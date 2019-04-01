@@ -1,0 +1,13 @@
+apiVersion: aerogear.org/v1alpha1
+kind: Installation
+metadata:
+  name: example-installation
+spec:
+  nmamespaceSelector: owner=integreatly
+  products:
+    rhsso:
+      namespace: sso
+    strimzi:
+      namespace: strimzi
+
+
