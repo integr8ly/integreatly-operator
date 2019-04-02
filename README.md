@@ -1,6 +1,6 @@
 # Integreatly Operator
 
-A Kubernetes Operator based on the Operator SDK for installing and reconciling integreatly products.
+A Kubernetes Operator based on the Operator SDK for installing and reconciling Integreatly products.
 
 ## Current status
 
