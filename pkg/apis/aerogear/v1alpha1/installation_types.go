@@ -4,8 +4,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type StatusPhase string
+type InstallationType string
+type ProductName string
+var (
+	PhaseNone       StatusPhase = ""
+	PhaseAccepted   StatusPhase = "accepted"
+	PhaseInProgress StatusPhase = "in progress"
+	PhaseCompleted  StatusPhase = "completed"
+	PhaseFailed     StatusPhase = "failed"
+
+	InstallationTypeWorkshop InstallationType = "workshop"
+	InstallationTypeManaged  InstallationType = "managed"
+
+	ProductAMQStreams ProductName = "amqstreams"
+)
 
 // InstallationSpec defines the desired state of Installation
 // +k8s:openapi-gen=true
@@ -13,6 +26,8 @@ type InstallationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Type            string `json:"type"`
+	NamespacePrefix string `json:"namespace_prefix"`
 }
 
 // InstallationStatus defines the observed state of Installation
@@ -21,6 +36,8 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Stages        map[int]string    `json:"stages"`
+	ProductStatus map[ProductName]string `json:"product_status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -3,11 +3,7 @@ kind: Installation
 metadata:
   name: example-installation
 spec:
-  nmamespaceSelector: owner=integreatly
-  products:
-    rhsso:
-      namespace: sso
-    strimzi:
-      namespace: strimzi
+  namespacePrefix: intly
+  type: managed
 
 
