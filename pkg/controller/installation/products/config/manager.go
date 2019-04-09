@@ -5,8 +5,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"gopkg.in/yaml.v2"
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
@@ -21,11 +21,11 @@ func NewManager(client pkgclient.Client, namespace string) (*Manager, error) {
 	cfgmap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name: ConfigMapName,
+			Name:      ConfigMapName,
 		},
 	}
 	err := client.Get(context.TODO(), pkgclient.ObjectKey{Name: ConfigMapName, Namespace: namespace}, cfgmap)
-	if ! errors.IsNotFound(err) && err != nil {
+	if !errors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
 	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap}, nil
@@ -43,9 +43,9 @@ type ConfigReadable interface {
 }
 
 type Manager struct {
-	Client pkgclient.Client
+	Client    pkgclient.Client
 	Namespace string
-	cfgmap *v1.ConfigMap
+	cfgmap    *v1.ConfigMap
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
