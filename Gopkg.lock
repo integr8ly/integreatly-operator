@@ -80,6 +80,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:ef796be125d656ea1556ea57c6b1911092c9c763085644ef9035c63ac3f2b573"
+  name = "github.com/coreos/go-semver"
+  packages = ["semver"]
+  pruneopts = "NT"
+  revision = "8ab6407b697782a06568d4b7f1db25550ec2e4c6"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:c61f4f97321a37adcb5b4fd4fd61209cd553e46c99ee606c465553541b12a229"
   name = "github.com/coreos/prometheus-operator"
   packages = [
@@ -392,6 +400,18 @@
   pruneopts = "NT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e23f911287c9b01dd85ad7d21ec1913cb562ff46c06f5b399eb19bd26ae82a2e"
+  name = "github.com/operator-framework/operator-lifecycle-manager"
+  packages = [
+    "pkg/api/apis/operators",
+    "pkg/api/apis/operators/v1",
+    "pkg/api/apis/operators/v1alpha1",
+  ]
+  pruneopts = "NT"
+  revision = "eef76a28a6cca5fc734fd955c0d7d23bf6bfaef8"
 
 [[projects]]
   branch = "master"
@@ -826,6 +846,7 @@
   packages = [
     "pkg/apis/apiextensions",
     "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset/scheme",
   ]
   pruneopts = "NT"
   revision = "0fe22c71c47604641d9aa352c785b7912c200562"
@@ -1096,6 +1117,8 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-openapi/spec",
+    "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1",
+    "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
