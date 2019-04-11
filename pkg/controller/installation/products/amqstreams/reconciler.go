@@ -14,6 +14,13 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+
+)
+
+var (
+	 installationNamespace string = "openshift-amq-streams"
+	 installationName      string = "amq-streams-install-"
+	 cvsName               string = "strimzi-cluster-operator.v0.11.1"
 )
 
 var (
@@ -112,7 +119,6 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 
 func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("amq streams accepted phase")
-
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Redhat,
 		r.Config.GetNamespace(),
