@@ -7,20 +7,22 @@ import (
 type KafkaTopicOperator struct {}
 type KafkaUserOperator struct {}
 
+type KafkaListener struct {}
+
 type KafkaSpecEntityOperator struct {
 	TopicOperator KafkaTopicOperator `json:"topicOperator"`
 	UserOperator KafkaUserOperator `json:"userOperator"`
 }
 
 type KafkaSpecZookeeper struct {
-	Replicas string `json:"replicas,omitempty"`
+	Replicas int `json:"replicas,omitempty"`
 	Storage KafkaStorage `json:"storage,omitempty"`
 }
 
 type KafkaSpecKafka struct {
 	Version string `json:"version,omitempty"`
-	Replicas string `json:"replicas,omitempty"`
-	listeners map[string]interface{} `json:"listeners,omitempty"`
+	Replicas int `json:"replicas,omitempty"`
+	Listeners map[string]interface{} `json:"listeners,omitempty"`
 	Config KafkaSpecKafkaConfig `json:"config,omitempty"`
 	Storage KafkaStorage `json:"storage,omitempty"`
 }
@@ -43,6 +45,8 @@ type KafkaSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Kafka KafkaSpecKafka `json:"kafka,omitempty"`
+	Zookeeper KafkaSpecZookeeper `json:"zookeeper,omitempty"`
+	EntityOperator KafkaSpecEntityOperator `json:"entityOperator,omitempty"`
 }
 
 // InstallationStatus defines the observed state of Installation

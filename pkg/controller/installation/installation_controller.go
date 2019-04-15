@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var log = logf.Log.WithName("Installation Controller")
@@ -115,11 +116,25 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		err = r.client.Status().Update(context.TODO(), instance)
 		instance.Spec.NamespacePrefix = instance.Spec.NamespacePrefix + "-a"
 		if err != nil {
-			log.Error(err, "error reconciling installation instance status")
+			if k8serr.IsConflict(err) {
+				log.Info("Error updating Installation resource. Requeue and retry.")
+				return reconcile.Result{
+					Requeue: true,
+				}, nil
+			}
+
+			log.Error(err, "Error reconciling installation instance status")
 			return reconcile.Result{}, err
 		}
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
+			if k8serr.IsConflict(err) {
+				log.Info("Error updating Installation resource. Requeue and retry.")
+				return reconcile.Result{
+					Requeue: true,
+				}, nil
+			}
+
 			log.Error(err, "error reconciling installation instance")
 			return reconcile.Result{}, err
 		}
