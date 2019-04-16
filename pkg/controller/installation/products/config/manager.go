@@ -11,20 +11,16 @@ import (
 	"strings"
 )
 
-var (
-	ConfigMapName = "integreatly-config"
-)
-
 type ProductConfig map[string]string
 
-func NewManager(client pkgclient.Client, namespace string) (*Manager, error) {
+func NewManager(client pkgclient.Client, namespace string, configMapName string) (*Manager, error) {
 	cfgmap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      ConfigMapName,
+			Name:      configMapName,
 		},
 	}
-	err := client.Get(context.TODO(), pkgclient.ObjectKey{Name: ConfigMapName, Namespace: namespace}, cfgmap)
+	err := client.Get(context.TODO(), pkgclient.ObjectKey{Name: configMapName, Namespace: namespace}, cfgmap)
 	if !errors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
@@ -57,7 +53,7 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 }
 func (m *Manager) WriteConfig(config ConfigReadable) error {
 	stringConfig, err := yaml.Marshal(config.Read())
-	err = m.Client.Get(context.TODO(), pkgclient.ObjectKey{Name: ConfigMapName, Namespace: m.Namespace}, m.cfgmap)
+	err = m.Client.Get(context.TODO(), pkgclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
 	if errors.IsNotFound(err) {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}
 		return m.Client.Create(context.TODO(), m.cfgmap)

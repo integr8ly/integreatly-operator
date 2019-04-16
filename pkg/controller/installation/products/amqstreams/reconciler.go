@@ -2,14 +2,13 @@ package amqstreams
 
 import (
 	"context"
+	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -23,18 +22,23 @@ var (
 	 cvsName               string = "strimzi-cluster-operator.v0.11.1"
 )
 
-func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, clusterHasOLM bool) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
 	}
-	return &Reconciler{client: client, ConfigManager: configManager, Config: config}, nil
+	return &Reconciler{client: client,
+		ConfigManager: configManager,
+		Config: config,
+		clusterHasOLM: clusterHasOLM,
+	}, nil
 }
 
 type Reconciler struct {
 	client        pkgclient.Client
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
+	clusterHasOLM bool
 }
 
 func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
@@ -93,52 +97,21 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("amq streams accepted phase")
 
-	csc := &marketplacev1.CatalogSourceConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "installed-redhat-" + installationNamespace,
-			Namespace: "openshift-marketplace",
-		},
-		Spec: marketplacev1.CatalogSourceConfigSpec{
-			DisplayName: "Red Hat Operators",
-			Publisher: "Red Hat",
-			Packages: "amq-streams",
-			TargetNamespace: installationNamespace,
-		},
+	if r.clusterHasOLM {
+		mpm := marketplace.NewManager(installationNamespace, r.client)
+		err := mpm.CreateSubscription(marketplace.GetOperatorSources().Redhat,"amq-streams", "final", []string{installationNamespace}, coreosv1alpha1.ApprovalManual)
+		if err != nil && !k8serr.IsAlreadyExists(err) {
+			return v1alpha1.PhaseFailed, err
+		}
 	}
-	err := r.client.Create(context.TODO(), csc)
-
-	og := &coreosv1.OperatorGroup{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: installationNamespace,
-			Name: installationName,
-		},
-		Spec: coreosv1.OperatorGroupSpec{
-			TargetNamespaces: []string{installationNamespace},
-		},
-	}
-	err = r.client.Create(context.TODO(), og)
-
-	sub := &coreosv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: installationNamespace,
-			Name: installationName,
-		},
-		Spec: &coreosv1alpha1.SubscriptionSpec{
-			//InstallPlanApproval: coreosv1alpha1.ApprovalManual,
-			//StartingCSV: cvsName,
-			Channel: "final",
-			Package: "amq-streams",
-			CatalogSource: csc.Name,
-			CatalogSourceNamespace: installationNamespace,
-		},
-	}
-	err = r.client.Create(context.TODO(), sub)
 
 	// commented out properties are for 1.1.0
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: fmt.Sprintf("%s/%s",
-				kafkav1.SchemeGroupVersion.Group, kafkav1.SchemeGroupVersion.Version),
+			APIVersion: fmt.Sprintf(
+				"%s/%s",
+				kafkav1.SchemeGroupVersion.Group,
+				kafkav1.SchemeGroupVersion.Version),
 			Kind: kafkav1.KafkaKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -175,7 +148,7 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 			},
 		},
 	}
-	err = r.client.Create(context.TODO(), kafka)
+	err := r.client.Create(context.TODO(), kafka)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err

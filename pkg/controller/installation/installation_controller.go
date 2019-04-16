@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"os"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 
 	pkgerr "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -19,7 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var log = logf.Log.WithName("Installation Controller")
@@ -91,7 +92,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace)
+	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, os.Getenv("INSTALLATION_CONFIG_MAP"))
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -114,9 +115,10 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			return reconcile.Result{}, err
 		}
 		err = r.client.Status().Update(context.TODO(), instance)
-		instance.Spec.NamespacePrefix = instance.Spec.NamespacePrefix + "-a"
 		if err != nil {
+			// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 			if k8serr.IsConflict(err) {
+				// If there is a conflict, requeue the resource and retry Update
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
 					Requeue: true,
@@ -126,9 +128,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			log.Error(err, "Error reconciling installation instance status")
 			return reconcile.Result{}, err
 		}
+		instance.Spec.NamespacePrefix = instance.Spec.NamespacePrefix + "-a"
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
+			// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 			if k8serr.IsConflict(err) {
+				// If there is a conflict, requeue the resource and retry Update
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
 					Requeue: true,
@@ -167,7 +172,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		}
 		//found an incomplete product
 		incompleteStage = true
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, configManager)
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, configManager, os.Getenv("CLUSTER_HAS_OLM") == "true")
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
