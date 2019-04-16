@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: msb
+  name: integreatly-operator
 objects:
   - apiVersion: v1
     kind: ServiceAccount
