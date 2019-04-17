@@ -99,7 +99,7 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 
 	if r.clusterHasOLM {
 		mpm := marketplace.NewManager(installationNamespace, r.client)
-		err := mpm.CreateSubscription(marketplace.GetOperatorSources().Redhat,"amq-streams", "final", []string{installationNamespace}, coreosv1alpha1.ApprovalManual)
+		err := mpm.CreateSubscription(marketplace.GetOperatorSources().Redhat,"amq-streams", "final", []string{installationNamespace}, coreosv1alpha1.ApprovalAutomatic)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
 			return v1alpha1.PhaseFailed, err
 		}
