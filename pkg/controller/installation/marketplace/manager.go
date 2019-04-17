@@ -25,6 +25,10 @@ func GetOperatorSources() *operatorSources {
 	}
 }
 
+type MarketplaceInterface interface {
+	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+}
+
 type MarketplaceManager struct {
 	client pkgclient.Client
 }

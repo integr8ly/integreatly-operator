@@ -27,7 +27,7 @@ func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWrite
 	if err != nil {
 		return nil, err
 	}
-	var mpm *marketplace.MarketplaceManager
+	var mpm marketplace.MarketplaceInterface
 	if clusterHasOLM {
 		mpm = marketplace.NewManager(client)
 	}
@@ -42,7 +42,7 @@ type Reconciler struct {
 	client        pkgclient.Client
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
-	mpm           *marketplace.MarketplaceManager
+	mpm           marketplace.MarketplaceInterface
 }
 
 func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
