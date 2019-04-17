@@ -1,4 +1,4 @@
-apiVersion: template.openshift.io/v1
+apiVersion: v1
 kind: Template
 metadata:
   name: integreatly-operator
@@ -26,7 +26,7 @@ objects:
           containers:
             - name: integreatly-operator
               # Replace this with the built image name
-              image: quay.io/philbrookes/integreatly-operator:latest
+              image: quay.io/sedroche/integreatly-operator:latest
               command:
                 - integreatly-operator
               imagePullPolicy: Always
@@ -45,6 +45,50 @@ objects:
                   value: ${CLUSTER_HAS_OLM}
                 - name: INSTALLATION_CONFIG_MAP
                   value: ${INSTALLATION_CONFIG_MAP}
+
+  - apiVersion: authorization.openshift.io/v1
+    kind: ClusterRole
+    metadata:
+      name: integreatly-operator
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - namespaces
+        verbs:
+          - list
+          - create
+          - watch
+      - apiGroups:
+          - kafka.strimzi.io
+        resources:
+          - kafkas
+        verbs:
+          - get
+          - create
+      - apiGroups:
+          - operators.coreos.com
+        resources:
+          - subscriptions
+          - operatorgroups
+          - catalogsourceconfigs
+        verbs:
+          - list
+          - create
+          - watch
+
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: integreatly-operator
+    subjects:
+      - kind: ServiceAccount
+        name: integreatly-operator
+        namespace: ${NAMESPACE}
+    roleRef:
+      kind: ClusterRole
+      name: integreatly-operator
+      apiGroup: rbac.authorization.k8s.io
 
   - apiVersion: rbac.authorization.k8s.io/v1
     kind: Role
@@ -114,6 +158,10 @@ objects:
       apiGroup: rbac.authorization.k8s.io
 
 parameters:
+  - name: NAMESPACE
+    description: Namespace of the project that is being deployed to
+    value: "openshift-integreatly-operator"
+
   - name: CLUSTER_HAS_OLM
     description: Defines whether the cluster integreatly operator is being deployed to has OLM installed.
     value: "true"
