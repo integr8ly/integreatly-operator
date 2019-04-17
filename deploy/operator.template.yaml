@@ -25,7 +25,8 @@ objects:
           serviceAccountName: integreatly-operator
           containers:
             - name: integreatly-operator
-              image: quay.io/integreatly/integreatly-operator:v1.0.0
+              # Replace this with the built image name
+              image: quay.io/integreatly/integreatly-operator:latest
               command:
                 - integreatly-operator
               imagePullPolicy: Always
