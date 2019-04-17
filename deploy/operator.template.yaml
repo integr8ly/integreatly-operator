@@ -1,4 +1,4 @@
-apiVersion: template.openshift.io/v1
+apiVersion: v1
 kind: Template
 metadata:
   name: integreatly-operator
