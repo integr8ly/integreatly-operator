@@ -42,7 +42,7 @@ objects:
                 - name: OPERATOR_NAME
                   value: "integreatly-operator"
                 - name: CLUSTER_HAS_OLM
-                  value: ${CLUSTER_HAS_OLM}
+                  value: "false"
                 - name: INSTALLATION_CONFIG_MAP
                   value: ${INSTALLATION_CONFIG_MAP}
 
@@ -161,10 +161,6 @@ parameters:
   - name: NAMESPACE
     description: Namespace of the project that is being deployed to
     value: "openshift-integreatly-operator"
-
-  - name: CLUSTER_HAS_OLM
-    description: Defines whether the cluster integreatly operator is being deployed to has OLM installed.
-    value: "true"
 
   - name: INSTALLATION_CONFIG_MAP
     description: Name of a config map which stores configuration for each product being installed.
