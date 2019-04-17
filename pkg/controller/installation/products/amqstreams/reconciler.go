@@ -27,10 +27,14 @@ func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWrite
 	if err != nil {
 		return nil, err
 	}
+	var mpm *marketplace.MarketplaceManager
+	if clusterHasOLM {
+		mpm = marketplace.NewManager(client)
+	}
 	return &Reconciler{client: client,
 		ConfigManager: configManager,
 		Config: config,
-		clusterHasOLM: clusterHasOLM,
+		mpm: mpm,
 	}, nil
 }
 
@@ -38,7 +42,7 @@ type Reconciler struct {
 	client        pkgclient.Client
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
-	clusterHasOLM bool
+	mpm           *marketplace.MarketplaceManager
 }
 
 func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
@@ -97,9 +101,14 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("amq streams accepted phase")
 
-	if r.clusterHasOLM {
-		mpm := marketplace.NewManager(installationNamespace, r.client)
-		err := mpm.CreateSubscription(marketplace.GetOperatorSources().Redhat,"amq-streams", "final", []string{installationNamespace}, coreosv1alpha1.ApprovalAutomatic)
+	if r.mpm != nil {
+		err := r.mpm.CreateSubscription(
+			marketplace.GetOperatorSources().Redhat,
+			installationNamespace,
+			"amq-streams",
+			"final",
+			[]string{installationNamespace},
+			coreosv1alpha1.ApprovalAutomatic)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
 			return v1alpha1.PhaseFailed, err
 		}

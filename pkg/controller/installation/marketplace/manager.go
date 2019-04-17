@@ -27,20 +27,18 @@ func GetOperatorSources() *operatorSources {
 
 type MarketplaceManager struct {
 	client pkgclient.Client
-	ns     string
 }
 
-func NewManager(ns string, client pkgclient.Client) *MarketplaceManager {
+func NewManager(client pkgclient.Client) *MarketplaceManager {
 	return &MarketplaceManager{
 		client: client,
-		ns: ns,
 	}
 }
 
-func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: m.ns,
+			Namespace: ns,
 			Name: pkg,
 		},
 	}
@@ -51,14 +49,14 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "installed-" + pkg + "-" + m.ns,
+			Name: "installed-" + pkg + "-" + ns,
 			Namespace: "openshift-marketplace",
 		},
 		Spec: marketplacev1.CatalogSourceConfigSpec{
 			DisplayName: os.Spec.DisplayName,
 			Publisher: os.Spec.Publisher,
 			Packages: pkg,
-			TargetNamespace: m.ns,
+			TargetNamespace: ns,
 		},
 	}
 	err = m.client.Create(context.TODO(), csc)
@@ -68,8 +66,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 
 	og := &coreosv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: m.ns,
-			GenerateName: m.ns + "-",
+			Namespace: ns,
+			GenerateName: ns + "-",
 		},
 		Spec: coreosv1.OperatorGroupSpec{
 			TargetNamespaces: operatorGroupNamespaces,
@@ -85,7 +83,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		Channel: channel,
 		Package: pkg,
 		CatalogSource: csc.Name,
-		CatalogSourceNamespace: m.ns,
+		CatalogSourceNamespace: ns,
 	}
 	err = m.client.Create(context.TODO(), sub)
 	if err != nil {
