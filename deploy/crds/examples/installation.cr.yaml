@@ -3,5 +3,4 @@ kind: Installation
 metadata:
   name: example-installation
 spec:
-  namespacePrefix: intly
   type: workshop

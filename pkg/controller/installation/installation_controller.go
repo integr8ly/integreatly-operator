@@ -128,7 +128,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			log.Error(err, "Error reconciling installation instance status")
 			return reconcile.Result{}, err
 		}
-		instance.Spec.NamespacePrefix = instance.Spec.NamespacePrefix + "-a"
 		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
 			// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
