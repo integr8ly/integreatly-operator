@@ -29,6 +29,14 @@ spec:
           type: object
         spec:
           type: object
+          properties:
+            type:
+              type: string
+              enum:
+              - workshop
+              - managed
+          required:
+            - type
         status:
           type: object
   version: v1alpha1
