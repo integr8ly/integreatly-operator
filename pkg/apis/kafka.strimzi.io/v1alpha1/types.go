@@ -22,7 +22,7 @@ type KafkaSpecZookeeper struct {
 type KafkaSpecKafka struct {
 	Version string `json:"version,omitempty"`
 	Replicas int `json:"replicas,omitempty"`
-	Listeners map[string]interface{} `json:"listeners,omitempty"`
+	Listeners map[string]KafkaListener `json:"listeners,omitempty"`
 	Config KafkaSpecKafkaConfig `json:"config,omitempty"`
 	Storage KafkaStorage `json:"storage,omitempty"`
 }

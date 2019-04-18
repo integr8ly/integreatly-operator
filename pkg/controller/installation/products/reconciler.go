@@ -2,7 +2,7 @@ package products
 
 import (
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqstreams"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"

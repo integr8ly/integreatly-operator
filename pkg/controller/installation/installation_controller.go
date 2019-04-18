@@ -7,7 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"os"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	pkgerr "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"

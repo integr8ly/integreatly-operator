@@ -2,7 +2,7 @@ package config
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"gopkg.in/yaml.v2"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

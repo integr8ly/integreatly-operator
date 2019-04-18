@@ -5,7 +5,7 @@ import (
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -131,7 +131,7 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 			Kafka:kafkav1.KafkaSpecKafka{
 				//Version: "2.1.1",
 				Replicas: 3,
-				Listeners: map[string]interface{}{
+				Listeners: map[string]kafkav1.KafkaListener{
 					"plain": kafkav1.KafkaListener{},
 					"tls": kafkav1.KafkaListener{},
 				},

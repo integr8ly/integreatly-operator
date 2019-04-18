@@ -2,7 +2,7 @@ package installation
 
 import (
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Type struct {
