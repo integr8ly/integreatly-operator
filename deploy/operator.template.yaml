@@ -138,7 +138,7 @@ objects:
         verbs:
           - update
       - apiGroups:
-          - aerogear.org
+          - integreatly.io
         resources:
           - '*'
         verbs:
