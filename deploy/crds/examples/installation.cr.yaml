@@ -1,9 +1,6 @@
-apiVersion: aerogear.org/v1alpha1
+apiVersion: integreatly.io/v1alpha1
 kind: Installation
 metadata:
   name: example-installation
 spec:
-  namespacePrefix: intly
-  type: managed
-
-
+  type: workshop
