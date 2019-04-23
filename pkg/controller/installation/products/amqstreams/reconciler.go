@@ -2,13 +2,13 @@ package amqstreams
 
 import (
 	"context"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	 installationNamespace string = "openshift-amq-streams"
-	 installationName      string = "amq-streams-install"
-	 cvsName               string = "strimzi-cluster-operator.v0.11.1"
+	installationNamespace string = "openshift-amq-streams"
+	installationName      string = "amq-streams-install"
+	cvsName               string = "strimzi-cluster-operator.v0.11.1"
 )
 
 func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, clusterHasOLM bool) (*Reconciler, error) {
@@ -33,8 +33,8 @@ func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWrite
 	}
 	return &Reconciler{client: client,
 		ConfigManager: configManager,
-		Config: config,
-		mpm: mpm,
+		Config:        config,
+		mpm:           mpm,
 	}, nil
 }
 
@@ -49,10 +49,14 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 	switch phase {
 	case v1alpha1.PhaseNone:
 		return r.handleNoPhase()
-	case v1alpha1.PhaseAccepted:
-		return r.handleAcceptedPhase()
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase()
+	case v1alpha1.PhaseCreatingSubscription:
+		return r.handleCreatingSubscription()
+	case v1alpha1.PhaseAwaitingSubscription:
+		return r.handleAwaitingSubscription()
+	case v1alpha1.PhaseCreatingComponents:
+		return r.handleCreatingComponents()
 	case v1alpha1.PhaseInProgress:
 		return r.handleProgressPhase()
 	case v1alpha1.PhaseCompleted:
@@ -74,7 +78,7 @@ func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
 		},
 	}
 	err := r.client.Create(context.TODO(), ns)
-	if err != nil && ! k8serr.IsAlreadyExists(err) {
+	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 	return v1alpha1.PhaseAwaitingNS, nil
@@ -84,7 +88,7 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("waiting for namespace to be active")
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      installationNamespace,
+			Name: installationNamespace,
 		},
 	}
 	err := r.client.Get(context.TODO(), pkgclient.ObjectKey{Name: installationNamespace}, ns)
@@ -92,28 +96,42 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 		return v1alpha1.PhaseFailed, err
 	}
 	if ns.Status.Phase == v1.NamespaceActive {
-		return v1alpha1.PhaseAccepted, nil
+		// 23/04/19 pbrookes: if mpm is nil we are not in an OLM environment, so do not create a subscription
+		//instead skip to creating components and assume operator is set up already
+		if r.mpm != nil {
+			return v1alpha1.PhaseCreatingSubscription, nil
+		} else {
+			return v1alpha1.PhaseCreatingComponents, nil
+		}
 	}
 
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("amq streams accepted phase")
 
-	if r.mpm != nil {
-		err := r.mpm.CreateSubscription(
-			marketplace.GetOperatorSources().Redhat,
-			installationNamespace,
-			"amq-streams",
-			"final",
-			[]string{installationNamespace},
-			coreosv1alpha1.ApprovalAutomatic)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, err
-		}
+	err := r.mpm.CreateSubscription(
+		marketplace.GetOperatorSources().Redhat,
+		installationNamespace,
+		"amq-streams",
+		"final",
+		[]string{installationNamespace},
+		coreosv1alpha1.ApprovalAutomatic)
+	if err != nil && !k8serr.IsAlreadyExists(err) {
+		return v1alpha1.PhaseFailed, err
 	}
 
+	return v1alpha1.PhaseAwaitingSubscription, nil
+}
+
+func (r *Reconciler) handleAwaitingSubscription() (v1alpha1.StatusPhase, error) {
+	//wait to see kafka CRD exists
+
+	return v1alpha1.PhaseAwaitingSubscription, nil
+}
+
+func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 	// commented out properties are for 1.1.0
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
@@ -124,21 +142,21 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 			Kind: kafkav1.KafkaKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "integreatly-cluster",
+			Name:      "integreatly-cluster",
 			Namespace: installationNamespace,
 		},
 		Spec: kafkav1.KafkaSpec{
-			Kafka:kafkav1.KafkaSpecKafka{
+			Kafka: kafkav1.KafkaSpecKafka{
 				//Version: "2.1.1",
 				Replicas: 3,
 				Listeners: map[string]kafkav1.KafkaListener{
 					"plain": kafkav1.KafkaListener{},
-					"tls": kafkav1.KafkaListener{},
+					"tls":   kafkav1.KafkaListener{},
 				},
 				Config: kafkav1.KafkaSpecKafkaConfig{
 					OffsetsTopicReplicationFactor: "3",
 					//LogMessageFormatVersion: "2.1",
-					TransactionStateLogMinIsr: "2",
+					TransactionStateLogMinIsr:            "2",
 					TransactionStateLogReplicationFactor: "3",
 				},
 				Storage: kafkav1.KafkaStorage{
@@ -147,13 +165,13 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 			},
 			Zookeeper: kafkav1.KafkaSpecZookeeper{
 				Replicas: 3,
-				Storage:kafkav1.KafkaStorage{
+				Storage: kafkav1.KafkaStorage{
 					Type: "ephemeral",
 				},
 			},
 			EntityOperator: kafkav1.KafkaSpecEntityOperator{
 				TopicOperator: kafkav1.KafkaTopicOperator{},
-				UserOperator: kafkav1.KafkaUserOperator{},
+				UserOperator:  kafkav1.KafkaUserOperator{},
 			},
 		},
 	}
@@ -167,7 +185,8 @@ func (r *Reconciler) handleAcceptedPhase() (v1alpha1.StatusPhase, error) {
 }
 
 func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
-	logrus.Infof("amq streams progress phase")
+	// check AMQ Streams pods are correct counts
+	// no status on kafka object until 1.2
 
-	return v1alpha1.PhaseCompleted, nil
+	return v1alpha1.PhaseInProgress, nil
 }

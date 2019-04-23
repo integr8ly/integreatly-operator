@@ -4,27 +4,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type KafkaTopicOperator struct {}
-type KafkaUserOperator struct {}
+type KafkaTopicOperator struct{}
+type KafkaUserOperator struct{}
 
-type KafkaListener struct {}
+type KafkaListener struct{}
 
 type KafkaSpecEntityOperator struct {
 	TopicOperator KafkaTopicOperator `json:"topicOperator"`
-	UserOperator KafkaUserOperator `json:"userOperator"`
+	UserOperator  KafkaUserOperator  `json:"userOperator"`
 }
 
 type KafkaSpecZookeeper struct {
-	Replicas int `json:"replicas,omitempty"`
-	Storage KafkaStorage `json:"storage,omitempty"`
+	Replicas int          `json:"replicas,omitempty"`
+	Storage  KafkaStorage `json:"storage,omitempty"`
 }
 
 type KafkaSpecKafka struct {
-	Version string `json:"version,omitempty"`
-	Replicas int `json:"replicas,omitempty"`
+	Version   string                   `json:"version,omitempty"`
+	Replicas  int                      `json:"replicas,omitempty"`
 	Listeners map[string]KafkaListener `json:"listeners,omitempty"`
-	Config KafkaSpecKafkaConfig `json:"config,omitempty"`
-	Storage KafkaStorage `json:"storage,omitempty"`
+	Config    KafkaSpecKafkaConfig     `json:"config,omitempty"`
+	Storage   KafkaStorage             `json:"storage,omitempty"`
 }
 
 type KafkaStorage struct {
@@ -32,10 +32,10 @@ type KafkaStorage struct {
 }
 
 type KafkaSpecKafkaConfig struct {
-	OffsetsTopicReplicationFactor string `json:"offsets.topic.replication.factor,omitempty"`
+	OffsetsTopicReplicationFactor        string `json:"offsets.topic.replication.factor,omitempty"`
 	TransactionStateLogReplicationFactor string `json:"transaction.state.log.replication.factor,omitempty"`
-	TransactionStateLogMinIsr string `json:"transaction.state.log.min.isr,omitempty"`
-	LogMessageFormatVersion string `json:"log.message.format.version,omitempty"`
+	TransactionStateLogMinIsr            string `json:"transaction.state.log.min.isr,omitempty"`
+	LogMessageFormatVersion              string `json:"log.message.format.version,omitempty"`
 }
 
 // InstallationSpec defines the desired state of Installation
@@ -44,8 +44,8 @@ type KafkaSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Kafka KafkaSpecKafka `json:"kafka,omitempty"`
-	Zookeeper KafkaSpecZookeeper `json:"zookeeper,omitempty"`
+	Kafka          KafkaSpecKafka          `json:"kafka,omitempty"`
+	Zookeeper      KafkaSpecZookeeper      `json:"zookeeper,omitempty"`
 	EntityOperator KafkaSpecEntityOperator `json:"entityOperator,omitempty"`
 }
 

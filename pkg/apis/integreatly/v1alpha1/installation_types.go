@@ -9,12 +9,15 @@ type InstallationType string
 type ProductName string
 
 var (
-	PhaseNone       StatusPhase = ""
-	PhaseAccepted   StatusPhase = "accepted"
-	PhaseAwaitingNS StatusPhase = "awaiting namespace"
-	PhaseInProgress StatusPhase = "in progress"
-	PhaseCompleted  StatusPhase = "completed"
-	PhaseFailed     StatusPhase = "failed"
+	PhaseNone                 StatusPhase = ""
+	PhaseAccepted             StatusPhase = "accepted"
+	PhaseAwaitingNS           StatusPhase = "awaiting namespace"
+	PhaseCreatingSubscription StatusPhase = "creating subscription"
+	PhaseAwaitingSubscription StatusPhase = "awaiting subscription"
+	PhaseCreatingComponents   StatusPhase = "creating components"
+	PhaseInProgress           StatusPhase = "in progress"
+	PhaseCompleted            StatusPhase = "completed"
+	PhaseFailed               StatusPhase = "failed"
 
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"
@@ -28,7 +31,7 @@ type InstallationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type            string `json:"type"`
+	Type string `json:"type"`
 }
 
 // InstallationStatus defines the observed state of Installation

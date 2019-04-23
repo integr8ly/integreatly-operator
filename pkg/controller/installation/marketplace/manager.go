@@ -19,7 +19,7 @@ func GetOperatorSources() *operatorSources {
 		Redhat: marketplacev1.OperatorSource{
 			Spec: marketplacev1.OperatorSourceSpec{
 				DisplayName: "Red Hat Operators",
-				Publisher: "Red Hat",
+				Publisher:   "Red Hat",
 			},
 		},
 	}
@@ -43,7 +43,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
-			Name: pkg,
+			Name:      pkg,
 		},
 	}
 	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
@@ -53,13 +53,13 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "installed-" + pkg + "-" + ns,
+			Name:      "installed-" + pkg + "-" + ns,
 			Namespace: "openshift-marketplace",
 		},
 		Spec: marketplacev1.CatalogSourceConfigSpec{
-			DisplayName: os.Spec.DisplayName,
-			Publisher: os.Spec.Publisher,
-			Packages: pkg,
+			DisplayName:     os.Spec.DisplayName,
+			Publisher:       os.Spec.Publisher,
+			Packages:        pkg,
 			TargetNamespace: ns,
 		},
 	}
@@ -70,7 +70,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 
 	og := &coreosv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
+			Namespace:    ns,
 			GenerateName: ns + "-",
 		},
 		Spec: coreosv1.OperatorGroupSpec{
@@ -83,10 +83,10 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	}
 
 	sub.Spec = &coreosv1alpha1.SubscriptionSpec{
-		InstallPlanApproval: approvalStrategy,
-		Channel: channel,
-		Package: pkg,
-		CatalogSource: csc.Name,
+		InstallPlanApproval:    approvalStrategy,
+		Channel:                channel,
+		Package:                pkg,
+		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
 	err = m.client.Create(context.TODO(), sub)
