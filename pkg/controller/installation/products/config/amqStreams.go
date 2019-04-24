@@ -18,6 +18,14 @@ func (a *AMQStreams) SetHost(newHost string) {
 	a.config["HOST"] = newHost
 }
 
+func (a *AMQStreams) GetNamespace() string {
+	return a.config["NAMESPACE"]
+}
+
+func (a *AMQStreams) SetNamespace(newNamespace string) {
+	a.config["NAMESPACE"] = newNamespace
+}
+
 func (a *AMQStreams) Read() ProductConfig {
 	return a.config
 }

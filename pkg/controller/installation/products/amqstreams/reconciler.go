@@ -17,15 +17,18 @@ import (
 )
 
 var (
-	installationNamespace string = "openshift-amq-streams"
-	installationName      string = "amq-streams-install"
-	cvsName               string = "strimzi-cluster-operator.v0.11.1"
+	defaultInstallationNamespace string = "amq-streams"
+	installationName             string = "amq-streams-install"
+	cvsName                      string = "strimzi-cluster-operator.v0.11.1"
 )
 
-func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, clusterHasOLM bool) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, namespacePrefix string, clusterHasOLM bool) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
+	}
+	if config.GetNamespace() == "" {
+		config.SetNamespace(namespacePrefix + defaultInstallationNamespace)
 	}
 	var mpm marketplace.MarketplaceInterface
 	if clusterHasOLM {
@@ -71,10 +74,11 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 
 func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("amq streams no phase")
+
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: installationNamespace,
-			Name:      installationNamespace,
+			Namespace: r.Config.GetNamespace(),
+			Name:      r.Config.GetNamespace(),
 		},
 	}
 	err := r.client.Create(context.TODO(), ns)
@@ -88,10 +92,10 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 	logrus.Infof("waiting for namespace to be active")
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: installationNamespace,
+			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(context.TODO(), pkgclient.ObjectKey{Name: installationNamespace}, ns)
+	err := r.client.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -113,10 +117,10 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Redhat,
-		installationNamespace,
+		r.Config.GetNamespace(),
 		"amq-streams",
 		"final",
-		[]string{installationNamespace},
+		[]string{r.Config.GetNamespace()},
 		coreosv1alpha1.ApprovalAutomatic)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
@@ -143,7 +147,7 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "integreatly-cluster",
-			Namespace: installationNamespace,
+			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: kafkav1.KafkaSpec{
 			Kafka: kafkav1.KafkaSpecKafka{

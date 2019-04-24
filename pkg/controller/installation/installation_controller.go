@@ -171,7 +171,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		}
 		//found an incomplete product
 		incompleteStage = true
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, configManager, os.Getenv("CLUSTER_HAS_OLM") != "false")
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, configManager, instance.Spec.NamespacePrefix, os.Getenv("CLUSTER_HAS_OLM") != "false")
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}

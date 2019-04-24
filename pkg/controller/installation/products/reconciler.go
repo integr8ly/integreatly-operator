@@ -12,10 +12,10 @@ type Interface interface {
 	Reconcile(phase v1alpha1.StatusPhase) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, configManager config.ConfigReadWriter, clusterHasOLM bool) (reconciler Interface, err error) {
+func NewReconciler(product v1alpha1.ProductName, client client.Client, configManager config.ConfigReadWriter, namespacePrefix string, clusterHasOLM bool) (reconciler Interface, err error) {
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(client, configManager, clusterHasOLM)
+		reconciler, err = amqstreams.NewReconciler(client, configManager, namespacePrefix, clusterHasOLM)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
