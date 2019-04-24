@@ -17,18 +17,16 @@ import (
 )
 
 var (
-	defaultInstallationNamespace string = "amq-streams"
-	installationName             string = "amq-streams-install"
-	cvsName                      string = "strimzi-cluster-operator.v0.11.1"
+	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, namespacePrefix string, clusterHasOLM bool) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
 	}
 	if config.GetNamespace() == "" {
-		config.SetNamespace(namespacePrefix + defaultInstallationNamespace)
+		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	var mpm marketplace.MarketplaceInterface
 	if clusterHasOLM {
