@@ -47,7 +47,7 @@ rules:
   verbs:
   - update
 - apiGroups:
-  - integreatly.io
+  - integreatly.org
   resources:
   - '*'
   verbs:

@@ -79,7 +79,7 @@ cluster/prepare:
 cluster/clean:
 	kubectl delete role integreatly-operator -n $(NAMESPACE)
 	kubectl delete rolebinding integreatly-operator -n $(NAMESPACE)
-	kubectl delete crd installations.integreatly.io
+	kubectl delete crd installations.integreatly.org
 	kubectl delete serviceaccount integreatly-operator -n $(NAMESPACE)
 	kubectl delete namespace $(NAMESPACE)
 

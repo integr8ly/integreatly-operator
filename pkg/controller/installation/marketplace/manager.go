@@ -5,6 +5,7 @@ import (
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,6 +41,7 @@ func NewManager(client pkgclient.Client) *MarketplaceManager {
 }
 
 func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -48,6 +50,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	}
 	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err == nil {
+		logrus.Infof("Subscription already exists")
 		return k8serr.NewAlreadyExists(coreosv1alpha1.Resource("subscription"), sub.Name)
 	}
 
@@ -64,7 +67,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		},
 	}
 	err = m.client.Create(context.TODO(), csc)
-	if err != nil {
+	if err != nil && !k8serr.IsAlreadyExists(err) {
+		logrus.Infof("error creating catalog source config: %s", err.Error())
 		return err
 	}
 
@@ -79,6 +83,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	}
 	err = m.client.Create(context.TODO(), og)
 	if err != nil {
+		logrus.Infof("error creating operator group")
 		return err
 	}
 
@@ -91,8 +96,11 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	}
 	err = m.client.Create(context.TODO(), sub)
 	if err != nil {
+		logrus.Infof("error creating sub")
 		return err
 	}
+
+	logrus.Infof("no errors")
 
 	return nil
 }
