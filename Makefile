@@ -31,7 +31,7 @@ code/compile:
 .PHONY: code/gen
 code/gen:
 	operator-sdk generate k8s
-	@go generate ./...s
+	@go generate ./...
 
 .PHONY: code/check
 code/check:
@@ -79,7 +79,7 @@ cluster/prepare:
 cluster/clean:
 	kubectl delete role integreatly-operator -n $(NAMESPACE)
 	kubectl delete rolebinding integreatly-operator -n $(NAMESPACE)
-	kubectl delete crd installations.aerogear.org
+	kubectl delete crd installations.integreatly.io
 	kubectl delete serviceaccount integreatly-operator -n $(NAMESPACE)
 	kubectl delete namespace $(NAMESPACE)
 

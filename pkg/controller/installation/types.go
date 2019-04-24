@@ -2,7 +2,7 @@ package installation
 
 import (
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Type struct {
@@ -38,16 +38,16 @@ func InstallationTypeFactory(installationType string) (error, *Type) {
 
 func newWorkshopType() *Type {
 	return &Type{
-		products:     []v1alpha1.ProductName{},
-		productOrder: map[int][]v1alpha1.ProductName{},
+		products: []v1alpha1.ProductName{},
+		productOrder: map[int][]v1alpha1.ProductName{
+			1: {v1alpha1.ProductAMQStreams},
+		},
 	}
 }
 
 func newManagedType() *Type {
 	return &Type{
-		products: []v1alpha1.ProductName{v1alpha1.ProductAMQStreams},
-		productOrder: map[int][]v1alpha1.ProductName{
-			1: {v1alpha1.ProductAMQStreams},
-		},
+		products:     []v1alpha1.ProductName{v1alpha1.ProductAMQStreams},
+		productOrder: map[int][]v1alpha1.ProductName{},
 	}
 }
