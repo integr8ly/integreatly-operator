@@ -11,6 +11,8 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var providerLabel = "opsrc-provider"
+
 type operatorSources struct {
 	Redhat marketplacev1.OperatorSource
 }
@@ -18,6 +20,11 @@ type operatorSources struct {
 func GetOperatorSources() *operatorSources {
 	return &operatorSources{
 		Redhat: marketplacev1.OperatorSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					providerLabel: "redhat",
+				},
+			},
 			Spec: marketplacev1.OperatorSourceSpec{
 				DisplayName: "Red Hat Operators",
 				Publisher:   "Red Hat",
@@ -56,7 +63,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installed-" + pkg + "-" + ns,
+			Name:      "installed-" + os.Labels[providerLabel] + "-" + ns,
 			Namespace: "openshift-marketplace",
 		},
 		Spec: marketplacev1.CatalogSourceConfigSpec{
