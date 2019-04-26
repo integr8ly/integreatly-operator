@@ -3,10 +3,13 @@ package config
 import "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 type AMQStreams struct {
-	config ProductConfig
+	config v1alpha1.ProductConfig
 }
 
-func newAMQStreams(config ProductConfig) *AMQStreams {
+func newAMQStreams(config v1alpha1.ProductConfig) *AMQStreams {
+	if config == nil {
+		config = v1alpha1.ProductConfig{}
+	}
 	return &AMQStreams{config: config}
 }
 
@@ -26,7 +29,7 @@ func (a *AMQStreams) SetNamespace(newNamespace string) {
 	a.config["NAMESPACE"] = newNamespace
 }
 
-func (a *AMQStreams) Read() ProductConfig {
+func (a *AMQStreams) Read() v1alpha1.ProductConfig {
 	return a.config
 }
 

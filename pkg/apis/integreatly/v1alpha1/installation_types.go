@@ -7,6 +7,7 @@ import (
 type StatusPhase string
 type InstallationType string
 type ProductName string
+type ProductConfig map[string]string
 
 var (
 	PhaseNone                 StatusPhase = ""
@@ -41,8 +42,9 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages        map[int]string         `json:"stages"`
-	ProductStatus map[ProductName]string `json:"product_status"`
+	Stages        map[int]string                `json:"stages"`
+	ProductStatus map[ProductName]string        `json:"product_status"`
+	ProductConfig map[ProductName]ProductConfig `json:"product_config"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

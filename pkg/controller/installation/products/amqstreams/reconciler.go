@@ -9,14 +9,14 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"k8s.io/client-go/kubernetes"
-
 	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"strings"
 )
 
@@ -24,32 +24,33 @@ var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
+var log = logf.Log.WithName("AMQ Streams reconciler")
+
 func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (*Reconciler, error) {
-	config, err := configManager.ReadAMQStreams()
+	config, err := configManager.GetAMQStreams()
 	if err != nil {
 		return nil, err
-	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	var mpm marketplace.MarketplaceInterface
 	if clusterHasOLM {
 		mpm = marketplace.NewManager(client)
 	}
 	return &Reconciler{client: client,
-		coreClient:    coreClient,
-		ConfigManager: configManager,
-		Config:        config,
-		mpm:           mpm,
+		coreClient:     coreClient,
+		ConfigManager:  configManager,
+		Config:         config,
+		installationCR: instance,
+		mpm:            mpm,
 	}, nil
 }
 
 type Reconciler struct {
-	client        pkgclient.Client
-	coreClient    *kubernetes.Clientset
-	Config        *config.AMQStreams
-	ConfigManager config.ConfigReadWriter
-	mpm           marketplace.MarketplaceInterface
+	client         pkgclient.Client
+	coreClient     *kubernetes.Clientset
+	Config         *config.AMQStreams
+	installationCR *v1alpha1.Installation
+	ConfigManager  config.ConfigReadWriter
+	mpm            marketplace.MarketplaceInterface
 }
 
 func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
@@ -75,10 +76,20 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 }
 
 func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
+	namespace := r.Config.GetNamespace()
+	if namespace == "" {
+		namespace = r.installationCR.Spec.NamespacePrefix + defaultInstallationNamespace
+		r.Config.SetNamespace(namespace)
+		err := r.ConfigManager.WriteConfig(r.Config)
+		if err != nil {
+			return v1alpha1.PhaseNone, err
+		}
+	}
+
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.Config.GetNamespace(),
-			Name:      r.Config.GetNamespace(),
+			Namespace: namespace,
+			Name:      namespace,
 		},
 	}
 	err := r.client.Create(context.TODO(), ns)

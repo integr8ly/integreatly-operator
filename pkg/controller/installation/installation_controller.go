@@ -100,7 +100,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, os.Getenv("INSTALLATION_CONFIG_MAP"))
+	configManager, err := config.NewManager(r.client, instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -120,6 +120,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		phase, err := r.processStage(instance, products, configManager)
 		instance.Status.Stages[stage] = string(phase)
 		if err != nil {
+			if k8serr.IsConflict(err) {
+				// If there is a conflict, requeue the resource and retry Update
+				log.Info("Error updating Installation resource. Requeue and retry.")
+				return reconcile.Result{
+					Requeue: true,
+				}, nil
+			}
 			return reconcile.Result{}, err
 		}
 		err = r.client.Status().Update(context.TODO(), instance)
