@@ -150,6 +150,14 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			log.Error(err, "error reconciling installation instance")
 			return reconcile.Result{}, err
 		}
+
+		// if phase is still in progress, ensure it's requeued until its completed.
+		if string(phase) == string(v1alpha1.PhaseInProgress) {
+			return reconcile.Result{
+				Requeue: true,
+			}, nil
+		}
+
 		//don't move to next stage until current stage is finished
 		break
 	}

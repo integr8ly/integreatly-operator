@@ -60,6 +60,12 @@ objects:
           - create
           - watch
       - apiGroups:
+          - ""
+        resources:
+          - pods
+        verbs:
+          - list
+      - apiGroups:
           - kafka.strimzi.io
         resources:
           - kafkas
