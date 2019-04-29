@@ -9,18 +9,22 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"k8s.io/client-go/kubernetes"
+
+	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -33,6 +37,7 @@ func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWrite
 		mpm = marketplace.NewManager(client)
 	}
 	return &Reconciler{client: client,
+		coreClient:    coreClient,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -41,6 +46,7 @@ func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWrite
 
 type Reconciler struct {
 	client        pkgclient.Client
+	coreClient    *kubernetes.Clientset
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
@@ -54,8 +60,6 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 		return r.handleAwaitingNSPhase()
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.handleCreatingSubscription()
-	case v1alpha1.PhaseAwaitingSubscription:
-		return r.handleAwaitingSubscription()
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents()
 	case v1alpha1.PhaseInProgress:
@@ -71,8 +75,6 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 }
 
 func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
-	logrus.Infof("amq streams no phase")
-
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
@@ -87,7 +89,6 @@ func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
 }
 
 func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
-	logrus.Infof("waiting for namespace to be active")
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
@@ -101,8 +102,10 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 		// 23/04/19 pbrookes: if mpm is nil we are not in an OLM environment, so do not create a subscription
 		//instead skip to creating components and assume operator is set up already
 		if r.mpm != nil {
+			logrus.Infof("Creating subscription")
 			return v1alpha1.PhaseCreatingSubscription, nil
 		} else {
+			logrus.Infof("jumping to component creation")
 			return v1alpha1.PhaseCreatingComponents, nil
 		}
 	}
@@ -111,30 +114,23 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 }
 
 func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
-	logrus.Infof("amq streams accepted phase")
-
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Redhat,
 		r.Config.GetNamespace(),
 		"amq-streams",
-		"final",
+		"stable",
 		[]string{r.Config.GetNamespace()},
 		coreosv1alpha1.ApprovalAutomatic)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseAwaitingSubscription, nil
-}
-
-func (r *Reconciler) handleAwaitingSubscription() (v1alpha1.StatusPhase, error) {
-	//wait to see kafka CRD exists
-
-	return v1alpha1.PhaseAwaitingSubscription, nil
+	return v1alpha1.PhaseCreatingComponents, nil
 }
 
 func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 	// commented out properties are for 1.1.0
+	//Keep trying to create the kafka resource until the CRD exists or some other error
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
@@ -152,12 +148,12 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 				//Version: "2.1.1",
 				Replicas: 3,
 				Listeners: map[string]kafkav1.KafkaListener{
-					"plain": kafkav1.KafkaListener{},
-					"tls":   kafkav1.KafkaListener{},
+					"plain": {},
+					"tls":   {},
 				},
 				Config: kafkav1.KafkaSpecKafkaConfig{
-					OffsetsTopicReplicationFactor: "3",
-					//LogMessageFormatVersion: "2.1",
+					OffsetsTopicReplicationFactor:        "3",
+					LogMessageFormatVersion:              "2.1",
 					TransactionStateLogMinIsr:            "2",
 					TransactionStateLogReplicationFactor: "3",
 				},
@@ -179,7 +175,14 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 	}
 	err := r.client.Create(context.TODO(), kafka)
 
+	//if this fails due to no matches for kind, keep trying until OLM creates the CRDs
+	if err != nil && strings.Contains(err.Error(), "no matches for kind") {
+		logrus.Infof("no match for kind error")
+		return v1alpha1.PhaseCreatingComponents, nil
+	}
+
 	if err != nil && !k8serr.IsAlreadyExists(err) {
+		logrus.Infof("kafka create error")
 		return v1alpha1.PhaseFailed, err
 	}
 
@@ -187,8 +190,30 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 }
 
 func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
-	// check AMQ Streams pods are correct counts
-	// no status on kafka object until 1.2
+	// check AMQ Streams is in ready state
+	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(metav1.ListOptions{})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
+	}
 
-	return v1alpha1.PhaseInProgress, nil
+	//expecting 8 pods in total
+	if len(pods.Items) < 8 {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	//and they should all be ready
+checkPodStatus:
+	for _, pod := range pods.Items {
+		for _, cnd := range pod.Status.Conditions {
+			if cnd.Type == v1.ContainersReady {
+				if cnd.Status != v1.ConditionStatus("True") {
+					logrus.Infof("pod not ready, returning in progress: %+v", cnd.Status)
+					return v1alpha1.PhaseInProgress, nil
+				}
+				break checkPodStatus
+			}
+		}
+	}
+	logrus.Infof("All pods ready, returning complete")
+	return v1alpha1.PhaseCompleted, nil
 }

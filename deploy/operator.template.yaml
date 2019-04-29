@@ -60,6 +60,12 @@ objects:
           - create
           - watch
       - apiGroups:
+          - ""
+        resources:
+          - pods
+        verbs:
+          - list
+      - apiGroups:
           - kafka.strimzi.io
         resources:
           - kafkas
@@ -139,7 +145,7 @@ objects:
         verbs:
           - update
       - apiGroups:
-          - integreatly.io
+          - integreatly.org
         resources:
           - '*'
         verbs:
