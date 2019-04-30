@@ -145,7 +145,7 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 		},
 		Spec: kafkav1.KafkaSpec{
 			Kafka: kafkav1.KafkaSpecKafka{
-				//Version: "2.1.1",
+				Version:  "2.1.1",
 				Replicas: 3,
 				Listeners: map[string]kafkav1.KafkaListener{
 					"plain": {},
@@ -153,18 +153,22 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 				},
 				Config: kafkav1.KafkaSpecKafkaConfig{
 					OffsetsTopicReplicationFactor:        "3",
-					LogMessageFormatVersion:              "2.1",
-					TransactionStateLogMinIsr:            "2",
 					TransactionStateLogReplicationFactor: "3",
+					TransactionStateLogMinIsr:            "2",
+					LogMessageFormatVersion:              "2.1",
 				},
 				Storage: kafkav1.KafkaStorage{
-					Type: "ephemeral",
+					Type:        "persistent-claim",
+					Size:        "10Gi",
+					DeleteClaim: false,
 				},
 			},
 			Zookeeper: kafkav1.KafkaSpecZookeeper{
 				Replicas: 3,
 				Storage: kafkav1.KafkaStorage{
-					Type: "ephemeral",
+					Type:        "persistent-claim",
+					Size:        "10Gi",
+					DeleteClaim: false,
 				},
 			},
 			EntityOperator: kafkav1.KafkaSpecEntityOperator{
