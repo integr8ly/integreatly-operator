@@ -28,7 +28,9 @@ type KafkaSpecKafka struct {
 }
 
 type KafkaStorage struct {
-	Type string `json:"type,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Size        string `json:"size,omitempty"`
+	DeleteClaim bool   `json:"deleteClaim,omitempty"`
 }
 
 type KafkaSpecKafkaConfig struct {
