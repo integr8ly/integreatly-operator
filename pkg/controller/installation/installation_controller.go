@@ -104,7 +104,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	for stage, products := range installType.GetProductOrder() {
+	for stage, installProducts := range installType.GetProductOrder() {
 		// if the stage has a status phase already, check it's value
 		if val, ok := instance.Status.Stages[stage]; ok {
 			//if it's complete, move to the next stage
@@ -117,7 +117,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			}
 		}
 		//found an incomplete stage, so process it and log it's status
-		phase, err := r.processStage(instance, products, configManager)
+		phase, err := r.processStage(instance, installProducts, configManager)
 		instance.Status.Stages[stage] = string(phase)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -152,7 +152,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		// if phase is still in progress, ensure it's requeued until its completed.
-		if string(phase) == string(v1alpha1.PhaseInProgress) {
+		if phase == v1alpha1.PhaseInProgress || phase == v1alpha1.PhaseCreatingComponents {
 			return reconcile.Result{
 				Requeue: true,
 			}, nil
