@@ -23,6 +23,7 @@ var (
 	InstallationTypeManaged  InstallationType = "managed"
 
 	ProductAMQStreams ProductName = "amqstreams"
+	ProductRHSSO ProductName = "rhsso"
 )
 
 // InstallationSpec defines the desired state of Installation
