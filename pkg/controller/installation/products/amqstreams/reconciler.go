@@ -115,10 +115,10 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 
 func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
-		marketplace.GetOperatorSources().Redhat,
+		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"amq-streams",
-		"stable",
+		"amq-streams",
 		[]string{r.Config.GetNamespace()},
 		coreosv1alpha1.ApprovalAutomatic)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
