@@ -118,7 +118,7 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"amq-streams",
-		"amq-streams",
+		"integreatly",
 		[]string{r.Config.GetNamespace()},
 		coreosv1alpha1.ApprovalAutomatic)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
