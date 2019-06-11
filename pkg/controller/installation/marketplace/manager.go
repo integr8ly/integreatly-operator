@@ -14,20 +14,20 @@ import (
 var providerLabel = "opsrc-provider"
 
 type operatorSources struct {
-	Redhat marketplacev1.OperatorSource
+	Integreatly marketplacev1.OperatorSource
 }
 
 func GetOperatorSources() *operatorSources {
 	return &operatorSources{
-		Redhat: marketplacev1.OperatorSource{
+		Integreatly: marketplacev1.OperatorSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
-					providerLabel: "redhat",
+					providerLabel: "integreatly",
 				},
 			},
 			Spec: marketplacev1.OperatorSourceSpec{
-				DisplayName: "Red Hat Operators",
-				Publisher:   "Red Hat",
+				DisplayName: "Integreatly Operators",
+				Publisher:   "Integreatly",
 			},
 		},
 	}
