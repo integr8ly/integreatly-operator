@@ -10,18 +10,18 @@ func newRHSSO(config ProductConfig) *RHSSO {
 	return &RHSSO{config: config}
 }
 
-func (a *RHSSO) GetNamespace() string {
-	return a.config["NAMESPACE"]
+func (r *RHSSO) GetNamespace() string {
+	return r.config["NAMESPACE"]
 }
 
-func (a *RHSSO) SetNamespace(newNamespace string) {
-	a.config["NAMESPACE"] = newNamespace
+func (r *RHSSO) SetNamespace(newNamespace string) {
+	r.config["NAMESPACE"] = newNamespace
 }
 
-func (a *RHSSO) Read() ProductConfig {
-	return a.config
+func (r *RHSSO) Read() ProductConfig {
+	return r.config
 }
 
-func (a *RHSSO) GetProductName() v1alpha1.ProductName {
+func (r *RHSSO) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductRHSSO
 }
