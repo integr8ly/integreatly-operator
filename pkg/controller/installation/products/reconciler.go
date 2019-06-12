@@ -19,7 +19,7 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, serverCli
 	case v1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(client, coreClient, configManager, instance)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(client, coreClient, serverClient, configManager, instance)
+		reconciler, err = rhsso.NewReconciler(client, serverClient, coreClient, configManager, instance)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
