@@ -38,16 +38,19 @@ func InstallationTypeFactory(installationType string) (error, *Type) {
 
 func newWorkshopType() *Type {
 	return &Type{
-		products: []v1alpha1.ProductName{v1alpha1.ProductAMQStreams},
+		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO, v1alpha1.ProductAMQStreams},
 		productOrder: map[int][]v1alpha1.ProductName{
-			1: {v1alpha1.ProductRHSSO, v1alpha1.ProductAMQStreams},
+			1: {v1alpha1.ProductRHSSO},
+			2: {v1alpha1.ProductAMQStreams},
 		},
 	}
 }
 
 func newManagedType() *Type {
 	return &Type{
-		products:     []v1alpha1.ProductName{},
-		productOrder: map[int][]v1alpha1.ProductName{},
+		products:     []v1alpha1.ProductName{v1alpha1.ProductRHSSO},
+		productOrder: map[int][]v1alpha1.ProductName{
+			1: {v1alpha1.ProductRHSSO},
+		},
 	}
 }
