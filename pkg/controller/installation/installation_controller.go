@@ -16,6 +16,7 @@ import (
 	"os"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -36,11 +37,12 @@ func Add(mgr manager.Manager) error {
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	conf := controllerruntime.GetConfigOrDie()
 	coreClient, err := kubernetes.NewForConfig(conf)
+	serverClient, err := pkgclient.New(conf, pkgclient.Options{})
 	if err != nil {
 		logrus.Infof("error creating core client: %v", err)
 		return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 	}
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient}
+	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient, serverClient: serverClient}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -75,9 +77,10 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
-	coreClient *kubernetes.Clientset
+	client       client.Client
+	scheme       *runtime.Scheme
+	coreClient   *kubernetes.Clientset
+	serverClient client.Client
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -187,7 +190,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		}
 		//found an incomplete product
 		incompleteStage = true
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.coreClient, configManager, instance, os.Getenv("CLUSTER_HAS_OLM") != "false")
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.serverClient, r.coreClient, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}

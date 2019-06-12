@@ -1,17 +1,16 @@
-package amqstreams
+package rhsso
 
 import (
 	"context"
 	"errors"
-	"fmt"
+	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 
-	errors2 "github.com/pkg/errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -21,11 +20,12 @@ import (
 )
 
 var (
-	defaultInstallationNamespace = "amq-streams"
+	defaultInstallationNamespace = "rhsso"
+	keycloakName                 = "rhsso"
 )
 
-func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
-	config, err := configManager.ReadAMQStreams()
+func NewReconciler(client pkgclient.Client, serverClient pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
 	}
@@ -35,6 +35,7 @@ func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, co
 	mpm := marketplace.NewManager(client)
 	return &Reconciler{client: client,
 		coreClient:    coreClient,
+		serverClient:  serverClient,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -43,8 +44,9 @@ func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, co
 
 type Reconciler struct {
 	client        pkgclient.Client
+	serverClient  pkgclient.Client
 	coreClient    *kubernetes.Clientset
-	Config        *config.AMQStreams
+	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 }
@@ -65,9 +67,9 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 		return v1alpha1.PhaseCompleted, nil
 	case v1alpha1.PhaseFailed:
 		//potentially do a dump and recover in the future
-		return v1alpha1.PhaseFailed, errors.New("installation of AMQ Streams failed")
+		return v1alpha1.PhaseFailed, errors.New("installation of RHSSO failed")
 	default:
-		return v1alpha1.PhaseFailed, errors.New("Unknown phase for AMQ Streams: " + string(phase))
+		return v1alpha1.PhaseFailed, errors.New("Unknown phase for RHSSO: " + string(phase))
 	}
 }
 
@@ -107,7 +109,7 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
-		"amq-streams",
+		"rhsso",
 		"integreatly",
 		[]string{r.Config.GetNamespace()},
 		coreosv1alpha1.ApprovalAutomatic)
@@ -119,55 +121,31 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 }
 
 func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
-	// commented out properties are for 1.1.0
-	//Keep trying to create the kafka resource until the CRD exists or some other error
-	kafka := &kafkav1.Kafka{
+	logrus.Infof("Creating Components")
+	logrus.Infof("Creating Keycloak")
+	keycloak := &aerogearv1.Keycloak{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
 				"%s/%s",
-				kafkav1.SchemeGroupVersion.Group,
-				kafkav1.SchemeGroupVersion.Version),
-			Kind: kafkav1.KafkaKind,
+				aerogearv1.SchemeGroupVersion.Group,
+				aerogearv1.SchemeGroupVersion.Version),
+			Kind: aerogearv1.KeycloakKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "integreatly-cluster",
+			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
-		Spec: kafkav1.KafkaSpec{
-			Kafka: kafkav1.KafkaSpecKafka{
-				Version:  "2.1.1",
-				Replicas: 3,
-				Listeners: map[string]kafkav1.KafkaListener{
-					"plain": {},
-					"tls":   {},
-				},
-				Config: kafkav1.KafkaSpecKafkaConfig{
-					OffsetsTopicReplicationFactor:        "3",
-					TransactionStateLogReplicationFactor: "3",
-					TransactionStateLogMinIsr:            "2",
-					LogMessageFormatVersion:              "2.1",
-				},
-				Storage: kafkav1.KafkaStorage{
-					Type:        "persistent-claim",
-					Size:        "10Gi",
-					DeleteClaim: false,
-				},
+		Spec: aerogearv1.KeycloakSpec{
+			AdminCredentials: "",
+			Plugins: []string{
+				"keycloak-metrics-spi",
 			},
-			Zookeeper: kafkav1.KafkaSpecZookeeper{
-				Replicas: 3,
-				Storage: kafkav1.KafkaStorage{
-					Type:        "persistent-claim",
-					Size:        "10Gi",
-					DeleteClaim: false,
-				},
-			},
-			EntityOperator: kafkav1.KafkaSpecEntityOperator{
-				TopicOperator: kafkav1.KafkaTopicOperator{},
-				UserOperator:  kafkav1.KafkaUserOperator{},
-			},
+			Backups:   []aerogearv1.KeycloakBackup{},
+			Provision: true,
 		},
 	}
-	err := r.client.Create(context.TODO(), kafka)
+
+	err := r.client.Create(context.TODO(), keycloak)
 
 	//if this fails due to no matches for kind, keep trying until OLM creates the CRDs
 	if err != nil && strings.Contains(err.Error(), "no matches for kind") {
@@ -176,7 +154,7 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 	}
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		logrus.Infof("kafka create error")
+		logrus.Infof("Keycloak create error")
 		return v1alpha1.PhaseFailed, err
 	}
 
@@ -184,30 +162,19 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 }
 
 func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
-	// check AMQ Streams is in ready state
-	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(metav1.ListOptions{})
+	logrus.Infof("checking ready status for rhsso")
+	kc := &aerogearv1.Keycloak{}
+
+	// We need to get the newly created Keycloak from the API server instead of the cache.
+	// cache client is not updated.
+	err := r.serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
+		return v1alpha1.PhaseFailed, err
 	}
 
-	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
-		return v1alpha1.PhaseInProgress, nil
+	if kc.Status.Phase == "reconcile" {
+		return v1alpha1.PhaseCompleted, nil
 	}
 
-	//and they should all be ready
-checkPodStatus:
-	for _, pod := range pods.Items {
-		for _, cnd := range pod.Status.Conditions {
-			if cnd.Type == v1.ContainersReady {
-				if cnd.Status != v1.ConditionStatus("True") {
-					logrus.Infof("pod not ready, returning in progress: %+v", cnd.Status)
-					return v1alpha1.PhaseInProgress, nil
-				}
-				break checkPodStatus
-			}
-		}
-	}
-	logrus.Infof("All pods ready, returning complete")
-	return v1alpha1.PhaseCompleted, nil
+	return v1alpha1.PhaseInProgress, nil
 }
