@@ -129,11 +129,11 @@ type KeycloakIdentityProviderPair struct {
 
 type KeycloakUser struct {
 	*KeycloakApiUser
-	OutputSecret string `json:"outputSecret, omitempty"`
+	OutputSecret string  `json:"outputSecret, omitempty"`
 	Password     *string `json:"password, omitempty"`
 }
 
-type KeycloakAttributes struct {}
+type KeycloakAttributes struct{}
 
 type KeycloakApiUser struct {
 	ID              string              `json:"id,omitempty"`

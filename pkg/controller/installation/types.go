@@ -48,7 +48,7 @@ func newWorkshopType() *Type {
 
 func newManagedType() *Type {
 	return &Type{
-		products:     []v1alpha1.ProductName{v1alpha1.ProductRHSSO},
+		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO},
 		productOrder: map[int][]v1alpha1.ProductName{
 			1: {v1alpha1.ProductRHSSO},
 		},

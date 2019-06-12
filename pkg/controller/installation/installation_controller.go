@@ -16,13 +16,13 @@ import (
 	"os"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var log = logf.Log.WithName("Installation Controller")
@@ -77,9 +77,9 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
-	coreClient *kubernetes.Clientset
+	client       client.Client
+	scheme       *runtime.Scheme
+	coreClient   *kubernetes.Clientset
 	serverClient client.Client
 }
 
