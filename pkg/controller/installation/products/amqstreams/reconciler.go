@@ -24,7 +24,7 @@ var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -32,10 +32,7 @@ func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, co
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	var mpm marketplace.MarketplaceInterface
-	if clusterHasOLM {
-		mpm = marketplace.NewManager(client)
-	}
+	mpm := marketplace.NewManager(client)
 	return &Reconciler{client: client,
 		coreClient:    coreClient,
 		ConfigManager: configManager,
@@ -99,15 +96,8 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 		return v1alpha1.PhaseFailed, err
 	}
 	if ns.Status.Phase == v1.NamespaceActive {
-		// 23/04/19 pbrookes: if mpm is nil we are not in an OLM environment, so do not create a subscription
-		//instead skip to creating components and assume operator is set up already
-		if r.mpm != nil {
-			logrus.Infof("Creating subscription")
-			return v1alpha1.PhaseCreatingSubscription, nil
-		} else {
-			logrus.Infof("jumping to component creation")
-			return v1alpha1.PhaseCreatingComponents, nil
-		}
+		logrus.Infof("Creating subscription")
+		return v1alpha1.PhaseCreatingSubscription, nil
 	}
 
 	return v1alpha1.PhaseAwaitingNS, nil

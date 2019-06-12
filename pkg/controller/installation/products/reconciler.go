@@ -14,12 +14,12 @@ type Interface interface {
 	Reconcile(phase v1alpha1.StatusPhase) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, serverClient client.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, clusterHasOLM bool) (reconciler Interface, err error) {
+func NewReconciler(product v1alpha1.ProductName, client client.Client, serverClient client.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(client, coreClient, configManager, instance, clusterHasOLM)
+		reconciler, err = amqstreams.NewReconciler(client, coreClient, configManager, instance)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(client, coreClient, serverClient, configManager, instance, clusterHasOLM)
+		reconciler, err = rhsso.NewReconciler(client, coreClient, serverClient, configManager, instance)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
