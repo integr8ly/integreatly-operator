@@ -13,7 +13,7 @@ var (
 	PhaseAccepted             StatusPhase = "accepted"
 	PhaseAwaitingNS           StatusPhase = "awaiting namespace"
 	PhaseCreatingSubscription StatusPhase = "creating subscription"
-	PhaseAwaitingSubscription StatusPhase = "awaiting subscription"
+	PhaseAwaitingOperator     StatusPhase = "awaiting operator"
 	PhaseCreatingComponents   StatusPhase = "creating components"
 	PhaseInProgress           StatusPhase = "in progress"
 	PhaseCompleted            StatusPhase = "completed"

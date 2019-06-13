@@ -10,6 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -17,14 +18,13 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -32,9 +32,10 @@ func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, co
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	mpm := marketplace.NewManager(client)
+	mpm := marketplace.NewManager(client, rc)
 	return &Reconciler{client: client,
 		coreClient:    coreClient,
+		restConfig:    rc,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -43,6 +44,7 @@ func NewReconciler(client pkgclient.Client, coreClient *kubernetes.Clientset, co
 
 type Reconciler struct {
 	client        pkgclient.Client
+	restConfig    *rest.Config
 	coreClient    *kubernetes.Clientset
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
@@ -59,6 +61,8 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 		return r.handleCreatingSubscription()
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents()
+	case v1alpha1.PhaseAwaitingOperator:
+		return r.handleAwaitingOperator()
 	case v1alpha1.PhaseInProgress:
 		return r.handleProgressPhase()
 	case v1alpha1.PhaseCompleted:
@@ -118,9 +122,35 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 	return v1alpha1.PhaseCreatingComponents, nil
 }
 
+func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
+	ip, err := r.mpm.GetSubscriptionInstallPlan("amq-streams", r.Config.GetNamespace())
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			logrus.Infof("No installplan created yet")
+			return v1alpha1.PhaseAwaitingOperator, nil
+		}
+
+		logrus.Infof("Error getting amq-streams subscription installplan")
+		return v1alpha1.PhaseFailed, err
+	}
+
+	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
+		logrus.Infof("amq-streams installplan phase is %s", ip.Status.Phase)
+		return v1alpha1.PhaseAwaitingOperator, nil
+	}
+
+	logrus.Infof("amq-streams installplan phase is %s", coreosv1alpha1.InstallPlanPhaseComplete)
+
+	return v1alpha1.PhaseCreatingComponents, nil
+}
+
 func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
-	// commented out properties are for 1.1.0
-	//Keep trying to create the kafka resource until the CRD exists or some other error
+	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
+	if err != nil {
+		logrus.Infof("Error creating server client")
+		return v1alpha1.PhaseFailed, err
+	}
+
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
@@ -167,18 +197,7 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 			},
 		},
 	}
-	err := r.client.Create(context.TODO(), kafka)
-
-	//if this fails due to no matches for kind, keep trying until OLM creates the CRDs
-	if err != nil && strings.Contains(err.Error(), "no matches for kind") {
-		logrus.Infof("no match for kind error")
-		return v1alpha1.PhaseCreatingComponents, nil
-	}
-
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		logrus.Infof("kafka create error")
-		return v1alpha1.PhaseFailed, err
-	}
+	err = serverClient.Create(context.TODO(), kafka)
 
 	return v1alpha1.PhaseInProgress, nil
 }

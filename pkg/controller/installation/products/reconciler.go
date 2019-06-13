@@ -7,6 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -14,12 +15,12 @@ type Interface interface {
 	Reconcile(phase v1alpha1.StatusPhase) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, serverClient client.Client, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(client, coreClient, configManager, instance)
+		reconciler, err = amqstreams.NewReconciler(client, rc, coreClient, configManager, instance)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(client, serverClient, coreClient, configManager, instance)
+		reconciler, err = rhsso.NewReconciler(client, rc, coreClient, configManager, instance)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
