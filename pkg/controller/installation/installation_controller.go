@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"time"
 )
 
 var log = logf.Log.WithName("Installation Controller")
@@ -156,7 +157,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		// if phase is still in progress, ensure it's requeued until its completed.
 		if string(phase) == string(v1alpha1.PhaseInProgress) {
 			return reconcile.Result{
-				Requeue: true,
+				Requeue:      true,
+				RequeueAfter: time.Second * 10,
 			}, nil
 		}
 
