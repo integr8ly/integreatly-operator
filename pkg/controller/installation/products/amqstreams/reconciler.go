@@ -119,7 +119,7 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseCreatingComponents, nil
+	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
 func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
