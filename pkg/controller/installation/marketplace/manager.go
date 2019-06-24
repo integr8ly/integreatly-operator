@@ -57,6 +57,9 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      pkg,
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 	}
 	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
@@ -69,6 +72,9 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installed-" + os.Labels[providerLabel] + "-" + ns,
 			Namespace: "openshift-marketplace",
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 		Spec: marketplacev1.CatalogSourceConfigSpec{
 			DisplayName:     os.Spec.DisplayName,
@@ -87,6 +93,9 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    ns,
 			GenerateName: ns + "-",
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 		Spec: coreosv1.OperatorGroupSpec{
 			TargetNamespaces: operatorGroupNamespaces,

@@ -109,6 +109,9 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "integreatly-operator-rolebinding",
 				Namespace: r.Config.GetNamespace(),
+				Labels: map[string]string{
+					"integreatly": "yes",
+				},
 			},
 			RoleRef: v12.RoleRef{
 				Name:     "admin",
@@ -192,6 +195,9 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 		Spec: aerogearv1.KeycloakSpec{
 			AdminCredentials: "",
@@ -220,6 +226,9 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 		Spec: aerogearv1.KeycloakRealmSpec{
 			CreateOnly: true,
