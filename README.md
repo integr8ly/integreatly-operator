@@ -12,9 +12,26 @@ The following custom resources are supported:
 
 - `Installation`
 
-## Test it locally
+## Local Setup
 
-TODO
+- Create the OperatorSource in OpenShift (https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml)
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml`
+- Create the Installation CustomResourceDefinition in OpenShift 
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/installation.crd.yaml`
+- Create the Namespace/Project for the Integreatly Operator to watch
+    * `oc new-project <namespace>` or `oc create namespace <namespace>`
+- Create the Installation resource in the namespace we created
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/examples/installation.cr.yaml`
+- Create the Role, RoleBinding and ServiceAccount
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/service_account.yaml`
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role.yaml`
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role_binding.yaml`
+- In the integr8ly/integreatly-operator directory, run the operator
+    * `operator-sdk up local --namespace=test`
+- In the OpenShift Ui, in Projects -> OpenShift-RHSSO -> Networking -> Routes. Select the URL for the `sso` Route to open up the SSO login page.
+- The username is `admin`, the password can be retrieved with 
+    * `oc get dc sso -n openshift-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'`
+
 
 ## Deploying to a Cluster
 
