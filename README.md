@@ -19,7 +19,7 @@ The following custom resources are supported:
 - Create the Installation CustomResourceDefinition in OpenShift 
     * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/installation.crd.yaml`
 - Create the Namespace/Project for the Integreatly Operator to watch
-    * `oc new-project test` or `oc create namespace test`
+    * `oc new-project <namespace>` or `oc create namespace <namespace>`
 - Create the Installation resource in the namespace we created
     * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/examples/installation.cr.yaml`
 - Create the Role, RoleBinding and ServiceAccount
