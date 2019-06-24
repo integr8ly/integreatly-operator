@@ -82,6 +82,9 @@ func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      r.Config.GetNamespace(),
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 	}
 	err := r.client.Create(context.TODO(), ns)
