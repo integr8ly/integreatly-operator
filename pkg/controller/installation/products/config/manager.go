@@ -32,6 +32,7 @@ type ConfigReadWriter interface {
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
+	GetOperatorNamespace() string
 }
 
 type ConfigReadable interface {
@@ -43,6 +44,10 @@ type Manager struct {
 	Client    pkgclient.Client
 	Namespace string
 	cfgmap    *v1.ConfigMap
+}
+
+func (m *Manager) GetOperatorNamespace() string {
+	return m.Namespace
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {

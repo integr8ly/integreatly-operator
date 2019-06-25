@@ -9,7 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	v12 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -104,7 +104,7 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 		return v1alpha1.PhaseFailed, err
 	}
 	if ns.Status.Phase == v1.NamespaceActive {
-		err := r.client.Create(context.TODO(), &v12.RoleBinding{
+		err := r.client.Create(context.TODO(), &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "integreatly-operator-rolebinding",
 				Namespace: r.Config.GetNamespace(),
@@ -112,16 +112,16 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 					"integreatly": "yes",
 				},
 			},
-			RoleRef: v12.RoleRef{
+			RoleRef: rbacv1.RoleRef{
 				Name:     "admin",
 				Kind:     "ClusterRole",
 				APIGroup: "rbac.authorization.k8s.io",
 			},
-			Subjects: []v12.Subject{
+			Subjects: []rbacv1.Subject{
 				{
 					Kind:      "ServiceAccount",
 					Name:      "integreatly-operator",
-					Namespace: "005-test",
+					Namespace: r.ConfigManager.GetOperatorNamespace(),
 				},
 			},
 		})
