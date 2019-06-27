@@ -77,8 +77,8 @@
     "pkg/client/versioned/scheme",
     "pkg/client/versioned/typed/monitoring/v1"
   ]
-  revision = "72ec4b9b16ef11700724dc71fec77112536eed40"
-  version = "v0.26.0"
+  revision = "7a25bf6b6bb2347dacb235659b73bc210117acc7"
+  version = "v0.29.0"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -342,8 +342,8 @@
     "pkg/metrics",
     "version"
   ]
-  revision = "78c472461e75e6c64589cfadf577a2004b8a26b3"
-  version = "v0.8.0"
+  revision = "33b3bfe10176f8647f5354516fff29dea42b6342"
+  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/pborman/uuid"
@@ -942,8 +942,7 @@
     "pkg/internal/general",
     "pkg/util"
   ]
-  revision = "950a0e88e4effb864253b3c7504b326cc83b9d11"
-  version = "v0.1.8"
+  revision = "9d55346c2bde73fb3326ac22eac2e5210a730207"
 
 [[projects]]
   name = "sigs.k8s.io/yaml"
@@ -954,6 +953,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d7f0c5ca8799e8747a4d93dbf5bdbaddc1d28554fc4cb4d8a564a3c03c53fd90"
+  inputs-digest = "c7369ca0ac63efa6c3cea34905f4199ae1c8e1541e8261a90092b3c8bdacc8e4"
   solver-name = "gps-cdcl"
   solver-version = 1
