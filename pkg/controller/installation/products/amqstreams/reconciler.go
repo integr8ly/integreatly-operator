@@ -18,13 +18,14 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mgr manager.Manager) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -34,7 +35,6 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 	}
 	mpm := marketplace.NewManager(client, rc)
 	return &Reconciler{client: client,
-		coreClient:    coreClient,
 		restConfig:    rc,
 		ConfigManager: configManager,
 		Config:        config,
@@ -204,7 +204,13 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 
 func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
 	// check AMQ Streams is in ready state
-	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(metav1.ListOptions{})
+	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
+	if err != nil {
+		logrus.Infof("Error creating server client")
+		return v1alpha1.PhaseFailed, err
+	}
+	pods := &corev1.PodList{}
+	err = serverClient.List(context.TODO(), &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
 	}

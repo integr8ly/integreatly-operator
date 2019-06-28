@@ -25,7 +25,7 @@ var (
 	keycloakRealmName            = "openshift"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -35,7 +35,6 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 	}
 	mpm := marketplace.NewManager(client, rc)
 	return &Reconciler{client: client,
-		coreClient:    coreClient,
 		restConfig:    rc,
 		ConfigManager: configManager,
 		Config:        config,
