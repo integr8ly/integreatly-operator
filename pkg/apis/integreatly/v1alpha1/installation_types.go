@@ -24,6 +24,7 @@ var (
 
 	ProductAMQStreams ProductName = "amqstreams"
 	ProductRHSSO      ProductName = "rhsso"
+	Product3Scale     ProductName = "3scale"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -32,8 +33,9 @@ type InstallationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type            string `json:"type"`
-	NamespacePrefix string `json:"namespacePrefix"`
+	Type             string `json:"type"`
+	RoutingSubdomain string `json:"routingSubdomain"`
+	NamespacePrefix  string `json:"namespacePrefix"`
 }
 
 // InstallationStatus defines the observed state of Installation

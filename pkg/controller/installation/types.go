@@ -41,7 +41,7 @@ func newWorkshopType() *Type {
 		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO, v1alpha1.ProductAMQStreams},
 		productOrder: [][]v1alpha1.ProductName{
 			{v1alpha1.ProductRHSSO},
-			{v1alpha1.ProductAMQStreams},
+			{v1alpha1.Product3Scale, v1alpha1.ProductAMQStreams},
 		},
 	}
 }
@@ -50,7 +50,7 @@ func newManagedType() *Type {
 	return &Type{
 		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO},
 		productOrder: [][]v1alpha1.ProductName{
-			{v1alpha1.ProductRHSSO},
+			{v1alpha1.Product3Scale, v1alpha1.ProductAMQStreams},
 		},
 	}
 }

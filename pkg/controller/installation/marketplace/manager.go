@@ -2,6 +2,7 @@ package marketplace
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -10,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 var providerLabel = "opsrc-provider"
@@ -35,31 +38,42 @@ func GetOperatorSources() *operatorSources {
 }
 
 type MarketplaceInterface interface {
-	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	CreateSubscription(i *v1alpha1.Installation, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
 	GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, error)
 }
 
 type MarketplaceManager struct {
 	client     pkgclient.Client
 	restConfig *rest.Config
+	mgr        manager.Manager
 }
 
-func NewManager(client pkgclient.Client, rc *rest.Config) *MarketplaceManager {
+func NewManager(client pkgclient.Client, mgr manager.Manager, rc *rest.Config) *MarketplaceManager {
 	return &MarketplaceManager{
 		client:     client,
 		restConfig: rc,
+		mgr:        mgr,
 	}
 }
 
-func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) CreateSubscription(i *v1alpha1.Installation, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      pkg,
+			Labels: map[string]string{
+				"integreatly": "yes",
+			},
 		},
 	}
-	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
+	serverClient, err := pkgclient.New(m.restConfig, pkgclient.Options{})
+	if err != nil {
+		logrus.Infof("Error creating server client")
+		return err
+	}
+
+	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err == nil {
 		logrus.Infof("Subscription already exists")
 		return k8serr.NewAlreadyExists(coreosv1alpha1.Resource("subscription"), sub.Name)
@@ -77,6 +91,9 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespace: ns,
 		},
 	}
+	if err := controllerutil.SetControllerReference(i, csc, m.mgr.GetScheme()); err != nil {
+		return err
+	}
 	err = m.client.Create(context.TODO(), csc)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating catalog source config: %s", err.Error())
@@ -92,6 +109,9 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
+	if err := controllerutil.SetControllerReference(i, og, m.mgr.GetScheme()); err != nil {
+		return err
+	}
 	err = m.client.Create(context.TODO(), og)
 	if err != nil {
 		logrus.Infof("error creating operator group")
@@ -105,13 +125,14 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
+	if err := controllerutil.SetControllerReference(i, sub, m.mgr.GetScheme()); err != nil {
+		return err
+	}
 	err = m.client.Create(context.TODO(), sub)
 	if err != nil {
 		logrus.Infof("error creating sub")
 		return err
 	}
-
-	logrus.Infof("no errors")
 
 	return nil
 }

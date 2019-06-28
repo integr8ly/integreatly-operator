@@ -35,7 +35,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	restConfig := controllerruntime.GetConfigOrDie()
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), restConfig: restConfig}
+	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), restConfig: restConfig, mgr: mgr}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -73,6 +73,7 @@ type ReconcileInstallation struct {
 	client     client.Client
 	scheme     *runtime.Scheme
 	restConfig *rest.Config
+	mgr        manager.Manager
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -183,12 +184,12 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		}
 		//found an incomplete product
 		incompleteStage = true
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance, r.mgr)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
 
-		newPhase, err := reconciler.Reconcile(v1alpha1.StatusPhase(phase))
+		newPhase, err := reconciler.Reconcile(instance)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)

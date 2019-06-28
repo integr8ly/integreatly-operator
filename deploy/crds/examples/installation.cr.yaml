@@ -5,3 +5,4 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: openshift-
+  routingSubdomain: example.com

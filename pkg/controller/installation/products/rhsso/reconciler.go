@@ -10,6 +10,7 @@ import (
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ var (
 	keycloakRealmName            = "openshift"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mgr manager.Manager) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, configManager confi
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	mpm := marketplace.NewManager(client, rc)
+	mpm := marketplace.NewManager(client, mgr, rc)
 	return &Reconciler{client: client,
 		restConfig:    rc,
 		ConfigManager: configManager,
@@ -51,14 +52,15 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
-	switch phase {
+func (r *Reconciler) Reconcile(instance *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	p := instance.Status.ProductStatus[v1alpha1.ProductRHSSO]
+	switch v1alpha1.StatusPhase(p) {
 	case v1alpha1.PhaseNone:
 		return r.handleNoPhase()
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase()
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription()
+		return r.handleCreatingSubscription(instance)
 	case v1alpha1.PhaseAwaitingOperator:
 		return r.handleAwaitingOperator()
 	case v1alpha1.PhaseCreatingComponents:
@@ -71,7 +73,7 @@ func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase
 		//potentially do a dump and recover in the future
 		return v1alpha1.PhaseFailed, errors.New("installation of RHSSO failed")
 	default:
-		return v1alpha1.PhaseFailed, errors.New("Unknown phase for RHSSO: " + string(phase))
+		return v1alpha1.PhaseFailed, errors.New("Unknown phase for RHSSO: " + string(p))
 	}
 }
 
@@ -107,8 +109,9 @@ func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription(i *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
+		i,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"rhsso",

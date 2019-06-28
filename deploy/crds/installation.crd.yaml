@@ -35,6 +35,10 @@ spec:
               enum:
               - workshop
               - managed
+            routingSubdomain:
+              type: string
+            namespacePrefix:
+              type: string
           required:
             - type
         status:
