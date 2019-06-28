@@ -1,6 +1,7 @@
 package apis
 
 import (
+threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -21,5 +22,6 @@ func init() {
 		kafkav1.SchemeBuilder.AddToScheme,
 		aerogearv1.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
+                threescalev1.SchemeBuilder.AddToScheme,
 	)
 }
