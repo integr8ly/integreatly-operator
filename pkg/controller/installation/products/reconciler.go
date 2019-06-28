@@ -18,13 +18,13 @@ type Interface interface {
 	Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(product v1alpha1.ProductName, client client.Client, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager(client, rc)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(coreClient, configManager, instance, mpm)
+		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(coreClient, configManager, instance, mpm)
+		reconciler, err = rhsso.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, instance, mpm)
 	default:

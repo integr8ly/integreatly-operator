@@ -40,13 +40,7 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	restConfig := controllerruntime.GetConfigOrDie()
-	coreClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		logrus.Infof("error creating core client: %v", err)
-		return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
-	}
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient, restConfig: restConfig}
+	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -83,8 +77,6 @@ type ReconcileInstallation struct {
 	// that reads objects from the cache and writes to the apiserver
 	client     client.Client
 	scheme     *runtime.Scheme
-	coreClient *kubernetes.Clientset
-	restConfig *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -199,7 +191,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if !(phase == string(v1alpha1.PhaseCompleted)) {
 			incompleteStage = true
 		}
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, r.coreClient, configManager, instance)
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}

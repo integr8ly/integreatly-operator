@@ -3,18 +3,18 @@ package rhsso
 import (
 	"context"
 	"errors"
-	"fmt"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+
+	"fmt"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,7 +24,7 @@ var (
 	keycloakRealmName            = "openshift"
 )
 
-func NewReconciler(coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -33,7 +33,6 @@ func NewReconciler(coreClient *kubernetes.Clientset, configManager config.Config
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	return &Reconciler{
-		coreClient:    coreClient,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -41,7 +40,6 @@ func NewReconciler(coreClient *kubernetes.Clientset, configManager config.Config
 }
 
 type Reconciler struct {
-	coreClient    *kubernetes.Clientset
 	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
@@ -53,7 +51,7 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	case v1alpha1.PhaseNone:
 		return r.handleNoPhase(serverClient)
 	case v1alpha1.PhaseAwaitingNS:
-		return r.handleAwaitingNSPhase(serverClient)
+		return r.handleAwaitingNSPhase()
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.handleCreatingSubscription()
 	case v1alpha1.PhaseAwaitingOperator:
@@ -86,7 +84,7 @@ func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client) (v1alpha1.Stat
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
