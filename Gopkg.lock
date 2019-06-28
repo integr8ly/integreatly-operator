@@ -39,6 +39,12 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/RHsyseng/operator-utils"
+  packages = ["pkg/olm"]
+  revision = "232650febd728455482b3c780c79a9ac0be62b50"
+
+[[projects]]
   name = "github.com/appscode/jsonpatch"
   packages = ["."]
   revision = "7c0e3b262f30165a8ec3d0b4c6059fd92703bfb2"
@@ -316,6 +322,12 @@
   packages = ["."]
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  name = "github.com/openshift/api"
+  packages = ["apps/v1"]
+  revision = "0d921e363e951d89f583292c60d013c318df64dc"
+  version = "v3.9.0"
 
 [[projects]]
   branch = "master"
@@ -953,6 +965,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c7369ca0ac63efa6c3cea34905f4199ae1c8e1541e8261a90092b3c8bdacc8e4"
+  inputs-digest = "502b9dcc136a475667bba510b88610213e797ddf5ac39cab1eda338d6aead010"
   solver-name = "gps-cdcl"
   solver-version = 1
