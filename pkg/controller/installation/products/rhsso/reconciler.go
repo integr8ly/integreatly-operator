@@ -16,7 +16,6 @@ import (
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -26,7 +25,7 @@ var (
 	keycloakRealmName            = "openshift"
 )
 
-func NewReconciler(coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -35,7 +34,6 @@ func NewReconciler(coreClient *kubernetes.Clientset, configManager config.Config
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	return &Reconciler{
-		coreClient:    coreClient,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -43,7 +41,6 @@ func NewReconciler(coreClient *kubernetes.Clientset, configManager config.Config
 }
 
 type Reconciler struct {
-	coreClient    *kubernetes.Clientset
 	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface

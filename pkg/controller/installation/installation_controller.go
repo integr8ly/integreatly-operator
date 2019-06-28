@@ -43,15 +43,9 @@ func newReconciler(mgr manager.Manager, products []string) reconcile.Reconciler 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	restConfig := controllerruntime.GetConfigOrDie()
-	coreClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		logrus.Infof("error creating core client: %v", err)
-		return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
-	}
 	return &ReconcileInstallation{
 		client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
-		coreClient:        coreClient,
 		restConfig:        restConfig,
 		productsToInstall: products,
 		context:           ctx,
@@ -93,7 +87,6 @@ type ReconcileInstallation struct {
 	// that reads objects from the cache and writes to the apiserver
 	client            client.Client
 	scheme            *runtime.Scheme
-	coreClient        *kubernetes.Clientset
 	restConfig        *rest.Config
 	productsToInstall []string
 	context           context.Context
@@ -220,7 +213,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if !(phase == string(v1alpha1.PhaseCompleted)) {
 			incompleteStage = true
 		}
-		reconciler, err := products.NewReconciler(r.context, v1alpha1.ProductName(product), r.client, r.restConfig, r.coreClient, configManager, instance)
+		reconciler, err := products.NewReconciler(r.context, v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
