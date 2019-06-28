@@ -1,6 +1,7 @@
 package apis
 
 import (
+        threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	enmasse "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
@@ -31,5 +32,6 @@ func init() {
 		enmassev1beta2.SchemeBuilder.AddToScheme,
 		enmassev1beta1.SchemeBuilder.AddToScheme,
 		enmasseAdmin.SchemeBuilder.AddToScheme,
+                threescalev1.SchemeBuilder.AddToScheme,
 	)
 }
