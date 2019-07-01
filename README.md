@@ -33,9 +33,24 @@ The following custom resources are supported:
     * `oc get dc sso -n openshift-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'`
 
 
-## Deploying to a Cluster
+## Deploying to a Cluster using OLM
 
-TODO
+- Create the [OperatorSource](https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml) in the cluster
+    * `oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml`
+
+- The Integreatly Operator should now be available in Operator Hub.
+
+![integreatly operator in hub](./docs/images/integreatly-in-hub.png)
+
+Install the Integreatly Operator
+
+- Then from the Developer catalog choose an Installation custom resource.
+
+![installation custome resource in developer catalog](./docs/images/dev-catalog-installation.png)
+
+and create a desired Installation. There is an example Installation CR at:
+
+https://github.com/integr8ly/integreatly-operator/blob/master/deploy/crds/examples/installation.cr.yaml
 
 ## Tests
 
