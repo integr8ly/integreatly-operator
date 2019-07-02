@@ -7,7 +7,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -74,47 +73,10 @@ func (r *Reconciler) Reconcile(in *v1alpha1.Installation) (v1alpha1.StatusPhase,
 	}
 
 	if ns.Status.Phase == v1.NamespaceActive {
-		rb := &rbacv1.RoleBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "integreatly-operator-rolebinding",
-				Namespace: r.namespace,
-				Labels: map[string]string{
-					"integreatly": "yes",
-				},
-			},
-			RoleRef: rbacv1.RoleRef{
-				Name:     "admin",
-				Kind:     "ClusterRole",
-				APIGroup: "rbac.authorization.k8s.io",
-			},
-			Subjects: []rbacv1.Subject{
-				{
-					Kind:      "ServiceAccount",
-					Name:      "integreatly-operator",
-					Namespace: r.ConfigManager.GetOperatorNamespace(),
-				},
-			},
-		}
-
 		serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
 		if err != nil {
 			logrus.Infof("Error creating server client")
 			return v1alpha1.PhaseFailed, err
-		}
-
-		err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: rb.Name, Namespace: r.namespace}, rb)
-		if err != nil && !k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, err
-		}
-
-		if err != nil {
-			if err := controllerutil.SetControllerReference(in, rb, r.mgr.GetScheme()); err != nil {
-				return v1alpha1.PhaseFailed, err
-			}
-			err := r.client.Create(context.TODO(), rb)
-			if err != nil {
-				return v1alpha1.PhaseFailed, err
-			}
 		}
 
 		err = r.mpm.CreateSubscription(
