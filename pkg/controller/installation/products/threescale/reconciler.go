@@ -162,7 +162,7 @@ func (r *Reconciler) Reconcile(in *v1alpha1.Installation) (v1alpha1.StatusPhase,
 					return v1alpha1.PhaseFailed, err
 				}
 			} else {
-				if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 {
+				if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0{
 					logrus.Infof("%s has successfully deployed", packageName)
 					return v1alpha1.PhaseCompleted, nil
 				}
