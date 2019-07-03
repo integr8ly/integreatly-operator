@@ -32,6 +32,7 @@ type ConfigReadWriter interface {
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
+	ReadCodeReady() (*CodeReady, error)
 }
 
 type ConfigReadable interface {
@@ -52,6 +53,15 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 	}
 	return newAMQStreams(config), nil
 }
+
+func (m *Manager) ReadCodeReady() (*CodeReady, error) {
+	config, err := m.ReadConfigForProduct(v1alpha1.ProductCodeReadyWorkspaces)
+	if err != nil {
+		return nil, err
+	}
+	return newCodeReady(config), nil
+}
+
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 	config, err := m.ReadConfigForProduct(v1alpha1.ProductRHSSO)
 	if err != nil {

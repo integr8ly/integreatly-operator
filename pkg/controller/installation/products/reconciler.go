@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/codeready"
 )
 
 type Interface interface {
@@ -21,6 +22,8 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 		reconciler, err = amqstreams.NewReconciler(client, rc, coreClient, configManager, instance)
 	case v1alpha1.ProductRHSSO:
 		reconciler, err = rhsso.NewReconciler(client, rc, coreClient, configManager, instance)
+	case v1alpha1.ProductCodeReadyWorkspaces:
+		reconciler, err = codeready.NewReconciler(client, rc, coreClient, configManager, instance)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

@@ -24,6 +24,7 @@ var (
 
 	ProductAMQStreams ProductName = "amqstreams"
 	ProductRHSSO      ProductName = "rhsso"
+	ProductCodeReadyWorkspaces ProductName = "codeready-workspaces"
 )
 
 // InstallationSpec defines the desired state of Installation

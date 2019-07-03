@@ -18,6 +18,22 @@ func (r *RHSSO) SetNamespace(newNamespace string) {
 	r.config["NAMESPACE"] = newNamespace
 }
 
+func (r *RHSSO) GetRealm() string {
+	return r.config["REALM"]
+}
+
+func (r *RHSSO) SetRealm(newRealm string) {
+	r.config["REALM"] = newRealm
+}
+
+func (r *RHSSO) GetURL() string {
+	return r.config["URL"]
+}
+
+func (r *RHSSO) SetURL(newURL string) {
+	r.config["URL"] = newURL
+}
+
 func (r *RHSSO) Read() ProductConfig {
 	return r.config
 }

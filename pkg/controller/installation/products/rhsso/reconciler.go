@@ -261,10 +261,53 @@ func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
+		err = r.exportConfig()
+		if err != nil {
+			logrus.Infof("Failed to write RH-SSO config %v", err)
+			return v1alpha1.PhaseFailed, err
+		}
+
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
 		return v1alpha1.PhaseCompleted, nil
 	}
 
 	logrus.Infof("KeycloakRealm status phase is: %s", kcr.Status.Phase)
 	return v1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) exportConfig() error {
+	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
+	if err != nil {
+		return err
+	}
+	kc := &aerogearv1.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: keycloakName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{ Name: keycloakName, Namespace: r.Config.GetNamespace() }, kc)
+	if err != nil {
+		return err
+	}
+	kcAdminCredSecretName := kc.Spec.AdminCredentials
+
+	kcAdminCredSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: kcAdminCredSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{ Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace() }, kcAdminCredSecret)
+	if err != nil {
+		return err
+	}
+	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
+	r.Config.SetRealm(keycloakRealmName)
+	r.Config.SetURL(string(kcURLBytes))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return err
+	}
+	return nil
 }
