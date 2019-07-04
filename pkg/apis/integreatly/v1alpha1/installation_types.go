@@ -35,6 +35,7 @@ type InstallationSpec struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Type            string `json:"type"`
 	NamespacePrefix string `json:"namespacePrefix"`
+	CreateNamespaces bool  `json:"createNamespaces"`
 }
 
 // InstallationStatus defines the observed state of Installation
