@@ -165,7 +165,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 	return reconcile.Result{
-		Requeue: true,
+		Requeue:      true,
 		RequeueAfter: time.Second * 10,
 	}, nil
 }

@@ -282,11 +282,11 @@ func (r *Reconciler) exportConfig() error {
 	}
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: keycloakName,
+			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{ Name: keycloakName, Namespace: r.Config.GetNamespace() }, kc)
+	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
 		return err
 	}
@@ -294,11 +294,11 @@ func (r *Reconciler) exportConfig() error {
 
 	kcAdminCredSecret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kcAdminCredSecretName,
+			Name:      kcAdminCredSecretName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{ Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace() }, kcAdminCredSecret)
+	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
 		return err
 	}

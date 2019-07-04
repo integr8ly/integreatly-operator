@@ -122,7 +122,7 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context) (v1alpha1.StatusPha
 	}
 
 	if ns.Status.Phase == v1.NamespaceTerminating {
-		logrus.Infof("namespace %s is terminating, maintaining phase to try again on next reconcile")
+		logrus.Infof("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
 		return v1alpha1.PhaseAwaitingNS, nil
 	}
 	if ns.Status.Phase != v1.NamespaceActive {
@@ -204,7 +204,7 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 			logrus.Infof(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
-		return v1alpha1.PhaseFailed, errors2.Wrap(err, fmt.Sprintf("could not retrieve installplan in namespace: %s"))
+		return v1alpha1.PhaseFailed, errors2.Wrap(err, fmt.Sprintf("could not retrieve installplan in namespace: %s", r.Config.GetNamespace()))
 	}
 
 	logrus.Infof("installplan phase is %s", ip.Status.Phase)
@@ -339,17 +339,11 @@ func (r *Reconciler) createCheCluster(ctx context.Context, serverClient pkgclien
 		},
 		Spec: chev1.CheClusterSpec{
 			Server: chev1.CheClusterSpecServer{
-				CheFlavor:      "codeready",
-				TlsSupport:     true,
-				SelfSignedCert: false,
+				CheFlavor:  "codeready",
+				TlsSupport: true,
 			},
 			Database: chev1.CheClusterSpecDB{
-				ExternalDB:            false,
-				ChePostgresDBHostname: "",
-				ChePostgresPassword:   "",
-				ChePostgresPort:       "",
-				ChePostgresUser:       "",
-				ChePostgresDb:         "",
+				ExternalDB: false,
 			},
 			Auth: chev1.CheClusterSpecAuth{
 				OpenShiftOauth:   false,

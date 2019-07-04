@@ -54,7 +54,7 @@ func NewManager(client pkgclient.Client, rc *rest.Config) *MarketplaceManager {
 
 func (m *MarketplaceManager) GetSubscription(ns string, name string) (*coreosv1alpha1.Subscription, error) {
 	sub := &coreosv1alpha1.Subscription{}
-	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{ Name: name, Namespace: ns }, sub)
+	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: name, Namespace: ns}, sub)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return nil, nil
