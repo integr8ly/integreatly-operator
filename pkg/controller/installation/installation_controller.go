@@ -181,15 +181,10 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		//check current phase of this product installation
 		if val, ok := instance.Status.ProductStatus[product]; ok {
 			phase = val
-			//installation complete, move to next product
-			//if phase == string(v1alpha1.PhaseCompleted) {
-			//	continue
-			//}
 			//product failed to install, return error and failed phase for stage
 			if phase == string(v1alpha1.PhaseFailed) {
 				//found a failed product
 				incompleteStage = true
-				return v1alpha1.PhaseFailed, pkgerr.New(fmt.Sprintf("failed to install %s", product))
 			}
 		}
 		//found an incomplete product
