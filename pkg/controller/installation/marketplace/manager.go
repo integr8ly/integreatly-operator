@@ -12,7 +12,10 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var providerLabel = "opsrc-provider"
+const (
+	providerLabel      = "opsrc-provider"
+	IntegreatlyChannel = "integreatly"
+)
 
 type operatorSources struct {
 	Integreatly marketplacev1.OperatorSource
@@ -35,7 +38,6 @@ func GetOperatorSources() *operatorSources {
 }
 
 type MarketplaceInterface interface {
-	GetSubscription(ns string, name string) (*coreosv1alpha1.Subscription, error)
 	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
 	GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, error)
 }
@@ -50,18 +52,6 @@ func NewManager(client pkgclient.Client, rc *rest.Config) *MarketplaceManager {
 		client:     client,
 		restConfig: rc,
 	}
-}
-
-func (m *MarketplaceManager) GetSubscription(ns string, name string) (*coreosv1alpha1.Subscription, error) {
-	sub := &coreosv1alpha1.Subscription{}
-	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: name, Namespace: ns}, sub)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return sub, nil
 }
 
 func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {

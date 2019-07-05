@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"fmt"
+	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -52,8 +53,9 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
-	switch phase {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
+	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
 		return r.handleNoPhase()
 	case v1alpha1.PhaseAwaitingNS:
@@ -263,7 +265,7 @@ func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
 		err = r.exportConfig()
 		if err != nil {
-			logrus.Infof("Failed to write RH-SSO config %v", err)
+			logrus.Errorf("Failed to write RH-SSO config %v", err)
 			return v1alpha1.PhaseFailed, err
 		}
 
@@ -278,7 +280,7 @@ func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
 func (r *Reconciler) exportConfig() error {
 	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
 	if err != nil {
-		return err
+		return pkgerr.Wrap(err, "could not build server client for keycloak config")
 	}
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
@@ -288,7 +290,7 @@ func (r *Reconciler) exportConfig() error {
 	}
 	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
-		return err
+		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
 	}
 	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
@@ -300,14 +302,14 @@ func (r *Reconciler) exportConfig() error {
 	}
 	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
-		return err
+		return pkgerr.Wrap(err, "could not retrieve keycloak admin credential secret for keycloak config")
 	}
 	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
 	r.Config.SetURL(string(kcURLBytes))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return err
+		return pkgerr.Wrap(err, "could not update keycloak config")
 	}
 	return nil
 }

@@ -9,7 +9,7 @@
 // Contributors:
 //   Red Hat, Inc. - initial API and implementation
 //
-package v1alpha1
+package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,11 +22,11 @@ import (
 type CheClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	Server   CheClusterSpecServer  `json:"server"`
-	Database CheClusterSpecDB      `json:"database"`
-	Auth     CheClusterSpecAuth    `json:"auth"`
-	Storage  CheClusterSpecStorage `json:"storage"`
-	K8SOnly  CheClusterSpecK8SOnly `json:"k8s"`
+	Server CheClusterSpecServer `json:"server"`
+	Database CheClusterSpecDB `json:"database"`
+	Auth CheClusterSpecAuth `json:"auth"`
+	Storage CheClusterSpecStorage `json:"storage"`
+	K8SOnly CheClusterSpecK8SOnly `json:"k8s"`
 }
 
 type CheClusterSpecServer struct {
@@ -42,9 +42,6 @@ type CheClusterSpecServer struct {
 	CheLogLevel string `json:"cheLogLevel"`
 	// CheDebug is debug mode for Che server. Defaults to false
 	CheDebug string `json:"cheDebug"`
-	// CustomClusterRoleName specifies a custom cluster role to user for the Che workspaces
-	// The default roles are used if this is left blank.
-	CheWorkspaceClusterRole string `json:"cheWorkspaceClusterRole"`
 	// SelfSignedCert signal about the necessity to get OpenShift router tls secret
 	// and extract certificate to add it to Java trust store for Che server
 	SelfSignedCert bool `json:"selfSignedCert"`
@@ -63,10 +60,6 @@ type CheClusterSpecServer struct {
 	ProxyUser string `json:"proxyUser"`
 	// ProxyPassword is password for a proxy user
 	ProxyPassword string `json:"proxyPassword"`
-	// ServerMemoryRequest sets mem request for server deployment. Defaults to 512Mi
-	ServerMemoryRequest string `json:"serverMemoryRequest"`
-	// ServerMemoryLimit sets mem limit for server deployment. Defaults to 1Gi
-	ServerMemoryLimit string `json:"serverMemoryLimit"`
 }
 
 type CheClusterSpecDB struct {
@@ -84,27 +77,25 @@ type CheClusterSpecDB struct {
 	ChePostgresPassword string `json:"chePostgresPassword"`
 	// ChePostgresDb is Postgres database name that Che server uses to connect to. Defaults to dbche
 	ChePostgresDb string `json:"chePostgresDb"`
-	// PostgresImage is an image used in Postgres deployment in format image:tag. Defaults to registry.redhat.io/rhscl/postgresql-96-rhel7 (see pkg/deploy/defaults.go for latest tag)
+	// PostgresImage is an image used in Postgres deployment in format image:tag. Defaults to registry.access.redhat.com/rhscl/postgresql-96-rhel7:1-25
 	PostgresImage string `json:"postgresImage"`
 }
 
 type CheClusterSpecAuth struct {
 	// ExternalKeycloak instructs operator on whether or not to deploy Keycloak/RH SSO instance. When set to true provision connection details
-	ExternalKeycloak bool `json:"externalIdentityProvider"`
-	// KeycloakURL is retrieved from respective route/ingress unless explicitly specified in CR (when externalIdentityProvider is true)
-	KeycloakURL string `json:"identityProviderURL"`
-	// KeycloakURL is retrieved from respective route/ingress unless explicitly specified in CR (when externalIdentityProvider is true)
-	//IdentityProviderURL string `json:"identityProviderURL"`
-	// KeycloakAdminUserName is a desired admin username of Keycloak admin user (applicable only when externalIdentityProvider is false)
-	KeycloakAdminUserName string `json:"identityProviderAdminUserName"`
-	// KeycloakAdminPassword is a desired password of Keycloak admin user (applicable only when externalIdentityProvider is false)
-	KeycloakAdminPassword string `json:"identityProviderPassword"`
-	// KeycloakRealm is name of a keycloak realm. When externalIdentityProvider is false this realm will be created, otherwise passed to Che server
-	KeycloakRealm string `json:"identityProviderRealm"`
-	// KeycloakClientId is id of a keycloak client. When externalIdentityProvider is false this client will be created, otherwise passed to Che server
-	KeycloakClientId string `json:"identityProviderClientId"`
+	ExternalKeycloak bool `json:"externalKeycloak"`
+	// KeycloakURL is retrieved from respective route/ingress unless explicitly specified in CR (when ExternalKeycloak is true)
+	KeycloakURL string `json:"keycloakURL"`
+	// KeycloakAdminUserName is a desired admin username of Keycloak admin user (applicable only when ExternalKeycloak is false)
+	KeycloakAdminUserName string `json:"keycloakAdminUserName"`
+	// KeycloakAdminPassword is a desired password of Keycloak admin user (applicable only when ExternalKeycloak is false)
+	KeycloakAdminPassword string `json:"keycloakAdminPassword"`
+	// KeycloakRealm is name of a keycloak realm. When ExternalKeycloak is false this realm will be created, otherwise passed to Che server
+	KeycloakRealm string `json:"keycloakRealm"`
+	// KeycloakClientId is id of a keycloak client. When ExternalKeycloak is false this client will be created, otherwise passed to Che server
+	KeycloakClientId string `json:"keycloakClientId"`
 	// KeycloakPostgresPassword is password for keycloak database user. Auto generated if left blank
-	KeycloakPostgresPassword string `json:"identityProviderPostgresPassword"`
+	KeycloakPostgresPassword string `json:"keycloakPostgresPassword"`
 	// UpdateAdminPassword forces the default admin Che user to update password on first login. False by default
 	UpdateAdminPassword bool `json:"updateAdminPassword"`
 	// OpenShiftOauth instructs an Operator to enable OpenShift v3 identity provider in Keycloak,
@@ -115,8 +106,9 @@ type CheClusterSpecAuth struct {
 	// OauthSecret is secret used in oAuthClient. Auto generated if left blank
 	OauthSecret string `json:"oAuthSecret"`
 	// KeycloakImage is image:tag used in Keycloak deployment
-	KeycloakImage string `json:"identityProviderImage"`
+	KeycloakImage string `json:"keycloakImage"`
 }
+
 
 type CheClusterSpecStorage struct {
 	// PvcStrategy is a persistent volume claim strategy for Che server. Can be common (all workspaces PVCs in one volume),
@@ -128,10 +120,6 @@ type CheClusterSpecStorage struct {
 	PreCreateSubPaths bool `json:"preCreateSubPaths"`
 	// PvcJobsImage is image:tag for preCreateSubPaths jobs
 	PvcJobsImage string `json:"pvcJobsImage"`
-	// PostgresPVCStorageClassName is storage class for a postgres pvc. Empty string by default, which means default storage class is used
-	PostgresPVCStorageClassName string `json:"postgresPVCStorageClassName"`
-	// WorkspacePVCStorageClassName is storage class for a workspaces pvc. Empty string by default, which means default storage class is used
-	WorkspacePVCStorageClassName string `json:"workspacePVCStorageClassName"`
 }
 
 type CheClusterSpecK8SOnly struct {
@@ -144,10 +132,6 @@ type CheClusterSpecK8SOnly struct {
 	IngressClass string `json:"ingressClass"`
 	// secret name used for tls termination
 	TlsSecretName string `json:"tlsSecretName"`
-	// FSGroup the Che POD and Workspace pod containers should run in
-	SecurityContextFsGroup string `json:"securityContextFsGroup"`
-	// User the Che POD and Workspace pod containers should run as
-	SecurityContextRunAsUser string `json:"securityContextRunAsUser"`
 }
 
 // CheClusterStatus defines the observed state of CheCluster

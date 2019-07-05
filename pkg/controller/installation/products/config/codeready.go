@@ -2,7 +2,6 @@ package config
 
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"strconv"
 )
 
 type CodeReady struct {
@@ -19,14 +18,6 @@ func (a *CodeReady) GetHost() string {
 
 func (a *CodeReady) SetHost(newHost string) {
 	a.config["HOST"] = newHost
-}
-
-func (a *CodeReady) SetCreateNamespace(newCreateNamespace bool) {
-	a.config["CREATE_NAMESPACE"] = strconv.FormatBool(newCreateNamespace)
-}
-
-func (a *CodeReady) GetCreateNamespace() bool {
-	return a.config["CREATE_NAMESPACE"] == strconv.FormatBool(true)
 }
 
 func (a *CodeReady) GetNamespace() string {

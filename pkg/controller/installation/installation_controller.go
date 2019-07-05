@@ -26,6 +26,10 @@ import (
 	"time"
 )
 
+const (
+	defaultInstallationConfigMapName = "integreatly-installation-config"
+)
+
 var log = logf.Log.WithName("Installation Controller")
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -103,7 +107,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, os.Getenv("INSTALLATION_CONFIG_MAP"))
+	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
+	if installationCfgMap == "" {
+		installationCfgMap = instance.Spec.NamespacePrefix + defaultInstallationConfigMapName
+	}
+
+	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, installationCfgMap)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -196,7 +205,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
 		logrus.Infof("reconciling product: %s", product)
-		newPhase, err := reconciler.Reconcile(v1alpha1.StatusPhase(phase))
+		newPhase, err := reconciler.Reconcile(instance)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)

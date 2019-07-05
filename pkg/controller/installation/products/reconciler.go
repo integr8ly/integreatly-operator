@@ -14,7 +14,7 @@ import (
 )
 
 type Interface interface {
-	Reconcile(phase v1alpha1.StatusPhase) (newPhase v1alpha1.StatusPhase, err error)
+	Reconcile(inst *v1alpha1.Installation) (newPhase v1alpha1.StatusPhase, err error)
 }
 
 func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
@@ -36,6 +36,6 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
-	return phase, nil
+func (n *NoOp) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	return v1alpha1.PhaseNone, nil
 }

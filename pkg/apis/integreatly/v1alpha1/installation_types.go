@@ -36,6 +36,7 @@ type InstallationSpec struct {
 	Type             string `json:"type"`
 	NamespacePrefix  string `json:"namespacePrefix"`
 	CreateNamespaces bool   `json:"createNamespaces"`
+	SelfSignedCerts  bool   `json:"selfSignedCerts"`
 }
 
 // InstallationStatus defines the observed state of Installation

@@ -18,12 +18,12 @@ objects:
 - apiVersion: v1
   kind: Namespace
   metadata:
-    name: ${INSTALLATION_NAMESPACE}
+    name: ${NAMESPACE_PREFIX}${INSTALLATION_NAMESPACE}
 - apiVersion: integreatly.org/v1alpha1
   kind: Installation
   metadata:
     name: ${NAMESPACE_PREFIX}integreatly-installation
-    namespace: ${INSTALLATION_NAMESPACE}
+    namespace: ${NAMESPACE_PREFIX}${INSTALLATION_NAMESPACE}
   spec:
     namespacePrefix: ${NAMESPACE_PREFIX}
     type: workshop
