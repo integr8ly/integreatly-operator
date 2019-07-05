@@ -22,7 +22,7 @@ objects:
 - apiVersion: integreatly.org/v1alpha1
   kind: Installation
   metadata:
-    name: integreatly-installation
+    name: ${NAMESPACE_PREFIX}integreatly-installation
     namespace: ${INSTALLATION_NAMESPACE}
   spec:
     namespacePrefix: ${NAMESPACE_PREFIX}
