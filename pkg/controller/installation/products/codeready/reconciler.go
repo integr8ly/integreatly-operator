@@ -231,29 +231,25 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("checking pod status in namespace: %s", r.Config.GetNamespace())
-	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(metav1.ListOptions{})
+	r.logger.Debugf("checking that checluster custom resource is marked as available")
+	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("failed to retrieve pods in namespace: %s", r.Config.GetNamespace()))
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not build server client for keycloak client")
 	}
 
-	//expecting 2 pods in total
-	if len(pods.Items) < 2 {
+	// retrive the checluster so we can use its URL for redirect and web origins in the keycloak client
+	cheCluster := &chev1.CheCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultCheClusterName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not retrieve checluster for keycloak client update")
+	}
+	if cheCluster.Status.CheClusterRunning != "Available" {
 		return v1alpha1.PhaseInProgress, nil
-	}
-
-	//and they should all be ready
-checkPodStatus:
-	for _, pod := range pods.Items {
-		for _, cnd := range pod.Status.Conditions {
-			if cnd.Type == v1.ContainersReady {
-				if cnd.Status != v1.ConditionStatus("True") {
-					r.logger.Debugf("pod not ready, returning in progress: %+v", cnd.Status)
-					return v1alpha1.PhaseInProgress, nil
-				}
-				break checkPodStatus
-			}
-		}
 	}
 
 	return v1alpha1.PhaseCompleted, nil
