@@ -204,8 +204,7 @@ func (r *ReconcileChe) CreateNewOauthClient(instance *orgv1.CheCluster, oAuthCli
 }
 
 // CreateService creates a service with a given name, port, selector and labels
-func (r *ReconcileChe) CreateService(cr *orgv1.CheCluster, name string, labels map[string]string, portName string, portNumber int32) error {
-	service := deploy.NewService(cr, name, labels, portName, portNumber)
+func (r *ReconcileChe) CreateService(cr *orgv1.CheCluster, service *corev1.Service) error {
 	if err := controllerutil.SetControllerReference(cr, service, r.scheme); err != nil {
 		logrus.Errorf("An error occurred %s", err)
 		return err
@@ -269,7 +268,7 @@ func (r *ReconcileChe) CreateNewRoleBinding(instance *orgv1.CheCluster, roleBind
 	return nil
 }
 
-func (r *ReconcileChe) CreateIdentityProviderItems(instance *orgv1.CheCluster, request reconcile.Request, cheFlavor string, keycloakDeploymentName string) (err error) {
+func (r *ReconcileChe) CreateIdentityProviderItems(instance *orgv1.CheCluster, request reconcile.Request, cheFlavor string, keycloakDeploymentName string, isOpenShift4 bool) (err error) {
 	tests := r.tests
 	keycloakAdminPassword := instance.Spec.Auth.KeycloakAdminPassword
 	oAuthClientName := instance.Spec.Auth.OauthClientName
@@ -290,13 +289,13 @@ func (r *ReconcileChe) CreateIdentityProviderItems(instance *orgv1.CheCluster, r
 	}
 	keycloakURL := instance.Spec.Auth.KeycloakURL
 	keycloakRealm := util.GetValue(instance.Spec.Auth.KeycloakRealm, cheFlavor)
-	oAuthClient := deploy.NewOAuthClient(oAuthClientName, oauthSecret, keycloakURL, keycloakRealm)
+	oAuthClient := deploy.NewOAuthClient(oAuthClientName, oauthSecret, keycloakURL, keycloakRealm, isOpenShift4)
 	if err := r.CreateNewOauthClient(instance, oAuthClient); err != nil {
 		return err
 	}
 
 	if !tests {
-		openShiftIdentityProviderCommand := deploy.GetOpenShiftIdentityProviderProvisionCommand(instance, oAuthClientName, oauthSecret, keycloakAdminPassword)
+		openShiftIdentityProviderCommand := deploy.GetOpenShiftIdentityProviderProvisionCommand(instance, oAuthClientName, oauthSecret, keycloakAdminPassword, isOpenShift4)
 		podToExec, err := k8sclient.GetDeploymentPod(keycloakDeploymentName, instance.Namespace)
 		if err != nil {
 			logrus.Errorf("Failed to retrieve pod name. Further exec will fail")
@@ -318,6 +317,28 @@ func (r *ReconcileChe) CreateIdentityProviderItems(instance *orgv1.CheCluster, r
 	return nil
 }
 
+func (r *ReconcileChe) CreateTLSSecret(instance *orgv1.CheCluster, url string, name string) (err error) {
+	// create a secret with either router tls cert (or OpenShift API crt) when on OpenShift infra
+	// and router is configured with a self signed certificate
+	// this secret is used by CRW server to reach RH SSO TLS endpoint
+	secret := &corev1.Secret{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.Namespace}, secret);
+		err != nil && errors.IsNotFound(err) {
+		crt, err := r.GetEndpointTlsCrt(instance, url)
+		if err != nil {
+			logrus.Errorf("Failed to extract crt. Failed to create a secret with a self signed crt: %s", err)
+			return err
+		} else {
+			secret := deploy.NewSecret(instance, name, crt)
+			if err := r.CreateNewSecret(instance, secret); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request reconcile.Request) (err error) {
 
 	chePostgresPassword := util.GetValue(instance.Spec.Database.ChePostgresPassword, util.GeneratePasswd(12))
@@ -331,12 +352,24 @@ func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request
 	keycloakPostgresPassword := util.GetValue(instance.Spec.Auth.KeycloakPostgresPassword, util.GeneratePasswd(12))
 	if len(instance.Spec.Auth.KeycloakPostgresPassword) < 1 {
 		instance.Spec.Auth.KeycloakPostgresPassword = keycloakPostgresPassword
+		keycloakDeployment, err := r.GetEffectiveDeployment(instance, "keycloak")
+		if err != nil {
+			logrus.Info("Disregard the error. No existing Identity provider deployment found. Generating passwd")
+		} else {
+			keycloakPostgresPassword = r.GetDeploymentEnv(keycloakDeployment, "DB_PASSWORD")
+		}
 		if err := r.UpdateCheCRSpec(instance, "auto-generated Keycloak DB password", "password-hidden"); err != nil {
 			return err
 		}
 	}
 	if len(instance.Spec.Auth.KeycloakAdminPassword) < 1 {
 		keycloakAdminPassword := util.GetValue(instance.Spec.Auth.KeycloakAdminPassword, util.GeneratePasswd(12))
+		keycloakDeployment, err := r.GetEffectiveDeployment(instance, "keycloak")
+		if err != nil {
+			logrus.Info("Disregard the error. No existing Identity provider deployment found. Generating passwd")
+		} else {
+			keycloakAdminPassword = r.GetDeploymentEnv(keycloakDeployment, "SSO_ADMIN_PASSWORD")
+		}
 		instance.Spec.Auth.KeycloakAdminPassword = keycloakAdminPassword
 		if err := r.UpdateCheCRSpec(instance, "Keycloak admin password", "password hidden"); err != nil {
 			return err
@@ -344,8 +377,14 @@ func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request
 	}
 	if len(instance.Spec.Auth.KeycloakAdminUserName) < 1 {
 		keycloakAdminUserName := util.GetValue(instance.Spec.Auth.KeycloakAdminUserName, "admin")
+		keycloakDeployment, err := r.GetEffectiveDeployment(instance, "keycloak")
+		if err != nil {
+			logrus.Info("Disregard the error. No existing Identity provider deployment found. Generating admin username")
+		} else {
+			keycloakAdminUserName = r.GetDeploymentEnv(keycloakDeployment, "SSO_ADMIN_USERNAME")
+		}
 		instance.Spec.Auth.KeycloakAdminUserName = keycloakAdminUserName
-		if err := r.UpdateCheCRSpec(instance, "Keycloak admin username", "password hidden"); err != nil {
+		if err := r.UpdateCheCRSpec(instance, "Keycloak admin username", keycloakAdminUserName); err != nil {
 			return err
 		}
 	}
@@ -406,6 +445,12 @@ func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request
 	keycloakImage := util.GetValue(instance.Spec.Auth.KeycloakImage, defaultKeycloakImage)
 	if len(instance.Spec.Auth.KeycloakImage) < 1 {
 		instance.Spec.Auth.KeycloakImage = keycloakImage
+		keycloakDeployment, err := r.GetEffectiveDeployment(instance, "keycloak")
+		if err != nil {
+			logrus.Info("Disregard the error. No existing Identity provider deployment found. Using default image")
+		} else {
+			keycloakImage = keycloakDeployment.Spec.Template.Spec.Containers[0].Image
+		}
 		if err := r.UpdateCheCRSpec(instance, "Keycloak image:tag", keycloakImage); err != nil {
 			return err
 		}
@@ -420,11 +465,16 @@ func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request
 	keycloakClientId := util.GetValue(instance.Spec.Auth.KeycloakClientId, cheFlavor+"-public")
 	if len(instance.Spec.Auth.KeycloakClientId) < 1 {
 		instance.Spec.Auth.KeycloakClientId = keycloakClientId
+
 		if err := r.UpdateCheCRSpec(instance, "Keycloak client ID", keycloakClientId); err != nil {
 			return err
 		}
 	}
-	pluginRegistryUrl := util.GetValue(instance.Spec.Server.PluginRegistryUrl, deploy.DefaultPluginRegistryUrl)
+	pluginRegistryUrl := util.GetValue(instance.Spec.Server.PluginRegistryUrl, deploy.DefaultUpstreamPluginRegistryUrl)
+	if cheFlavor == "codeready" {
+		pluginRegistryUrl = deploy.DefaultPluginRegistryUrl
+	}
+
 	if len(instance.Spec.Server.PluginRegistryUrl) < 1 {
 		instance.Spec.Server.PluginRegistryUrl = pluginRegistryUrl
 		if err := r.UpdateCheCRSpec(instance, "plugin registry URL", pluginRegistryUrl); err != nil {
@@ -459,7 +509,11 @@ func (r *ReconcileChe) GenerateAndSaveFields(instance *orgv1.CheCluster, request
 			return err
 		}
 	}
-	pvcJobsImage := util.GetValue(instance.Spec.Storage.PvcJobsImage, deploy.DefaultPvcJobsImage)
+	defaultPVCJobsImage := deploy.DefaultPvcJobsUpstreamImage
+	if cheFlavor == "codeready" {
+		defaultPVCJobsImage = deploy.DefaultPvcJobsImage
+	}
+	pvcJobsImage := util.GetValue(instance.Spec.Storage.PvcJobsImage, defaultPVCJobsImage)
 	if len(instance.Spec.Storage.PvcJobsImage) < 1 {
 		instance.Spec.Storage.PvcJobsImage = pvcJobsImage
 		if err := r.UpdateCheCRSpec(instance, "pvc jobs image", pvcJobsImage); err != nil {

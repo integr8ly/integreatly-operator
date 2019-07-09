@@ -117,12 +117,12 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:a92c2793febb3a74bd068609f05b13b6d4b090a0cb5d86ec8951c53119a8ea5b"
+  digest = "1:85c3164cb43dc296665998d4fc9b6e00dbe1b6f7cd7c47b80afac491e653bef2"
   name = "github.com/eclipse/che-operator"
   packages = ["pkg/apis/org/v1"]
   pruneopts = "NT"
-  revision = "5c107c2e799c3ac31cf3d2581c635d5ba8ceced7"
-  version = "6.19.2"
+  revision = "2f639261d8b5416b2934591e12925ee0935814dd"
+  version = "7.0.0-RC-2.0"
 
 [[projects]]
   digest = "1:1302bdd23af4264a095d48c2c28660a8ecf2e02454ce172cef5cb946029a1383"

@@ -19,6 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 )
 
 func addMap(a map[string]string, b map[string]string) {
@@ -40,6 +41,7 @@ type CheConfigMap struct {
 	PvcStrategy                  string `json:"CHE_INFRA_KUBERNETES_PVC_STRATEGY"`
 	PvcClaimSize                 string `json:"CHE_INFRA_KUBERNETES_PVC_QUANTITY"`
 	PvcJobsImage                 string `json:"CHE_INFRA_KUBERNETES_PVC_JOBS_IMAGE"`
+	WorkspacePvcStorageClassName string `json:"CHE_INFRA_KUBERNETES_PVC_STORAGE__CLASS__NAME"`
 	PreCreateSubPaths            string `json:"CHE_INFRA_KUBERNETES_PVC_PRECREATE__SUBPATHS"`
 	TlsSupport                   string `json:"CHE_INFRA_OPENSHIFT_TLS__ENABLED"`
 	K8STrustCerts                string `json:"CHE_INFRA_KUBERNETES_TRUST__CERTS"`
@@ -62,14 +64,14 @@ type CheConfigMap struct {
 	WebSocketEndpointMinor       string `json:"CHE_WEBSOCKET_ENDPOINT__MINOR"`
 }
 
-func GetCustomConfigMapData()(cheEnv map[string]string) {
+func GetCustomConfigMapData() (cheEnv map[string]string) {
 
 	cheEnv = map[string]string{
 		"CHE_PREDEFINED_STACKS_RELOAD__ON__START":               "true",
 		"CHE_INFRA_KUBERNETES_SERVICE__ACCOUNT__NAME":           "che-workspace",
 		"CHE_WORKSPACE_AUTO_START":                              "true",
 		"CHE_INFRA_KUBERNETES_WORKSPACE__UNRECOVERABLE__EVENTS": "FailedMount,FailedScheduling,MountVolume.SetUp failed,Failed to pull image",
-		"CHE_WORKSPACE_AGENT_DEV_INACTIVE__STOP__TIMEOUT__MS":   "-1",
+		"CHE_LIMITS_WORKSPACE_IDLE_TIMEOUT": "-1",
 	}
 	return cheEnv
 
@@ -80,7 +82,7 @@ func GetCustomConfigMapData()(cheEnv map[string]string) {
 func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 	cheHost := cr.Spec.Server.CheHost
 	keycloakURL := cr.Spec.Auth.KeycloakURL
-	isOpenShift, err := util.DetectOpenShift()
+	isOpenShift, isOpenshift4, err := util.DetectOpenShift()
 	if err != nil {
 		logrus.Errorf("Failed to get current infra: %s", err)
 	}
@@ -97,6 +99,9 @@ func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 	if openshiftOAuth && isOpenShift {
 		workspacesNamespace = ""
 		openShiftIdentityProviderId = "openshift-v3"
+		if isOpenshift4 {
+			openShiftIdentityProviderId = "openshift-v4"
+		}
 	}
 	tlsSupport := cr.Spec.Server.TlsSupport
 	protocol := "http"
@@ -109,8 +114,14 @@ func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 	proxyJavaOpts := ""
 	proxyUser := cr.Spec.Server.ProxyUser
 	proxyPassword := cr.Spec.Server.ProxyPassword
+	nonProxyHosts := cr.Spec.Server.NonProxyHosts
+	if len(nonProxyHosts) < 1 && len(cr.Spec.Server.ProxyURL) > 1 {
+		nonProxyHosts = os.Getenv("KUBERNETES_SERVICE_HOST")
+	} else {
+		nonProxyHosts = nonProxyHosts + "|" + os.Getenv("KUBERNETES_SERVICE_HOST")
+	}
 	if len(cr.Spec.Server.ProxyURL) > 1 {
-		proxyJavaOpts = util.GenerateProxyJavaOpts(cr.Spec.Server.ProxyURL, cr.Spec.Server.ProxyPort, cr.Spec.Server.NonProxyHosts, proxyUser, proxyPassword)
+		proxyJavaOpts = util.GenerateProxyJavaOpts(cr.Spec.Server.ProxyURL, cr.Spec.Server.ProxyPort, nonProxyHosts, proxyUser, proxyPassword)
 	}
 	cheWorkspaceHttpProxy := ""
 	cheWorkspaceNoProxy := ""
@@ -120,9 +131,17 @@ func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 
 	ingressDomain := cr.Spec.K8SOnly.IngressDomain
 	tlsSecretName := cr.Spec.K8SOnly.TlsSecretName
+	securityContextFsGroup := util.GetValue(cr.Spec.K8SOnly.SecurityContextFsGroup, DefaultSecurityContextFsGroup)
+	securityContextRunAsUser := util.GetValue(cr.Spec.K8SOnly.SecurityContextRunAsUser, DefaultSecurityContextRunAsUser)
 	pvcStrategy := util.GetValue(cr.Spec.Storage.PvcStrategy, DefaultPvcStrategy)
 	pvcClaimSize := util.GetValue(cr.Spec.Storage.PvcClaimSize, DefaultPvcClaimSize)
-	pvcJobsImage := util.GetValue(cr.Spec.Storage.PvcJobsImage, DefaultPvcJobsImage)
+	workspacePvcStorageClassName := cr.Spec.Storage.WorkspacePVCStorageClassName
+	
+	defaultPVCJobsImage := DefaultPvcJobsUpstreamImage
+	if cheFlavor == "codeready" {
+		defaultPVCJobsImage = DefaultPvcJobsImage
+	}
+	pvcJobsImage := util.GetValue(cr.Spec.Storage.PvcJobsImage, defaultPVCJobsImage)
 	preCreateSubPaths := "true"
 	if !cr.Spec.Storage.PreCreateSubPaths {
 		preCreateSubPaths = "false"
@@ -152,6 +171,7 @@ func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 		WorkspacesNamespace:          workspacesNamespace,
 		PvcStrategy:                  pvcStrategy,
 		PvcClaimSize:                 pvcClaimSize,
+		WorkspacePvcStorageClassName: workspacePvcStorageClassName,
 		PvcJobsImage:                 pvcJobsImage,
 		PreCreateSubPaths:            preCreateSubPaths,
 		TlsSupport:                   tls,
@@ -183,8 +203,8 @@ func GetConfigMapData(cr *orgv1.CheCluster) (cheEnv map[string]string) {
 
 	// k8s specific envs
 	k8sCheEnv := map[string]string{
-		"CHE_INFRA_KUBERNETES_POD_SECURITY__CONTEXT_FS__GROUP":     "0",
-		"CHE_INFRA_KUBERNETES_POD_SECURITY__CONTEXT_RUN__AS__USER": "0",
+		"CHE_INFRA_KUBERNETES_POD_SECURITY__CONTEXT_FS__GROUP":     securityContextFsGroup,
+		"CHE_INFRA_KUBERNETES_POD_SECURITY__CONTEXT_RUN__AS__USER": securityContextRunAsUser,
 		"CHE_INFRA_KUBERNETES_NAMESPACE":                           workspacesNamespace,
 		"CHE_INFRA_KUBERNETES_INGRESS_DOMAIN":                      ingressDomain,
 		"CHE_INFRA_KUBERNETES_SERVER__STRATEGY":                    ingressStrategy,

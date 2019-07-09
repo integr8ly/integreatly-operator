@@ -38,15 +38,6 @@ func (r *ReconcileChe) UpdateCheCRStatus(instance *orgv1.CheCluster, updatedFiel
 	return nil
 }
 
-func (r *ReconcileChe) UpdateCheCRSpec1(instance *orgv1.CheCluster, updatedField string, value string) (err error) {
-	logrus.Infof("Updating %s CR with %s: %s", instance.Name, updatedField, value)
-	if err = r.client.Update(context.TODO(), instance); err != nil {
-		return err
-	}
-	logrus.Infof("Custom resource %s updated", instance.Name)
-	return nil
-}
-
 func (r *ReconcileChe) UpdateCheCRSpec(instance *orgv1.CheCluster, updatedField string, value string) (err error) {
 	logrus.Infof("Updating %s CR with %s: %s", instance.Name, updatedField, value)
 	err = r.client.Update(context.TODO(), instance)
@@ -147,10 +138,10 @@ func (r *ReconcileChe) ReconcileTLSObjects(instance *orgv1.CheCluster, request r
 		logrus.Errorf("Failed to delete %s route: %s", currentCheRoute.Name, err)
 		return false, err
 	}
-	cheRoute := deploy.NewRoute(instance, cheFlavor, "che-host")
+	cheRoute := deploy.NewRoute(instance, cheFlavor, "che-host", 8080)
 
 	if tlsSupport {
-		cheRoute = deploy.NewTlsRoute(instance, cheFlavor, "che-host")
+		cheRoute = deploy.NewTlsRoute(instance, cheFlavor, "che-host", 8080)
 		protocol = "https"
 	}
 
@@ -177,10 +168,10 @@ func (r *ReconcileChe) ReconcileTLSObjects(instance *orgv1.CheCluster, request r
 		logrus.Errorf("Failed to delete %s route: %s", currentKeycloakRoute.Name, err)
 		return false, err
 	}
-	keycloakRoute := deploy.NewRoute(instance, "keycloak", "keycloak")
+	keycloakRoute := deploy.NewRoute(instance, "keycloak", "keycloak", 8080)
 
 	if tlsSupport {
-		keycloakRoute = deploy.NewTlsRoute(instance, "keycloak", "keycloak")
+		keycloakRoute = deploy.NewTlsRoute(instance, "keycloak", "keycloak", 8080)
 	}
 	if err := r.CreateNewRoute(instance, keycloakRoute); err != nil {
 		logrus.Errorf("Failed to create Keycloak route: %s", err)
@@ -189,14 +180,14 @@ func (r *ReconcileChe) ReconcileTLSObjects(instance *orgv1.CheCluster, request r
 	return true, nil
 }
 
-func (r *ReconcileChe) ReconcileIdentityProvider(instance *orgv1.CheCluster) (deleted bool, err error) {
+func (r *ReconcileChe) ReconcileIdentityProvider(instance *orgv1.CheCluster, isOpenShift4 bool) (deleted bool, err error) {
 	if instance.Spec.Auth.OpenShiftOauth == false && instance.Status.OpenShiftoAuthProvisioned == true {
 		keycloakAdminPassword := instance.Spec.Auth.KeycloakAdminPassword
 		keycloakDeployment := &appsv1.Deployment{}
 		if err := r.client.Get(context.TODO(), types.NamespacedName{Name: "keycloak", Namespace: instance.Namespace}, keycloakDeployment); err != nil {
 			logrus.Errorf("Deployment %s not found: %s", keycloakDeployment.Name, err)
 		}
-		deleteOpenShiftIdentityProviderProvisionCommand := deploy.GetDeleteOpenShiftIdentityProviderProvisionCommand(instance, keycloakAdminPassword)
+		deleteOpenShiftIdentityProviderProvisionCommand := deploy.GetDeleteOpenShiftIdentityProviderProvisionCommand(instance, keycloakAdminPassword, isOpenShift4)
 		podToExec, err := k8sclient.GetDeploymentPod(keycloakDeployment.Name, instance.Namespace)
 		if err != nil {
 			logrus.Errorf("Failed to retrieve pod name. Further exec will fail")

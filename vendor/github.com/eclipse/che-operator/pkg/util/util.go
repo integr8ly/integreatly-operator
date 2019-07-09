@@ -12,6 +12,7 @@
 package util
 
 import (
+	"errors"
 	"crypto/tls"
 	"encoding/json"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,26 @@ import (
 	"strings"
 	"time"
 )
+
+
+func ContainsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func DoRemoveString(slice []string, s string) (result []string) {
+	for _, item := range slice {
+		if item == s {
+			continue
+		}
+		result = append(result, item)
+	}
+	return
+}
 
 func GeneratePasswd(stringLength int) (passwd string) {
 	rand.Seed(time.Now().UnixNano())
@@ -39,30 +60,33 @@ func GeneratePasswd(stringLength int) (passwd string) {
 	return passwd
 }
 
-func DetectOpenShift() (bool, error) {
+func DetectOpenShift() (isOpenshift bool, isOpenshift4 bool, anError error) {
 	tests := IsTestMode()
 	if !tests {
 		kubeconfig, err := config.GetConfig()
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 		discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeconfig)
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 		apiList, err := discoveryClient.ServerGroups()
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 		apiGroups := apiList.Groups
 		for i := 0; i < len(apiGroups); i++ {
 			if apiGroups[i].Name == "route.openshift.io" {
-				return true, nil
+				isOpenshift = true
+			}
+			if apiGroups[i].Name == "config.openshift.io" {
+				isOpenshift4 = true
 			}
 		}
-		return false, nil
+		return
 	}
-	return true, nil
+	return true, false, nil
 }
 
 func GetValue(key string, defaultValue string) (value string) {
@@ -83,14 +107,22 @@ func IsTestMode() (isTesting bool) {
 	return true
 }
 
-// GetClusterPublicHostname is a hacky way to get OpenShift API public DNS/IP
+func GetClusterPublicHostname(isOpenShift4 bool) (hostname string, err error) {
+	if isOpenShift4 {
+		return getClusterPublicHostnameForOpenshiftV4()
+	} else {
+		return getClusterPublicHostnameForOpenshiftV3()
+	}
+}
+
+// getClusterPublicHostnameForOpenshiftV3 is a hacky way to get OpenShift API public DNS/IP
 // to be used in OpenShift oAuth provider as baseURL
-func GetClusterPublicHostname() (hostname string, err error) {
+func getClusterPublicHostnameForOpenshiftV3() (hostname string, err error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := &http.Client{}
 	kubeApi := os.Getenv("KUBERNETES_PORT_443_TCP_ADDR")
 	url := "https://" + kubeApi + "/.well-known/oauth-authorization-server"
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	resp, err := client.Do(req)
 	if err != nil {
 		logrus.Errorf("An error occurred when getting API public hostname: %s", err)
@@ -112,6 +144,58 @@ func GetClusterPublicHostname() (hostname string, err error) {
 	return hostname, nil
 }
 
+// getClusterPublicHostnameForOpenshiftV3 is a way to get OpenShift API public DNS/IP
+// to be used in OpenShift oAuth provider as baseURL
+func getClusterPublicHostnameForOpenshiftV4() (hostname string, err error) {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{}
+	kubeApi := os.Getenv("KUBERNETES_PORT_443_TCP_ADDR")
+	url := "https://" + kubeApi + "/apis/config.openshift.io/v1/infrastructures/cluster"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	file, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	if err != nil {
+		logrus.Errorf("Failed to locate token file: %s", err)
+		return "", err
+	}
+	token := string(file)
+
+	req.Header = http.Header{
+		"Authorization": []string{ "Bearer " + token },
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		logrus.Errorf("An error occurred when getting API public hostname: %s", err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode / 100 != 2 {
+		message := url + " - " + resp.Status
+		logrus.Errorf("An error occurred when getting API public hostname: %s", message)
+		return "", errors.New(message)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Errorf("An error occurred when getting API public hostname: %s", err)
+		return "", err
+	}
+	var jsonData map[string]interface{}
+	err = json.Unmarshal(body, &jsonData)
+	if err != nil {
+		logrus.Errorf("An error occurred when unmarshalling while getting API public hostname: %s", err)
+		return "", err
+	}
+	switch status := jsonData["status"].(type) {
+	case map[string]interface{}:
+		hostname = status["apiServerURL"].(string)
+	default:	
+		logrus.Errorf("An error occurred when unmarshalling while getting API public hostname: %s", body)
+		return "", errors.New(string(body))
+	}
+
+	return hostname, nil
+}
+
 func GenerateProxyJavaOpts(proxyURL string, proxyPort string, nonProxyHosts string, proxyUser string, proxyPassword string) (javaOpts string) {
 
 	proxyHost := strings.TrimLeft(proxyURL, "https://")
@@ -124,7 +208,7 @@ func GenerateProxyJavaOpts(proxyURL string, proxyPort string, nonProxyHosts stri
 	javaOpts =
 		" -Dhttp.proxyHost=" + proxyHost + " -Dhttp.proxyPort=" + proxyPort +
 			" -Dhttps.proxyHost=" + proxyHost + " -Dhttps.proxyPort=" + proxyPort +
-			" -Dhttp.nonProxyHosts='" + nonProxyHosts + "|172.30.0.1'" + proxyUserPassword
+			" -Dhttp.nonProxyHosts='" + nonProxyHosts + "'" + proxyUserPassword
 	return javaOpts
 }
 
