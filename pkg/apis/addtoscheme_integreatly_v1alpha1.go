@@ -1,6 +1,7 @@
 package apis
 
 import (
+	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
@@ -19,5 +20,6 @@ func init() {
 		marketplacev1.SchemeBuilder.AddToScheme,
 		kafkav1.SchemeBuilder.AddToScheme,
 		aerogearv1.SchemeBuilder.AddToScheme,
+		chev1.SchemeBuilder.AddToScheme,
 	)
 }

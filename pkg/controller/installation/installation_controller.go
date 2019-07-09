@@ -26,6 +26,10 @@ import (
 	"time"
 )
 
+const (
+	defaultInstallationConfigMapName = "integreatly-installation-config"
+)
+
 var log = logf.Log.WithName("Installation Controller")
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -103,22 +107,25 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, os.Getenv("INSTALLATION_CONFIG_MAP"))
+	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
+	if installationCfgMap == "" {
+		installationCfgMap = instance.Spec.NamespacePrefix + defaultInstallationConfigMapName
+	}
+
+	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, installationCfgMap)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 	for stage, installProducts := range installType.GetProductOrder() {
 		// if the stage has a status phase already, check it's value
-		if val, ok := instance.Status.Stages[stage]; ok {
-			//if it's complete, move to the next stage
-			if val == string(v1alpha1.PhaseCompleted) {
-				continue
-			}
+		val, ok := instance.Status.Stages[stage]
+		if ok {
 			//if this stage failed we need to abort the install, so return an error
 			if val == string(v1alpha1.PhaseFailed) {
 				return reconcile.Result{}, pkgerr.New(fmt.Sprintf("installation failed on stage %d", stage))
 			}
 		}
+		logrus.Infof("processing stage: %s", val)
 		//found an incomplete stage, so process it and log it's status
 		phase, err := r.processStage(instance, installProducts, configManager)
 		instance.Status.Stages[stage] = string(phase)
@@ -161,11 +168,15 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				RequeueAfter: time.Second * 10,
 			}, nil
 		}
-
 		//don't move to next stage until current stage is finished
-		break
+		if !(val == string(v1alpha1.PhaseCompleted)) {
+			break
+		}
 	}
-	return reconcile.Result{}, nil
+	return reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: time.Second * 10,
+	}, nil
 }
 
 func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, prods []v1alpha1.ProductName, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
@@ -174,29 +185,27 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		instance.Status.ProductStatus = map[v1alpha1.ProductName]string{}
 	}
 	for _, product := range prods {
+		logrus.Infof("checking product: %s", product)
 		phase := ""
 		//check current phase of this product installation
 		if val, ok := instance.Status.ProductStatus[product]; ok {
 			phase = val
-			//installation complete, move to next product
-			if phase == string(v1alpha1.PhaseCompleted) {
-				continue
-			}
 			//product failed to install, return error and failed phase for stage
 			if phase == string(v1alpha1.PhaseFailed) {
 				//found a failed product
 				incompleteStage = true
-				return v1alpha1.PhaseFailed, pkgerr.New(fmt.Sprintf("failed to install %s", product))
 			}
 		}
 		//found an incomplete product
-		incompleteStage = true
+		if !(phase == string(v1alpha1.PhaseCompleted)) {
+			incompleteStage = true
+		}
 		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, r.coreClient, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
-
-		newPhase, err := reconciler.Reconcile(v1alpha1.StatusPhase(phase))
+		logrus.Infof("reconciling product: %s", product)
+		newPhase, err := reconciler.Reconcile(instance)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)

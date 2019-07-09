@@ -51,8 +51,9 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(phase v1alpha1.StatusPhase) (v1alpha1.StatusPhase, error) {
-	switch phase {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
+	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
 		return r.handleNoPhase()
 	case v1alpha1.PhaseAwaitingNS:

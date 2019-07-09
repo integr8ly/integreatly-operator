@@ -12,7 +12,10 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var providerLabel = "opsrc-provider"
+const (
+	providerLabel      = "opsrc-provider"
+	IntegreatlyChannel = "integreatly"
+)
 
 type operatorSources struct {
 	Integreatly marketplacev1.OperatorSource
