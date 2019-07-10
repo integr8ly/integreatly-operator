@@ -110,7 +110,6 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	}
 	err = m.client.Create(context.TODO(), sub)
 	if err != nil {
-		logrus.Infof("error creating sub")
 		return err
 	}
 

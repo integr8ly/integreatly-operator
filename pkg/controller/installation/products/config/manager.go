@@ -88,7 +88,9 @@ func (m *Manager) ReadConfigForProduct(product v1alpha1.ProductName) (ProductCon
 	config := m.cfgmap.Data[string(product)]
 	decoder := yaml.NewDecoder(strings.NewReader(config))
 	retConfig := ProductConfig{}
-	decoder.Decode(retConfig)
+	if err := decoder.Decode(retConfig); err != nil {
+		return nil, err
+	}
 
 	return retConfig, nil
 }
