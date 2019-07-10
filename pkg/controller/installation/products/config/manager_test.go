@@ -2,15 +2,16 @@ package config
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"strings"
-	"testing"
 )
 
 const (
@@ -117,9 +118,52 @@ func TestWriteConfig(t *testing.T) {
 	}
 }
 
-//func TestReadConfigForProduct(t *testing.T) {
-//
-//}
+func TestReadConfigForProduct(t *testing.T) {
+	tests := []struct {
+		productName       string
+		existingResources []runtime.Object
+		expected          map[string]string
+	}{
+		{
+			productName: mockProductName,
+			existingResources: []runtime.Object{&v1.ConfigMap{
+				ObjectMeta: v12.ObjectMeta{
+					Name:      mockConfigMapName,
+					Namespace: mockNamespaceName,
+				},
+				Data: map[string]string{
+					"mock": "testKey: testVal",
+				},
+			}},
+			expected: map[string]string{
+				"testKey": "testVal",
+			},
+		},
+		{
+			productName:       mockProductName,
+			existingResources: []runtime.Object{},
+			expected:          map[string]string{},
+		},
+	}
+
+	for _, test := range tests {
+		fakeClient := fake.NewFakeClient(test.existingResources...)
+		mgr, err := NewManager(fakeClient, mockNamespaceName, mockConfigMapName)
+		if err != nil {
+			t.Fatalf("could not create manager %v", err)
+		}
+		config, err := mgr.ReadConfigForProduct(mockProductName)
+		if err != nil {
+			t.Fatalf("could not read config %v", err)
+		}
+		for key, value := range test.expected {
+			if strings.Compare(config[key], value) != 0 {
+				t.Fatalf("expected %s but got %s for key %s", value, config[key], key)
+			}
+		}
+	}
+
+}
 
 func newMockConfig(productName string, vals map[string]string) *mockConfig {
 	return &mockConfig{

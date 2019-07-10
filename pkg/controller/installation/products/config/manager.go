@@ -2,13 +2,14 @@ package config
 
 import (
 	"context"
+	"strings"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 type ProductConfig map[string]string
@@ -88,9 +89,7 @@ func (m *Manager) ReadConfigForProduct(product v1alpha1.ProductName) (ProductCon
 	config := m.cfgmap.Data[string(product)]
 	decoder := yaml.NewDecoder(strings.NewReader(config))
 	retConfig := ProductConfig{}
-	if err := decoder.Decode(retConfig); err != nil {
-		return nil, err
-	}
+	decoder.Decode(retConfig)
 
 	return retConfig, nil
 }
