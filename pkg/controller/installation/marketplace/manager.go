@@ -37,6 +37,7 @@ func GetOperatorSources() *operatorSources {
 	}
 }
 
+//go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
 	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
 	GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, error)

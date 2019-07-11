@@ -140,6 +140,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
 					Requeue: true,
+					RequeueAfter: time.Second * 10,
 				}, nil
 			}
 
@@ -154,6 +155,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
 					Requeue: true,
+					RequeueAfter: time.Second * 10,
 				}, nil
 			}
 
@@ -173,6 +175,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			break
 		}
 	}
+
 	return reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
@@ -181,6 +184,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, prods []v1alpha1.ProductName, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
 	incompleteStage := false
+	//TODO: Deep copy instance
 	if instance.Status.ProductStatus == nil {
 		instance.Status.ProductStatus = map[v1alpha1.ProductName]string{}
 	}

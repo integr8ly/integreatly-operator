@@ -5,31 +5,31 @@ import (
 )
 
 type CodeReady struct {
-	config ProductConfig
+	Config ProductConfig
 }
 
-func newCodeReady(config ProductConfig) *CodeReady {
-	return &CodeReady{config: config}
+func NewCodeReady(config ProductConfig) *CodeReady {
+	return &CodeReady{Config: config}
 }
 
 func (a *CodeReady) GetHost() string {
-	return a.config["HOST"]
+	return a.Config["HOST"]
 }
 
 func (a *CodeReady) SetHost(newHost string) {
-	a.config["HOST"] = newHost
+	a.Config["HOST"] = newHost
 }
 
 func (a *CodeReady) GetNamespace() string {
-	return a.config["NAMESPACE"]
+	return a.Config["NAMESPACE"]
 }
 
 func (a *CodeReady) SetNamespace(newNamespace string) {
-	a.config["NAMESPACE"] = newNamespace
+	a.Config["NAMESPACE"] = newNamespace
 }
 
 func (a *CodeReady) Read() ProductConfig {
-	return a.config
+	return a.Config
 }
 
 func (a *CodeReady) GetProductName() v1alpha1.ProductName {

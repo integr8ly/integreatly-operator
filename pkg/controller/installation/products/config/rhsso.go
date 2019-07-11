@@ -6,39 +6,39 @@ import (
 )
 
 type RHSSO struct {
-	config ProductConfig
+	Config ProductConfig
 }
 
-func newRHSSO(config ProductConfig) *RHSSO {
-	return &RHSSO{config: config}
+func NewRHSSO(config ProductConfig) *RHSSO {
+	return &RHSSO{Config: config}
 }
 
 func (r *RHSSO) GetNamespace() string {
-	return r.config["NAMESPACE"]
+	return r.Config["NAMESPACE"]
 }
 
 func (r *RHSSO) SetNamespace(newNamespace string) {
-	r.config["NAMESPACE"] = newNamespace
+	r.Config["NAMESPACE"] = newNamespace
 }
 
 func (r *RHSSO) GetRealm() string {
-	return r.config["REALM"]
+	return r.Config["REALM"]
 }
 
 func (r *RHSSO) SetRealm(newRealm string) {
-	r.config["REALM"] = newRealm
+	r.Config["REALM"] = newRealm
 }
 
 func (r *RHSSO) GetURL() string {
-	return r.config["URL"]
+	return r.Config["URL"]
 }
 
 func (r *RHSSO) SetURL(newURL string) {
-	r.config["URL"] = newURL
+	r.Config["URL"] = newURL
 }
 
 func (r *RHSSO) Read() ProductConfig {
-	return r.config
+	return r.Config
 }
 
 func (r *RHSSO) GetProductName() v1alpha1.ProductName {
