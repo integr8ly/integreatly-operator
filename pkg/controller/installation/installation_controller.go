@@ -12,10 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -40,7 +39,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	restConfig := controllerruntime.GetConfigOrDie()
+	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), restConfig: restConfig}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -77,6 +77,7 @@ type ReconcileInstallation struct {
 	// that reads objects from the cache and writes to the apiserver
 	client     client.Client
 	scheme     *runtime.Scheme
+	restConfig *rest.Config
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read

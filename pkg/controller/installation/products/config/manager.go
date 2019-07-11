@@ -35,6 +35,7 @@ type ConfigReadWriter interface {
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
 	ReadCodeReady() (*CodeReady, error)
+	GetOperatorNamespace() string
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -47,6 +48,10 @@ type Manager struct {
 	Client    pkgclient.Client
 	Namespace string
 	cfgmap    *v1.ConfigMap
+}
+
+func (m *Manager) GetOperatorNamespace() string {
+	return m.Namespace
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {

@@ -14,8 +14,8 @@ import (
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	k8sclient "k8s.io/client-go/kubernetes/fake"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	fakepkgclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -57,7 +57,6 @@ func TestCodeready(t *testing.T) {
 		ExpectedCreateError  string
 		Object               *v1alpha1.Installation
 		FakeConfig           *config.ConfigReadWriterMock
-		FakeK8sClient        *k8sclient.Clientset
 		FakeControllerClient client.Client
 		FakeMPM              *marketplace.MarketplaceInterfaceMock
 		ValidateCallCounts   func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
@@ -66,7 +65,7 @@ func TestCodeready(t *testing.T) {
 			Name:                 "test no phase without errors",
 			ExpectedStatus:       v1alpha1.PhaseAwaitingNS,
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
@@ -85,7 +84,7 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus:       v1alpha1.PhaseNone,
 			ExpectedCreateError:  "could not retrieve che config: could not load codeready config",
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 					return nil, errors.New("could not load codeready config")
@@ -97,7 +96,7 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus:       v1alpha1.PhaseNone,
 			ExpectedCreateError:  "keycloak config is not valid: config realm is not defined",
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 					return config.NewCodeReady(config.ProductConfig{}), nil
@@ -112,7 +111,7 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus:       v1alpha1.PhaseNone,
 			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 					return config.NewCodeReady(config.ProductConfig{}), nil
@@ -127,7 +126,7 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus:       v1alpha1.PhaseNone,
 			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 					return config.NewCodeReady(config.ProductConfig{}), nil
@@ -141,7 +140,7 @@ func TestCodeready(t *testing.T) {
 			Name:                 "test no phase with creatNamespaces",
 			ExpectedStatus:       v1alpha1.PhaseAwaitingNS,
 			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
 		},
 		{
@@ -155,11 +154,11 @@ func TestCodeready(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(serverClient pkgclient.Client, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if mockMPM == nil {
@@ -182,11 +181,11 @@ func TestCodeready(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(serverClient pkgclient.Client, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy error")
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeControllerClient: fakepkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
 		},
 		{
@@ -199,7 +198,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openshift",
 					Namespace: "rhsso",
@@ -217,7 +216,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openshift",
 					Namespace: "rhsso",
@@ -235,7 +234,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, e error) {
 					return &operatorsv1alpha1.InstallPlan{
@@ -266,7 +265,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, e error) {
 					return &operatorsv1alpha1.InstallPlan{
@@ -300,7 +299,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openshift",
 					Namespace: "rhsso",
@@ -318,7 +317,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openshift",
 					Namespace: "rhsso",
@@ -341,7 +340,7 @@ func TestCodeready(t *testing.T) {
 					},
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
+			FakeControllerClient: fakepkgclient.NewFakeClientWithScheme(buildScheme(), &aerogearv1.KeycloakRealm{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "openshift",
 					Namespace: "rhsso",
@@ -367,7 +366,7 @@ func TestCodeready(t *testing.T) {
 				},
 			}),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(serverClient pkgclient.Client, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
 			},

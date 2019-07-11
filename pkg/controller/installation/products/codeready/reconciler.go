@@ -64,7 +64,7 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	case v1alpha1.PhaseNone, v1alpha1.PhaseAwaitingNS:
 		return r.reconcileNamespace(ctx, inst, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.reconcileSubscription(ctx)
+		return r.reconcileSubscription(serverClient)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.reconcileCheCluster(ctx, inst, serverClient)
 	case v1alpha1.PhaseAwaitingOperator:
@@ -87,7 +87,7 @@ func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Install
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile checluster")
 	}
-	phase, err = r.reconcileSubscription(ctx)
+	phase, err = r.reconcileSubscription(serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile subscription")
 	}
@@ -124,9 +124,10 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseCreatingSubscription, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
+		serverClient,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,

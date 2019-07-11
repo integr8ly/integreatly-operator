@@ -13,6 +13,7 @@ import (
 	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,7 +23,7 @@ var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -51,7 +52,7 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase(serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription()
+		return r.handleCreatingSubscription(serverClient)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents(serverClient)
 	case v1alpha1.PhaseAwaitingOperator:
@@ -100,8 +101,9 @@ func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alp
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
+		serverClient,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"amq-streams",
@@ -194,7 +196,7 @@ func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1
 func (r *Reconciler) handleProgressPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// check AMQ Streams is in ready state
 	pods := &corev1.PodList{}
-	err = serverClient.List(context.TODO(), &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
+	err := serverClient.List(context.TODO(), &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
 	}
