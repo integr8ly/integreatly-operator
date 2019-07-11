@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -15,7 +16,7 @@ import (
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -109,11 +110,6 @@ func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Install
 }
 
 func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	if !inst.Spec.CreateNamespaces {
-		r.logger.Debugf("skipping creating namespace: %s", r.Config.GetNamespace())
-		return v1alpha1.PhaseCreatingSubscription, nil
-	}
-
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
