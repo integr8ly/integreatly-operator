@@ -143,7 +143,6 @@ type KeycloakApiUser struct {
 	LastName        string              `json:"lastName"`
 	Email           string              `json:"email,omitempty"`
 	EmailVerified   bool                `json:"emailVerified"`
-	Password        string              `json:"password,omitempty"`
 	Enabled         bool                `json:"enabled"`
 	RealmRoles      []string            `json:"realmRoles,omitempty"`
 	ClientRoles     map[string][]string `json:"clientRoles"`

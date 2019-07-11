@@ -39,7 +39,7 @@ func GetOperatorSources() *operatorSources {
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	CreateSubscription(serverClient pkgclient.Client, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
 	GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, error)
 }
 
@@ -55,7 +55,7 @@ func NewManager(client pkgclient.Client, rc *rest.Config) *MarketplaceManager {
 	}
 }
 
-func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) CreateSubscription(serverClient pkgclient.Client, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -63,7 +63,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			Name:      pkg,
 		},
 	}
-	err := m.client.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
+
+	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err == nil {
 		logrus.Infof("Subscription already exists")
 		return k8serr.NewAlreadyExists(coreosv1alpha1.Resource("subscription"), sub.Name)
@@ -113,8 +114,6 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	if err != nil {
 		return err
 	}
-
-	logrus.Infof("no errors")
 
 	return nil
 }

@@ -6,6 +6,7 @@ package marketplace
 import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
 
@@ -24,7 +25,7 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 //         // make and configure a mocked MarketplaceInterface
 //         mockedMarketplaceInterface := &MarketplaceInterfaceMock{
-//             CreateSubscriptionFunc: func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+//             CreateSubscriptionFunc: func(serverClient client.Client, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 // 	               panic("mock out the CreateSubscription method")
 //             },
 //             GetSubscriptionInstallPlanFunc: func(subName string, ns string) (*v1alpha1.InstallPlan, error) {
@@ -38,7 +39,7 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //     }
 type MarketplaceInterfaceMock struct {
 	// CreateSubscriptionFunc mocks the CreateSubscription method.
-	CreateSubscriptionFunc func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
+	CreateSubscriptionFunc func(serverClient client.Client, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
 
 	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
 	GetSubscriptionInstallPlanFunc func(subName string, ns string) (*v1alpha1.InstallPlan, error)
@@ -47,6 +48,8 @@ type MarketplaceInterfaceMock struct {
 	calls struct {
 		// CreateSubscription holds details about calls to the CreateSubscription method.
 		CreateSubscription []struct {
+			// ServerClient is the serverClient argument value.
+			ServerClient client.Client
 			// Os is the os argument value.
 			Os v1.OperatorSource
 			// Ns is the ns argument value.
@@ -71,11 +74,12 @@ type MarketplaceInterfaceMock struct {
 }
 
 // CreateSubscription calls CreateSubscriptionFunc.
-func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+func (mock *MarketplaceInterfaceMock) CreateSubscription(serverClient client.Client, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 	if mock.CreateSubscriptionFunc == nil {
 		panic("MarketplaceInterfaceMock.CreateSubscriptionFunc: method is nil but MarketplaceInterface.CreateSubscription was just called")
 	}
 	callInfo := struct {
+		ServerClient            client.Client
 		Os                      v1.OperatorSource
 		Ns                      string
 		Pkg                     string
@@ -83,6 +87,7 @@ func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, n
 		OperatorGroupNamespaces []string
 		ApprovalStrategy        v1alpha1.Approval
 	}{
+		ServerClient:            serverClient,
 		Os:                      os,
 		Ns:                      ns,
 		Pkg:                     pkg,
@@ -93,13 +98,14 @@ func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, n
 	lockMarketplaceInterfaceMockCreateSubscription.Lock()
 	mock.calls.CreateSubscription = append(mock.calls.CreateSubscription, callInfo)
 	lockMarketplaceInterfaceMockCreateSubscription.Unlock()
-	return mock.CreateSubscriptionFunc(os, ns, pkg, channel, operatorGroupNamespaces, approvalStrategy)
+	return mock.CreateSubscriptionFunc(serverClient, os, ns, pkg, channel, operatorGroupNamespaces, approvalStrategy)
 }
 
 // CreateSubscriptionCalls gets all the calls that were made to CreateSubscription.
 // Check the length with:
 //     len(mockedMarketplaceInterface.CreateSubscriptionCalls())
 func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
+	ServerClient            client.Client
 	Os                      v1.OperatorSource
 	Ns                      string
 	Pkg                     string
@@ -108,6 +114,7 @@ func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
 	ApprovalStrategy        v1alpha1.Approval
 } {
 	var calls []struct {
+		ServerClient            client.Client
 		Os                      v1.OperatorSource
 		Ns                      string
 		Pkg                     string
