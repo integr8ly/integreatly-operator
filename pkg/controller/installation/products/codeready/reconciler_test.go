@@ -6,7 +6,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
-
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	k8sclient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -16,20 +15,20 @@ import (
 )
 
 func TestCodeready(t *testing.T) {
-	scenarios := []struct{
-		Name string
-		ExpectedStatus v1alpha1.StatusPhase
-		ExpectedError string
-		ExpectedCreateError string
-		Object *v1alpha1.Installation
-		FakeConfig *config.ConfigReadWriterMock
-		FakeK8sClient *k8sclient.Clientset
+	scenarios := []struct {
+		Name                 string
+		ExpectedStatus       v1alpha1.StatusPhase
+		ExpectedError        string
+		ExpectedCreateError  string
+		Object               *v1alpha1.Installation
+		FakeConfig           *config.ConfigReadWriterMock
+		FakeK8sClient        *k8sclient.Clientset
 		FakeControllerClient client.Client
 	}{
 		{
-			Name: "test no phase without errors",
-			ExpectedStatus: v1alpha1.PhaseCreatingSubscription,
-			Object: &v1alpha1.Installation{},
+			Name:                 "test no phase without errors",
+			ExpectedStatus:       v1alpha1.PhaseCreatingSubscription,
+			Object:               &v1alpha1.Installation{},
 			FakeControllerClient: pkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
@@ -38,17 +37,17 @@ func TestCodeready(t *testing.T) {
 				ReadRHSSOFunc: func() (*config.RHSSO, error) {
 					return config.NewRHSSO(config.ProductConfig{
 						"NAMESPACE": "rhsso",
-						"REALM": "openshift",
-						"URL": "rhsso.openshift-cluster.com",
+						"REALM":     "openshift",
+						"URL":       "rhsso.openshift-cluster.com",
 					}), nil
 				},
 			},
 		},
 		{
-			Name: "test error on bad codeready config",
-			ExpectedStatus: v1alpha1.PhaseNone,
-			ExpectedCreateError: "could not retrieve che config: could not load codeready config",
-			Object: &v1alpha1.Installation{},
+			Name:                 "test error on bad codeready config",
+			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedCreateError:  "could not retrieve che config: could not load codeready config",
+			Object:               &v1alpha1.Installation{},
 			FakeControllerClient: pkgclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
@@ -57,15 +56,15 @@ func TestCodeready(t *testing.T) {
 				ReadRHSSOFunc: func() (*config.RHSSO, error) {
 					return config.NewRHSSO(config.ProductConfig{
 						"NAMESPACE": "rhsso",
-						"REALM": "openshift",
-						"URL": "rhsso.openshift-cluster.com",
+						"REALM":     "openshift",
+						"URL":       "rhsso.openshift-cluster.com",
 					}), nil
 				},
 			},
 		},
 	}
 
-	for _, scenario := range scenarios{
+	for _, scenario := range scenarios {
 		logger := logrus.WithFields(logrus.Fields{"product": string("codeready")})
 		testReconciler, err := NewReconciler(
 			scenario.FakeControllerClient,

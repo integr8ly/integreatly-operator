@@ -139,7 +139,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				// If there is a conflict, requeue the resource and retry Update
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
-					Requeue: true,
+					Requeue:      true,
 					RequeueAfter: time.Second * 10,
 				}, nil
 			}
@@ -154,7 +154,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				// If there is a conflict, requeue the resource and retry Update
 				log.Info("Error updating Installation resource. Requeue and retry.")
 				return reconcile.Result{
-					Requeue: true,
+					Requeue:      true,
 					RequeueAfter: time.Second * 10,
 				}, nil
 			}
