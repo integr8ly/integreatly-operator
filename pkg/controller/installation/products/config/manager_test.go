@@ -20,25 +20,22 @@ const (
 	mockNamespaceName = "test"
 )
 
-type mockConfig struct {
-	productName string
-	config      ProductConfig
-}
-
-func (c *mockConfig) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductName(c.productName)
-}
-
-func (c *mockConfig) Read() ProductConfig {
-	return c.config
-}
-
 func TestWriteConfig(t *testing.T) {
+	defaultProductConfig := ProductConfig{"testKey": "testVal"}
+	defaultConfigReadable := &ConfigReadableMock{
+		GetProductNameFunc: func() v1alpha1.ProductName {
+			return mockProductName
+		},
+		ReadFunc: func() ProductConfig {
+			return defaultProductConfig
+		},
+	}
+
 	tests := []struct {
 		productName       string
 		existingResources []runtime.Object
 		toWrite           ConfigReadable
-		expected          map[string]string
+		expected          ProductConfig
 	}{
 		// Test basic adding config
 		{
@@ -49,12 +46,8 @@ func TestWriteConfig(t *testing.T) {
 					Namespace: mockNamespaceName,
 				},
 			}},
-			toWrite: newMockConfig(mockProductName, map[string]string{
-				"testKey": "testVal",
-			}),
-			expected: map[string]string{
-				"testKey": "testVal",
-			},
+			toWrite:  defaultConfigReadable,
+			expected: defaultProductConfig,
 		},
 		// Test overwrite config
 		{
@@ -69,23 +62,15 @@ func TestWriteConfig(t *testing.T) {
 					"testKey2": "testVal2",
 				},
 			}},
-			toWrite: newMockConfig(mockProductName, map[string]string{
-				"testKey1": "newTestVal",
-			}),
-			expected: map[string]string{
-				"testKey1": "newTestVal",
-			},
+			toWrite:  defaultConfigReadable,
+			expected: defaultProductConfig,
 		},
 		// Test create configmap if one doesn't exist
 		{
 			productName:       mockProductName,
 			existingResources: []runtime.Object{},
-			toWrite: newMockConfig(mockProductName, map[string]string{
-				"testKey": "testVal",
-			}),
-			expected: map[string]string{
-				"testKey": "testVal",
-			},
+			toWrite:           defaultConfigReadable,
+			expected:          defaultProductConfig,
 		},
 	}
 	for _, test := range tests {
@@ -122,7 +107,7 @@ func TestReadConfigForProduct(t *testing.T) {
 	tests := []struct {
 		productName       string
 		existingResources []runtime.Object
-		expected          map[string]string
+		expected          ProductConfig
 	}{
 		{
 			productName: mockProductName,
@@ -135,9 +120,7 @@ func TestReadConfigForProduct(t *testing.T) {
 					"mock": "testKey: testVal",
 				},
 			}},
-			expected: map[string]string{
-				"testKey": "testVal",
-			},
+			expected: ProductConfig{"testKey": "testVal"},
 		},
 		{
 			productName:       mockProductName,
@@ -163,11 +146,4 @@ func TestReadConfigForProduct(t *testing.T) {
 		}
 	}
 
-}
-
-func newMockConfig(productName string, vals map[string]string) *mockConfig {
-	return &mockConfig{
-		productName: productName,
-		config:      vals,
-	}
 }
