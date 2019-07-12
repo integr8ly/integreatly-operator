@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
 	Reconcile(inst *v1alpha1.Installation) (newPhase v1alpha1.StatusPhase, err error)
 }

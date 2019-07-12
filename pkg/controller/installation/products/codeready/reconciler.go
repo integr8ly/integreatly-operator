@@ -28,7 +28,7 @@ const (
 	defaultSubscriptionName      = "codeready-workspaces"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not retrieve che config")
@@ -59,7 +59,7 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 type Reconciler struct {
 	client         pkgclient.Client
 	restConfig     *rest.Config
-	coreClient     *kubernetes.Clientset
+	coreClient     kubernetes.Interface
 	Config         *config.CodeReady
 	KeycloakConfig *config.RHSSO
 	ConfigManager  config.ConfigReadWriter

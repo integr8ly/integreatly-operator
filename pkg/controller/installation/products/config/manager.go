@@ -28,6 +28,8 @@ func NewManager(client pkgclient.Client, namespace string, configMapName string)
 	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap}, nil
 }
 
+
+//go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
 type ConfigReadWriter interface {
 	ReadConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
 	WriteConfig(config ConfigReadable) error
@@ -36,6 +38,7 @@ type ConfigReadWriter interface {
 	ReadCodeReady() (*CodeReady, error)
 }
 
+//go:generate moq -out ConfigReadable_moq.go . ConfigReadable
 type ConfigReadable interface {
 	Read() ProductConfig
 	GetProductName() v1alpha1.ProductName
@@ -52,7 +55,7 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newAMQStreams(config), nil
+	return NewAMQStreams(config), nil
 }
 
 func (m *Manager) ReadCodeReady() (*CodeReady, error) {
@@ -60,7 +63,7 @@ func (m *Manager) ReadCodeReady() (*CodeReady, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newCodeReady(config), nil
+	return NewCodeReady(config), nil
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
@@ -68,7 +71,7 @@ func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newRHSSO(config), nil
+	return NewRHSSO(config), nil
 }
 func (m *Manager) WriteConfig(config ConfigReadable) error {
 	stringConfig, err := yaml.Marshal(config.Read())

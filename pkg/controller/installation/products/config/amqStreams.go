@@ -6,7 +6,7 @@ type AMQStreams struct {
 	config ProductConfig
 }
 
-func newAMQStreams(config ProductConfig) *AMQStreams {
+func NewAMQStreams(config ProductConfig) *AMQStreams {
 	return &AMQStreams{config: config}
 }
 
