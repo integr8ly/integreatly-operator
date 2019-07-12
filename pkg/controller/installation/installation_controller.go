@@ -174,8 +174,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 			phase = val
 			//product failed to install, return error and failed phase for stage
 			if phase == string(v1alpha1.PhaseFailed) {
-				//found a failed product
-				incompleteStage = true
+				return v1alpha1.PhaseFailed, pkgerr.New("failed installation of " + string(product))
 			}
 		}
 		//found an incomplete product

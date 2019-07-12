@@ -4,4 +4,4 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-  namespacePrefix: openshift-
+  namespacePrefix: 031-
