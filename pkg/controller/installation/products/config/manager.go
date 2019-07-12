@@ -28,7 +28,6 @@ func NewManager(client pkgclient.Client, namespace string, configMapName string)
 	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap}, nil
 }
 
-
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
 type ConfigReadWriter interface {
 	ReadConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
