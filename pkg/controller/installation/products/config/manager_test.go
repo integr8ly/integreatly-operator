@@ -14,8 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-a := 1
-
 const (
 	mockProductName   = "mock"
 	mockConfigMapName = "test"
