@@ -3,6 +3,7 @@ package codeready
 import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
@@ -24,6 +25,7 @@ func TestCodeready(t *testing.T) {
 		FakeConfig           *config.ConfigReadWriterMock
 		FakeK8sClient        *k8sclient.Clientset
 		FakeControllerClient client.Client
+		FakeMPM				 marketplace.MarketplaceInterface
 	}{
 		{
 			Name:                 "test no phase without errors",
@@ -62,6 +64,51 @@ func TestCodeready(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name:                 "test error on bad RHSSO config",
+			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedCreateError:  "keycloak config is not valid: config realm is not defined",
+			Object:               &v1alpha1.Installation{},
+			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{}), nil
+				},
+			},
+		},
+		{
+			Name:                 "test awaiting subscrit on failed RHSSO config",
+			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
+			Object:               &v1alpha1.Installation{},
+			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, errors.New("could not load keycloak config")
+				},
+			},
+		},
+		{
+			Name:                 "test error on failed RHSSO config",
+			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
+			Object:               &v1alpha1.Installation{},
+			FakeControllerClient: pkgclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, errors.New("could not load keycloak config")
+				},
+			},
+		},
 	}
 
 	for _, scenario := range scenarios {
@@ -73,6 +120,7 @@ func TestCodeready(t *testing.T) {
 			scenario.FakeConfig,
 			scenario.Object,
 			logger,
+			scenario.FakeMPM,
 		)
 		if err != nil && err.Error() != scenario.ExpectedCreateError {
 			t.Fatalf("unexpected error creating reconciler: '%v', expected: '%v'", err, scenario.ExpectedCreateError)

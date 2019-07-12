@@ -28,7 +28,7 @@ const (
 	defaultSubscriptionName      = "codeready-workspaces"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry) (*Reconciler, error) {
+func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not retrieve che config")
@@ -44,7 +44,6 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernet
 		return nil, pkgerr.Wrap(err, "keycloak config is not valid")
 	}
 
-	mpm := marketplace.NewManager(client, rc)
 	return &Reconciler{client: client,
 		coreClient:     coreClient,
 		restConfig:     rc,
