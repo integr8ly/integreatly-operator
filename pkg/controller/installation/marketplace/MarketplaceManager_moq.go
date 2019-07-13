@@ -27,7 +27,7 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //             CreateSubscriptionFunc: func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 // 	               panic("mock out the CreateSubscription method")
 //             },
-//             GetSubscriptionInstallPlanFunc: func(subName string, ns string) (*v1alpha1.InstallPlan, error) {
+//             GetSubscriptionInstallPlanFunc: func(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
 // 	               panic("mock out the GetSubscriptionInstallPlan method")
 //             },
 //         }
@@ -41,7 +41,7 @@ type MarketplaceInterfaceMock struct {
 	CreateSubscriptionFunc func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
 
 	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
-	GetSubscriptionInstallPlanFunc func(subName string, ns string) (*v1alpha1.InstallPlan, error)
+	GetSubscriptionInstallPlanFunc func(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -122,7 +122,7 @@ func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
 }
 
 // GetSubscriptionInstallPlan calls GetSubscriptionInstallPlanFunc.
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(subName string, ns string) (*v1alpha1.InstallPlan, error) {
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
 	if mock.GetSubscriptionInstallPlanFunc == nil {
 		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlanFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlan was just called")
 	}

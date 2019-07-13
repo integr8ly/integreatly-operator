@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	errors2 "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -35,6 +36,7 @@ type ConfigReadWriter interface {
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
 	ReadCodeReady() (*CodeReady, error)
+	ReadFuse() (*Fuse, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -65,6 +67,14 @@ func (m *Manager) ReadCodeReady() (*CodeReady, error) {
 	return NewCodeReady(config), nil
 }
 
+func (m *Manager) ReadFuse() (*Fuse, error) {
+	config, err := m.ReadConfigForProduct(v1alpha1.ProductFuse)
+	if err != nil {
+		return nil, err
+	}
+	return newFuse(config), nil
+}
+
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 	config, err := m.ReadConfigForProduct(v1alpha1.ProductRHSSO)
 	if err != nil {
@@ -91,7 +101,11 @@ func (m *Manager) ReadConfigForProduct(product v1alpha1.ProductName) (ProductCon
 	config := m.cfgmap.Data[string(product)]
 	decoder := yaml.NewDecoder(strings.NewReader(config))
 	retConfig := ProductConfig{}
-	decoder.Decode(retConfig)
-
+	if config == "" {
+		return retConfig, nil
+	}
+	if err := decoder.Decode(retConfig); err != nil {
+		return nil, errors2.Wrap(err, "failed to decode product config for "+string(product))
+	}
 	return retConfig, nil
 }

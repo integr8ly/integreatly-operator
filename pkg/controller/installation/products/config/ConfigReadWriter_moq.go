@@ -12,6 +12,7 @@ var (
 	lockConfigReadWriterMockReadAMQStreams       sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadConfigForProduct sync.RWMutex
+	lockConfigReadWriterMockReadFuse             sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
 )
@@ -35,6 +36,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadConfigForProductFunc: func(product v1alpha1.ProductName) (ProductConfig, error) {
 // 	               panic("mock out the ReadConfigForProduct method")
 //             },
+//             ReadFuseFunc: func() (*Fuse, error) {
+// 	               panic("mock out the ReadFuse method")
+//             },
 //             ReadRHSSOFunc: func() (*RHSSO, error) {
 // 	               panic("mock out the ReadRHSSO method")
 //             },
@@ -57,6 +61,9 @@ type ConfigReadWriterMock struct {
 	// ReadConfigForProductFunc mocks the ReadConfigForProduct method.
 	ReadConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
 
+	// ReadFuseFunc mocks the ReadFuse method.
+	ReadFuseFunc func() (*Fuse, error)
+
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
 
@@ -75,6 +82,9 @@ type ConfigReadWriterMock struct {
 		ReadConfigForProduct []struct {
 			// Product is the product argument value.
 			Product v1alpha1.ProductName
+		}
+		// ReadFuse holds details about calls to the ReadFuse method.
+		ReadFuse []struct {
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -167,6 +177,32 @@ func (mock *ConfigReadWriterMock) ReadConfigForProductCalls() []struct {
 	lockConfigReadWriterMockReadConfigForProduct.RLock()
 	calls = mock.calls.ReadConfigForProduct
 	lockConfigReadWriterMockReadConfigForProduct.RUnlock()
+	return calls
+}
+
+// ReadFuse calls ReadFuseFunc.
+func (mock *ConfigReadWriterMock) ReadFuse() (*Fuse, error) {
+	if mock.ReadFuseFunc == nil {
+		panic("ConfigReadWriterMock.ReadFuseFunc: method is nil but ConfigReadWriter.ReadFuse was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadFuse.Lock()
+	mock.calls.ReadFuse = append(mock.calls.ReadFuse, callInfo)
+	lockConfigReadWriterMockReadFuse.Unlock()
+	return mock.ReadFuseFunc()
+}
+
+// ReadFuseCalls gets all the calls that were made to ReadFuse.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadFuseCalls())
+func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadFuse.RLock()
+	calls = mock.calls.ReadFuse
+	lockConfigReadWriterMockReadFuse.RUnlock()
 	return calls
 }
 
