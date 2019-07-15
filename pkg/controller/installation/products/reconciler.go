@@ -3,6 +3,7 @@ package products
 import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqstreams"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -20,13 +21,14 @@ type Interface interface {
 
 func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	logger := logrus.WithFields(logrus.Fields{"product": string(product)})
+	mpm := marketplace.NewManager(client, rc)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(client, rc, coreClient, configManager, instance)
+		reconciler, err = amqstreams.NewReconciler(client, rc, coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(client, rc, coreClient, configManager, instance)
+		reconciler, err = rhsso.NewReconciler(client, rc, coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(client, rc, coreClient, configManager, instance, logger)
+		reconciler, err = codeready.NewReconciler(client, rc, coreClient, configManager, instance, logger, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

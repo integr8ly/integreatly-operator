@@ -118,62 +118,40 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 	for stage, installProducts := range installType.GetProductOrder() {
 		// if the stage has a status phase already, check it's value
-		val, ok := instance.Status.Stages[stage]
+		stagePhase, ok := instance.Status.Stages[stage]
 		if ok {
 			//if this stage failed we need to abort the install, so return an error
-			if val == string(v1alpha1.PhaseFailed) {
+			if stagePhase == string(v1alpha1.PhaseFailed) {
 				return reconcile.Result{}, pkgerr.New(fmt.Sprintf("installation failed on stage %d", stage))
 			}
 		}
-		logrus.Infof("processing stage: %s", val)
-		//found an incomplete stage, so process it and log it's status
+		//this stage is either completed, so allow it's reconcilers to reconcile state
+		//or incomplete, so allow the reconcilers to progress the installation of their component
 		phase, err := r.processStage(instance, installProducts, configManager)
 		instance.Status.Stages[stage] = string(phase)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		err = r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-			if k8serr.IsConflict(err) {
-				// If there is a conflict, requeue the resource and retry Update
-				log.Info("Error updating Installation resource. Requeue and retry.")
-				return reconcile.Result{
-					Requeue:      true,
-					RequeueAfter: time.Second * 10,
-				}, nil
-			}
-
-			log.Error(err, "Error reconciling installation instance status")
-			return reconcile.Result{}, err
+		//don't move to next stage until current stage is complete
+		if stagePhase != string(v1alpha1.PhaseCompleted) {
+			break
 		}
-		err = r.client.Update(context.TODO(), instance)
-		if err != nil {
-			// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-			if k8serr.IsConflict(err) {
-				// If there is a conflict, requeue the resource and retry Update
-				log.Info("Error updating Installation resource. Requeue and retry.")
-				return reconcile.Result{
-					Requeue:      true,
-					RequeueAfter: time.Second * 10,
-				}, nil
-			}
+	}
 
-			log.Error(err, "error reconciling installation instance")
-			return reconcile.Result{}, err
-		}
-
-		// if phase is still in progress, ensure it's requeued until its completed.
-		if string(phase) == string(v1alpha1.PhaseInProgress) {
+	err = r.client.Update(context.TODO(), instance)
+	if err != nil {
+		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
+		if k8serr.IsConflict(err) {
+			// If there is a conflict, requeue the resource and retry Update
+			log.Info("Error updating Installation resource. Requeue and retry.")
 			return reconcile.Result{
 				Requeue:      true,
 				RequeueAfter: time.Second * 10,
 			}, nil
 		}
-		//don't move to next stage until current stage is finished
-		if !(val == string(v1alpha1.PhaseCompleted)) {
-			break
-		}
+
+		log.Error(err, "error reconciling installation instance")
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{
