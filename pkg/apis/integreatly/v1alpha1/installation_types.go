@@ -28,6 +28,7 @@ var (
 	ProductCodeReadyWorkspaces ProductName = "codeready-workspaces"
 	ProductFuse                ProductName = "fuse"
 	Product3Scale              ProductName = "3scale"
+	ProductNexus               ProductName = "nexus"
 )
 
 // InstallationSpec defines the desired state of Installation
