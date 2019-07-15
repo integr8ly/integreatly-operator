@@ -66,7 +66,7 @@ func TestCodeready(t *testing.T) {
 	}{
 		{
 			Name:                 "test no phase without errors",
-			ExpectedStatus:       v1alpha1.PhaseCreatingSubscription,
+			ExpectedStatus:       v1alpha1.PhaseAwaitingNS,
 			Object:               &v1alpha1.Installation{},
 			FakeControllerClient: pkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
@@ -142,7 +142,7 @@ func TestCodeready(t *testing.T) {
 		{
 			Name:                 "test no phase with creatNamespaces",
 			ExpectedStatus:       v1alpha1.PhaseAwaitingNS,
-			Object:               &v1alpha1.Installation{Spec: v1alpha1.InstallationSpec{CreateNamespaces: true}},
+			Object:               &v1alpha1.Installation{},
 			FakeControllerClient: pkgclient.NewFakeClient(),
 			FakeConfig:           basicConfigMock(),
 		},
@@ -150,7 +150,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test subscription phase",
 			ExpectedStatus: v1alpha1.PhaseAwaitingOperator,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
@@ -178,7 +177,6 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus: v1alpha1.PhaseFailed,
 			ExpectedError:  "could not create subscription in namespace: codeready-workspaces: dummy error",
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
@@ -197,7 +195,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test creating components phase",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingComponents),
@@ -216,7 +213,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test creating components phase missing cluster",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingComponents),
@@ -300,7 +296,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test in progress phase, not ready",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseInProgress),
@@ -319,7 +314,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test in progress phase, ready",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseInProgress),
@@ -343,7 +337,6 @@ func TestCodeready(t *testing.T) {
 			Name:           "test completed phase",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			Object: &v1alpha1.Installation{
-				Spec: v1alpha1.InstallationSpec{CreateNamespaces: true},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCompleted),
