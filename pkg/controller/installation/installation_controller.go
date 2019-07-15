@@ -138,6 +138,24 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
+	//UPDATE STATUS
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
+		if k8serr.IsConflict(err) {
+			// If there is a conflict, requeue the resource and retry Update
+			log.Info("Error updating Installation resource status. Requeue and retry.")
+			return reconcile.Result{
+				Requeue:      true,
+				RequeueAfter: time.Second * 10,
+			}, nil
+		}
+
+		log.Error(err, "error reconciling installation instance")
+		return reconcile.Result{}, err
+	}
+
+	//UPDATE OBJECT
 	err = r.client.Update(context.TODO(), instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.

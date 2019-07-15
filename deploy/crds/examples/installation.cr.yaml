@@ -4,4 +4,4 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-  namespacePrefix: 031-
+  namespacePrefix: integreatly-
