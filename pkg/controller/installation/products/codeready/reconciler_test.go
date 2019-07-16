@@ -237,13 +237,13 @@ func TestCodeready(t *testing.T) {
 			},
 			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, e error) {
+				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: ns,
 							Name:      subName,
 						},
-					}, nil
+					}, nil, nil
 				},
 			},
 			FakeConfig: basicConfigMock(),
@@ -268,7 +268,7 @@ func TestCodeready(t *testing.T) {
 			},
 			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, e error) {
+				GetSubscriptionInstallPlanFunc: func(subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: ns,
@@ -277,7 +277,7 @@ func TestCodeready(t *testing.T) {
 						Status: operatorsv1alpha1.InstallPlanStatus{
 							Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
 						},
-					}, nil
+					}, nil, nil
 				},
 			},
 			FakeConfig: basicConfigMock(),

@@ -15,7 +15,6 @@ import (
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 )
@@ -26,15 +25,14 @@ const (
 )
 
 type Reconciler struct {
-	client        pkgclient.Client
-	coreClient    *kubernetes.Clientset
+	coreClient    kubernetes.Interface
 	Config        *config.Fuse
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 }
 
-func NewReconciler( coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve keycloak codeReadyConfig")
@@ -66,7 +64,7 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")
 	}
 
-	reconciledPhase, err = r.reconcileSubscription(ctx,serverClient)
+	reconciledPhase, err = r.reconcileSubscription(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for fuse ")
 	}
@@ -76,17 +74,16 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile fuse custom resource ")
 	}
 
-	logrus.Info("End of reconcile Phase : ", reconciledPhase)
-
-	return v1alpha1.StatusPhase(v1alpha1.PhaseCompleted), nil
+	r.logger.Info("End of reconcile Phase : ", reconciledPhase)
+	// if we get to the end and no phase set then it is done
+	if reconciledPhase == v1alpha1.PhaseNone {
+		return v1alpha1.PhaseCompleted, nil
+	}
+	return reconciledPhase, nil
 }
 
 func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	nsr := resources.NewNamespaceReconciler(client, r.logger)
-	if !inst.Spec.CreateNamespaces {
-		r.logger.Infof("skipping creating namespace: %s", r.Config.GetNamespace())
-		return v1alpha1.PhaseCreatingSubscription, nil
-	}
 	ns := &v1.Namespace{
 		ObjectMeta: v12.ObjectMeta{
 			Name: r.Config.GetNamespace(),
@@ -108,8 +105,6 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// NEED to ensure a subscription is created if not exists
-	// need to make sure there is only one operator source
 	r.logger.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Integreatly,
@@ -121,13 +116,13 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient
 	if err != nil && !errors2.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", r.Config.GetNamespace()))
 	}
-	return r.handleAwaitingOperator(ctx)
+	return r.handleAwaitingOperator(ctx, client)
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ref := v12.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
 	intLimit := -1
-	cr := syn.Syndesis{
+	cr := &syn.Syndesis{
 		ObjectMeta: v12.ObjectMeta{
 			OwnerReferences: []v12.OwnerReference{
 				*ref,
@@ -135,7 +130,10 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
-		TypeMeta: v12.TypeMeta{},
+		TypeMeta: v12.TypeMeta{
+			Kind:       "Syndesis",
+			APIVersion: syn.SchemeGroupVersion.String(),
+		},
 		Spec: syn.SyndesisSpec{
 			Integration: syn.IntegrationSpec{
 				Limit: &intLimit,
@@ -149,16 +147,16 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			},
 		},
 	}
-	if err := r.client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name}, &cr); err != nil {
+	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if errors2.IsNotFound(err) {
-			if err := r.client.Create(ctx, &cr); err != nil && !errors2.IsAlreadyExists(err) {
+			if err := client.Create(ctx, cr); err != nil && !errors2.IsAlreadyExists(err) {
 				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling cutom resource")
 			}
-			return v1alpha1.PhaseNone, nil
+			return v1alpha1.PhaseInProgress, nil
 		}
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling cutom resource")
 	}
-	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
+	if cr.Status.Phase != syn.SyndesisPhaseInstalled && cr.Status.Phase != syn.SyndesisPhaseStartupFailed {
 		return v1alpha1.PhaseInProgress, nil
 	}
 	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
@@ -167,7 +165,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	return v1alpha1.PhaseNone, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
 	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
@@ -175,10 +173,10 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 			if sub != nil {
 				logrus.Infof("time since created %v", time.Now().Sub(sub.CreationTimestamp.Time).Seconds())
 			}
-			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > time.Minute*3 {
+			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > config.SubscriptionTimeout {
 				// delete subscription so it is recreated
 				logrus.Info("removing subscription as no install plan ready yet will recreate")
-				if err := r.client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
+				if err := client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
 					gp := int64(0)
 					options.GracePeriodSeconds = &gp
 

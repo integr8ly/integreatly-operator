@@ -72,7 +72,7 @@ func (m *Manager) ReadFuse() (*Fuse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newFuse(config), nil
+	return NewFuse(config), nil
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {

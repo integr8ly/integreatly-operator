@@ -100,7 +100,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	og := &coreosv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
-			Name:      ns + "-rhmi",
+			Name:      ns + "-integreatly",
 			Labels:    map[string]string{"integreatly": pkg},
 		},
 		Spec: coreosv1.OperatorGroupSpec{

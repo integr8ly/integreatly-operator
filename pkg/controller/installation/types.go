@@ -38,10 +38,10 @@ func InstallationTypeFactory(installationType string) (error, *Type) {
 
 func newWorkshopType() *Type {
 	return &Type{
-		products: []v1alpha1.ProductName{v1alpha1.ProductFuse},
+		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO, v1alpha1.ProductAMQStreams},
 		productOrder: [][]v1alpha1.ProductName{
-			{},
-			{v1alpha1.ProductFuse},
+			{v1alpha1.ProductRHSSO},
+			{v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams},
 		},
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newFuse(config ProductConfig) *Fuse {
+func NewFuse(config ProductConfig) *Fuse {
 	return &Fuse{config: config}
 }
 
