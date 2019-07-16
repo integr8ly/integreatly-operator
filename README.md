@@ -14,28 +14,67 @@ The following custom resources are supported:
 
 ## Local Setup
 
-- Create the OperatorSource in OpenShift (https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml)
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml`
-- Create the Installation CustomResourceDefinition in OpenShift 
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/installation.crd.yaml`
-- Create the Namespace/Project for the Integreatly Operator to watch
-    * `oc new-project <namespace>` or `oc create namespace <namespace>`
-- Create the Installation resource in the namespace we created
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/examples/installation.cr.yaml`
-- Create the Role, RoleBinding and ServiceAccount
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/service_account.yaml`
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role.yaml`
-    * `oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role_binding.yaml`
-- In the integr8ly/integreatly-operator directory, run the operator
-    * `operator-sdk up local --namespace=test`
-- In the OpenShift Ui, in Projects -> OpenShift-RHSSO -> Networking -> Routes. Select the URL for the `sso` Route to open up the SSO login page.
-- The username is `admin`, the password can be retrieved with 
-    * `oc get dc sso -n openshift-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'`
+Create the [`OperatorSource`](https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml) in OpenShift:
+```sh
+oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+```
+
+Create the Installation `CustomResourceDefinition` in OpenShift:
+```sh
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/installation.crd.yaml
+```
+
+Create the Namespace/Project for the Integreatly Operator to watch:
+```sh
+oc new-project <namespace>
+```
+
+Create the `Installation` resource in the namespace we created:
+```sh
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/examples/installation.cr.yaml
+```
+
+Create the `Role`, `RoleBinding` and `ServiceAccount`:
+```sh
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/service_account.yaml
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role.yaml
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role_binding.yaml
+```
+
+Clone this repository, change directory and run the operator:
+```sh
+operator-sdk up local --namespace=<namespace>
+```
+
+In the OpenShift UI, in `Projects -> openshift-rhsso -> Networking -> Routes`, select the URL for the `sso` Route to open up the SSO login page.
+
+The username is `admin`, and the password can be retrieved by running:
+```sh
+oc get dc sso -n openshift-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'
+```
 
 
-## Deploying to a Cluster
+## Deploying to a Cluster with OLM
 
-TODO
+Create the [`OperatorSource`](https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml) in the cluster:
+```sh
+oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+```
+
+Within a few minutes, the Integreatly operator should be visible in the OperatorHub (`Catalog > OperatorHub`). To create a new subscription, click on the Install button, choose an installation mode and keep the approval strategy on automatic.
+
+
+Once the subscription shows a status of `installed`, a new Integreatly Installation Custom Resource (CR) can be created which will begin to install the supported services. In `Catalog > Developer Catalog`, choose the Integreatly Installation and click Install. An example installation CR can be found below:
+
+```yml
+apiVersion: integreatly.org/v1alpha1
+kind: Installation
+metadata:
+  name: example-installation
+spec:
+  type: workshop
+namespacePrefix: integreatly-
+```
 
 ## Tests
 
@@ -60,6 +99,8 @@ Commit changes and open pull request.
 
 When the PR is accepted, create a new release tag:
 
-```git tag v<version> && git push upstream v<version>```
+```sh
+git tag v<version> && git push upstream v<version>
+```
 
 
