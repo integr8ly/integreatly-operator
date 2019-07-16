@@ -7,7 +7,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -386,12 +385,9 @@ func TestCodeready(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(*testing.T) {
-			logger := logrus.WithFields(logrus.Fields{"product": string("codeready")})
 			testReconciler, err := NewReconciler(
-				scenario.FakeK8sClient,
 				scenario.FakeConfig,
 				scenario.Object,
-				logger,
 				scenario.FakeMPM,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
