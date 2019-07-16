@@ -5,20 +5,18 @@ import (
 	"errors"
 	"fmt"
 
+	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,7 +27,7 @@ const (
 	defaultSubscriptionName      = "codeready-workspaces"
 )
 
-func NewReconciler(rc *rest.Config, coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not retrieve che config")
@@ -47,7 +45,6 @@ func NewReconciler(rc *rest.Config, coreClient kubernetes.Interface, configManag
 
 	return &Reconciler{
 		coreClient:     coreClient,
-		restConfig:     rc,
 		ConfigManager:  configManager,
 		Config:         config,
 		KeycloakConfig: kcConfig,
@@ -57,7 +54,6 @@ func NewReconciler(rc *rest.Config, coreClient kubernetes.Interface, configManag
 }
 
 type Reconciler struct {
-	restConfig     *rest.Config
 	coreClient     kubernetes.Interface
 	Config         *config.CodeReady
 	KeycloakConfig *config.RHSSO

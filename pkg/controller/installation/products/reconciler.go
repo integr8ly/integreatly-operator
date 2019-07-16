@@ -24,11 +24,11 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 	mpm := marketplace.NewManager(client, rc)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(rc, coreClient, configManager, instance, mpm)
+		reconciler, err = amqstreams.NewReconciler(coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(rc, coreClient, configManager, instance, mpm)
+		reconciler, err = rhsso.NewReconciler(coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(rc, coreClient, configManager, instance, logger, mpm)
+		reconciler, err = codeready.NewReconciler(coreClient, configManager, instance, logger, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

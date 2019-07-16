@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
@@ -389,7 +388,6 @@ func TestCodeready(t *testing.T) {
 		t.Run(scenario.Name, func(*testing.T) {
 			logger := logrus.WithFields(logrus.Fields{"product": string("codeready")})
 			testReconciler, err := NewReconciler(
-				&rest.Config{},
 				scenario.FakeK8sClient,
 				scenario.FakeConfig,
 				scenario.Object,
