@@ -24,7 +24,7 @@ var (
 	defaultInstallationNamespace = "amq-streams"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	return &Reconciler{client: client,
+	return &Reconciler{
 		coreClient:    coreClient,
 		restConfig:    rc,
 		ConfigManager: configManager,
@@ -42,7 +42,6 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 }
 
 type Reconciler struct {
-	client        pkgclient.Client
 	restConfig    *rest.Config
 	coreClient    *kubernetes.Clientset
 	Config        *config.AMQStreams
@@ -50,13 +49,13 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
-		return r.handleNoPhase()
+		return r.handleNoPhase(serverClient)
 	case v1alpha1.PhaseAwaitingNS:
-		return r.handleAwaitingNSPhase()
+		return r.handleAwaitingNSPhase(serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.handleCreatingSubscription()
 	case v1alpha1.PhaseCreatingComponents:
@@ -75,27 +74,27 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhas
 	}
 }
 
-func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Create(context.TODO(), ns)
+	err := serverClient.Create(context.TODO(), ns)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
+	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}

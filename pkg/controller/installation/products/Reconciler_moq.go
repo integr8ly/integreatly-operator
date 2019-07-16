@@ -5,6 +5,7 @@ package products
 
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
 
@@ -46,7 +47,7 @@ type InterfaceMock struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}

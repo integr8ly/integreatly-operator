@@ -16,7 +16,7 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(inst *v1alpha1.Installation) (newPhase v1alpha1.StatusPhase, err error)
+	Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
 }
 
 func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
@@ -24,11 +24,11 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 	mpm := marketplace.NewManager(client, rc)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(client, rc, coreClient, configManager, instance, mpm)
+		reconciler, err = amqstreams.NewReconciler(rc, coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(client, rc, coreClient, configManager, instance, mpm)
+		reconciler, err = rhsso.NewReconciler(rc, coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(client, rc, coreClient, configManager, instance, logger, mpm)
+		reconciler, err = codeready.NewReconciler(rc, coreClient, configManager, instance, logger, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
@@ -39,6 +39,6 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseNone, nil
 }

@@ -389,7 +389,6 @@ func TestCodeready(t *testing.T) {
 		t.Run(scenario.Name, func(*testing.T) {
 			logger := logrus.WithFields(logrus.Fields{"product": string("codeready")})
 			testReconciler, err := NewReconciler(
-				scenario.FakeControllerClient,
 				&rest.Config{},
 				scenario.FakeK8sClient,
 				scenario.FakeConfig,
@@ -410,7 +409,7 @@ func TestCodeready(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(scenario.Object)
+			status, err := testReconciler.Reconcile(scenario.Object, scenario.FakeControllerClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}
