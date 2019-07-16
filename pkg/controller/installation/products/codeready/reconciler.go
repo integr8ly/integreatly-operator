@@ -16,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,7 +26,7 @@ const (
 	defaultSubscriptionName      = "codeready-workspaces"
 )
 
-func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not retrieve che config")
@@ -44,7 +43,6 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	}
 
 	return &Reconciler{
-		coreClient:     coreClient,
 		ConfigManager:  configManager,
 		Config:         config,
 		KeycloakConfig: kcConfig,
@@ -54,7 +52,6 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 }
 
 type Reconciler struct {
-	coreClient     kubernetes.Interface
 	Config         *config.CodeReady
 	KeycloakConfig *config.RHSSO
 	ConfigManager  config.ConfigReadWriter

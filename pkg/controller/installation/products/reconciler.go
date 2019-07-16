@@ -28,7 +28,7 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 	case v1alpha1.ProductRHSSO:
 		reconciler, err = rhsso.NewReconciler(coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(coreClient, configManager, instance, logger, mpm)
+		reconciler, err = codeready.NewReconciler(configManager, instance, logger, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
