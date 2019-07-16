@@ -7,10 +7,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
@@ -387,14 +385,9 @@ func TestCodeready(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(*testing.T) {
-			logger := logrus.WithFields(logrus.Fields{"product": string("codeready")})
 			testReconciler, err := NewReconciler(
-				scenario.FakeControllerClient,
-				&rest.Config{},
-				scenario.FakeK8sClient,
 				scenario.FakeConfig,
 				scenario.Object,
-				logger,
 				scenario.FakeMPM,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
@@ -410,7 +403,7 @@ func TestCodeready(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(scenario.Object)
+			status, err := testReconciler.Reconcile(scenario.Object, scenario.FakeControllerClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}

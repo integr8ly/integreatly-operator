@@ -4,18 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 
+	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	pkgerr "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,7 +26,7 @@ const (
 	defaultSubscriptionName      = "codeready-workspaces"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, logger *logrus.Entry, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, pkgerr.Wrap(err, "could not retrieve che config")
@@ -45,55 +42,48 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient kubernet
 		return nil, pkgerr.Wrap(err, "keycloak config is not valid")
 	}
 
-	return &Reconciler{client: client,
-		coreClient:     coreClient,
-		restConfig:     rc,
+	return &Reconciler{
 		ConfigManager:  configManager,
 		Config:         config,
 		KeycloakConfig: kcConfig,
 		mpm:            mpm,
-		logger:         logger,
 	}, nil
 }
 
 type Reconciler struct {
-	client         pkgclient.Client
-	restConfig     *rest.Config
-	coreClient     kubernetes.Interface
 	Config         *config.CodeReady
 	KeycloakConfig *config.RHSSO
 	ConfigManager  config.ConfigReadWriter
 	mpm            marketplace.MarketplaceInterface
-	logger         *logrus.Entry
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ctx := context.TODO()
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone, v1alpha1.PhaseAwaitingNS:
-		return r.reconcileNamespace(ctx, inst)
+		return r.reconcileNamespace(ctx, inst, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.reconcileSubscription(ctx)
 	case v1alpha1.PhaseCreatingComponents:
-		return r.reconcileCheCluster(ctx, inst)
+		return r.reconcileCheCluster(ctx, inst, serverClient)
 	case v1alpha1.PhaseAwaitingOperator:
 		return r.handleAwaitingOperator(ctx)
 	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase(ctx)
+		return r.handleProgressPhase(ctx, serverClient)
 	case v1alpha1.PhaseCompleted, v1alpha1.PhaseFailed:
-		return r.handleReconcile(ctx, inst)
+		return r.handleReconcile(ctx, inst, serverClient)
 	default:
-		return r.handleReconcile(ctx, inst)
+		return r.handleReconcile(ctx, inst, serverClient)
 	}
 }
 
-func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	phase, err := r.reconcileNamespace(ctx, inst)
+func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.reconcileNamespace(ctx, inst, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile namespace")
 	}
-	phase, err = r.reconcileCheCluster(ctx, inst)
+	phase, err = r.reconcileCheCluster(ctx, inst, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile checluster")
 	}
@@ -101,31 +91,31 @@ func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Install
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile subscription")
 	}
-	phase, err = r.reconcileKeycloakClient(ctx)
+	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile keycloakrealm")
 	}
 	return phase, nil
 }
 
-func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve namespace: %s", r.Config.GetNamespace()))
 		}
-		if err = r.client.Create(ctx, ns); err != nil {
+		if err = serverClient.Create(ctx, ns); err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not create namespace: %s", r.Config.GetNamespace()))
 		}
 	}
 
 	if ns.Status.Phase == v1.NamespaceTerminating {
-		r.logger.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
+		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
 		return v1alpha1.PhaseAwaitingNS, nil
 	}
 	if ns.Status.Phase != v1.NamespaceActive {
@@ -135,7 +125,7 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
+	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
@@ -150,18 +140,16 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.Status
 	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
-func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("creating required custom resources in namespace: %s", r.Config.GetNamespace())
-
-	kcRealm := &keycloakv1.KeycloakRealm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.KeycloakConfig.GetRealm(),
-			Namespace: r.KeycloakConfig.GetNamespace(),
-		},
-	}
-	err := r.client.Get(ctx, pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}, kcRealm)
+func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Debugf("creating required custom resources in namespace: %s", r.Config.GetNamespace())
+	kcRealm := &keycloakv1.KeycloakRealm{}
+	key := pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}
+	err := serverClient.Get(ctx, key, kcRealm)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not retrieve keycloakrealm custom resource")
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(
+			err,
+			fmt.Sprintf("could not retrieve: %+v", key),
+		)
 	}
 
 	cheCluster := &chev1.CheCluster{
@@ -170,14 +158,14 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = r.client.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 		}
-		if err = r.createCheCluster(ctx, r.KeycloakConfig, kcRealm, inst.Spec.SelfSignedCerts); err != nil {
+		if err = r.createCheCluster(ctx, r.KeycloakConfig, kcRealm, inst.Spec.SelfSignedCerts, serverClient); err != nil {
 			if k8serr.IsAlreadyExists(err) {
-				r.logger.Debugf("checluster custom resource already exists in namespace: %s", r.Config.GetNamespace())
+				logrus.Debugf("checluster custom resource already exists in namespace: %s", r.Config.GetNamespace())
 				return v1alpha1.PhaseInProgress, nil
 			}
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not create checluster custom resource in namespace: %s", r.Config.GetNamespace()))
@@ -189,7 +177,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		cheCluster.Spec.Auth.KeycloakURL == r.KeycloakConfig.GetURL() &&
 		cheCluster.Spec.Auth.KeycloakRealm == r.KeycloakConfig.GetRealm() &&
 		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
-		r.logger.Debug("skipping checluster custom resource update as all values are correct")
+		logrus.Debug("skipping checluster custom resource update as all values are correct")
 		return v1alpha1.PhaseInProgress, nil
 	}
 	cheCluster.Spec.Auth.ExternalKeycloak = true
@@ -197,32 +185,32 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	cheCluster.Spec.Auth.KeycloakURL = r.KeycloakConfig.GetURL()
 	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
 	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
-	if err = r.client.Update(ctx, cheCluster); err != nil {
+	if err = serverClient.Update(ctx, cheCluster); err != nil {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 	}
 	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
+	logrus.Debugf("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
 	ip, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			r.logger.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
+			logrus.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve installplan in namespace: %s", r.Config.GetNamespace()))
 	}
 
-	r.logger.Debugf("installplan phase is %s, waiting for %s", ip.Status.Phase, coreosv1alpha1.InstallPlanPhaseComplete)
+	logrus.Debugf("installplan phase is %s, waiting for %s", ip.Status.Phase, coreosv1alpha1.InstallPlanPhaseComplete)
 	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
 		return v1alpha1.PhaseAwaitingOperator, nil
 	}
 	return v1alpha1.PhaseCreatingComponents, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("checking that checluster custom resource is marked as available")
+func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Debugf("checking that checluster custom resource is marked as available")
 
 	// retrive the checluster so we can use its URL for redirect and web origins in the keycloak client
 	cheCluster := &chev1.CheCluster{
@@ -231,7 +219,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context) (v1alpha1.StatusPh
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
 	if err != nil {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not retrieve checluster for keycloak client update")
 	}
@@ -242,8 +230,8 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context) (v1alpha1.StatusPh
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileKeycloakClient(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("checking keycloak client exists in keycloakrealm custom resource in namespace: %s", r.Config.GetNamespace())
+func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Debugf("checking keycloak client exists in keycloakrealm custom resource in namespace: %s", r.Config.GetNamespace())
 
 	// retrive the checluster so we can use its URL for redirect and web origins in the keycloak client
 	cheCluster := &chev1.CheCluster{
@@ -252,7 +240,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context) (v1alpha1.Stat
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
 	if err != nil {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not retrieve checluster for keycloak client update")
 	}
@@ -268,7 +256,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context) (v1alpha1.Stat
 			Namespace: r.KeycloakConfig.GetNamespace(),
 		},
 	}
-	err = r.client.Get(ctx, pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}, kcRealm)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}, kcRealm)
 	if err != nil {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not retrieve keycloakrealm for keycloak client update")
 	}
@@ -294,7 +282,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context) (v1alpha1.Stat
 
 	// Append the che client to the list of clients in the keycloak realm and save
 	kcRealm.Spec.Clients = findOrAppendCheKeycloakClient(kcRealm.Spec.Clients, kcCheClient)
-	err = r.client.Update(ctx, kcRealm)
+	err = serverClient.Update(ctx, kcRealm)
 	if err != nil {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not update keycloakrealm custom resource with codeready client")
 	}
@@ -317,7 +305,7 @@ func findCheKeycloakClient(clients []*keycloakv1.KeycloakClient) *keycloakv1.Key
 	return nil
 }
 
-func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, selfSignedCerts bool) error {
+func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, selfSignedCerts bool, serverClient pkgclient.Client) error {
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultCheClusterName,
@@ -359,5 +347,5 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			},
 		},
 	}
-	return r.client.Create(ctx, cheCluster)
+	return serverClient.Create(ctx, cheCluster)
 }

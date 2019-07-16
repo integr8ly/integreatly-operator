@@ -190,9 +190,9 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		//check current phase of this product installation
 		if val, ok := instance.Status.ProductStatus[product]; ok {
 			phase = val
-			//product failed to install, return error and failed phase for stage
+			//product failed to install, return error but keep trying
 			if phase == string(v1alpha1.PhaseFailed) {
-				return v1alpha1.PhaseFailed, pkgerr.New("failed installation of " + string(product))
+				return v1alpha1.PhaseInProgress, pkgerr.New("failed installation of " + string(product))
 			}
 		}
 		//found an incomplete product
@@ -204,7 +204,11 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
 		logrus.Infof("reconciling product: %s", product)
-		newPhase, err := reconciler.Reconcile(instance)
+		serverClient, err := client.New(r.restConfig, client.Options{})
+		if err != nil {
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
+		}
+		newPhase, err := reconciler.Reconcile(instance, serverClient)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)

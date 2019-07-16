@@ -3,20 +3,18 @@ package rhsso
 import (
 	"context"
 	"errors"
+	"fmt"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	"fmt"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -26,7 +24,7 @@ var (
 	keycloakRealmName            = "openshift"
 )
 
-func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -34,9 +32,8 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	return &Reconciler{client: client,
+	return &Reconciler{
 		coreClient:    coreClient,
-		restConfig:    rc,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -44,29 +41,27 @@ func NewReconciler(client pkgclient.Client, rc *rest.Config, coreClient *kuberne
 }
 
 type Reconciler struct {
-	client        pkgclient.Client
-	restConfig    *rest.Config
 	coreClient    *kubernetes.Clientset
 	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
-		return r.handleNoPhase()
+		return r.handleNoPhase(serverClient)
 	case v1alpha1.PhaseAwaitingNS:
-		return r.handleAwaitingNSPhase()
+		return r.handleAwaitingNSPhase(serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.handleCreatingSubscription()
 	case v1alpha1.PhaseAwaitingOperator:
 		return r.handleAwaitingOperator()
 	case v1alpha1.PhaseCreatingComponents:
-		return r.handleCreatingComponents()
+		return r.handleCreatingComponents(serverClient)
 	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase()
+		return r.handleProgressPhase(serverClient)
 	case v1alpha1.PhaseCompleted:
 		return v1alpha1.PhaseCompleted, nil
 	case v1alpha1.PhaseFailed:
@@ -77,27 +72,27 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation) (v1alpha1.StatusPhas
 	}
 }
 
-func (r *Reconciler) handleNoPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Create(context.TODO(), ns)
+	err := serverClient.Create(context.TODO(), ns)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleAwaitingNSPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := r.client.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
+	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -146,14 +141,8 @@ func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseCreatingComponents, nil
 }
 
-func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Creating Components")
-
-	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
-	if err != nil {
-		logrus.Infof("Error creating server client")
-		return v1alpha1.PhaseFailed, err
-	}
 
 	logrus.Infof("Creating Keycloak")
 
@@ -179,7 +168,7 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 		},
 	}
 
-	err = serverClient.Create(context.TODO(), kc)
+	err := serverClient.Create(context.TODO(), kc)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -246,23 +235,17 @@ func (r *Reconciler) handleCreatingComponents() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("checking ready status for rhsso")
 	kcr := &aerogearv1.KeycloakRealm{}
 
-	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
-	if err != nil {
-		logrus.Infof("Error creating server client")
-		return v1alpha1.PhaseFailed, err
-	}
-
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
+	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
-		err = r.exportConfig()
+		err = r.exportConfig(serverClient)
 		if err != nil {
 			logrus.Errorf("Failed to write RH-SSO config %v", err)
 			return v1alpha1.PhaseFailed, err
@@ -276,18 +259,14 @@ func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) exportConfig() error {
-	serverClient, err := pkgclient.New(r.restConfig, pkgclient.Options{})
-	if err != nil {
-		return pkgerr.Wrap(err, "could not build server client for keycloak config")
-	}
+func (r *Reconciler) exportConfig(serverClient pkgclient.Client) error {
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
+	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
 	}
