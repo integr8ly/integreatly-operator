@@ -1,0 +1,86 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: integreatly-operator
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - namespaces
+  verbs:
+    - list
+    - get
+    - create
+    - watch
+- apiGroups:
+    - operators.coreos.com
+  resources:
+    - catalogsourceconfigs
+  verbs:
+    - list
+    - create
+    - watch
+- apiGroups:
+    - ""
+  resources:
+    - pods
+    - secrets
+  verbs:
+    - list
+    - get
+- apiGroups:
+    - operators.coreos.com
+  resources:
+    - catalogsourceconfigs/finalizers
+  verbs:
+    - '*'
+- apiGroups:
+    - operators.coreos.com
+  resources:
+    - operatorgroups
+    - subscriptions
+    - installplans
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - aerogear.org
+  resources:
+    - keycloaks
+    - keycloakrealms
+  verbs:
+    - list
+    - create
+    - update
+    - watch
+    - get
+- apiGroups:
+    - kafka.strimzi.io
+  resources:
+    - kafkas
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - apps.3scale.net
+  resources:
+    - apimanagers
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - org.eclipse.che
+  resources:
+    - checlusters
+  verbs:
+    - list
+    - create
+    - watch
+    - get
