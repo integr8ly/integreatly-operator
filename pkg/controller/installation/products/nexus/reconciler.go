@@ -2,6 +2,7 @@ package nexus
 
 import (
 	"context"
+	"fmt"
 
 	nexus "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -21,6 +22,7 @@ import (
 const (
 	defaultInstallationNamespace = "nexus"
 	defaultSubscriptionName      = "nexus"
+	resourceName                 = "nexus"
 )
 
 type Reconciler struct {
@@ -55,75 +57,67 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
+func (r *Reconciler) Reconcile(in *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ctx := context.TODO()
 
-	switch v1alpha1.StatusPhase(phase) {
-	case v1alpha1.PhaseNone:
-		return r.handleNoPhase(ctx, serverClient)
-	case v1alpha1.PhaseAwaitingNS:
-		return r.reconcileNamespace(ctx, serverClient)
-	case v1alpha1.PhaseCreatingSubscription:
-		return r.reconcileSubscription()
-	case v1alpha1.PhaseCreatingComponents:
-		return r.reconcileCustomResource(ctx, inst, serverClient)
-	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator()
-	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase()
-	case v1alpha1.PhaseCompleted:
-		return v1alpha1.PhaseCompleted, nil
-	case v1alpha1.PhaseFailed:
-		return v1alpha1.PhaseFailed, errors.New("installation of nexus failed")
-	default:
-		return v1alpha1.PhaseFailed, errors.New("unknown phase for nexus: " + string(phase))
-	}
-}
-
-func (r *Reconciler) handleNoPhase(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.Config.GetNamespace(),
-			Name:      r.Config.GetNamespace(),
-		},
+	phase, err := r.reconcileNamespace(ctx, serverClient)
+	if err != nil && phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	err := client.Create(ctx, ns)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, err
+	phase, err = r.reconcileSubscription()
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	return v1alpha1.PhaseAwaitingNS, nil
+	phase, err = r.reconcileOperator()
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileCustomResource(ctx, in, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.handleProgress()
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileNamespace(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("reconciling namespace")
+
+	namespace := r.Config.GetNamespace()
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: r.Config.GetNamespace(),
+			Namespace: namespace,
+			Name:      namespace,
 		},
 	}
 
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
+	// attempt to create the namespace
+	err := client.Create(ctx, ns)
+	if err != nil && !k8serr.IsAlreadyExists(err) {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create namespace %s", namespace)
 	}
 
-	if ns.Status.Phase == v1.NamespaceTerminating {
-		r.logger.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
-		return v1alpha1.PhaseAwaitingNS, nil
-	}
+	// if the namespace is active, complete the phase
 	if ns.Status.Phase == v1.NamespaceActive {
-		r.logger.Infof("creating subscription for Nexus")
-		return v1alpha1.PhaseCreatingSubscription, nil
+		return v1alpha1.PhaseCompleted, nil
 	}
 
-	return v1alpha1.PhaseAwaitingNS, nil
+	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) reconcileSubscription() (v1alpha1.StatusPhase, error) {
-	r.logger.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, marketplace.IntegreatlyChannel, r.Config.GetNamespace())
+	r.logger.Debug("reconciling subscription")
 
+	// create the subscription
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
@@ -135,43 +129,39 @@ func (r *Reconciler) reconcileSubscription() (v1alpha1.StatusPhase, error) {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create subscription in namespace %s", r.Config.GetNamespace())
 	}
 
-	return v1alpha1.PhaseAwaitingOperator, nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
-	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
+func (r *Reconciler) reconcileOperator() (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("reconciling installplan")
 
+	// get the installplan for the subscription
 	ip, err := r.mpm.GetSubscriptionInstallPlan("nexus", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			r.logger.Infof("no installplan created yet")
-			return v1alpha1.PhaseAwaitingOperator, nil
 		}
 
 		r.logger.Infof("error getting nexus subscription installplan: %s", err)
 		return v1alpha1.PhaseFailed, err
 	}
 
+	// if the installplan phase is complete, complete the phase
 	r.logger.Infof("nexus installplan phase is %s", ip.Status.Phase)
-	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
-		return v1alpha1.PhaseAwaitingOperator, nil
+	if ip != nil && ip.Status.Phase == coreosv1alpha1.InstallPlanPhaseComplete {
+		return v1alpha1.PhaseCompleted, nil
 	}
 
-	r.logger.Infof("nexus installplan is complete. Installation ready")
-	return v1alpha1.PhaseCreatingComponents, nil
+	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	r.logger.Info("creating nexus custom resource")
+	r.logger.Debug("reconciling nexus custom resource")
 
-	ref := metav1.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
 	cr := &nexus.Nexus{
 		ObjectMeta: metav1.ObjectMeta{
-			OwnerReferences: []metav1.OwnerReference{
-				*ref,
-			},
 			Namespace: r.Config.GetNamespace(),
-			Name:      defaultSubscriptionName,
+			Name:      resourceName,
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: nexus.SchemeGroupVersion.String(),
@@ -187,30 +177,30 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			NexusMemoryLimit:   "2Gi",
 		},
 	}
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
-		if k8serr.IsNotFound(err) {
-			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a nexus custom resource")
-			}
 
-			r.logger.Info("created custom resource for nexus")
-			return v1alpha1.PhaseInProgress, nil
-		}
-
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a nexus custom resource")
+	// attempt to create the custom resource
+	if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a nexus custom resource")
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	// if there are no errors, the phase is complete
+	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase() (v1alpha1.StatusPhase, error) {
-	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(metav1.ListOptions{})
+func (r *Reconciler) handleProgress() (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("checking nexus pod is running")
+
+	listOptions := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("app=%s", resourceName),
+	}
+
+	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(listOptions)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to list pods in nexus namespace")
 	}
 
-	// expecting 2 pods in total
-	if len(pods.Items) < 2 {
+	// expecting 1 pod in total
+	if len(pods.Items) < 1 {
 		return v1alpha1.PhaseInProgress, nil
 	}
 
@@ -220,7 +210,6 @@ checkPodStatus:
 		for _, cnd := range pod.Status.Conditions {
 			if cnd.Type == v1.ContainersReady {
 				if cnd.Status != v1.ConditionStatus("True") {
-					r.logger.Infof("pod not ready, returning in progress: %+v", cnd.Status)
 					return v1alpha1.PhaseInProgress, nil
 				}
 				break checkPodStatus
