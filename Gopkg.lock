@@ -114,6 +114,14 @@
   version = "v4.5.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:120d83d77dc7220a284a6f8906099a697a62110ffcf41c4d8c7ec859bdf27b72"
+  name = "github.com/fabric8-launcher/launcher-operator"
+  packages = ["pkg/apis/launcher/v1alpha2"]
+  pruneopts = "NT"
+  revision = "d3ce2276c2b7442c08b66040866a49bd47c48e89"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
