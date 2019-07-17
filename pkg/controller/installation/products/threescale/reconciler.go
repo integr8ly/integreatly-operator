@@ -77,7 +77,7 @@ func (r *Reconciler) Reconcile(in *v1alpha1.Installation, serverClient pkgclient
 		return phase, err
 	}
 
-	logrus.Infof("%s has successfully deployed", packageName)
+	logrus.Infof("%s has successfully deployed.", packageName)
 
 	phase, err = r.reconcileRHSSOIntegration(serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
