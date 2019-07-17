@@ -25,8 +25,21 @@ setup/travis:
 	@echo Installing Operator SDK
 	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v0.6.0/operator-sdk-v0.6.0-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
 
+.PHONY: setup/service_account
+setup/service_account:
+	@oc replace --force -f deploy/role.yaml -n $(NAMESPACE)
+	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
+	@oc replace --force -f deploy/role_binding.yaml -n $(NAMESPACE)
+	@oc replace --force -f deploy/clusterrole.yaml -n $(NAMESPACE)
+	@oc replace --force -f deploy/cluster_role_binding.yaml -n $(NAMESPACE)
+
 .PHONY: code/run
 code/run:
+	@operator-sdk up local --namespace=$(NAMESPACE)
+
+.PHONY: code/run/service_account
+code/run/service_account: setup/service_account
+	@oc login --token=$(shell oc serviceaccounts get-token integreatly-operator -n ${NAMESPACE})
 	@operator-sdk up local --namespace=$(NAMESPACE)
 
 .PHONY: code/compile
