@@ -13,6 +13,7 @@ var (
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadConfigForProduct sync.RWMutex
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
+	lockConfigReadWriterMockReadLauncher         sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
 )
@@ -38,6 +39,8 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             ReadLauncherFunc: func() (*Launcher, error) {
+// 	               panic("mock out the ReadLauncher method")
 //             },
 //             ReadRHSSOFunc: func() (*RHSSO, error) {
 // 	               panic("mock out the ReadRHSSO method")
@@ -63,6 +66,8 @@ type ConfigReadWriterMock struct {
 
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
+	// ReadLauncherFunc mocks the ReadLauncher method.
+	ReadLauncherFunc func() (*Launcher, error)
 
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
@@ -85,6 +90,8 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
+		// ReadLauncher holds details about calls to the ReadLauncher method.
+		ReadLauncher []struct {
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -203,6 +210,29 @@ func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
 	lockConfigReadWriterMockReadFuse.RLock()
 	calls = mock.calls.ReadFuse
 	lockConfigReadWriterMockReadFuse.RUnlock()
+// ReadLauncher calls ReadLauncherFunc.
+func (mock *ConfigReadWriterMock) ReadLauncher() (*Launcher, error) {
+	if mock.ReadLauncherFunc == nil {
+		panic("ConfigReadWriterMock.ReadLauncherFunc: method is nil but ConfigReadWriter.ReadLauncher was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadLauncher.Lock()
+	mock.calls.ReadLauncher = append(mock.calls.ReadLauncher, callInfo)
+	lockConfigReadWriterMockReadLauncher.Unlock()
+	return mock.ReadLauncherFunc()
+}
+
+// ReadLauncherCalls gets all the calls that were made to ReadLauncher.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadLauncherCalls())
+func (mock *ConfigReadWriterMock) ReadLauncherCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadLauncher.RLock()
+	calls = mock.calls.ReadLauncher
+	lockConfigReadWriterMockReadLauncher.RUnlock()
 	return calls
 }
 

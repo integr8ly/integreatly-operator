@@ -23,7 +23,7 @@ var _ Interface = &InterfaceMock{}
 //
 //         // make and configure a mocked Interface
 //         mockedInterface := &InterfaceMock{
-//             ReconcileFunc: func(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+//             ReconcileFunc: func(inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
 //         }
@@ -34,7 +34,7 @@ var _ Interface = &InterfaceMock{}
 //     }
 type InterfaceMock struct {
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error)
+	ReconcileFunc func(inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -42,6 +42,8 @@ type InterfaceMock struct {
 		Reconcile []struct {
 			// Inst is the inst argument value.
 			Inst *v1alpha1.Installation
+			// ServerClient is the serverClient argument value.
+			ServerClient client.Client
 		}
 	}
 }
@@ -52,24 +54,28 @@ func (mock *InterfaceMock) Reconcile(inst *v1alpha1.Installation, serverClient c
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
-		Inst *v1alpha1.Installation
+		Inst         *v1alpha1.Installation
+		ServerClient client.Client
 	}{
-		Inst: inst,
+		Inst:         inst,
+		ServerClient: serverClient,
 	}
 	lockInterfaceMockReconcile.Lock()
 	mock.calls.Reconcile = append(mock.calls.Reconcile, callInfo)
 	lockInterfaceMockReconcile.Unlock()
-	return mock.ReconcileFunc(inst)
+	return mock.ReconcileFunc(inst, serverClient)
 }
 
 // ReconcileCalls gets all the calls that were made to Reconcile.
 // Check the length with:
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
-	Inst *v1alpha1.Installation
+	Inst         *v1alpha1.Installation
+	ServerClient client.Client
 } {
 	var calls []struct {
-		Inst *v1alpha1.Installation
+		Inst         *v1alpha1.Installation
+		ServerClient client.Client
 	}
 	lockInterfaceMockReconcile.RLock()
 	calls = mock.calls.Reconcile
