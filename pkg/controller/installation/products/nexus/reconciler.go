@@ -6,6 +6,7 @@ import (
 
 	nexus "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -57,11 +58,11 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(in *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ctx := context.TODO()
 
-	phase, err := r.reconcileNamespace(ctx, serverClient)
-	if err != nil && phase != v1alpha1.PhaseCompleted {
+	phase, err := r.reconcileNamespace(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -75,7 +76,7 @@ func (r *Reconciler) Reconcile(in *v1alpha1.Installation, serverClient pkgclient
 		return phase, err
 	}
 
-	phase, err = r.reconcileCustomResource(ctx, in, serverClient)
+	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -89,10 +90,11 @@ func (r *Reconciler) Reconcile(in *v1alpha1.Installation, serverClient pkgclient
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileNamespace(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling namespace")
 
 	namespace := r.Config.GetNamespace()
+	nsr := resources.NewNamespaceReconciler(client, r.logger)
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -100,10 +102,10 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, client pkgclient.Cl
 		},
 	}
 
-	// attempt to create the namespace
-	err := client.Create(ctx, ns)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create namespace %s", namespace)
+	// reconcile the namespace
+	ns, err := nsr.Reconcile(ctx, ns, inst)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to reconcile %s namespace", r.Config.GetNamespace())
 	}
 
 	// if the namespace is active, complete the phase
@@ -136,7 +138,7 @@ func (r *Reconciler) reconcileOperator() (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling installplan")
 
 	// get the installplan for the subscription
-	ip, err := r.mpm.GetSubscriptionInstallPlan("nexus", r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan("nexus", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			r.logger.Infof("no installplan created yet")
