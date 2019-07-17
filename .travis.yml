@@ -19,10 +19,14 @@ jobs:
   include:
   - stage: test
     script:
-    - cd $HOME/gopath/src/github.com/integr8ly/$OPERATOR_NAME && make setup/dep setup/travis code/check test/unit
+    - cd $HOME/gopath/src/github.com/integr8ly/$OPERATOR_NAME && make setup/travis code/check
+    - go get github.com/mattn/goveralls
+    - go install github.com/mattn/goveralls
+    - go test -v -covermode=count -coverprofile=coverage.out ./...
+    - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN
   - stage: compile
     script:
-    - make code/check setup/dep setup/travis image/build TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
+    - make setup/travis image/build TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
   - stage: push
     script:
     - export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
