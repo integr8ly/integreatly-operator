@@ -23,6 +23,7 @@ var (
 	InstallationTypeManaged  InstallationType = "managed"
 
 	ProductAMQStreams          ProductName = "amqstreams"
+	ProductAMQOnline           ProductName = "amqonline"
 	ProductRHSSO               ProductName = "rhsso"
 	ProductCodeReadyWorkspaces ProductName = "codeready-workspaces"
 	ProductFuse                ProductName = "fuse"

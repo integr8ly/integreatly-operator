@@ -144,8 +144,6 @@ func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
 func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Creating Components")
 
-	logrus.Infof("Creating Keycloak")
-
 	kc := &aerogearv1.Keycloak{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
