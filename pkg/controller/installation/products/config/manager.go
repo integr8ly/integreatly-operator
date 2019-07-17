@@ -37,6 +37,7 @@ type ConfigReadWriter interface {
 	ReadRHSSO() (*RHSSO, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadFuse() (*Fuse, error)
+	ReadLauncher() (*Launcher, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -82,6 +83,15 @@ func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 	}
 	return NewRHSSO(config), nil
 }
+
+func (m *Manager) ReadLauncher() (*Launcher, error) {
+	config, err := m.ReadConfigForProduct(v1alpha1.ProductLauncher)
+	if err != nil {
+		return nil, err
+	}
+	return NewLauncher(config), nil
+}
+
 func (m *Manager) WriteConfig(config ConfigReadable) error {
 	stringConfig, err := yaml.Marshal(config.Read())
 	err = m.Client.Get(context.TODO(), pkgclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
