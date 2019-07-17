@@ -387,6 +387,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(serverClient pkgclient.Client) (v
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
+
 	site := string(urlSecret.Data["SSO_ADMIN_URL"]) + "/auth/realms/" + rhsso.KeycloakRealmName
 	res, err := r.tsClient.AddSSOIntegration(map[string]string{
 		"kind":                              "keycloak",
