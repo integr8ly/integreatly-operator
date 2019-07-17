@@ -15,6 +15,11 @@ setup/dep:
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 	@echo setup complete
 
+.PHONY: setup/moq
+setup/moq:
+	dep ensure
+	cd vendor/github.com/matryer/moq/ && go install .
+
 .PHONY: setup/travis
 setup/travis:
 	@echo Installing Operator SDK

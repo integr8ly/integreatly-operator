@@ -120,7 +120,7 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 }
 
 func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
-	ip, err := r.mpm.GetSubscriptionInstallPlan("rhsso", r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan("rhsso", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Infof("No installplan created yet")

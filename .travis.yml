@@ -13,7 +13,7 @@ stages:
 - test
 - compile
 - name: push
-  if: fork = false
+  if: fork = false AND branch = master
 
 jobs:
   include:
