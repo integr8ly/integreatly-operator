@@ -6,6 +6,17 @@ A Kubernetes Operator based on the Operator SDK for installing and reconciling I
 
 This is a PoC / alpha version. Most functionality is there but it is higly likely there are bugs and improvements needed
 
+## Prerequisites
+- [Go (v1.12+)](https://golang.org/dl/) 
+- [moq](https://github.com/matryer/moq)
+
+### MOQ
+After installation, the following commands must be run to avoid a known [issue](https://github.com/matryer/moq/issues/98) related to the package:
+```
+go get -u .
+go install github.com/matryer/moq
+```
+
 ## Supported Custom Resources
 
 The following custom resources are supported:
