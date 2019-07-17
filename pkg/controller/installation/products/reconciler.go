@@ -2,12 +2,14 @@ package products
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqstreams"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/launcher"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,6 +33,8 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 		reconciler, err = codeready.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(coreClient, configManager, instance, mpm)
+	case v1alpha1.ProductLauncher:
+		reconciler, err = launcher.NewReconciler(coreClient, configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
