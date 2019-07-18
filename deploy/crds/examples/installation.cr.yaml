@@ -5,3 +5,6 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
+  githubOauthClientId: github-oauth-client-id
+  githubOauthClientSecret: github-oauth-client-secret
+  selfSignedCerts: false
