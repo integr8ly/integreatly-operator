@@ -2,7 +2,6 @@ package codeready
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -14,6 +13,8 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -72,15 +73,93 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile checluster")
 	}
-
 	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile keycloakrealm")
 	}
+	phase, err = r.reconcileBackups(ctx, inst, serverClient)
+	if err != nil {
+		return phase, pkgerr.Wrap(err, "could not reconcile backups")
+	}
 	if phase == v1alpha1.PhaseNone {
 		return v1alpha1.PhaseCompleted, nil
 	}
+	logrus.Infof("codeready reconciled with no errors")
 	return phase, nil
+}
+
+func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	backupConfig := resources.BackupConfig{
+		Namespace:     r.Config.GetNamespace(),
+		Name:          "codeready",
+		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
+		Components: []resources.BackupComponent{
+			{
+				Name:     "codeready-postgres-backup",
+				Type:     "postgres",
+				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+			{
+				Name:     "codeready-pv-backup",
+				Type:     "codeready_pv",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+		},
+	}
+	err := r.reconcilePostgresSecret(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to reconcile postgres component backup secret")
+	}
+	err = resources.ReconcileBackup(ctx, serverClient, inst, backupConfig)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to create backups for codeready")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePostgresSecret(ctx context.Context, serverClient pkgclient.Client) error {
+	//get values from deployment
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      "postgres",
+		},
+	}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Namespace: deployment.Namespace, Name: deployment.Name}, deployment)
+	if err != nil {
+		return pkgerr.Wrapf(err, "could not get postgres deployment to reconcile component backup secret")
+	}
+
+	postgresqlSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetPostgresBackupSecretName(),
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{
+			"POSTGRES_HOST": []byte("postgres." + r.Config.GetNamespace() + ".svc"),
+		},
+	}
+
+	for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
+		switch env.Name {
+		case "POSTGRESQL_USER":
+			postgresqlSecret.Data["POSTGRES_USERNAME"] = []byte(env.Value)
+		case "POSTGRESQL_PASSWORD":
+			postgresqlSecret.Data["POSTGRES_PASSWORD"] = []byte(env.Value)
+		case "POSTGRESQL_DATABASE":
+			postgresqlSecret.Data["POSTGRES_DATABASE"] = []byte(env.Value)
+		}
+	}
+
+	err = resources.CreateOrUpdate(ctx, serverClient, postgresqlSecret)
+	if err != nil {
+		return pkgerr.Wrapf(err, "error reconciling postgres component backup secret")
+	}
+	logrus.Infof("codeready postgres component backup secret successfully reconciled")
+
+	return nil
 }
 
 func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -168,7 +247,8 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	}
 	cheURL := cheCluster.Status.CheURL
 	if cheURL == "" {
-		return v1alpha1.PhaseFailed, errors.New("che URL is not set")
+		//still waiting for the Che URL, so exit codeready reconciling now and try again
+		return v1alpha1.PhaseInProgress, nil
 	}
 
 	// retrieve the sso config so we can find the keycloakrealm custom resource to update

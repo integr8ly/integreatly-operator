@@ -135,7 +135,7 @@ func TestReadConfigForProduct(t *testing.T) {
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)
 		}
-		config, err := mgr.ReadConfigForProduct(mockProductName)
+		config, err := mgr.readConfigForProduct(mockProductName)
 		if err != nil {
 			t.Fatalf("could not read config %v", err)
 		}

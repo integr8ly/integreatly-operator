@@ -5,6 +5,35 @@ metadata:
   name: integreatly-operator
 rules:
 - apiGroups:
+  - batch
+  resources:
+    - cronjobs
+  verbs:
+    - create
+    - update
+- apiGroups:
+    - "rbac.authorization.k8s.io"
+  resources:
+    - "clusterroles"
+    - "clusterrolebindings"
+  verbs:
+    - create
+    - update
+- apiGroups:
+    - "*"
+  resources:
+    - "*"
+  verbs:
+    - get
+    - list
+- apiGroups:
+    - ""
+  resources:
+    - "pods/exec"
+  verbs:
+    - create
+    - update
+- apiGroups:
     - ""
   resources:
     - namespaces

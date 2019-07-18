@@ -78,13 +78,13 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
-	case v1alpha1.PhaseNone:
+	case v1alpha1.PhaseNone, v1alpha1.PhaseInProgress:
 		return r.reconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	case v1alpha1.PhaseCreatingSubscription, v1alpha1.PhaseAwaitingOperator:
 		return r.handleCreatingSubscription(ctx, inst, r.Config.GetNamespace(), serverClient)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents(ctx, serverClient, inst)
-	case v1alpha1.PhaseInProgress:
+	case v1alpha1.PhaseAwaitingComponents:
 		return r.handleProgressPhase(ctx, serverClient)
 	case v1alpha1.PhaseCompleted:
 		return v1alpha1.PhaseCompleted, nil
@@ -186,7 +186,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient 
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseAwaitingComponents, nil
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -210,7 +210,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 	}
 
 	logrus.Infof("KeycloakRealm status phase is: %s", kcr.Status.Phase)
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseAwaitingComponents, nil
 }
 
 func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Client) error {

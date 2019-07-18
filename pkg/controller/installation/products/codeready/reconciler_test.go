@@ -21,10 +21,18 @@ import (
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	rbacv1 "k8s.io/api/rbac/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
+		GetOperatorNamespaceFunc: func() string {
+			return "integreatly-operator"
+		},
 		ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 			return config.NewCodeReady(config.ProductConfig{}), nil
 		},
@@ -48,6 +56,9 @@ func buildScheme() *runtime.Scheme {
 	kafkav1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
 	aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	rbacv1.SchemeBuilder.AddToScheme(scheme)
+	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
+	appsv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 
@@ -102,8 +113,37 @@ func TestCodeready(t *testing.T) {
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
-			FakeConfig:           basicConfigMock(),
+			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster, &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: defaultInstallationNamespace,
+					Name:      "postgres",
+				},
+				Spec: appsv1.DeploymentSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{
+								{
+									Env: []corev1.EnvVar{
+										{
+											Name:  "POSTGRES_USERNAME",
+											Value: "username",
+										},
+										{
+											Name:  "POSTGRES_PASSWORD",
+											Value: "password",
+										},
+										{
+											Name:  "POSTGRES_DATABASE",
+											Value: "database",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			FakeConfig: basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
 					t.Fatalf("expected 1 call to readCodeReady config, got: %d", len(mockConfig.ReadCodeReadyCalls()))
@@ -123,11 +163,9 @@ func TestCodeready(t *testing.T) {
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-
 					return nil
 				},
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-
 					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
@@ -194,6 +232,14 @@ func TestCodeready(t *testing.T) {
 			ExpectedStatus: v1alpha1.PhaseFailed,
 			ExpectedError:  "could not reconcile subscription: could not create subscription in namespace: codeready-workspaces: dummy error",
 			Object: &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "installation",
+					Namespace: "installation-namespace",
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
 				Status: v1alpha1.InstallationStatus{
 					ProductStatus: map[v1alpha1.ProductName]string{
 						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
@@ -205,35 +251,20 @@ func TestCodeready(t *testing.T) {
 					return errors.New("dummy error")
 				},
 			},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig:           basicConfigMock(),
-		},
-		{
-			Name:           "test creating components phase missing cluster expect err",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Object: &v1alpha1.Installation{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
-				},
-				Status: v1alpha1.InstallationStatus{
-					ProductStatus: map[v1alpha1.ProductName]string{
-						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingComponents),
+			FakeControllerClient: pkgclient.NewFakeClient(
+				&corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: defaultInstallationNamespace,
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								Name:       "installation",
+								APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							},
+						},
 					},
-				},
-			},
-			ExpectedError:        "could not reconcile keycloakrealm: che URL is not set",
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm),
-			FakeConfig:           basicConfigMock(),
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-					return nil
-				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
-				},
-			},
+					Status: corev1.NamespaceStatus{},
+				}),
+			FakeConfig: basicConfigMock(),
 		},
 	}
 

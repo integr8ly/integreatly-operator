@@ -11,10 +11,10 @@ type ProductName string
 var (
 	PhaseNone                 StatusPhase = ""
 	PhaseAccepted             StatusPhase = "accepted"
-	PhaseAwaitingNS           StatusPhase = "awaiting namespace"
 	PhaseCreatingSubscription StatusPhase = "creating subscription"
 	PhaseAwaitingOperator     StatusPhase = "awaiting operator"
 	PhaseCreatingComponents   StatusPhase = "creating components"
+	PhaseAwaitingComponents   StatusPhase = "awaiting components"
 	PhaseInProgress           StatusPhase = "in progress"
 	PhaseCompleted            StatusPhase = "completed"
 	PhaseFailed               StatusPhase = "failed"
