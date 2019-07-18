@@ -49,13 +49,13 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
-		return r.handleNoPhase(serverClient)
+		return r.handleNoPhase(serverClient, inst)
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase(serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
 		return r.handleCreatingSubscription()
 	case v1alpha1.PhaseCreatingComponents:
-		return r.handleCreatingComponents(serverClient)
+		return r.handleCreatingComponents(serverClient, inst)
 	case v1alpha1.PhaseAwaitingOperator:
 		return r.handleAwaitingOperator()
 	case v1alpha1.PhaseInProgress:
@@ -70,13 +70,14 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	}
 }
 
-func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      r.Config.GetNamespace(),
 		},
 	}
+	ns.OwnerReferences = append(ns.OwnerReferences, *metav1.NewControllerRef(inst, v1alpha1.SchemaGroupVersionKind))
 	err := serverClient.Create(context.TODO(), ns)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, err
@@ -139,7 +140,7 @@ func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseCreatingComponents, nil
 }
 
-func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
@@ -186,6 +187,7 @@ func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1
 			},
 		},
 	}
+	kafka.OwnerReferences = append(kafka.OwnerReferences, *metav1.NewControllerRef(inst, v1alpha1.SchemaGroupVersionKind))
 	err := serverClient.Create(context.TODO(), kafka)
 	if err != nil {
 		return v1alpha1.PhaseCreatingComponents, errors2.Wrap(err, "error creating kafka CR")

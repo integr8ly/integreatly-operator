@@ -2,6 +2,7 @@ package marketplace
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -47,12 +48,14 @@ type MarketplaceInterface interface {
 type MarketplaceManager struct {
 	client     pkgclient.Client
 	restConfig *rest.Config
+	ownerRef   *metav1.OwnerReference
 }
 
-func NewManager(client pkgclient.Client, rc *rest.Config) *MarketplaceManager {
+func NewManager(client pkgclient.Client, rc *rest.Config, install *v1alpha1.Installation) *MarketplaceManager {
 	return &MarketplaceManager{
 		client:     client,
 		restConfig: rc,
+		ownerRef:   metav1.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind),
 	}
 }
 
@@ -64,6 +67,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			Name:      pkg,
 		},
 	}
+
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installed-" + os.Labels[providerLabel] + "-" + ns,
@@ -90,6 +94,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		}
 	}
 
+	csc.OwnerReferences = append(csc.OwnerReferences, *m.ownerRef)
 	err = m.client.Create(ctx, csc)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating catalog source config: %s", err.Error())
@@ -107,6 +112,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
+	og.OwnerReferences = append(og.OwnerReferences, *m.ownerRef)
 	err = m.client.Create(context.TODO(), og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating operator group")
@@ -120,6 +126,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
+	sub.OwnerReferences = append(sub.OwnerReferences, *m.ownerRef)
 	err = m.client.Create(context.TODO(), sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")

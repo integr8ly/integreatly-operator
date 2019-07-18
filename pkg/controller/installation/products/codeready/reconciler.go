@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	pkgerr "github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,6 +58,7 @@ type Reconciler struct {
 }
 
 func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("reconciling codeready phase: %s", inst.Status.ProductStatus[r.Config.GetProductName()])
 	ctx := context.TODO()
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
@@ -99,27 +100,15 @@ func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Install
 }
 
 func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	nsr := resources.NewNamespaceReconciler(serverClient)
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
+	ns, err := nsr.Reconcile(ctx, ns, inst)
 	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve namespace: %s", r.Config.GetNamespace()))
-		}
-		if err = serverClient.Create(ctx, ns); err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not create namespace: %s", r.Config.GetNamespace()))
-		}
-	}
-
-	if ns.Status.Phase == v1.NamespaceTerminating {
-		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
-		return v1alpha1.PhaseAwaitingNS, nil
-	}
-	if ns.Status.Phase != v1.NamespaceActive {
-		return v1alpha1.PhaseAwaitingNS, nil
+		return v1alpha1.PhaseFailed, err
 	}
 	return v1alpha1.PhaseCreatingSubscription, nil
 }
@@ -163,7 +152,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 		}
-		if err = r.createCheCluster(ctx, r.KeycloakConfig, kcRealm, inst.Spec.SelfSignedCerts, serverClient); err != nil {
+		if err = r.createCheCluster(ctx, r.KeycloakConfig, kcRealm, inst, serverClient); err != nil {
 			if k8serr.IsAlreadyExists(err) {
 				logrus.Debugf("checluster custom resource already exists in namespace: %s", r.Config.GetNamespace())
 				return v1alpha1.PhaseInProgress, nil
@@ -305,7 +294,8 @@ func findCheKeycloakClient(clients []*keycloakv1.KeycloakClient) *keycloakv1.Key
 	return nil
 }
 
-func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, selfSignedCerts bool, serverClient pkgclient.Client) error {
+func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
+	selfSignedCerts := inst.Spec.SelfSignedCerts
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultCheClusterName,
@@ -347,5 +337,6 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			},
 		},
 	}
+	cheCluster.OwnerReferences = append(cheCluster.OwnerReferences, *metav1.NewControllerRef(inst, v1alpha1.SchemaGroupVersionKind))
 	return serverClient.Create(ctx, cheCluster)
 }

@@ -100,6 +100,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	//do nothing for uninstalls at present
+	if instance.DeletionTimestamp != nil {
+		return reconcile.Result{}, nil
+	}
+
 	if instance.Status.Stages == nil {
 		instance.Status.Stages = map[int]string{}
 	}

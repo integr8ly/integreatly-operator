@@ -23,7 +23,7 @@ type Interface interface {
 }
 
 func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
-	mpm := marketplace.NewManager(client, rc)
+	mpm := marketplace.NewManager(client, rc, instance)
 	nsr := resources.NewNamespaceReconciler(client)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
