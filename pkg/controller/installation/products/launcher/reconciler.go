@@ -53,13 +53,28 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 
 	phase, err := r.reconcileNamespace(ctx, inst, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile namespace for fuse ")
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile namespace for launcher ")
 	}
 
-	// TODO Case: Create subscription (This will create the launcher operator)
-	// TODO Case: Create launcher_oauth_github Secret (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
-	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
-	// TODO Case: OauthClient (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
+	phase, err = r.reconcileSubscription(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile subscription for launcher ")
+	}
+
+	phase, err = r.reconcileGithubOauth(ctx, inst, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile secret for launcher github oauth")
+	}
+
+	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile custom resource for launcher")
+	}
+
+	phase, err = r.reconcileOauthClient(ctx, inst, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile oauthclient for launcher")
+	}
 
 	r.logger.Debug("End of reconcile Phase: ", phase)
 
@@ -96,5 +111,27 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 
 	// all good return no status when ready
 	r.logger.Debug("namespace is ready")
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Create subscription (This will create the launcher operator)
+
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileGithubOauth(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Create launcher_oauth_github Secret (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
+
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Case: OauthClient (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
 	return v1alpha1.PhaseNone, nil
 }
