@@ -34,19 +34,19 @@ var log = logf.Log.WithName("Installation Controller")
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
+func Add(mgr manager.Manager, products []string) error {
+	return add(mgr, newReconciler(mgr, products))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, products []string) reconcile.Reconciler {
 	restConfig := controllerruntime.GetConfigOrDie()
 	coreClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		logrus.Infof("error creating core client: %v", err)
 		return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 	}
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient, restConfig: restConfig}
+	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient, restConfig: restConfig, productsToInstall: products}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -81,10 +81,11 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
-	coreClient *kubernetes.Clientset
-	restConfig *rest.Config
+	client            client.Client
+	scheme            *runtime.Scheme
+	coreClient        *kubernetes.Clientset
+	restConfig        *rest.Config
+	productsToInstall []string
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -103,7 +104,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		instance.Status.Stages = map[int]string{}
 	}
 
-	err, installType := InstallationTypeFactory(instance.Spec.Type)
+	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

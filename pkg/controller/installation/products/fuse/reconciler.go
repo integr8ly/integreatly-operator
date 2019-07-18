@@ -58,7 +58,6 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 
 func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ctx := context.TODO()
-
 	reconciledPhase, err := r.reconcileNamespace(ctx, inst, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")

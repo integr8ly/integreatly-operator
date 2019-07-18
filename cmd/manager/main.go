@@ -29,6 +29,7 @@ import (
 var (
 	metricsHost       = "0.0.0.0"
 	metricsPort int32 = 8383
+	products    []string
 )
 var log = logf.Log.WithName("cmd")
 
@@ -46,6 +47,8 @@ func main() {
 	// Add flags registered by imported packages (e.g. glog and
 	// controller-runtime)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+
+	pflag.StringSliceVarP(&products, "products", "p", []string{"all"}, "--products=rhsso,fuse")
 
 	pflag.Parse()
 
@@ -102,7 +105,7 @@ func main() {
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
+	if err := controller.AddToManager(mgr, products); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
