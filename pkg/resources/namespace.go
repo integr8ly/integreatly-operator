@@ -5,24 +5,26 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type NamespaceReconciler struct {
+//go:generate moq -out NamespaceReconciler_moq.go . NamespaceReconciler
+type NamespaceReconciler interface {
+	Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error)
+}
+
+type SimpleNamespaceReconciler struct {
 	client pkgclient.Client
-	logger *logrus.Entry
 }
 
-func NewNamespaceReconciler(client pkgclient.Client, logger *logrus.Entry) *NamespaceReconciler {
-	return &NamespaceReconciler{client: client, logger: logger}
+func NewNamespaceReconciler(client pkgclient.Client) NamespaceReconciler {
+	return &SimpleNamespaceReconciler{client: client}
 }
 
-func (nr *NamespaceReconciler) Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
-
+func (nr *SimpleNamespaceReconciler) Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
 	if ns.Name == "" {
 		return ns, errors.New("cannot reconcile namespace, it has no name")
 	}

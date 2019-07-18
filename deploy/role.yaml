@@ -52,3 +52,17 @@ rules:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - enmasse.io
+  resources:
+  - '*'
+  - addressspaceplans
+  verbs:
+  - '*'
+- apiGroups:
+  - admin.enmasse.io
+  resources:
+  - '*'
+  - standardinfraconfigs
+  verbs:
+  - '*'

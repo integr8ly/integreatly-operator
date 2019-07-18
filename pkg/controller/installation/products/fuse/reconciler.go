@@ -83,7 +83,7 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 }
 
 func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	nsr := resources.NewNamespaceReconciler(client, r.logger)
+	nsr := resources.NewNamespaceReconciler(client)
 	ns := &v1.Namespace{
 		ObjectMeta: v12.ObjectMeta{
 			Name: r.Config.GetNamespace(),
@@ -150,11 +150,11 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if errors2.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !errors2.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling cutom resource")
+				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling custom resource")
 			}
 			return v1alpha1.PhaseInProgress, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling cutom resource")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling custom resource")
 	}
 	if cr.Status.Phase != syn.SyndesisPhaseInstalled && cr.Status.Phase != syn.SyndesisPhaseStartupFailed {
 		return v1alpha1.PhaseInProgress, nil

@@ -2,7 +2,11 @@ package apis
 
 import (
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
+	enmasse "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
+	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -23,5 +27,9 @@ func init() {
 		aerogearv1.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syn.SchemeBuilder.AddToScheme,
+		enmasse.SchemeBuilder.AddToScheme,
+		enmassev1beta2.SchemeBuilder.AddToScheme,
+		enmassev1beta1.SchemeBuilder.AddToScheme,
+		enmasseAdmin.SchemeBuilder.AddToScheme,
 	)
 }

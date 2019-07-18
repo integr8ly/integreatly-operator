@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -12,7 +11,6 @@ import (
 )
 
 func TestReconcileNamespace(t *testing.T) {
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	commonValidate := func(t *testing.T, ns *v1.Namespace) {
 		if ns == nil {
 			t.Fatal("expected a Namespace but got nil ")
@@ -87,7 +85,7 @@ func TestReconcileNamespace(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			nsReconcile := NewNamespaceReconciler(tc.FakeControllerClient(), logger)
+			nsReconcile := NewNamespaceReconciler(tc.FakeControllerClient())
 			ns, err := nsReconcile.Reconcile(context.TODO(), tc.NS, tc.Owner)
 			if tc.ExpectError && err == nil {
 				t.Fatal("expected an error but got none")

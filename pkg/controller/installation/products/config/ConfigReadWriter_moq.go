@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	lockConfigReadWriterMockReadAMQOnline        sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams       sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadConfigForProduct sync.RWMutex
@@ -27,6 +28,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 //         // make and configure a mocked ConfigReadWriter
 //         mockedConfigReadWriter := &ConfigReadWriterMock{
+//             ReadAMQOnlineFunc: func() (*AMQOnline, error) {
+// 	               panic("mock out the ReadAMQOnline method")
+//             },
 //             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
 // 	               panic("mock out the ReadAMQStreams method")
 //             },
@@ -52,6 +56,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 //     }
 type ConfigReadWriterMock struct {
+	// ReadAMQOnlineFunc mocks the ReadAMQOnline method.
+	ReadAMQOnlineFunc func() (*AMQOnline, error)
+
 	// ReadAMQStreamsFunc mocks the ReadAMQStreams method.
 	ReadAMQStreamsFunc func() (*AMQStreams, error)
 
@@ -72,6 +79,9 @@ type ConfigReadWriterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// ReadAMQOnline holds details about calls to the ReadAMQOnline method.
+		ReadAMQOnline []struct {
+		}
 		// ReadAMQStreams holds details about calls to the ReadAMQStreams method.
 		ReadAMQStreams []struct {
 		}
@@ -95,6 +105,32 @@ type ConfigReadWriterMock struct {
 			Config ConfigReadable
 		}
 	}
+}
+
+// ReadAMQOnline calls ReadAMQOnlineFunc.
+func (mock *ConfigReadWriterMock) ReadAMQOnline() (*AMQOnline, error) {
+	if mock.ReadAMQOnlineFunc == nil {
+		panic("ConfigReadWriterMock.ReadAMQOnlineFunc: method is nil but ConfigReadWriter.ReadAMQOnline was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadAMQOnline.Lock()
+	mock.calls.ReadAMQOnline = append(mock.calls.ReadAMQOnline, callInfo)
+	lockConfigReadWriterMockReadAMQOnline.Unlock()
+	return mock.ReadAMQOnlineFunc()
+}
+
+// ReadAMQOnlineCalls gets all the calls that were made to ReadAMQOnline.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadAMQOnlineCalls())
+func (mock *ConfigReadWriterMock) ReadAMQOnlineCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadAMQOnline.RLock()
+	calls = mock.calls.ReadAMQOnline
+	lockConfigReadWriterMockReadAMQOnline.RUnlock()
+	return calls
 }
 
 // ReadAMQStreams calls ReadAMQStreamsFunc.
