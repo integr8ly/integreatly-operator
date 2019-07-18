@@ -3,15 +3,21 @@ package installation
 import (
 	"errors"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/sirupsen/logrus"
+	"strings"
+)
+
+var (
+	allManagedOrder = [][]v1alpha1.ProductName{
+		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQOnline},
+	}
+	allWorkspaceOrder = [][]v1alpha1.ProductName{
+		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline},
+	}
 )
 
 type Type struct {
-	products     []v1alpha1.ProductName
 	productOrder [][]v1alpha1.ProductName
-}
-
-func (t *Type) GetProducts() []v1alpha1.ProductName {
-	return t.products
 }
 
 func (t *Type) HasProduct(product string) bool {
@@ -24,34 +30,57 @@ func (t *Type) GetProductOrder() [][]v1alpha1.ProductName {
 	return t.productOrder
 }
 
-func InstallationTypeFactory(installationType string) (error, *Type) {
+func InstallationTypeFactory(installationType string, products []string) (error, *Type) {
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
 	case string(v1alpha1.InstallationTypeWorkshop):
-		return nil, newWorkshopType()
+		return nil, newWorkshopType(products)
 	case string(v1alpha1.InstallationTypeManaged):
-		return nil, newManagedType()
+		return nil, newManagedType(products)
 	default:
 		return errors.New("unknown installation type: " + installationType), nil
 	}
 }
 
-func newWorkshopType() *Type {
-	return &Type{
-		products: []v1alpha1.ProductName{v1alpha1.ProductAMQOnline},
+func newWorkshopType(products []string) *Type {
+	logrus.Info("installing workshop products ", products)
+	t := &Type{
 		productOrder: [][]v1alpha1.ProductName{
-			{v1alpha1.ProductRHSSO},
-			{v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline},
+			{},
+			{},
 		},
 	}
+
+	buildProducts(t, products, v1alpha1.InstallationTypeWorkshop)
+	return t
 }
 
-func newManagedType() *Type {
-	return &Type{
-		products: []v1alpha1.ProductName{v1alpha1.ProductRHSSO},
+func newManagedType(products []string) *Type {
+	logrus.Info("installing managed products ", products)
+	t := &Type{
 		productOrder: [][]v1alpha1.ProductName{
-			{v1alpha1.ProductRHSSO},
-			{v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductFuse, v1alpha1.ProductAMQOnline},
+			{},
+			{},
 		},
+	}
+	buildProducts(t, products, v1alpha1.InstallationTypeManaged)
+	return t
+}
+
+func buildProducts(t *Type, products []string, installType v1alpha1.InstallationType) {
+	for _, p := range products {
+		product := strings.ToLower(strings.TrimSpace(p))
+		if product == "all" {
+			if installType == v1alpha1.InstallationTypeManaged {
+				t.productOrder = allManagedOrder
+			} else if installType == v1alpha1.InstallationTypeWorkshop {
+				t.productOrder = allWorkspaceOrder
+			}
+			break
+		}
+		if v1alpha1.ProductName(product) == v1alpha1.ProductRHSSO {
+			t.productOrder[0] = []v1alpha1.ProductName{v1alpha1.ProductRHSSO}
+		}
+		t.productOrder[1] = append(t.productOrder[1], v1alpha1.ProductName(product))
 	}
 }
