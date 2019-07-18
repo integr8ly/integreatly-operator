@@ -39,6 +39,7 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             },
 //             ReadLauncherFunc: func() (*Launcher, error) {
 // 	               panic("mock out the ReadLauncher method")
 //             },
@@ -66,6 +67,7 @@ type ConfigReadWriterMock struct {
 
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
+
 	// ReadLauncherFunc mocks the ReadLauncher method.
 	ReadLauncherFunc func() (*Launcher, error)
 
@@ -90,6 +92,7 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
+		}
 		// ReadLauncher holds details about calls to the ReadLauncher method.
 		ReadLauncher []struct {
 		}
@@ -210,6 +213,9 @@ func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
 	lockConfigReadWriterMockReadFuse.RLock()
 	calls = mock.calls.ReadFuse
 	lockConfigReadWriterMockReadFuse.RUnlock()
+	return calls
+}
+
 // ReadLauncher calls ReadLauncherFunc.
 func (mock *ConfigReadWriterMock) ReadLauncher() (*Launcher, error) {
 	if mock.ReadLauncherFunc == nil {
