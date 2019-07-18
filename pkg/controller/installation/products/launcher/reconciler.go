@@ -56,7 +56,12 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, " failed to reconcile namespace for fuse ")
 	}
 
-	r.logger.Info("End of reconcile Phase: ", phase)
+	// TODO Case: Create subscription (This will create the launcher operator)
+	// TODO Case: Create launcher_oauth_github Secret (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
+	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
+	// TODO Case: OauthClient (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
+
+	r.logger.Debug("End of reconcile Phase: ", phase)
 
 	// if we get to the end and no phase set then the reconcile is completed
 	if phase == v1alpha1.PhaseNone {
