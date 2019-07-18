@@ -5,6 +5,19 @@ metadata:
   name: integreatly-operator
 rules:
 - apiGroups:
+    - "*"
+  resources:
+    - "*"
+  verbs:
+    - get
+    - list
+- apiGroups:
+    - ""
+  resources:
+    - "pods/exec"
+  verbs:
+    - create
+- apiGroups:
     - ""
   resources:
     - namespaces

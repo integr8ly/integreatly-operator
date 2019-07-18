@@ -9,6 +9,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 func init() {
@@ -23,5 +24,6 @@ func init() {
 		aerogearv1.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syn.SchemeBuilder.AddToScheme,
+		rbacv1.SchemeBuilder.AddToScheme,
 	)
 }
