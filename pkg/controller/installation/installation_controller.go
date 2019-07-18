@@ -40,13 +40,23 @@ func Add(mgr manager.Manager, products []string) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, products []string) reconcile.Reconciler {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 	restConfig := controllerruntime.GetConfigOrDie()
 	coreClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		logrus.Infof("error creating core client: %v", err)
 		return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 	}
-	return &ReconcileInstallation{client: mgr.GetClient(), scheme: mgr.GetScheme(), coreClient: coreClient, restConfig: restConfig, productsToInstall: products}
+	return &ReconcileInstallation{
+		client:            mgr.GetClient(),
+		scheme:            mgr.GetScheme(),
+		coreClient:        coreClient,
+		restConfig:        restConfig,
+		productsToInstall: products,
+		context:           ctx,
+		cancel:            cancel,
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -86,13 +96,15 @@ type ReconcileInstallation struct {
 	coreClient        *kubernetes.Clientset
 	restConfig        *rest.Config
 	productsToInstall []string
+	context           context.Context
+	cancel            context.CancelFunc
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	instance := &v1alpha1.Installation{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.client.Get(r.context, request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -100,8 +112,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	//do nothing for uninstalls at present
+	// if the CR is being deleted,
+	// cancel this context to kill all
+	// ongoing requests to the API and exit
 	if instance.DeletionTimestamp != nil {
+		r.cancel() //cancel context
 		return reconcile.Result{}, nil
 	}
 
@@ -118,7 +133,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = instance.Spec.NamespacePrefix + defaultInstallationConfigMapName
 	}
 
-	configManager, err := config.NewManager(r.client, request.NamespacedName.Namespace, installationCfgMap)
+	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -145,7 +160,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	//UPDATE STATUS
-	err = r.client.Status().Update(context.TODO(), instance)
+	err = r.client.Status().Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
@@ -162,7 +177,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	//UPDATE OBJECT
-	err = r.client.Update(context.TODO(), instance)
+	err = r.client.Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
@@ -205,7 +220,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if !(phase == string(v1alpha1.PhaseCompleted)) {
 			incompleteStage = true
 		}
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, r.coreClient, configManager, instance)
+		reconciler, err := products.NewReconciler(r.context, v1alpha1.ProductName(product), r.client, r.restConfig, r.coreClient, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
@@ -214,7 +229,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
 		}
-		newPhase, err := reconciler.Reconcile(instance, serverClient)
+		newPhase, err := reconciler.Reconcile(r.context, instance, serverClient)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)

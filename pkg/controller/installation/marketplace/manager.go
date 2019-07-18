@@ -5,6 +5,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -41,25 +42,25 @@ func GetOperatorSources() *operatorSources {
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
-	GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
+	CreateSubscription(ctx context.Context, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	GetSubscriptionInstallPlan(ctx context.Context, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
 }
 
 type MarketplaceManager struct {
 	client     pkgclient.Client
 	restConfig *rest.Config
-	ownerRef   *metav1.OwnerReference
+	owner      ownerutil.Owner
 }
 
 func NewManager(client pkgclient.Client, rc *rest.Config, install *v1alpha1.Installation) *MarketplaceManager {
 	return &MarketplaceManager{
 		client:     client,
 		restConfig: rc,
-		ownerRef:   metav1.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind),
+		owner:      install,
 	}
 }
 
-func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -80,9 +81,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespace: ns,
 		},
 	}
-	ctx := context.TODO()
 	//TODO might need to check status of catalogsourceconfig
-	_, err := m.getSubscription(sub.Name, ns)
+	_, err := m.getSubscription(ctx, sub.Name, ns)
 	if err != nil && k8serr.IsNotFound(err) {
 		logrus.Infof("Subscription not found ")
 		// delete catalog source config
@@ -94,13 +94,13 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		}
 	}
 
-	csc.OwnerReferences = append(csc.OwnerReferences, *m.ownerRef)
+	ownerutil.EnsureOwner(csc, m.owner)
 	err = m.client.Create(ctx, csc)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating catalog source config: %s", err.Error())
 		return err
 	}
-	logrus.Infof("catalog source config created ")
+	logrus.Infof("catalog source config created")
 
 	og := &coreosv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -112,8 +112,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
-	og.OwnerReferences = append(og.OwnerReferences, *m.ownerRef)
-	err = m.client.Create(context.TODO(), og)
+	ownerutil.EnsureOwner(og, m.owner)
+	err = m.client.Create(ctx, og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating operator group")
 		return err
@@ -126,8 +126,8 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
-	sub.OwnerReferences = append(sub.OwnerReferences, *m.ownerRef)
-	err = m.client.Create(context.TODO(), sub)
+	ownerutil.EnsureOwner(sub, m.owner)
+	err = m.client.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")
 		return err
@@ -138,7 +138,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 	return nil
 }
 
-func (m *MarketplaceManager) getSubscription(subName, ns string) (*coreosv1alpha1.Subscription, error) {
+func (m *MarketplaceManager) getSubscription(ctx context.Context, subName, ns string) (*coreosv1alpha1.Subscription, error) {
 	logrus.Infof("Getting subscription %s in ns: %s", subName, ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -152,7 +152,7 @@ func (m *MarketplaceManager) getSubscription(subName, ns string) (*coreosv1alpha
 		return nil, err
 	}
 
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err != nil {
 		logrus.Infof("Error getting subscription %s in ns: %s", subName, ns)
 		return nil, err
@@ -160,8 +160,8 @@ func (m *MarketplaceManager) getSubscription(subName, ns string) (*coreosv1alpha
 	return sub, nil
 }
 
-func (m *MarketplaceManager) GetSubscriptionInstallPlan(subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
-	sub, err := m.getSubscription(subName, ns)
+func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+	sub, err := m.getSubscription(ctx, subName, ns)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "GetSubscriptionInstallPlan")
 	}
@@ -181,7 +181,7 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlan(subName, ns string) (*co
 		logrus.Infof("Error creating server client")
 		return nil, nil, err
 	}
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: ip.Name, Namespace: ip.Namespace}, ip)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: ip.Name, Namespace: ip.Namespace}, ip)
 	if err != nil {
 		return nil, nil, err
 	}

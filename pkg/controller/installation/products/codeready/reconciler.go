@@ -11,6 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -57,9 +58,7 @@ type Reconciler struct {
 	mpm            marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling codeready phase: %s", inst.Status.ProductStatus[r.Config.GetProductName()])
-	ctx := context.TODO()
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone, v1alpha1.PhaseAwaitingNS:
@@ -116,6 +115,7 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
 	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
+		ctx,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -182,7 +182,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
 	logrus.Debugf("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
@@ -337,6 +337,6 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			},
 		},
 	}
-	cheCluster.OwnerReferences = append(cheCluster.OwnerReferences, *metav1.NewControllerRef(inst, v1alpha1.SchemaGroupVersionKind))
+	ownerutil.EnsureOwner(cheCluster, inst)
 	return serverClient.Create(ctx, cheCluster)
 }

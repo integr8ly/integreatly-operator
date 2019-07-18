@@ -34,9 +34,14 @@ func TestReconcileNamespace(t *testing.T) {
 		Validate             func(t *testing.T, ns *v1.Namespace)
 	}{
 		{
-			Name:  "test namespace reconciled correctly when not already created",
-			NS:    &v1.Namespace{ObjectMeta: v12.ObjectMeta{Name: "something"}},
-			Owner: &v1alpha1.Installation{},
+			Name: "test namespace reconciled correctly when not already created",
+			NS:   &v1.Namespace{ObjectMeta: v12.ObjectMeta{Name: "something"}},
+			Owner: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					Kind:       "Installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
 			FakeControllerClient: func() client.Client {
 				c := pkgclient.NewFakeClient()
 				return c
@@ -58,7 +63,7 @@ func TestReconcileNamespace(t *testing.T) {
 				},
 				TypeMeta: v12.TypeMeta{
 					Kind:       "Installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
 			FakeControllerClient: func() client.Client {

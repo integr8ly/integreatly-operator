@@ -1,6 +1,7 @@
 package products
 
 import (
+	"context"
 	"errors"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -19,10 +20,10 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(ctx context.Context, product v1alpha1.ProductName, client client.Client, rc *rest.Config, coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager(client, rc, instance)
 	nsr := resources.NewNamespaceReconciler(client)
 	switch product {
@@ -46,6 +47,6 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseNone, nil
 }

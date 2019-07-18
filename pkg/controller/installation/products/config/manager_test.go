@@ -76,7 +76,7 @@ func TestWriteConfig(t *testing.T) {
 	for _, test := range tests {
 		fakeClient := fake.NewFakeClient(test.existingResources...)
 
-		mgr, err := NewManager(fakeClient, mockNamespaceName, mockConfigMapName)
+		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName)
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)
 		}
@@ -131,7 +131,7 @@ func TestReadConfigForProduct(t *testing.T) {
 
 	for _, test := range tests {
 		fakeClient := fake.NewFakeClient(test.existingResources...)
-		mgr, err := NewManager(fakeClient, mockNamespaceName, mockConfigMapName)
+		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName)
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)
 		}

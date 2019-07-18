@@ -4,6 +4,7 @@
 package marketplace
 
 import (
+	"context"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"sync"
@@ -24,10 +25,10 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 //         // make and configure a mocked MarketplaceInterface
 //         mockedMarketplaceInterface := &MarketplaceInterfaceMock{
-//             CreateSubscriptionFunc: func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+//             CreateSubscriptionFunc: func(ctx context.Context, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 // 	               panic("mock out the CreateSubscription method")
 //             },
-//             GetSubscriptionInstallPlanFunc: func(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
+//             GetSubscriptionInstallPlanFunc: func(ctx context.Context, subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
 // 	               panic("mock out the GetSubscriptionInstallPlan method")
 //             },
 //         }
@@ -38,15 +39,17 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //     }
 type MarketplaceInterfaceMock struct {
 	// CreateSubscriptionFunc mocks the CreateSubscription method.
-	CreateSubscriptionFunc func(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
+	CreateSubscriptionFunc func(ctx context.Context, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
 
 	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
-	GetSubscriptionInstallPlanFunc func(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error)
+	GetSubscriptionInstallPlanFunc func(ctx context.Context, subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// CreateSubscription holds details about calls to the CreateSubscription method.
 		CreateSubscription []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// Os is the os argument value.
 			Os v1.OperatorSource
 			// Ns is the ns argument value.
@@ -62,6 +65,8 @@ type MarketplaceInterfaceMock struct {
 		}
 		// GetSubscriptionInstallPlan holds details about calls to the GetSubscriptionInstallPlan method.
 		GetSubscriptionInstallPlan []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// SubName is the subName argument value.
 			SubName string
 			// Ns is the ns argument value.
@@ -71,11 +76,12 @@ type MarketplaceInterfaceMock struct {
 }
 
 // CreateSubscription calls CreateSubscriptionFunc.
-func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+func (mock *MarketplaceInterfaceMock) CreateSubscription(ctx context.Context, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 	if mock.CreateSubscriptionFunc == nil {
 		panic("MarketplaceInterfaceMock.CreateSubscriptionFunc: method is nil but MarketplaceInterface.CreateSubscription was just called")
 	}
 	callInfo := struct {
+		Ctx                     context.Context
 		Os                      v1.OperatorSource
 		Ns                      string
 		Pkg                     string
@@ -83,6 +89,7 @@ func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, n
 		OperatorGroupNamespaces []string
 		ApprovalStrategy        v1alpha1.Approval
 	}{
+		Ctx:                     ctx,
 		Os:                      os,
 		Ns:                      ns,
 		Pkg:                     pkg,
@@ -93,13 +100,14 @@ func (mock *MarketplaceInterfaceMock) CreateSubscription(os v1.OperatorSource, n
 	lockMarketplaceInterfaceMockCreateSubscription.Lock()
 	mock.calls.CreateSubscription = append(mock.calls.CreateSubscription, callInfo)
 	lockMarketplaceInterfaceMockCreateSubscription.Unlock()
-	return mock.CreateSubscriptionFunc(os, ns, pkg, channel, operatorGroupNamespaces, approvalStrategy)
+	return mock.CreateSubscriptionFunc(ctx, os, ns, pkg, channel, operatorGroupNamespaces, approvalStrategy)
 }
 
 // CreateSubscriptionCalls gets all the calls that were made to CreateSubscription.
 // Check the length with:
 //     len(mockedMarketplaceInterface.CreateSubscriptionCalls())
 func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
+	Ctx                     context.Context
 	Os                      v1.OperatorSource
 	Ns                      string
 	Pkg                     string
@@ -108,6 +116,7 @@ func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
 	ApprovalStrategy        v1alpha1.Approval
 } {
 	var calls []struct {
+		Ctx                     context.Context
 		Os                      v1.OperatorSource
 		Ns                      string
 		Pkg                     string
@@ -122,31 +131,35 @@ func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
 }
 
 // GetSubscriptionInstallPlan calls GetSubscriptionInstallPlanFunc.
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlan(ctx context.Context, subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
 	if mock.GetSubscriptionInstallPlanFunc == nil {
 		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlanFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlan was just called")
 	}
 	callInfo := struct {
+		Ctx     context.Context
 		SubName string
 		Ns      string
 	}{
+		Ctx:     ctx,
 		SubName: subName,
 		Ns:      ns,
 	}
 	lockMarketplaceInterfaceMockGetSubscriptionInstallPlan.Lock()
 	mock.calls.GetSubscriptionInstallPlan = append(mock.calls.GetSubscriptionInstallPlan, callInfo)
 	lockMarketplaceInterfaceMockGetSubscriptionInstallPlan.Unlock()
-	return mock.GetSubscriptionInstallPlanFunc(subName, ns)
+	return mock.GetSubscriptionInstallPlanFunc(ctx, subName, ns)
 }
 
 // GetSubscriptionInstallPlanCalls gets all the calls that were made to GetSubscriptionInstallPlan.
 // Check the length with:
 //     len(mockedMarketplaceInterface.GetSubscriptionInstallPlanCalls())
 func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlanCalls() []struct {
+	Ctx     context.Context
 	SubName string
 	Ns      string
 } {
 	var calls []struct {
+		Ctx     context.Context
 		SubName string
 		Ns      string
 	}
