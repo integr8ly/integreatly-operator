@@ -143,7 +143,7 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 			if sub != nil {
 				logrus.Infof("time since created %v", time.Now().Sub(sub.CreationTimestamp.Time).Seconds())
 			}
-			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > time.Second*60 {
+			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > config.SubscriptionTimeout {
 				// delete subscription so it is recreated
 				logrus.Info("removing subscription as no install plan ready yet will recreate")
 				if err := r.client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
