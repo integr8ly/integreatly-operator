@@ -5,3 +5,7 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
+  amqOnline:
+    resourceURLs:
+    - https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/resources/default-amqonline-resources.json
+
