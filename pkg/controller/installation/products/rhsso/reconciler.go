@@ -8,7 +8,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -47,21 +49,21 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
-		return r.handleNoPhase(serverClient)
+		return r.handleNoPhase(ctx, serverClient, inst)
 	case v1alpha1.PhaseAwaitingNS:
-		return r.handleAwaitingNSPhase(serverClient)
+		return r.handleAwaitingNSPhase(ctx, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription()
+		return r.handleCreatingSubscription(ctx)
 	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator()
+		return r.handleAwaitingOperator(ctx)
 	case v1alpha1.PhaseCreatingComponents:
-		return r.handleCreatingComponents(serverClient)
+		return r.handleCreatingComponents(ctx, serverClient, inst)
 	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase(serverClient)
+		return r.handleProgressPhase(ctx, serverClient)
 	case v1alpha1.PhaseCompleted:
 		return v1alpha1.PhaseCompleted, nil
 	case v1alpha1.PhaseFailed:
@@ -72,27 +74,28 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	}
 }
 
-func (r *Reconciler) handleNoPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleNoPhase(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	nsr := resources.NewNamespaceReconciler(serverClient)
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Create(context.TODO(), ns)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, err
+	ns, err := nsr.Reconcile(ctx, ns, inst)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "error creating namespace for rhsso")
 	}
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingNSPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -104,8 +107,9 @@ func (r *Reconciler) handleAwaitingNSPhase(serverClient pkgclient.Client) (v1alp
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
+		ctx,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"rhsso",
@@ -119,8 +123,8 @@ func (r *Reconciler) handleCreatingSubscription() (v1alpha1.StatusPhase, error) 
 	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan("rhsso", r.Config.GetNamespace())
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, "rhsso", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Infof("No installplan created yet")
@@ -141,9 +145,7 @@ func (r *Reconciler) handleAwaitingOperator() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseCreatingComponents, nil
 }
 
-func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("Creating Components")
-
+func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
@@ -165,8 +167,8 @@ func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1
 			Provision: true,
 		},
 	}
-
-	err := serverClient.Create(context.TODO(), kc)
+	ownerutil.EnsureOwner(kc, inst)
+	err := serverClient.Create(ctx, kc)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -225,7 +227,8 @@ func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1
 			},
 		},
 	}
-	err = serverClient.Create(context.TODO(), kcr)
+	ownerutil.EnsureOwner(kcr, inst)
+	err = serverClient.Create(ctx, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -233,17 +236,17 @@ func (r *Reconciler) handleCreatingComponents(serverClient pkgclient.Client) (v1
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) handleProgressPhase(serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("checking ready status for rhsso")
 	kcr := &aerogearv1.KeycloakRealm{}
 
-	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
-		err = r.exportConfig(serverClient)
+		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
 			logrus.Errorf("Failed to write RH-SSO config %v", err)
 			return v1alpha1.PhaseFailed, err
@@ -257,14 +260,14 @@ func (r *Reconciler) handleProgressPhase(serverClient pkgclient.Client) (v1alpha
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) exportConfig(serverClient pkgclient.Client) error {
+func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Client) error {
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
 	}
@@ -276,7 +279,7 @@ func (r *Reconciler) exportConfig(serverClient pkgclient.Client) error {
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(context.TODO(), pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not retrieve keycloak admin credential secret for keycloak config")
 	}

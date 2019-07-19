@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
@@ -56,8 +57,7 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ctx := context.TODO()
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	reconciledPhase, err := r.reconcileNamespace(ctx, inst, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")
@@ -106,6 +106,7 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
+		ctx,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -119,13 +120,9 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ref := v12.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
 	intLimit := -1
 	cr := &syn.Syndesis{
 		ObjectMeta: v12.ObjectMeta{
-			OwnerReferences: []v12.OwnerReference{
-				*ref,
-			},
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
@@ -146,6 +143,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			},
 		},
 	}
+	ownerutil.EnsureOwner(cr, install)
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if errors2.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !errors2.IsAlreadyExists(err) {
@@ -166,7 +164,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
+	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if errors2.IsNotFound(err) {
 			if sub != nil {

@@ -52,8 +52,13 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 					Phase: syn.SyndesisPhaseInstalling,
 				},
 			}),
-			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 		},
 		{
@@ -67,8 +72,13 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 					Phase: syn.SyndesisPhaseStartupFailed,
 				},
 			}),
-			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
 			ExpectedStatus: v1alpha1.PhaseFailed,
 			ExpectErr:      true,
 		},
@@ -83,8 +93,13 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 					Phase: syn.SyndesisPhaseInstalled,
 				},
 			}),
-			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
 			ExpectedStatus: v1alpha1.PhaseNone,
 		},
 	}
@@ -172,8 +187,13 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 					Phase: v1.NamespaceTerminating,
 				},
 			}),
-			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
 			ExpectedStatus: v1alpha1.PhaseAwaitingNS,
 		},
 	}

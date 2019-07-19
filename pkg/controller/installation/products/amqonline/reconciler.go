@@ -53,8 +53,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ctx := context.TODO()
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	logrus.Info("phase status ", phase)
 
@@ -121,6 +120,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.Status
 	// need to make sure there is only one operator source
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
+		ctx,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -135,7 +135,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.Status
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
+	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		logrus.Info("error in handleAwaitingOperator ", err.Error())
 		if k8serr.IsNotFound(err) {
