@@ -24,6 +24,7 @@ import (
 const (
 	defaultInstallationNamespace = "amq-online"
 	defaultSubscriptionName      = "amq-online"
+	defaultConsoleSvcName        = "console"
 )
 
 type Reconciler struct {
@@ -38,7 +39,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface, nsr resources.NamespaceReconciler) (*Reconciler, error) {
 	amqOnlineConfig, err := configManager.ReadAMQOnline()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve keycloak codeReadyConfig")
+		return nil, errors.Wrap(err, "could not retrieve keycloak amq online config")
 	}
 
 	if amqOnlineConfig.GetNamespace() == "" {
@@ -61,17 +62,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for amq online ")
 	}
-
 	reconciledPhase, err = r.reconcileSubscription(ctx)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for amq online ")
 	}
-
 	reconciledPhase, err = r.handleAwaitingOperator(ctx)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for amq online ")
 	}
-
 	reconciledPhase, err = r.reconcileAuthServices(ctx, serverClient, GetDefaultAuthServices(r.Config.GetNamespace()))
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online auth services ")
@@ -87,6 +85,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	reconciledPhase, err = r.reconcileAddressSpacePlans(ctx, serverClient, GetDefaultAddressSpacePlans(r.Config.GetNamespace()))
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online address space plans ")
+	}
+	reconciledPhase, err = r.reconcileConfig(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online config")
 	}
 
 	logrus.Info("End of reconcile Phase : ", reconciledPhase)
@@ -218,6 +220,31 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 		err := serverClient.Create(ctx, asp)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create address plan %v", asp))
+		}
+	}
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("reconciling config")
+	consoleSvc := &v1beta1.ConsoleService{
+		ObjectMeta: v12.ObjectMeta{
+			Name:      defaultConsoleSvcName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultConsoleSvcName, Namespace: r.Config.GetNamespace()}, consoleSvc)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			logrus.Debugf("could not find consoleservice %s, trying again on next reconcile", defaultConsoleSvcName)
+			return v1alpha1.PhaseNone, nil
+		}
+		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve consoleservice %s", defaultConsoleSvcName))
+	}
+	if consoleSvc.Status.Host != "" && consoleSvc.Status.Port == 443 {
+		r.Config.SetHost(fmt.Sprintf("https://%s", consoleSvc.Status.Host))
+		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not persist config")
 		}
 	}
 	return v1alpha1.PhaseNone, nil

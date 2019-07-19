@@ -2,6 +2,8 @@ package amqonline
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmassev1 "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -56,6 +58,9 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"NAMESPACE": defaultNamespace,
 				"URL":       "sso.openshift-cluster.com",
 			}), nil
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
 		},
 	}
 }
@@ -302,5 +307,146 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 				t.Fatalf("expected status %s but got %s", s.ExpectedStatus, phase)
 			}
 		})
+	}
+}
+
+func TestReconcile_reconcileConfig(t *testing.T) {
+	defaultHost := "https://example.host.com"
+	scenarios := []struct {
+		Name               string
+		Client             client.Client
+		ExpectedStatus     v1alpha1.StatusPhase
+		FakeConfig         *config.ConfigReadWriterMock
+		ExpectError        bool
+		ValidateCallCounts func(t *testing.T, cfgMock *config.ConfigReadWriterMock)
+	}{
+		{
+			Name: "Test doesn't set host when the port is not 443",
+			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
+				ObjectMeta: v12.ObjectMeta{
+					Name:      defaultConsoleSvcName,
+					Namespace: defaultNamespace,
+				},
+				Status: enmassev1.ConsoleServiceStatus{
+					Host: defaultHost,
+					Port: 0,
+				},
+			}),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
+				if len(cfgMock.WriteConfigCalls()) != 0 {
+					t.Fatal("config written once or more")
+				}
+			},
+		},
+		{
+			Name: "Test doesn't set host when the host is undefined or empty",
+			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
+				ObjectMeta: v12.ObjectMeta{
+					Name:      defaultConsoleSvcName,
+					Namespace: defaultNamespace,
+				},
+				Status: enmassev1.ConsoleServiceStatus{
+					Host: "",
+					Port: 443,
+				},
+			}),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
+				if len(cfgMock.WriteConfigCalls()) != 0 {
+					t.Fatal("config written once or more")
+				}
+			},
+		},
+		{
+			Name: "Test successfully setting host when port and host are defined properly",
+			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
+				ObjectMeta: v12.ObjectMeta{
+					Name:      defaultConsoleSvcName,
+					Namespace: defaultNamespace,
+				},
+				Status: enmassev1.ConsoleServiceStatus{
+					Host: defaultHost,
+					Port: 443,
+				},
+			}),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
+				expectedHost := fmt.Sprintf("https://%s", defaultHost)
+				if len(cfgMock.WriteConfigCalls()) != 1 {
+					t.Fatal("config not called once")
+				}
+				cfg := config.NewAMQOnline(cfgMock.WriteConfigCalls()[0].Config.Read())
+				if cfg.GetHost() != expectedHost {
+					t.Fatalf("incorrect host, expected %s but got %s", expectedHost, cfg.GetHost())
+				}
+			},
+		},
+		{
+			Name:           "Test continues when console it not found",
+			Client:         fake.NewFakeClientWithScheme(buildScheme()),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
+				if len(cfgMock.WriteConfigCalls()) != 0 {
+					t.Fatal("config called once or more")
+				}
+			},
+		},
+		{
+			Name: "Test fails with error when failing to write config",
+			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
+				ObjectMeta: v12.ObjectMeta{
+					Name:      defaultConsoleSvcName,
+					Namespace: defaultNamespace,
+				},
+				Status: enmassev1.ConsoleServiceStatus{
+					Host: defaultHost,
+					Port: 443,
+				},
+			}),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadAMQOnlineFunc: func() (ready *config.AMQOnline, e error) {
+					return config.NewAMQOnline(config.ProductConfig{
+						"NAMESPACE": defaultNamespace,
+					}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{
+						"NAMESPACE": defaultNamespace,
+						"URL":       "sso.openshift-cluster.com",
+					}), nil
+				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return errors.New("test error")
+				},
+			},
+			ExpectedStatus:     v1alpha1.PhaseFailed,
+			ExpectError:        true,
+			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {},
+		},
+	}
+	for _, s := range scenarios {
+		t.Run(s.Name, func(t *testing.T) {
+			r, err := NewReconciler(s.FakeConfig, nil, nil, nil)
+			if err != nil {
+				t.Fatal("could not create reconciler", err)
+			}
+			phase, err := r.reconcileConfig(context.TODO(), s.Client)
+			if err != nil && !s.ExpectError {
+				t.Fatal("failed to reconcile config", err)
+			}
+			if err == nil && s.ExpectError {
+				t.Fatal("expected error but received nil")
+			}
+			if phase != s.ExpectedStatus {
+				t.Fatalf("expected status %s but got %s", s.ExpectedStatus, phase)
+			}
+			s.ValidateCallCounts(t, s.FakeConfig)
+		})
+
 	}
 }
