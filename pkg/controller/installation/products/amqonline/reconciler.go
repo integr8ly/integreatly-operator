@@ -2,7 +2,11 @@ package amqonline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	v1beta12 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
@@ -18,7 +22,6 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 const (
@@ -34,6 +37,14 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 	restConfig    *rest.Config
 	nsReconciler  resources.NamespaceReconciler
+}
+
+type resourceSet struct {
+	AddrPlans            []*v1beta2.AddressPlan           `json:"addressPlans"`
+	AddrSpacePlans       []*v1beta2.AddressSpacePlan      `json:"addressSpacePlans"`
+	AuthServices         []*v1beta1.AuthenticationService `json:"authServices"`
+	StdInfraConfigs      []*v1beta12.StandardInfraConfig  `json:"standardInfraConfigs"`
+	BrokeredInfraConfigs []*v1beta12.BrokeredInfraConfig  `json:"brokeredInfraConfigs"`
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface, nsr resources.NamespaceReconciler) (*Reconciler, error) {
@@ -70,19 +81,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for amq online ")
 	}
-	reconciledPhase, err = r.reconcileAuthServices(ctx, serverClient, GetDefaultAuthServices(r.Config.GetNamespace()))
+	defResourceSet, err := getResourceSetFromURLList(inst.Spec.AMQOnlineConfig.ResourceURLs, http.DefaultClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to retrieve default resource set for amq online")
+	}
+	reconciledPhase, err = r.reconcileAuthServices(ctx, serverClient, defResourceSet.AuthServices)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online auth services ")
 	}
-	reconciledPhase, err = r.reconcileBrokerConfigs(ctx, serverClient, GetDefaultBrokeredInfraConfigs(r.Config.GetNamespace()), GetDefaultStandardInfraConfigs(r.Config.GetNamespace()))
+	reconciledPhase, err = r.reconcileBrokerConfigs(ctx, serverClient, defResourceSet.BrokeredInfraConfigs, defResourceSet.StdInfraConfigs)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online broker configs ")
 	}
-	reconciledPhase, err = r.reconcileAddressPlans(ctx, serverClient, GetDefaultAddressPlans(r.Config.GetNamespace()))
+	reconciledPhase, err = r.reconcileAddressPlans(ctx, serverClient, defResourceSet.AddrPlans)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online address plans ")
 	}
-	reconciledPhase, err = r.reconcileAddressSpacePlans(ctx, serverClient, GetDefaultAddressSpacePlans(r.Config.GetNamespace()))
+	reconciledPhase, err = r.reconcileAddressSpacePlans(ctx, serverClient, defResourceSet.AddrSpacePlans)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile amq online address space plans ")
 	}
@@ -173,7 +188,7 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 }
 
 func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkgclient.Client, authSvcs []*v1beta1.AuthenticationService) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling default auth services")
+	logrus.Infof("reconciling default auth services (%d)", len(authSvcs))
 	for _, as := range authSvcs {
 		as.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, as)
@@ -185,7 +200,7 @@ func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkg
 }
 
 func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pkgclient.Client, brokeredCfgs []*v1beta12.BrokeredInfraConfig, stdCfgs []*v1beta12.StandardInfraConfig) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling default infra configs")
+	logrus.Infof("reconciling default infra configs (%d brokered, %d standard)", len(brokeredCfgs), len(stdCfgs))
 	for _, bic := range brokeredCfgs {
 		bic.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, bic)
@@ -204,8 +219,9 @@ func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pk
 }
 
 func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkgclient.Client, addrPlans []*v1beta2.AddressPlan) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling default address plans")
+	logrus.Infof("reconciling default address plans (%d)", len(addrPlans))
 	for _, ap := range addrPlans {
+		ap.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, ap)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create address plan %v", ap))
@@ -215,8 +231,9 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkg
 }
 
 func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient pkgclient.Client, addrSpacePlans []*v1beta2.AddressSpacePlan) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling default address space plans")
+	logrus.Infof("reconciling default address space plans (%d)", len(addrSpacePlans))
 	for _, asp := range addrSpacePlans {
+		asp.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, asp)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create address plan %v", asp))
@@ -248,4 +265,35 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 		}
 	}
 	return v1alpha1.PhaseNone, nil
+}
+
+func getResourceSetFromURLList(urls []string, client *http.Client) (*resourceSet, error) {
+	defaultResources := &resourceSet{}
+
+	for _, url := range urls {
+		defaultResourcesForURL, err := getResourceSetFromURL(url, client)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("could not retrieve resource set from url %s", url))
+		}
+		defaultResources.AddrPlans = append(defaultResources.AddrPlans, defaultResourcesForURL.AddrPlans...)
+		defaultResources.AddrSpacePlans = append(defaultResources.AddrSpacePlans, defaultResourcesForURL.AddrSpacePlans...)
+		defaultResources.AuthServices = append(defaultResources.AuthServices, defaultResourcesForURL.AuthServices...)
+		defaultResources.StdInfraConfigs = append(defaultResources.StdInfraConfigs, defaultResourcesForURL.StdInfraConfigs...)
+		defaultResources.BrokeredInfraConfigs = append(defaultResources.BrokeredInfraConfigs, defaultResourcesForURL.BrokeredInfraConfigs...)
+	}
+	return defaultResources, nil
+}
+
+func getResourceSetFromURL(url string, client *http.Client) (*resourceSet, error) {
+	defaultResources := &resourceSet{}
+
+	res, err := client.Get(url)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("could not complete default resource request to URL %s", url))
+	}
+	defer res.Body.Close()
+	if err = json.NewDecoder(res.Body).Decode(defaultResources); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("could not decode response for default resources from URL %s", url))
+	}
+	return defaultResources, nil
 }

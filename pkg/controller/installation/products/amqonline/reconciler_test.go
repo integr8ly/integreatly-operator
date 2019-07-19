@@ -1,9 +1,16 @@
 package amqonline
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmassev1 "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -24,7 +31,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
+)
+
+const (
+	defaultNamespace = "amq-online"
 )
 
 func buildScheme() *runtime.Scheme {
@@ -42,9 +52,200 @@ func buildScheme() *runtime.Scheme {
 	return scheme
 }
 
-const (
-	defaultNamespace = "amq-online"
-)
+func basicResourceSetServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		b := new(bytes.Buffer)
+		json.NewEncoder(b).Encode(&resourceSet{
+			AddrPlans: []*enmassev1beta2.AddressPlan{
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "standard-large-multicast",
+					},
+				},
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "standard-large-anycast",
+					},
+				},
+			},
+			AddrSpacePlans: []*enmassev1beta2.AddressSpacePlan{
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "brokered-single-broker",
+					},
+				},
+			},
+			StdInfraConfigs: []*enmassev1beta1.StandardInfraConfig{
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "default",
+					},
+				},
+			},
+			BrokeredInfraConfigs: []*enmassev1beta1.BrokeredInfraConfig{},
+			AuthServices: []*enmassev1.AuthenticationService{
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "standard-authservice",
+					},
+				},
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "none-authservice",
+					},
+				},
+				{
+					ObjectMeta: v12.ObjectMeta{
+						Name: "test-authservice",
+					},
+				},
+			},
+		})
+		rw.Write(b.Bytes())
+	}))
+}
+
+func basicAddressPlanList(ns string) []*enmassev1beta2.AddressPlan {
+	return []*v1beta2.AddressPlan{
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "brokered-topic",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressPlanSpec{
+				DisplayName:      "Brokered Topic",
+				DisplayOrder:     0,
+				ShortDescription: "Creates a topic on a broker.",
+				LongDescription:  "Creates a topic on a broker.",
+				AddressType:      "topic",
+				Resources: v1beta2.AddressPlanResources{
+					Broker: 0.0,
+				},
+			},
+		},
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "brokered-queue",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressPlanSpec{
+				DisplayName:      "Brokered Queue",
+				DisplayOrder:     0,
+				ShortDescription: "Creates a queue on a broker.",
+				LongDescription:  "Creates a queue on a broker.",
+				AddressType:      "queue",
+				Resources: v1beta2.AddressPlanResources{
+					Broker: 0.0,
+				},
+			},
+		},
+	}
+}
+
+func basicAuthServiceList(ns string) []*enmassev1.AuthenticationService {
+	return []*enmassev1.AuthenticationService{
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "standard-authservice",
+				Namespace: ns,
+			},
+			Spec: enmassev1.AuthenticationServiceSpec{
+				Type: "standard",
+			},
+		},
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "none-authservice",
+				Namespace: ns,
+			},
+			Spec: enmassev1.AuthenticationServiceSpec{
+				Type: "none",
+			},
+		},
+	}
+}
+
+func basicBrokeredInfraConfigList(ns string) []*v1beta1.BrokeredInfraConfig {
+	return []*v1beta1.BrokeredInfraConfig{
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "default",
+				Namespace: ns,
+			},
+			Spec: v1beta1.BrokeredInfraConfigSpec{
+				Admin: v1beta1.InfraConfigAdmin{
+					Resources: v1beta1.InfraConfigResources{
+						Memory: "512Mi",
+					},
+				},
+				Broker: v1beta1.InfraConfigBroker{
+					Resources: v1beta1.InfraConfigResources{
+						Memory:  "512Mi",
+						Storage: "5Gi",
+					},
+					AddressFullPolicy: "FAIL",
+				},
+			},
+		},
+	}
+}
+
+func basicStandardInfraConfigList(ns string) []*v1beta1.StandardInfraConfig {
+	return []*v1beta1.StandardInfraConfig{
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name: "default-minimal",
+			},
+			Spec: v1beta1.StandardInfraConfigSpec{
+				Admin: v1beta1.InfraConfigAdmin{
+					Resources: v1beta1.InfraConfigResources{
+						Memory: "512Mi",
+					},
+				},
+				Broker: v1beta1.InfraConfigBroker{
+					Resources: v1beta1.InfraConfigResources{
+						Memory:  "512Mi",
+						Storage: "2Gi",
+					},
+					AddressFullPolicy: "FAIL",
+				},
+				Router: v1beta1.InfraConfigRouter{
+					MinReplicas: 1,
+					Resources: v1beta1.InfraConfigResources{
+						Memory: "256Mi",
+					},
+					LinkCapacity: 250,
+				},
+			},
+		},
+	}
+}
+
+func basicAddressSpacePlanList(ns string) []*v1beta2.AddressSpacePlan {
+	return []*v1beta2.AddressSpacePlan{
+		{
+			ObjectMeta: v12.ObjectMeta{
+				Name:      "brokered-single-broker",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressSpacePlanSpec{
+				DisplayName:      "Single Broker",
+				DisplayOrder:     0,
+				InfraConfigRef:   "default",
+				ShortDescription: "Single Broker instance",
+				LongDescription:  "Single Broker plan where you can create an infinite number of queues until the system falls over.",
+				AddressSpaceType: "brokered",
+				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
+					Broker: 1.9,
+				},
+				AddressPlans: []string{
+					"brokered-queue",
+					"brokered-topic",
+				},
+			},
+		},
+	}
+}
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
@@ -146,13 +347,13 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			Name:           "Test returns none phase if successfully creating new auth services",
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
-			AuthServices:   GetDefaultAuthServices(defaultNamespace),
+			AuthServices:   basicAuthServiceList(defaultNamespace),
 			ExpectedStatus: v1alpha1.PhaseNone,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
-			AuthServices:   GetDefaultAuthServices(defaultNamespace),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), basicAuthServiceList(defaultSubscriptionName)[0]),
+			AuthServices:   basicAuthServiceList(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: v1alpha1.PhaseNone,
 		},
@@ -191,15 +392,15 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			Name:                 "Test returns none phase if successfully creating new address space plans",
 			Client:               fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:           basicConfigMock(),
-			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
-			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
+			BrokeredInfraConfigs: basicBrokeredInfraConfigList(defaultNamespace),
+			StandardInfraConfigs: basicStandardInfraConfigList(defaultNamespace),
 			ExpectedStatus:       v1alpha1.PhaseNone,
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
-			Client:               fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
-			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
-			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
+			Client:               fake.NewFakeClientWithScheme(buildScheme(), basicAuthServiceList(defaultSubscriptionName)[0]),
+			BrokeredInfraConfigs: basicBrokeredInfraConfigList(defaultNamespace),
+			StandardInfraConfigs: basicStandardInfraConfigList(defaultNamespace),
 			FakeConfig:           basicConfigMock(),
 			ExpectedStatus:       v1alpha1.PhaseNone,
 		},
@@ -237,13 +438,13 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			Name:           "Test returns none phase if successfully creating new address space plans",
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
-			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
+			AddressPlans:   basicAddressPlanList(defaultNamespace),
 			ExpectedStatus: v1alpha1.PhaseNone,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
-			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), basicAuthServiceList(defaultSubscriptionName)[0]),
+			AddressPlans:   basicAddressPlanList(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: v1alpha1.PhaseNone,
 		},
@@ -281,13 +482,13 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			Name:              "Test returns none phase if successfully creating new address space plans",
 			Client:            fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:        basicConfigMock(),
-			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
+			AddressSpacePlans: basicAddressSpacePlanList(defaultNamespace),
 			ExpectedStatus:    v1alpha1.PhaseNone,
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
-			Client:            fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
-			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
+			Client:            fake.NewFakeClientWithScheme(buildScheme(), basicAuthServiceList(defaultSubscriptionName)[0]),
+			AddressSpacePlans: basicAddressSpacePlanList(defaultNamespace),
 			FakeConfig:        basicConfigMock(),
 			ExpectedStatus:    v1alpha1.PhaseNone,
 		},
@@ -447,6 +648,129 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			}
 			s.ValidateCallCounts(t, s.FakeConfig)
 		})
+	}
+}
 
+func TestReconcile_getResourceSetFromURL(t *testing.T) {
+	scenarios := []struct {
+		Server                      *httptest.Server
+		ExpectError                 bool
+		ExpectedAddrPlanCount       int
+		ExpectedAddrSpacePlanCount  int
+		ExpectedAuthServiceCount    int
+		ExpectedStdInfraConfigCount int
+		ExpectedBrokeredConfigCount int
+	}{
+		{
+			Server:                      basicResourceSetServer(),
+			ExpectedAddrPlanCount:       2,
+			ExpectedBrokeredConfigCount: 0,
+			ExpectedStdInfraConfigCount: 1,
+			ExpectedAuthServiceCount:    3,
+			ExpectedAddrSpacePlanCount:  1,
+		},
+		{
+			Server: httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				rw.WriteHeader(500)
+			})),
+			ExpectError: true,
+		},
+		{
+			Server: httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				rw.Write([]byte("[{ \"testKey\": \"testVal\" }]"))
+			})),
+			ExpectError: true,
+		},
+	}
+	for _, s := range scenarios {
+		defer s.Server.Close()
+		rs, err := getResourceSetFromURL(s.Server.URL, s.Server.Client())
+		if err != nil && !s.ExpectError {
+			t.Fatal("error getting resource set from URL", err)
+		}
+		if err == nil && s.ExpectError {
+			t.Fatal("expected error but received none")
+		}
+		if err == nil {
+			if len(rs.AddrPlans) != s.ExpectedAddrPlanCount {
+				t.Fatalf("incorrect address plan count, expected %d but got %d", s.ExpectedAddrPlanCount, len(rs.AddrPlans))
+			}
+			if len(rs.AddrSpacePlans) != s.ExpectedAddrSpacePlanCount {
+				t.Fatalf("incorrect address space plan count, expected %d but got %d", s.ExpectedAddrSpacePlanCount, len(rs.AddrSpacePlans))
+			}
+			if len(rs.AuthServices) != s.ExpectedAuthServiceCount {
+				t.Fatalf("incorrect auth service count, expected %d but got %d", s.ExpectedAuthServiceCount, len(rs.AuthServices))
+			}
+			if len(rs.StdInfraConfigs) != s.ExpectedStdInfraConfigCount {
+				t.Fatalf("incorrect standard infra config count, expected %d but got %d", s.ExpectedStdInfraConfigCount, len(rs.StdInfraConfigs))
+			}
+			if len(rs.BrokeredInfraConfigs) != s.ExpectedBrokeredConfigCount {
+				t.Fatalf("incorrect brokered infra config count, expected %d but got %d", s.ExpectedBrokeredConfigCount, len(rs.BrokeredInfraConfigs))
+			}
+		}
+	}
+}
+
+func TestReconcile_getResourceSetFromURLList(t *testing.T) {
+	scenario := []struct {
+		Servers                     []*httptest.Server
+		ExpectError                 bool
+		ExpectedAddrPlanCount       int
+		ExpectedAddrSpacePlanCount  int
+		ExpectedAuthServiceCount    int
+		ExpectedStdInfraConfigCount int
+		ExpectedBrokeredConfigCount int
+	}{
+		{
+			Servers: []*httptest.Server{
+				basicResourceSetServer(),
+				basicResourceSetServer(),
+			},
+			ExpectedAddrPlanCount:       4,
+			ExpectedBrokeredConfigCount: 0,
+			ExpectedStdInfraConfigCount: 2,
+			ExpectedAuthServiceCount:    6,
+			ExpectedAddrSpacePlanCount:  2,
+		},
+		{
+			Servers: []*httptest.Server{
+				basicResourceSetServer(),
+				httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+					rw.WriteHeader(500)
+				})),
+			},
+			ExpectError: true,
+		},
+	}
+	for _, s := range scenario {
+		serverURLs := []string{}
+		for _, server := range s.Servers {
+			serverURLs = append(serverURLs, server.URL)
+		}
+		rs, err := getResourceSetFromURLList(serverURLs, s.Servers[0].Client())
+		if err != nil && !s.ExpectError {
+			t.Fatal("error getting resource set from URL", err)
+		}
+		if err == nil && s.ExpectError {
+			t.Fatal("expected error but received none")
+		}
+
+		if err == nil {
+			if len(rs.AddrPlans) != s.ExpectedAddrPlanCount {
+				t.Fatalf("incorrect address plan count, expected %d but got %d", s.ExpectedAddrPlanCount, len(rs.AddrPlans))
+			}
+			if len(rs.AddrSpacePlans) != s.ExpectedAddrSpacePlanCount {
+				t.Fatalf("incorrect address space plan count, expected %d but got %d", s.ExpectedAddrSpacePlanCount, len(rs.AddrSpacePlans))
+			}
+			if len(rs.AuthServices) != s.ExpectedAuthServiceCount {
+				t.Fatalf("incorrect auth service count, expected %d but got %d", s.ExpectedAuthServiceCount, len(rs.AuthServices))
+			}
+			if len(rs.StdInfraConfigs) != s.ExpectedStdInfraConfigCount {
+				t.Fatalf("incorrect standard infra config count, expected %d but got %d", s.ExpectedStdInfraConfigCount, len(rs.StdInfraConfigs))
+			}
+			if len(rs.BrokeredInfraConfigs) != s.ExpectedBrokeredConfigCount {
+				t.Fatalf("incorrect brokered infra config count, expected %d but got %d", s.ExpectedBrokeredConfigCount, len(rs.BrokeredInfraConfigs))
+			}
+		}
 	}
 }
