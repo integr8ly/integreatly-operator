@@ -14,8 +14,6 @@ stages:
 - compile
 - name: push
   if: fork = false AND branch = master
-- name: push-dev
-  if: fork = false AND branch != master
 
 jobs:
   include:
@@ -33,9 +31,5 @@ jobs:
   - stage: push
     script:
     - docker login --password "$QUAY_PASSWORD" --username "$QUAY_USERNAME" quay.io
-    - make setup/dep setup/travis image/build/push
-  - stage: push-dev
-    script:
     - export TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
-    - docker login --password "$QUAY_PASSWORD" --username "$QUAY_USERNAME" quay.io
-    - make setup/dep setup/travis image/build/push TAG=$TAG
+    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then make setup/dep setup/travis image/build/push; else make setup/dep setup/travis image/build/push TAG=$TAG; fi
