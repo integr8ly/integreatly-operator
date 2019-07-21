@@ -9,23 +9,22 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
-	defaultRhssoNamespace = "rhsso"
-	customerAdminPassword = "Password1"
-	keycloakName          = "rhsso"
-	keycloakRealmName     = "openshift"
-	rhssoId               = "openshift-client"
-	clientSecret          = rhssoId + "-secret"
+	defaultRhssoNamespace   = "rhsso"
+	customerAdminPassword   = "Password1"
+	keycloakName            = "rhsso"
+	keycloakRealmName       = "openshift"
+	rhssoId                 = "openshift-client"
+	clientSecret            = rhssoId + "-secret"
+	defaultSubscriptionName = "rhsso"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -63,6 +62,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		ConfigManager: configManager,
 		Config:        rhssoConfig,
 		mpm:           mpm,
+		Reconciler:    resources.NewReconciler(mpm),
 		installation:  instance,
 	}, nil
 }
@@ -72,19 +72,16 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 	installation  *v1alpha1.Installation
+	*resources.Reconciler
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
 	switch v1alpha1.StatusPhase(phase) {
 	case v1alpha1.PhaseNone:
-		return r.handleNoPhase(ctx, serverClient, inst)
-	case v1alpha1.PhaseAwaitingNS:
-		return r.handleAwaitingNSPhase(ctx, serverClient)
-	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription(ctx, serverClient, inst)
-	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator(ctx, serverClient)
+		return r.reconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	case v1alpha1.PhaseCreatingSubscription, v1alpha1.PhaseAwaitingOperator:
+		return r.handleCreatingSubscription(ctx, inst, r.Config.GetNamespace(), serverClient)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents(ctx, serverClient, inst)
 	case v1alpha1.PhaseInProgress:
@@ -99,77 +96,26 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 }
 
-func (r *Reconciler) handleNoPhase(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	nsr := resources.NewNamespaceReconciler(serverClient)
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.Config.GetNamespace(),
-			Name:      r.Config.GetNamespace(),
-		},
-	}
-	ns, err := nsr.Reconcile(ctx, ns, inst)
+func (r *Reconciler) reconcileNamespace(ctx context.Context, ns string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileNamespace(ctx, ns, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "error creating namespace for rhsso")
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to reconcile namespace for amq streams")
 	}
-	return v1alpha1.PhaseAwaitingNS, nil
-}
-
-func (r *Reconciler) handleAwaitingNSPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.Config.GetNamespace(),
-		},
-	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.Config.GetNamespace()}, ns)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-	if ns.Status.Phase == v1.NamespaceActive {
-		logrus.Infof("Creating subscription")
+	if phase == v1alpha1.PhaseCompleted {
 		return v1alpha1.PhaseCreatingSubscription, nil
 	}
-
-	return v1alpha1.PhaseAwaitingNS, nil
+	return phase, err
 }
 
-func (r *Reconciler) handleCreatingSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	err := r.mpm.CreateSubscription(
-		ctx,
-		serverClient,
-		inst,
-		marketplace.GetOperatorSources().Integreatly,
-		r.Config.GetNamespace(),
-		"rhsso",
-		"integreatly",
-		[]string{r.Config.GetNamespace()},
-		coreosv1alpha1.ApprovalAutomatic)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, err
-	}
-
-	return v1alpha1.PhaseAwaitingOperator, nil
-}
-
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, "rhsso", r.Config.GetNamespace())
+func (r *Reconciler) handleCreatingSubscription(ctx context.Context, inst *v1alpha1.Installation, ns string, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, ns, client)
 	if err != nil {
-		if k8serr.IsNotFound(err) {
-			logrus.Infof("No installplan created yet")
-			return v1alpha1.PhaseAwaitingOperator, nil
-		}
-
-		logrus.Infof("Error getting rhsso subscription installplan")
-		return v1alpha1.PhaseFailed, err
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to reconcile subscription for amq streams")
 	}
-
-	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
-		logrus.Infof("rhsso installplan phase is %s", ip.Status.Phase)
-		return v1alpha1.PhaseAwaitingOperator, nil
+	if phase == v1alpha1.PhaseCompleted {
+		return v1alpha1.PhaseCreatingComponents, nil
 	}
-
-	logrus.Infof("rhsso installplan phase is %s", coreosv1alpha1.InstallPlanPhaseComplete)
-
-	return v1alpha1.PhaseCreatingComponents, nil
+	return phase, nil
 }
 
 func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {

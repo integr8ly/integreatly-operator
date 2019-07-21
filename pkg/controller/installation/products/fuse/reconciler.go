@@ -2,22 +2,18 @@ package fuse
 
 import (
 	"context"
-	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
-	v1 "k8s.io/api/core/v1"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 const (
@@ -26,6 +22,7 @@ const (
 )
 
 type Reconciler struct {
+	*resources.Reconciler
 	coreClient    kubernetes.Interface
 	Config        *config.Fuse
 	ConfigManager config.ConfigReadWriter
@@ -53,16 +50,17 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		Config:        fuseConfig,
 		mpm:           mpm,
 		logger:        logger,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	reconciledPhase, err := r.reconcileNamespace(ctx, inst, serverClient)
+	reconciledPhase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")
 	}
 
-	reconciledPhase, err = r.reconcileSubscription(ctx, serverClient, inst)
+	reconciledPhase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for fuse ")
 	}
@@ -71,53 +69,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile fuse custom resource ")
 	}
-
-	r.logger.Info("End of reconcile Phase : ", reconciledPhase)
 	// if we get to the end and no phase set then it is done
-	if reconciledPhase == v1alpha1.PhaseNone {
-		return v1alpha1.PhaseCompleted, nil
-	}
+
 	return reconciledPhase, nil
-}
-
-func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	nsr := resources.NewNamespaceReconciler(client)
-	ns := &v1.Namespace{
-		ObjectMeta: v12.ObjectMeta{
-			Name: r.Config.GetNamespace(),
-		},
-	}
-	ns, err := nsr.Reconcile(ctx, ns, inst)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile fuse namespace "+r.Config.GetNamespace())
-	}
-	if ns.Status.Phase == v1.NamespaceTerminating {
-		r.logger.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", r.Config.GetNamespace())
-		return v1alpha1.PhaseAwaitingNS, nil
-	}
-	if ns.Status.Phase != v1.NamespaceActive {
-		return v1alpha1.PhaseAwaitingNS, nil
-	}
-	// all good return no status if already
-	return v1alpha1.PhaseNone, nil
-}
-
-func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	r.logger.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
-	err := r.mpm.CreateSubscription(
-		ctx,
-		client,
-		inst,
-		marketplace.GetOperatorSources().Integreatly,
-		r.Config.GetNamespace(),
-		defaultSubscriptionName,
-		marketplace.IntegreatlyChannel,
-		[]string{r.Config.GetNamespace()},
-		v1alpha12.ApprovalAutomatic)
-	if err != nil && !errors2.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", r.Config.GetNamespace()))
-	}
-	return r.handleAwaitingOperator(ctx, client)
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -160,40 +114,5 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
 		return v1alpha1.PhaseFailed, errors.New("syndesis has failed to install " + string(cr.Status.Reason))
 	}
-	return v1alpha1.PhaseNone, nil
-}
-
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, defaultSubscriptionName, r.Config.GetNamespace())
-	if err != nil {
-		if errors2.IsNotFound(err) {
-			if sub != nil {
-				logrus.Infof("time since created %v", time.Now().Sub(sub.CreationTimestamp.Time).Seconds())
-			}
-			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > config.SubscriptionTimeout {
-				// delete subscription so it is recreated
-				logrus.Info("removing subscription as no install plan ready yet will recreate")
-				if err := client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
-					gp := int64(0)
-					options.GracePeriodSeconds = &gp
-
-				}); err != nil {
-					// not going to fail here will retry
-					r.logger.Error("failed to delete sub after install plan was not available for more than 20 seconds . Ignoring will retry ", err)
-				}
-			}
-			r.logger.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
-			return v1alpha1.PhaseAwaitingOperator, nil
-		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan in namespace: %s", r.Config.GetNamespace()))
-	}
-
-	r.logger.Infof("installplan phase is %s", ip.Status.Phase)
-	if ip.Status.Phase != v1alpha12.InstallPlanPhaseComplete {
-		r.logger.Infof("fuse online install plan is not complete yet")
-		return v1alpha1.PhaseAwaitingOperator, nil
-	}
-	r.logger.Infof("fuse online install plan is complete. Installation ready ")
-	return v1alpha1.PhaseNone, nil
+	return v1alpha1.PhaseCompleted, nil
 }

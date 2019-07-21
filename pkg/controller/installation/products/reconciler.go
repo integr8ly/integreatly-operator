@@ -14,7 +14,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/threescale"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"net/http"
@@ -26,9 +25,8 @@ type Interface interface {
 	Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
 }
 
-func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
-	nsr := resources.NewNamespaceReconciler(client)
 	switch product {
 	case v1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)
@@ -39,7 +37,7 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 	case v1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductAMQOnline:
-		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm, nsr)
+		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

@@ -15,7 +15,6 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,6 +50,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
@@ -62,17 +62,18 @@ type Reconciler struct {
 	tsClient      ThreeScaleInterface
 	appsv1Client  appsv1Client.AppsV1Interface
 	oauthv1Client oauthClient.OauthV1Interface
+	*resources.Reconciler
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.reconcileNamespace(ctx, serverClient)
+	phase, err := r.ReconcileNamespace(ctx, r.namespace, in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileOperator(ctx, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, in, packageName, r.namespace, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -101,26 +102,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileNamespace(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	nsr := resources.NewNamespaceReconciler(serverClient)
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.namespace,
-			Name:      r.namespace,
-		},
-	}
-	ns, err := nsr.Reconcile(ctx, ns, r.installation)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "%s namespace creation failed.", packageName)
-	}
-
-	if ns.Status.Phase == v1.NamespaceActive {
-		return v1alpha1.PhaseCompleted, nil
-	}
-
-	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) reconcileOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
