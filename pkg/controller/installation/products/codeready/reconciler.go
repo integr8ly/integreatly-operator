@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -64,11 +65,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	case v1alpha1.PhaseNone, v1alpha1.PhaseAwaitingNS:
 		return r.reconcileNamespace(ctx, inst, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.reconcileSubscription(ctx)
+		return r.reconcileSubscription(ctx, serverClient, inst)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.reconcileCheCluster(ctx, inst, serverClient)
 	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator(ctx)
+		return r.handleAwaitingOperator(ctx, serverClient)
 	case v1alpha1.PhaseInProgress:
 		return r.handleProgressPhase(ctx, serverClient)
 	case v1alpha1.PhaseCompleted, v1alpha1.PhaseFailed:
@@ -87,7 +88,7 @@ func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Install
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile checluster")
 	}
-	phase, err = r.reconcileSubscription(ctx)
+	phase, err = r.reconcileSubscription(ctx, serverClient, inst)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile subscription")
 	}
@@ -112,10 +113,12 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseCreatingSubscription, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		ctx,
+		serverClient,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -180,9 +183,9 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Debugf("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))

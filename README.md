@@ -40,6 +40,28 @@ Create the Namespace/Project for the Integreatly Operator to watch:
 oc new-project <namespace>
 ```
 
+- Some products will need AWS credentials so create 2 secrets in the Namespace/Project for the Integreatly Operator
+    ```
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: s3-credentials
+      namespace: <installation-namespace>
+    stringData:
+      AWS_ACCESS_KEY_ID: <your-aws-access-key>
+      AWS_SECRET_ACCESS_KEY: <your-aws-secret-key>
+    ```
+    ```
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: s3-bucket
+      namespace: <installation-namespace>
+    stringData:
+      AWS_BUCKET: <an-aws-s3-bucket-name>
+      AWS_REGION: <region-s3-bucket-name-is-in>
+    ```
+
 Create the `Installation` resource in the namespace we created:
 ```sh
 oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/crds/examples/installation.cr.yaml

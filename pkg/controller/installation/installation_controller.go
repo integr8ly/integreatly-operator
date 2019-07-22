@@ -12,10 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -213,7 +212,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if !(phase == string(v1alpha1.PhaseCompleted)) {
 			incompleteStage = true
 		}
-		reconciler, err := products.NewReconciler(r.context, v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}

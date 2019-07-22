@@ -14,6 +14,7 @@ import (
 	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,11 +53,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase(ctx, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription(ctx)
+		return r.handleCreatingSubscription(ctx, serverClient, inst)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents(ctx, serverClient, inst)
 	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator(ctx)
+		return r.handleAwaitingOperator(ctx, serverClient)
 	case v1alpha1.PhaseInProgress:
 		return r.handleProgressPhase(ctx, serverClient)
 	case v1alpha1.PhaseCompleted:
@@ -102,9 +103,11 @@ func (r *Reconciler) handleAwaitingNSPhase(ctx context.Context, serverClient pkg
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleCreatingSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
 		ctx,
+		serverClient,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"amq-streams",
@@ -118,8 +121,8 @@ func (r *Reconciler) handleCreatingSubscription(ctx context.Context) (v1alpha1.S
 	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, "amq-streams", r.Config.GetNamespace())
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, "amq-streams", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Infof("No installplan created yet")
@@ -198,7 +201,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// check AMQ Streams is in ready state
 	pods := &corev1.PodList{}
-	err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
+	err := serverClient.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
 	}

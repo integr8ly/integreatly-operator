@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -13,7 +12,7 @@ import (
 
 //go:generate moq -out NamespaceReconciler_moq.go . NamespaceReconciler
 type NamespaceReconciler interface {
-	Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error)
+	Reconcile(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error)
 }
 
 type SimpleNamespaceReconciler struct {
@@ -24,7 +23,7 @@ func NewNamespaceReconciler(client pkgclient.Client) NamespaceReconciler {
 	return &SimpleNamespaceReconciler{client: client}
 }
 
-func (nr *SimpleNamespaceReconciler) Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
+func (nr *SimpleNamespaceReconciler) Reconcile(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error) {
 	if ns.Name == "" {
 		return ns, errors.New("cannot reconcile namespace, it has no name")
 	}

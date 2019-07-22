@@ -62,11 +62,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for amq online ")
 	}
-	reconciledPhase, err = r.reconcileSubscription(ctx)
+	reconciledPhase, err = r.reconcileSubscription(ctx, serverClient, inst)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for amq online ")
 	}
-	reconciledPhase, err = r.handleAwaitingOperator(ctx)
+	reconciledPhase, err = r.handleAwaitingOperator(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for amq online ")
 	}
@@ -117,12 +117,14 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseNone, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	// NEED to ensure a subscription is created if not exists
 	// need to make sure there is only one operator source
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		ctx,
+		serverClient,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -132,12 +134,12 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context) (v1alpha1.Status
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", r.Config.GetNamespace()))
 	}
-	return r.handleAwaitingOperator(ctx)
+	return r.handleAwaitingOperator(ctx, serverClient)
 }
 
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
+	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		logrus.Info("error in handleAwaitingOperator ", err.Error())
 		if k8serr.IsNotFound(err) {
