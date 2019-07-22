@@ -5,7 +5,7 @@ package resources
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"k8s.io/api/core/v1"
 	"sync"
 )
@@ -24,7 +24,7 @@ var _ NamespaceReconciler = &NamespaceReconcilerMock{}
 //
 //         // make and configure a mocked NamespaceReconciler
 //         mockedNamespaceReconciler := &NamespaceReconcilerMock{
-//             ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
+//             ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
 //         }
@@ -35,7 +35,7 @@ var _ NamespaceReconciler = &NamespaceReconcilerMock{}
 //     }
 type NamespaceReconcilerMock struct {
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error)
+	ReconcileFunc func(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -46,20 +46,20 @@ type NamespaceReconcilerMock struct {
 			// Ns is the ns argument value.
 			Ns *v1.Namespace
 			// Owner is the owner argument value.
-			Owner *v1alpha1.Installation
+			Owner ownerutil.Owner
 		}
 	}
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *NamespaceReconcilerMock) Reconcile(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
+func (mock *NamespaceReconcilerMock) Reconcile(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error) {
 	if mock.ReconcileFunc == nil {
 		panic("NamespaceReconcilerMock.ReconcileFunc: method is nil but NamespaceReconciler.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx   context.Context
 		Ns    *v1.Namespace
-		Owner *v1alpha1.Installation
+		Owner ownerutil.Owner
 	}{
 		Ctx:   ctx,
 		Ns:    ns,
@@ -77,12 +77,12 @@ func (mock *NamespaceReconcilerMock) Reconcile(ctx context.Context, ns *v1.Names
 func (mock *NamespaceReconcilerMock) ReconcileCalls() []struct {
 	Ctx   context.Context
 	Ns    *v1.Namespace
-	Owner *v1alpha1.Installation
+	Owner ownerutil.Owner
 } {
 	var calls []struct {
 		Ctx   context.Context
 		Ns    *v1.Namespace
-		Owner *v1alpha1.Installation
+		Owner ownerutil.Owner
 	}
 	lockNamespaceReconcilerMockReconcile.RLock()
 	calls = mock.calls.Reconcile

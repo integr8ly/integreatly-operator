@@ -7,6 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,7 +16,6 @@ import (
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	k8sclient "k8s.io/client-go/kubernetes/fake"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
@@ -58,7 +58,6 @@ func TestCodeready(t *testing.T) {
 		ExpectedCreateError  string
 		Object               *v1alpha1.Installation
 		FakeConfig           *config.ConfigReadWriterMock
-		FakeK8sClient        *k8sclient.Clientset
 		FakeControllerClient client.Client
 		FakeMPM              *marketplace.MarketplaceInterfaceMock
 		ValidateCallCounts   func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
@@ -144,13 +143,6 @@ func TestCodeready(t *testing.T) {
 			},
 		},
 		{
-			Name:                 "test no phase with creatNamespaces",
-			ExpectedStatus:       v1alpha1.PhaseCreatingSubscription,
-			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig:           basicConfigMock(),
-		},
-		{
 			Name:           "test subscription phase",
 			ExpectedStatus: v1alpha1.PhaseAwaitingOperator,
 			Object: &v1alpha1.Installation{
@@ -161,7 +153,7 @@ func TestCodeready(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
 			},
@@ -188,7 +180,7 @@ func TestCodeready(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy error")
 				},
 			},
@@ -243,7 +235,7 @@ func TestCodeready(t *testing.T) {
 			},
 			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: ns,
@@ -274,7 +266,7 @@ func TestCodeready(t *testing.T) {
 			},
 			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, sub *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: ns,
@@ -373,7 +365,7 @@ func TestCodeready(t *testing.T) {
 				},
 			}),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
 			},

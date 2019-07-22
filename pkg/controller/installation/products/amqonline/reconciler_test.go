@@ -17,6 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -82,7 +83,7 @@ func TestReconcile_reconcileNamespace(t *testing.T) {
 			Installation:   defaultInstallation,
 			ExpectedStatus: v1alpha1.PhaseAwaitingNS,
 			FakeNSR: &resources.NamespaceReconcilerMock{
-				ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
+				ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error) {
 					return &v1.Namespace{
 						ObjectMeta: v12.ObjectMeta{
 							Name: "amq-online",
@@ -100,7 +101,7 @@ func TestReconcile_reconcileNamespace(t *testing.T) {
 			Installation:   defaultInstallation,
 			ExpectedStatus: v1alpha1.PhaseNone,
 			FakeNSR: &resources.NamespaceReconcilerMock{
-				ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner *v1alpha1.Installation) (*v1.Namespace, error) {
+				ReconcileFunc: func(ctx context.Context, ns *v1.Namespace, owner ownerutil.Owner) (*v1.Namespace, error) {
 					return &v1.Namespace{
 						ObjectMeta: v12.ObjectMeta{
 							Name: "amq-online",
