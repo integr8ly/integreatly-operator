@@ -150,11 +150,11 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if errors2.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !errors2.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling cutom resource")
+				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling custom resource")
 			}
 			return v1alpha1.PhaseInProgress, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling cutom resource")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling custom resource")
 	}
 	if cr.Status.Phase != syn.SyndesisPhaseInstalled && cr.Status.Phase != syn.SyndesisPhaseStartupFailed {
 		return v1alpha1.PhaseInProgress, nil

@@ -35,8 +35,18 @@ spec:
               enum:
               - workshop
               - managed
+            namespacePrefix:
+              type: string
+            selfSignedCerts:
+              type: boolean
+            githubOauthClientId:
+              type: string
+            githubOauthClientSecret:
+              type: string
           required:
             - type
+            - githubOauthClientId
+            - githubOauthClientSecret
         status:
           type: object
   version: v1alpha1

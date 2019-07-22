@@ -107,7 +107,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
-	err = m.client.Create(context.TODO(), og)
+	err = m.client.Create(ctx, og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating operator group")
 		return err
@@ -120,7 +120,7 @@ func (m *MarketplaceManager) CreateSubscription(os marketplacev1.OperatorSource,
 		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
-	err = m.client.Create(context.TODO(), sub)
+	err = m.client.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")
 		return err
