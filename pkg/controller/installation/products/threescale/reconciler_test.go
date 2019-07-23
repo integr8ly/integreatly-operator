@@ -36,7 +36,7 @@ func TestThreeScale(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error getting pre req objects for %s: %v", packageName, err)
 		}
-		configManager, fakeSigsClient, fakeAppsV1Client, fakeOauthClient, fakeThreeScaleClient, mpm, err := GetClients(clusterPreReqObjects, scheme, appsv1PreReqObjects)
+		configManager, fakeSigsClient, fakeAppsV1Client, fakeOauthClient, fakeThreeScaleClient, mpm, err := getClients(clusterPreReqObjects, scheme, appsv1PreReqObjects)
 		if err != nil {
 			t.Fatalf("Error creating clients for %s: %v", packageName, err)
 		}
@@ -63,7 +63,7 @@ func TestThreeScale(t *testing.T) {
 			t.Fatalf("unexpected status: %v, expected: %v", status, v1alpha1.PhaseCompleted)
 		}
 
-		err = assertInstallationSuccessfullyReconciled(installation, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
+		err = assertInstallationSuccessfullyReconciled(installation, configManager, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -99,7 +99,7 @@ func TestThreeScale(t *testing.T) {
 			t.Fatalf("unexpected status when repeating reconcile: %v, expected: %v", status, v1alpha1.PhaseCompleted)
 		}
 
-		err = assertInstallationSuccessfullyReconciled(installation, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
+		err = assertInstallationSuccessfullyReconciled(installation, configManager, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
 		if err != nil {
 			t.Fatal(err.Error())
 		}

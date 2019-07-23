@@ -37,8 +37,7 @@ const (
 )
 
 var (
-	keycloakRealmPath = "/auth/realms/" + rhsso.KeycloakRealmName
-	sdConfig          = fmt.Sprintf("production:\n  enabled: true\n  server_scheme: 'https'\n  server_host: 'kubernetes.default.svc.cluster.local'\n  server_port: 443\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n  timeout: 1\n  open_timeout: 1\n  max_retry: 5\n", oauthId, clientSecret)
+	sdConfig = fmt.Sprintf("production:\n  enabled: true\n  server_scheme: 'https'\n  server_host: 'kubernetes.default.svc.cluster.local'\n  server_port: 443\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n  timeout: 1\n  open_timeout: 1\n  max_retry: 5\n", oauthId, clientSecret)
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -236,8 +235,19 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	rhssoNamespace := rhssoConfig.GetNamespace()
+	rhssoRealm := rhssoConfig.GetRealm()
+	if rhssoNamespace == "" || rhssoRealm == "" {
+		logrus.Info("Cannot configure SSO integration without SSO namespace and SSO realm")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
 	kcr := &aerogearv1.KeycloakRealm{}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhsso.KeycloakRealmName, Namespace: r.installation.Spec.NamespacePrefix + rhsso.DefaultRhssoNamespace}, kcr)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -372,21 +382,11 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		}
 	}
 
-	urlSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "credential-rhsso",
-		},
-	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: urlSecret.Name, Namespace: r.installation.Spec.NamespacePrefix + rhsso.DefaultRhssoNamespace}, urlSecret)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	site := string(urlSecret.Data["SSO_ADMIN_URL"]) + keycloakRealmPath
+	site := rhssoConfig.GetURL() + "/auth/realms/" + rhssoRealm
 	res, err := r.tsClient.AddSSOIntegration(map[string]string{
 		"kind":                              "keycloak",
 		"name":                              "rhsso",
@@ -405,8 +405,19 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 }
 
 func (r *Reconciler) reconcileUpdatingAdminDetails(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	rhssoNamespace := rhssoConfig.GetNamespace()
+	rhssoRealm := rhssoConfig.GetRealm()
+	if rhssoNamespace == "" || rhssoRealm == "" {
+		logrus.Info("Cannot update admin details without SSO namespace and SSO realm")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
 	kcr := &aerogearv1.KeycloakRealm{}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhsso.KeycloakRealmName, Namespace: r.installation.Spec.NamespacePrefix + rhsso.DefaultRhssoNamespace}, kcr)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -480,7 +491,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	}
 	if system.Data["service_discovery.yml"] != sdConfig {
 		system.Data["service_discovery.yml"] = sdConfig
-		serverClient.Update(ctx, system)
+		err := serverClient.Update(ctx, system)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
