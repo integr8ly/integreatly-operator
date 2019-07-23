@@ -134,6 +134,56 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkg
 	return r.handleAwaitingOperator(ctx, serverClient)
 }
 
+func (r *Reconciler) reconcileGithubOauth(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Debugf("reconciling secret for launcher github oauth in namespace: %s", r.Config.GetNamespace())
+
+	githubOauthClientId := inst.Spec.GithubOauthClientId
+	githubOauthClientSecret := inst.Spec.GithubOauthClientSecret
+
+	// Set placeholder values if client id and secret are not provided
+	if githubOauthClientId == "" {
+		githubOauthClientId = "github-oauth-client-id"
+	}
+
+	if githubOauthClientSecret == "" {
+		githubOauthClientSecret = "github-oauth-client-secret"
+	}
+
+	launcherGithubOauthSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "launcher-oauth-github",
+			Namespace: r.Config.GetNamespace(),
+		},
+		StringData: map[string]string{
+			"clientId": githubOauthClientId,
+			"secret": githubOauthClientSecret,
+		},
+	}
+
+	err := serverClient.Create(ctx, launcherGithubOauthSecret)
+	if err != nil {
+		if !k8serr.IsAlreadyExists(err) {
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("failed to retrieve %s secret in namespace %s", launcherGithubOauthSecret.Name, r.Config.GetNamespace()))
+		}
+
+		if err = serverClient.Update(ctx, launcherGithubOauthSecret); err != nil {
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("failed to update %s secret in namespace %s", launcherGithubOauthSecret.Name, r.Config.GetNamespace()))
+		}
+	}
+
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) reconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// TODO Case: OauthClient (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
+	return v1alpha1.PhaseNone, nil
+}
+
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
 	ip, _, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
@@ -152,22 +202,5 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclien
 	}
 
 	r.logger.Infof("launcher install plan is complete. Installation ready.")
-	return v1alpha1.PhaseNone, nil
-}
-
-
-func (r *Reconciler) reconcileGithubOauth(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// TODO Create launcher_oauth_github Secret (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
-
-	return v1alpha1.PhaseNone, nil
-}
-
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
-	return v1alpha1.PhaseNone, nil
-}
-
-func (r *Reconciler) reconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// TODO Case: OauthClient (as per https://github.com/fabric8-launcher/launcher-operator#install-the-launcher-via-the-installed-operator)
 	return v1alpha1.PhaseNone, nil
 }
