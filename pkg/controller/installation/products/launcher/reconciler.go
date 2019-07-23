@@ -3,7 +3,6 @@ package launcher
 import (
 	"context"
 	"fmt"
-	"time"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -101,7 +100,7 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	// Reconcile namespace
 	ns, err := nsr.Reconcile(ctx, ns, inst)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to reconcile fuse namespace "+r.Config.GetNamespace())
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to reconcile launcher namespace "+r.Config.GetNamespace())
 	}
 
 	if ns.Status.Phase == v1.NamespaceTerminating {
@@ -119,7 +118,6 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// TODO Create subscription (This will create the launcher operator)
 	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		marketplace.GetOperatorSources().Integreatly,
@@ -138,25 +136,9 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkg
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			if sub != nil {
-				logrus.Infof("time since created %v", time.Now().Sub(sub.CreationTimestamp.Time).Seconds())
-			}
-			// should be triggered ever 3 minuets if no install plan found
-			// if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > config.SubscriptionTimeout {
-			// 	// delete subscription so it is recreated
-			// 	logrus.Info("removing subscription as no install plan ready yet will recreate")
-			// 	if err := client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
-			// 		gp := int64(0)
-			// 		options.GracePeriodSeconds = &gp
-
-			// 	}); err != nil {
-			// 		// not going to fail here will retry
-			// 		r.logger.Error("failed to delete sub after install plan was not available for more than 20 seconds . Ignoring will retry ", err)
-			// 	}
-			// }
 			r.logger.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
@@ -165,10 +147,11 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclien
 
 	r.logger.Infof("installplan phase is %s", ip.Status.Phase)
 	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
-		r.logger.Infof("launcher online install plan is not complete yet")
+		r.logger.Infof("launcher install plan is not complete yet")
 		return v1alpha1.PhaseAwaitingOperator, nil
 	}
-	r.logger.Infof("launcher online install plan is complete. Installation ready ")
+
+	r.logger.Infof("launcher install plan is complete. Installation ready.")
 	return v1alpha1.PhaseNone, nil
 }
 

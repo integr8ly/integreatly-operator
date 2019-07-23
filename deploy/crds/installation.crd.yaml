@@ -45,8 +45,6 @@ spec:
               type: string
           required:
             - type
-            - githubOauthClientId
-            - githubOauthClientSecret
         status:
           type: object
   version: v1alpha1
