@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	lockConfigReadWriterMockGetOperatorNamespace sync.RWMutex
 	lockConfigReadWriterMockReadAMQOnline        sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams       sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
@@ -28,6 +29,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 //         // make and configure a mocked ConfigReadWriter
 //         mockedConfigReadWriter := &ConfigReadWriterMock{
+//             GetOperatorNamespaceFunc: func() string {
+// 	               panic("mock out the GetOperatorNamespace method")
+//             },
 //             ReadAMQOnlineFunc: func() (*AMQOnline, error) {
 // 	               panic("mock out the ReadAMQOnline method")
 //             },
@@ -56,6 +60,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //
 //     }
 type ConfigReadWriterMock struct {
+	// GetOperatorNamespaceFunc mocks the GetOperatorNamespace method.
+	GetOperatorNamespaceFunc func() string
+
 	// ReadAMQOnlineFunc mocks the ReadAMQOnline method.
 	ReadAMQOnlineFunc func() (*AMQOnline, error)
 
@@ -79,6 +86,9 @@ type ConfigReadWriterMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetOperatorNamespace holds details about calls to the GetOperatorNamespace method.
+		GetOperatorNamespace []struct {
+		}
 		// ReadAMQOnline holds details about calls to the ReadAMQOnline method.
 		ReadAMQOnline []struct {
 		}
@@ -105,6 +115,32 @@ type ConfigReadWriterMock struct {
 			Config ConfigReadable
 		}
 	}
+}
+
+// GetOperatorNamespace calls GetOperatorNamespaceFunc.
+func (mock *ConfigReadWriterMock) GetOperatorNamespace() string {
+	if mock.GetOperatorNamespaceFunc == nil {
+		panic("ConfigReadWriterMock.GetOperatorNamespaceFunc: method is nil but ConfigReadWriter.GetOperatorNamespace was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockGetOperatorNamespace.Lock()
+	mock.calls.GetOperatorNamespace = append(mock.calls.GetOperatorNamespace, callInfo)
+	lockConfigReadWriterMockGetOperatorNamespace.Unlock()
+	return mock.GetOperatorNamespaceFunc()
+}
+
+// GetOperatorNamespaceCalls gets all the calls that were made to GetOperatorNamespace.
+// Check the length with:
+//     len(mockedConfigReadWriter.GetOperatorNamespaceCalls())
+func (mock *ConfigReadWriterMock) GetOperatorNamespaceCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockGetOperatorNamespace.RLock()
+	calls = mock.calls.GetOperatorNamespace
+	lockConfigReadWriterMockGetOperatorNamespace.RUnlock()
+	return calls
 }
 
 // ReadAMQOnline calls ReadAMQOnlineFunc.

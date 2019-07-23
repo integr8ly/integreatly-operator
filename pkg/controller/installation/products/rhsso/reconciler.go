@@ -16,37 +16,62 @@ import (
 	"k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
-	defaultInstallationNamespace = "rhsso"
-	keycloakName                 = "rhsso"
-	keycloakRealmName            = "openshift"
+	defaultRhssoNamespace = "rhsso"
+	customerAdminPassword = "Password1"
+	keycloakName          = "rhsso"
+	keycloakRealmName     = "openshift"
+	rhssoId               = "openshift-client"
+	clientSecret          = rhssoId + "-secret"
 )
 
-func NewReconciler(coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
-	config, err := configManager.ReadRHSSO()
+var CustomerAdminUser = &aerogearv1.KeycloakUser{
+	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
+		Enabled:       true,
+		Attributes:    aerogearv1.KeycloakAttributes{},
+		UserName:      "customer-admin",
+		EmailVerified: true,
+		Email:         "customer-admin@example.com",
+		ClientRoles: map[string][]string{
+			"account": {
+				"manage-account",
+				"view-profile",
+			},
+			"realm-management": {
+				"manage-users",
+				"manage-identity-providers",
+				"view-realm",
+			},
+		},
+	},
+	Password:     &customerAdminPassword,
+	OutputSecret: "customer-admin-user-credentials",
+}
+
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
 	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+	if rhssoConfig.GetNamespace() == "" {
+		rhssoConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultRhssoNamespace)
 	}
 	return &Reconciler{
-		coreClient:    coreClient,
 		ConfigManager: configManager,
-		Config:        config,
+		Config:        rhssoConfig,
 		mpm:           mpm,
+		installation:  instance,
 	}, nil
 }
 
 type Reconciler struct {
-	coreClient    *kubernetes.Clientset
 	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
+	installation  *v1alpha1.Installation
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -57,9 +82,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	case v1alpha1.PhaseAwaitingNS:
 		return r.handleAwaitingNSPhase(ctx, serverClient)
 	case v1alpha1.PhaseCreatingSubscription:
-		return r.handleCreatingSubscription(ctx)
+		return r.handleCreatingSubscription(ctx, serverClient, inst)
 	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator(ctx)
+		return r.handleAwaitingOperator(ctx, serverClient)
 	case v1alpha1.PhaseCreatingComponents:
 		return r.handleCreatingComponents(ctx, serverClient, inst)
 	case v1alpha1.PhaseInProgress:
@@ -107,9 +132,11 @@ func (r *Reconciler) handleAwaitingNSPhase(ctx context.Context, serverClient pkg
 	return v1alpha1.PhaseAwaitingNS, nil
 }
 
-func (r *Reconciler) handleCreatingSubscription(ctx context.Context) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	err := r.mpm.CreateSubscription(
 		ctx,
+		serverClient,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		"rhsso",
@@ -123,8 +150,8 @@ func (r *Reconciler) handleCreatingSubscription(ctx context.Context) (v1alpha1.S
 	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.StatusPhase, error) {
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, "rhsso", r.Config.GetNamespace())
+func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, "rhsso", r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			logrus.Infof("No installplan created yet")
@@ -147,13 +174,6 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context) (v1alpha1.Statu
 
 func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: fmt.Sprintf(
-				"%s/%s",
-				aerogearv1.SchemeGroupVersion.Group,
-				aerogearv1.SchemeGroupVersion.Version),
-			Kind: aerogearv1.KeycloakKind,
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
@@ -175,13 +195,6 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient 
 
 	logrus.Infof("Creating Keycloakrealm")
 	kcr := &aerogearv1.KeycloakRealm{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: fmt.Sprintf(
-				"%s/%s",
-				aerogearv1.SchemeGroupVersion.Group,
-				aerogearv1.SchemeGroupVersion.Version),
-			Kind: aerogearv1.KeycloakRealmKind,
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
@@ -197,31 +210,25 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient 
 					"metrics-listener",
 				},
 				Users: []*aerogearv1.KeycloakUser{
+					CustomerAdminUser,
+				},
+				Clients: []*aerogearv1.KeycloakClient{
 					{
-						KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-							Enabled:       true,
-							Attributes:    aerogearv1.KeycloakAttributes{},
-							UserName:      "customer-admin",
-							EmailVerified: true,
-							Email:         "customer-admin@example.com",
-							Password:      "Password1",
-							RealmRoles: []string{
-								"offline_access",
-								"uma_authorization",
+						KeycloakApiClient: &aerogearv1.KeycloakApiClient{
+							ID:                      rhssoId,
+							ClientID:                rhssoId,
+							Enabled:                 true,
+							Secret:                  clientSecret,
+							ClientAuthenticatorType: "client-secret",
+							RedirectUris: []string{
+								fmt.Sprintf("https://tutorial-web-app-webapp.%s", r.installation.Spec.RoutingSubdomain),
+								fmt.Sprintf("%v/*", r.installation.Spec.MasterURL),
+								"http://localhost:3006*",
 							},
-							ClientRoles: map[string][]string{
-								"account": {
-									"manage-account",
-									"view-profile",
-								},
-								"realm-management": {
-									"manage-users",
-									"manage-identity-providers",
-									"view-realm",
-								},
-							},
+							StandardFlowEnabled:       true,
+							DirectAccessGrantsEnabled: true,
 						},
-						OutputSecret: "customer-admin-user-credentials",
+						OutputSecret: rhssoId + "-client",
 					},
 				},
 			},

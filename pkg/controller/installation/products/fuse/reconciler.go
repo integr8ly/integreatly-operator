@@ -33,7 +33,7 @@ type Reconciler struct {
 	logger        *logrus.Entry
 }
 
-func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve keycloak codeReadyConfig")
@@ -49,7 +49,6 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		coreClient:    coreClient,
 		ConfigManager: configManager,
 		Config:        fuseConfig,
 		mpm:           mpm,
@@ -63,7 +62,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")
 	}
 
-	reconciledPhase, err = r.reconcileSubscription(ctx, serverClient)
+	reconciledPhase, err = r.reconcileSubscription(ctx, serverClient, inst)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for fuse ")
 	}
@@ -103,10 +102,12 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseNone, nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("reconciling subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
 	err := r.mpm.CreateSubscription(
 		ctx,
+		client,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -164,7 +165,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, defaultSubscriptionName, r.Config.GetNamespace())
+	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if errors2.IsNotFound(err) {
 			if sub != nil {

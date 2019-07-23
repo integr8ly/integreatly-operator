@@ -35,7 +35,6 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	cases := []struct {
 		Name           string
 		client         client.Client
-		FakeK8sClient  *k8sclient.Clientset
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *v1alpha1.Installation
 		ExpectErr      bool
@@ -106,7 +105,6 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			reconciler, err := NewReconciler(
-				tc.FakeK8sClient,
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
@@ -201,7 +199,6 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			reconciler, err := NewReconciler(
-				tc.FakeK8sClient,
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,

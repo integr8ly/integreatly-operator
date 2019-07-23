@@ -63,6 +63,10 @@ required = [
   # branch = "v0.8.x" #osdk_branch_annotation
   version = "=v0.8.1" #osdk_version_annotation
 
+[[constraint]]
+  name = "github.com/openshift/client-go"
+  revision = "3f02cbbd83afea65cb22c2d5205e913ceef20fe7"
+
 [prune]
   go-tests = true
   non-go = true

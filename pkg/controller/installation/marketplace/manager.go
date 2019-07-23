@@ -2,7 +2,6 @@ package marketplace
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -11,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -42,25 +40,17 @@ func GetOperatorSources() *operatorSources {
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	CreateSubscription(ctx context.Context, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
-	GetSubscriptionInstallPlan(ctx context.Context, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
+	CreateSubscription(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	GetSubscriptionInstallPlan(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
 }
 
-type MarketplaceManager struct {
-	client     pkgclient.Client
-	restConfig *rest.Config
-	owner      ownerutil.Owner
+type MarketplaceManager struct{}
+
+func NewManager() *MarketplaceManager {
+	return &MarketplaceManager{}
 }
 
-func NewManager(client pkgclient.Client, rc *rest.Config, install *v1alpha1.Installation) *MarketplaceManager {
-	return &MarketplaceManager{
-		client:     client,
-		restConfig: rc,
-		owner:      install,
-	}
-}
-
-func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -82,11 +72,11 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketpl
 		},
 	}
 	//TODO might need to check status of catalogsourceconfig
-	_, err := m.getSubscription(ctx, sub.Name, ns)
+	_, err := m.getSubscription(ctx, serverClient, sub.Name, ns)
 	if err != nil && k8serr.IsNotFound(err) {
 		logrus.Infof("Subscription not found ")
 		// delete catalog source config
-		if err := m.client.Delete(ctx, csc, func(options *pkgclient.DeleteOptions) {
+		if err := serverClient.Delete(ctx, csc, func(options *pkgclient.DeleteOptions) {
 			gp := int64(0)
 			options.GracePeriodSeconds = &gp
 		}); err != nil && !k8serr.IsNotFound(err) {
@@ -94,8 +84,8 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketpl
 		}
 	}
 
-	ownerutil.EnsureOwner(csc, m.owner)
-	err = m.client.Create(ctx, csc)
+	ownerutil.EnsureOwner(csc, owner)
+	err = serverClient.Create(ctx, csc)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating catalog source config: %s", err.Error())
 		return err
@@ -112,8 +102,8 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketpl
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
-	ownerutil.EnsureOwner(og, m.owner)
-	err = m.client.Create(ctx, og)
+	ownerutil.EnsureOwner(og, owner)
+	err = serverClient.Create(ctx, og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating operator group")
 		return err
@@ -126,8 +116,8 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketpl
 		CatalogSource:          csc.Name,
 		CatalogSourceNamespace: ns,
 	}
-	ownerutil.EnsureOwner(sub, m.owner)
-	err = m.client.Create(ctx, sub)
+	ownerutil.EnsureOwner(sub, owner)
+	err = serverClient.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")
 		return err
@@ -138,7 +128,7 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, os marketpl
 	return nil
 }
 
-func (m *MarketplaceManager) getSubscription(ctx context.Context, subName, ns string) (*coreosv1alpha1.Subscription, error) {
+func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
 	logrus.Infof("Getting subscription %s in ns: %s", subName, ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -146,13 +136,8 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, subName, ns st
 			Name:      subName,
 		},
 	}
-	serverClient, err := pkgclient.New(m.restConfig, pkgclient.Options{})
-	if err != nil {
-		logrus.Infof("Error creating server client")
-		return nil, err
-	}
 
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err != nil {
 		logrus.Infof("Error getting subscription %s in ns: %s", subName, ns)
 		return nil, err
@@ -160,8 +145,8 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, subName, ns st
 	return sub, nil
 }
 
-func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
-	sub, err := m.getSubscription(ctx, subName, ns)
+func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "GetSubscriptionInstallPlan")
 	}
@@ -176,11 +161,7 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, sub
 			Namespace: ns,
 		},
 	}
-	serverClient, err := pkgclient.New(m.restConfig, pkgclient.Options{})
-	if err != nil {
-		logrus.Infof("Error creating server client")
-		return nil, nil, err
-	}
+
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: ip.Name, Namespace: ip.Namespace}, ip)
 	if err != nil {
 		return nil, nil, err
