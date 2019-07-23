@@ -11,9 +11,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/launcher"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -34,7 +34,12 @@ func NewReconciler(product v1alpha1.ProductName, client client.Client, rc *rest.
 	case v1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(coreClient, configManager, instance, mpm)
 	case v1alpha1.ProductLauncher:
-		reconciler, err = launcher.NewReconciler(coreClient, configManager, instance, mpm)
+		appsv1, err := appsv1Client.NewForConfig(rc)
+		if err != nil {
+			return nil, err
+		}
+
+		reconciler, err = launcher.NewReconciler(coreClient, appsv1, configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

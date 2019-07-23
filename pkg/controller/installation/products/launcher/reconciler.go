@@ -15,22 +15,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 )
 
 const (
 	defaultInstallationNamespace = "launcher"
-	defaultSubscriptionName="launcher"
+	defaultSubscriptionName = "launcher"
+	defaultLauncherName = "launcher"
 )
 
 type Reconciler struct {
 	coreClient    kubernetes.Interface
+	appsv1Client appsv1Client.AppsV1Interface
 	Config        *config.Launcher
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 }
 
-func NewReconciler(coreClient *kubernetes.Clientset, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(coreClient *kubernetes.Clientset, appsv1Client appsv1Client.AppsV1Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadLauncher()
 	if err != nil {
 		return nil, err
@@ -44,6 +48,7 @@ func NewReconciler(coreClient *kubernetes.Clientset, configManager config.Config
 
 	return &Reconciler{
 		coreClient:    coreClient,
+		appsv1Client: appsv1Client,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -169,14 +174,43 @@ func (r *Reconciler) reconcileGithubOauth(ctx context.Context, inst *v1alpha1.In
 		if err = serverClient.Update(ctx, launcherGithubOauthSecret); err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("failed to update %s secret in namespace %s", launcherGithubOauthSecret.Name, r.Config.GetNamespace()))
 		}
+
+		return v1alpha1.PhaseInProgress, nil
 	}
 
 	return v1alpha1.PhaseNone, nil
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// TODO Case: Create Custom Resource https://gist.github.com/JameelB/ab711ed80e147078e816aaf895ba00b4
-	return v1alpha1.PhaseNone, nil
+	cr := &launcherv1alpha2.Launcher{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultLauncherName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Spec: launcherv1alpha2.LauncherSpec{
+			OpenShift: launcherv1alpha2.OpenShiftConfig{
+				ConsoleURL: "", // TODO This is available in installation cr
+			},
+			OAuth: launcherv1alpha2.OAuthConfig{
+				Enabled: true,
+			},
+		},
+	}
+
+	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
+		if k8serr.IsNotFound(err) {
+			if err := serverClient.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
+				return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to create launcher custom resource during reconcile")
+			}
+
+			return v1alpha1.PhaseInProgress, nil
+		}
+
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to retrieve launcher cr")
+	}
+
+	// No status is available in the Launcher custom resource, will need to check pod status to ensure installation is ready
+	return r.checkPodsStatus(ctx, serverClient)
 }
 
 func (r *Reconciler) reconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -202,5 +236,39 @@ func (r *Reconciler) handleAwaitingOperator(ctx context.Context, client pkgclien
 	}
 
 	r.logger.Infof("launcher install plan is complete. Installation ready.")
+	return v1alpha1.PhaseNone, nil
+}
+
+func (r *Reconciler) checkPodsStatus(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("checking ready status for launcher")
+	cr := &launcherv1alpha2.Launcher{}
+
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultLauncherName, Namespace: r.Config.GetNamespace()}, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	dcList, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).List(metav1.ListOptions{})
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to list deployment configs")
+	}
+
+	podList := &v1.PodList{}
+	if err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, podList); err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to list launcher pods")
+	}
+
+	for _, dc := range dcList.Items {
+		for _, pod := range podList.Items {
+			if pod.GetLabels()["deploymentconfig"] == dc.GetName() {
+				for _, condition := range pod.Status.Conditions {
+					if condition.Status != "True" {
+						return v1alpha1.PhaseInProgress, nil
+					}
+				}
+			}		
+		}
+	}
+
 	return v1alpha1.PhaseNone, nil
 }
