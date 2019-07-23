@@ -57,11 +57,11 @@ Clone this repository, change directory and run the operator:
 operator-sdk up local --namespace=<namespace>
 ```
 
-In the OpenShift UI, in `Projects -> openshift-rhsso -> Networking -> Routes`, select the URL for the `sso` Route to open up the SSO login page.
+In the OpenShift UI, in `Projects -> integreatly-rhsso -> Networking -> Routes`, select the URL for the `sso` Route to open up the SSO login page.
 
 The username is `admin`, and the password can be retrieved by running:
 ```sh
-oc get dc sso -n openshift-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'
+oc get dc sso -n integreatly-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'
 ```
 
 
