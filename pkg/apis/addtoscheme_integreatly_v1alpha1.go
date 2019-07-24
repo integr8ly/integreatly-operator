@@ -4,6 +4,7 @@ import (
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	enmasse "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
+	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
@@ -49,5 +50,6 @@ func init() {
 		nexusv1.SchemeBuilder.AddToScheme,
 		rbacv1.SchemeBuilder.AddToScheme,
 		usersv1.SchemeBuilder.AddToScheme,
+		launcherv1alpha2.SchemeBuilder.AddToScheme,
 	)
 }
