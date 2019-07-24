@@ -4,25 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmassev1 "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
+
+	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func buildScheme() *runtime.Scheme {
@@ -78,14 +82,14 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -123,7 +127,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			FakeConfig:           basicConfigMock(),
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
-			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedStatus:       v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
@@ -131,7 +135,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			FakeConfig:           basicConfigMock(),
-			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedStatus:       v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -167,14 +171,14 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -210,14 +214,14 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			Client:            fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:        basicConfigMock(),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
-			ExpectedStatus:    v1alpha1.PhaseNone,
+			ExpectedStatus:    v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
 			Client:            fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			FakeConfig:        basicConfigMock(),
-			ExpectedStatus:    v1alpha1.PhaseNone,
+			ExpectedStatus:    v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -261,7 +265,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config written once or more")
@@ -281,7 +285,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config written once or more")
@@ -301,7 +305,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				expectedHost := fmt.Sprintf("https://%s", defaultHost)
 				if len(cfgMock.WriteConfigCalls()) != 1 {
@@ -317,7 +321,8 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			Name:           "Test continues when console it not found",
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config called once or more")
@@ -376,5 +381,105 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			s.ValidateCallCounts(t, s.FakeConfig)
 		})
 
+	}
+}
+
+func TestReconciler_fullReconcile(t *testing.T) {
+	consoleSvc := &enmassev1.ConsoleService{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      defaultConsoleSvcName,
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
+	ns := &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: defaultInstallationNamespace,
+			OwnerReferences: []v1.OwnerReference{
+				{
+					Name:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	cases := []struct {
+		Name           string
+		ExpectError    bool
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     client.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name:           "test successful reconcile",
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc),
+			FakeConfig:     basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: v1.ObjectMeta{
+								Name: "amqonline-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "amqonline-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "installation",
+					Namespace: defaultInstallationNamespace,
+				},
+				TypeMeta: v1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected error but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
 	}
 }

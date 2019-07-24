@@ -1,7 +1,8 @@
-package threescale
+package client
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	sigs "sigs.k8s.io/controller-runtime/pkg/client"
 	fakesigs "sigs.k8s.io/controller-runtime/pkg/client/fake"

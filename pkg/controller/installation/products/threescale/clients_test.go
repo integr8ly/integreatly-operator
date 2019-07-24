@@ -2,8 +2,11 @@ package threescale
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/client"
 	appsv1 "github.com/openshift/api/apps/v1"
 	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -12,11 +15,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
-	"net/http"
 )
 
-func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *SigsClientInterfaceMock {
-	sigsFakeClient := NewSigsClientMoqWithScheme(scheme, preReqObjects...)
+func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
+	sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
 	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object) error {
 		switch obj := obj.(type) {
 		case *corev1.Namespace:

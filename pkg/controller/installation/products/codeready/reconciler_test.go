@@ -2,24 +2,28 @@ package codeready
 
 import (
 	"context"
-	"errors"
+	"testing"
+
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -27,6 +31,32 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 )
+
+var testKeycloakRealm = aerogearv1.KeycloakRealm{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "openshift",
+		Namespace: "rhsso",
+	},
+	Spec: aerogearv1.KeycloakRealmSpec{
+		CreateOnly: false,
+		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
+			Clients: []*aerogearv1.KeycloakClient{
+				&aerogearv1.KeycloakClient{
+					KeycloakApiClient: &aerogearv1.KeycloakApiClient{
+						Name: defaultClientName,
+					},
+				},
+			},
+		},
+	},
+}
+
+var testCheCluster = chev1.CheCluster{
+	ObjectMeta: metav1.ObjectMeta{
+		Namespace: defaultInstallationNamespace,
+		Name:      defaultCheClusterName,
+	},
+}
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
@@ -62,27 +92,379 @@ func buildScheme() *runtime.Scheme {
 	return scheme
 }
 
-func TestCodeready(t *testing.T) {
-	testKeycloakRealm := aerogearv1.KeycloakRealm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "openshift",
-			Namespace: "rhsso",
+func TestReconciler_config(t *testing.T) {
+	cases := []struct {
+		Name           string
+		ExpectError    bool
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     pkgclient.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name:           "test error on failed config",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
+			ExpectedError:  "could not retrieve che config: could not read che config",
+			Installation:   &v1alpha1.Installation{},
+			FakeClient:     fakeclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return nil, errors.New("could not read che config")
+				},
+			},
 		},
-		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly: false,
-			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
-				Clients: []*aerogearv1.KeycloakClient{
-					&aerogearv1.KeycloakClient{
-						KeycloakApiClient: &aerogearv1.KeycloakApiClient{
-							Name: defaultClientName,
-						},
+		{
+			Name:           "test error on bad RHSSO config",
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedError:  "keycloak config is not valid: config realm is not defined",
+			Installation:   &v1alpha1.Installation{},
+			FakeClient:     fakeclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return config.NewRHSSO(config.ProductConfig{}), nil
+				},
+			},
+		},
+		{
+			Name:           "test awaiting subscrition - failed RHSSO config",
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedError:  "could not retrieve keycloak config: could not load keycloak config",
+			Installation:   &v1alpha1.Installation{},
+			FakeClient:     fakeclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, errors.New("could not load keycloak config")
+				},
+			},
+		},
+		{
+			Name:           "test error on failed RHSSO config",
+			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedError:  "could not retrieve keycloak config: could not load keycloak config",
+			Installation:   &v1alpha1.Installation{},
+			FakeClient:     fakeclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
+					return config.NewCodeReady(config.ProductConfig{}), nil
+				},
+				ReadRHSSOFunc: func() (*config.RHSSO, error) {
+					return nil, errors.New("could not load keycloak config")
+				},
+			},
+		},
+		{
+			Name:           "test subscription phase with error from mpm",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
+			Installation:   &v1alpha1.Installation{},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return errors.New("dummy error")
+				},
+			},
+			FakeClient: fakeclient.NewFakeClient(),
+			FakeConfig: basicConfigMock(),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			if err == nil && tc.ExpectedError != "" {
+				t.Fatalf("expected error '%v' and got nil", tc.ExpectedError)
+			}
+
+			// if we expect errors creating the reconciler, don't try to use it
+			if tc.ExpectedError != "" {
+				return
+			}
+
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected error but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestCodeready_reconcileCluster(t *testing.T) {
+	scenarios := []struct {
+		Name           string
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectError    bool
+		ExpectedError  string
+		Installation   *v1alpha1.Installation
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     client.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+	}{
+		{
+			Name:           "test phase in progress when che cluster is missing",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm),
+			FakeConfig: basicConfigMock(),
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				scenario.FakeConfig,
+				scenario.Installation,
+				scenario.FakeMPM,
+			)
+			if err != nil && err.Error() != scenario.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
+			}
+
+			status, err := testReconciler.reconcileCheCluster(context.TODO(), scenario.Installation, scenario.FakeClient)
+			if err != nil && err.Error() != scenario.ExpectedError {
+				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
+			}
+
+			if err == nil && scenario.ExpectedError != "" {
+				t.Fatalf("expected error '%v' and got nil", scenario.ExpectedError)
+			}
+
+			if status != scenario.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", scenario.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestCodeready_reconcileClient(t *testing.T) {
+	scenarios := []struct {
+		Name                string
+		ExpectedStatus      v1alpha1.StatusPhase
+		ExpectedError       string
+		ExpectedCreateError string
+		Installation        *v1alpha1.Installation
+		FakeConfig          *config.ConfigReadWriterMock
+		FakeClient          client.Client
+		FakeMPM             *marketplace.MarketplaceInterfaceMock
+	}{
+		{
+			Name:           "test creating components phase missing cluster expect p",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+				Status: v1alpha1.InstallationStatus{
+					ProductStatus: map[v1alpha1.ProductName]string{
+						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
 					},
+				},
+			},
+			ExpectedError: "could not retrieve checluster for keycloak client update: checlusters.org.eclipse.che \"integreatly-cluster\" not found",
+			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm),
+			FakeConfig:    basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+				},
+			},
+		},
+		{
+			Name:           "test creating components returns in progress",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+				Status: v1alpha1.InstallationStatus{
+					ProductStatus: map[v1alpha1.ProductName]string{
+						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
+					},
+				},
+			},
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
+			FakeConfig: basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 		},
 	}
 
-	testCheCluster := chev1.CheCluster{
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				scenario.FakeConfig,
+				scenario.Installation,
+				scenario.FakeMPM,
+			)
+			if err != nil && err.Error() != scenario.ExpectedCreateError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedCreateError)
+			}
+
+			if err == nil && scenario.ExpectedCreateError != "" {
+				t.Fatalf("expected error '%v' and got nil", scenario.ExpectedCreateError)
+			}
+
+			// if we expect errors creating the reconciler, don't try to use it
+			if scenario.ExpectedCreateError != "" {
+				return
+			}
+
+			status, err := testReconciler.reconcileKeycloakClient(context.TODO(), scenario.FakeClient)
+			if err != nil && err.Error() != scenario.ExpectedError {
+				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
+			}
+
+			if err == nil && scenario.ExpectedError != "" {
+				t.Fatalf("expected error '%v' and got nil", scenario.ExpectedError)
+			}
+
+			if status != scenario.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", scenario.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestCodeready_reconcileProgress(t *testing.T) {
+	scenarios := []struct {
+		Name           string
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		ExpectError    bool
+		Installation   *v1alpha1.Installation
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     client.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+	}{
+		{
+			Name:           "test che cluster creating returns phase in progress",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
+			FakeConfig: basicConfigMock(),
+		},
+		{
+			Name:           "test che cluster create error returns phase failed",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("get request failed")
+				},
+			},
+			ExpectError:   true,
+			ExpectedError: "could not retrieve checluster for keycloak client update: get request failed",
+			FakeConfig:    basicConfigMock(),
+		},
+		{
+			Name:           "test che cluster available returns phase complete",
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(buildScheme(), &chev1.CheCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: defaultInstallationNamespace,
+					Name:      defaultCheClusterName,
+				},
+				Status: chev1.CheClusterStatus{
+					CheClusterRunning: "Available",
+				},
+			}),
+			FakeConfig: basicConfigMock(),
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				scenario.FakeConfig,
+				scenario.Installation,
+				scenario.FakeMPM,
+			)
+			if err != nil && err.Error() != scenario.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
+			}
+
+			status, err := testReconciler.handleProgressPhase(context.TODO(), scenario.FakeClient)
+			if err != nil && err.Error() != scenario.ExpectedError {
+				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
+			}
+
+			if err == nil && scenario.ExpectedError != "" {
+				t.Fatalf("expected error '%v' and got nil", scenario.ExpectedError)
+			}
+
+			if status != scenario.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", scenario.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestCodeready_fullReconcile(t *testing.T) {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace,
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	cluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,
 			Name:      defaultCheClusterName,
@@ -93,56 +475,58 @@ func TestCodeready(t *testing.T) {
 		},
 	}
 
-	scenarios := []struct {
-		Name                 string
-		ExpectedStatus       v1alpha1.StatusPhase
-		ExpectedError        string
-		ExpectedCreateError  string
-		Object               *v1alpha1.Installation
-		FakeConfig           *config.ConfigReadWriterMock
-		FakeControllerClient client.Client
-		FakeMPM              *marketplace.MarketplaceInterfaceMock
-		ValidateCallCounts   func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
-	}{
-		{
-			Name:           "test successful installation without errors",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Object: &v1alpha1.Installation{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
-				},
-			},
-			FakeControllerClient: pkgclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster, &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: defaultInstallationNamespace,
-					Name:      "postgres",
-				},
-				Spec: appsv1.DeploymentSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: defaultInstallationNamespace,
+			Name:      "postgres",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{
 								{
-									Env: []corev1.EnvVar{
-										{
-											Name:  "POSTGRES_USERNAME",
-											Value: "username",
-										},
-										{
-											Name:  "POSTGRES_PASSWORD",
-											Value: "password",
-										},
-										{
-											Name:  "POSTGRES_DATABASE",
-											Value: "database",
-										},
-									},
+									Name:  "POSTGRES_USERNAME",
+									Value: "username",
+								},
+								{
+									Name:  "POSTGRES_PASSWORD",
+									Value: "password",
+								},
+								{
+									Name:  "POSTGRES_DATABASE",
+									Value: "database",
 								},
 							},
 						},
 					},
 				},
-			}),
+			},
+		},
+	}
+
+	scenarios := []struct {
+		Name                string
+		ExpectedStatus      v1alpha1.StatusPhase
+		ExpectedError       string
+		ExpectedCreateError string
+		Installation        *v1alpha1.Installation
+		FakeConfig          *config.ConfigReadWriterMock
+		FakeClient          client.Client
+		FakeMPM             *marketplace.MarketplaceInterfaceMock
+		ValidateCallCounts  func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
+	}{
+		{
+			Name:           "test successful installation without errors",
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster),
 			FakeConfig: basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
@@ -166,105 +550,22 @@ func TestCodeready(t *testing.T) {
 					return nil
 				},
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
-				},
-			},
-		},
-		{
-			Name:                 "test error on bad codeready config",
-			ExpectedStatus:       v1alpha1.PhaseNone,
-			ExpectedCreateError:  "could not retrieve che config: could not load codeready config",
-			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return nil, errors.New("could not load codeready config")
-				},
-			},
-		},
-		{
-			Name:                 "test error on bad RHSSO config",
-			ExpectedStatus:       v1alpha1.PhaseNone,
-			ExpectedCreateError:  "keycloak config is not valid: config realm is not defined",
-			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return config.NewRHSSO(config.ProductConfig{}), nil
-				},
-			},
-		},
-		{
-			Name:                 "test awaiting subscrition - failed RHSSO config",
-			ExpectedStatus:       v1alpha1.PhaseNone,
-			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
-			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return nil, errors.New("could not load keycloak config")
-				},
-			},
-		},
-		{
-			Name:                 "test error on failed RHSSO config",
-			ExpectedStatus:       v1alpha1.PhaseNone,
-			ExpectedCreateError:  "could not retrieve keycloak config: could not load keycloak config",
-			Object:               &v1alpha1.Installation{},
-			FakeControllerClient: pkgclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return nil, errors.New("could not load keycloak config")
-				},
-			},
-		},
-		{
-			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			ExpectedError:  "could not reconcile subscription: could not create subscription in namespace: codeready-workspaces: dummy error",
-			Object: &v1alpha1.Installation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: "installation-namespace",
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-				Status: v1alpha1.InstallationStatus{
-					ProductStatus: map[v1alpha1.ProductName]string{
-						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingSubscription),
-					},
-				},
-			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-					return errors.New("dummy error")
-				},
-			},
-			FakeControllerClient: pkgclient.NewFakeClient(
-				&corev1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: defaultInstallationNamespace,
-						OwnerReferences: []metav1.OwnerReference{
-							{
-								Name:       "installation",
-								APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "codeready-install-plan",
 							},
-						},
-					},
-					Status: corev1.NamespaceStatus{},
-				}),
-			FakeConfig: basicConfigMock(),
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
 		},
 	}
 
@@ -272,7 +573,7 @@ func TestCodeready(t *testing.T) {
 		t.Run(scenario.Name, func(t *testing.T) {
 			testReconciler, err := NewReconciler(
 				scenario.FakeConfig,
-				scenario.Object,
+				scenario.Installation,
 				scenario.FakeMPM,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
@@ -288,7 +589,7 @@ func TestCodeready(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), scenario.Object, scenario.FakeControllerClient)
+			status, err := testReconciler.Reconcile(context.TODO(), scenario.Installation, scenario.FakeClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}
@@ -306,4 +607,20 @@ func TestCodeready(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Generate a fake k8s client with a fuse custom resource in a specific phase
+func getFakeClient(scheme *runtime.Scheme, objs []runtime.Object) *moqclient.SigsClientInterfaceMock {
+	sigsFakeClient := moqclient.NewSigsClientMoqWithScheme(scheme, objs...)
+	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object) error {
+		switch obj := obj.(type) {
+		case *chev1.CheCluster:
+			obj.Status.CheURL = "https://test.com"
+			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
+		}
+
+		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
+	}
+
+	return sigsFakeClient
 }

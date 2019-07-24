@@ -9,7 +9,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -57,6 +56,8 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
+// Reconcile reads that state of the cluster for nexus and makes changes based on the state read
+// and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
@@ -64,11 +65,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), client)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	phase, err = r.reconcileOperator(ctx, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -83,31 +79,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	r.logger.Debug("reconciling installplan")
-
-	// get the installplan for the subscription
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, defaultSubscriptionName, r.Config.GetNamespace())
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			r.logger.Infof("no installplan created yet")
-		}
-
-		r.logger.Infof("error getting nexus subscription installplan: %s", err)
-		return v1alpha1.PhaseFailed, err
-	}
-
-	// if the installplan phase is complete, complete the phase
-	r.logger.Infof("nexus installplan phase is %s", ip.Status.Phase)
-	if ip != nil && ip.Status.Phase == coreosv1alpha1.InstallPlanPhaseComplete {
-		return v1alpha1.PhaseCompleted, nil
-	}
-
-	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
