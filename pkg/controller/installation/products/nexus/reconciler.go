@@ -2,7 +2,6 @@ package nexus
 
 import (
 	"context"
-	"fmt"
 
 	nexus "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -13,6 +12,7 @@ import (
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ type Reconciler struct {
 	logger        *logrus.Entry
 }
 
-func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadNexus()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read nexus config")
@@ -50,7 +50,6 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	logger := logrus.WithFields(logrus.Fields{"product": config.GetProductName()})
 
 	return &Reconciler{
-		coreClient:    coreClient,
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
@@ -58,30 +57,28 @@ func NewReconciler(coreClient kubernetes.Interface, configManager config.ConfigR
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	ctx := context.TODO()
-
-	phase, err := r.reconcileNamespace(ctx, inst, serverClient)
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.reconcileNamespace(ctx, serverClient, inst)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileSubscription()
+	phase, err = r.reconcileSubscription(ctx, serverClient, inst)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileOperator()
+	phase, err = r.reconcileOperator(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
+	phase, err = r.reconcileCustomResource(ctx, serverClient, inst)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.handleProgress()
+	phase, err = r.handleProgress(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -90,11 +87,11 @@ func (r *Reconciler) Reconcile(inst *v1alpha1.Installation, serverClient pkgclie
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileNamespace(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling namespace")
 
 	namespace := r.Config.GetNamespace()
-	nsr := resources.NewNamespaceReconciler(client, r.logger)
+	nsr := resources.NewNamespaceReconciler(client)
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -116,11 +113,14 @@ func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) reconcileSubscription() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling subscription")
 
 	// create the subscription
 	err := r.mpm.CreateSubscription(
+		ctx,
+		client,
+		inst,
 		marketplace.GetOperatorSources().Integreatly,
 		r.Config.GetNamespace(),
 		defaultSubscriptionName,
@@ -134,11 +134,11 @@ func (r *Reconciler) reconcileSubscription() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileOperator() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOperator(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling installplan")
 
 	// get the installplan for the subscription
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan("nexus", r.Config.GetNamespace())
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, defaultSubscriptionName, r.Config.GetNamespace())
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			r.logger.Infof("no installplan created yet")
@@ -157,7 +157,7 @@ func (r *Reconciler) reconcileOperator() (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, client pkgclient.Client, install *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling nexus custom resource")
 
 	cr := &nexus.Nexus{
@@ -189,20 +189,17 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgress() (v1alpha1.StatusPhase, error) {
-	r.logger.Debug("checking nexus pod is running")
+func (r *Reconciler) handleProgress(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("checking nexus pods are running")
 
-	listOptions := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app=%s", resourceName),
-	}
-
-	pods, err := r.coreClient.CoreV1().Pods(r.Config.GetNamespace()).List(listOptions)
+	pods := &corev1.PodList{}
+	err := client.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to list pods in nexus namespace")
 	}
 
-	// expecting 1 pod in total
-	if len(pods.Items) < 1 {
+	// expecting 2 pods in total
+	if len(pods.Items) < 2 {
 		return v1alpha1.PhaseInProgress, nil
 	}
 

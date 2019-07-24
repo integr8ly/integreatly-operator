@@ -57,7 +57,7 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 
 		reconciler, err = threescale.NewReconciler(configManager, instance, appsv1, oauthv1Client, tsClient, mpm)
 	case v1alpha1.ProductNexus:
-		reconciler, err = nexus.NewReconciler(coreClient, configManager, instance, mpm)
+		reconciler, err = nexus.NewReconciler(configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}
