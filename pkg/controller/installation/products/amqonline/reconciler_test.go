@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmassev1 "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -22,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func buildScheme() *runtime.Scheme {
@@ -78,14 +79,14 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -123,7 +124,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			FakeConfig:           basicConfigMock(),
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
-			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedStatus:       v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
@@ -131,7 +132,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			FakeConfig:           basicConfigMock(),
-			ExpectedStatus:       v1alpha1.PhaseNone,
+			ExpectedStatus:       v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -167,14 +168,14 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -210,14 +211,14 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			Client:            fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:        basicConfigMock(),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
-			ExpectedStatus:    v1alpha1.PhaseNone,
+			ExpectedStatus:    v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
 			Client:            fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			FakeConfig:        basicConfigMock(),
-			ExpectedStatus:    v1alpha1.PhaseNone,
+			ExpectedStatus:    v1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -261,7 +262,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config written once or more")
@@ -281,7 +282,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config written once or more")
@@ -301,7 +302,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 				},
 			}),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseCompleted,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				expectedHost := fmt.Sprintf("https://%s", defaultHost)
 				if len(cfgMock.WriteConfigCalls()) != 1 {
@@ -317,7 +318,8 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			Name:           "Test continues when console it not found",
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
-			ExpectedStatus: v1alpha1.PhaseNone,
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {
 				if len(cfgMock.WriteConfigCalls()) != 0 {
 					t.Fatal("config called once or more")
