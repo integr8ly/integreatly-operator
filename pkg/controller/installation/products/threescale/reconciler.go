@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	sdConfig = fmt.Sprintf("production:\n  enabled: true\n  server_scheme: 'https'\n  server_host: 'kubernetes.default.svc.cluster.local'\n  server_port: 443\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n  timeout: 1\n  open_timeout: 1\n  max_retry: 5\n", oauthId, clientSecret)
+	sdConfig = fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthId, clientSecret)
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
