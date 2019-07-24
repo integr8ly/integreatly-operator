@@ -2,6 +2,8 @@ package fuse
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -10,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,14 +35,14 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve keycloak codeReadyConfig")
+		return nil, errors.Wrap(err, "could not retrieve fuse config")
 	}
 
 	if fuseConfig.GetNamespace() == "" {
 		fuseConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	if err = fuseConfig.Validate(); err != nil {
-		return nil, errors.Wrap(err, "keycloak codeReadyConfig is not valid")
+		return nil, errors.Wrap(err, "fuse config is not valid")
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -54,34 +56,36 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
+// Reconcile reads that state of the cluster for fuse and makes changes based on the state read
+// and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	reconciledPhase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile namespace for fuse ")
+	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	reconciledPhase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile subscription for fuse ")
+	phase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	reconciledPhase, err = r.reconcileCustomResource(ctx, inst, serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to reconcile fuse custom resource ")
-	}
-	// if we get to the end and no phase set then it is done
-
-	return reconciledPhase, nil
+	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
 }
 
+// reconcileCustomResource ensures that the fuse custom resource exists
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	intLimit := -1
 	cr := &syn.Syndesis{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
-		TypeMeta: v12.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			Kind:       "Syndesis",
 			APIVersion: syn.SchemeGroupVersion.String(),
 		},
@@ -99,20 +103,20 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 		},
 	}
 	ownerutil.EnsureOwner(cr, install)
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
-		if errors2.IsNotFound(err) {
-			if err := client.Create(ctx, cr); err != nil && !errors2.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling custom resource")
-			}
-			return v1alpha1.PhaseInProgress, nil
-		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling custom resource")
+
+	// attempt to create the custom resource
+	if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a fuse custom resource")
 	}
-	if cr.Status.Phase != syn.SyndesisPhaseInstalled && cr.Status.Phase != syn.SyndesisPhaseStartupFailed {
+
+	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
+		return v1alpha1.PhaseFailed, errors.New(fmt.Sprintf("failed to install fuse custom resource: %s", cr.Status.Reason))
+	}
+
+	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
 		return v1alpha1.PhaseInProgress, nil
 	}
-	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
-		return v1alpha1.PhaseFailed, errors.New("syndesis has failed to install " + string(cr.Status.Reason))
-	}
+
+	// if there are no errors, the phase is complete
 	return v1alpha1.PhaseCompleted, nil
 }
