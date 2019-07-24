@@ -11,11 +11,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,6 +47,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		Config:         config,
 		KeycloakConfig: kcConfig,
 		mpm:            mpm,
+		Reconciler:     resources.NewReconciler(mpm),
 	}, nil
 }
 
@@ -57,79 +56,31 @@ type Reconciler struct {
 	KeycloakConfig *config.RHSSO
 	ConfigManager  config.ConfigReadWriter
 	mpm            marketplace.MarketplaceInterface
+	*resources.Reconciler
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
-	switch v1alpha1.StatusPhase(phase) {
-	case v1alpha1.PhaseNone, v1alpha1.PhaseAwaitingNS:
-		return r.reconcileNamespace(ctx, inst, serverClient)
-	case v1alpha1.PhaseCreatingSubscription:
-		return r.reconcileSubscription(ctx, serverClient, inst)
-	case v1alpha1.PhaseCreatingComponents:
-		return r.reconcileCheCluster(ctx, inst, serverClient)
-	case v1alpha1.PhaseAwaitingOperator:
-		return r.handleAwaitingOperator(ctx, serverClient)
-	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase(ctx, serverClient)
-	case v1alpha1.PhaseCompleted, v1alpha1.PhaseFailed:
-		return r.handleReconcile(ctx, inst, serverClient)
-	default:
-		return r.handleReconcile(ctx, inst, serverClient)
-	}
-}
-
-func (r *Reconciler) handleReconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.reconcileNamespace(ctx, inst, serverClient)
+	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile namespace")
+	}
+	phase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return phase, pkgerr.Wrap(err, "could not reconcile subscription")
 	}
 	phase, err = r.reconcileCheCluster(ctx, inst, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile checluster")
 	}
-	phase, err = r.reconcileSubscription(ctx, serverClient, inst)
-	if err != nil {
-		return phase, pkgerr.Wrap(err, "could not reconcile subscription")
-	}
+
 	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
 	if err != nil {
 		return phase, pkgerr.Wrap(err, "could not reconcile keycloakrealm")
 	}
+	if phase == v1alpha1.PhaseNone {
+		return v1alpha1.PhaseCompleted, nil
+	}
 	return phase, nil
-}
-
-func (r *Reconciler) reconcileNamespace(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	nsr := resources.NewNamespaceReconciler(serverClient)
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.Config.GetNamespace(),
-		},
-	}
-	ns, err := nsr.Reconcile(ctx, ns, inst)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-	return v1alpha1.PhaseCreatingSubscription, nil
-}
-
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	logrus.Debugf("creating subscription %s from channel %s in namespace: %s", defaultSubscriptionName, "integreatly", r.Config.GetNamespace())
-	err := r.mpm.CreateSubscription(
-		ctx,
-		serverClient,
-		inst,
-		marketplace.GetOperatorSources().Integreatly,
-		r.Config.GetNamespace(),
-		defaultSubscriptionName,
-		marketplace.IntegreatlyChannel,
-		[]string{r.Config.GetNamespace()},
-		coreosv1alpha1.ApprovalAutomatic)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", r.Config.GetNamespace()))
-	}
-
-	return v1alpha1.PhaseAwaitingOperator, nil
 }
 
 func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -138,10 +89,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	key := pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}
 	err := serverClient.Get(ctx, key, kcRealm)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(
-			err,
-			fmt.Sprintf("could not retrieve: %+v", key),
-		)
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve: %+v", key))
 	}
 
 	cheCluster := &chev1.CheCluster{
@@ -181,24 +129,6 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 	}
 	return v1alpha1.PhaseInProgress, nil
-}
-
-func (r *Reconciler) handleAwaitingOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Debugf("checking installplan is created for subscription %s in namespace: %s", defaultSubscriptionName, r.Config.GetNamespace())
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, defaultSubscriptionName, r.Config.GetNamespace())
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			logrus.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", r.Config.GetNamespace()))
-			return v1alpha1.PhaseAwaitingOperator, nil
-		}
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve installplan in namespace: %s", r.Config.GetNamespace()))
-	}
-
-	logrus.Debugf("installplan phase is %s, waiting for %s", ip.Status.Phase, coreosv1alpha1.InstallPlanPhaseComplete)
-	if ip.Status.Phase != coreosv1alpha1.InstallPlanPhaseComplete {
-		return v1alpha1.PhaseAwaitingOperator, nil
-	}
-	return v1alpha1.PhaseCreatingComponents, nil
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

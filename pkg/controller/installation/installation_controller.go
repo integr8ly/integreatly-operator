@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
 	"time"
 )
 
@@ -197,6 +198,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 	if instance.Status.ProductStatus == nil {
 		instance.Status.ProductStatus = map[v1alpha1.ProductName]string{}
 	}
+	var merr error
 	for _, product := range prods {
 		logrus.Infof("checking product: %s", product)
 		phase := ""
@@ -208,7 +210,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 		if !(phase == string(v1alpha1.PhaseCompleted)) {
 			incompleteStage = true
 		}
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.client, r.restConfig, configManager, instance)
+		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.restConfig, configManager, instance)
 		if err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
 		}
@@ -218,15 +220,34 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, pr
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
 		}
 		newPhase, err := reconciler.Reconcile(r.context, instance, serverClient)
+		logrus.Infof("finished reconciling product: %s phase is %s", product, newPhase)
 		instance.Status.ProductStatus[product] = string(newPhase)
 		if err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
+			if merr == nil {
+				merr = &multiErr{}
+			}
+			merr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product))
 		}
 	}
 
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {
-		return v1alpha1.PhaseInProgress, nil
+		return v1alpha1.PhaseInProgress, merr
 	}
-	return v1alpha1.PhaseCompleted, nil
+	return v1alpha1.PhaseCompleted, merr
+}
+
+type multiErr struct {
+	errors []string
+}
+
+func (mer *multiErr) Error() string {
+	return "product installation errors : " + strings.Join(mer.errors, ":")
+}
+
+func (mer *multiErr) Add(err error) {
+	if mer.errors == nil {
+		mer.errors = []string{}
+	}
+	mer.errors = append(mer.errors, err.Error())
 }
