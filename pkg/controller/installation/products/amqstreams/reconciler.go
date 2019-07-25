@@ -2,17 +2,18 @@ package amqstreams
 
 import (
 	"context"
-	"errors"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	errors2 "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,75 +23,67 @@ var (
 	defaultSubscriptionName      = "amq-streams"
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
-	config, err := configManager.ReadAMQStreams()
-	if err != nil {
-		return nil, err
-	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
-	}
-	return &Reconciler{
-		ConfigManager: configManager,
-		Config:        config,
-		mpm:           mpm,
-		Reconciler:    resources.NewReconciler(mpm),
-	}, nil
-}
-
 type Reconciler struct {
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
+	logger        *logrus.Entry
 	*resources.Reconciler
 }
 
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+	config, err := configManager.ReadAMQStreams()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not read nexus config")
+	}
+
+	if config.GetNamespace() == "" {
+		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+	}
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
+	return &Reconciler{
+		ConfigManager: configManager,
+		Config:        config,
+		mpm:           mpm,
+		logger:        logger,
+		Reconciler:    resources.NewReconciler(mpm),
+	}, nil
+}
+
+// Reconcile reads that state of the cluster for amq streams and makes changes based on the state read
+// and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase := inst.Status.ProductStatus[r.Config.GetProductName()]
-	switch v1alpha1.StatusPhase(phase) {
-	case v1alpha1.PhaseNone:
-		return r.reconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
-	case v1alpha1.PhaseCreatingSubscription, v1alpha1.PhaseAwaitingOperator:
-		return r.handleCreatingSubscription(ctx, inst, r.Config.GetNamespace(), serverClient)
-	case v1alpha1.PhaseCreatingComponents:
-		return r.handleCreatingComponents(ctx, serverClient, inst)
-	case v1alpha1.PhaseInProgress:
-		return r.handleProgressPhase(ctx, serverClient)
-	case v1alpha1.PhaseCompleted:
-		return v1alpha1.PhaseCompleted, nil
-	case v1alpha1.PhaseFailed:
-		//potentially do a dump and recover in the future
-		return v1alpha1.PhaseFailed, errors.New("installation of AMQ Streams failed")
-	default:
-		return v1alpha1.PhaseFailed, errors.New("Unknown phase for AMQ Streams: " + string(phase))
+	ns := r.Config.GetNamespace()
+
+	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
+
+	phase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, ns, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.handleCreatingComponents(ctx, serverClient, inst)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.handleProgressPhase(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
 }
 
-// TODO this reconciler needs a refactor working around the problem for now (we shouldn't need to wrap the reconcile namespace call)
-func (r *Reconciler) reconcileNamespace(ctx context.Context, ns string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileNamespace(ctx, ns, inst, client)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors2.Wrap(err, "failed to reconcile namespace for amq streams")
-	}
-	if phase == v1alpha1.PhaseCompleted {
-		return v1alpha1.PhaseCreatingSubscription, nil
-	}
-	return phase, err
-}
+func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("reconciling amq streams custom resource")
 
-// TODO this reconciler needs a refactor working around the problem for now (we shouldn't need to wrap the ReconcileSubscription namespace call)
-func (r *Reconciler) handleCreatingSubscription(ctx context.Context, inst *v1alpha1.Installation, ns string, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, ns, client)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors2.Wrap(err, "failed to reconcile subscription for amq streams")
-	}
-	if phase == v1alpha1.PhaseCompleted {
-		return v1alpha1.PhaseCreatingComponents, nil
-	}
-	return phase, nil
-}
-
-func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
 	kafka := &kafkav1.Kafka{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: fmt.Sprintf(
@@ -138,19 +131,23 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, serverClient 
 		},
 	}
 	ownerutil.EnsureOwner(kafka, inst)
-	err := serverClient.Create(ctx, kafka)
-	if err != nil {
-		return v1alpha1.PhaseCreatingComponents, errors2.Wrap(err, "error creating kafka CR")
+
+	// attempt to create the custom resource
+	if err := client.Create(ctx, kafka); err != nil && !k8serr.IsAlreadyExists(err) {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a nexus custom resource")
 	}
-	return v1alpha1.PhaseInProgress, nil
+
+	// if there are no errors, the phase is complete
+	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// check AMQ Streams is in ready state
+func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Debug("checking amq streams pods are running")
+
 	pods := &v1.PodList{}
-	err := serverClient.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
+	err := client.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors2.Wrap(err, "Failed to check AMQ Streams installation")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to check AMQ Streams installation")
 	}
 
 	//expecting 8 pods in total
@@ -164,13 +161,13 @@ checkPodStatus:
 		for _, cnd := range pod.Status.Conditions {
 			if cnd.Type == v1.ContainersReady {
 				if cnd.Status != v1.ConditionStatus("True") {
-					logrus.Infof("pod not ready, returning in progress: %+v", cnd.Status)
 					return v1alpha1.PhaseInProgress, nil
 				}
 				break checkPodStatus
 			}
 		}
 	}
-	logrus.Infof("All pods ready, returning complete")
+
+	r.logger.Infof("all pods ready, returning complete")
 	return v1alpha1.PhaseCompleted, nil
 }
