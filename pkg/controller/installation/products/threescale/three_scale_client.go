@@ -42,7 +42,7 @@ func (tsc *threeScaleClient) AddSSOIntegration(data map[string]string, accessTok
 		return nil, err
 	}
 
-	res, err := http.Post(
+	res, err := tsc.httpc.Post(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/account/authentication_providers.json", tsc.wildCardDomain),
 		"application/json",
 		bytes.NewBuffer(reqData),
@@ -70,7 +70,7 @@ func (tsc *threeScaleClient) GetAdminUser(accessToken string) (*User, error) {
 }
 
 func (tsc *threeScaleClient) GetUsers(accessToken string) (*Users, error) {
-	res, err := http.Get(
+	res, err := tsc.httpc.Get(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users.json?access_token=%s", tsc.wildCardDomain, accessToken),
 	)
 	if err != nil {
@@ -93,7 +93,7 @@ func (tsc *threeScaleClient) AddUser(username string, email string, password str
 	data["email"] = email
 	data["password"] = password
 	reqData, err := json.Marshal(data)
-	res, err := http.Post(
+	res, err := tsc.httpc.Post(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users.json", tsc.wildCardDomain),
 		"application/json",
 		bytes.NewBuffer(reqData),
