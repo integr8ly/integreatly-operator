@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"

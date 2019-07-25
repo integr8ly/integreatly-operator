@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -17,7 +19,7 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func assertInstallationSuccessfullyReconciled(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient *SigsClientInterfaceMock, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeOauthClient oauthClient.OauthV1Interface) error {
+func assertInstallationSuccessfullyReconciled(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient *client.SigsClientInterfaceMock, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeOauthClient oauthClient.OauthV1Interface) error {
 	ctx := context.TODO()
 
 	// A namespace should have been created..

@@ -2,8 +2,11 @@ package threescale
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -16,11 +19,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
-	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	sigsClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func getClients(preReqObjects []runtime.Object, scheme *runtime.Scheme, appsv1PreReqs map[string]*appsv1.DeploymentConfig) (*config.Manager, *SigsClientInterfaceMock, appsv1Client.AppsV1Interface, oauthClient.OauthV1Interface, *ThreeScaleInterfaceMock, marketplace.MarketplaceInterface, error) {
+func getClients(preReqObjects []runtime.Object, scheme *runtime.Scheme, appsv1PreReqs map[string]*appsv1.DeploymentConfig) (*config.Manager, *client.SigsClientInterfaceMock, appsv1Client.AppsV1Interface, oauthClient.OauthV1Interface, *ThreeScaleInterfaceMock, marketplace.MarketplaceInterface, error) {
 	sigClient := getSigClient(preReqObjects, scheme)
 	configManager, err := getConfigManager(sigClient)
 	if err != nil {
@@ -30,8 +32,8 @@ func getClients(preReqObjects []runtime.Object, scheme *runtime.Scheme, appsv1Pr
 	return configManager, sigClient, getAppsV1Client(appsv1PreReqs), getOauthV1Client(), getThreeScaleClient(), getMarketplaceManager(), nil
 }
 
-func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *SigsClientInterfaceMock {
-	sigsFakeClient := NewSigsClientMoqWithScheme(scheme, preReqObjects...)
+func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
+	sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
 	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object) error {
 		switch obj := obj.(type) {
 		case *corev1.Namespace:
@@ -63,7 +65,7 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *SigsC
 
 	return sigsFakeClient
 }
-func getConfigManager(client client.Client) (*config.Manager, error) {
+func getConfigManager(client sigsClient.Client) (*config.Manager, error) {
 	configManager, err := config.NewManager(context.TODO(), client, configManagerConfigMap.Namespace, configManagerConfigMap.Name)
 	if err != nil {
 		return nil, err
