@@ -16,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,11 +26,11 @@ const (
 )
 
 type Reconciler struct {
-	coreClient    kubernetes.Interface
 	Config        *config.Nexus
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
+	*resources.Reconciler
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -54,83 +53,37 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		Config:        config,
 		mpm:           mpm,
 		logger:        logger,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.reconcileNamespace(ctx, serverClient, inst)
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileSubscription(ctx, serverClient, inst)
+	phase, err = r.ReconcileSubscription(ctx, inst, defaultSubscriptionName, r.Config.GetNamespace(), client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileOperator(ctx, serverClient)
+	phase, err = r.reconcileOperator(ctx, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileCustomResource(ctx, serverClient, inst)
+	phase, err = r.reconcileCustomResource(ctx, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.handleProgress(ctx, serverClient)
+	phase, err = r.handleProgress(ctx, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileNamespace(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	r.logger.Debug("reconciling namespace")
-
-	namespace := r.Config.GetNamespace()
-	nsr := resources.NewNamespaceReconciler(client)
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      namespace,
-		},
-	}
-
-	// reconcile the namespace
-	ns, err := nsr.Reconcile(ctx, ns, inst)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to reconcile %s namespace", r.Config.GetNamespace())
-	}
-
-	// if the namespace is active, complete the phase
-	if ns.Status.Phase == v1.NamespaceActive {
-		return v1alpha1.PhaseCompleted, nil
-	}
-
-	return v1alpha1.PhaseInProgress, nil
-}
-
-func (r *Reconciler) reconcileSubscription(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	r.logger.Debug("reconciling subscription")
-
-	// create the subscription
-	err := r.mpm.CreateSubscription(
-		ctx,
-		client,
-		inst,
-		marketplace.GetOperatorSources().Integreatly,
-		r.Config.GetNamespace(),
-		defaultSubscriptionName,
-		marketplace.IntegreatlyChannel,
-		[]string{r.Config.GetNamespace()},
-		coreosv1alpha1.ApprovalAutomatic)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create subscription in namespace %s", r.Config.GetNamespace())
-	}
-
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -157,7 +110,7 @@ func (r *Reconciler) reconcileOperator(ctx context.Context, client pkgclient.Cli
 	return v1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, client pkgclient.Client, install *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling nexus custom resource")
 
 	cr := &nexus.Nexus{
