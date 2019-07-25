@@ -2,9 +2,11 @@ package installation
 
 import (
 	"errors"
+
+	"strings"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 var (
@@ -12,7 +14,7 @@ var (
 		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale},
 	}
 	allWorkspaceOrder = [][]v1alpha1.ProductName{
-		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale},
+		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductNexus},
 	}
 )
 

@@ -4,8 +4,9 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"sync"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadConfigForProduct sync.RWMutex
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
+	lockConfigReadWriterMockReadNexus            sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
 )
@@ -46,6 +48,8 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             ReadNexusFunc: func() (*Nexus, error) {
+// 	               panic("mock out the ReadNexus method")
 //             },
 //             ReadRHSSOFunc: func() (*RHSSO, error) {
 // 	               panic("mock out the ReadRHSSO method")
@@ -78,6 +82,9 @@ type ConfigReadWriterMock struct {
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
 
+	// ReadNexusFunc mocks the ReadNexus method.
+	ReadNexusFunc func() (*Nexus, error)
+
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
 
@@ -105,6 +112,10 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
+		}
+
+		// ReadNexus holds details about calls to the ReadNexus method.
+		ReadNexus []struct {
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -275,6 +286,32 @@ func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
 	lockConfigReadWriterMockReadFuse.RLock()
 	calls = mock.calls.ReadFuse
 	lockConfigReadWriterMockReadFuse.RUnlock()
+	return calls
+}
+
+// ReadNexus calls ReadNexusFunc.
+func (mock *ConfigReadWriterMock) ReadNexus() (*Nexus, error) {
+	if mock.ReadNexusFunc == nil {
+		panic("ConfigReadWriterMock.ReadNexusFunc: method is nil but ConfigReadWriter.ReadNexus was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadNexus.Lock()
+	mock.calls.ReadNexus = append(mock.calls.ReadNexus, callInfo)
+	lockConfigReadWriterMockReadNexus.Unlock()
+	return mock.ReadNexusFunc()
+}
+
+// ReadNexusCalls gets all the calls that were made to ReadNexus.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadNexusCalls())
+func (mock *ConfigReadWriterMock) ReadNexusCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadNexus.RLock()
+	calls = mock.calls.ReadNexus
+	lockConfigReadWriterMockReadNexus.RUnlock()
 	return calls
 }
 

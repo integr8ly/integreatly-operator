@@ -38,6 +38,7 @@ type ConfigReadWriter interface {
 	ReadCodeReady() (*CodeReady, error)
 	ReadFuse() (*Fuse, error)
 	ReadAMQOnline() (*AMQOnline, error)
+	ReadNexus() (*Nexus, error)
 	GetOperatorNamespace() string
 }
 
@@ -96,6 +97,14 @@ func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
 		return nil, err
 	}
 	return NewAMQOnline(config), nil
+}
+
+func (m *Manager) ReadNexus() (*Nexus, error) {
+	config, err := m.ReadConfigForProduct(v1alpha1.ProductNexus)
+	if err != nil {
+		return nil, err
+	}
+	return NewNexus(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {
