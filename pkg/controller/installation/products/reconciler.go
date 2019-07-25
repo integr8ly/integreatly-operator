@@ -2,6 +2,7 @@ package products
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -52,7 +53,12 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 			return nil, err
 		}
 
-		httpc := &http.Client{}
+		httpc := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: instance.Spec.SelfSignedCerts},
+			},
+		}
+
 		tsClient := threescale.NewThreeScaleClient(httpc, instance.Spec.RoutingSubdomain)
 
 		reconciler, err = threescale.NewReconciler(configManager, instance, appsv1, oauthv1Client, tsClient, mpm)
