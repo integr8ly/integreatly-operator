@@ -21,6 +21,8 @@ import (
 var (
 	defaultInstallationNamespace = "amq-streams"
 	defaultSubscriptionName      = "amq-streams"
+	packageName                  = "amq-streams"
+	clusterName                  = "integreatly-cluster"
 )
 
 type Reconciler struct {
@@ -93,7 +95,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 			Kind: kafkav1.KafkaKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "integreatly-cluster",
+			Name:      clusterName,
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: kafkav1.KafkaSpec{
@@ -147,7 +149,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 	pods := &v1.PodList{}
 	err := client.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to check AMQ Streams installation")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to check amq streams installation")
 	}
 
 	//expecting 8 pods in total
