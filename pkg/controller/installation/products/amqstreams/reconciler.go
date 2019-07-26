@@ -36,7 +36,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read nexus config")
+		return nil, errors.Wrap(err, "could not read amq streams config")
 	}
 
 	if config.GetNamespace() == "" {
@@ -136,7 +136,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 
 	// attempt to create the custom resource
 	if err := client.Create(ctx, kafka); err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a nexus custom resource")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a kafka custom resource")
 	}
 
 	// if there are no errors, the phase is complete

@@ -10,29 +10,22 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/client"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
-
-var ip = &coreosv1alpha1.InstallPlan{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: fmt.Sprintf("%s-installplan", packageName),
-	},
-	Status: coreosv1alpha1.InstallPlanStatus{
-		Phase: coreosv1alpha1.InstallPlanPhaseComplete,
-	},
-}
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
@@ -55,114 +48,365 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func TestAmqStreams(t *testing.T) {
-	// set up the fake client
-	ctx := context.TODO()
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatalf("error getting scheme: %v", err)
+func TestReconciler_config(t *testing.T) {
+	cases := []struct {
+		Name           string
+		ExpectError    bool
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     pkgclient.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name:           "test error on failed config",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
+			ExpectedError:  "could not read amq streams config: could not read amq streams config",
+			Installation:   &v1alpha1.Installation{},
+			FakeClient:     fakeclient.NewFakeClient(),
+			FakeConfig: &config.ConfigReadWriterMock{
+				ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
+					return nil, errors.New("could not read amq streams config")
+				},
+			},
+		},
+		{
+			Name:           "test subscription phase with error from mpm",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectError:    true,
+			Installation:   &v1alpha1.Installation{},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return errors.New("dummy error")
+				},
+			},
+			FakeClient: fakeclient.NewFakeClient(),
+			FakeConfig: basicConfigMock(),
+		},
 	}
 
-	// create the fake pods
-	pods := []runtime.Object{}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			if err == nil && tc.ExpectedError != "" {
+				t.Fatalf("expected error '%v' and got nil", tc.ExpectedError)
+			}
+
+			// if we expect errors creating the reconciler, don't try to use it
+			if tc.ExpectedError != "" {
+				return
+			}
+
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected error but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileCustomResource(t *testing.T) {
+	scheme := runtime.NewScheme()
+	kafkav1.SchemeBuilder.AddToScheme(scheme)
+
+	cases := []struct {
+		Name           string
+		FakeClient     client.Client
+		FakeConfig     *config.ConfigReadWriterMock
+		Installation   *v1alpha1.Installation
+		ExpectError    bool
+		ExpectedError  string
+		ExpectedStatus v1alpha1.StatusPhase
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+	}{
+		{
+			Name:       "Test reconcile custom resource returns completed when successful created",
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+		},
+		{
+			Name: "Test reconcile custom resource returns fails on unsuccessful create",
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+					return errors.New("dummy create error")
+				},
+			},
+			FakeConfig: basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: "integreatly.org/v1alpha1",
+				},
+			},
+			ExpectError:    true,
+			ExpectedError:  "failed to get or create a kafka custom resource",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			reconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil {
+				t.Fatal("unexpected err ", err)
+			}
+			phase, err := reconciler.handleCreatingComponents(context.TODO(), tc.FakeClient, tc.Installation)
+			if tc.ExpectError && err == nil {
+				t.Fatal("expected an error but got none")
+			}
+			if !tc.ExpectError && err != nil {
+				t.Fatal("expected no error but got one ", err)
+			}
+			if tc.ExpectedStatus != phase {
+				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
+			}
+		})
+	}
+}
+
+func TestReconciler_handleProgress(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	unreadyPods := []runtime.Object{}
 	for i := 0; i < 8; i++ {
-		pods = append(pods, &corev1.Pod{
+		unreadyPods = append(unreadyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%d", packageName, i),
 				Namespace: defaultInstallationNamespace,
 			},
+			Status: corev1.PodStatus{
+				Conditions: []corev1.PodCondition{
+					corev1.PodCondition{
+						Type:   corev1.ContainersReady,
+						Status: corev1.ConditionUnknown,
+					},
+				},
+			},
 		})
 	}
 
-	fakeClient := getSigClient(pods, scheme)
-
-	// create Installation object
-	inst := &v1alpha1.Installation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-installation",
-			Namespace: "integreatly-operator-namespace",
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-		},
-		Spec: v1alpha1.InstallationSpec{
-			MasterURL:        "https://console.apps.example.com",
-			RoutingSubdomain: "apps.example.com",
-		},
-	}
-
-	// start reconciler
-	testReconciler, err := NewReconciler(basicConfigMock(), inst, marketplace.NewManager())
-	status, err := testReconciler.Reconcile(ctx, inst, fakeClient)
-	if err != nil {
-		t.Fatalf("error reconciling %s: %v", packageName, err)
-	}
-
-	if status != v1alpha1.PhaseCompleted {
-		t.Fatalf("unexpected status: %v, expected: %v", status, v1alpha1.PhaseCompleted)
-	}
-
-	err = assertReconciled(inst, fakeClient)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-}
-
-func assertReconciled(inst *v1alpha1.Installation, fakeSigsClient *client.SigsClientInterfaceMock) error {
-	ctx := context.TODO()
-
-	// expect the namespace to be created
-	ns := &corev1.Namespace{}
-	err := fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: defaultInstallationNamespace}, ns)
-	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("%s namespace was not created", defaultInstallationNamespace))
-	}
-
-	// expect the subscription to be created
-	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: defaultSubscriptionName, Namespace: defaultInstallationNamespace}, sub)
-	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("%s operator subscription was not created", packageName))
-	}
-
-	// expect the custom resource to be created
-	cr := &kafkav1.Kafka{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: clusterName, Namespace: defaultInstallationNamespace}, cr)
-	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("%s custom resource was not created", packageName))
-	}
-
-	return nil
-}
-
-func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
-	sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
-	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object) error {
-		switch obj := obj.(type) {
-		case *corev1.Namespace:
-			obj.Status.Phase = corev1.NamespaceActive
-			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-		case *corev1.Pod:
-			obj.Status.Conditions = append(obj.Status.Conditions, corev1.PodCondition{
-				Type:   corev1.ContainersReady,
-				Status: corev1.ConditionTrue,
-			})
-			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-		case *coreosv1alpha1.Subscription:
-			obj.Status = coreosv1alpha1.SubscriptionStatus{
-				Install: &coreosv1alpha1.InstallPlanReference{
-					Name: ip.Name,
+	readyPods := []runtime.Object{}
+	for i := 0; i < 8; i++ {
+		readyPods = append(readyPods, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%d", packageName, i),
+				Namespace: defaultInstallationNamespace,
+			},
+			Status: corev1.PodStatus{
+				Conditions: []corev1.PodCondition{
+					corev1.PodCondition{
+						Type:   corev1.ContainersReady,
+						Status: corev1.ConditionTrue,
+					},
 				},
-			}
-			err := sigsFakeClient.GetSigsClient().Create(ctx, obj)
-			if err != nil {
-				return err
-			}
-			ip.Namespace = obj.Namespace
-			return sigsFakeClient.GetSigsClient().Create(ctx, ip)
-		}
-		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
+			},
+		})
 	}
 
-	return sigsFakeClient
+	cases := []struct {
+		Name           string
+		ExpectError    bool
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     client.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name:           "test failure to list pods",
+			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedError:  "failed to check amq streams installation",
+			ExpectError:    true,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				ListFunc: func(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+					return errors.New("dummy create error")
+				},
+			},
+			FakeConfig:   basicConfigMock(),
+			Installation: &v1alpha1.Installation{},
+		},
+		{
+			Name:           "test incomplete amount of pods returns phase in progress",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme),
+			FakeConfig:     basicConfigMock(),
+			Installation:   &v1alpha1.Installation{},
+		},
+		{
+			Name:           "test unready pods returns phase in progress",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
+			FakeConfig:     basicConfigMock(),
+			Installation:   &v1alpha1.Installation{},
+		},
+		{
+			Name:           "test ready pods returns phase complete",
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, readyPods...),
+			FakeConfig:     basicConfigMock(),
+			Installation:   &v1alpha1.Installation{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
+
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected error but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestReconciler_fullReconcile(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	objs := []runtime.Object{}
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-ns",
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+	objs = append(objs, ns)
+
+	for i := 0; i < 8; i++ {
+		objs = append(objs, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%d", packageName, i),
+				Namespace: defaultInstallationNamespace,
+			},
+			Status: corev1.PodStatus{
+				Conditions: []corev1.PodCondition{
+					corev1.PodCondition{
+						Type:   corev1.ContainersReady,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		})
+	}
+
+	cases := []struct {
+		Name           string
+		ExpectError    bool
+		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedError  string
+		FakeConfig     *config.ConfigReadWriterMock
+		FakeClient     client.Client
+		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name:           "test successful reconcile",
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, objs...),
+			FakeConfig:     basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return nil
+				},
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "amq-install-plan",
+							},
+							Status: operatorsv1alpha1.InstallPlanStatus{
+								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "amq-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation: &v1alpha1.Installation{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeMPM,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected error but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
 }
