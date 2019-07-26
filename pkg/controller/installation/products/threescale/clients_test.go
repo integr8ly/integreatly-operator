@@ -4,31 +4,16 @@ import (
 	"context"
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	appsv1 "github.com/openshift/api/apps/v1"
 	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
-	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
-	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-func getClients(preReqObjects []runtime.Object, scheme *runtime.Scheme, appsv1PreReqs map[string]*appsv1.DeploymentConfig) (*config.Manager, *SigsClientInterfaceMock, appsv1Client.AppsV1Interface, oauthClient.OauthV1Interface, *ThreeScaleInterfaceMock, marketplace.MarketplaceInterface, error) {
-	sigClient := getSigClient(preReqObjects, scheme)
-	configManager, err := getConfigManager(sigClient)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, err
-	}
-
-	return configManager, sigClient, getAppsV1Client(appsv1PreReqs), getOauthV1Client(), getThreeScaleClient(), getMarketplaceManager(), nil
-}
 
 func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *SigsClientInterfaceMock {
 	sigsFakeClient := NewSigsClientMoqWithScheme(scheme, preReqObjects...)
@@ -63,14 +48,6 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *SigsC
 
 	return sigsFakeClient
 }
-func getConfigManager(client client.Client) (*config.Manager, error) {
-	configManager, err := config.NewManager(context.TODO(), client, configManagerConfigMap.Namespace, configManagerConfigMap.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	return configManager, nil
-}
 
 func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Client.AppsV1Interface {
 	fakeAppsv1 := fakeappsv1Client.NewSimpleClientset([]runtime.Object{}...).AppsV1()
@@ -104,10 +81,6 @@ func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Cl
 	return fakeAppsv1
 }
 
-func getOauthV1Client() oauthClient.OauthV1Interface {
-	return fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1()
-}
-
 func getThreeScaleClient() *ThreeScaleInterfaceMock {
 	return &ThreeScaleInterfaceMock{
 		AddSSOIntegrationFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
@@ -126,8 +99,4 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			}, nil
 		},
 	}
-}
-
-func getMarketplaceManager() marketplace.MarketplaceInterface {
-	return marketplace.NewManager()
 }
