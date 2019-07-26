@@ -107,21 +107,24 @@ var systemSidekiq = appsv1.DeploymentConfig{
 	},
 }
 
-func GetClusterPreReqObjects(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) ([]runtime.Object, map[string]*appsv1.DeploymentConfig) {
+var successfulTestAppsV1Objects = map[string]*appsv1.DeploymentConfig{
+	systemApp.Name:     &systemApp,
+	systemSidekiq.Name: &systemSidekiq,
+}
+
+func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
 	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
-	systemApp.Namespace = threeScaleInstallationNamepsace
-	systemSidekiq.Namespace = threeScaleInstallationNamepsace
 
 	return []runtime.Object{
 		s3BucketSecret,
 		s3CredentialsSecret,
 		keycloakrealm,
+		configManagerConfigMap,
 		threeScaleAdminDetailsSecret,
 		threeScaleServiceDiscoveryConfigMap,
-		configManagerConfigMap,
-	}, map[string]*appsv1.DeploymentConfig{systemApp.Name: &systemApp, systemSidekiq.Name: &systemSidekiq}
+	}
 }

@@ -6,13 +6,23 @@ import (
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
+	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
+)
+
+var (
+	integreatlyOperatorNamespace = "integreatly-operator-namespace"
 )
 
 func getBuildScheme() (*runtime.Scheme, error) {
@@ -28,82 +38,67 @@ func getBuildScheme() (*runtime.Scheme, error) {
 }
 
 func TestThreeScale(t *testing.T) {
-
-	integreatlyOperatorNamespace := "integreatly-operator-namespace"
-	clusterPreReqObjects, appsv1PreReqObjects := GetClusterPreReqObjects(integreatlyOperatorNamespace, defaultInstallationNamespace)
 	scheme, err := getBuildScheme()
 	if err != nil {
-		t.Fatalf("Error getting pre req objects for %s: %v", packageName, err)
-	}
-	configManager, fakeSigsClient, fakeAppsV1Client, fakeOauthClient, fakeThreeScaleClient, mpm, err := getClients(clusterPreReqObjects, scheme, appsv1PreReqObjects)
-	if err != nil {
-		t.Fatalf("Error creating clients for %s: %v", packageName, err)
+		t.Fatalf("Error creating build scheme")
 	}
 
-	// Create Installation and reconcile on it.
-	installation := &v1alpha1.Installation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-installation",
-			Namespace: integreatlyOperatorNamespace,
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-		},
-		Spec: v1alpha1.InstallationSpec{
-			MasterURL:        "https://console.apps.example.com",
-			RoutingSubdomain: "apps.example.com",
-		},
-	}
-	ctx := context.TODO()
-	testReconciler, err := NewReconciler(configManager, installation, fakeAppsV1Client, fakeOauthClient, fakeThreeScaleClient, mpm)
-	status, err := testReconciler.Reconcile(ctx, installation, fakeSigsClient)
-	if err != nil {
-		t.Fatalf("Error reconciling %s: %v", packageName, err)
-	}
-
-	if status != v1alpha1.PhaseCompleted {
-		t.Fatalf("unexpected status: %v, expected: %v", status, v1alpha1.PhaseCompleted)
-	}
-
-	err = assertInstallationSuccessfullyReconciled(installation, configManager, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
-	sa, err := fakeAppsV1Client.DeploymentConfigs(defaultInstallationNamespace).Get("system-app", metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Error getting deplymentconfig: %v", err)
-	}
-	if sa.Status.LatestVersion == 1 {
-		t.Fatalf("system-app was not rolled out")
-	}
-	ssk, err := fakeAppsV1Client.DeploymentConfigs(defaultInstallationNamespace).Get("system-sidekiq", metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Error getting deplymentconfig: %v", err)
-	}
-	if ssk.Status.LatestVersion == 1 {
-		t.Fatalf("system-sidekiq was not rolled out")
-	}
-
-	// Ensure reconcile is idempotent
-	installation.Status = integreatlyv1alpha1.InstallationStatus{
-		ProductStatus: map[integreatlyv1alpha1.ProductName]string{
-			integreatlyv1alpha1.Product3Scale: string(status),
+	scenarios := []struct {
+		Name                 string
+		Installation         *integreatlyv1alpha1.Installation
+		FakeSigsClient       client.Client
+		FakeAppsV1Client     appsv1Client.AppsV1Interface
+		FakeOauthClient      oauthClient.OauthV1Interface
+		FakeThreeScaleClient *ThreeScaleInterfaceMock
+		ExpectedStatus       integreatlyv1alpha1.StatusPhase
+		AssertFunc           AssertFunc
+	}{
+		{
+			Name:                 "Test successful installation without errors",
+			FakeSigsClient:       getSigClient(getSuccessfullTestPreReqs(integreatlyOperatorNamespace, defaultInstallationNamespace), scheme),
+			FakeAppsV1Client:     getAppsV1Client(successfulTestAppsV1Objects),
+			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeThreeScaleClient: getThreeScaleClient(),
+			AssertFunc:           assertInstallationSuccessfull,
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-installation",
+					Namespace: "integreatly-operator-namespace",
+				},
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+				Spec: v1alpha1.InstallationSpec{
+					MasterURL:        "https://console.apps.example.com",
+					RoutingSubdomain: "apps.example.com",
+				},
+			},
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
-	status, err = testReconciler.Reconcile(ctx, installation, fakeSigsClient)
-	if err != nil {
-		t.Fatalf("Error repeating reconciling %s: %v", packageName, err)
-	}
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			ctx := context.TODO()
+			configManager, err := config.NewManager(context.TODO(), scenario.FakeSigsClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name)
+			if err != nil {
+				t.Fatalf("Error creating config manager")
+			}
 
-	if status != v1alpha1.PhaseCompleted {
-		t.Fatalf("unexpected status when repeating reconcile: %v, expected: %v", status, v1alpha1.PhaseCompleted)
-	}
+			testReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, marketplace.NewManager())
+			status, err := testReconciler.Reconcile(ctx, scenario.Installation, scenario.FakeSigsClient)
+			if err != nil {
+				t.Fatalf("Error reconciling %s: %v", packageName, err)
+			}
 
-	err = assertInstallationSuccessfullyReconciled(installation, configManager, fakeSigsClient, fakeThreeScaleClient, fakeOauthClient)
-	if err != nil {
-		t.Fatal(err.Error())
+			if status != scenario.ExpectedStatus {
+				t.Fatalf("unexpected status: %v, expected: %v", status, scenario.ExpectedStatus)
+			}
+
+			err = scenario.AssertFunc(scenario.Installation, configManager, scenario.FakeSigsClient, scenario.FakeThreeScaleClient, scenario.FakeAppsV1Client, scenario.FakeOauthClient)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+		})
 	}
 
 }

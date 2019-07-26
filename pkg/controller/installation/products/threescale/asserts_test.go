@@ -9,6 +9,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
+	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,12 +18,18 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func assertInstallationSuccessfullyReconciled(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient *SigsClientInterfaceMock, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeOauthClient oauthClient.OauthV1Interface) error {
+type AssertFunc func(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface) error
+
+func assertNoop(*v1alpha1.Installation, *config.Manager, pkgclient.Client, *ThreeScaleInterfaceMock, appsv1Client.AppsV1Interface, oauthClient.OauthV1Interface) error {
+	return nil
+}
+
+func assertInstallationSuccessfull(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface) error {
 	ctx := context.TODO()
 
 	// A namespace should have been created..
 	ns := &corev1.Namespace{}
-	err := fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: packageName}, ns)
+	err := fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: defaultInstallationNamespace}, ns)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("%s namespace should have been created", defaultInstallationNamespace))
 	}
@@ -92,6 +99,22 @@ func assertInstallationSuccessfullyReconciled(installation *v1alpha1.Installatio
 	}
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
 		return errors.New(fmt.Sprintf("Service discovery config is misconfigured"))
+	}
+
+	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
+	sa, err := fakeAppsV1Client.DeploymentConfigs(defaultInstallationNamespace).Get("system-app", metav1.GetOptions{})
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error getting deplymentconfig: %v", err))
+	}
+	if sa.Status.LatestVersion == 1 {
+		return errors.New(fmt.Sprintf("system-app was not rolled out"))
+	}
+	ssk, err := fakeAppsV1Client.DeploymentConfigs(defaultInstallationNamespace).Get("system-sidekiq", metav1.GetOptions{})
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error getting deplymentconfig: %v", err))
+	}
+	if ssk.Status.LatestVersion == 1 {
+		return errors.New(fmt.Sprintf("system-sidekiq was not rolled out"))
 	}
 
 	return nil
