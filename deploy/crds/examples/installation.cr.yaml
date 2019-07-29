@@ -4,6 +4,7 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-  namespacePrefix: integreatly-
-  routingSubdomain: example.com
-  masterUrl: http://master.example.com
+  namespacePrefix: 016-integreatly-
+  routingSubdomain: apps.cluster-pbrookes-1b0d.pbrookes-1b0d.openshiftworkshop.com
+  masterUrl: https://console-openshift-console.apps.cluster-pbrookes-1b0d.pbrookes-1b0d.openshiftworkshop.com
+  selfSignedCerts: true

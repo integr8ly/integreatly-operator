@@ -14,11 +14,11 @@ var (
 	lockConfigReadWriterMockReadAMQOnline        sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams       sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
-	lockConfigReadWriterMockReadConfigForProduct sync.RWMutex
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
 	lockConfigReadWriterMockReadNexus            sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -43,9 +43,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadCodeReadyFunc: func() (*CodeReady, error) {
 // 	               panic("mock out the ReadCodeReady method")
 //             },
-//             ReadConfigForProductFunc: func(product v1alpha1.ProductName) (ProductConfig, error) {
-// 	               panic("mock out the ReadConfigForProduct method")
-//             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
 //             ReadNexusFunc: func() (*Nexus, error) {
@@ -56,6 +53,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             WriteConfigFunc: func(config ConfigReadable) error {
 // 	               panic("mock out the WriteConfig method")
+//             },
+//             readConfigForProductFunc: func(product v1alpha1.ProductName) (ProductConfig, error) {
+// 	               panic("mock out the readConfigForProduct method")
 //             },
 //         }
 //
@@ -76,9 +76,6 @@ type ConfigReadWriterMock struct {
 	// ReadCodeReadyFunc mocks the ReadCodeReady method.
 	ReadCodeReadyFunc func() (*CodeReady, error)
 
-	// ReadConfigForProductFunc mocks the ReadConfigForProduct method.
-	ReadConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
-
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
 
@@ -90,6 +87,9 @@ type ConfigReadWriterMock struct {
 
 	// WriteConfigFunc mocks the WriteConfig method.
 	WriteConfigFunc func(config ConfigReadable) error
+
+	// readConfigForProductFunc mocks the readConfigForProduct method.
+	readConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -105,11 +105,6 @@ type ConfigReadWriterMock struct {
 		// ReadCodeReady holds details about calls to the ReadCodeReady method.
 		ReadCodeReady []struct {
 		}
-		// ReadConfigForProduct holds details about calls to the ReadConfigForProduct method.
-		ReadConfigForProduct []struct {
-			// Product is the product argument value.
-			Product v1alpha1.ProductName
-		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
 		}
@@ -124,6 +119,11 @@ type ConfigReadWriterMock struct {
 		WriteConfig []struct {
 			// Config is the config argument value.
 			Config ConfigReadable
+		}
+		// readConfigForProduct holds details about calls to the readConfigForProduct method.
+		readConfigForProduct []struct {
+			// Product is the product argument value.
+			Product v1alpha1.ProductName
 		}
 	}
 }
@@ -229,37 +229,6 @@ func (mock *ConfigReadWriterMock) ReadCodeReadyCalls() []struct {
 	lockConfigReadWriterMockReadCodeReady.RLock()
 	calls = mock.calls.ReadCodeReady
 	lockConfigReadWriterMockReadCodeReady.RUnlock()
-	return calls
-}
-
-// ReadConfigForProduct calls ReadConfigForProductFunc.
-func (mock *ConfigReadWriterMock) ReadConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
-	if mock.ReadConfigForProductFunc == nil {
-		panic("ConfigReadWriterMock.ReadConfigForProductFunc: method is nil but ConfigReadWriter.ReadConfigForProduct was just called")
-	}
-	callInfo := struct {
-		Product v1alpha1.ProductName
-	}{
-		Product: product,
-	}
-	lockConfigReadWriterMockReadConfigForProduct.Lock()
-	mock.calls.ReadConfigForProduct = append(mock.calls.ReadConfigForProduct, callInfo)
-	lockConfigReadWriterMockReadConfigForProduct.Unlock()
-	return mock.ReadConfigForProductFunc(product)
-}
-
-// ReadConfigForProductCalls gets all the calls that were made to ReadConfigForProduct.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadConfigForProductCalls())
-func (mock *ConfigReadWriterMock) ReadConfigForProductCalls() []struct {
-	Product v1alpha1.ProductName
-} {
-	var calls []struct {
-		Product v1alpha1.ProductName
-	}
-	lockConfigReadWriterMockReadConfigForProduct.RLock()
-	calls = mock.calls.ReadConfigForProduct
-	lockConfigReadWriterMockReadConfigForProduct.RUnlock()
 	return calls
 }
 
@@ -369,5 +338,36 @@ func (mock *ConfigReadWriterMock) WriteConfigCalls() []struct {
 	lockConfigReadWriterMockWriteConfig.RLock()
 	calls = mock.calls.WriteConfig
 	lockConfigReadWriterMockWriteConfig.RUnlock()
+	return calls
+}
+
+// readConfigForProduct calls readConfigForProductFunc.
+func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
+	if mock.readConfigForProductFunc == nil {
+		panic("ConfigReadWriterMock.readConfigForProductFunc: method is nil but ConfigReadWriter.readConfigForProduct was just called")
+	}
+	callInfo := struct {
+		Product v1alpha1.ProductName
+	}{
+		Product: product,
+	}
+	lockConfigReadWriterMockreadConfigForProduct.Lock()
+	mock.calls.readConfigForProduct = append(mock.calls.readConfigForProduct, callInfo)
+	lockConfigReadWriterMockreadConfigForProduct.Unlock()
+	return mock.readConfigForProductFunc(product)
+}
+
+// readConfigForProductCalls gets all the calls that were made to readConfigForProduct.
+// Check the length with:
+//     len(mockedConfigReadWriter.readConfigForProductCalls())
+func (mock *ConfigReadWriterMock) readConfigForProductCalls() []struct {
+	Product v1alpha1.ProductName
+} {
+	var calls []struct {
+		Product v1alpha1.ProductName
+	}
+	lockConfigReadWriterMockreadConfigForProduct.RLock()
+	calls = mock.calls.readConfigForProduct
+	lockConfigReadWriterMockreadConfigForProduct.RUnlock()
 	return calls
 }

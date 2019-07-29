@@ -31,7 +31,7 @@ func NewManager(ctx context.Context, client pkgclient.Client, namespace string, 
 
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
 type ConfigReadWriter interface {
-	ReadConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
+	readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
@@ -60,7 +60,7 @@ func (m *Manager) GetOperatorNamespace() string {
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductAMQStreams)
+	config, err := m.readConfigForProduct(v1alpha1.ProductAMQStreams)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 }
 
 func (m *Manager) ReadCodeReady() (*CodeReady, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductCodeReadyWorkspaces)
+	config, err := m.readConfigForProduct(v1alpha1.ProductCodeReadyWorkspaces)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (m *Manager) ReadCodeReady() (*CodeReady, error) {
 }
 
 func (m *Manager) ReadFuse() (*Fuse, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductFuse)
+	config, err := m.readConfigForProduct(v1alpha1.ProductFuse)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (m *Manager) ReadFuse() (*Fuse, error) {
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductRHSSO)
+	config, err := m.readConfigForProduct(v1alpha1.ProductRHSSO)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 }
 
 func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductAMQOnline)
+	config, err := m.readConfigForProduct(v1alpha1.ProductAMQOnline)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
 }
 
 func (m *Manager) ReadNexus() (*Nexus, error) {
-	config, err := m.ReadConfigForProduct(v1alpha1.ProductNexus)
+	config, err := m.readConfigForProduct(v1alpha1.ProductNexus)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (m *Manager) WriteConfig(config ConfigReadable) error {
 	}
 }
 
-func (m *Manager) ReadConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
+func (m *Manager) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
 	config := m.cfgmap.Data[string(product)]
 	decoder := yaml.NewDecoder(strings.NewReader(config))
 	retConfig := ProductConfig{}

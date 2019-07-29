@@ -43,7 +43,11 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		if err = client.Create(ctx, ns); err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create namespace: %s", ns.Name))
 		}
-		return v1alpha1.PhaseCompleted, nil
+	} else {
+		prepareNS(ns, inst)
+		if err := client.Update(ctx, ns); err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update the ns definition ")
+		}
 	}
 	// ns exists so check it is our namespace
 	if !NSIsOwnedBy(ns, inst) && ns.Status.Phase != v1.NamespaceTerminating {
@@ -52,10 +56,6 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	if ns.Status.Phase == v1.NamespaceTerminating {
 		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
 		return v1alpha1.PhaseInProgress, nil
-	}
-	prepareNS(ns, inst)
-	if err := client.Update(ctx, ns); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update the ns definition ")
 	}
 	if ns.Status.Phase != v1.NamespaceActive {
 		return v1alpha1.PhaseInProgress, nil

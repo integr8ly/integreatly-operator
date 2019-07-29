@@ -35,3 +35,15 @@ func (a *CodeReady) Read() ProductConfig {
 func (a *CodeReady) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductCodeReadyWorkspaces
 }
+
+func (a *CodeReady) GetBackendSecretName() string {
+	return "s3-credentials"
+}
+
+func (a *CodeReady) GetPostgresBackupSecretName() string {
+	return "codeready-postgres-secret"
+}
+
+func (a *CodeReady) GetBackupSchedule() string {
+	return "30 2 * * *"
+}
