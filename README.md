@@ -42,24 +42,12 @@ oc new-project <namespace>
 
 - Some products will need AWS credentials so create 2 secrets in the Namespace/Project for the Integreatly Operator
     ```
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: s3-credentials
-      namespace: <installation-namespace>
-    stringData:
-      AWS_ACCESS_KEY_ID: <your-aws-access-key>
-      AWS_SECRET_ACCESS_KEY: <your-aws-secret-key>
-    ```
-    ```
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: s3-bucket
-      namespace: <installation-namespace>
-    stringData:
-      AWS_BUCKET: <an-aws-s3-bucket-name>
-      AWS_REGION: <region-s3-bucket-name-is-in>
+   oc process -f ./deploy/s3-secrets.yaml \
+   -p INSTALLATION_NAMESPACE=<test-namespace> \
+   -p AWS_ACCESS_KEY_ID=<access key> \
+   -p AWS_SECRET_ACCESS_KEY=<access secret> \
+   -p AWS_BUCKET=<test bucket> \
+   -p AWS_REGION=eu-central-1 | oc apply -f -
     ```
 
 Create the `Installation` resource in the namespace we created:
@@ -94,7 +82,17 @@ Create the [`OperatorSource`](https://raw.githubusercontent.com/integr8ly/manife
 oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
 ```
 
-Within a few minutes, the Integreatly operator should be visible in the OperatorHub (`Catalog > OperatorHub`). To create a new subscription, click on the Install button, choose an installation mode and keep the approval strategy on automatic.
+Create a new namespace to test in, and create the secrets required for 3scale and backups:
+```
+   oc process -f ./deploy/s3-secrets.yaml \
+   -p INSTALLATION_NAMESPACE=<test-namespace> \
+   -p AWS_ACCESS_KEY_ID=<access key> \
+   -p AWS_SECRET_ACCESS_KEY=<access secret> \
+   -p AWS_BUCKET=<test bucket> \
+   -p AWS_REGION=eu-central-1 | oc apply -f -
+```
+
+Within a few minutes, the Integreatly operator should be visible in the OperatorHub (`Catalog > OperatorHub`). To create a new subscription, click on the Install button, choose to install the operator in the created namespace and keep the approval strategy on automatic.
 
 
 Once the subscription shows a status of `installed`, a new Integreatly Installation Custom Resource (CR) can be created which will begin to install the supported services. In `Catalog > Developer Catalog`, choose the Integreatly Installation and click Install. An example installation CR can be found below:
