@@ -15,6 +15,7 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +54,7 @@ func TestThreeScale(t *testing.T) {
 		FakeThreeScaleClient *ThreeScaleInterfaceMock
 		ExpectedStatus       integreatlyv1alpha1.StatusPhase
 		AssertFunc           AssertFunc
+		FakeMPM              *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:                 "Test successful installation without errors",
@@ -74,6 +76,14 @@ func TestThreeScale(t *testing.T) {
 					RoutingSubdomain: "apps.example.com",
 				},
 			},
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlan{Status: operatorsv1alpha1.InstallPlanStatus{Phase: operatorsv1alpha1.InstallPlanPhaseComplete}}, nil, nil
+				},
+				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+					return nil
+				},
+			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
@@ -85,7 +95,10 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("Error creating config manager")
 			}
 
-			testReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, marketplace.NewManager())
+			testReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.FakeMPM)
+			if err != nil {
+				t.Fatalf("Error creating new reconciler %s: %v", packageName, err)
+			}
 			status, err := testReconciler.Reconcile(ctx, scenario.Installation, scenario.FakeSigsClient)
 			if err != nil {
 				t.Fatalf("Error reconciling %s: %v", packageName, err)
@@ -95,7 +108,7 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("unexpected status: %v, expected: %v", status, scenario.ExpectedStatus)
 			}
 
-			err = scenario.AssertFunc(scenario.Installation, configManager, scenario.FakeSigsClient, scenario.FakeThreeScaleClient, scenario.FakeAppsV1Client, scenario.FakeOauthClient)
+			err = scenario.AssertFunc(scenario.Installation, configManager, scenario.FakeSigsClient, scenario.FakeThreeScaleClient, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeMPM)
 			if err != nil {
 				t.Fatal(err.Error())
 			}

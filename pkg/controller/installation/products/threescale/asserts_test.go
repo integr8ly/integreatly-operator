@@ -8,24 +8,24 @@ import (
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type AssertFunc func(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface) error
+type AssertFunc func(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface, fakeMPM *marketplace.MarketplaceInterfaceMock) error
 
 func assertNoop(*v1alpha1.Installation, *config.Manager, pkgclient.Client, *ThreeScaleInterfaceMock, appsv1Client.AppsV1Interface, oauthClient.OauthV1Interface) error {
 	return nil
 }
 
-func assertInstallationSuccessfull(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface) error {
+func assertInstallationSuccessfull(installation *v1alpha1.Installation, configManager *config.Manager, fakeSigsClient pkgclient.Client, fakeThreeScaleClient *ThreeScaleInterfaceMock, fakeAppsV1Client appsv1Client.AppsV1Interface, fakeOauthClient oauthClient.OauthV1Interface, fakeMPM *marketplace.MarketplaceInterfaceMock) error {
 	ctx := context.TODO()
 
 	// A namespace should have been created..
@@ -36,9 +36,7 @@ func assertInstallationSuccessfull(installation *v1alpha1.Installation, configMa
 	}
 
 	// A subscription to the product operator should have been created.
-	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: packageName, Namespace: defaultInstallationNamespace}, sub)
-	if k8serr.IsNotFound(err) {
+	if len(fakeMPM.CreateSubscriptionCalls()) != 1 {
 		return errors.New(fmt.Sprintf("%s operator subscription was not created", packageName))
 	}
 

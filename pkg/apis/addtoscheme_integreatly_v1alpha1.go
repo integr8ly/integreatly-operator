@@ -8,12 +8,14 @@ import (
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
+	solutionExplorer "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	nexusv1 "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
+	routev1 "github.com/openshift/api/route/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -38,6 +40,9 @@ func init() {
 		enmassev1beta1.SchemeBuilder.AddToScheme,
 		enmasseAdmin.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
+		solutionExplorer.SchemeBuilder.AddToScheme,
+		routev1.SchemeBuilder.AddToScheme,
+
 		appsv1.AddToScheme,
 		oauthv1.AddToScheme,
 		nexusv1.SchemeBuilder.AddToScheme,

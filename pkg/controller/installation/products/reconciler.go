@@ -13,8 +13,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/nexus"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"k8s.io/client-go/rest"
-
 	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
@@ -31,6 +32,11 @@ type Interface interface {
 
 func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
+	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
+	if instance.Spec.SelfSignedCerts {
+		oauthResolver.InSecure = true
+	}
+	oauthResolver.Host = rc.Host
 	switch product {
 	case v1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)
@@ -42,6 +48,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = fuse.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductAMQOnline:
 		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm)
+	case v1alpha1.ProductSolutionExplorer:
+		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, mpm, oauthResolver)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

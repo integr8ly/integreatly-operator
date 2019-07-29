@@ -14,7 +14,6 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -102,33 +101,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileOperator(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	err := r.mpm.CreateSubscription(
-		ctx,
-		serverClient,
-		r.installation,
-		marketplace.GetOperatorSources().Integreatly,
-		r.namespace,
-		packageName,
-		"integreatly",
-		[]string{r.namespace},
-		coreosv1alpha1.ApprovalAutomatic)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, err
-	}
-
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, serverClient, packageName, r.namespace)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return v1alpha1.PhaseFailed, err
-	}
-
-	if ip != nil && ip.Status.Phase == coreosv1alpha1.InstallPlanPhaseComplete {
-		return v1alpha1.PhaseCompleted, nil
-	}
-
-	return v1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

@@ -17,6 +17,7 @@ var (
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
 	lockConfigReadWriterMockReadNexus            sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
 	lockConfigReadWriterMockreadConfigForProduct sync.RWMutex
 )
@@ -50,6 +51,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadRHSSOFunc: func() (*RHSSO, error) {
 // 	               panic("mock out the ReadRHSSO method")
+//             },
+//             ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
+// 	               panic("mock out the ReadSolutionExplorer method")
 //             },
 //             WriteConfigFunc: func(config ConfigReadable) error {
 // 	               panic("mock out the WriteConfig method")
@@ -85,6 +89,9 @@ type ConfigReadWriterMock struct {
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
 
+	// ReadSolutionExplorerFunc mocks the ReadSolutionExplorer method.
+	ReadSolutionExplorerFunc func() (*SolutionExplorer, error)
+
 	// WriteConfigFunc mocks the WriteConfig method.
 	WriteConfigFunc func(config ConfigReadable) error
 
@@ -114,6 +121,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
+		}
+		// ReadSolutionExplorer holds details about calls to the ReadSolutionExplorer method.
+		ReadSolutionExplorer []struct {
 		}
 		// WriteConfig holds details about calls to the WriteConfig method.
 		WriteConfig []struct {
@@ -307,6 +317,32 @@ func (mock *ConfigReadWriterMock) ReadRHSSOCalls() []struct {
 	lockConfigReadWriterMockReadRHSSO.RLock()
 	calls = mock.calls.ReadRHSSO
 	lockConfigReadWriterMockReadRHSSO.RUnlock()
+	return calls
+}
+
+// ReadSolutionExplorer calls ReadSolutionExplorerFunc.
+func (mock *ConfigReadWriterMock) ReadSolutionExplorer() (*SolutionExplorer, error) {
+	if mock.ReadSolutionExplorerFunc == nil {
+		panic("ConfigReadWriterMock.ReadSolutionExplorerFunc: method is nil but ConfigReadWriter.ReadSolutionExplorer was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadSolutionExplorer.Lock()
+	mock.calls.ReadSolutionExplorer = append(mock.calls.ReadSolutionExplorer, callInfo)
+	lockConfigReadWriterMockReadSolutionExplorer.Unlock()
+	return mock.ReadSolutionExplorerFunc()
+}
+
+// ReadSolutionExplorerCalls gets all the calls that were made to ReadSolutionExplorer.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadSolutionExplorerCalls())
+func (mock *ConfigReadWriterMock) ReadSolutionExplorerCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadSolutionExplorer.RLock()
+	calls = mock.calls.ReadSolutionExplorer
+	lockConfigReadWriterMockReadSolutionExplorer.RUnlock()
 	return calls
 }
 
