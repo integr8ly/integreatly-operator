@@ -41,7 +41,12 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 	case v1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductRHSSO:
-		reconciler, err = rhsso.NewReconciler(configManager, instance, mpm)
+		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		if err != nil {
+			return nil, err
+		}
+
+		reconciler, err = rhsso.NewReconciler(configManager, instance, oauthv1Client, mpm)
 	case v1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductFuse:

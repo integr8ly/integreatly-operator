@@ -2,13 +2,13 @@ package rhsso
 
 import (
 	"context"
-	"fmt"
-
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
@@ -24,9 +24,10 @@ var (
 	customerAdminPassword   = "Password1"
 	keycloakName            = "rhsso"
 	keycloakRealmName       = "openshift"
-	rhssoId                 = "openshift-client"
-	clientSecret            = rhssoId + "-secret"
+	oauthId                 = "rhsso"
+	clientSecret            = "placeholder" // this should be replaced in INTLY-2784
 	defaultSubscriptionName = "integreatly-rhsso"
+	idpAlias                = "openshift-v4"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -58,10 +59,11 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 	installation  *v1alpha1.Installation
 	logger        *logrus.Entry
+	oauthv1Client oauthClient.OauthV1Interface
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -73,12 +75,13 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		ConfigManager: configManager,
 		Config:        rhssoConfig,
+		ConfigManager: configManager,
 		mpm:           mpm,
-		logger:        logger,
-		Reconciler:    resources.NewReconciler(mpm),
 		installation:  instance,
+		logger:        logger,
+		oauthv1Client: oauthv1Client,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
@@ -121,6 +124,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			AdminCredentials: "",
 			Plugins: []string{
 				"keycloak-metrics-spi",
+				"openshift4-idp",
 			},
 			Backups:   []aerogearv1.KeycloakBackup{},
 			Provision: true,
@@ -139,7 +143,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly: true,
+			CreateOnly:                        true,
+			BrowserRedirectorIdentityProvider: idpAlias,
 			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
 				ID:          keycloakRealmName,
 				Realm:       keycloakRealmName,
@@ -150,25 +155,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 				},
 				Users: []*aerogearv1.KeycloakUser{
 					CustomerAdminUser,
-				},
-				Clients: []*aerogearv1.KeycloakClient{
-					{
-						KeycloakApiClient: &aerogearv1.KeycloakApiClient{
-							ID:                      rhssoId,
-							ClientID:                rhssoId,
-							Enabled:                 true,
-							Secret:                  clientSecret,
-							ClientAuthenticatorType: "client-secret",
-							RedirectUris: []string{
-								fmt.Sprintf("https://tutorial-web-app-webapp.%s", r.installation.Spec.RoutingSubdomain),
-								fmt.Sprintf("%v/*", r.installation.Spec.MasterURL),
-								"http://localhost:3006*",
-							},
-							StandardFlowEnabled:       true,
-							DirectAccessGrantsEnabled: true,
-						},
-						OutputSecret: rhssoId + "-client",
-					},
 				},
 			},
 		},
@@ -197,7 +183,12 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
 		}
 
-		r.logger.Info("keycloak has successfully processed the keycloakRealm")
+		err = r.setupOpenshiftIDP(ctx, kcr, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
+		}
+
+		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
 		return v1alpha1.PhaseCompleted, nil
 	}
 
@@ -236,4 +227,59 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 		return pkgerr.Wrap(err, "could not update keycloak config")
 	}
 	return nil
+}
+
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+	_, err := r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
+	if err != nil && k8serr.IsNotFound(err) {
+		oauthClient := &oauthv1.OAuthClient{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: oauthId,
+			},
+			Secret: clientSecret,
+			RedirectURIs: []string{
+				r.Config.GetURL() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+			},
+			GrantMethod: oauthv1.GrantHandlerPrompt,
+		}
+		_, err = r.oauthv1Client.OAuthClients().Create(oauthClient)
+		if err != nil {
+			return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
+		}
+	}
+
+	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {
+		logrus.Infof("Adding keycloak realm client")
+
+		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
+			Alias:                     idpAlias,
+			ProviderID:                "openshift-v4",
+			Enabled:                   true,
+			TrustEmail:                false,
+			StoreToken:                true,
+			AddReadTokenRoleOnCreate:  true,
+			FirstBrokerLoginFlowAlias: "first broker login",
+			Config: map[string]string{
+				"hideOnLoginPage": "",
+				"baseUrl":         "https://openshift.default.svc.cluster.local",
+				"clientId":        oauthId,
+				"disableUserInfo": "",
+				"clientSecret":    clientSecret,
+				"defaultScope":    "user:full",
+				"useJwksUrl":      "true",
+			},
+		})
+
+		return serverClient.Update(ctx, kcr)
+	}
+	return nil
+}
+
+func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, alias string) bool {
+	for _, p := range providers {
+		if p.Alias == alias {
+			return true
+		}
+	}
+	return false
 }

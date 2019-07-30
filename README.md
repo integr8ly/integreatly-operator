@@ -104,7 +104,7 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-namespacePrefix: integreatly-
+  namespacePrefix: integreatly-
 ```
 
 ## Tests

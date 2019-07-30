@@ -29,7 +29,7 @@ const (
 	apiManagerName               = "3scale"
 	clientId                     = "3scale"
 	oauthId                      = "3scale"
-	clientSecret                 = clientId + "-client-secret"
+	clientSecret                 = "placeholder" // this should be replaced in INTLY-2784
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
 )
