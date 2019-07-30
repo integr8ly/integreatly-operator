@@ -3,6 +3,8 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -13,7 +15,6 @@ import (
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 // This is the base reconciler that all the other reconcilers extend. It handles things like namespace creation, subscription creation etc
