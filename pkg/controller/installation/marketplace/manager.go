@@ -52,7 +52,6 @@ func NewManager() *MarketplaceManager {
 }
 
 func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
-	logrus.Infof("creating subscription in ns: %s", ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -72,7 +71,19 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClien
 			TargetNamespace: ns,
 		},
 	}
-	//TODO might need to check status of catalogsourceconfig
+	ownerutil.EnsureOwner(csc, owner)
+
+	// check catalog source config status
+	cscErr := serverClient.Get(ctx, pkgclient.ObjectKey{Namespace: csc.Namespace, Name: csc.Name}, csc)
+	if cscErr != nil && !k8serr.IsNotFound(cscErr) {
+		return errors.Wrap(cscErr, "failed to get catalog source config "+csc.Name)
+	}
+
+	if cscErr == nil && csc.Status.CurrentPhase.Name != "Succeeded" {
+		logrus.Infof("catalog source config %s is not ready yet message is %s phase is %s ", csc.Name, csc.Status.CurrentPhase.Message, csc.Status.CurrentPhase.Name)
+		return errors.New("catalog source config is not ready yet " + csc.Name + " will retry")
+	}
+	// If there is no subscription remove the catalog source config and recreate
 	_, err := m.getSubscription(ctx, serverClient, sub.Name, ns)
 	if err != nil && k8serr.IsNotFound(err) {
 		logrus.Infof("Subscription not found ")
@@ -85,13 +96,20 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClien
 		}
 	}
 
-	ownerutil.EnsureOwner(csc, owner)
-	err = serverClient.Create(ctx, csc)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		logrus.Infof("error creating catalog source config: %s", err.Error())
-		return err
+	// recreate the catalog source config and the subscription
+	if k8serr.IsNotFound(cscErr) {
+		err = serverClient.Create(ctx, csc)
+		if err != nil && !k8serr.IsAlreadyExists(err) {
+			logrus.Infof("error creating catalog source config: %s", err.Error())
+			return err
+		} else if err == nil {
+			logrus.Infof("catalog source config created")
+			// just created return and let it update
+			return nil
+		}
 	}
-	logrus.Infof("catalog source config created")
+
+	//catalog source is ready create the other stuff
 
 	og := &coreosv1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -118,6 +136,7 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClien
 		CatalogSourceNamespace: ns,
 	}
 	ownerutil.EnsureOwner(sub, owner)
+	logrus.Infof("creating subscription in ns: %s", ns)
 	err = serverClient.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")

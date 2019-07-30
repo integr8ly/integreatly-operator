@@ -40,6 +40,7 @@ type ConfigReadWriter interface {
 	ReadAMQOnline() (*AMQOnline, error)
 	ReadNexus() (*Nexus, error)
 	GetOperatorNamespace() string
+	ReadSolutionExplorer() (*SolutionExplorer, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -53,6 +54,14 @@ type Manager struct {
 	Namespace string
 	cfgmap    *v1.ConfigMap
 	context   context.Context
+}
+
+func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductSolutionExplorer)
+	if err != nil {
+		return nil, err
+	}
+	return NewSolutionExplorer(config), nil
 }
 
 func (m *Manager) GetOperatorNamespace() string {

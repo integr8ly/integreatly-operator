@@ -11,10 +11,10 @@ import (
 
 var (
 	allManagedOrder = [][]v1alpha1.ProductName{
-		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale},
+		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductSolutionExplorer},
 	}
 	allWorkspaceOrder = [][]v1alpha1.ProductName{
-		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductNexus},
+		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductNexus, v1alpha1.ProductSolutionExplorer},
 	}
 )
 

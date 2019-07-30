@@ -5,6 +5,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	v14 "github.com/openshift/api/oauth/v1"
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	v13 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -35,13 +36,29 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func buildScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	alpha1.AddToScheme(scheme)
+	v14.AddToScheme(scheme)
+	v13.SchemeBuilder.AddToScheme(scheme)
+
 	return scheme
 }
 
 func TestNewReconciler_ReconcileSubscription(t *testing.T) {
+	ownerInstall := &v1alpha1.Installation{
+		TypeMeta: v12.TypeMeta{
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			Kind:       "Installation",
+		},
+	}
+	catalogSourceConfig := &v13.CatalogSourceConfig{
+		ObjectMeta: v12.ObjectMeta{
+			Name:      "installed-integreatly-test-ns",
+			Namespace: "openshift-marketplace",
+		},
+	}
+	ownerutil.AddOwner(catalogSourceConfig, ownerInstall, true, true)
 	cases := []struct {
 		Name             string
-		FakeMPM          *marketplace.MarketplaceInterfaceMock
+		FakeMPM          marketplace.MarketplaceInterface
 		client           client.Client
 		SubscriptionName string
 		ExpectErr        bool
@@ -89,6 +106,15 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			SubscriptionName: "something",
 			ExpectedStatus:   v1alpha1.PhaseAwaitingOperator,
 		},
+		{
+			Name:             "test reconcile subscription returns waiting for operator when catalog source config not ready",
+			client:           pkgclient.NewFakeClientWithScheme(buildScheme(), catalogSourceConfig),
+			SubscriptionName: "something",
+			ExpectedStatus:   v1alpha1.PhaseFailed,
+			FakeMPM:          marketplace.NewManager(),
+			Installation:     ownerInstall,
+			ExpectErr:        true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -107,9 +133,76 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", status)
 			}
 			if tc.Validate != nil {
-				tc.Validate(t, tc.FakeMPM)
+				tc.Validate(t, tc.FakeMPM.(*marketplace.MarketplaceInterfaceMock))
 			}
 
+		})
+	}
+}
+
+func TestReconciler_ReconcileOauthClient(t *testing.T) {
+	existingClient := &v14.OAuthClient{
+		GrantMethod:  v14.GrantHandlerAuto,
+		Secret:       "test",
+		RedirectURIs: []string{"http://test.com"},
+	}
+	cases := []struct {
+		Name           string
+		OauthClient    *v14.OAuthClient
+		ExpectErr      bool
+		ExpectedStatus v1alpha1.StatusPhase
+		client         client.Client
+		Installation   *v1alpha1.Installation
+	}{
+		{
+			Name: "test oauth client is reconciled correctly when it does not exist",
+			OauthClient: &v14.OAuthClient{
+				GrantMethod:  v14.GrantHandlerAuto,
+				Secret:       "test",
+				RedirectURIs: []string{"http://test.com"},
+			},
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					Kind:       "Installation",
+				},
+				ObjectMeta: v12.ObjectMeta{
+					Name: "test-install",
+				},
+			},
+			client:         pkgclient.NewFakeClientWithScheme(buildScheme()),
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+		},
+		{
+			Name:        "test oauth client is reconciled correctly when it does exist",
+			OauthClient: existingClient,
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v12.TypeMeta{
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					Kind:       "Installation",
+				},
+				ObjectMeta: v12.ObjectMeta{
+					Name: "test-install",
+				},
+			},
+			client:         pkgclient.NewFakeClientWithScheme(buildScheme(), existingClient),
+			ExpectedStatus: v1alpha1.PhaseCompleted,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			reconciler := NewReconciler(nil)
+			phase, err := reconciler.ReconcileOauthClient(context.TODO(), tc.Installation, tc.OauthClient, tc.client)
+			if tc.ExpectErr && err == nil {
+				t.Fatal("expected an error but got none")
+			}
+			if !tc.ExpectErr && err != nil {
+				t.Fatal("expected no error but got one ", err)
+			}
+			if tc.ExpectedStatus != phase {
+				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
+			}
 		})
 	}
 }

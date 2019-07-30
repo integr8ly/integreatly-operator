@@ -24,6 +24,7 @@ var (
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"
+	ProductSolutionExplorer    ProductName = "solution-explorer"
 	ProductRHSSO               ProductName = "rhsso"
 	ProductCodeReadyWorkspaces ProductName = "codeready-workspaces"
 	ProductFuse                ProductName = "fuse"
