@@ -23,7 +23,7 @@ setup/moq:
 .PHONY: setup/travis
 setup/travis:
 	@echo Installing Operator SDK
-	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v0.6.0/operator-sdk-v0.6.0-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
+	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v0.8.1/operator-sdk-v0.8.1-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
 
 .PHONY: setup/service_account
 setup/service_account:
