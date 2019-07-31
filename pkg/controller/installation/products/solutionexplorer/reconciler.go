@@ -22,7 +22,7 @@ import (
 
 const (
 	defaultName          = "solution-explorer"
-	defaultSubNameAndPkg = "solution-explorer"
+	defaultSubNameAndPkg = "integreatly-solution-explorer"
 	defaultTemplateLoc   = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
 	param_openshift_host = "OPENSHIFT_HOST"
 	param_oauth_client   = "OPENSHIFT_OAUTHCLIENT_ID"

@@ -202,7 +202,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		unreadyPods = append(unreadyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", packageName, i),
+				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -220,7 +220,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		readyPods = append(readyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", packageName, i),
+				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -335,7 +335,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", packageName, i),
+				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
