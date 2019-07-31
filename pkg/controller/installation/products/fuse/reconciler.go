@@ -20,7 +20,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "fuse"
-	defaultSubscriptionName      = "syndesis"
+	defaultSubscriptionName      = "integreatly-syndesis"
 )
 
 type Reconciler struct {

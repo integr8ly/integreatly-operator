@@ -24,7 +24,7 @@ const (
 	defaultInstallationNamespace = "codeready-workspaces"
 	defaultClientName            = "che-client"
 	defaultCheClusterName        = "integreatly-cluster"
-	defaultSubscriptionName      = "codeready-workspaces"
+	defaultSubscriptionName      = "integreatly-codeready-workspaces"
 )
 
 type Reconciler struct {

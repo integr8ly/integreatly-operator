@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "3scale"
-	packageName                  = "3scale"
+	packageName                  = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientId                     = "3scale"
 	oauthId                      = "3scale"

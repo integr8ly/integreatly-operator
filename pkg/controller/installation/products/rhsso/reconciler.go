@@ -26,7 +26,7 @@ var (
 	keycloakRealmName       = "openshift"
 	rhssoId                 = "openshift-client"
 	clientSecret            = rhssoId + "-secret"
-	defaultSubscriptionName = "rhsso"
+	defaultSubscriptionName = "integreatly-rhsso"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{

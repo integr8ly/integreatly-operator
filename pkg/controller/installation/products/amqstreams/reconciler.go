@@ -20,8 +20,7 @@ import (
 
 var (
 	defaultInstallationNamespace = "amq-streams"
-	defaultSubscriptionName      = "amq-streams"
-	packageName                  = "amq-streams"
+	defaultSubscriptionName      = "integreatly-amq-streams"
 	clusterName                  = "integreatly-cluster"
 )
 

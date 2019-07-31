@@ -21,7 +21,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "amq-online"
-	defaultSubscriptionName      = "amq-online"
+	defaultSubscriptionName      = "integreatly-amq-online"
 	defaultConsoleSvcName        = "console"
 )
 
