@@ -36,7 +36,7 @@ func assertInstallationSuccessfull(installation *v1alpha1.Installation, configMa
 	}
 
 	// A subscription to the product operator should have been created.
-	if len(fakeMPM.CreateSubscriptionCalls()) != 1 {
+	if len(fakeMPM.InstallOperatorCalls()) != 1 {
 		return errors.New(fmt.Sprintf("%s operator subscription was not created", packageName))
 	}
 

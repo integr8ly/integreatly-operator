@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	lockMarketplaceInterfaceMockCreateSubscription         sync.RWMutex
 	lockMarketplaceInterfaceMockGetSubscriptionInstallPlan sync.RWMutex
+	lockMarketplaceInterfaceMockInstallOperator            sync.RWMutex
 )
 
 // Ensure, that MarketplaceInterfaceMock does implement MarketplaceInterface.
@@ -27,11 +27,11 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 //         // make and configure a mocked MarketplaceInterface
 //         mockedMarketplaceInterface := &MarketplaceInterfaceMock{
-//             CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
-// 	               panic("mock out the CreateSubscription method")
-//             },
 //             GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error) {
 // 	               panic("mock out the GetSubscriptionInstallPlan method")
+//             },
+//             InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+// 	               panic("mock out the InstallOperator method")
 //             },
 //         }
 //
@@ -40,35 +40,14 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //
 //     }
 type MarketplaceInterfaceMock struct {
-	// CreateSubscriptionFunc mocks the CreateSubscription method.
-	CreateSubscriptionFunc func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
-
 	// GetSubscriptionInstallPlanFunc mocks the GetSubscriptionInstallPlan method.
 	GetSubscriptionInstallPlanFunc func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlan, *v1alpha1.Subscription, error)
 
+	// InstallOperatorFunc mocks the InstallOperator method.
+	InstallOperatorFunc func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
+
 	// calls tracks calls to the methods.
 	calls struct {
-		// CreateSubscription holds details about calls to the CreateSubscription method.
-		CreateSubscription []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ServerClient is the serverClient argument value.
-			ServerClient client.Client
-			// Owner is the owner argument value.
-			Owner ownerutil.Owner
-			// Os is the os argument value.
-			Os v1.OperatorSource
-			// Ns is the ns argument value.
-			Ns string
-			// Pkg is the pkg argument value.
-			Pkg string
-			// Channel is the channel argument value.
-			Channel string
-			// OperatorGroupNamespaces is the operatorGroupNamespaces argument value.
-			OperatorGroupNamespaces []string
-			// ApprovalStrategy is the approvalStrategy argument value.
-			ApprovalStrategy v1alpha1.Approval
-		}
 		// GetSubscriptionInstallPlan holds details about calls to the GetSubscriptionInstallPlan method.
 		GetSubscriptionInstallPlan []struct {
 			// Ctx is the ctx argument value.
@@ -80,70 +59,24 @@ type MarketplaceInterfaceMock struct {
 			// Ns is the ns argument value.
 			Ns string
 		}
+		// InstallOperator holds details about calls to the InstallOperator method.
+		InstallOperator []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ServerClient is the serverClient argument value.
+			ServerClient client.Client
+			// Owner is the owner argument value.
+			Owner ownerutil.Owner
+			// Os is the os argument value.
+			Os v1.OperatorSource
+			// T is the t argument value.
+			T Target
+			// OperatorGroupNamespaces is the operatorGroupNamespaces argument value.
+			OperatorGroupNamespaces []string
+			// ApprovalStrategy is the approvalStrategy argument value.
+			ApprovalStrategy v1alpha1.Approval
+		}
 	}
-}
-
-// CreateSubscription calls CreateSubscriptionFunc.
-func (mock *MarketplaceInterfaceMock) CreateSubscription(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
-	if mock.CreateSubscriptionFunc == nil {
-		panic("MarketplaceInterfaceMock.CreateSubscriptionFunc: method is nil but MarketplaceInterface.CreateSubscription was just called")
-	}
-	callInfo := struct {
-		Ctx                     context.Context
-		ServerClient            client.Client
-		Owner                   ownerutil.Owner
-		Os                      v1.OperatorSource
-		Ns                      string
-		Pkg                     string
-		Channel                 string
-		OperatorGroupNamespaces []string
-		ApprovalStrategy        v1alpha1.Approval
-	}{
-		Ctx:                     ctx,
-		ServerClient:            serverClient,
-		Owner:                   owner,
-		Os:                      os,
-		Ns:                      ns,
-		Pkg:                     pkg,
-		Channel:                 channel,
-		OperatorGroupNamespaces: operatorGroupNamespaces,
-		ApprovalStrategy:        approvalStrategy,
-	}
-	lockMarketplaceInterfaceMockCreateSubscription.Lock()
-	mock.calls.CreateSubscription = append(mock.calls.CreateSubscription, callInfo)
-	lockMarketplaceInterfaceMockCreateSubscription.Unlock()
-	return mock.CreateSubscriptionFunc(ctx, serverClient, owner, os, ns, pkg, channel, operatorGroupNamespaces, approvalStrategy)
-}
-
-// CreateSubscriptionCalls gets all the calls that were made to CreateSubscription.
-// Check the length with:
-//     len(mockedMarketplaceInterface.CreateSubscriptionCalls())
-func (mock *MarketplaceInterfaceMock) CreateSubscriptionCalls() []struct {
-	Ctx                     context.Context
-	ServerClient            client.Client
-	Owner                   ownerutil.Owner
-	Os                      v1.OperatorSource
-	Ns                      string
-	Pkg                     string
-	Channel                 string
-	OperatorGroupNamespaces []string
-	ApprovalStrategy        v1alpha1.Approval
-} {
-	var calls []struct {
-		Ctx                     context.Context
-		ServerClient            client.Client
-		Owner                   ownerutil.Owner
-		Os                      v1.OperatorSource
-		Ns                      string
-		Pkg                     string
-		Channel                 string
-		OperatorGroupNamespaces []string
-		ApprovalStrategy        v1alpha1.Approval
-	}
-	lockMarketplaceInterfaceMockCreateSubscription.RLock()
-	calls = mock.calls.CreateSubscription
-	lockMarketplaceInterfaceMockCreateSubscription.RUnlock()
-	return calls
 }
 
 // GetSubscriptionInstallPlan calls GetSubscriptionInstallPlanFunc.
@@ -186,5 +119,60 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlanCalls() []struct
 	lockMarketplaceInterfaceMockGetSubscriptionInstallPlan.RLock()
 	calls = mock.calls.GetSubscriptionInstallPlan
 	lockMarketplaceInterfaceMockGetSubscriptionInstallPlan.RUnlock()
+	return calls
+}
+
+// InstallOperator calls InstallOperatorFunc.
+func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+	if mock.InstallOperatorFunc == nil {
+		panic("MarketplaceInterfaceMock.InstallOperatorFunc: method is nil but MarketplaceInterface.InstallOperator was just called")
+	}
+	callInfo := struct {
+		Ctx                     context.Context
+		ServerClient            client.Client
+		Owner                   ownerutil.Owner
+		Os                      v1.OperatorSource
+		T                       Target
+		OperatorGroupNamespaces []string
+		ApprovalStrategy        v1alpha1.Approval
+	}{
+		Ctx:                     ctx,
+		ServerClient:            serverClient,
+		Owner:                   owner,
+		Os:                      os,
+		T:                       t,
+		OperatorGroupNamespaces: operatorGroupNamespaces,
+		ApprovalStrategy:        approvalStrategy,
+	}
+	lockMarketplaceInterfaceMockInstallOperator.Lock()
+	mock.calls.InstallOperator = append(mock.calls.InstallOperator, callInfo)
+	lockMarketplaceInterfaceMockInstallOperator.Unlock()
+	return mock.InstallOperatorFunc(ctx, serverClient, owner, os, t, operatorGroupNamespaces, approvalStrategy)
+}
+
+// InstallOperatorCalls gets all the calls that were made to InstallOperator.
+// Check the length with:
+//     len(mockedMarketplaceInterface.InstallOperatorCalls())
+func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
+	Ctx                     context.Context
+	ServerClient            client.Client
+	Owner                   ownerutil.Owner
+	Os                      v1.OperatorSource
+	T                       Target
+	OperatorGroupNamespaces []string
+	ApprovalStrategy        v1alpha1.Approval
+} {
+	var calls []struct {
+		Ctx                     context.Context
+		ServerClient            client.Client
+		Owner                   ownerutil.Owner
+		Os                      v1.OperatorSource
+		T                       Target
+		OperatorGroupNamespaces []string
+		ApprovalStrategy        v1alpha1.Approval
+	}
+	lockMarketplaceInterfaceMockInstallOperator.RLock()
+	calls = mock.calls.InstallOperator
+	lockMarketplaceInterfaceMockInstallOperator.RUnlock()
 	return calls
 }

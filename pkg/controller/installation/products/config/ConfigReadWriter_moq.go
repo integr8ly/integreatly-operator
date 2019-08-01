@@ -4,9 +4,8 @@
 package config
 
 import (
-	"sync"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"sync"
 )
 
 var (
@@ -46,6 +45,7 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             },
 //             ReadNexusFunc: func() (*Nexus, error) {
 // 	               panic("mock out the ReadNexus method")
 //             },
@@ -115,7 +115,6 @@ type ConfigReadWriterMock struct {
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
 		}
-
 		// ReadNexus holds details about calls to the ReadNexus method.
 		ReadNexus []struct {
 		}

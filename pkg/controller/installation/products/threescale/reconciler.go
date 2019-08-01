@@ -72,7 +72,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, in, packageName, r.namespace, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, in, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.namespace}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
