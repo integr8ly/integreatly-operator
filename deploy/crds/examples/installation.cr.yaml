@@ -5,6 +5,6 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
-  routingSubdomain: apps.cluster-pbrookes-1b0d.pbrookes-1b0d.openshiftworkshop.com
-  masterUrl: https://console-openshift-console.apps.cluster-pbrookes-1b0d.pbrookes-1b0d.openshiftworkshop.com
+  routingSubdomain: example.com
+  masterUrl: http://master.example.com
   selfSignedCerts: true
