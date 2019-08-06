@@ -1,0 +1,55 @@
+apiVersion: hive.openshift.io/v1alpha1
+kind: SelectorSyncSet
+metadata:
+  name: integreatly-operator
+spec:
+  clusterDeploymentSelector:
+    matchLabels:
+      integreatly.org/managed: 'true'
+  resourceApplyMode: sync
+  resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: integreatly-operator
+    - apiVersion: operators.coreos.com/v1
+      kind: OperatorSource
+      metadata:
+        name: integreatly-operators
+        namespace: openshift-marketplace
+      spec:
+        authorizationToken: {}
+        displayName: Integreatly Operators
+        endpoint: 'https://quay.io/cnr'
+        publisher: Integreatly Publisher
+        registryNamespace: integreatly
+        type: appregistry
+    - apiVersion: operators.coreos.com/v1
+      kind: CatalogSourceConfig
+      metadata:
+        name: installed-integreatly-operator
+        namespace: openshift-marketplace
+      spec:
+        csDisplayName: Integreatly Operators
+        csPublisher: Red Hat
+        packages: integreatly
+        targetNamespace: integreatly-operator
+    - apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+        name: integreatly-operator
+        namespace: integreatly-operator
+      spec:
+        targetNamespaces:
+          - integreatly-operator
+    - apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+        name: integreatly-operator
+        namespace: integreatly-operator
+      spec:
+        channel: integreatly
+        installPlanApproval: Automatic
+        name: integreatly
+        source: installed-integreatly-operator
+        sourceNamespace: integreatly-operator
