@@ -8,13 +8,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	v1 "github.com/openshift/api/oauth/v1"
-	v13 "github.com/openshift/api/route/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -87,20 +87,48 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileOauthClient(ctx, inst, &v1.OAuthClient{
+
+	if r.Config.GetHost() != route {
+		r.Config.SetHost(route)
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+
+	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
 		RedirectURIs: []string{route},
 		Secret:       "test",
-		GrantMethod:  v1.GrantHandlerAuto,
-		ObjectMeta: v12.ObjectMeta{
+		GrantMethod:  oauthv1.GrantHandlerAuto,
+		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultSubNameAndPkg,
 		},
 	}, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+	phase, err = r.reconcileManifest(inst)
 	return phase, err
 }
 
+func (r *Reconciler) reconcileManifest(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+	//add all completed products to the manifest
+	for _, stage := range inst.Status.Stages {
+		for _, product := range stage.Products {
+			if product.Status == v1alpha1.PhaseCompleted {
+				config, err := r.ConfigManager.ReadProduct(product.Name)
+				if err != nil {
+					return v1alpha1.PhaseFailed, err
+				}
+				product.Host = config.GetHost()
+				product.Version = config.GetProductVersion()
+			}
+		}
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) (string, error) {
-	route := &v13.Route{
-		ObjectMeta: v12.ObjectMeta{
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      defaultRouteName,
 		},
@@ -112,6 +140,7 @@ func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) 
 	if route.Spec.TLS == nil {
 		protocol = "http"
 	}
+
 	return fmt.Sprintf("%s://%s", protocol, route.Spec.Host), nil
 }
 
@@ -126,7 +155,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		return v1alpha1.PhaseFailed, err
 	}
 	seCR := &webapp.WebApp{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      defaultName,
 		},
@@ -140,7 +169,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 			Path: defaultTemplateLoc,
 			Parameters: map[string]string{
 				param_oauth_client:   defaultSubNameAndPkg,
-				param_sso_route:      ssoConfig.GetURL(),
+				param_sso_route:      ssoConfig.GetHost(),
 				param_openshift_host: oauthURL,
 			},
 		},

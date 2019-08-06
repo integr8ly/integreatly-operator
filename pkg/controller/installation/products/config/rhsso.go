@@ -29,12 +29,12 @@ func (r *RHSSO) SetRealm(newRealm string) {
 	r.Config["REALM"] = newRealm
 }
 
-func (r *RHSSO) GetURL() string {
-	return r.Config["URL"]
+func (r *RHSSO) GetHost() string {
+	return r.Config["HOST"]
 }
 
-func (r *RHSSO) SetURL(newURL string) {
-	r.Config["URL"] = newURL
+func (r *RHSSO) SetHost(newHost string) {
+	r.Config["HOST"] = newHost
 }
 
 func (r *RHSSO) Read() ProductConfig {
@@ -43,6 +43,10 @@ func (r *RHSSO) Read() ProductConfig {
 
 func (r *RHSSO) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductRHSSO
+}
+
+func (r *RHSSO) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.VersionRHSSO
 }
 
 func (r *RHSSO) Validate() error {
@@ -55,8 +59,11 @@ func (r *RHSSO) Validate() error {
 	if r.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")
 	}
-	if r.GetURL() == "" {
+	if r.GetHost() == "" {
 		return errors.New("config url is not defined")
+	}
+	if r.GetProductVersion() == "" {
+		return errors.New("version is not defined")
 	}
 	return nil
 }

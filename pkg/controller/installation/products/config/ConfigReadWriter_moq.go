@@ -4,9 +4,8 @@
 package config
 
 import (
-	"sync"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"sync"
 )
 
 var (
@@ -16,8 +15,10 @@ var (
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
 	lockConfigReadWriterMockReadNexus            sync.RWMutex
+	lockConfigReadWriterMockReadProduct          sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO            sync.RWMutex
 	lockConfigReadWriterMockReadSolutionExplorer sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale       sync.RWMutex
 	lockConfigReadWriterMockWriteConfig          sync.RWMutex
 	lockConfigReadWriterMockreadConfigForProduct sync.RWMutex
 )
@@ -46,14 +47,21 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             },
 //             ReadNexusFunc: func() (*Nexus, error) {
 // 	               panic("mock out the ReadNexus method")
+//             },
+//             ReadProductFunc: func(product v1alpha1.ProductName) (ConfigReadable, error) {
+// 	               panic("mock out the ReadProduct method")
 //             },
 //             ReadRHSSOFunc: func() (*RHSSO, error) {
 // 	               panic("mock out the ReadRHSSO method")
 //             },
 //             ReadSolutionExplorerFunc: func() (*SolutionExplorer, error) {
 // 	               panic("mock out the ReadSolutionExplorer method")
+//             },
+//             ReadThreeScaleFunc: func() (*ThreeScale, error) {
+// 	               panic("mock out the ReadThreeScale method")
 //             },
 //             WriteConfigFunc: func(config ConfigReadable) error {
 // 	               panic("mock out the WriteConfig method")
@@ -86,11 +94,17 @@ type ConfigReadWriterMock struct {
 	// ReadNexusFunc mocks the ReadNexus method.
 	ReadNexusFunc func() (*Nexus, error)
 
+	// ReadProductFunc mocks the ReadProduct method.
+	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
+
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
 
 	// ReadSolutionExplorerFunc mocks the ReadSolutionExplorer method.
 	ReadSolutionExplorerFunc func() (*SolutionExplorer, error)
+
+	// ReadThreeScaleFunc mocks the ReadThreeScale method.
+	ReadThreeScaleFunc func() (*ThreeScale, error)
 
 	// WriteConfigFunc mocks the WriteConfig method.
 	WriteConfigFunc func(config ConfigReadable) error
@@ -115,15 +129,22 @@ type ConfigReadWriterMock struct {
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
 		}
-
 		// ReadNexus holds details about calls to the ReadNexus method.
 		ReadNexus []struct {
+		}
+		// ReadProduct holds details about calls to the ReadProduct method.
+		ReadProduct []struct {
+			// Product is the product argument value.
+			Product v1alpha1.ProductName
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
 		}
 		// ReadSolutionExplorer holds details about calls to the ReadSolutionExplorer method.
 		ReadSolutionExplorer []struct {
+		}
+		// ReadThreeScale holds details about calls to the ReadThreeScale method.
+		ReadThreeScale []struct {
 		}
 		// WriteConfig holds details about calls to the WriteConfig method.
 		WriteConfig []struct {
@@ -294,6 +315,37 @@ func (mock *ConfigReadWriterMock) ReadNexusCalls() []struct {
 	return calls
 }
 
+// ReadProduct calls ReadProductFunc.
+func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
+	if mock.ReadProductFunc == nil {
+		panic("ConfigReadWriterMock.ReadProductFunc: method is nil but ConfigReadWriter.ReadProduct was just called")
+	}
+	callInfo := struct {
+		Product v1alpha1.ProductName
+	}{
+		Product: product,
+	}
+	lockConfigReadWriterMockReadProduct.Lock()
+	mock.calls.ReadProduct = append(mock.calls.ReadProduct, callInfo)
+	lockConfigReadWriterMockReadProduct.Unlock()
+	return mock.ReadProductFunc(product)
+}
+
+// ReadProductCalls gets all the calls that were made to ReadProduct.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadProductCalls())
+func (mock *ConfigReadWriterMock) ReadProductCalls() []struct {
+	Product v1alpha1.ProductName
+} {
+	var calls []struct {
+		Product v1alpha1.ProductName
+	}
+	lockConfigReadWriterMockReadProduct.RLock()
+	calls = mock.calls.ReadProduct
+	lockConfigReadWriterMockReadProduct.RUnlock()
+	return calls
+}
+
 // ReadRHSSO calls ReadRHSSOFunc.
 func (mock *ConfigReadWriterMock) ReadRHSSO() (*RHSSO, error) {
 	if mock.ReadRHSSOFunc == nil {
@@ -343,6 +395,32 @@ func (mock *ConfigReadWriterMock) ReadSolutionExplorerCalls() []struct {
 	lockConfigReadWriterMockReadSolutionExplorer.RLock()
 	calls = mock.calls.ReadSolutionExplorer
 	lockConfigReadWriterMockReadSolutionExplorer.RUnlock()
+	return calls
+}
+
+// ReadThreeScale calls ReadThreeScaleFunc.
+func (mock *ConfigReadWriterMock) ReadThreeScale() (*ThreeScale, error) {
+	if mock.ReadThreeScaleFunc == nil {
+		panic("ConfigReadWriterMock.ReadThreeScaleFunc: method is nil but ConfigReadWriter.ReadThreeScale was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadThreeScale.Lock()
+	mock.calls.ReadThreeScale = append(mock.calls.ReadThreeScale, callInfo)
+	lockConfigReadWriterMockReadThreeScale.Unlock()
+	return mock.ReadThreeScaleFunc()
+}
+
+// ReadThreeScaleCalls gets all the calls that were made to ReadThreeScale.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadThreeScaleCalls())
+func (mock *ConfigReadWriterMock) ReadThreeScaleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadThreeScale.RLock()
+	calls = mock.calls.ReadThreeScale
+	lockConfigReadWriterMockReadThreeScale.RUnlock()
 	return calls
 }
 

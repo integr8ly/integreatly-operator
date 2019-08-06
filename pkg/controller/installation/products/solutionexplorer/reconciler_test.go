@@ -53,8 +53,13 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			},
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
-			FakeConfig:     basicConfigMock(),
+			Installation: &v1alpha1.Installation{
+				TypeMeta: v1.TypeMeta{
+					Kind:       "Installation",
+					APIVersion: "v1alpha1",
+				},
+			},
+			FakeConfig: basicConfigMock(),
 			client: fake.NewFakeClientWithScheme(scheme, &v1alpha12.WebApp{
 				ObjectMeta: v1.ObjectMeta{
 					Namespace: "solution-explorer",

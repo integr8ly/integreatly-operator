@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,4 +35,17 @@ type WebAppStatus struct {
 type WebAppTemplate struct {
 	Path       string            `json:"path"`
 	Parameters map[string]string `json:"parameters"`
+}
+
+type Manifest struct {
+	Version    string
+	Components []Component
+}
+
+type Component struct {
+	Name    v1alpha1.ProductName
+	Version v1alpha1.ProductVersion
+	Host    string
+	Type    string
+	Mobile  bool
 }

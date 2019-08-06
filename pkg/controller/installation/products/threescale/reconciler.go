@@ -14,6 +14,7 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,11 +41,18 @@ var (
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	ns := i.Spec.NamespacePrefix + defaultInstallationNamespace
-
+	tsConfig, err := configManager.ReadThreeScale()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not retrieve threescale config")
+	}
+	if tsConfig.GetNamespace() == "" {
+		tsConfig.SetNamespace(ns)
+		configManager.WriteConfig(tsConfig)
+	}
 	return &Reconciler{
 		ConfigManager: configManager,
+		Config:        tsConfig,
 		mpm:           mpm,
-		namespace:     ns,
 		installation:  i,
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
@@ -54,8 +62,8 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 }
 
 type Reconciler struct {
-	namespace     string
 	ConfigManager config.ConfigReadWriter
+	Config        *config.ThreeScale
 	mpm           marketplace.MarketplaceInterface
 	installation  *v1alpha1.Installation
 	tsClient      ThreeScaleInterface
@@ -67,12 +75,12 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.ReconcileNamespace(ctx, r.namespace, in, serverClient)
+	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, in, packageName, r.namespace, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, in, packageName, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -119,7 +127,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	tsS3 := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s3SecretName,
-			Namespace: r.namespace,
+			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: tsS3.Name, Namespace: tsS3.Namespace}, tsS3)
@@ -147,7 +155,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	apim := &threescalev1.APIManager{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiManagerName,
-			Namespace: r.namespace,
+			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: threescalev1.APIManagerSpec{
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
@@ -167,7 +175,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 			},
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: apim.Name, Namespace: r.namespace}, apim)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: apim.Name, Namespace: r.Config.GetNamespace()}, apim)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -335,11 +343,17 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		}
 	}
 
+	r.Config.SetHost(fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	site := rhssoConfig.GetURL() + "/auth/realms/" + rhssoRealm
+	site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
 	res, err := r.tsClient.AddSSOIntegration(map[string]string{
 		"kind":                              "keycloak",
 		"name":                              "rhsso",
@@ -435,7 +449,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	system := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "system",
-			Namespace: r.namespace,
+			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: system.Name, Namespace: system.Namespace}, system)
@@ -466,11 +480,11 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient pkgclient.Client) (*string, *string, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.namespace,
+			Namespace: r.Config.GetNamespace(),
 			Name:      "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.namespace}, s)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -483,11 +497,11 @@ func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverCl
 func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient pkgclient.Client, username string, email string) error {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.namespace,
+			Namespace: r.Config.GetNamespace(),
 			Name:      "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.namespace}, s)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return err
 	}
@@ -514,7 +528,7 @@ func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient pkgclient.C
 			Name: "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.namespace}, s)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +538,7 @@ func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient pkgclient.C
 }
 
 func (r *Reconciler) RolloutDeployment(name string) error {
-	_, err := r.appsv1Client.DeploymentConfigs(r.namespace).Instantiate(name, &appsv1.DeploymentRequest{
+	_, err := r.appsv1Client.DeploymentConfigs(r.Config.GetNamespace()).Instantiate(name, &appsv1.DeploymentRequest{
 		Name:   name,
 		Force:  true,
 		Latest: true,

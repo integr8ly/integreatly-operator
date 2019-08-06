@@ -221,7 +221,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetURL(string(kcURLBytes))
+	r.Config.SetHost(string(kcURLBytes))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not update keycloak config")
@@ -238,7 +238,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 			},
 			Secret: clientSecret,
 			RedirectURIs: []string{
-				r.Config.GetURL() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+				r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
 			},
 			GrantMethod: oauthv1.GrantHandlerPrompt,
 		}

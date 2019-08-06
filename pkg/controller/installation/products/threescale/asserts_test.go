@@ -68,7 +68,7 @@ func assertInstallationSuccessfull(installation *v1alpha1.Installation, configMa
 		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
 	}
 	integrationCall := fakeThreeScaleClient.AddSSOIntegrationCalls()[0]
-	if integrationCall.Data["client_id"] != clientId || integrationCall.Data["site"] != rhssoConfig.GetURL()+"/auth/realms/"+rhssoConfig.GetRealm() {
+	if integrationCall.Data["client_id"] != clientId || integrationCall.Data["site"] != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
 		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
 	}
 
