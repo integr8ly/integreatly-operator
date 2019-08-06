@@ -14,6 +14,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	routev1 "github.com/openshift/api/route/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -25,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -38,8 +39,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		ReadRHSSOFunc: func() (*config.RHSSO, error) {
 			return config.NewRHSSO(config.ProductConfig{
 				"NAMESPACE": "fuse",
-				"URL":       "fuse.openshift-cluster.com",
+				"HOST":      "fuse.openshift-cluster.com",
 			}), nil
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
 		},
 	}
 }
@@ -54,6 +58,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = syn.SchemeBuilder.AddToScheme(scheme)
+	err = routev1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -133,6 +138,13 @@ func TestReconciler_config(t *testing.T) {
 	}
 }
 func TestReconciler_reconcileCustomResource(t *testing.T) {
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	scheme, err := getBuildScheme()
 	if err != nil {
 		t.Fatal(err)
@@ -174,7 +186,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled)),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), route),
 			FakeConfig: basicConfigMock(),
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -262,6 +274,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -275,7 +294,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), ns),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), ns, route),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

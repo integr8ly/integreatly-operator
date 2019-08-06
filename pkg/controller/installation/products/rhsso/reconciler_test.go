@@ -417,8 +417,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: v1alpha1.InstallationStatus{
-					ProductStatus: map[v1alpha1.ProductName]string{
-						v1alpha1.ProductCodeReadyWorkspaces: string(v1alpha1.PhaseCreatingComponents),
+					Stages: map[string]*v1alpha1.InstallationStageStatus{
+						"codeready-stage": {
+							Name: "codeready-stage",
+							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+								v1alpha1.ProductCodeReadyWorkspaces: {
+									Name:   v1alpha1.ProductCodeReadyWorkspaces,
+									Status: v1alpha1.PhaseCreatingComponents,
+								},
+							},
+						},
 					},
 				},
 			},

@@ -12,38 +12,41 @@ func NewCodeReady(config ProductConfig) *CodeReady {
 	return &CodeReady{Config: config}
 }
 
-func (a *CodeReady) GetHost() string {
-	return a.Config["HOST"]
+func (c *CodeReady) GetHost() string {
+	return c.Config["HOST"]
 }
 
-func (a *CodeReady) SetHost(newHost string) {
-	a.Config["HOST"] = newHost
+func (c *CodeReady) SetHost(newHost string) {
+	c.Config["HOST"] = newHost
 }
 
-func (a *CodeReady) GetNamespace() string {
-	return a.Config["NAMESPACE"]
+func (c *CodeReady) GetNamespace() string {
+	return c.Config["NAMESPACE"]
 }
 
-func (a *CodeReady) SetNamespace(newNamespace string) {
-	a.Config["NAMESPACE"] = newNamespace
+func (c *CodeReady) SetNamespace(newNamespace string) {
+	c.Config["NAMESPACE"] = newNamespace
 }
 
-func (a *CodeReady) Read() ProductConfig {
-	return a.Config
+func (c *CodeReady) Read() ProductConfig {
+	return c.Config
 }
 
-func (a *CodeReady) GetProductName() v1alpha1.ProductName {
+func (c *CodeReady) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductCodeReadyWorkspaces
 }
+func (c *CodeReady) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.VersionCodeReadyWorkspaces
+}
 
-func (a *CodeReady) GetBackendSecretName() string {
+func (c *CodeReady) GetBackendSecretName() string {
 	return "s3-credentials"
 }
 
-func (a *CodeReady) GetPostgresBackupSecretName() string {
+func (c *CodeReady) GetPostgresBackupSecretName() string {
 	return "codeready-postgres-secret"
 }
 
-func (a *CodeReady) GetBackupSchedule() string {
+func (c *CodeReady) GetBackupSchedule() string {
 	return "30 2 * * *"
 }

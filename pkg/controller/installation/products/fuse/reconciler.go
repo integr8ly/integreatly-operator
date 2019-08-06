@@ -3,6 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
+	v1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -123,6 +124,28 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
 		return v1alpha1.PhaseInProgress, nil
+	}
+
+	route := &v1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not read syndesis route for fuse")
+	}
+
+	var url string
+	if route.Spec.TLS != nil {
+		url = fmt.Sprintf("https://" + route.Spec.Host)
+	} else {
+		url = fmt.Sprintf("http://" + route.Spec.Host)
+	}
+	if r.Config.GetHost() != url {
+		r.Config.SetHost(url)
+		r.ConfigManager.WriteConfig(r.Config)
 	}
 
 	// if there are no errors, the phase is complete

@@ -7,6 +7,7 @@ import (
 type StatusPhase string
 type InstallationType string
 type ProductName string
+type ProductVersion string
 
 var (
 	PhaseNone                 StatusPhase = ""
@@ -30,6 +31,15 @@ var (
 	ProductFuse                ProductName = "fuse"
 	Product3Scale              ProductName = "3scale"
 	ProductNexus               ProductName = "nexus"
+
+	VersionAMQStreams          ProductVersion = "1.1"
+	VersionAMQOnline           ProductVersion = "1.1"
+	VersionSolutionExplorer    ProductVersion = "2.10"
+	VersionRHSSO               ProductVersion = "7.3"
+	VersionCodeReadyWorkspaces ProductVersion = "1.2"
+	VersionFuse                ProductVersion = "1.7"
+	Version3Scale              ProductVersion = "2.6"
+	VersionNexus               ProductVersion = "3.16"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -51,8 +61,22 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages        map[int]string         `json:"stages"`
-	ProductStatus map[ProductName]string `json:"product_status"`
+	Stages map[string]*InstallationStageStatus `json:"stages"`
+}
+
+type InstallationStageStatus struct {
+	Name     string                                     `json:"name"`
+	Phase    StatusPhase                                `json:"phase"`
+	Products map[ProductName]*InstallationProductStatus `json:"products"`
+}
+
+type InstallationProductStatus struct {
+	Name    ProductName    `json:"name"`
+	Version ProductVersion `json:"version"`
+	Host    string         `json:"host"`
+	Type    string         `json:"type,omitempty"`
+	Mobile  bool           `json:"mobile,omitempty"`
+	Status  StatusPhase    `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

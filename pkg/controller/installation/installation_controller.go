@@ -2,12 +2,10 @@ package installation
 
 import (
 	"context"
-	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	pkgerr "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -114,7 +112,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	if instance.Status.Stages == nil {
-		instance.Status.Stages = map[int]string{}
+		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
 	}
 
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
@@ -130,24 +128,24 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
-	for stage, installProducts := range installType.GetProductOrder() {
-		// if the stage has a status phase already, check it's value
-		stagePhase, ok := instance.Status.Stages[stage]
-		if ok {
-			//if this stage failed we need to abort the install, so return an error
-			if stagePhase == string(v1alpha1.PhaseFailed) {
-				return reconcile.Result{}, pkgerr.New(fmt.Sprintf("installation failed on stage %d", stage))
+	for _, stage := range installType.GetStages() {
+		stageStatus, ok := instance.Status.Stages[stage.Name]
+		if !ok {
+			//initialise the stage
+			stageStatus = &v1alpha1.InstallationStageStatus{
+				Phase:    "unprocessed",
+				Name:     stage.Name,
+				Products: stage.Products,
 			}
 		}
-		//this stage is either completed, so allow it's reconcilers to reconcile state
-		//or incomplete, so allow the reconcilers to progress the installation of their component
-		phase, err := r.processStage(instance, installProducts, configManager)
-		instance.Status.Stages[stage] = string(phase)
+
+		err := r.processStage(instance, stageStatus, configManager)
+		instance.Status.Stages[stage.Name] = stageStatus
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 		//don't move to next stage until current stage is complete
-		if stagePhase != string(v1alpha1.PhaseCompleted) {
+		if stageStatus.Phase != v1alpha1.PhaseCompleted {
 			break
 		}
 	}
@@ -192,49 +190,40 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}, nil
 }
 
-func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, prods []v1alpha1.ProductName, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *v1alpha1.InstallationStageStatus, configManager config.ConfigReadWriter) error {
 	incompleteStage := false
-	//TODO: Deep copy instance
-	if instance.Status.ProductStatus == nil {
-		instance.Status.ProductStatus = map[v1alpha1.ProductName]string{}
-	}
 	var merr error
-	for _, product := range prods {
-		logrus.Infof("checking product: %s", product)
-		phase := ""
-		//check current phase of this product installation
-		if val, ok := instance.Status.ProductStatus[product]; ok {
-			phase = val
-		}
-		//found an incomplete product
-		if !(phase == string(v1alpha1.PhaseCompleted)) {
-			incompleteStage = true
-		}
-		reconciler, err := products.NewReconciler(v1alpha1.ProductName(product), r.restConfig, configManager, instance)
+	for _, product := range stage.Products {
+		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 		if err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed installation of %s", product)
+			stage.Phase = v1alpha1.PhaseFailed
+			return pkgerr.Wrapf(err, "failed to build a reconciler for %s", product.Name)
 		}
-		logrus.Infof("reconciling product: %s", product)
 		serverClient, err := client.New(r.restConfig, client.Options{})
 		if err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
+			stage.Phase = v1alpha1.PhaseFailed
+			return pkgerr.Wrap(err, "could not create server client")
 		}
-		newPhase, err := reconciler.Reconcile(r.context, instance, serverClient)
-		logrus.Infof("finished reconciling product: %s phase is %s", product, newPhase)
-		instance.Status.ProductStatus[product] = string(newPhase)
+		product.Status, err = reconciler.Reconcile(r.context, instance, serverClient)
 		if err != nil {
 			if merr == nil {
 				merr = &multiErr{}
 			}
-			merr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product))
+			merr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product.Name))
+		}
+		//found an incomplete product
+		if !(product.Status == v1alpha1.PhaseCompleted) {
+			incompleteStage = true
 		}
 	}
 
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {
-		return v1alpha1.PhaseInProgress, merr
+		stage.Phase = v1alpha1.PhaseInProgress
+	} else {
+		stage.Phase = v1alpha1.PhaseCompleted
 	}
-	return v1alpha1.PhaseCompleted, merr
+	return merr
 }
 
 type multiErr struct {

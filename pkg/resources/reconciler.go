@@ -89,7 +89,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation,  t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, v1alpha12.ApprovalAutomatic)
 	if err != nil && !errors2.IsAlreadyExists(err) {
