@@ -83,8 +83,8 @@ oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operat
 ```
 
 Create a new namespace to test in, and create the secrets required for 3scale and backups:
-```
-   oc process -f ./deploy/s3-secrets.yaml \
+```sh
+oc process -f ./deploy/s3-secrets.yaml \
    -p INSTALLATION_NAMESPACE=<test-namespace> \
    -p AWS_ACCESS_KEY_ID=<access key> \
    -p AWS_SECRET_ACCESS_KEY=<access secret> \
@@ -105,6 +105,9 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
+  routingSubdomain: example.com
+  masterUrl: http://master.example.com
+  selfSignedCerts: true
 ```
 
 ## Tests
