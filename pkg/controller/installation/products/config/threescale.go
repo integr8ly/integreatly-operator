@@ -38,7 +38,11 @@ func (t *ThreeScale) GetProductName() v1alpha1.ProductName {
 }
 
 func (t *ThreeScale) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.Version3Scale
+	return v1alpha1.ProductVersion(t.config["VERSION"])
+}
+
+func (t *ThreeScale) SetProductVersion(newVersion string) {
+	t.config["VERSION"] = newVersion
 }
 
 func (t *ThreeScale) Validate() error {
@@ -50,9 +54,6 @@ func (t *ThreeScale) Validate() error {
 	}
 	if t.GetHost() == "" {
 		return errors.New("config host is not defined")
-	}
-	if t.GetProductVersion() == "" {
-		return errors.New("version is not defined")
 	}
 	return nil
 }

@@ -70,7 +70,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -104,24 +104,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
-	phase, err = r.reconcileManifest(inst)
-	return phase, err
-}
-
-func (r *Reconciler) reconcileManifest(inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
-	//add all completed products to the manifest
-	for _, stage := range inst.Status.Stages {
-		for _, product := range stage.Products {
-			if product.Status == v1alpha1.PhaseCompleted {
-				config, err := r.ConfigManager.ReadProduct(product.Name)
-				if err != nil {
-					return v1alpha1.PhaseFailed, err
-				}
-				product.Host = config.GetHost()
-				product.Version = config.GetProductVersion()
-			}
-		}
-	}
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -183,6 +167,10 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to get the webapp resource namespace %s name %s", seCR.Namespace, seCR.Name))
 	}
 	if seCR.Status.Message == "OK" {
+		if r.Config.GetProductVersion() != v1alpha1.ProductVersion(seCR.Status.Version) {
+			r.Config.SetProductVersion(seCR.Status.Version)
+			r.ConfigManager.WriteConfig(r.Config)
+		}
 		return v1alpha1.PhaseCompleted, nil
 	}
 	return v1alpha1.PhaseInProgress, nil

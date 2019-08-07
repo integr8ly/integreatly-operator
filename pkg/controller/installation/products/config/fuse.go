@@ -38,7 +38,11 @@ func (f *Fuse) GetProductName() v1alpha1.ProductName {
 }
 
 func (f *Fuse) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionFuse
+	return v1alpha1.ProductVersion(f.config["VERSION"])
+}
+
+func (f *Fuse) SetProductVersion(newVersion string) {
+	f.config["VERSION"] = newVersion
 }
 
 func (f *Fuse) Validate() error {
@@ -48,9 +52,6 @@ func (f *Fuse) Validate() error {
 
 	if f.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")
-	}
-	if f.GetProductVersion() == "" {
-		return errors.New("version is not defined")
 	}
 	return nil
 }

@@ -349,6 +349,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -387,6 +388,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -401,7 +403,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -441,6 +443,7 @@ func TestReconciler_testPhases(t *testing.T) {
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test namespace terminating returns phase in progress",
@@ -470,6 +473,7 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription creating returns phase in progress",
@@ -486,6 +490,7 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test components creating returns phase in progress",
@@ -516,6 +521,7 @@ func TestReconciler_testPhases(t *testing.T) {
 						}, nil
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -530,7 +536,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				t.Fatalf("unexpected error : '%v'", err)
 			}
 
-			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}

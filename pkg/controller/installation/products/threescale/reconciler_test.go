@@ -55,6 +55,7 @@ func TestThreeScale(t *testing.T) {
 		ExpectedStatus       integreatlyv1alpha1.StatusPhase
 		AssertFunc           AssertFunc
 		FakeMPM              *marketplace.MarketplaceInterfaceMock
+		Product              *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:                 "Test successful installation without errors",
@@ -86,6 +87,7 @@ func TestThreeScale(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Product:        &v1alpha1.InstallationProductStatus{},
 		},
 	}
 	for _, scenario := range scenarios {
@@ -100,7 +102,7 @@ func TestThreeScale(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", packageName, err)
 			}
-			status, err := testReconciler.Reconcile(ctx, scenario.Installation, scenario.FakeSigsClient)
+			status, err := testReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient)
 			if err != nil {
 				t.Fatalf("Error reconciling %s: %v", packageName, err)
 			}

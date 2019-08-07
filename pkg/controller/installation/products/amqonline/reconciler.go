@@ -57,7 +57,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
@@ -94,6 +94,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	return v1alpha1.PhaseCompleted, nil
 }

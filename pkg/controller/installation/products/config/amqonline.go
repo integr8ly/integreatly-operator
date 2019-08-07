@@ -51,8 +51,5 @@ func (a *AMQOnline) Validate() error {
 	if a.GetHost() == "" {
 		return errors.New("config host is not defined")
 	}
-	if a.GetProductVersion() == "" {
-		return errors.New("version is not defined")
-	}
 	return nil
 }

@@ -32,13 +32,12 @@ var (
 	Product3Scale              ProductName = "3scale"
 	ProductNexus               ProductName = "nexus"
 
-	VersionAMQStreams          ProductVersion = "1.1"
-	VersionAMQOnline           ProductVersion = "1.1"
-	VersionSolutionExplorer    ProductVersion = "2.10"
-	VersionRHSSO               ProductVersion = "7.3"
-	VersionCodeReadyWorkspaces ProductVersion = "1.2"
-	VersionFuse                ProductVersion = "1.7"
-	Version3Scale              ProductVersion = "2.6"
+	// PBrookes 08/08/2019:
+	// Could not find a way to determine these versions dynamically, so they are hard-coded
+	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
+	VersionAMQOnline           ProductVersion = "0.28.0.redhat-00066"
+	VersionAMQStreams          ProductVersion = "1.1.0"
+	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionNexus               ProductVersion = "3.16"
 )
 

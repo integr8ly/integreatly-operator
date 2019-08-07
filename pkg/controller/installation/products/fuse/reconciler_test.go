@@ -72,6 +72,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test error on failed config",
@@ -85,6 +86,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read fuse config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -99,6 +101,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
+			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -122,7 +125,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -150,6 +153,13 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-global-config",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		FakeClient     client.Client
@@ -161,7 +171,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	}{
 		{
 			Name:       "Test reconcile custom resource returns in progress when successful created",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -186,7 +196,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), route),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), route, secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -198,7 +208,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalling)),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalling), secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -281,6 +291,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-global-config",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -290,11 +307,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), ns, route),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), ns, route, secret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -328,6 +346,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -342,7 +361,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

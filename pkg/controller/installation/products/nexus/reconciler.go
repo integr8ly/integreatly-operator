@@ -58,7 +58,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 // Reconcile reads that state of the cluster for nexus and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -78,6 +78,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil

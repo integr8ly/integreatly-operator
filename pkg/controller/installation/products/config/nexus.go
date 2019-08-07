@@ -49,8 +49,5 @@ func (n *Nexus) Validate() error {
 	if n.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")
 	}
-	if n.GetProductVersion() == "" {
-		return errors.New("version is not defined")
-	}
 	return nil
 }

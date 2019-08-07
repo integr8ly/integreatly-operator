@@ -105,6 +105,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test error on failed config",
@@ -118,6 +119,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read che config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on bad RHSSO config",
@@ -133,6 +135,7 @@ func TestReconciler_config(t *testing.T) {
 					return config.NewRHSSO(config.ProductConfig{}), nil
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test awaiting subscrition - failed RHSSO config",
@@ -148,6 +151,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not load keycloak config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on failed RHSSO config",
@@ -163,6 +167,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not load keycloak config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -177,6 +182,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
+			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -200,7 +206,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -538,6 +544,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		FakeClient          client.Client
 		FakeMPM             *marketplace.MarketplaceInterfaceMock
 		ValidateCallCounts  func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
+		Product             *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful installation without errors",
@@ -589,6 +596,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -612,7 +620,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), scenario.Installation, scenario.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), scenario.Installation, scenario.Product, scenario.FakeClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}

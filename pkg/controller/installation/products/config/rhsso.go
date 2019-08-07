@@ -46,9 +46,12 @@ func (r *RHSSO) GetProductName() v1alpha1.ProductName {
 }
 
 func (r *RHSSO) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionRHSSO
+	return v1alpha1.ProductVersion(r.Config["VERSION"])
 }
 
+func (r *RHSSO) SetProductVersion(version string) {
+	r.Config["VERSION"] = version
+}
 func (r *RHSSO) Validate() error {
 	if r.GetProductName() == "" {
 		return errors.New("config product name is not defined")
@@ -61,9 +64,6 @@ func (r *RHSSO) Validate() error {
 	}
 	if r.GetHost() == "" {
 		return errors.New("config url is not defined")
-	}
-	if r.GetProductVersion() == "" {
-		return errors.New("version is not defined")
 	}
 	return nil
 }

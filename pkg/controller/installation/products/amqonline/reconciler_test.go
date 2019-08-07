@@ -416,6 +416,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -454,6 +455,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -468,7 +470,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

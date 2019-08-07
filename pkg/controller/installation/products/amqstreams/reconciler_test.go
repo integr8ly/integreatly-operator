@@ -32,6 +32,9 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
 			return config.NewAMQStreams(config.ProductConfig{}), nil
 		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
 	}
 }
 
@@ -58,6 +61,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test error on failed config",
@@ -71,6 +75,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read amq streams config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -84,6 +89,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
+			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -107,7 +113,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -198,6 +204,13 @@ func TestReconciler_handleProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kafka := &kafkav1.Kafka{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "integreatly-cluster",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	unreadyPods := []runtime.Object{}
 	for i := 0; i < 8; i++ {
 		unreadyPods = append(unreadyPods, &corev1.Pod{
@@ -274,7 +287,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:           "test ready pods returns phase complete",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, readyPods...),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, append(readyPods, kafka)...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &v1alpha1.Installation{},
 		},
@@ -358,6 +371,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *v1alpha1.Installation
+		Product        *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -395,6 +409,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -409,7 +424,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

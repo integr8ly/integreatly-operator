@@ -72,7 +72,7 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
@@ -106,6 +106,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
@@ -428,7 +431,15 @@ func (r *Reconciler) reconcileUpdatingAdminDetails(ctx context.Context, serverCl
 }
 
 func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	_, err := r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
+	cm := &corev1.ConfigMap{}
+	// if this errors it can be ignored
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-environment", Namespace: r.Config.GetNamespace()}, cm)
+	if err == nil && string(r.Config.GetProductVersion()) != cm.Data["AMP_RELEASE"] {
+		r.Config.SetProductVersion(cm.Data["AMP_RELEASE"])
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+
+	_, err = r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
 		tsOauth := &oauthv1.OAuthClient{
 			ObjectMeta: metav1.ObjectMeta{

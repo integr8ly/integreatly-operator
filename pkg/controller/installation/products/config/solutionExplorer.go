@@ -38,7 +38,11 @@ func (s *SolutionExplorer) GetProductName() v1alpha1.ProductName {
 }
 
 func (s *SolutionExplorer) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionSolutionExplorer
+	return v1alpha1.ProductVersion(s.config["VERSION"])
+}
+
+func (s *SolutionExplorer) SetProductVersion(newVersion string) {
+	s.config["VERSION"] = newVersion
 }
 
 func (s *SolutionExplorer) Validate() error {
@@ -47,9 +51,6 @@ func (s *SolutionExplorer) Validate() error {
 	}
 	if s.GetProductName() == "" {
 		return errors.New("config product name is not defined")
-	}
-	if s.GetProductVersion() == "" {
-		return errors.New("version is not defined")
 	}
 	return nil
 }

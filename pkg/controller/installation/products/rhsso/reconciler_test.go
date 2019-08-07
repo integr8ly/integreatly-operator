@@ -68,6 +68,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *v1alpha1.Installation
+		Product         *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:            "test error on failed config",
@@ -82,6 +83,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read rhsso config")
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -96,6 +98,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
+			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -120,7 +123,7 @@ func TestReconciler_config(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
 			}
@@ -259,7 +262,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:            "test unready kcr cr returns phase in progress",
 			ExpectedStatus:  v1alpha1.PhaseInProgress,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed})),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed})),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
@@ -378,6 +381,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *v1alpha1.Installation
+		Product         *v1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -430,6 +434,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					},
 				},
 			},
+			Product: &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -445,7 +450,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

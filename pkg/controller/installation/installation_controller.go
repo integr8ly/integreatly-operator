@@ -204,7 +204,7 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, st
 			stage.Phase = v1alpha1.PhaseFailed
 			return pkgerr.Wrap(err, "could not create server client")
 		}
-		product.Status, err = reconciler.Reconcile(r.context, instance, serverClient)
+		product.Status, err = reconciler.Reconcile(r.context, instance, product, serverClient)
 		if err != nil {
 			if merr == nil {
 				merr = &multiErr{}
