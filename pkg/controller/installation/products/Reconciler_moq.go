@@ -24,7 +24,7 @@ var _ Interface = &InterfaceMock{}
 //
 //         // make and configure a mocked Interface
 //         mockedInterface := &InterfaceMock{
-//             ReconcileFunc: func(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+//             ReconcileFunc: func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
 //         }
@@ -35,7 +35,7 @@ var _ Interface = &InterfaceMock{}
 //     }
 type InterfaceMock struct {
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -45,6 +45,8 @@ type InterfaceMock struct {
 			Ctx context.Context
 			// Inst is the inst argument value.
 			Inst *v1alpha1.Installation
+			// Product is the product argument value.
+			Product *v1alpha1.InstallationProductStatus
 			// ServerClient is the serverClient argument value.
 			ServerClient client.Client
 		}
@@ -52,23 +54,25 @@ type InterfaceMock struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
 		Inst         *v1alpha1.Installation
+		Product      *v1alpha1.InstallationProductStatus
 		ServerClient client.Client
 	}{
 		Ctx:          ctx,
 		Inst:         inst,
+		Product:      product,
 		ServerClient: serverClient,
 	}
 	lockInterfaceMockReconcile.Lock()
 	mock.calls.Reconcile = append(mock.calls.Reconcile, callInfo)
 	lockInterfaceMockReconcile.Unlock()
-	return mock.ReconcileFunc(ctx, inst, serverClient)
+	return mock.ReconcileFunc(ctx, inst, product, serverClient)
 }
 
 // ReconcileCalls gets all the calls that were made to Reconcile.
@@ -77,11 +81,13 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *v1alpha1.Install
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
 	Inst         *v1alpha1.Installation
+	Product      *v1alpha1.InstallationProductStatus
 	ServerClient client.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
 		Inst         *v1alpha1.Installation
+		Product      *v1alpha1.InstallationProductStatus
 		ServerClient client.Client
 	}
 	lockInterfaceMockReconcile.RLock()

@@ -37,6 +37,10 @@ func (a *AMQOnline) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductAMQOnline
 }
 
+func (a *AMQOnline) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.VersionAMQOnline
+}
+
 func (a *AMQOnline) Validate() error {
 	if a.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")

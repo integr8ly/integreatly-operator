@@ -9,17 +9,58 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Stage struct {
+	Products map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus
+	Name     string
+}
+
 var (
-	allManagedOrder = [][]v1alpha1.ProductName{
-		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductSolutionExplorer},
+	allManagedStages = []Stage{
+		{
+			Name: "authentication",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductRHSSO: {
+					Name: v1alpha1.ProductRHSSO,
+				},
+			},
+		},
+		{
+			Name: "products",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
+				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
+				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
+				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
+				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
+			},
+		},
 	}
-	allWorkspaceOrder = [][]v1alpha1.ProductName{
-		{v1alpha1.ProductRHSSO}, {v1alpha1.ProductFuse, v1alpha1.ProductCodeReadyWorkspaces, v1alpha1.ProductAMQStreams, v1alpha1.ProductAMQOnline, v1alpha1.Product3Scale, v1alpha1.ProductNexus, v1alpha1.ProductSolutionExplorer},
+	allWorkspaceStages = []Stage{
+		{
+			Name: "authentication",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductRHSSO: {
+					Name: v1alpha1.ProductRHSSO,
+				},
+			},
+		},
+		{
+			Name: "products",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
+				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
+				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
+				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
+				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
+				v1alpha1.ProductNexus:               {Name: v1alpha1.ProductNexus},
+				v1alpha1.ProductAMQStreams:          {Name: v1alpha1.ProductAMQStreams},
+			},
+		},
 	}
 )
 
 type Type struct {
-	productOrder [][]v1alpha1.ProductName
+	Stages []Stage
 }
 
 func (t *Type) HasProduct(product string) bool {
@@ -28,8 +69,8 @@ func (t *Type) HasProduct(product string) bool {
 
 //GetProductOrder returns indexed arrays of products names this is worked through starting at 0
 //the install will not move to the next index until all installs in the current index have completed successfully
-func (t *Type) GetProductOrder() [][]v1alpha1.ProductName {
-	return t.productOrder
+func (t *Type) GetStages() []Stage {
+	return t.Stages
 }
 
 func InstallationTypeFactory(installationType string, products []string) (error, *Type) {
@@ -47,10 +88,7 @@ func InstallationTypeFactory(installationType string, products []string) (error,
 func newWorkshopType(products []string) *Type {
 	logrus.Info("installing workshop products ", products)
 	t := &Type{
-		productOrder: [][]v1alpha1.ProductName{
-			{},
-			{},
-		},
+		Stages: []Stage{},
 	}
 
 	buildProducts(t, products, v1alpha1.InstallationTypeWorkshop)
@@ -60,29 +98,37 @@ func newWorkshopType(products []string) *Type {
 func newManagedType(products []string) *Type {
 	logrus.Info("installing managed products ", products)
 	t := &Type{
-		productOrder: [][]v1alpha1.ProductName{
-			{},
-			{},
-		},
+		Stages: []Stage{},
 	}
 	buildProducts(t, products, v1alpha1.InstallationTypeManaged)
 	return t
 }
 
 func buildProducts(t *Type, products []string, installType v1alpha1.InstallationType) {
+	t.Stages = []Stage{
+		Stage{
+			Name:     "authentication",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+		},
+		Stage{
+			Name:     "products",
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+		},
+	}
 	for _, p := range products {
 		product := strings.ToLower(strings.TrimSpace(p))
 		if product == "all" {
 			if installType == v1alpha1.InstallationTypeManaged {
-				t.productOrder = allManagedOrder
+				t.Stages = allManagedStages
 			} else if installType == v1alpha1.InstallationTypeWorkshop {
-				t.productOrder = allWorkspaceOrder
+				t.Stages = allWorkspaceStages
 			}
 			break
 		}
 		if v1alpha1.ProductName(product) == v1alpha1.ProductRHSSO {
-			t.productOrder[0] = []v1alpha1.ProductName{v1alpha1.ProductRHSSO}
+			t.Stages[0].Products[v1alpha1.ProductRHSSO] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductRHSSO}
 		}
-		t.productOrder[1] = append(t.productOrder[1], v1alpha1.ProductName(product))
+
+		t.Stages[1].Products[v1alpha1.ProductName(product)] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductName(product)}
 	}
 }

@@ -33,3 +33,7 @@ func (a *AMQStreams) Read() ProductConfig {
 func (a *AMQStreams) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductAMQStreams
 }
+
+func (a *AMQStreams) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.VersionAMQStreams
+}

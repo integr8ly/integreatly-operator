@@ -91,6 +91,7 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 			return "", errors.Wrap(err, "failed to create catalog source config")
 		}
 	}
+
 	var catalogSourceName string
 	return catalogSourceName, wait.Poll(time.Second, time.Minute*5, func() (done bool, err error) {
 		err = client.List(ctx, &pkgclient.ListOptions{Namespace: t.Namespace}, csList)
@@ -154,7 +155,6 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient p
 }
 
 func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
-	logrus.Infof("Getting subscription %s in ns: %s", subName, ns)
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -176,7 +176,6 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, ser
 		return nil, nil, errors.Wrap(err, "GetSubscriptionInstallPlan")
 	}
 	if sub.Status.Install == nil {
-		logrus.Infof("Installplan for subscription %s is not yet created", sub.Name)
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
 	}
 

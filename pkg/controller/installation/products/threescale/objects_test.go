@@ -113,12 +113,20 @@ var successfulTestAppsV1Objects = map[string]*appsv1.DeploymentConfig{
 	systemSidekiq.Name: &systemSidekiq,
 }
 
+var cm = &corev1.ConfigMap{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "system-environment",
+		Namespace: defaultInstallationNamespace,
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
 	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
+	cm.Namespace = threeScaleInstallationNamepsace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -127,5 +135,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		configManagerConfigMap,
 		threeScaleAdminDetailsSecret,
 		threeScaleServiceDiscoveryConfigMap,
+		cm,
 	}
 }

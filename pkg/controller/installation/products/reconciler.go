@@ -27,7 +27,7 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
 }
 
 func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
@@ -87,6 +87,6 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	return v1alpha1.PhaseNone, nil
 }

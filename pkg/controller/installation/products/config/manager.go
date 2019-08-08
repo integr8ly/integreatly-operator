@@ -36,17 +36,21 @@ type ConfigReadWriter interface {
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
 	ReadCodeReady() (*CodeReady, error)
+	ReadThreeScale() (*ThreeScale, error)
 	ReadFuse() (*Fuse, error)
 	ReadAMQOnline() (*AMQOnline, error)
 	ReadNexus() (*Nexus, error)
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
+	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
 type ConfigReadable interface {
 	Read() ProductConfig
 	GetProductName() v1alpha1.ProductName
+	GetProductVersion() v1alpha1.ProductVersion
+	GetHost() string
 }
 
 type Manager struct {
@@ -54,6 +58,29 @@ type Manager struct {
 	Namespace string
 	cfgmap    *v1.ConfigMap
 	context   context.Context
+}
+
+func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
+	switch product {
+	case v1alpha1.Product3Scale:
+		return m.ReadThreeScale()
+	case v1alpha1.ProductAMQOnline:
+		return m.ReadAMQOnline()
+	case v1alpha1.ProductRHSSO:
+		return m.ReadRHSSO()
+	case v1alpha1.ProductAMQStreams:
+		return m.ReadAMQStreams()
+	case v1alpha1.ProductCodeReadyWorkspaces:
+		return m.ReadCodeReady()
+	case v1alpha1.ProductFuse:
+		return m.ReadFuse()
+	case v1alpha1.ProductNexus:
+		return m.ReadNexus()
+	case v1alpha1.ProductSolutionExplorer:
+		return m.ReadSolutionExplorer()
+	}
+
+	return nil, errors2.New("no config found for product " + string(product))
 }
 
 func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
@@ -74,6 +101,14 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 		return nil, err
 	}
 	return NewAMQStreams(config), nil
+}
+
+func (m *Manager) ReadThreeScale() (*ThreeScale, error) {
+	config, err := m.readConfigForProduct(v1alpha1.Product3Scale)
+	if err != nil {
+		return nil, err
+	}
+	return NewThreeScale(config), nil
 }
 
 func (m *Manager) ReadCodeReady() (*CodeReady, error) {

@@ -64,7 +64,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -88,6 +88,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
@@ -197,7 +200,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	// check cr values
 	if cheCluster.Spec.Auth.ExternalKeycloak &&
 		!cheCluster.Spec.Auth.OpenShiftOauth &&
-		cheCluster.Spec.Auth.KeycloakURL == r.KeycloakConfig.GetURL() &&
+		cheCluster.Spec.Auth.KeycloakURL == r.KeycloakConfig.GetHost() &&
 		cheCluster.Spec.Auth.KeycloakRealm == r.KeycloakConfig.GetRealm() &&
 		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
 		logrus.Debug("skipping checluster custom resource update as all values are correct")
@@ -207,7 +210,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	// update cr values
 	cheCluster.Spec.Auth.ExternalKeycloak = true
 	cheCluster.Spec.Auth.OpenShiftOauth = false
-	cheCluster.Spec.Auth.KeycloakURL = r.KeycloakConfig.GetURL()
+	cheCluster.Spec.Auth.KeycloakURL = r.KeycloakConfig.GetHost()
 	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
 	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
 	if err = serverClient.Update(ctx, cheCluster); err != nil {
@@ -257,6 +260,11 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	if cheURL == "" {
 		//still waiting for the Che URL, so exit codeready reconciling now and try again
 		return v1alpha1.PhaseInProgress, nil
+	}
+
+	if r.Config.GetHost() != cheURL {
+		r.Config.SetHost(cheURL)
+		r.ConfigManager.WriteConfig(r.Config)
 	}
 
 	// retrieve the sso config so we can find the keycloakrealm custom resource to update
@@ -347,7 +355,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			Auth: chev1.CheClusterSpecAuth{
 				OpenShiftOauth:   false,
 				ExternalKeycloak: true,
-				KeycloakURL:      kcCfg.GetURL(),
+				KeycloakURL:      kcCfg.GetHost(),
 				KeycloakRealm:    kr.Name,
 				KeycloakClientId: defaultClientName,
 			},

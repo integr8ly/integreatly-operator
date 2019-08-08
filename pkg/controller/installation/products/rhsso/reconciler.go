@@ -87,7 +87,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
@@ -109,6 +109,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
@@ -169,10 +172,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	kc := &aerogearv1.Keycloak{}
+	// if this errors, it can be ignored
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
+	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
+		r.Config.SetProductVersion(kc.Status.Version)
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+
 	r.logger.Info("checking ready status for rhsso")
 	kcr := &aerogearv1.KeycloakRealm{}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get keycloak realm custom resource")
 	}
@@ -221,7 +232,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetURL(string(kcURLBytes))
+	r.Config.SetHost(string(kcURLBytes))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not update keycloak config")
@@ -238,7 +249,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 			},
 			Secret: clientSecret,
 			RedirectURIs: []string{
-				r.Config.GetURL() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+				r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
 			},
 			GrantMethod: oauthv1.GrantHandlerPrompt,
 		}

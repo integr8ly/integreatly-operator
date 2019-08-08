@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	lockConfigReadableMockGetProductName sync.RWMutex
-	lockConfigReadableMockRead           sync.RWMutex
+	lockConfigReadableMockGetHost           sync.RWMutex
+	lockConfigReadableMockGetProductName    sync.RWMutex
+	lockConfigReadableMockGetProductVersion sync.RWMutex
+	lockConfigReadableMockRead              sync.RWMutex
 )
 
 // Ensure, that ConfigReadableMock does implement ConfigReadable.
@@ -23,8 +25,14 @@ var _ ConfigReadable = &ConfigReadableMock{}
 //
 //         // make and configure a mocked ConfigReadable
 //         mockedConfigReadable := &ConfigReadableMock{
+//             GetHostFunc: func() string {
+// 	               panic("mock out the GetHost method")
+//             },
 //             GetProductNameFunc: func() v1alpha1.ProductName {
 // 	               panic("mock out the GetProductName method")
+//             },
+//             GetProductVersionFunc: func() v1alpha1.ProductVersion {
+// 	               panic("mock out the GetProductVersion method")
 //             },
 //             ReadFunc: func() ProductConfig {
 // 	               panic("mock out the Read method")
@@ -36,21 +44,59 @@ var _ ConfigReadable = &ConfigReadableMock{}
 //
 //     }
 type ConfigReadableMock struct {
+	// GetHostFunc mocks the GetHost method.
+	GetHostFunc func() string
+
 	// GetProductNameFunc mocks the GetProductName method.
 	GetProductNameFunc func() v1alpha1.ProductName
+
+	// GetProductVersionFunc mocks the GetProductVersion method.
+	GetProductVersionFunc func() v1alpha1.ProductVersion
 
 	// ReadFunc mocks the Read method.
 	ReadFunc func() ProductConfig
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetHost holds details about calls to the GetHost method.
+		GetHost []struct {
+		}
 		// GetProductName holds details about calls to the GetProductName method.
 		GetProductName []struct {
+		}
+		// GetProductVersion holds details about calls to the GetProductVersion method.
+		GetProductVersion []struct {
 		}
 		// Read holds details about calls to the Read method.
 		Read []struct {
 		}
 	}
+}
+
+// GetHost calls GetHostFunc.
+func (mock *ConfigReadableMock) GetHost() string {
+	if mock.GetHostFunc == nil {
+		panic("ConfigReadableMock.GetHostFunc: method is nil but ConfigReadable.GetHost was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadableMockGetHost.Lock()
+	mock.calls.GetHost = append(mock.calls.GetHost, callInfo)
+	lockConfigReadableMockGetHost.Unlock()
+	return mock.GetHostFunc()
+}
+
+// GetHostCalls gets all the calls that were made to GetHost.
+// Check the length with:
+//     len(mockedConfigReadable.GetHostCalls())
+func (mock *ConfigReadableMock) GetHostCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadableMockGetHost.RLock()
+	calls = mock.calls.GetHost
+	lockConfigReadableMockGetHost.RUnlock()
+	return calls
 }
 
 // GetProductName calls GetProductNameFunc.
@@ -76,6 +122,32 @@ func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 	lockConfigReadableMockGetProductName.RLock()
 	calls = mock.calls.GetProductName
 	lockConfigReadableMockGetProductName.RUnlock()
+	return calls
+}
+
+// GetProductVersion calls GetProductVersionFunc.
+func (mock *ConfigReadableMock) GetProductVersion() v1alpha1.ProductVersion {
+	if mock.GetProductVersionFunc == nil {
+		panic("ConfigReadableMock.GetProductVersionFunc: method is nil but ConfigReadable.GetProductVersion was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadableMockGetProductVersion.Lock()
+	mock.calls.GetProductVersion = append(mock.calls.GetProductVersion, callInfo)
+	lockConfigReadableMockGetProductVersion.Unlock()
+	return mock.GetProductVersionFunc()
+}
+
+// GetProductVersionCalls gets all the calls that were made to GetProductVersion.
+// Check the length with:
+//     len(mockedConfigReadable.GetProductVersionCalls())
+func (mock *ConfigReadableMock) GetProductVersionCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadableMockGetProductVersion.RLock()
+	calls = mock.calls.GetProductVersion
+	lockConfigReadableMockGetProductVersion.RUnlock()
 	return calls
 }
 

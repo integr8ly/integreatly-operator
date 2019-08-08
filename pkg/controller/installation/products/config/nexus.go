@@ -7,34 +7,46 @@ import (
 )
 
 type Nexus struct {
-	Config ProductConfig
+	config ProductConfig
 }
 
 func NewNexus(config ProductConfig) *Nexus {
-	return &Nexus{Config: config}
+	return &Nexus{config: config}
 }
 
-func (r *Nexus) GetNamespace() string {
-	return r.Config["NAMESPACE"]
+func (n *Nexus) GetNamespace() string {
+	return n.config["NAMESPACE"]
 }
 
-func (r *Nexus) SetNamespace(newNamespace string) {
-	r.Config["NAMESPACE"] = newNamespace
+func (n *Nexus) SetNamespace(newNamespace string) {
+	n.config["NAMESPACE"] = newNamespace
 }
 
-func (r *Nexus) Read() ProductConfig {
-	return r.Config
+func (n *Nexus) Read() ProductConfig {
+	return n.config
 }
 
-func (r *Nexus) GetProductName() v1alpha1.ProductName {
+func (n *Nexus) GetHost() string {
+	return n.config["HOST"]
+}
+
+func (n *Nexus) SetHost(newHost string) {
+	n.config["HOST"] = newHost
+}
+
+func (n *Nexus) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductNexus
 }
 
-func (r *Nexus) Validate() error {
-	if r.GetProductName() == "" {
+func (n *Nexus) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.VersionNexus
+}
+
+func (n *Nexus) Validate() error {
+	if n.GetProductName() == "" {
 		return errors.New("config product name is not defined")
 	}
-	if r.GetNamespace() == "" {
+	if n.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")
 	}
 	return nil

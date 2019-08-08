@@ -21,12 +21,12 @@ func (f *Fuse) SetNamespace(newNamespace string) {
 	f.config["NAMESPACE"] = newNamespace
 }
 
-func (f *Fuse) GetURL() string {
-	return f.config["URL"]
+func (f *Fuse) GetHost() string {
+	return f.config["HOST"]
 }
 
-func (f *Fuse) SetURL(newURL string) {
-	f.config["URL"] = newURL
+func (f *Fuse) SetHost(newHost string) {
+	f.config["HOST"] = newHost
 }
 
 func (f *Fuse) Read() ProductConfig {
@@ -35,6 +35,14 @@ func (f *Fuse) Read() ProductConfig {
 
 func (f *Fuse) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductFuse
+}
+
+func (f *Fuse) GetProductVersion() v1alpha1.ProductVersion {
+	return v1alpha1.ProductVersion(f.config["VERSION"])
+}
+
+func (f *Fuse) SetProductVersion(newVersion string) {
+	f.config["VERSION"] = newVersion
 }
 
 func (f *Fuse) Validate() error {

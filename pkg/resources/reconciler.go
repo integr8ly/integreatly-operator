@@ -104,7 +104,6 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.I
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))
 	}
 
-	logrus.Debugf("installplan phase is %s", ip.Status.Phase)
 	if ip.Status.Phase != v1alpha12.InstallPlanPhaseComplete {
 		logrus.Infof("%s install plan is not complete yet ", t.Pkg)
 		return v1alpha1.PhaseInProgress, nil
