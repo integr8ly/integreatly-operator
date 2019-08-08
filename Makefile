@@ -20,6 +20,10 @@ setup/moq:
 	dep ensure
 	cd vendor/github.com/matryer/moq/ && go install .
 
+.PHONY: setup/dedicated
+setup/dedicated:
+	cd ./scripts && ./dedicated-setup.sh
+
 .PHONY: setup/travis
 setup/travis:
 	@echo Installing Operator SDK
