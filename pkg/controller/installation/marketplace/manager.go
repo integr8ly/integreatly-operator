@@ -58,7 +58,7 @@ type Target struct {
 	Namespace, Pkg, Channel string
 }
 
-func (m *MarketplaceManager) createAndWaitCatalogSourceConfig(ctx context.Context, owner ownerutil.Owner, t Target, os marketplacev1.OperatorSource, client pkgclient.Client, sub *coreosv1alpha1.Subscription) (string, error) {
+func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, os marketplacev1.OperatorSource, client pkgclient.Client) (string, error) {
 
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -118,7 +118,7 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient p
 	}
 	ownerutil.EnsureOwner(sub, owner)
 
-	csName, err := m.createAndWaitCatalogSourceConfig(ctx, owner, t, os, serverClient, sub)
+	csName, err := m.createAndWaitCatalogSource(ctx, owner, t, os, serverClient)
 	if err != nil {
 		return err
 	}
