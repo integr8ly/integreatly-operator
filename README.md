@@ -74,6 +74,21 @@ The username is `admin`, and the password can be retrieved by running:
 oc get dc sso -n integreatly-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'
 ```
 
+## Setting up your cluster to be OSD like
+
+To setup your cluster to have dedicated admins run the ```dedicated-setup.sh``` script
+```
+cd scripts
+./dedicated-setup.sh
+
+```
+
+If you want to remove the opertor run
+
+```bash
+cd scripts
+./dedicated-cleanup.sh
+```
 
 ## Deploying to a Cluster with OLM
 
