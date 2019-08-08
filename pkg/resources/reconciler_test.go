@@ -64,12 +64,14 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		ExpectErr        bool
 		ExpectedStatus   v1alpha1.StatusPhase
 		Installation     *v1alpha1.Installation
+		Target           marketplace.Target
 		Validate         func(t *testing.T, mock *marketplace.MarketplaceInterfaceMock)
 	}{
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+
 					return nil
 				},
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
@@ -80,20 +82,20 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			ExpectedStatus:   v1alpha1.PhaseCompleted,
 			Installation:     &v1alpha1.Installation{},
 			Validate: func(t *testing.T, mock *marketplace.MarketplaceInterfaceMock) {
-				if len(mock.CreateSubscriptionCalls()) != 1 {
-					t.Fatalf("expected create subscription to be called once but was called %v", len(mock.CreateSubscriptionCalls()))
+				if len(mock.InstallOperatorCalls()) != 1 {
+					t.Fatalf("expected create subscription to be called once but was called %v", len(mock.InstallOperatorCalls()))
 				}
 				if len(mock.GetSubscriptionInstallPlanCalls()) != 1 {
 					t.Fatalf("expected GetSubscriptionInstallPlanCalls to be called once but was called %v", len(mock.GetSubscriptionInstallPlanCalls()))
 				}
-
 			},
 		},
 		{
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
 			client: pkgclient.NewFakeClientWithScheme(buildScheme()),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+
 					return nil
 				},
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
@@ -107,8 +109,17 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			ExpectedStatus:   v1alpha1.PhaseAwaitingOperator,
 		},
 		{
-			Name:             "test reconcile subscription returns waiting for operator when catalog source config not ready",
-			client:           pkgclient.NewFakeClientWithScheme(buildScheme(), catalogSourceConfig),
+			Name: "test reconcile subscription returns waiting for operator when catalog source config not ready",
+			client: pkgclient.NewFakeClientWithScheme(buildScheme(), catalogSourceConfig, &alpha1.CatalogSourceList{
+				Items: []alpha1.CatalogSource{
+					alpha1.CatalogSource{
+						ObjectMeta: v12.ObjectMeta{
+							Name:      "test",
+							Namespace: "test-ns",
+						},
+					},
+				},
+			}),
 			SubscriptionName: "something",
 			ExpectedStatus:   v1alpha1.PhaseFailed,
 			FakeMPM:          marketplace.NewManager(),
@@ -122,7 +133,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			reconciler := NewReconciler(
 				tc.FakeMPM,
 			)
-			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, tc.SubscriptionName, "test-ns", tc.client)
+			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, tc.client)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}

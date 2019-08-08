@@ -2,9 +2,12 @@ package marketplace
 
 import (
 	"context"
+	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"time"
 
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	of "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
@@ -41,7 +44,7 @@ func GetOperatorSources() *operatorSources {
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	CreateSubscription(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	InstallOperator(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
 	GetSubscriptionInstallPlan(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
 }
 
@@ -51,73 +54,84 @@ func NewManager() *MarketplaceManager {
 	return &MarketplaceManager{}
 }
 
-func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
-	sub := &coreosv1alpha1.Subscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      pkg,
-		},
-	}
+type Target struct {
+	Namespace, Pkg, Channel string
+}
+
+func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, os marketplacev1.OperatorSource, client pkgclient.Client) (string, error) {
 
 	csc := &marketplacev1.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installed-" + os.Labels[providerLabel] + "-" + ns,
-			Namespace: "openshift-marketplace",
+			GenerateName: "installed-" + os.Labels[providerLabel] + "-" + t.Namespace + "-",
+			Namespace:    "openshift-marketplace",
+			Labels:       map[string]string{"integreatly": "true"},
 		},
 		Spec: marketplacev1.CatalogSourceConfigSpec{
 			DisplayName:     os.Spec.DisplayName,
 			Publisher:       os.Spec.Publisher,
-			Packages:        pkg,
-			TargetNamespace: ns,
+			Packages:        t.Pkg,
+			TargetNamespace: t.Namespace,
 		},
+	}
+	csList := &of.CatalogSourceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CatalogSourceList",
+			APIVersion: of.SchemeGroupVersion.String(),
+		},
+		ListMeta: metav1.ListMeta{},
 	}
 	ownerutil.EnsureOwner(csc, owner)
 
-	// check catalog source config status
-	cscErr := serverClient.Get(ctx, pkgclient.ObjectKey{Namespace: csc.Namespace, Name: csc.Name}, csc)
-	if cscErr != nil && !k8serr.IsNotFound(cscErr) {
-		return errors.Wrap(cscErr, "failed to get catalog source config "+csc.Name)
+	if err := client.List(ctx, &pkgclient.ListOptions{Namespace: t.Namespace}, csList); err != nil {
+		return "", err
 	}
-
-	if cscErr == nil && csc.Status.CurrentPhase.Name != "Succeeded" {
-		logrus.Infof("catalog source config %s is not ready yet message is %s phase is %s ", csc.Name, csc.Status.CurrentPhase.Message, csc.Status.CurrentPhase.Name)
-		return errors.New("catalog source config is not ready yet " + csc.Name + " will retry")
-	}
-	// If there is no subscription remove the catalog source config and recreate
-	_, err := m.getSubscription(ctx, serverClient, sub.Name, ns)
-	if err != nil && k8serr.IsNotFound(err) {
-		logrus.Infof("Subscription not found ")
-		// delete catalog source config
-		if err := serverClient.Delete(ctx, csc, func(options *pkgclient.DeleteOptions) {
-			gp := int64(0)
-			options.GracePeriodSeconds = &gp
-		}); err != nil && !k8serr.IsNotFound(err) {
-			return errors.Wrap(err, "failed to delete the catalog source config "+err.Error()+" \n")
+	// as each operator is the only that should be installed in that we assume the catalog source is present if more than 0 returned
+	if len(csList.Items) == 0 {
+		if err := client.Create(ctx, csc); err != nil {
+			return "", errors.Wrap(err, "failed to create catalog source config")
 		}
 	}
-
-	// recreate the catalog source config and the subscription
-	if k8serr.IsNotFound(cscErr) {
-		err = serverClient.Create(ctx, csc)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
-			logrus.Infof("error creating catalog source config: %s", err.Error())
-			return err
-		} else if err == nil {
-			logrus.Infof("catalog source config created")
-			// just created return and let it update
-			return nil
+	var catalogSourceName string
+	return catalogSourceName, wait.Poll(time.Second, time.Minute*5, func() (done bool, err error) {
+		err = client.List(ctx, &pkgclient.ListOptions{Namespace: t.Namespace}, csList)
+		if err == nil && len(csList.Items) > 0 {
+			catalogSourceName = csList.Items[0].Name
+			return true, nil
 		}
+		return false, err
+	})
+
+}
+
+func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+	sub := &coreosv1alpha1.Subscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: t.Namespace,
+			Name:      t.Pkg,
+		},
 	}
+	sub.Spec = &coreosv1alpha1.SubscriptionSpec{
+		InstallPlanApproval:    approvalStrategy,
+		Channel:                t.Channel,
+		Package:                t.Pkg,
+		CatalogSourceNamespace: t.Namespace,
+	}
+	ownerutil.EnsureOwner(sub, owner)
+
+	csName, err := m.createAndWaitCatalogSource(ctx, owner, t, os, serverClient)
+	if err != nil {
+		return err
+	}
+	sub.Spec.CatalogSource = csName
 
 	//catalog source is ready create the other stuff
-
-	og := &coreosv1.OperatorGroup{
+	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      ns + "-integreatly",
-			Labels:    map[string]string{"integreatly": pkg},
+			Namespace: t.Namespace,
+			Name:      t.Namespace + "-integreatly",
+			Labels:    map[string]string{"integreatly": t.Pkg},
 		},
-		Spec: coreosv1.OperatorGroupSpec{
+		Spec: v1.OperatorGroupSpec{
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
@@ -128,24 +142,15 @@ func (m *MarketplaceManager) CreateSubscription(ctx context.Context, serverClien
 		return err
 	}
 
-	sub.Spec = &coreosv1alpha1.SubscriptionSpec{
-		InstallPlanApproval:    approvalStrategy,
-		Channel:                channel,
-		Package:                pkg,
-		CatalogSource:          csc.Name,
-		CatalogSourceNamespace: ns,
-	}
-	ownerutil.EnsureOwner(sub, owner)
-	logrus.Infof("creating subscription in ns: %s", ns)
+	logrus.Infof("creating subscription in ns if it doesn't already exist: %s", t.Namespace)
 	err = serverClient.Create(ctx, sub)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating sub")
 		return err
 	}
 
-	logrus.Infof("no errors subscription ready")
-
 	return nil
+
 }
 
 func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {

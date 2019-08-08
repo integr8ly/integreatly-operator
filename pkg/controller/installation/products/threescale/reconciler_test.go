@@ -80,7 +80,8 @@ func TestThreeScale(t *testing.T) {
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlan{Status: operatorsv1alpha1.InstallPlanStatus{Phase: operatorsv1alpha1.InstallPlanPhaseComplete}}, nil, nil
 				},
-				CreateSubscriptionFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, ns string, pkg string, channel string, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+
 					return nil
 				},
 			},

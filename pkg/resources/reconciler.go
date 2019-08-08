@@ -3,11 +3,8 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	v13 "github.com/openshift/api/oauth/v1"
 	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
@@ -92,50 +89,27 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, subscriptionName, namespace string, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", subscriptionName, "integreatly", namespace)
-	err := r.mpm.CreateSubscription(
-		ctx,
-		client,
-		inst,
-		marketplace.GetOperatorSources().Integreatly,
-		namespace,
-		subscriptionName,
-		marketplace.IntegreatlyChannel,
-		[]string{namespace},
-		v1alpha12.ApprovalAutomatic)
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
+	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, v1alpha12.ApprovalAutomatic)
 	if err != nil && !errors2.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", namespace))
+		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
-	ip, sub, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, subscriptionName, namespace)
+	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, t.Pkg, t.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if errors2.IsNotFound(errors.Cause(err)) {
-			if sub != nil {
-				logrus.Infof("time since created %v", time.Now().Sub(sub.CreationTimestamp.Time).Seconds())
-			}
-			if sub != nil && time.Now().Sub(sub.CreationTimestamp.Time) > config.SubscriptionTimeout {
-				// delete subscription so it is recreated
-				logrus.Info("removing subscription as no install plan ready yet will recreate", sub.Name)
-				if err := client.Delete(ctx, sub, func(options *pkgclient.DeleteOptions) {
-					gp := int64(0)
-					options.GracePeriodSeconds = &gp
-				}); err != nil && !errors2.IsNotFound(err) {
-					return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to delete existing subscription "+subscriptionName)
-				}
-			}
-			logrus.Debugf(fmt.Sprintf("installplan resource is not found in namespace: %s", namespace))
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", namespace))
+		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))
 	}
 
 	logrus.Debugf("installplan phase is %s", ip.Status.Phase)
 	if ip.Status.Phase != v1alpha12.InstallPlanPhaseComplete {
-		logrus.Infof("%s install plan is not complete yet ", subscriptionName)
+		logrus.Infof("%s install plan is not complete yet ", t.Pkg)
 		return v1alpha1.PhaseInProgress, nil
 	}
-	logrus.Infof("%s install plan is complete. Installation ready ", subscriptionName)
+	logrus.Infof("%s install plan is complete. Installation ready ", t.Pkg)
 	return v1alpha1.PhaseCompleted, nil
 }
 
