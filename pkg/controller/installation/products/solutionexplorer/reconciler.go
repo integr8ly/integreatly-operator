@@ -21,13 +21,14 @@ import (
 )
 
 const (
-	defaultName          = "solution-explorer"
-	defaultSubNameAndPkg = "integreatly-solution-explorer"
-	defaultTemplateLoc   = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	param_openshift_host = "OPENSHIFT_HOST"
-	param_oauth_client   = "OPENSHIFT_OAUTHCLIENT_ID"
-	param_sso_route      = "SSO_ROUTE"
-	defaultRouteName     = "tutorial-web-app"
+	defaultName                = "solution-explorer"
+	defaultSubNameAndPkg       = "integreatly-solution-explorer"
+	defaultTemplateLoc         = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
+	param_openshift_host       = "OPENSHIFT_HOST"
+	param_openshift_oauth_host = "OPENSHIFT_OAUTH_HOST"
+	param_oauth_client         = "OPENSHIFT_OAUTHCLIENT_ID"
+	param_sso_route            = "SSO_ROUTE"
+	defaultRouteName           = "tutorial-web-app"
 )
 
 type Reconciler struct {
@@ -152,9 +153,10 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		Template: webapp.WebAppTemplate{
 			Path: defaultTemplateLoc,
 			Parameters: map[string]string{
-				param_oauth_client:   defaultSubNameAndPkg,
-				param_sso_route:      ssoConfig.GetHost(),
-				param_openshift_host: oauthURL,
+				param_oauth_client:         defaultSubNameAndPkg,
+				param_sso_route:            ssoConfig.GetHost(),
+				param_openshift_host:       inst.Spec.MasterURL,
+				param_openshift_oauth_host: oauthURL,
 			},
 		},
 	}
