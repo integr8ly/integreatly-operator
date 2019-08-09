@@ -16,6 +16,7 @@ import (
 
 	nexusv1 "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
+	usersv1 "github.com/openshift/api/user/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -47,5 +48,6 @@ func init() {
 		oauthv1.AddToScheme,
 		nexusv1.SchemeBuilder.AddToScheme,
 		rbacv1.SchemeBuilder.AddToScheme,
+		usersv1.SchemeBuilder.AddToScheme,
 	)
 }

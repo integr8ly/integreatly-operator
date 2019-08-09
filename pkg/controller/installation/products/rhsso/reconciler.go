@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
@@ -16,7 +17,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var (
@@ -29,6 +32,10 @@ var (
 	defaultSubscriptionName = "integreatly-rhsso"
 	idpAlias                = "openshift-v4"
 )
+
+var UpdateNoOp = func(existing runtime.Object) error {
+	return nil
+}
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
 	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
@@ -110,6 +117,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileOpenshiftUsers(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -146,7 +158,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly:                        true,
+			CreateOnly:                        false,
+			DeleteUsers:                       true,
 			BrowserRedirectorIdentityProvider: idpAlias,
 			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
 				ID:          keycloakRealmName,
@@ -163,9 +176,37 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		},
 	}
 	ownerutil.EnsureOwner(kcr, inst)
-	err = serverClient.Create(ctx, kcr)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create keycloak realm")
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, UpdateNoOp)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak realm")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Info("Reconciling openshift users to Keycloak")
+
+	kcr := &aerogearv1.KeycloakRealm{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakRealmName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	openshiftUsers := &usersv1.UserList{}
+	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
+		kcr := existing.(*aerogearv1.KeycloakRealm)
+		kcr.Spec.Users = syncronizeUserLists(kcr.Spec.Users, openshiftUsers.Items)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -243,7 +284,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
 	_, err := r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
 	if err != nil && k8serr.IsNotFound(err) {
-		oauthClient := &oauthv1.OAuthClient{
+		oauthc := &oauthv1.OAuthClient{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: oauthId,
 			},
@@ -253,7 +294,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 			},
 			GrantMethod: oauthv1.GrantHandlerPrompt,
 		}
-		_, err = r.oauthv1Client.OAuthClients().Create(oauthClient)
+		_, err = r.oauthv1Client.OAuthClients().Create(oauthc)
 		if err != nil {
 			return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
 		}
@@ -266,7 +307,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 			Alias:                     idpAlias,
 			ProviderID:                "openshift-v4",
 			Enabled:                   true,
-			TrustEmail:                false,
+			TrustEmail:                true,
 			StoreToken:                true,
 			AddReadTokenRoleOnCreate:  true,
 			FirstBrokerLoginFlowAlias: "first broker login",
@@ -292,5 +333,91 @@ func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, 
 			return true
 		}
 	}
+	return false
+}
+
+func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
+	var added []usersv1.User
+	for _, osUser := range openshiftUsers {
+		if !kcContainsOsUser(keycloakUsers, osUser) {
+			added = append(added, osUser)
+		}
+	}
+
+	var deleted []int
+	for i, kcUser := range keycloakUsers {
+		if kcUser.UserName != CustomerAdminUser.UserName && !OsUserInKc(openshiftUsers, kcUser) {
+			deleted = append(deleted, i)
+		}
+	}
+
+	return added, deleted
+}
+
+func syncronizeUserLists(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) []*aerogearv1.KeycloakUser {
+	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers)
+
+	var result []*aerogearv1.KeycloakUser
+	result = append(result, keycloakUsers...)
+
+	for _, index := range deletedIndexes {
+		result = remove(index, result)
+	}
+
+	for _, osUser := range added {
+		result = append(result, &aerogearv1.KeycloakUser{
+			KeycloakApiUser: &aerogearv1.KeycloakApiUser{
+				Enabled:       true,
+				Attributes:    aerogearv1.KeycloakAttributes{},
+				UserName:      osUser.Name,
+				EmailVerified: true,
+				Email:         osUser.Name + "@example.com",
+				ClientRoles: map[string][]string{
+					"account": {
+						"manage-account",
+						"view-profile",
+					},
+					"realm-management": {
+						"manage-users",
+						"manage-identity-providers",
+						"view-realm",
+					},
+				},
+			},
+			FederatedIdentities: []aerogearv1.FederatedIdentity{
+				{
+					IdentityProvider: "openshift-v4",
+					UserId:           string(osUser.UID),
+					UserName:         osUser.Name,
+				},
+			},
+		})
+	}
+
+	return result
+}
+
+func remove(index int, kcUsers []*aerogearv1.KeycloakUser) []*aerogearv1.KeycloakUser {
+	kcUsers[index] = kcUsers[len(kcUsers)-1]
+	return kcUsers[:len(kcUsers)-1]
+}
+
+func kcContainsOsUser(kcUsers []*aerogearv1.KeycloakUser, osUser usersv1.User) bool {
+	for _, kcu := range kcUsers {
+		if kcu.UserName == osUser.Name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func OsUserInKc(osUsers []usersv1.User, kcUser *aerogearv1.KeycloakUser) bool {
+	for _, osu := range osUsers {
+		if osu.Name == kcUser.UserName {
+			return true
+		}
+	}
+
 	return false
 }

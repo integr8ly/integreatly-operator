@@ -12,10 +12,13 @@ import (
 type ThreeScaleInterface interface {
 	SetNamespace(ns string)
 	AddSSOIntegration(data map[string]string, accessToken string) (*http.Response, error)
-	GetAdminUser(accessToken string) (*User, error)
+	GetUser(username, accessToken string) (*User, error)
 	GetUsers(accessToken string) (*Users, error)
 	AddUser(username string, email string, password string, accessToken string) (*http.Response, error)
-	UpdateAdminPortalUserDetails(username string, email string, accessToken string) (*http.Response, error)
+	DeleteUser(userId int, accessToken string) (*http.Response, error)
+	SetUserAsAdmin(userId int, accessToken string) (*http.Response, error)
+	SetUserAsMember(userId int, accessToken string) (*http.Response, error)
+	UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error)
 }
 
 type threeScaleClient struct {
@@ -54,14 +57,14 @@ func (tsc *threeScaleClient) AddSSOIntegration(data map[string]string, accessTok
 	return res, nil
 }
 
-func (tsc *threeScaleClient) GetAdminUser(accessToken string) (*User, error) {
+func (tsc *threeScaleClient) GetUser(username, accessToken string) (*User, error) {
 	users, err := tsc.GetUsers(accessToken)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, u := range users.Users {
-		if u.UserDetails.Role == "admin" {
+		if u.UserDetails.Username == username {
 			return u, nil
 		}
 	}
@@ -105,18 +108,71 @@ func (tsc *threeScaleClient) AddUser(username string, email string, password str
 	return res, nil
 }
 
-func (tsc *threeScaleClient) UpdateAdminPortalUserDetails(username string, email string, accessToken string) (*http.Response, error) {
-	tsAdmin, err := tsc.GetAdminUser(accessToken)
+func (tsc *threeScaleClient) DeleteUser(userId int, accessToken string) (*http.Response, error) {
+	data := make(map[string]string)
+	data["access_token"] = accessToken
+	reqData, err := json.Marshal(data)
+
+	req, err := http.NewRequest(
+		http.MethodDelete,
+		fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userId),
+		bytes.NewBuffer(reqData))
+	req.Header.Add("Content-type", "application/json")
+	res, err := tsc.httpc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
+	return res, nil
+}
+
+func (tsc *threeScaleClient) SetUserAsAdmin(userId int, accessToken string) (*http.Response, error) {
+	data, err := json.Marshal(map[string]string{
+		"access_token": accessToken,
+	})
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/admin.json", tsc.wildCardDomain, userId)
+	req, err := http.NewRequest(
+		"PUT",
+		url,
+		bytes.NewBuffer(data),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	res, err := tsc.httpc.Do(req)
+
+	return res, err
+}
+
+func (tsc *threeScaleClient) SetUserAsMember(userId int, accessToken string) (*http.Response, error) {
+	data, err := json.Marshal(map[string]string{
+		"access_token": accessToken,
+	})
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/member.json", tsc.wildCardDomain, userId)
+	req, err := http.NewRequest(
+		"PUT",
+		url,
+		bytes.NewBuffer(data),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	res, err := tsc.httpc.Do(req)
+
+	return res, err
+}
+
+func (tsc *threeScaleClient) UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error) {
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 		"username":     username,
 		"email":        email,
 	})
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, tsAdmin.UserDetails.Id)
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userId)
 	req, err := http.NewRequest(
 		"PUT",
 		url,

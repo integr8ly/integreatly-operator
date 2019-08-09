@@ -74,7 +74,8 @@ type KeycloakRealm struct {
 }
 
 type KeycloakRealmSpec struct {
-	CreateOnly bool `json:"createOnly,omitempty"`
+	CreateOnly  bool `json:"createOnly,omitempty"`
+	DeleteUsers bool `json:"deleteUsers,omitempty"`
 	// Alias of the Identity Provider that will be used to setup "Identity Provider Redirector" for browser based authentication
 	BrowserRedirectorIdentityProvider string `json:"browserRedirectorIdentityProvider,omitempty"`
 	*KeycloakApiRealm
@@ -131,8 +132,9 @@ type KeycloakIdentityProviderPair struct {
 
 type KeycloakUser struct {
 	*KeycloakApiUser
-	OutputSecret string  `json:"outputSecret, omitempty"`
-	Password     *string `json:"password, omitempty"`
+	OutputSecret        string              `json:"outputSecret, omitempty"`
+	Password            *string             `json:"password, omitempty"`
+	FederatedIdentities []FederatedIdentity `json:"federatedIdentities,omitempty"`
 }
 
 type KeycloakAttributes struct{}
@@ -150,6 +152,12 @@ type KeycloakApiUser struct {
 	ClientRoles     map[string][]string `json:"clientRoles"`
 	RequiredActions []string            `json:"requiredActions,omitempty"`
 	Groups          []string            `json:"groups,omitempty"`
+}
+
+type FederatedIdentity struct {
+	IdentityProvider string `json:"identityProvider,omitempty"`
+	UserId           string `json:"userId,omitempty"`
+	UserName         string `json:"userName,omitempty"`
 }
 
 type KeycloakUserPair struct {
