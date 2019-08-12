@@ -2,6 +2,7 @@ package fuse
 
 import (
 	"context"
+	v1 "github.com/openshift/api/apps/v1"
 	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
@@ -59,6 +60,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = syn.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.SchemeBuilder.AddToScheme(scheme)
+	err = v1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -312,7 +314,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), ns, route, secret),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -404,6 +406,26 @@ func getFuseCr(phase syn.SyndesisPhase) *syn.Syndesis {
 		},
 		Status: syn.SyndesisStatus{
 			Phase: phase,
+		},
+	}
+}
+
+func getFuseDC(ns string) *v1.DeploymentConfig {
+	return &v1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      "syndesis-oauthproxy",
+		},
+		Spec: v1.DeploymentConfigSpec{
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						corev1.Container{
+							Args: []string{"--openshift-sar={}"},
+						},
+					},
+				},
+			},
 		},
 	}
 }

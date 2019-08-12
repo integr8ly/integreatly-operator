@@ -3,8 +3,10 @@ package fuse
 import (
 	"context"
 	"fmt"
+	v13 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
 	v12 "k8s.io/api/core/v1"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -75,10 +77,44 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileOauthProxy(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
+}
+
+//TODO this should be removed once https://issues.jboss.org/browse/INTLY-2836 is implemented
+// We want to avoid this kind of thing as really this is owned by the syndesis operator
+func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	var dcName = "syndesis-oauthproxy"
+	dc := &v13.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      dcName,
+		},
+	}
+	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get dc for the oauth proxy "+dcName)
+	}
+
+	for i, a := range dc.Spec.Template.Spec.Containers[0].Args {
+		if strings.Contains(a, "--openshift-sar") {
+			args := dc.Spec.Template.Spec.Containers[0].Args
+			args[i] = args[0]
+			dc.Spec.Template.Spec.Containers[0].Args = args[1:]
+			break
+		}
+	}
+	if err := client.Update(ctx, dc); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update oauth proxy for fuse")
+	}
+
 	return v1alpha1.PhaseCompleted, nil
 }
 
