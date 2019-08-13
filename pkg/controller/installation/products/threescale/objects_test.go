@@ -7,6 +7,7 @@ import (
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
+	usersv1 "github.com/openshift/api/user/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,8 @@ var (
 	testRhssoNamespace = "test-rhsso"
 	testRhssoRealm     = "test-realm"
 	testRhssoURL       = "https://test.rhsso.url"
+	adminRole          = "admin"
+	memberRole         = "member"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{
@@ -58,6 +61,8 @@ var keycloakrealm = &aerogearv1.KeycloakRealm{
 		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
 			Users: []*aerogearv1.KeycloakUser{
 				rhsso.CustomerAdminUser,
+				rhssoTest1,
+				rhssoTest2,
 			},
 			Clients: []*aerogearv1.KeycloakClient{},
 		},
@@ -69,8 +74,8 @@ var threeScaleAdminDetailsSecret = &corev1.Secret{
 		Name: "system-seed",
 	},
 	Data: map[string][]byte{
-		"ADMIN_USER":  bytes.NewBufferString(threeScaleAdminUser.UserDetails.Username).Bytes(),
-		"ADMIN_EMAIL": bytes.NewBufferString(threeScaleAdminUser.UserDetails.Email).Bytes(),
+		"ADMIN_USER":  bytes.NewBufferString(threeScaleDefaultAdminUser.UserDetails.Username).Bytes(),
+		"ADMIN_EMAIL": bytes.NewBufferString(threeScaleDefaultAdminUser.UserDetails.Email).Bytes(),
 	},
 }
 
@@ -83,10 +88,35 @@ var threeScaleServiceDiscoveryConfigMap = &corev1.ConfigMap{
 	},
 }
 
-var threeScaleAdminUser = &User{
+var threeScaleDefaultAdminUser = &User{
 	UserDetails: UserDetails{
+		Id:       1,
 		Email:    "not" + rhsso.CustomerAdminUser.Email,
 		Username: "not" + rhsso.CustomerAdminUser.UserName,
+		Role:     adminRole,
+	},
+}
+
+var rhssoTest1 = &aerogearv1.KeycloakUser{
+	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
+		UserName: "test1",
+		Email:    "test1@example.com",
+	},
+}
+
+var rhssoTest2 = &aerogearv1.KeycloakUser{
+	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
+		UserName: "test2",
+		Email:    "test2@example.com",
+	},
+}
+
+var testDedicatedAdminsGroup = &usersv1.Group{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "dedicated-admins",
+	},
+	Users: []string{
+		rhssoTest1.UserName,
 	},
 }
 
@@ -113,7 +143,7 @@ var successfulTestAppsV1Objects = map[string]*appsv1.DeploymentConfig{
 	systemSidekiq.Name: &systemSidekiq,
 }
 
-var cm = &corev1.ConfigMap{
+var systemEnvConfigMap = &corev1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "system-environment",
 		Namespace: defaultInstallationNamespace,
@@ -126,7 +156,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
 	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
-	cm.Namespace = threeScaleInstallationNamepsace
+	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -135,6 +165,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		configManagerConfigMap,
 		threeScaleAdminDetailsSecret,
 		threeScaleServiceDiscoveryConfigMap,
-		cm,
+		systemEnvConfigMap,
+		testDedicatedAdminsGroup,
 	}
 }

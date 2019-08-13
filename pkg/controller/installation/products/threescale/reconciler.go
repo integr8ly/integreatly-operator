@@ -693,9 +693,9 @@ func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
 	return false
 }
 
-func tsContainsKc(osUsers []*User, kcUser *aerogearv1.KeycloakUser) bool {
-	for _, osu := range osUsers {
-		if osu.UserDetails.Username == kcUser.UserName {
+func tsContainsKc(tsusers []*User, kcUser *aerogearv1.KeycloakUser) bool {
+	for _, tsu := range tsusers {
+		if tsu.UserDetails.Username == kcUser.UserName {
 			return true
 		}
 	}

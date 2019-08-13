@@ -2,8 +2,11 @@ package threescale
 
 import (
 	"context"
+	"math/rand"
 	"net/http"
 
+	"errors"
+	"fmt"
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/client"
@@ -12,7 +15,9 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
 )
@@ -43,6 +48,17 @@ func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *clien
 			}
 			installPlanFor3ScaleSubscription.Namespace = obj.Namespace
 			return sigsFakeClient.GetSigsClient().Create(ctx, installPlanFor3ScaleSubscription)
+		case *marketplacev1.CatalogSourceConfig:
+			cs := &coreosv1alpha1.CatalogSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-catalogsource",
+					Namespace: obj.GetTargetNamespace(),
+				},
+			}
+			err := sigsFakeClient.GetSigsClient().Create(ctx, cs)
+			if err != nil {
+				return err
+			}
 		}
 
 		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
@@ -84,18 +100,71 @@ func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Cl
 }
 
 func getThreeScaleClient() *ThreeScaleInterfaceMock {
+	testUsers := &Users{
+		Users: []*User{
+			threeScaleDefaultAdminUser,
+		},
+	}
 	return &ThreeScaleInterfaceMock{
 		AddSSOIntegrationFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
 			return &http.Response{
 				StatusCode: http.StatusCreated,
 			}, nil
 		},
-		GetAdminUserFunc: func(accessToken string) (user *User, e error) {
-			return threeScaleAdminUser, nil
+		GetUsersFunc: func(accessToken string) (users *Users, e error) {
+			return testUsers, nil
 		},
-		UpdateAdminPortalUserDetailsFunc: func(username string, email string, accessToken string) (response *http.Response, e error) {
-			threeScaleAdminUser.UserDetails.Username = username
-			threeScaleAdminUser.UserDetails.Email = email
+		GetUserFunc: func(userName string, accessToken string) (user *User, e error) {
+			for _, user := range testUsers.Users {
+				if user.UserDetails.Username == userName {
+					return user, nil
+				}
+			}
+
+			return nil, errors.New(fmt.Sprintf("user %s not found", userName))
+		},
+		UpdateUserFunc: func(userId int, username string, email string, accessToken string) (response *http.Response, e error) {
+			if userId == threeScaleDefaultAdminUser.UserDetails.Id {
+				threeScaleDefaultAdminUser.UserDetails.Username = username
+				threeScaleDefaultAdminUser.UserDetails.Email = email
+				return &http.Response{
+					StatusCode: http.StatusOK,
+				}, nil
+			}
+
+			return &http.Response{
+				StatusCode: http.StatusBadRequest,
+			}, errors.New(fmt.Sprintf("Error updating 3scale admin user"))
+		},
+		AddUserFunc: func(username string, email string, password string, accessToken string) (response *http.Response, e error) {
+			testUsers.Users = append(testUsers.Users, &User{
+				UserDetails: UserDetails{
+					Role:     memberRole,
+					Id:       rand.Int(),
+					Username: username,
+					Email:    email,
+				},
+			})
+			return &http.Response{
+				StatusCode: http.StatusCreated,
+			}, nil
+		},
+		SetUserAsAdminFunc: func(userId int, accessToken string) (response *http.Response, e error) {
+			for _, user := range testUsers.Users {
+				if user.UserDetails.Id == userId {
+					user.UserDetails.Role = adminRole
+				}
+			}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+			}, nil
+		},
+		SetUserAsMemberFunc: func(userId int, accessToken string) (response *http.Response, e error) {
+			for _, user := range testUsers.Users {
+				if user.UserDetails.Id == userId {
+					user.UserDetails.Role = memberRole
+				}
+			}
 			return &http.Response{
 				StatusCode: http.StatusOK,
 			}, nil
