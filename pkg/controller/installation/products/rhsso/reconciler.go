@@ -7,6 +7,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -16,6 +17,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -83,6 +85,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sso",
+			Namespace: ns,
+		},
+	}
 }
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read

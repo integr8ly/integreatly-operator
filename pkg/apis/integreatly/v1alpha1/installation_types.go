@@ -8,6 +8,7 @@ type StatusPhase string
 type InstallationType string
 type ProductName string
 type ProductVersion string
+type PreflightStatus string
 
 var (
 	PhaseNone                 StatusPhase = ""
@@ -39,6 +40,10 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionNexus               ProductVersion = "3.16"
+
+	PreflightInProgress PreflightStatus = ""
+	PreflightSuccess    PreflightStatus = "successful"
+	PreflightFail       PreflightStatus = "failed"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -60,7 +65,9 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages map[string]*InstallationStageStatus `json:"stages"`
+	Stages           map[string]*InstallationStageStatus `json:"stages"`
+	PreflightStatus  PreflightStatus
+	PreflightMessage string
 }
 
 type InstallationStageStatus struct {

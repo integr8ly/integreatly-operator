@@ -6,12 +6,14 @@ package products
 import (
 	"context"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
 
 var (
-	lockInterfaceMockReconcile sync.RWMutex
+	lockInterfaceMockGetPreflightObject sync.RWMutex
+	lockInterfaceMockReconcile          sync.RWMutex
 )
 
 // Ensure, that InterfaceMock does implement Interface.
@@ -24,6 +26,9 @@ var _ Interface = &InterfaceMock{}
 //
 //         // make and configure a mocked Interface
 //         mockedInterface := &InterfaceMock{
+//             GetPreflightObjectFunc: func(ns string) runtime.Object {
+// 	               panic("mock out the GetPreflightObject method")
+//             },
 //             ReconcileFunc: func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
@@ -34,11 +39,19 @@ var _ Interface = &InterfaceMock{}
 //
 //     }
 type InterfaceMock struct {
+	// GetPreflightObjectFunc mocks the GetPreflightObject method.
+	GetPreflightObjectFunc func(ns string) runtime.Object
+
 	// ReconcileFunc mocks the Reconcile method.
 	ReconcileFunc func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// GetPreflightObject holds details about calls to the GetPreflightObject method.
+		GetPreflightObject []struct {
+			// Ns is the ns argument value.
+			Ns string
+		}
 		// Reconcile holds details about calls to the Reconcile method.
 		Reconcile []struct {
 			// Ctx is the ctx argument value.
@@ -51,6 +64,37 @@ type InterfaceMock struct {
 			ServerClient client.Client
 		}
 	}
+}
+
+// GetPreflightObject calls GetPreflightObjectFunc.
+func (mock *InterfaceMock) GetPreflightObject(ns string) runtime.Object {
+	if mock.GetPreflightObjectFunc == nil {
+		panic("InterfaceMock.GetPreflightObjectFunc: method is nil but Interface.GetPreflightObject was just called")
+	}
+	callInfo := struct {
+		Ns string
+	}{
+		Ns: ns,
+	}
+	lockInterfaceMockGetPreflightObject.Lock()
+	mock.calls.GetPreflightObject = append(mock.calls.GetPreflightObject, callInfo)
+	lockInterfaceMockGetPreflightObject.Unlock()
+	return mock.GetPreflightObjectFunc(ns)
+}
+
+// GetPreflightObjectCalls gets all the calls that were made to GetPreflightObject.
+// Check the length with:
+//     len(mockedInterface.GetPreflightObjectCalls())
+func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
+	Ns string
+} {
+	var calls []struct {
+		Ns string
+	}
+	lockInterfaceMockGetPreflightObject.RLock()
+	calls = mock.calls.GetPreflightObject
+	lockInterfaceMockGetPreflightObject.RUnlock()
+	return calls
 }
 
 // Reconcile calls ReconcileFunc.

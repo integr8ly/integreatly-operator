@@ -3,9 +3,10 @@ package fuse
 import (
 	"context"
 	"fmt"
-	v13 "github.com/openshift/api/apps/v1"
+	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
 	v12 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -60,6 +61,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-server",
+			Namespace: ns,
+		},
+	}
+}
+
 // Reconcile reads that state of the cluster for fuse and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -93,7 +103,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 // We want to avoid this kind of thing as really this is owned by the syndesis operator
 func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	var dcName = "syndesis-oauthproxy"
-	dc := &v13.DeploymentConfig{
+	dc := &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      dcName,

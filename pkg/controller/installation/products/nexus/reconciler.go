@@ -2,6 +2,8 @@ package nexus
 
 import (
 	"context"
+	v12 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	nexus "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -54,6 +56,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &v12.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nexus-operator",
+			Namespace: ns,
+		},
+	}
 }
 
 // Reconcile reads that state of the cluster for nexus and makes changes based on the state read

@@ -5,10 +5,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	pkgerr "github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"os"
@@ -111,10 +114,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, nil
 	}
 
-	if instance.Status.Stages == nil {
-		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
-	}
-
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -128,6 +127,17 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	// either not checked, or rechecking preflight checks
+	if instance.Status.PreflightStatus == v1alpha1.PreflightInProgress ||
+		instance.Status.PreflightStatus == v1alpha1.PreflightFail {
+		return r.preflightChecks(instance, installType, configManager)
+	}
+
+	if instance.Status.Stages == nil {
+		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
+	}
+
 	for _, stage := range installType.GetStages() {
 		stageStatus, ok := instance.Status.Stages[stage.Name]
 		if !ok {
@@ -190,6 +200,81 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}, nil
 }
 
+func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
+	result := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: time.Second * 10,
+	}
+	requiredSecrets := []string{"s3-credentials", "s3-bucket"}
+	for _, secretName := range requiredSecrets {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: installation.Namespace,
+			},
+		}
+		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
+			return result, err
+		} else if !exists {
+			installation.Status.PreflightStatus = v1alpha1.PreflightFail
+			installation.Status.PreflightMessage = "Could not find " + secret.Name + " secret in integreatly-operator namespace: " + installation.Namespace
+			_ = r.client.Status().Update(r.context, installation)
+			return result, err
+		}
+	}
+
+	namespaces := &corev1.NamespaceList{}
+	err := r.client.List(r.context, &client.ListOptions{}, namespaces)
+	if err != nil {
+		// could not list namespaces, keep trying
+		logrus.Infof("error listing namespaces, will retry")
+		return result, err
+	}
+
+	for _, ns := range namespaces.Items {
+		products, err := r.checkNamespaceForProducts(ns, installation, installationType, configManager)
+		if err != nil {
+			// error searching for existing products, keep trying
+			logrus.Infof("error looking for existing deployments, will retry")
+			return result, err
+		}
+		if len(products) != 0 {
+			//found one or more conflicting products
+			installation.Status.PreflightStatus = v1alpha1.PreflightFail
+			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
+			logrus.Infof("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
+			_ = r.client.Status().Update(r.context, installation)
+			return result, err
+		}
+	}
+
+	installation.Status.PreflightStatus = v1alpha1.PreflightSuccess
+	installation.Status.PreflightMessage = "preflight checks passed"
+	_ = r.client.Status().Update(r.context, installation)
+	return result, nil
+}
+
+func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
+	foundProducts := []string{}
+	// new client to avoid caching issues
+	serverClient, _ := client.New(r.restConfig, client.Options{})
+	for _, stage := range installationType.Stages {
+		for _, product := range stage.Products {
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation)
+			if err != nil {
+				return foundProducts, err
+			}
+			search := reconciler.GetPreflightObject(ns.Name)
+			exists, err := resources.Exists(r.context, serverClient, search)
+			if err != nil {
+				return foundProducts, err
+			} else if exists {
+				foundProducts = append(foundProducts, string(product.Name))
+			}
+		}
+	}
+	return foundProducts, nil
+}
 func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *v1alpha1.InstallationStageStatus, configManager config.ConfigReadWriter) error {
 	incompleteStage := false
 	var merr error
