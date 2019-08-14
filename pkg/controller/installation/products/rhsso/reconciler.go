@@ -40,17 +40,7 @@ var CustomerAdminUser = &aerogearv1.KeycloakUser{
 		UserName:      "customer-admin",
 		EmailVerified: true,
 		Email:         "customer-admin@example.com",
-		ClientRoles: map[string][]string{
-			"account": {
-				"manage-account",
-				"view-profile",
-			},
-			"realm-management": {
-				"manage-users",
-				"manage-identity-providers",
-				"view-realm",
-			},
-		},
+		ClientRoles:   getKeycloakRoles(true),
 	},
 	Password:     &customerAdminPassword,
 	OutputSecret: "customer-admin-user-credentials",
@@ -155,6 +145,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		kcr.Spec.CreateOnly = false
 		kcr.Spec.DeleteUsers = true
 		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
+
 		if kcr.Spec.KeycloakApiRealm == nil {
 			kcr.Spec.KeycloakApiRealm = &aerogearv1.KeycloakApiRealm{}
 		}
@@ -165,16 +156,16 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		kcr.Spec.EventsListeners = []string{
 			"metrics-listener",
 		}
+
 		if kcr.Spec.Users == nil {
 			kcr.Spec.Users = []*aerogearv1.KeycloakUser{CustomerAdminUser}
 		}
-
-		openshiftUsers := &usersv1.UserList{}
-		err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+		users, err := syncronizeWithOpenshiftUsers(kcr.Spec.Users, ctx, serverClient)
 		if err != nil {
 			return err
 		}
-		kcr.Spec.Users = syncronizeUserLists(kcr.Spec.Users, openshiftUsers.Items)
+		kcr.Spec.Users = users
+
 		return nil
 	})
 	if err != nil {
@@ -327,43 +318,30 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 	return added, deleted
 }
 
-func syncronizeUserLists(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) []*aerogearv1.KeycloakUser {
-	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers)
-
-	if len(added) == 0 && len(deletedIndexes) == 0 {
-		return keycloakUsers
+func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient pkgclient.Client) ([]*aerogearv1.KeycloakUser, error) {
+	openshiftUsers := &usersv1.UserList{}
+	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	if err != nil {
+		return nil, err
 	}
-
-	var result []*aerogearv1.KeycloakUser
-	result = append(result, keycloakUsers...)
+	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers.Items)
 
 	for _, index := range deletedIndexes {
-		result = remove(index, result)
+		keycloakUsers = remove(index, keycloakUsers)
 	}
 
 	for _, osUser := range added {
-		result = append(result, &aerogearv1.KeycloakUser{
+		keycloakUsers = append(keycloakUsers, &aerogearv1.KeycloakUser{
 			KeycloakApiUser: &aerogearv1.KeycloakApiUser{
 				Enabled:       true,
 				Attributes:    aerogearv1.KeycloakAttributes{},
 				UserName:      osUser.Name,
 				EmailVerified: true,
 				Email:         osUser.Name + "@example.com",
-				ClientRoles: map[string][]string{
-					"account": {
-						"manage-account",
-						"view-profile",
-					},
-					"realm-management": {
-						"manage-users",
-						"manage-identity-providers",
-						"view-realm",
-					},
-				},
 			},
 			FederatedIdentities: []aerogearv1.FederatedIdentity{
 				{
-					IdentityProvider: "openshift-v4",
+					IdentityProvider: idpAlias,
 					UserId:           string(osUser.UID),
 					UserName:         osUser.Name,
 				},
@@ -371,7 +349,20 @@ func syncronizeUserLists(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUser
 		})
 	}
 
-	return result
+	openshiftAdminGroup := &usersv1.Group{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return nil, err
+	}
+	for _, kcUser := range keycloakUsers {
+		if kcUser.UserName == CustomerAdminUser.UserName {
+			continue
+		}
+
+		kcUser.ClientRoles = getKeycloakRoles(isOpenshiftAdmin(kcUser, openshiftAdminGroup))
+	}
+
+	return keycloakUsers, nil
 }
 
 func remove(index int, kcUsers []*aerogearv1.KeycloakUser) []*aerogearv1.KeycloakUser {
@@ -397,4 +388,32 @@ func OsUserInKc(osUsers []usersv1.User, kcUser *aerogearv1.KeycloakUser) bool {
 	}
 
 	return false
+}
+
+func isOpenshiftAdmin(kcUser *aerogearv1.KeycloakUser, adminGroup *usersv1.Group) bool {
+	for _, name := range adminGroup.Users {
+		if kcUser.UserName == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getKeycloakRoles(isAdmin bool) map[string][]string {
+	roles := map[string][]string{
+		"account": {
+			"manage-account",
+			"view-profile",
+		},
+	}
+	if isAdmin {
+		roles["realm-management"] = []string{
+			"manage-users",
+			"manage-identity-providers",
+			"view-realm",
+		}
+	}
+
+	return roles
 }
