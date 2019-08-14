@@ -41,6 +41,7 @@ var (
 	ProductNexus               ProductName = "nexus"
 	ProductLauncher            ProductName = "launcher"
 	ProductUps                 ProductName = "ups"
+	ProductMonitoring          ProductName = "monitoring"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded

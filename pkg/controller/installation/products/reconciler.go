@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -83,6 +84,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		}
 
 		reconciler, err = launcher.NewReconciler(configManager, instance, appsv1, mpm)
+	case v1alpha1.ProductMonitoring:
+		reconciler, err = monitoring.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

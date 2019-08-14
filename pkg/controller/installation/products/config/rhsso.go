@@ -52,6 +52,7 @@ func (r *RHSSO) GetProductVersion() v1alpha1.ProductVersion {
 func (r *RHSSO) SetProductVersion(version string) {
 	r.Config["VERSION"] = version
 }
+
 func (r *RHSSO) Validate() error {
 	if r.GetProductName() == "" {
 		return errors.New("config product name is not defined")
