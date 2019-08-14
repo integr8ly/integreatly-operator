@@ -9,15 +9,17 @@ import (
 )
 
 var (
-	lockThreeScaleInterfaceMockAddSSOIntegration sync.RWMutex
-	lockThreeScaleInterfaceMockAddUser           sync.RWMutex
-	lockThreeScaleInterfaceMockDeleteUser        sync.RWMutex
-	lockThreeScaleInterfaceMockGetUser           sync.RWMutex
-	lockThreeScaleInterfaceMockGetUsers          sync.RWMutex
-	lockThreeScaleInterfaceMockSetNamespace      sync.RWMutex
-	lockThreeScaleInterfaceMockSetUserAsAdmin    sync.RWMutex
-	lockThreeScaleInterfaceMockSetUserAsMember   sync.RWMutex
-	lockThreeScaleInterfaceMockUpdateUser        sync.RWMutex
+	lockThreeScaleInterfaceMockAddAuthenticationProvider       sync.RWMutex
+	lockThreeScaleInterfaceMockAddUser                         sync.RWMutex
+	lockThreeScaleInterfaceMockDeleteUser                      sync.RWMutex
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName sync.RWMutex
+	lockThreeScaleInterfaceMockGetAuthenticationProviders      sync.RWMutex
+	lockThreeScaleInterfaceMockGetUser                         sync.RWMutex
+	lockThreeScaleInterfaceMockGetUsers                        sync.RWMutex
+	lockThreeScaleInterfaceMockSetNamespace                    sync.RWMutex
+	lockThreeScaleInterfaceMockSetUserAsAdmin                  sync.RWMutex
+	lockThreeScaleInterfaceMockSetUserAsMember                 sync.RWMutex
+	lockThreeScaleInterfaceMockUpdateUser                      sync.RWMutex
 )
 
 // Ensure, that ThreeScaleInterfaceMock does implement ThreeScaleInterface.
@@ -30,14 +32,20 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 //
 //         // make and configure a mocked ThreeScaleInterface
 //         mockedThreeScaleInterface := &ThreeScaleInterfaceMock{
-//             AddSSOIntegrationFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
-// 	               panic("mock out the AddSSOIntegration method")
+//             AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (*http.Response, error) {
+// 	               panic("mock out the AddAuthenticationProvider method")
 //             },
 //             AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the AddUser method")
 //             },
 //             DeleteUserFunc: func(userId int, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the DeleteUser method")
+//             },
+//             GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
+// 	               panic("mock out the GetAuthenticationProviderByName method")
+//             },
+//             GetAuthenticationProvidersFunc: func(accessToken string) (*AuthProviders, error) {
+// 	               panic("mock out the GetAuthenticationProviders method")
 //             },
 //             GetUserFunc: func(username string, accessToken string) (*User, error) {
 // 	               panic("mock out the GetUser method")
@@ -64,14 +72,20 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 //
 //     }
 type ThreeScaleInterfaceMock struct {
-	// AddSSOIntegrationFunc mocks the AddSSOIntegration method.
-	AddSSOIntegrationFunc func(data map[string]string, accessToken string) (*http.Response, error)
+	// AddAuthenticationProviderFunc mocks the AddAuthenticationProvider method.
+	AddAuthenticationProviderFunc func(data map[string]string, accessToken string) (*http.Response, error)
 
 	// AddUserFunc mocks the AddUser method.
 	AddUserFunc func(username string, email string, password string, accessToken string) (*http.Response, error)
 
 	// DeleteUserFunc mocks the DeleteUser method.
 	DeleteUserFunc func(userId int, accessToken string) (*http.Response, error)
+
+	// GetAuthenticationProviderByNameFunc mocks the GetAuthenticationProviderByName method.
+	GetAuthenticationProviderByNameFunc func(name string, accessToken string) (*AuthProvider, error)
+
+	// GetAuthenticationProvidersFunc mocks the GetAuthenticationProviders method.
+	GetAuthenticationProvidersFunc func(accessToken string) (*AuthProviders, error)
 
 	// GetUserFunc mocks the GetUser method.
 	GetUserFunc func(username string, accessToken string) (*User, error)
@@ -93,8 +107,8 @@ type ThreeScaleInterfaceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// AddSSOIntegration holds details about calls to the AddSSOIntegration method.
-		AddSSOIntegration []struct {
+		// AddAuthenticationProvider holds details about calls to the AddAuthenticationProvider method.
+		AddAuthenticationProvider []struct {
 			// Data is the data argument value.
 			Data map[string]string
 			// AccessToken is the accessToken argument value.
@@ -115,6 +129,18 @@ type ThreeScaleInterfaceMock struct {
 		DeleteUser []struct {
 			// UserId is the userId argument value.
 			UserId int
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+		}
+		// GetAuthenticationProviderByName holds details about calls to the GetAuthenticationProviderByName method.
+		GetAuthenticationProviderByName []struct {
+			// Name is the name argument value.
+			Name string
+			// AccessToken is the accessToken argument value.
+			AccessToken string
+		}
+		// GetAuthenticationProviders holds details about calls to the GetAuthenticationProviders method.
+		GetAuthenticationProviders []struct {
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
@@ -163,10 +189,10 @@ type ThreeScaleInterfaceMock struct {
 	}
 }
 
-// AddSSOIntegration calls AddSSOIntegrationFunc.
-func (mock *ThreeScaleInterfaceMock) AddSSOIntegration(data map[string]string, accessToken string) (*http.Response, error) {
-	if mock.AddSSOIntegrationFunc == nil {
-		panic("ThreeScaleInterfaceMock.AddSSOIntegrationFunc: method is nil but ThreeScaleInterface.AddSSOIntegration was just called")
+// AddAuthenticationProvider calls AddAuthenticationProviderFunc.
+func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]string, accessToken string) (*http.Response, error) {
+	if mock.AddAuthenticationProviderFunc == nil {
+		panic("ThreeScaleInterfaceMock.AddAuthenticationProviderFunc: method is nil but ThreeScaleInterface.AddAuthenticationProvider was just called")
 	}
 	callInfo := struct {
 		Data        map[string]string
@@ -175,16 +201,16 @@ func (mock *ThreeScaleInterfaceMock) AddSSOIntegration(data map[string]string, a
 		Data:        data,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockAddSSOIntegration.Lock()
-	mock.calls.AddSSOIntegration = append(mock.calls.AddSSOIntegration, callInfo)
-	lockThreeScaleInterfaceMockAddSSOIntegration.Unlock()
-	return mock.AddSSOIntegrationFunc(data, accessToken)
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.Lock()
+	mock.calls.AddAuthenticationProvider = append(mock.calls.AddAuthenticationProvider, callInfo)
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.Unlock()
+	return mock.AddAuthenticationProviderFunc(data, accessToken)
 }
 
-// AddSSOIntegrationCalls gets all the calls that were made to AddSSOIntegration.
+// AddAuthenticationProviderCalls gets all the calls that were made to AddAuthenticationProvider.
 // Check the length with:
-//     len(mockedThreeScaleInterface.AddSSOIntegrationCalls())
-func (mock *ThreeScaleInterfaceMock) AddSSOIntegrationCalls() []struct {
+//     len(mockedThreeScaleInterface.AddAuthenticationProviderCalls())
+func (mock *ThreeScaleInterfaceMock) AddAuthenticationProviderCalls() []struct {
 	Data        map[string]string
 	AccessToken string
 } {
@@ -192,9 +218,9 @@ func (mock *ThreeScaleInterfaceMock) AddSSOIntegrationCalls() []struct {
 		Data        map[string]string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockAddSSOIntegration.RLock()
-	calls = mock.calls.AddSSOIntegration
-	lockThreeScaleInterfaceMockAddSSOIntegration.RUnlock()
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.RLock()
+	calls = mock.calls.AddAuthenticationProvider
+	lockThreeScaleInterfaceMockAddAuthenticationProvider.RUnlock()
 	return calls
 }
 
@@ -273,6 +299,72 @@ func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
 	lockThreeScaleInterfaceMockDeleteUser.RLock()
 	calls = mock.calls.DeleteUser
 	lockThreeScaleInterfaceMockDeleteUser.RUnlock()
+	return calls
+}
+
+// GetAuthenticationProviderByName calls GetAuthenticationProviderByNameFunc.
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string, accessToken string) (*AuthProvider, error) {
+	if mock.GetAuthenticationProviderByNameFunc == nil {
+		panic("ThreeScaleInterfaceMock.GetAuthenticationProviderByNameFunc: method is nil but ThreeScaleInterface.GetAuthenticationProviderByName was just called")
+	}
+	callInfo := struct {
+		Name        string
+		AccessToken string
+	}{
+		Name:        name,
+		AccessToken: accessToken,
+	}
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Lock()
+	mock.calls.GetAuthenticationProviderByName = append(mock.calls.GetAuthenticationProviderByName, callInfo)
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Unlock()
+	return mock.GetAuthenticationProviderByNameFunc(name, accessToken)
+}
+
+// GetAuthenticationProviderByNameCalls gets all the calls that were made to GetAuthenticationProviderByName.
+// Check the length with:
+//     len(mockedThreeScaleInterface.GetAuthenticationProviderByNameCalls())
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []struct {
+	Name        string
+	AccessToken string
+} {
+	var calls []struct {
+		Name        string
+		AccessToken string
+	}
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RLock()
+	calls = mock.calls.GetAuthenticationProviderByName
+	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RUnlock()
+	return calls
+}
+
+// GetAuthenticationProviders calls GetAuthenticationProvidersFunc.
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken string) (*AuthProviders, error) {
+	if mock.GetAuthenticationProvidersFunc == nil {
+		panic("ThreeScaleInterfaceMock.GetAuthenticationProvidersFunc: method is nil but ThreeScaleInterface.GetAuthenticationProviders was just called")
+	}
+	callInfo := struct {
+		AccessToken string
+	}{
+		AccessToken: accessToken,
+	}
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.Lock()
+	mock.calls.GetAuthenticationProviders = append(mock.calls.GetAuthenticationProviders, callInfo)
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.Unlock()
+	return mock.GetAuthenticationProvidersFunc(accessToken)
+}
+
+// GetAuthenticationProvidersCalls gets all the calls that were made to GetAuthenticationProviders.
+// Check the length with:
+//     len(mockedThreeScaleInterface.GetAuthenticationProvidersCalls())
+func (mock *ThreeScaleInterfaceMock) GetAuthenticationProvidersCalls() []struct {
+	AccessToken string
+} {
+	var calls []struct {
+		AccessToken string
+	}
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.RLock()
+	calls = mock.calls.GetAuthenticationProviders
+	lockThreeScaleInterfaceMockGetAuthenticationProviders.RUnlock()
 	return calls
 }
 

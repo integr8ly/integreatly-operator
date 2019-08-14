@@ -3,7 +3,6 @@ package threescale
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 )
@@ -11,7 +10,9 @@ import (
 //go:generate moq -out three_scale_moq.go . ThreeScaleInterface
 type ThreeScaleInterface interface {
 	SetNamespace(ns string)
-	AddSSOIntegration(data map[string]string, accessToken string) (*http.Response, error)
+	AddAuthenticationProvider(data map[string]string, accessToken string) (*http.Response, error)
+	GetAuthenticationProviders(accessToken string) (*AuthProviders, error)
+	GetAuthenticationProviderByName(name string, accessToken string) (*AuthProvider, error)
 	GetUser(username, accessToken string) (*User, error)
 	GetUsers(accessToken string) (*Users, error)
 	AddUser(username string, email string, password string, accessToken string) (*http.Response, error)
@@ -20,6 +21,11 @@ type ThreeScaleInterface interface {
 	SetUserAsMember(userId int, accessToken string) (*http.Response, error)
 	UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error)
 }
+
+const (
+	adminRole  = "admin"
+	memberRole = "member"
+)
 
 type threeScaleClient struct {
 	httpc          *http.Client
@@ -38,7 +44,7 @@ func (tsc *threeScaleClient) SetNamespace(ns string) {
 	tsc.ns = ns
 }
 
-func (tsc *threeScaleClient) AddSSOIntegration(data map[string]string, accessToken string) (*http.Response, error) {
+func (tsc *threeScaleClient) AddAuthenticationProvider(data map[string]string, accessToken string) (*http.Response, error) {
 	data["access_token"] = accessToken
 	reqData, err := json.Marshal(data)
 	if err != nil {
@@ -57,6 +63,38 @@ func (tsc *threeScaleClient) AddSSOIntegration(data map[string]string, accessTok
 	return res, nil
 }
 
+func (tsc *threeScaleClient) GetAuthenticationProviders(accessToken string) (*AuthProviders, error) {
+	res, err := tsc.httpc.Get(
+		fmt.Sprintf("https://3scale-admin.%s/admin/api/account/authentication_providers.json?access_token=%s", tsc.wildCardDomain, accessToken),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	authProviders := &AuthProviders{}
+	err = json.NewDecoder(res.Body).Decode(authProviders)
+	if err != nil {
+		return nil, err
+	}
+
+	return authProviders, nil
+}
+
+func (tsc *threeScaleClient) GetAuthenticationProviderByName(name string, accessToken string) (*AuthProvider, error) {
+	authProviders, err := tsc.GetAuthenticationProviders(accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ap := range authProviders.AuthProviders {
+		if ap.ProviderDetails.Name == name {
+			return ap, nil
+		}
+	}
+
+	return nil, &tsError{message: "Authprovider not found", StatusCode: http.StatusNotFound}
+}
+
 func (tsc *threeScaleClient) GetUser(username, accessToken string) (*User, error) {
 	users, err := tsc.GetUsers(accessToken)
 	if err != nil {
@@ -69,7 +107,7 @@ func (tsc *threeScaleClient) GetUser(username, accessToken string) (*User, error
 		}
 	}
 
-	return nil, errors.New("3Scale admin user not found")
+	return nil, &tsError{message: "User not found", StatusCode: http.StatusNotFound}
 }
 
 func (tsc *threeScaleClient) GetUsers(accessToken string) (*Users, error) {

@@ -34,6 +34,7 @@ const (
 	clientSecret                 = "placeholder" // this should be replaced in INTLY-2784
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
+	rhssoIntegrationName         = "rhsso"
 )
 
 var (
@@ -362,19 +363,25 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
-	res, err := r.tsClient.AddSSOIntegration(map[string]string{
-		"kind":                              "keycloak",
-		"name":                              "rhsso",
-		"client_id":                         clientId,
-		"client_secret":                     clientSecret,
-		"site":                              site,
-		"skip_ssl_certificate_verification": "true",
-		"published":                         "true",
-	}, *accessToken)
 
-	if err != nil || res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusUnprocessableEntity {
+	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
+	if err != nil && !tsIsNotFoundError(err) {
 		return v1alpha1.PhaseFailed, err
+	}
+	if tsIsNotFoundError(err) {
+		site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
+		res, err := r.tsClient.AddAuthenticationProvider(map[string]string{
+			"kind":                              "keycloak",
+			"name":                              rhssoIntegrationName,
+			"client_id":                         clientId,
+			"client_secret":                     clientSecret,
+			"site":                              site,
+			"skip_ssl_certificate_verification": "true",
+			"published":                         "true",
+		}, *accessToken)
+		if err != nil || res.StatusCode != http.StatusCreated {
+			return v1alpha1.PhaseFailed, err
+		}
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -474,7 +481,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 		}
 
 		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
-		if err != nil || res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusUnprocessableEntity {
+		if err != nil || res.StatusCode != http.StatusCreated {
 			return v1alpha1.PhaseFailed, err
 		}
 	}
@@ -499,12 +506,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 			continue
 		}
 
-		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) {
+		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
 			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return v1alpha1.PhaseFailed, err
 			}
-		} else {
+		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole {
 			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return v1alpha1.PhaseFailed, err

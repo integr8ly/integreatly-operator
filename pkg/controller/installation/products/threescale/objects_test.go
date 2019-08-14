@@ -18,8 +18,6 @@ var (
 	testRhssoNamespace = "test-rhsso"
 	testRhssoRealm     = "test-realm"
 	testRhssoURL       = "https://test.rhsso.url"
-	adminRole          = "admin"
-	memberRole         = "member"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{

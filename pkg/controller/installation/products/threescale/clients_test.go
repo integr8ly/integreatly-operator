@@ -105,11 +105,37 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			threeScaleDefaultAdminUser,
 		},
 	}
+	testAuthProviders := &AuthProviders{
+		AuthProviders: []*AuthProvider{},
+	}
 	return &ThreeScaleInterfaceMock{
-		AddSSOIntegrationFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
+		AddAuthenticationProviderFunc: func(data map[string]string, accessToken string) (response *http.Response, e error) {
+			testAuthProviders.AuthProviders = append(testAuthProviders.AuthProviders, &AuthProvider{
+				ProviderDetails: AuthProviderDetails{
+					Kind:                           data["kind"],
+					Name:                           data["name"],
+					ClientId:                       data["client_id"],
+					ClientSecret:                   data["client_secret"],
+					Site:                           data["site"],
+					SkipSSLCertificateVerification: data["skip_ssl_certificate_verification"] == "true",
+					Published:                      data["published"] == "true",
+				},
+			})
 			return &http.Response{
 				StatusCode: http.StatusCreated,
 			}, nil
+		},
+		GetAuthenticationProvidersFunc: func(accessToken string) (providers *AuthProviders, e error) {
+			return testAuthProviders, nil
+		},
+		GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (provider *AuthProvider, e error) {
+			for _, ap := range testAuthProviders.AuthProviders {
+				if ap.ProviderDetails.Name == name {
+					return ap, nil
+				}
+			}
+
+			return nil, &tsError{message: "Authprovider not found", StatusCode: http.StatusNotFound}
 		},
 		GetUsersFunc: func(accessToken string) (users *Users, e error) {
 			return testUsers, nil

@@ -24,6 +24,7 @@ func assertNoop(ThreeScaleTestScenario, *config.Manager) error {
 
 func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManager *config.Manager) error {
 	ctx := context.TODO()
+	accessToken := "test123"
 	fakeSigsClient := scenario.FakeSigsClient
 	installation := scenario.Installation
 	fakeThreeScaleClient := scenario.FakeThreeScaleClient
@@ -76,14 +77,20 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if !containsClient(kcr.Spec.Clients, clientId) {
 		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
 	}
-	integrationCall := fakeThreeScaleClient.AddSSOIntegrationCalls()[0]
-	if integrationCall.Data["client_id"] != clientId || integrationCall.Data["site"] != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
+	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)
+	if tsIsNotFoundError(err) {
+		return errors.New(fmt.Sprintf("SSO integration was not created"))
+	}
+	if authProvider.ProviderDetails.ClientId != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
 		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
 	}
 
 	// RHSSO CustomerAdmin admin user should be set as the default 3scale admin
-	updateAdminCall := fakeThreeScaleClient.UpdateUserCalls()[0]
-	if updateAdminCall.Username != rhsso.CustomerAdminUser.UserName || updateAdminCall.Email != rhsso.CustomerAdminUser.Email {
+	defaultAdminUser, err := fakeThreeScaleClient.GetUser(rhsso.CustomerAdminUser.UserName, accessToken)
+	if err != nil {
+		return err
+	}
+	if defaultAdminUser.UserDetails.Email != rhsso.CustomerAdminUser.Email {
 		return errors.New(fmt.Sprintf("Request to 3scale API to update admin details was incorrect"))
 	}
 	adminSecret := &corev1.Secret{}
