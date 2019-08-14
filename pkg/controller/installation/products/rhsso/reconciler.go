@@ -33,10 +33,6 @@ var (
 	idpAlias                = "openshift-v4"
 )
 
-var UpdateNoOp = func(existing runtime.Object) error {
-	return nil
-}
-
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
 	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
 		Enabled:       true,
@@ -117,11 +113,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileOpenshiftUsers(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -130,84 +121,66 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Info("Reconciling Keycloak components")
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
-		Spec: aerogearv1.KeycloakSpec{
-			AdminCredentials: "",
-			Plugins: []string{
-				"keycloak-metrics-spi",
-				"openshift4-idp",
-			},
-			Backups:   []aerogearv1.KeycloakBackup{},
-			Provision: true,
-		},
 	}
 	ownerutil.EnsureOwner(kc, inst)
-	err := serverClient.Create(ctx, kc)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create keycloak custom resource")
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func(existing runtime.Object) error {
+		kc := existing.(*aerogearv1.Keycloak)
+		kc.Spec.Plugins = []string{
+			"keycloak-metrics-spi",
+			"openshift4-idp",
+		}
+		kc.Spec.Provision = true
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
 	}
+	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 
-	r.logger.Info("creating Keycloakrealm")
 	kcr := &aerogearv1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
-		},
-		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly:                        false,
-			DeleteUsers:                       true,
-			BrowserRedirectorIdentityProvider: idpAlias,
-			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
-				ID:          keycloakRealmName,
-				Realm:       keycloakRealmName,
-				DisplayName: keycloakRealmName,
-				Enabled:     true,
-				EventsListeners: []string{
-					"metrics-listener",
-				},
-				Users: []*aerogearv1.KeycloakUser{
-					CustomerAdminUser,
-				},
-			},
 		},
 	}
 	ownerutil.EnsureOwner(kcr, inst)
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, UpdateNoOp)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak realm")
-	}
-
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	r.logger.Info("Reconciling openshift users to Keycloak")
-
-	kcr := &aerogearv1.KeycloakRealm{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakRealmName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-
-	openshiftUsers := &usersv1.UserList{}
-	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
 		kcr := existing.(*aerogearv1.KeycloakRealm)
+		kcr.Spec.CreateOnly = false
+		kcr.Spec.DeleteUsers = true
+		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
+		if kcr.Spec.KeycloakApiRealm == nil {
+			kcr.Spec.KeycloakApiRealm = &aerogearv1.KeycloakApiRealm{}
+		}
+		kcr.Spec.ID = keycloakRealmName
+		kcr.Spec.Realm = keycloakRealmName
+		kcr.Spec.DisplayName = keycloakRealmName
+		kcr.Spec.Enabled = true
+		kcr.Spec.EventsListeners = []string{
+			"metrics-listener",
+		}
+		if kcr.Spec.Users == nil {
+			kcr.Spec.Users = []*aerogearv1.KeycloakUser{CustomerAdminUser}
+		}
+
+		openshiftUsers := &usersv1.UserList{}
+		err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+		if err != nil {
+			return err
+		}
 		kcr.Spec.Users = syncronizeUserLists(kcr.Spec.Users, openshiftUsers.Items)
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak realm")
 	}
+	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -356,6 +329,10 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 
 func syncronizeUserLists(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) []*aerogearv1.KeycloakUser {
 	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers)
+
+	if len(added) == 0 && len(deletedIndexes) == 0 {
+		return keycloakUsers
+	}
 
 	var result []*aerogearv1.KeycloakUser
 	result = append(result, keycloakUsers...)
