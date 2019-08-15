@@ -143,7 +143,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
 		kcr := existing.(*aerogearv1.KeycloakRealm)
 		kcr.Spec.CreateOnly = false
-		kcr.Spec.DeleteUsers = true
 		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
 
 		if kcr.Spec.KeycloakApiRealm == nil {

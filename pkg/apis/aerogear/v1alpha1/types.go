@@ -74,8 +74,7 @@ type KeycloakRealm struct {
 }
 
 type KeycloakRealmSpec struct {
-	CreateOnly  bool `json:"createOnly,omitempty"`
-	DeleteUsers bool `json:"deleteUsers,omitempty"`
+	CreateOnly bool `json:"createOnly,omitempty"`
 	// Alias of the Identity Provider that will be used to setup "Identity Provider Redirector" for browser based authentication
 	BrowserRedirectorIdentityProvider string `json:"browserRedirectorIdentityProvider,omitempty"`
 	*KeycloakApiRealm
