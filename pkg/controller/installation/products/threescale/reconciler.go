@@ -12,6 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/pkg/errors"
@@ -33,6 +34,7 @@ const (
 	clientSecret                 = "placeholder" // this should be replaced in INTLY-2784
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
+	rhssoIntegrationName         = "rhsso"
 )
 
 var (
@@ -97,7 +99,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
-	phase, err = r.reconcileUpdatingAdminDetails(ctx, serverClient)
+	phase, err = r.reconcileUpdatingDefaultAdminDetails(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileOpenshiftUsers(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -356,25 +363,31 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
-	res, err := r.tsClient.AddSSOIntegration(map[string]string{
-		"kind":                              "keycloak",
-		"name":                              "rhsso",
-		"client_id":                         clientId,
-		"client_secret":                     clientSecret,
-		"site":                              site,
-		"skip_ssl_certificate_verification": "true",
-		"published":                         "true",
-	}, *accessToken)
 
-	if err != nil || res.StatusCode != http.StatusCreated && res.StatusCode != http.StatusUnprocessableEntity {
+	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
+	if err != nil && !tsIsNotFoundError(err) {
 		return v1alpha1.PhaseFailed, err
+	}
+	if tsIsNotFoundError(err) {
+		site := rhssoConfig.GetHost() + "/auth/realms/" + rhssoRealm
+		res, err := r.tsClient.AddAuthenticationProvider(map[string]string{
+			"kind":                              "keycloak",
+			"name":                              rhssoIntegrationName,
+			"client_id":                         clientId,
+			"client_secret":                     clientSecret,
+			"site":                              site,
+			"skip_ssl_certificate_verification": "true",
+			"published":                         "true",
+		}, *accessToken)
+		if err != nil || res.StatusCode != http.StatusCreated {
+			return v1alpha1.PhaseFailed, err
+		}
 	}
 
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileUpdatingAdminDetails(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
@@ -396,18 +409,25 @@ func (r *Reconciler) reconcileUpdatingAdminDetails(ctx context.Context, serverCl
 		return u.UserName == rhsso.CustomerAdminUser.UserName
 	})
 	if len(kcUsers) == 1 {
+		s := &corev1.Secret{}
+		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+
+		currentAdminUser := string(s.Data["ADMIN_USER"])
 		accessToken, err := r.GetAdminToken(ctx, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
-		tsAdmin, err := r.tsClient.GetAdminUser(*accessToken)
+		tsAdmin, err := r.tsClient.GetUser(currentAdminUser, *accessToken)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
 
 		kcCaUser := kcUsers[0]
 		if tsAdmin.UserDetails.Username != kcCaUser.UserName && tsAdmin.UserDetails.Email != kcCaUser.Email {
-			res, err := r.tsClient.UpdateAdminPortalUserDetails(kcCaUser.UserName, kcCaUser.Email, *accessToken)
+			res, err := r.tsClient.UpdateUser(tsAdmin.UserDetails.Id, kcCaUser.UserName, kcCaUser.Email, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK && res.StatusCode != http.StatusUnprocessableEntity {
 				return v1alpha1.PhaseFailed, err
 			}
@@ -422,6 +442,78 @@ func (r *Reconciler) reconcileUpdatingAdminDetails(ctx context.Context, serverCl
 
 			err = r.RolloutDeployment("system-app")
 			if err != nil {
+				return v1alpha1.PhaseFailed, err
+			}
+		}
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling openshift users to 3scale")
+
+	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	kcr := &aerogearv1.KeycloakRealm{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	accessToken, err := r.GetAdminToken(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	tsUsers, err := r.tsClient.GetUsers(*accessToken)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	added, deleted := r.getUserDiff(kcr.Spec.Users, tsUsers.Users)
+	for _, kcUser := range added {
+		if kcUser.UserName == rhsso.CustomerAdminUser.UserName {
+			continue
+		}
+
+		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
+		if err != nil || res.StatusCode != http.StatusCreated {
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+	for _, tsUser := range deleted {
+		res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
+		if err != nil || res.StatusCode != http.StatusOK {
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+
+	openshiftAdminGroup := &usersv1.Group{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return v1alpha1.PhaseFailed, err
+	}
+	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	for _, tsUser := range newTsUsers.Users {
+		if tsUser.UserDetails.Username == rhsso.CustomerAdminUser.UserName {
+			continue
+		}
+
+		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
+			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
+			if err != nil || res.StatusCode != http.StatusOK {
+				return v1alpha1.PhaseFailed, err
+			}
+		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole {
+			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.Id, *accessToken)
+			if err != nil || res.StatusCode != http.StatusOK {
 				return v1alpha1.PhaseFailed, err
 			}
 		}
@@ -578,4 +670,52 @@ func filterUsers(u []*aerogearv1.KeycloakUser, predicate predicateFunc) []*aerog
 	}
 
 	return result
+}
+
+func (r *Reconciler) getUserDiff(kcUsers []*aerogearv1.KeycloakUser, tsUsers []*User) ([]*aerogearv1.KeycloakUser, []*User) {
+	var added []*aerogearv1.KeycloakUser
+	for _, kcUser := range kcUsers {
+		if !tsContainsKc(tsUsers, kcUser) {
+			added = append(added, kcUser)
+		}
+	}
+
+	var deleted []*User
+	for _, tsUser := range tsUsers {
+		if !kcContainsTs(kcUsers, tsUser) {
+			deleted = append(deleted, tsUser)
+		}
+	}
+
+	return added, deleted
+}
+
+func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
+	for _, kcu := range kcUsers {
+		if kcu.UserName == tsUser.UserDetails.Username {
+			return true
+		}
+	}
+
+	return false
+}
+
+func tsContainsKc(tsusers []*User, kcUser *aerogearv1.KeycloakUser) bool {
+	for _, tsu := range tsusers {
+		if tsu.UserDetails.Username == kcUser.UserName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
+	for _, userName := range adminGroup.Users {
+		if tsUser.UserDetails.Username == userName {
+			return true
+		}
+	}
+
+	return false
 }

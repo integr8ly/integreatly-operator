@@ -2,6 +2,8 @@ package rhsso
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
@@ -12,6 +14,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -20,8 +23,9 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +58,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	err = usersv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -175,6 +180,9 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
 					return errors.New("failed to create keycloak custom resource")
 				},
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return k8serr.NewNotFound(schema.GroupResource{}, "keycloak")
+				},
 			},
 			FakeConfig: basicConfigMock(),
 			Installation: &v1alpha1.Installation{
@@ -184,7 +192,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			ExpectError:    true,
-			ExpectedError:  "failed to create keycloak custom resource: failed to create keycloak custom resource",
+			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
 			ExpectedStatus: v1alpha1.PhaseFailed,
 		},
 	}
