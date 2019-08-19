@@ -122,54 +122,6 @@ func TestReconciler_config(t *testing.T) {
 			Product: &v1alpha1.InstallationProductStatus{},
 		},
 		{
-			Name:           "test error on bad RHSSO config",
-			ExpectedStatus: v1alpha1.PhaseNone,
-			ExpectedError:  "keycloak config is not valid: config realm is not defined",
-			Installation:   &v1alpha1.Installation{},
-			FakeClient:     fakeclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return config.NewRHSSO(config.ProductConfig{}), nil
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
-		},
-		{
-			Name:           "test awaiting subscrition - failed RHSSO config",
-			ExpectedStatus: v1alpha1.PhaseNone,
-			ExpectedError:  "could not retrieve keycloak config: could not load keycloak config",
-			Installation:   &v1alpha1.Installation{},
-			FakeClient:     fakeclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return nil, errors.New("could not load keycloak config")
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
-		},
-		{
-			Name:           "test error on failed RHSSO config",
-			ExpectedStatus: v1alpha1.PhaseNone,
-			ExpectedError:  "could not retrieve keycloak config: could not load keycloak config",
-			Installation:   &v1alpha1.Installation{},
-			FakeClient:     fakeclient.NewFakeClient(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
-					return config.NewCodeReady(config.ProductConfig{}), nil
-				},
-				ReadRHSSOFunc: func() (*config.RHSSO, error) {
-					return nil, errors.New("could not load keycloak config")
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
-		},
-		{
 			Name:           "test subscription phase with error from mpm",
 			ExpectedStatus: v1alpha1.PhaseFailed,
 			ExpectError:    true,
@@ -561,8 +513,8 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
 					t.Fatalf("expected 1 call to readCodeReady config, got: %d", len(mockConfig.ReadCodeReadyCalls()))
 				}
-				if len(mockConfig.ReadRHSSOCalls()) != 1 {
-					t.Fatalf("expected 1 call to readRHSSO config, got: %d", len(mockConfig.ReadCodeReadyCalls()))
+				if len(mockConfig.ReadRHSSOCalls()) != 2 {
+					t.Fatalf("expected 2 calls to readRHSSO config, got: %d", len(mockConfig.ReadRHSSOCalls()))
 				}
 				if mockMPM == nil {
 					t.Fatalf("expected MPM not to be nil but it was nil ")
