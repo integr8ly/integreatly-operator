@@ -265,6 +265,9 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 				return foundProducts, err
 			}
 			search := reconciler.GetPreflightObject(ns.Name)
+			if search == nil {
+				continue
+			}
 			exists, err := resources.Exists(r.context, serverClient, search)
 			if err != nil {
 				return foundProducts, err
