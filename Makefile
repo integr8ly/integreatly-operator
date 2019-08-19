@@ -37,6 +37,10 @@ setup/service_account:
 	@oc replace --force -f deploy/clusterrole.yaml -n $(NAMESPACE)
 	@oc replace --force -f deploy/cluster_role_binding.yaml -n $(NAMESPACE)
 
+.PHONY: setup/git/hooks
+setup/git/hooks:
+	git config core.hooksPath .githooks
+
 .PHONY: code/run
 code/run:
 	@operator-sdk up local --namespace=$(NAMESPACE)

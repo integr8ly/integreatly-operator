@@ -1,0 +1,11 @@
+#!/usr/bin/sh
+
+staged_go_files=$(git diff --cached --name-only | grep ".go$" | grep -v "vendor/")
+[ -z "$staged_go_files" ] && exit 0
+
+# Ensure code is formatted correctly
+unformatted_files=$(gofmt -l $staged_go_files)
+[ -z "$unformatted_files" ] && exit 0
+
+echo >&2 "[code/check failed] run 'make code/fix' to fix formatting issues"
+exit 1
