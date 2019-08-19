@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -72,6 +73,15 @@ type Reconciler struct {
 	appsv1Client  appsv1Client.AppsV1Interface
 	oauthv1Client oauthClient.OauthV1Interface
 	*resources.Reconciler
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "system-app",
+			Namespace: ns,
+		},
+	}
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

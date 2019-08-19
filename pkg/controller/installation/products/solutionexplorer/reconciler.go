@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	v1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -15,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -69,6 +71,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		Reconciler:    resources.NewReconciler(mpm),
 		OauthResolver: resolver,
 	}, nil
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &v1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tutorial-web-app",
+			Namespace: ns,
+		},
+	}
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

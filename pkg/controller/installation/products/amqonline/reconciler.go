@@ -3,6 +3,8 @@ package amqonline
 import (
 	"context"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	v1beta12 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
@@ -14,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -53,6 +55,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "api-server",
+			Namespace: ns,
+		},
+	}
 }
 
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read
@@ -162,7 +173,7 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 	r.logger.Infof("reconciling config")
 
 	consoleSvc := &v1beta1.ConsoleService{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultConsoleSvcName,
 			Namespace: r.Config.GetNamespace(),
 		},

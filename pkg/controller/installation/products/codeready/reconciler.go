@@ -3,6 +3,7 @@ package codeready
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -62,6 +63,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:         logger,
 		Reconciler:     resources.NewReconciler(mpm),
 	}, nil
+}
+
+func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "codeready",
+			Namespace: ns,
+		},
+	}
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
