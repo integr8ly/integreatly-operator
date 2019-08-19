@@ -29,11 +29,10 @@ const (
 )
 
 type Reconciler struct {
-	Config         *config.CodeReady
-	KeycloakConfig *config.RHSSO
-	ConfigManager  config.ConfigReadWriter
-	mpm            marketplace.MarketplaceInterface
-	logger         *logrus.Entry
+	Config        *config.CodeReady
+	ConfigManager config.ConfigReadWriter
+	mpm           marketplace.MarketplaceInterface
+	logger        *logrus.Entry
 	*resources.Reconciler
 }
 
@@ -45,23 +44,15 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	kcConfig, err := configManager.ReadRHSSO()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve keycloak config")
-	}
-	if err = kcConfig.Validate(); err != nil {
-		return nil, errors.Wrap(err, "keycloak config is not valid")
-	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		ConfigManager:  configManager,
-		Config:         config,
-		KeycloakConfig: kcConfig,
-		mpm:            mpm,
-		logger:         logger,
-		Reconciler:     resources.NewReconciler(mpm),
+		ConfigManager: configManager,
+		Config:        config,
+		mpm:           mpm,
+		logger:        logger,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
@@ -181,11 +172,19 @@ func (r *Reconciler) reconcilePostgresSecret(ctx context.Context, serverClient p
 }
 
 func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	kcConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloak config")
+	}
+	if err = kcConfig.Validate(); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "keycloak config is not valid")
+	}
+
 	r.logger.Infof("creating required custom resources in namespace: %s", r.Config.GetNamespace())
 
 	kcRealm := &keycloakv1.KeycloakRealm{}
-	key := pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}
-	err := serverClient.Get(ctx, key, kcRealm)
+	key := pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}
+	err = serverClient.Get(ctx, key, kcRealm)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve: %+v", key))
 	}
@@ -201,7 +200,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 		}
-		if err = r.createCheCluster(ctx, r.KeycloakConfig, kcRealm, inst, serverClient); err != nil {
+		if err = r.createCheCluster(ctx, kcConfig, kcRealm, inst, serverClient); err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 		}
 		return v1alpha1.PhaseInProgress, err
@@ -210,8 +209,8 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	// check cr values
 	if cheCluster.Spec.Auth.ExternalKeycloak &&
 		!cheCluster.Spec.Auth.OpenShiftOauth &&
-		cheCluster.Spec.Auth.KeycloakURL == r.KeycloakConfig.GetHost() &&
-		cheCluster.Spec.Auth.KeycloakRealm == r.KeycloakConfig.GetRealm() &&
+		cheCluster.Spec.Auth.KeycloakURL == kcConfig.GetHost() &&
+		cheCluster.Spec.Auth.KeycloakRealm == kcConfig.GetRealm() &&
 		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
 		logrus.Debug("skipping checluster custom resource update as all values are correct")
 		return v1alpha1.PhaseCompleted, nil
@@ -220,7 +219,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	// update cr values
 	cheCluster.Spec.Auth.ExternalKeycloak = true
 	cheCluster.Spec.Auth.OpenShiftOauth = false
-	cheCluster.Spec.Auth.KeycloakURL = r.KeycloakConfig.GetHost()
+	cheCluster.Spec.Auth.KeycloakURL = kcConfig.GetHost()
 	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
 	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
 	if err = serverClient.Update(ctx, cheCluster); err != nil {
@@ -253,6 +252,13 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 
 func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("checking keycloak client exists in keycloakrealm custom resource in namespace: %s", r.Config.GetNamespace())
+	kcConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloak config")
+	}
+	if err = kcConfig.Validate(); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "keycloak config is not valid")
+	}
 
 	// retrive the checluster so we can use its URL for redirect and web origins in the keycloak client
 	cheCluster := &chev1.CheCluster{
@@ -261,7 +267,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve checluster for keycloak client update")
 	}
@@ -280,11 +286,11 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	// retrieve the sso config so we can find the keycloakrealm custom resource to update
 	kcRealm := &keycloakv1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.KeycloakConfig.GetRealm(),
-			Namespace: r.KeycloakConfig.GetNamespace(),
+			Name:      kcConfig.GetRealm(),
+			Namespace: kcConfig.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: r.KeycloakConfig.GetRealm(), Namespace: r.KeycloakConfig.GetNamespace()}, kcRealm)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}, kcRealm)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloakrealm for keycloak client update")
 	}
