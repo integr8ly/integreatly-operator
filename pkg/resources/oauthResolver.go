@@ -2,14 +2,19 @@ package resources
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 const oauthServerDetails = "%s/.well-known/oauth-authorization-server"
 const defaultHost = "https://openshift.default.svc"
+const rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
 type OauthResolver struct {
 	client   *http.Client
@@ -26,12 +31,30 @@ func NewOauthResolver(client *http.Client) *OauthResolver {
 
 func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 	url := fmt.Sprintf(oauthServerDetails, or.Host)
-	if or.InSecure {
+
+	caCert, err := ioutil.ReadFile(rootCAFile)
+	// if running locally, CA certificate isn't available in expected path
+	if os.IsNotExist(err) {
+		logrus.Warn("GetOauthEndPoint() will skip certificate verification - this is acceptable only if operator is running locally")
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		or.client.Transport = tr
+	} else {
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read k8s root CA file")
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+
+		tlsConfig := &tls.Config{
+			RootCAs: caCertPool,
+		}
+		tlsConfig.BuildNameToCertificate()
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		or.client.Transport = transport
 	}
+
 	resp, err := or.client.Get(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get oauth server config from well known endpoint "+url)
