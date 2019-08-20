@@ -461,7 +461,7 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 			"view-profile",
 		},
 		"broker": {
-            "read-token",
+			"read-token",
 		},
 	}
 	if isAdmin {
