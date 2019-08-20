@@ -7,16 +7,19 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	usersv1 "github.com/openshift/api/user/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -26,6 +29,7 @@ import (
 const (
 	defaultInstallationNamespace = "fuse"
 	defaultSubscriptionName      = "integreatly-syndesis"
+	adminGroupName               = "dedicated-admins"
 )
 
 type Reconciler struct {
@@ -78,6 +82,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileAdminPerms(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -96,6 +105,87 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.Version = r.Config.GetProductVersion()
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Infof("Reconciling permissions for %s group on %s namespace", adminGroupName, r.Config.GetNamespace())
+
+	roleName := adminGroupName + "-view-fuse"
+	adminViewFuseRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: roleName,
+		},
+	}
+	or, err := controllerutil.CreateOrUpdate(ctx, client, adminViewFuseRole, func(existing runtime.Object) error {
+		cr := existing.(*rbacv1.ClusterRole)
+
+		cr.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"namespaces"},
+				Verbs:     []string{"get"},
+			},
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"pods"},
+				Verbs:     []string{"get", "list"},
+			},
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"pods/log"},
+				Verbs:     []string{"get"},
+			},
+		}
+
+		return nil
+	})
+	r.logger.Infof("The %s role perms were: %s", adminViewFuseRole.Name, or)
+
+	openshiftUsers := &usersv1.UserList{}
+	err = client.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	openshiftAdminGroup := &usersv1.Group{}
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: adminGroupName}, openshiftAdminGroup)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	adminViewFuseRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     roleName,
+		},
+	}
+	or, err = controllerutil.CreateOrUpdate(ctx, client, adminViewFuseRoleBinding, func(existing runtime.Object) error {
+		rb := existing.(*rbacv1.RoleBinding)
+
+		subjects := []rbacv1.Subject{}
+		for _, osUser := range openshiftUsers.Items {
+			if userIsOpenshiftAdmin(osUser, openshiftAdminGroup) {
+				subjects = append(subjects, rbacv1.Subject{
+					APIGroup: "rbac.authorization.k8s.io",
+					Name:     osUser.Name,
+					Kind:     "User",
+				})
+			}
+		}
+
+		rb.Subjects = subjects
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	r.logger.Infof("The %s subjects were: %s", adminViewFuseRoleBinding.Name, or)
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -208,4 +298,14 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 	// if there are no errors, the phase is complete
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func userIsOpenshiftAdmin(user usersv1.User, adminGroup *usersv1.Group) bool {
+	for _, userName := range adminGroup.Users {
+		if user.Name == userName {
+			return true
+		}
+	}
+
+	return false
 }

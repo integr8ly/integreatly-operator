@@ -8,6 +8,7 @@ import (
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	usersv1 "github.com/openshift/api/user/v1"
 	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -61,6 +63,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = syn.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.SchemeBuilder.AddToScheme(scheme)
 	err = v1.SchemeBuilder.AddToScheme(scheme)
+	err = usersv1.SchemeBuilder.AddToScheme(scheme)
+	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -300,6 +304,20 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	test1User := &usersv1.User{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test1",
+		},
+	}
+	openshiftAdminGroup := &usersv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dedicated-admins",
+		},
+		Users: []string{
+			test1User.Name,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -314,7 +332,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
