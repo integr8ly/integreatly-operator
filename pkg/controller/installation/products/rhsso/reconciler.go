@@ -460,6 +460,9 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 			"manage-account",
 			"view-profile",
 		},
+		"broker": {
+            "read-token",
+		},
 	}
 	if isAdmin {
 		roles["realm-management"] = []string{
