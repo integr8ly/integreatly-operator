@@ -16,7 +16,7 @@ spec:
       containers:
         - name: integreatly-operator
           # Replace this with the built image name
-          image: quay.io/integreatly/integreatly-operator:v1.7.0
+          image: quay.io/integreatly/integreatly-operator:v1.7.1
           command:
           - integreatly-operator
           imagePullPolicy: Always
