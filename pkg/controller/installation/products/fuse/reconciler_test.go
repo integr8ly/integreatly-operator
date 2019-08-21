@@ -400,7 +400,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 // Return a fuse custom resource in a specific phase
 func getFuseCr(phase syn.SyndesisPhase) *syn.Syndesis {
-	intLimit := -1
+	intLimit := 0
 	return &syn.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,

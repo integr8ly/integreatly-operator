@@ -230,7 +230,8 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 	r.logger.Info("Reconciling fuse custom resource")
 
-	intLimit := -1
+	// 0 results in unlimited integrations
+	intLimit := 0
 	cr := &syn.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
