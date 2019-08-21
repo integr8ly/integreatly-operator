@@ -122,7 +122,7 @@ func (r *Reconciler) reconcileLauncher(ctx context.Context, serverClient pkgclie
 					{
 						ID:         "openshift-v4",
 						Name:       "Local Openshift Cluster",
-						ApiURL:     r.installation.Spec.ApiURL,
+						ApiURL:     "https://openshift.default.svc.cluster.local",
 						ConsoleURL: r.installation.Spec.MasterURL,
 						Type:       "local",
 					},

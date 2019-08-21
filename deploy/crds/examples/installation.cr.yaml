@@ -7,5 +7,4 @@ spec:
   namespacePrefix: integreatly-
   routingSubdomain: apps.example.com
   masterUrl: http://console.apps.example.com
-  apiUrl: https://api.example.com:6443
   selfSignedCerts: true

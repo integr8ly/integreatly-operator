@@ -57,7 +57,6 @@ type InstallationSpec struct {
 	Type             string `json:"type"`
 	RoutingSubdomain string `json:"routingSubdomain"`
 	MasterURL        string `json:"masterUrl"`
-	ApiURL           string `json:"apiUrl"`
 	NamespacePrefix  string `json:"namespacePrefix"`
 	SelfSignedCerts  bool   `json:"selfSignedCerts"`
 }

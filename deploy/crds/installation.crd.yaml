@@ -41,8 +41,6 @@ spec:
               type: string
             masterUrl:
               type: string
-            apiUrl:
-              type: string
             namespacePrefix:
               type: string
           required:
