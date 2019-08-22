@@ -13,6 +13,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/launcher"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/nexus"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
@@ -58,6 +59,13 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductSolutionExplorer:
 		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, mpm, oauthResolver)
+	case v1alpha1.ProductLauncher:
+		appsv1, err := appsv1Client.NewForConfig(rc)
+		if err != nil {
+			return nil, err
+		}
+
+		reconciler, err = launcher.NewReconciler(configManager, instance, appsv1, mpm)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

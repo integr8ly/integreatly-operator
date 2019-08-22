@@ -233,7 +233,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return v1alpha1.PhaseFailed, err
 	}
 
-	if !containsClient(kcr.Spec.Clients, clientId) {
+	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
 		logrus.Infof("Adding keycloak realm client")
 
 		kcr.Spec.Clients = append(kcr.Spec.Clients, &aerogearv1.KeycloakClient{
@@ -658,15 +658,6 @@ func (r *Reconciler) RolloutDeployment(name string) error {
 	})
 
 	return err
-}
-
-func containsClient(kcc []*aerogearv1.KeycloakClient, id string) bool {
-	for _, a := range kcc {
-		if a.ID == id {
-			return true
-		}
-	}
-	return false
 }
 
 type predicateFunc func(*aerogearv1.KeycloakUser) bool

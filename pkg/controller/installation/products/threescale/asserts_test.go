@@ -74,7 +74,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	}
 	kcr := &aerogearv1.KeycloakRealm{}
 	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
-	if !containsClient(kcr.Spec.Clients, clientId) {
+	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
 		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
 	}
 	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)

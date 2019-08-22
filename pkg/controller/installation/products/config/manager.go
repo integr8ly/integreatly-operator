@@ -40,6 +40,7 @@ type ConfigReadWriter interface {
 	ReadFuse() (*Fuse, error)
 	ReadAMQOnline() (*AMQOnline, error)
 	ReadNexus() (*Nexus, error)
+	ReadLauncher() (*Launcher, error)
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
 	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
@@ -149,6 +150,14 @@ func (m *Manager) ReadNexus() (*Nexus, error) {
 		return nil, err
 	}
 	return NewNexus(config), nil
+}
+
+func (m *Manager) ReadLauncher() (*Launcher, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductLauncher)
+	if err != nil {
+		return nil, err
+	}
+	return NewLauncher(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {

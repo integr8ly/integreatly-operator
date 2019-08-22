@@ -32,6 +32,7 @@ var (
 	ProductFuse                ProductName = "fuse"
 	Product3Scale              ProductName = "3scale"
 	ProductNexus               ProductName = "nexus"
+	ProductLauncher            ProductName = "launcher"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -40,6 +41,7 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionNexus               ProductVersion = "3.16"
+	VersionLauncher            ProductVersion = "0.1.2"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"

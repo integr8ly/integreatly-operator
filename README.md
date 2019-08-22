@@ -49,6 +49,11 @@ oc new-project <namespace>
    -p AWS_BUCKET=<test bucket> \
    -p AWS_REGION=eu-central-1 | oc apply -f -
     ```
+- RHSSO requires a secret called `github-oauth-secret` containing Github OAuth credentials to setup a Github identity provider.
+
+  ```sh
+  oc create secret generic github-oauth-secret --from-literal=clientId=<client-id>--from-literal=secret=<client-secret> -n <integreatly-operator-namespace>
+  ```
 
 Create the `Installation` resource in the namespace we created:
 ```sh

@@ -2,6 +2,8 @@ package rhsso
 
 import (
 	"context"
+	"fmt"
+
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -24,14 +26,16 @@ import (
 )
 
 var (
-	defaultRhssoNamespace   = "rhsso"
-	customerAdminPassword   = "Password1"
-	keycloakName            = "rhsso"
-	keycloakRealmName       = "openshift"
-	oauthId                 = "rhsso"
-	clientSecret            = "placeholder" // this should be replaced in INTLY-2784
-	defaultSubscriptionName = "integreatly-rhsso"
-	idpAlias                = "openshift-v4"
+	defaultRhssoNamespace               = "rhsso"
+	customerAdminPassword               = "Password1"
+	keycloakName                        = "rhsso"
+	keycloakRealmName                   = "openshift"
+	oauthId                             = "rhsso"
+	clientSecret                        = "placeholder" // this should be replaced in INTLY-2784
+	defaultSubscriptionName             = "integreatly-rhsso"
+	idpAlias                            = "openshift-v4"
+	githubIdpAlias                      = "github"
+	githubOauthAppCredentialsSecretName = "github-oauth-secret"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -213,6 +217,11 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
 		}
 
+		err = r.setupGithubIDP(ctx, kcr, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Github IDP")
+		}
+
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
 		return v1alpha1.PhaseCompleted, nil
 	}
@@ -297,6 +306,42 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 
 		return serverClient.Update(ctx, kcr)
 	}
+	return nil
+}
+
+func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+	githubCreds := &v1.Secret{}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
+	if err != nil {
+		logrus.Errorf("Unable to find Github oauth credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
+		return err
+	}
+
+	if !containsIdentityProvider(kcr.Spec.IdentityProviders, githubIdpAlias) {
+		logrus.Infof("Adding github identity provider to the keycloak realm")
+		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
+			Alias:                     githubIdpAlias,
+			ProviderID:                githubIdpAlias,
+			Enabled:                   true,
+			TrustEmail:                false,
+			StoreToken:                true,
+			AddReadTokenRoleOnCreate:  true,
+			FirstBrokerLoginFlowAlias: "first broker login",
+			LinkOnly:                  true,
+			AuthenticateByDefault:     false,
+			Config: map[string]string{
+				"hideOnLoginPage": "true",
+				"clientId":        fmt.Sprintf("%s", githubCreds.Data["clientId"]),
+				"disableUserInfo": "",
+				"clientSecret":    fmt.Sprintf("%s", githubCreds.Data["secret"]),
+				"defaultScope":    "repo,user,write:public_key,admin:repo_hook,read:org,public_repo,user:email",
+				"useJwksUrl":      "true",
+			},
+		})
+		return serverClient.Update(ctx, kcr)
+	}
+	// We need to revisit how the github idp gets created/updated
+	// Client ID and secret can get outdated we need to ensure they are synced with the value secret in the github-oauth-secret
 	return nil
 }
 
@@ -414,6 +459,9 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 		"account": {
 			"manage-account",
 			"view-profile",
+		},
+		"broker": {
+			"read-token",
 		},
 	}
 	if isAdmin {
