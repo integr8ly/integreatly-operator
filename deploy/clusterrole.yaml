@@ -113,3 +113,17 @@ rules:
     - create
     - watch
     - get
+- apiGroups:
+    - user.openshift.io
+  resources:
+    - users
+  verbs:
+    - watch
+- apiGroups:
+    - user.openshift.io
+  resources:
+    - groups
+  verbs:
+    - get
+    - create
+    - update
