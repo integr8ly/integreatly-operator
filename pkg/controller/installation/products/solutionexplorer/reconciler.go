@@ -3,6 +3,8 @@ package solutionexplorer
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -14,23 +16,23 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	defaultName                = "solution-explorer"
-	defaultSubNameAndPkg       = "integreatly-solution-explorer"
-	defaultTemplateLoc         = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	param_openshift_host       = "OPENSHIFT_HOST"
-	param_openshift_oauth_host = "OPENSHIFT_OAUTH_HOST"
-	param_oauth_client         = "OPENSHIFT_OAUTHCLIENT_ID"
-	param_sso_route            = "SSO_ROUTE"
-	defaultRouteName           = "tutorial-web-app"
+	defaultName             = "solution-explorer"
+	defaultSubNameAndPkg    = "integreatly-solution-explorer"
+	defaultTemplateLoc      = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
+	paramOpenShiftHost      = "OPENSHIFT_HOST"
+	paramOpenShiftOauthHost = "OPENSHIFT_OAUTH_HOST"
+	paramOauthClient        = "OPENSHIFT_OAUTHCLIENT_ID"
+	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
+	paramSSORoute           = "SSO_ROUTE"
+	defaultRouteName        = "tutorial-web-app"
 )
 
 type Reconciler struct {
@@ -159,20 +161,22 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 	ownerutil.AddOwner(seCR, inst, true, true)
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
 	logrus.Info("ReconcileCustomResource setting url for openshift host ", oauthURL)
-	seCR.Spec = webapp.WebAppSpec{
-		AppLabel: "tutorial-web-app",
-		Template: webapp.WebAppTemplate{
-			Path: defaultTemplateLoc,
-			Parameters: map[string]string{
-				param_oauth_client:         defaultSubNameAndPkg,
-				param_sso_route:            ssoConfig.GetHost(),
-				param_openshift_host:       inst.Spec.MasterURL,
-				param_openshift_oauth_host: oauthURL,
-			},
-		},
-	}
-	if err := client.Create(ctx, seCR); err != nil && !errors2.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, " failed to create webapp")
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func(existing runtime.Object) error {
+		cr := existing.(*webapp.WebApp)
+		cr.Spec.AppLabel = "tutorial-web-app"
+		cr.Spec.Template.Path = defaultTemplateLoc
+		cr.Spec.Template.Parameters = map[string]string{
+			paramOauthClient:        defaultSubNameAndPkg,
+			paramSSORoute:           ssoConfig.GetHost(),
+			paramOpenShiftHost:      inst.Spec.MasterURL,
+			paramOpenShiftOauthHost: oauthURL,
+			paramOpenShiftVersion:   "4",
+		}
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile webapp resource")
 	}
 	// do a get to ensure we have an upto date copy
 	if err := client.Get(ctx, pkgclient.ObjectKey{Namespace: seCR.Namespace, Name: seCR.Name}, seCR); err != nil {
