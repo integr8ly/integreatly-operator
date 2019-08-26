@@ -138,6 +138,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
+	phase, err = r.ReconcileOauthClient(ctx, in, &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: oauthId,
+		},
+		Secret: clientSecret,
+		RedirectURIs: []string{
+			r.installation.Spec.MasterURL,
+		},
+		GrantMethod: oauthv1.GrantHandlerPrompt,
+	}, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	phase, err = r.reconcileServiceDiscovery(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -558,24 +572,6 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	if err == nil && string(r.Config.GetProductVersion()) != cm.Data["AMP_RELEASE"] {
 		r.Config.SetProductVersion(cm.Data["AMP_RELEASE"])
 		r.ConfigManager.WriteConfig(r.Config)
-	}
-
-	_, err = r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
-	if err != nil && k8serr.IsNotFound(err) {
-		tsOauth := &oauthv1.OAuthClient{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: oauthId,
-			},
-			Secret: clientSecret,
-			RedirectURIs: []string{
-				r.installation.Spec.MasterURL,
-			},
-			GrantMethod: oauthv1.GrantHandlerPrompt,
-		}
-		_, err = r.oauthv1Client.OAuthClients().Create(tsOauth)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
 	}
 
 	system := &corev1.ConfigMap{

@@ -126,6 +126,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: oauthId,
+		},
+		Secret: clientSecret,
+		RedirectURIs: []string{
+			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+		},
+		GrantMethod: oauthv1.GrantHandlerPrompt,
+	}, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -283,24 +297,6 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 }
 
 func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
-	_, err := r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
-	if err != nil && k8serr.IsNotFound(err) {
-		oauthc := &oauthv1.OAuthClient{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: oauthId,
-			},
-			Secret: clientSecret,
-			RedirectURIs: []string{
-				r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-			},
-			GrantMethod: oauthv1.GrantHandlerPrompt,
-		}
-		_, err = r.oauthv1Client.OAuthClients().Create(oauthc)
-		if err != nil {
-			return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
-		}
-	}
-
 	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {
 		logrus.Infof("Adding keycloak realm client")
 
