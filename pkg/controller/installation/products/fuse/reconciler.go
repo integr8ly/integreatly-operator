@@ -3,12 +3,13 @@ package fuse
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -232,7 +233,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 	// 0 results in unlimited integrations
 	intLimit := 0
-	cr := &syn.Syndesis{
+	synCR := &syn.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
@@ -241,37 +242,34 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			Kind:       "Syndesis",
 			APIVersion: syn.SchemeGroupVersion.String(),
 		},
-		Spec: syn.SyndesisSpec{
-			Integration: syn.IntegrationSpec{
-				Limit: &intLimit,
-			},
-			Components: syn.ComponentsSpec{
-				Server: syn.ServerConfiguration{
-					Features: syn.ServerFeatures{
-						ExposeVia3Scale: true,
-					},
-				},
-			},
-		},
 	}
-	ownerutil.EnsureOwner(cr, install)
+	ownerutil.EnsureOwner(synCR, install)
 
 	// attempt to create the custom resource
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
-		if k8serr.IsNotFound(err) {
-			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling custom resource")
-			}
-			return v1alpha1.PhaseInProgress, nil
+	or, err := controllerutil.CreateOrUpdate(ctx, client, synCR, func(existing runtime.Object) error {
+		synCr := existing.(*syn.Syndesis)
+		synCr.Spec.Integration = syn.IntegrationSpec{
+			Limit: &intLimit,
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling custom resource")
+		synCr.Spec.Components = syn.ComponentsSpec{
+			Server: syn.ServerConfiguration{
+				Features: syn.ServerFeatures{
+					ExposeVia3Scale: true,
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile syndesis custom resource")
+	}
+	r.logger.Infof("syndesis custom resource reconciled, %s", or)
+
+	if synCR.Status.Phase == syn.SyndesisPhaseStartupFailed {
+		return v1alpha1.PhaseFailed, errors.New(fmt.Sprintf("failed to install fuse custom resource: %s", synCR.Status.Reason))
 	}
 
-	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
-		return v1alpha1.PhaseFailed, errors.New(fmt.Sprintf("failed to install fuse custom resource: %s", cr.Status.Reason))
-	}
-
-	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
+	if synCR.Status.Phase != syn.SyndesisPhaseInstalled {
 		return v1alpha1.PhaseInProgress, nil
 	}
 
