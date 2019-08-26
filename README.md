@@ -67,6 +67,18 @@ oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/ma
 oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role_binding.yaml
 ```
 
+Create user level sso
+```sh
+oc new-project mobile-developer-console
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/rhsso-user-role.yaml -n mobile-developer-console
+oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/rhsso-user-role_binding.yaml -n mobile-developer-console
+```
+Set env var
+```sh
+oc new-project user-sso
+oc set env deployment/keycloak-operator 'CONSUMER_NAMESPACES=user-sso; mobile-developer-console' -n user-sso
+```
+
 Clone this repository, change directory and run the operator:
 ```sh
 operator-sdk up local --namespace=<namespace>

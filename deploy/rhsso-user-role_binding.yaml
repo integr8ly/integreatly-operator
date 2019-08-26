@@ -1,0 +1,14 @@
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: "mdc-account-keycloak-operator"
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: "user-sso"
+roleRef:
+  kind: Role
+  name: keycloak-operator
+  apiGroup: rbac.authorization.k8s.io
