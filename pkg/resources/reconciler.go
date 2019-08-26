@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	v13 "github.com/openshift/api/oauth/v1"
@@ -10,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -29,18 +30,18 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 
 func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, client *v13.OAuthClient, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	if err := apiClient.Get(ctx, pkgclient.ObjectKey{Name: client.Name}, client); err != nil {
-		if errors2.IsNotFound(err) {
+		if k8serr.IsNotFound(err) {
 			prepareObject(client, inst)
 			if err := apiClient.Create(ctx, client); err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create Oauth Client "+client.Name)
+				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create oauth client: %s", client.Name)
 			}
 			return v1alpha1.PhaseCompleted, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get oauth client "+client.Name)
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get oauth client: %s", client.Name)
 	}
 	prepareObject(client, inst)
 	if err := apiClient.Update(ctx, client); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update oauth client")
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to update oauth client: %s", client.Name)
 	}
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -58,12 +59,12 @@ func (r *Reconciler) getNS(ctx context.Context, namespace string, client pkgclie
 func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns, err := r.getNS(ctx, namespace, client)
 	if err != nil {
-		if !errors2.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve namespace: %s", ns.Name))
+		if !k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve namespace: %s", ns.Name)
 		}
 		prepareObject(ns, inst)
 		if err = client.Create(ctx, ns); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create namespace: %s", ns.Name))
+			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create namespace: %s", ns.Name)
 		}
 	} else {
 		prepareObject(ns, inst)
@@ -92,13 +93,13 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, v1alpha12.ApprovalAutomatic)
-	if err != nil && !errors2.IsAlreadyExists(err) {
+	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
 	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, t.Pkg, t.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
-		if errors2.IsNotFound(errors.Cause(err)) {
+		if k8serr.IsNotFound(errors.Cause(err)) {
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))

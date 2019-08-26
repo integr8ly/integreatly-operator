@@ -2,6 +2,10 @@ package installation
 
 import (
 	"context"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -14,24 +18,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"os"
-	"sigs.k8s.io/controller-runtime"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
-	"time"
 )
 
 const (
 	defaultInstallationConfigMapName = "integreatly-installation-config"
+	finalizer                        = "finalizer.integreatly.org"
 )
-
-var log = logf.Log.WithName("Installation Controller")
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -106,12 +105,28 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// if the CR is being deleted,
-	// cancel this context to kill all
-	// ongoing requests to the API and exit
+	// Add finalizer
+	err = resources.AddFinalizer(r.context, instance, r.client, finalizer)
+	if err != nil {
+		logrus.Error("Error adding finalizer to installation", err)
+		return reconcile.Result{}, err
+	}
+
+	// If the CR is being deleted, attempt to delete the finalizer and cancel this context
 	if instance.DeletionTimestamp != nil {
-		r.cancel() //cancel context
-		return reconcile.Result{}, nil
+		finalizers := instance.GetFinalizers()
+		if len(finalizers) == 1 && finalizers[0] == finalizer {
+			err = resources.RemoveFinalizer(r.context, instance, r.client, finalizer)
+			if err != nil {
+				logrus.Info("Error removing finalizer from custom resource", err)
+				return reconcile.Result{}, err
+			}
+
+			// Cancel this context to kill all
+			// ongoing requests to the API and exit
+			r.cancel()
+			return reconcile.Result{}, nil
+		}
 	}
 
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
@@ -160,37 +175,37 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	//UPDATE STATUS
+	// UPDATE STATUS
 	err = r.client.Status().Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
 			// If there is a conflict, requeue the resource and retry Update
-			log.Info("Error updating Installation resource status. Requeue and retry.")
+			logrus.Info("Error updating Installation resource status. Requeue and retry.", err)
 			return reconcile.Result{
 				Requeue:      true,
-				RequeueAfter: time.Second * 10,
+				RequeueAfter: time.Second,
 			}, nil
 		}
 
-		log.Error(err, "error reconciling installation instance")
+		logrus.Error(err, "error reconciling installation instance")
 		return reconcile.Result{}, err
 	}
 
-	//UPDATE OBJECT
+	// UPDATE OBJECT
 	err = r.client.Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
 			// If there is a conflict, requeue the resource and retry Update
-			log.Info("Error updating Installation resource. Requeue and retry.")
+			logrus.Info("Error updating Installation resource. Requeue and retry.", err)
 			return reconcile.Result{
 				Requeue:      true,
 				RequeueAfter: time.Second * 10,
 			}, nil
 		}
 
-		log.Error(err, "error reconciling installation instance")
+		logrus.Error(err, "error reconciling installation instance")
 		return reconcile.Result{}, err
 	}
 

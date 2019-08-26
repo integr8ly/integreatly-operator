@@ -36,6 +36,7 @@ var (
 	idpAlias                            = "openshift-v4"
 	githubIdpAlias                      = "github"
 	githubOauthAppCredentialsSecretName = "github-oauth-secret"
+	finalizer                           = "finalizer.rhsso.integreatly.org"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -95,7 +96,25 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling rhsso")
 	ns := r.Config.GetNamespace()
+
+	// Add finalizer if not there
+	err := resources.AddFinalizer(ctx, inst, serverClient, finalizer)
+	if err != nil {
+		logrus.Error("Error adding rhsso finalizer to installation", err)
+		return v1alpha1.PhaseFailed, nil
+	}
+
+	// Run finalization logic. If it fails, don't remove the finalizer
+	// so that we can retry during the next reconciliation
+	if inst.GetDeletionTimestamp() != nil {
+		err := resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+		if err != nil && !k8serr.IsNotFound(err) {
+			logrus.Error("Error removing rhsso oauth client", err)
+			return v1alpha1.PhaseFailed, nil
+		}
+	}
 
 	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {

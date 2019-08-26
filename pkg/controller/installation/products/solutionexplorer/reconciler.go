@@ -13,9 +13,11 @@ import (
 	v1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -33,11 +35,14 @@ const (
 	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
+	finalizer               = "finalizer.webapp.integreatly.org"
+	oauthId                 = "integreatly-solution-explorer"
 )
 
 type Reconciler struct {
 	*resources.Reconciler
 	coreClient    kubernetes.Interface
+	oauthv1Client oauthClient.OauthV1Interface
 	Config        *config.SolutionExplorer
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
@@ -50,7 +55,7 @@ type OauthResolver interface {
 	GetOauthEndPoint() (*resources.OauthServerConfig, error)
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
 	seConfig, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve solution explorer config")
@@ -72,6 +77,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		OauthResolver: resolver,
+		oauthv1Client: oauthv1Client,
 	}, nil
 }
 
@@ -85,18 +91,40 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling solution explorer")
+
+	// Add finalizer if not there
+	err := resources.AddFinalizer(ctx, inst, serverClient, finalizer)
+	if err != nil {
+		logrus.Error("Error adding solution explorer finalizer to installation", err)
+		return v1alpha1.PhaseFailed, err
+	}
+
+	// Run finalization logic. If it fails, don't remove the finalizer
+	// so that we can retry during the next reconciliation
+	if inst.GetDeletionTimestamp() != nil {
+		err := resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+		if err != nil && !k8serr.IsNotFound(err) {
+			logrus.Error("Error removing solution explorer oauth client", err)
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	phase, err = r.ReconcileCustomResource(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	route, err := r.ensureAppUrl(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
@@ -112,12 +140,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		Secret:       "test",
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultSubNameAndPkg,
+			Name: oauthId,
 		},
 	}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 

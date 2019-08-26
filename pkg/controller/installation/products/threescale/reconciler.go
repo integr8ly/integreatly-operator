@@ -3,6 +3,8 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -17,12 +19,11 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"net/http"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -36,6 +37,7 @@ const (
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
 	rhssoIntegrationName         = "rhsso"
+	finalizer                    = "finalizer.3scale.integreatly.org"
 )
 
 var (
@@ -86,6 +88,23 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
+
+	// Add finalizer if not there
+	err := resources.AddFinalizer(ctx, in, serverClient, finalizer)
+	if err != nil {
+		logrus.Error("Error adding 3scale finalizer to installation", err)
+		return v1alpha1.PhaseFailed, nil
+	}
+
+	// Run finalization logic. If it fails, don't remove the finalizer
+	// so that we can retry during the next reconciliation
+	if in.GetDeletionTimestamp() != nil {
+		err := resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, finalizer, oauthId)
+		if err != nil && !k8serr.IsNotFound(err) {
+			logrus.Error("Error removing 3scale oauth client", err)
+			return v1alpha1.PhaseFailed, nil
+		}
+	}
 
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
