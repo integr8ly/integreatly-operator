@@ -31,6 +31,7 @@ var (
 	ProductRHSSOUser           ProductName = "rhssouser"
 	ProductCodeReadyWorkspaces ProductName = "codeready-workspaces"
 	ProductFuse                ProductName = "fuse"
+	ProductFuseOnOpenshift     ProductName = "fuse-on-openshift"
 	Product3Scale              ProductName = "3scale"
 	ProductNexus               ProductName = "nexus"
 	ProductLauncher            ProductName = "launcher"
@@ -41,6 +42,7 @@ var (
 	VersionAMQOnline           ProductVersion = "0.28.0.redhat-00066"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
+	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionNexus               ProductVersion = "3.16"
 	VersionLauncher            ProductVersion = "0.1.2"
 

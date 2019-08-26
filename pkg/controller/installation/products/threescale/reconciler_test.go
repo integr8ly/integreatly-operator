@@ -37,8 +37,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = usersv1.SchemeBuilder.AddToScheme(scheme)
-	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
+	err = usersv1.AddToScheme(scheme)
+	err = oauthv1.AddToScheme(scheme)
 	return scheme, err
 }
 
