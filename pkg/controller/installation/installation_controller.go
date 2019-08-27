@@ -29,7 +29,6 @@ import (
 
 const (
 	defaultInstallationConfigMapName = "integreatly-installation-config"
-	finalizer                        = "finalizer.integreatly.org"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -105,30 +104,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// Add finalizer
-	err = resources.AddFinalizer(r.context, instance, r.client, finalizer)
-	if err != nil {
-		logrus.Error("Error adding finalizer to installation", err)
-		return reconcile.Result{}, err
-	}
-
-	// If the CR is being deleted, attempt to delete the finalizer and cancel this context
-	if instance.DeletionTimestamp != nil {
-		finalizers := instance.GetFinalizers()
-		if len(finalizers) == 1 && finalizers[0] == finalizer {
-			err = resources.RemoveFinalizer(r.context, instance, r.client, finalizer)
-			if err != nil {
-				logrus.Info("Error removing finalizer from custom resource", err)
-				return reconcile.Result{}, err
-			}
-
-			// Cancel this context to kill all
-			// ongoing requests to the API and exit
-			r.cancel()
-			return reconcile.Result{}, nil
-		}
-	}
-
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -151,6 +126,36 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	if instance.Status.Stages == nil {
 		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
+	}
+
+	// If the CR is being deleted, cancel the current context
+	// and attempt to clean up the products with finalizers
+	if instance.DeletionTimestamp != nil {
+		// Cancel this context to kill all ongoing requests to the API
+		// and use a new context to handle deletion logic
+		r.cancel()
+
+		// Clean up the products which have finalizers associated to them
+		merr := &multiErr{}
+		for _, product := range resources.FinalizeProducts {
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to build reconciler for product %s", product.Name))
+			}
+			serverClient, err := client.New(r.restConfig, client.Options{})
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to create server client for %s", product.Name))
+			}
+			_, err = reconciler.Reconcile(context.TODO(), instance, product, serverClient)
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to reconcile product %s", product.Name))
+			}
+		}
+
+		if len(merr.errors) == 0 {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, merr
 	}
 
 	for _, stage := range installType.GetStages() {
@@ -184,7 +189,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			logrus.Info("Error updating Installation resource status. Requeue and retry.", err)
 			return reconcile.Result{
 				Requeue:      true,
-				RequeueAfter: time.Second,
+				RequeueAfter: time.Second * 10,
 			}, nil
 		}
 
@@ -216,6 +221,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
+	logrus.Info("Running preflight checks..")
+
 	result := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,

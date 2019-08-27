@@ -17,7 +17,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -93,24 +92,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
-	// Add finalizer if not there
-	err := resources.AddFinalizer(ctx, inst, serverClient, finalizer)
-	if err != nil {
-		logrus.Error("Error adding solution explorer finalizer to installation", err)
-		return v1alpha1.PhaseFailed, err
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	// Run finalization logic. If it fails, don't remove the finalizer
-	// so that we can retry during the next reconciliation
-	if inst.GetDeletionTimestamp() != nil {
-		err := resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
-		if err != nil && !k8serr.IsNotFound(err) {
-			logrus.Error("Error removing solution explorer oauth client", err)
-			return v1alpha1.PhaseFailed, err
-		}
-	}
-
-	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

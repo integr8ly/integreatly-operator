@@ -90,6 +90,38 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	return v1alpha1.PhaseCompleted, nil
 }
 
+type finalizerFunc func() error
+
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, finalizer string, finalFunc finalizerFunc) (v1alpha1.StatusPhase, error) {
+	// Add finalizer if not there
+	err := AddFinalizer(ctx, inst, client, product, finalizer)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
+		return v1alpha1.PhaseFailed, err
+	}
+
+	// Run finalization logic. If it fails, don't remove the finalizer
+	// so that we can retry during the next reconciliation
+	if inst.GetDeletionTimestamp() != nil {
+		if contains(inst.GetFinalizers(), finalizer) {
+			err := finalFunc()
+			if err != nil {
+				return v1alpha1.PhaseFailed, err
+			}
+
+			// Remove the finalizer to allow for deletion of the installation cr
+			logrus.Infof("Removing finalizer: %s", finalizer)
+			err = RemoveFinalizer(ctx, inst, client, finalizer)
+			if err != nil {
+				return v1alpha1.PhaseFailed, err
+			}
+		}
+		// Don't continue reconciling the product
+		return v1alpha1.PhaseNone, nil
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, v1alpha12.ApprovalAutomatic)

@@ -329,7 +329,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
+			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.Installation, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)

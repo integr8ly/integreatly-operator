@@ -99,24 +99,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	logrus.Info("Reconciling rhsso")
 	ns := r.Config.GetNamespace()
 
-	// Add finalizer if not there
-	err := resources.AddFinalizer(ctx, inst, serverClient, finalizer)
-	if err != nil {
-		logrus.Error("Error adding rhsso finalizer to installation", err)
-		return v1alpha1.PhaseFailed, nil
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	// Run finalization logic. If it fails, don't remove the finalizer
-	// so that we can retry during the next reconciliation
-	if inst.GetDeletionTimestamp() != nil {
-		err := resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
-		if err != nil && !k8serr.IsNotFound(err) {
-			logrus.Error("Error removing rhsso oauth client", err)
-			return v1alpha1.PhaseFailed, nil
-		}
-	}
-
-	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -126,26 +116,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: oauthId,
-		},
-		Secret: clientSecret,
-		RedirectURIs: []string{
-			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
-	}, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, serverClient)
+	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -222,7 +198,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
@@ -245,7 +221,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
 		}
 
-		err = r.setupOpenshiftIDP(ctx, kcr, serverClient)
+		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
 		}
@@ -296,7 +272,23 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+	oauthc := &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: oauthId,
+		},
+		Secret: clientSecret,
+		RedirectURIs: []string{
+			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+		},
+		GrantMethod: oauthv1.GrantHandlerPrompt,
+	}
+
+	_, err := r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
+	if err != nil {
+		return err
+	}
+
 	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {
 		logrus.Infof("Adding keycloak realm client")
 
