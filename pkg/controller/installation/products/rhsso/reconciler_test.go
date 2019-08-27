@@ -2,9 +2,10 @@ package rhsso
 
 import (
 	"context"
+	"testing"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -14,6 +15,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -23,8 +25,8 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,6 +68,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.SchemeBuilder.AddToScheme(scheme)
+	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -96,21 +99,6 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},
-		},
-		{
-			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			ExpectError:    true,
-			Installation:   &v1alpha1.Installation{},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-
-					return errors.New("dummy error")
-				},
-			},
-			FakeClient: fakeclient.NewFakeClient(),
-			FakeConfig: basicConfigMock(),
-			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -442,8 +430,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: &v1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultRhssoNamespace,
+					Name:       "installation",
+					Namespace:  defaultRhssoNamespace,
+					Finalizers: []string{"finalizer.rhsso.integreatly.org"},
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",

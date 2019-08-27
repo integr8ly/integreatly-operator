@@ -10,6 +10,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
@@ -37,6 +38,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.SchemeBuilder.AddToScheme(scheme)
+	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -69,8 +71,9 @@ func TestThreeScale(t *testing.T) {
 			Assert:               assertInstallationSuccessfull,
 			Installation: &v1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-installation",
-					Namespace: "integreatly-operator-namespace",
+					Name:       "test-installation",
+					Namespace:  "integreatly-operator-namespace",
+					Finalizers: []string{"finalizer.3scale.integreatly.org"},
 				},
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
