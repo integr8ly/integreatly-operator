@@ -3,6 +3,7 @@ package codeready
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -251,7 +252,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 }
 
 func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("checking keycloak client exists in keycloakrealm custom resource in namespace: %s", r.Config.GetNamespace())
+	r.logger.Infof("checking keycloak client exists for che")
 	kcConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloak config")
@@ -280,7 +281,9 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 
 	if r.Config.GetHost() != cheURL {
 		r.Config.SetHost(cheURL)
-		r.ConfigManager.WriteConfig(r.Config)
+		if err = r.ConfigManager.WriteConfig(r.Config); err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not write che configuration")
+		}
 	}
 
 	// retrieve the sso config so we can find the keycloakrealm custom resource to update
@@ -296,47 +299,118 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	}
 
 	// Create a che client that can be used in keycloak for che to login with
-	kcCheClient := &keycloakv1.KeycloakClient{}
-	if existingKcCheClient := findCheKeycloakClient(kcRealm.Spec.Clients); existingKcCheClient != nil {
-		kcCheClient = existingKcCheClient
-	}
-	kcCheClient.KeycloakApiClient = &keycloakv1.KeycloakApiClient{
-		ID:                        defaultClientName,
-		Name:                      defaultClientName,
-		Enabled:                   true,
-		StandardFlowEnabled:       true,
-		DirectAccessGrantsEnabled: true,
-		RootURL:                   cheURL,
-		RedirectUris:              []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
-		AdminURL:                  cheURL,
-		WebOrigins:                []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
-		PublicClient:              true,
-		ClientAuthenticatorType:   "client-secret",
-	}
-
-	// Append the che client to the list of clients in the keycloak realm and save
-	kcRealm.Spec.Clients = findOrAppendCheKeycloakClient(kcRealm.Spec.Clients, kcCheClient)
-	err = serverClient.Update(ctx, kcRealm)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update keycloakrealm custom resource with codeready client")
-	}
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func findOrAppendCheKeycloakClient(clients []*keycloakv1.KeycloakClient, toAppend *keycloakv1.KeycloakClient) []*keycloakv1.KeycloakClient {
-	if existingKcCheClient := findCheKeycloakClient(clients); existingKcCheClient != nil {
-		return clients
-	}
-	return append(clients, toAppend)
-}
-
-func findCheKeycloakClient(clients []*keycloakv1.KeycloakClient) *keycloakv1.KeycloakClient {
-	for _, client := range clients {
-		if client.ID == defaultClientName {
-			return client
+	if !keycloakv1.ContainsClient(kcRealm.Spec.Clients, defaultClientName) {
+		r.logger.Infof("creating che client, %s, in keycloak", defaultClientName)
+		kcRealm.Spec.Clients = append(kcRealm.Spec.Clients, &keycloakv1.KeycloakClient{
+			KeycloakApiClient: &keycloakv1.KeycloakApiClient{
+				ID:                        defaultClientName,
+				ClientID:                  defaultClientName,
+				ClientAuthenticatorType:   "client-secret",
+				Enabled:                   true,
+				PublicClient:              true,
+				DirectAccessGrantsEnabled: true,
+				RedirectUris:              []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
+				WebOrigins:                []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
+				StandardFlowEnabled:       true,
+				RootURL:                   cheURL,
+				FullScopeAllowed:          true,
+				Access: map[string]bool{
+					"view":      true,
+					"configure": true,
+					"manage":    true,
+				},
+				ProtocolMappers: []keycloakv1.KeycloakProtocolMapper{
+					{
+						Name:            "given name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+						ConsentRequired: true,
+						ConsentText:     "${givenName}",
+						Config: map[string]string{
+							"userinfo.token.claim": "true",
+							"user.attribute":       "firstName",
+							"id.token.claim":       "true",
+							"access.token.claim":   "true",
+							"claim.name":           "given_name",
+							"jsonType.label":       "String",
+						},
+					},
+					{
+						Name:            "full name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-full-name-mapper",
+						ConsentRequired: true,
+						ConsentText:     "${fullName}",
+						Config: map[string]string{
+							"id.token.claim":       "true",
+							"access.token.claim":   "true",
+							"userinfo.token.claim": "true",
+						},
+					},
+					{
+						Name:            "family name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+						ConsentRequired: true,
+						ConsentText:     "${familyName}",
+						Config: map[string]string{
+							"userinfo.token.claim": "true",
+							"user.attribute":       "lastName",
+							"id.token.claim":       "true",
+							"access.token.claim":   "true",
+							"claim.name":           "family_name",
+							"jsonType.label":       "String",
+						},
+					},
+					{
+						Name:            "role list",
+						Protocol:        "saml",
+						ProtocolMapper:  "saml-role-list-mapper",
+						ConsentRequired: false,
+						ConsentText:     "${familyName}",
+						Config: map[string]string{
+							"single":               "false",
+							"attribute.nameformat": "Basic",
+							"attribute.name":       "Role",
+						},
+					},
+					{
+						Name:            "email",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+						ConsentRequired: true,
+						ConsentText:     "${email}",
+						Config: map[string]string{
+							"userinfo.token.claim": "true",
+							"user.attribute":       "email",
+							"id.token.claim":       "true",
+							"access.token.claim":   "true",
+							"claim.name":           "email",
+							"jsonType.label":       "String",
+						},
+					},
+					{
+						Name:            "username",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+						ConsentRequired: false,
+						Config: map[string]string{
+							"userinfo.token.claim": "true",
+							"user.attribute":       "username",
+							"id.token.claim":       "true",
+							"access.token.claim":   "true",
+							"claim.name":           "preferred_username",
+							"jsonType.label":       "String",
+						},
+					},
+				},
+			},
+		})
+		if err = serverClient.Update(ctx, kcRealm); err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update keycloakrealm custom resource with codeready client")
 		}
 	}
-	return nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
