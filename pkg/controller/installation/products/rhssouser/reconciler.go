@@ -25,14 +25,14 @@ import (
 )
 
 var (
-	defaultRhssoNamespace               = "user-sso"
-	customerAdminPassword               = "Password1"
-	keycloakName                        = "rhssouser"
-	keycloakRealmName                   = "user-sso"
-	oauthId                             = "rhssouser"
-	clientSecret                        = "placeholder" // this should be replaced in INTLY-2784
-	defaultSubscriptionName             = "integreatly-rhsso"
-	idpAlias                            = "openshift-v4"
+	defaultRhssoNamespace   = "user-sso"
+	customerAdminPassword   = "Password1"
+	keycloakName            = "rhssouser"
+	keycloakRealmName       = "user-sso"
+	oauthId                 = "rhssouser"
+	clientSecret            = "placeholder" // this should be replaced in INTLY-2784
+	defaultSubscriptionName = "integreatly-rhsso"
+	idpAlias                = "openshift-v4"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -316,7 +316,7 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	openshiftAdminGroup := &usersv1.Group{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
