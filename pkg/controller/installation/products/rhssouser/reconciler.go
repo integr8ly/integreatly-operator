@@ -2,7 +2,6 @@ package rhssouser
 
 import (
 	"context"
-	"fmt"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -29,13 +28,11 @@ var (
 	defaultRhssoNamespace               = "user-sso"
 	customerAdminPassword               = "Password1"
 	keycloakName                        = "rhssouser"
-	keycloakRealmName                   = "openshift"
+	keycloakRealmName                   = "user-sso"
 	oauthId                             = "rhssouser"
 	clientSecret                        = "placeholder" // this should be replaced in INTLY-2784
 	defaultSubscriptionName             = "integreatly-rhsso"
 	idpAlias                            = "openshift-v4"
-	githubIdpAlias                      = "github"
-	githubOauthAppCredentialsSecretName = "github-oauth-secret"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -217,11 +214,6 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP for user-sso")
 		}
 
-		err = r.setupGithubIDP(ctx, kcr, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Github IDP for user-sso")
-		}
-
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm for user-sso")
 		return v1alpha1.PhaseCompleted, nil
 	}
@@ -309,42 +301,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.Keyc
 	return nil
 }
 
-func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
-	githubCreds := &v1.Secret{}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
-	if err != nil {
-		logrus.Errorf("Unable to find Github oauth credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
-		return err
-	}
-
-	if !containsIdentityProvider(kcr.Spec.IdentityProviders, githubIdpAlias) {
-		logrus.Infof("Adding github identity provider to the keycloak realm")
-		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
-			Alias:                     githubIdpAlias,
-			ProviderID:                githubIdpAlias,
-			Enabled:                   true,
-			TrustEmail:                false,
-			StoreToken:                true,
-			AddReadTokenRoleOnCreate:  true,
-			FirstBrokerLoginFlowAlias: "first broker login",
-			LinkOnly:                  true,
-			AuthenticateByDefault:     false,
-			Config: map[string]string{
-				"hideOnLoginPage": "true",
-				"clientId":        fmt.Sprintf("%s", githubCreds.Data["clientId"]),
-				"disableUserInfo": "",
-				"clientSecret":    fmt.Sprintf("%s", githubCreds.Data["secret"]),
-				"defaultScope":    "repo,user,write:public_key,admin:repo_hook,read:org,public_repo,user:email",
-				"useJwksUrl":      "true",
-			},
-		})
-		return serverClient.Update(ctx, kcr)
-	}
-	// We need to revisit how the github idp gets created/updated
-	// Client ID and secret can get outdated we need to ensure they are synced with the value secret in the github-oauth-secret
-	return nil
-}
-
 func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, alias string) bool {
 	for _, p := range providers {
 		if p.Alias == alias {
@@ -354,55 +310,13 @@ func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, 
 	return false
 }
 
-func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
-	var added []usersv1.User
-	for _, osUser := range openshiftUsers {
-		if !kcContainsOsUser(keycloakUsers, osUser) {
-			added = append(added, osUser)
-		}
-	}
-
-	var deleted []int
-	for i, kcUser := range keycloakUsers {
-		if kcUser.UserName != CustomerAdminUser.UserName && !OsUserInKc(openshiftUsers, kcUser) {
-			deleted = append(deleted, i)
-		}
-	}
-
-	return added, deleted
-}
-
 func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient pkgclient.Client) ([]*aerogearv1.KeycloakUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
 	if err != nil {
 		return nil, err
 	}
-	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers.Items)
-
-	for _, index := range deletedIndexes {
-		keycloakUsers = remove(index, keycloakUsers)
-	}
-
-	for _, osUser := range added {
-		keycloakUsers = append(keycloakUsers, &aerogearv1.KeycloakUser{
-			KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-				Enabled:       true,
-				Attributes:    aerogearv1.KeycloakAttributes{},
-				UserName:      osUser.Name,
-				EmailVerified: true,
-				Email:         osUser.Name + "@example.com",
-			},
-			FederatedIdentities: []aerogearv1.FederatedIdentity{
-				{
-					IdentityProvider: idpAlias,
-					UserId:           string(osUser.UID),
-					UserName:         osUser.Name,
-				},
-			},
-		})
-	}
-
+	
 	openshiftAdminGroup := &usersv1.Group{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
@@ -417,31 +331,6 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 	}
 
 	return keycloakUsers, nil
-}
-
-func remove(index int, kcUsers []*aerogearv1.KeycloakUser) []*aerogearv1.KeycloakUser {
-	kcUsers[index] = kcUsers[len(kcUsers)-1]
-	return kcUsers[:len(kcUsers)-1]
-}
-
-func kcContainsOsUser(kcUsers []*aerogearv1.KeycloakUser, osUser usersv1.User) bool {
-	for _, kcu := range kcUsers {
-		if kcu.UserName == osUser.Name {
-			return true
-		}
-	}
-
-	return false
-}
-
-func OsUserInKc(osUsers []usersv1.User, kcUser *aerogearv1.KeycloakUser) bool {
-	for _, osu := range osUsers {
-		if osu.Name == kcUser.UserName {
-			return true
-		}
-	}
-
-	return false
 }
 
 func isOpenshiftAdmin(kcUser *aerogearv1.KeycloakUser, adminGroup *usersv1.Group) bool {
