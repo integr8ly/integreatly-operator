@@ -2,6 +2,10 @@ package installation
 
 import (
 	"context"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -14,24 +18,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"os"
-	"sigs.k8s.io/controller-runtime"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
-	"time"
 )
 
 const (
 	defaultInstallationConfigMapName = "integreatly-installation-config"
 )
-
-var log = logf.Log.WithName("Installation Controller")
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -106,14 +104,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// if the CR is being deleted,
-	// cancel this context to kill all
-	// ongoing requests to the API and exit
-	if instance.DeletionTimestamp != nil {
-		r.cancel() //cancel context
-		return reconcile.Result{}, nil
-	}
-
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -138,6 +128,36 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
 	}
 
+	// If the CR is being deleted, cancel the current context
+	// and attempt to clean up the products with finalizers
+	if instance.DeletionTimestamp != nil {
+		// Cancel this context to kill all ongoing requests to the API
+		// and use a new context to handle deletion logic
+		r.cancel()
+
+		// Clean up the products which have finalizers associated to them
+		merr := &multiErr{}
+		for _, product := range resources.FinalizeProducts {
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to build reconciler for product %s", product.Name))
+			}
+			serverClient, err := client.New(r.restConfig, client.Options{})
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to create server client for %s", product.Name))
+			}
+			_, err = reconciler.Reconcile(context.TODO(), instance, product, serverClient)
+			if err != nil {
+				merr.Add(pkgerr.Wrapf(err, "Failed to reconcile product %s", product.Name))
+			}
+		}
+
+		if len(merr.errors) == 0 {
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, merr
+	}
+
 	for _, stage := range installType.GetStages() {
 		stageStatus, ok := instance.Status.Stages[stage.Name]
 		if !ok {
@@ -160,37 +180,37 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	//UPDATE STATUS
+	// UPDATE STATUS
 	err = r.client.Status().Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
 			// If there is a conflict, requeue the resource and retry Update
-			log.Info("Error updating Installation resource status. Requeue and retry.")
+			logrus.Info("Error updating Installation resource status. Requeue and retry.", err)
 			return reconcile.Result{
 				Requeue:      true,
 				RequeueAfter: time.Second * 10,
 			}, nil
 		}
 
-		log.Error(err, "error reconciling installation instance")
+		logrus.Error(err, "error reconciling installation instance")
 		return reconcile.Result{}, err
 	}
 
-	//UPDATE OBJECT
+	// UPDATE OBJECT
 	err = r.client.Update(r.context, instance)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
 			// If there is a conflict, requeue the resource and retry Update
-			log.Info("Error updating Installation resource. Requeue and retry.")
+			logrus.Info("Error updating Installation resource. Requeue and retry.", err)
 			return reconcile.Result{
 				Requeue:      true,
 				RequeueAfter: time.Second * 10,
 			}, nil
 		}
 
-		log.Error(err, "error reconciling installation instance")
+		logrus.Error(err, "error reconciling installation instance")
 		return reconcile.Result{}, err
 	}
 
@@ -201,6 +221,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
+	logrus.Info("Running preflight checks..")
+
 	result := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,

@@ -36,6 +36,7 @@ var (
 	idpAlias                            = "openshift-v4"
 	githubIdpAlias                      = "github"
 	githubOauthAppCredentialsSecretName = "github-oauth-secret"
+	finalizer                           = "finalizer.rhsso.integreatly.org"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -95,9 +96,17 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling rhsso")
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -112,7 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, serverClient)
+	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -189,7 +198,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
@@ -212,7 +221,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
 		}
 
-		err = r.setupOpenshiftIDP(ctx, kcr, serverClient)
+		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
 		}
@@ -263,23 +272,21 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
-	_, err := r.oauthv1Client.OAuthClients().Get(oauthId, metav1.GetOptions{})
-	if err != nil && k8serr.IsNotFound(err) {
-		oauthc := &oauthv1.OAuthClient{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: oauthId,
-			},
-			Secret: clientSecret,
-			RedirectURIs: []string{
-				r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-			},
-			GrantMethod: oauthv1.GrantHandlerPrompt,
-		}
-		_, err = r.oauthv1Client.OAuthClients().Create(oauthc)
-		if err != nil {
-			return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
-		}
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+	oauthc := &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: oauthId,
+		},
+		Secret: clientSecret,
+		RedirectURIs: []string{
+			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+		},
+		GrantMethod: oauthv1.GrantHandlerPrompt,
+	}
+
+	_, err := r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
+	if err != nil {
+		return err
 	}
 
 	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {

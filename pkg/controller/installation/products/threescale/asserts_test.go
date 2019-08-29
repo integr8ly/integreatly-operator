@@ -9,6 +9,7 @@ import (
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -28,7 +29,6 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	fakeSigsClient := scenario.FakeSigsClient
 	installation := scenario.Installation
 	fakeThreeScaleClient := scenario.FakeThreeScaleClient
-	fakeOauthClient := scenario.FakeOauthClient
 	fakeAppsV1Client := scenario.FakeAppsV1Client
 
 	tsConfig, err := configManager.ReadThreeScale()
@@ -100,13 +100,15 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	}
 
 	// Service discovery should be configured
-	threeScaleOauth, err := fakeOauthClient.OAuthClients().Get(oauthId, metav1.GetOptions{})
+	threeScaleOauth := &oauthv1.OAuthClient{}
+	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: oauthId}, threeScaleOauth)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("3scale should have an Ouath Client '%s' created", oauthId))
+		return errors.New(fmt.Sprintf("3scale should have an Oauth Client '%s' created", oauthId))
 	}
 	if threeScaleOauth.RedirectURIs[0] != installation.Spec.MasterURL {
-		return errors.New(fmt.Sprintf("3scale Ouath Client redirect uri should be %s and is %s", installation.Spec.MasterURL, threeScaleOauth.RedirectURIs[0]))
+		return errors.New(fmt.Sprintf("3scale Oauth Client redirect uri should be %s and is %s", installation.Spec.MasterURL, threeScaleOauth.RedirectURIs[0]))
 	}
+
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
 	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
 	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {

@@ -4,8 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -19,7 +22,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"k8s.io/client-go/rest"
-	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/threescale"
@@ -58,7 +60,12 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 	case v1alpha1.ProductAMQOnline:
 		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductSolutionExplorer:
-		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, mpm, oauthResolver)
+		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		if err != nil {
+			return nil, err
+		}
+
+		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, oauthv1Client, mpm, oauthResolver)
 	case v1alpha1.ProductLauncher:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

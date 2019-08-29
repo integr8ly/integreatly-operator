@@ -2,16 +2,19 @@ package solutionexplorer
 
 import (
 	"context"
+	"testing"
+
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
+	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -32,15 +35,16 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	scheme := runtime.NewScheme()
 	v1alpha12.AddToScheme(scheme)
 	cases := []struct {
-		Name           string
-		client         client.Client
-		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *v1alpha1.Installation
-		ExpectErr      bool
-		ExpectedStatus v1alpha1.StatusPhase
-		OauthResolver  func() OauthResolver
-		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Validate       func(t *testing.T, mock interface{})
+		Name            string
+		client          client.Client
+		FakeConfig      *config.ConfigReadWriterMock
+		Installation    *v1alpha1.Installation
+		ExpectErr       bool
+		ExpectedStatus  v1alpha1.StatusPhase
+		OauthResolver   func() OauthResolver
+		FakeMPM         *marketplace.MarketplaceInterfaceMock
+		FakeOauthClient oauthClient.OauthV1Interface
+		Validate        func(t *testing.T, mock interface{})
 	}{
 		{
 			Name: " test custom resource is reconciled and phase complete returned",
@@ -51,8 +55,9 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 					},
 				}
 			},
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			ExpectedStatus:  v1alpha1.PhaseCompleted,
+			FakeMPM:         &marketplace.MarketplaceInterfaceMock{},
 			Installation: &v1alpha1.Installation{
 				TypeMeta: v1.TypeMeta{
 					Kind:       "Installation",
@@ -81,7 +86,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			mockResolver := tc.OauthResolver()
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, mockResolver)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
