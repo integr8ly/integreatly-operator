@@ -67,11 +67,6 @@ oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/ma
 oc create -f https://raw.githubusercontent.com/integr8ly/integreatly-operator/master/deploy/role_binding.yaml
 ```
 
-Create a `Role` and `RoleBinding` for RHMDS
-```sh
-make cluster/prepare/rhmds
-```
-
 Clone this repository, change directory and run the operator:
 ```sh
 operator-sdk up local --namespace=<namespace>
