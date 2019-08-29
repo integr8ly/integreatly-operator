@@ -1,5 +1,6 @@
 ORG=integreatly
 NAMESPACE=integreatly
+RHMDS_NAMESPACE=mobile-developer-console
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
@@ -100,6 +101,13 @@ cluster/prepare:
 	kubectl apply -f deploy/role.yaml
 	kubectl apply -f deploy/service_account.yaml
 	kubectl create --insecure-skip-tls-verify -f deploy/rbac.yaml -n $(NAMESPACE)
+
+.PHONY: cluster/prepare/rhmds
+	oc new-project $(RHMDS_NAMESPACE)
+    oc create -f deploy/rhsso-user-role.yaml -n $(RHMDS_NAMESPACE)
+	oc create -f deploy/rhsso-user-role_binding.yaml -n $(RHMDS_NAMESPACE)
+	
+$RHMDS_NAMESPACE
 
 .PHONY: cluster/clean
 cluster/clean:
