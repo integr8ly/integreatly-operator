@@ -159,23 +159,17 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	for _, stage := range installType.GetStages() {
-		stageStatus, ok := instance.Status.Stages[stage.Name]
-		if !ok {
-			//initialise the stage
-			stageStatus = &v1alpha1.InstallationStageStatus{
-				Phase:    "unprocessed",
-				Name:     stage.Name,
-				Products: stage.Products,
-			}
+		stagePhase, err := r.processStage(instance, &stage, configManager)
+		instance.Status.Stages[stage.Name] = &v1alpha1.InstallationStageStatus{
+			Name:     stage.Name,
+			Phase:    stagePhase,
+			Products: stage.Products,
 		}
-
-		err := r.processStage(instance, stageStatus, configManager)
-		instance.Status.Stages[stage.Name] = stageStatus
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 		//don't move to next stage until current stage is complete
-		if stageStatus.Phase != v1alpha1.PhaseCompleted {
+		if stagePhase != v1alpha1.PhaseCompleted {
 			break
 		}
 	}
@@ -300,26 +294,24 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	}
 	return foundProducts, nil
 }
-func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *v1alpha1.InstallationStageStatus, configManager config.ConfigReadWriter) error {
+func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
 	incompleteStage := false
-	var merr error
+	var mErr error
 	for _, product := range stage.Products {
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 		if err != nil {
-			stage.Phase = v1alpha1.PhaseFailed
-			return pkgerr.Wrapf(err, "failed to build a reconciler for %s", product.Name)
+			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to build a reconciler for %s", product.Name)
 		}
 		serverClient, err := client.New(r.restConfig, client.Options{})
 		if err != nil {
-			stage.Phase = v1alpha1.PhaseFailed
-			return pkgerr.Wrap(err, "could not create server client")
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
 		}
 		product.Status, err = reconciler.Reconcile(r.context, instance, product, serverClient)
 		if err != nil {
-			if merr == nil {
-				merr = &multiErr{}
+			if mErr == nil {
+				mErr = &multiErr{}
 			}
-			merr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product.Name))
+			mErr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product.Name))
 		}
 		//found an incomplete product
 		if !(product.Status == v1alpha1.PhaseCompleted) {
@@ -329,11 +321,9 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, st
 
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {
-		stage.Phase = v1alpha1.PhaseInProgress
-	} else {
-		stage.Phase = v1alpha1.PhaseCompleted
+		return v1alpha1.PhaseInProgress, mErr
 	}
-	return merr
+	return v1alpha1.PhaseCompleted, mErr
 }
 
 type multiErr struct {
