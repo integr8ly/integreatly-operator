@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -392,13 +393,17 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 	}
 
 	for _, osUser := range added {
+		email := osUser.Name
+		if !strings.Contains(email, "@") {
+			email = email + "@example.com"
+		}
 		keycloakUsers = append(keycloakUsers, &aerogearv1.KeycloakUser{
 			KeycloakApiUser: &aerogearv1.KeycloakApiUser{
 				Enabled:       true,
 				Attributes:    aerogearv1.KeycloakAttributes{},
 				UserName:      osUser.Name,
 				EmailVerified: true,
-				Email:         osUser.Name + "@example.com",
+				Email:         email,
 			},
 			FederatedIdentities: []aerogearv1.FederatedIdentity{
 				{
