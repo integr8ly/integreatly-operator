@@ -10,14 +10,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -26,7 +24,6 @@ import (
 
 var (
 	defaultRhssoNamespace   = "user-sso"
-	customerAdminPassword   = "Password1"
 	keycloakName            = "rhssouser"
 	keycloakRealmName       = "user-sso"
 	oauthId                 = "rhssouser"
@@ -161,11 +158,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		kcr.Spec.EventsListeners = []string{
 			"metrics-listener",
 		}
-		users, err := syncronizeWithOpenshiftUsers(kcr.Spec.Users, ctx, serverClient)
-		if err != nil {
-			return err
-		}
-		kcr.Spec.Users = users
 
 		return nil
 	})
@@ -295,30 +287,5 @@ func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, 
 			return true
 		}
 	}
-	return false
-}
-
-func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient pkgclient.Client) ([]*aerogearv1.KeycloakUser, error) {
-	openshiftUsers := &usersv1.UserList{}
-	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
-	if err != nil {
-		return nil, err
-	}
-
-	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return nil, err
-	}
-	return keycloakUsers, nil
-}
-
-func isOpenshiftAdmin(kcUser *aerogearv1.KeycloakUser, adminGroup *usersv1.Group) bool {
-	for _, name := range adminGroup.Users {
-		if kcUser.UserName == name {
-			return true
-		}
-	}
-
 	return false
 }
