@@ -14,6 +14,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -66,6 +67,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.SchemeBuilder.AddToScheme(scheme)
+	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -96,21 +98,6 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},
-		},
-		{
-			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			ExpectError:    true,
-			Installation:   &v1alpha1.Installation{},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-
-					return errors.New("dummy error")
-				},
-			},
-			FakeClient: fakeclient.NewFakeClient(),
-			FakeConfig: basicConfigMock(),
-			Product:    &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -341,7 +328,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
+			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.Installation, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
