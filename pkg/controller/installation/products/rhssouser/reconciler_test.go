@@ -499,9 +499,7 @@ func getKcr(status aerogearv1.KeycloakRealmStatus) *aerogearv1.KeycloakRealm {
 				EventsListeners: []string{
 					"metrics-listener",
 				},
-				Users: []*aerogearv1.KeycloakUser{
-					CustomerAdminUser,
-				},
+				Users: []*aerogearv1.KeycloakUser{},
 			},
 		},
 		Status: status,

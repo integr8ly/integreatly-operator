@@ -35,19 +35,6 @@ var (
 	idpAlias                = "openshift-v4"
 )
 
-var CustomerAdminUser = &aerogearv1.KeycloakUser{
-	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-		Enabled:       true,
-		Attributes:    aerogearv1.KeycloakAttributes{},
-		UserName:      "customer-admin",
-		EmailVerified: true,
-		Email:         "customer-admin@example.com",
-		ClientRoles:   getKeycloakRoles(true),
-	},
-	Password:     &customerAdminPassword,
-	OutputSecret: "customer-admin-user-credentials",
-}
-
 type Reconciler struct {
 	Config        *config.RHSSOUser
 	ConfigManager config.ConfigReadWriter
@@ -165,10 +152,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		kcr.Spec.Enabled = true
 		kcr.Spec.EventsListeners = []string{
 			"metrics-listener",
-		}
-
-		if kcr.Spec.Users == nil {
-			kcr.Spec.Users = []*aerogearv1.KeycloakUser{CustomerAdminUser}
 		}
 		users, err := syncronizeWithOpenshiftUsers(kcr.Spec.Users, ctx, serverClient)
 		if err != nil {
@@ -319,14 +302,6 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, err
 	}
-	for _, kcUser := range keycloakUsers {
-		if kcUser.UserName == CustomerAdminUser.UserName {
-			continue
-		}
-
-		kcUser.ClientRoles = getKeycloakRoles(isOpenshiftAdmin(kcUser, openshiftAdminGroup))
-	}
-
 	return keycloakUsers, nil
 }
 
@@ -338,25 +313,4 @@ func isOpenshiftAdmin(kcUser *aerogearv1.KeycloakUser, adminGroup *usersv1.Group
 	}
 
 	return false
-}
-
-func getKeycloakRoles(isAdmin bool) map[string][]string {
-	roles := map[string][]string{
-		"account": {
-			"manage-account",
-			"view-profile",
-		},
-		"broker": {
-			"read-token",
-		},
-	}
-	if isAdmin {
-		roles["realm-management"] = []string{
-			"manage-users",
-			"manage-identity-providers",
-			"view-realm",
-		}
-	}
-
-	return roles
 }
