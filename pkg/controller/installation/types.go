@@ -33,6 +33,7 @@ var (
 				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
 				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
 				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
+				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
 			},
 		},
 	}
@@ -56,6 +57,7 @@ var (
 				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
 				v1alpha1.ProductNexus:               {Name: v1alpha1.ProductNexus},
 				v1alpha1.ProductAMQStreams:          {Name: v1alpha1.ProductAMQStreams},
+				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
 			},
 		},
 	}

@@ -35,6 +35,7 @@ type ConfigReadWriter interface {
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
+	ReadRHSSOUser() (*RHSSOUser, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
 	ReadFuse() (*Fuse, error)
@@ -69,6 +70,8 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadAMQOnline()
 	case v1alpha1.ProductRHSSO:
 		return m.ReadRHSSO()
+	case v1alpha1.ProductRHSSOUser:
+		return m.ReadRHSSOUser()
 	case v1alpha1.ProductAMQStreams:
 		return m.ReadAMQStreams()
 	case v1alpha1.ProductCodeReadyWorkspaces:
@@ -134,6 +137,14 @@ func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 		return nil, err
 	}
 	return NewRHSSO(config), nil
+}
+
+func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductRHSSOUser)
+	if err != nil {
+		return nil, err
+	}
+	return NewRHSSOUser(config), nil
 }
 
 func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
