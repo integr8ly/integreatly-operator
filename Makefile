@@ -3,11 +3,18 @@ NAMESPACE=integreatly
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-TAG=v1.8.0
+PREVIOUS_TAG=1.8.0
+TAG=1.8.1
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
+OPERATOR_SDK_VERSION=0.10.0
+
+.PHONY: gen/csv
+gen/csv:
+	@operator-sdk olm-catalog gen-csv --csv-version $(TAG) --update-crds --from-version $(PREVIOUS_TAG)
+	@rm -rf deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 
 .PHONY: setup/dep
 setup/dep:
@@ -27,7 +34,7 @@ setup/dedicated:
 .PHONY: setup/travis
 setup/travis:
 	@echo Installing Operator SDK
-	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v0.8.1/operator-sdk-v0.8.1-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
+	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v$(OPERATOR_SDK_VERSION)/operator-sdk-v$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
 
 .PHONY: setup/service_account
 setup/service_account:
@@ -69,18 +76,18 @@ code/fix:
 
 .PHONY: image/build
 image/build: code/compile
-	@operator-sdk build $(REG)/$(ORG)/$(PROJECT):$(TAG)
+	@operator-sdk build $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 .PHONY: image/push
 image/push:
-	docker push $(REG)/$(ORG)/$(PROJECT):$(TAG)
+	docker push $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 .PHONY: image/build/push
 image/build/push: image/build image/push
 
 .PHONY: image/build/test
 image/build/test:
-	operator-sdk build --enable-tests $(REG)/$(ORG)/$(PROJECT):$(TAG)
+	operator-sdk build --enable-tests $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 .PHONY: test/unit
 test/unit:

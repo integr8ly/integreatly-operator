@@ -1,0 +1,4 @@
+packageName: integreatly
+channels:
+  - name: integreatly
+currentCSV: integreatlyoperator.1.8.1
