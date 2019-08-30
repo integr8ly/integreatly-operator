@@ -33,6 +33,7 @@ var (
 	clientSecret            = "placeholder" // this should be replaced in INTLY-2784
 	defaultSubscriptionName = "integreatly-rhsso"
 	idpAlias                = "openshift-v4"
+	finalizer               = "finalizer.user-sso.integreatly.org"
 )
 
 type Reconciler struct {
@@ -81,7 +82,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -245,7 +253,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		},
 		Secret: clientSecret,
 		RedirectURIs: []string{
-			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+			r.Config.GetHost() + "/auth/realms/user-sso/broker/openshift-v4/endpoint",
 		},
 		GrantMethod: oauthv1.GrantHandlerPrompt,
 	}

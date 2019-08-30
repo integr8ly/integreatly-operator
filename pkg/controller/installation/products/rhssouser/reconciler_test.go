@@ -2,9 +2,10 @@ package rhssouser
 
 import (
 	"context"
+	"testing"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -24,8 +25,8 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -68,6 +69,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.SchemeBuilder.AddToScheme(scheme)
 	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
+
 	return scheme, err
 }
 
@@ -429,8 +431,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: &v1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultRhssoNamespace,
+					Name:       "installation",
+					Namespace:  defaultRhssoNamespace,
+					Finalizers: []string{"finalizer.user-sso.integreatly.org"},
 				},
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
