@@ -3,12 +3,13 @@ package fuse
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
 	v12 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -27,9 +28,12 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "fuse"
-	defaultSubscriptionName      = "integreatly-syndesis"
-	adminGroupName               = "dedicated-admins"
+	defaultInstallationNamespace     = "fuse"
+	defaultSubscriptionName          = "integreatly-syndesis"
+	adminGroupName                   = "dedicated-admins"
+	defaultOriginPullSecretName      = "samples-registry-credentials"
+	defaultOriginPullSecretNamespace = "openshift"
+	defaultFusePullSecret            = "syndesis-pull-secret"
 )
 
 type Reconciler struct {
@@ -78,6 +82,10 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+	phase, err = r.reconcilePullSecret(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -189,6 +197,44 @@ func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.C
 	return v1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcilePullSecret(ctx context.Context, namespace string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	if inst.Spec.PullSecret.Name == "" {
+		inst.Spec.PullSecret.Name = defaultOriginPullSecretName
+	}
+	if inst.Spec.PullSecret.Namespace == "" {
+		inst.Spec.PullSecret.Namespace = defaultOriginPullSecretNamespace
+	}
+
+	originalSec := &v12.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      inst.Spec.PullSecret.Name,
+			Namespace: inst.Spec.PullSecret.Namespace,
+		},
+	}
+	err := client.Get(ctx, pkgclient.ObjectKey{Name: originalSec.Name, Namespace: originalSec.Namespace}, originalSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve secret %s in namespace %s", originalSec.Name, originalSec.Namespace)
+	}
+
+	fusePullSec := &v12.Secret{
+		Type: v12.SecretTypeDockerConfigJson,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultFusePullSecret,
+			Namespace: namespace,
+		},
+	}
+	or, err := controllerutil.CreateOrUpdate(ctx, client, fusePullSec, func(existing runtime.Object) error {
+		sec := existing.(*v12.Secret)
+		sec.Data = originalSec.Data
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not reconcile fuse pull secret %s", fusePullSec.Name)
+	}
+	logrus.Infof("reconciled fuse pull secret %s, %s", fusePullSec.Name, or)
+	return v1alpha1.PhaseCompleted, nil
+}
+
 //TODO this should be removed once https://issues.jboss.org/browse/INTLY-2836 is implemented
 // We want to avoid this kind of thing as really this is owned by the syndesis operator
 func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -230,7 +276,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 
 	r.logger.Info("Reconciling fuse custom resource")
 
-	intLimit := -1
+	intLimit := 0
 	cr := &syn.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),

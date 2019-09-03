@@ -55,11 +55,17 @@ type InstallationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type             string `json:"type"`
-	RoutingSubdomain string `json:"routingSubdomain"`
-	MasterURL        string `json:"masterUrl"`
-	NamespacePrefix  string `json:"namespacePrefix"`
-	SelfSignedCerts  bool   `json:"selfSignedCerts"`
+	Type             string         `json:"type"`
+	RoutingSubdomain string         `json:"routingSubdomain"`
+	MasterURL        string         `json:"masterUrl"`
+	NamespacePrefix  string         `json:"namespacePrefix"`
+	SelfSignedCerts  bool           `json:"selfSignedCerts"`
+	PullSecret       PullSecretSpec `json:"pullSecret"`
+}
+
+type PullSecretSpec struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 // InstallationStatus defines the observed state of Installation

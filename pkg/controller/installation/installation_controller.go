@@ -160,6 +160,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	for _, stage := range installType.GetStages() {
 		stagePhase, err := r.processStage(instance, &stage, configManager)
+		if instance.Status.Stages == nil {
+			instance.Status.Stages = make(map[string]*v1alpha1.InstallationStageStatus)
+		}
 		instance.Status.Stages[stage.Name] = &v1alpha1.InstallationStageStatus{
 			Name:     stage.Name,
 			Phase:    stagePhase,

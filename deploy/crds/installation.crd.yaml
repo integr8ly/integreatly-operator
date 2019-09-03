@@ -43,6 +43,13 @@ spec:
               type: string
             namespacePrefix:
               type: string
+            pullSecret:
+              type: object
+              properties:
+                name:
+                  type: string
+                namespace:
+                  type: string
           required:
             - type
         status:
