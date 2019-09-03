@@ -4,8 +4,9 @@ metadata:
   creationTimestamp: null
   name: integreatly-operator
 rules:
+## start backup permissions
 - apiGroups:
-  - batch
+    - batch
   resources:
     - cronjobs
   verbs:
@@ -33,15 +34,27 @@ rules:
   verbs:
     - create
     - update
+  ## end backup permissions
+- apiGroups:
+    - "integreatly.org"
+  resources:
+    - "*"
+  verbs:
+    - "*"
+# This is used to allow the operator to setup the ns needed for each product
 - apiGroups:
     - ""
   resources:
     - namespaces
+    - namespaces/finalizers
+    - "serviceaccounts"
   verbs:
     - list
-    - get
     - create
     - watch
+    - get
+    - update
+# This is used to allow the operator to setup catalog source config and remove it if needed.
 - apiGroups:
     - operators.coreos.com
   resources:
@@ -50,6 +63,7 @@ rules:
     - list
     - create
     - watch
+    - delete
 - apiGroups:
     - ""
   resources:
@@ -75,6 +89,7 @@ rules:
     - create
     - watch
     - get
+    - delete
 - apiGroups:
     - aerogear.org
   resources:
@@ -108,11 +123,92 @@ rules:
     - org.eclipse.che
   resources:
     - checlusters
+    - checlusters/finalizers
   verbs:
     - list
     - create
     - watch
     - get
+- apiGroups:
+    - syndesis.io
+  resources:
+    - syndesises
+    - syndesises/finalizers
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - admin.enmasse.io
+  resources:
+    - authenticationservices
+    - addressplans
+    - addressspaceplans
+    - brokeredinfraconfigs
+    - standardinfraconfigs
+    - consoleservices
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - oauth.openshift.io
+  resources:
+    - oauthclients
+  verbs:
+    - create
+    - get
+    - update
+    - delete
+- apiGroups:
+    - ''
+  resources:
+    - configmaps
+  verbs:
+    - get
+    - update
+- apiGroups:
+    - apps.openshift.io
+  resources:
+    - deploymentconfigs/instantiate
+    - deploymentconfigs #needed for editing fuse oauth proxy
+  verbs:
+    - create
+    - update #needed for editing fuse oauth proxy
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+  verbs:
+    - get
+    - create
+    - update
+- apiGroups:
+    - gpte.opentlc.com
+  resources:
+    - nexus
+  verbs:
+    - list
+    - create
+    - watch
+    - get
+- apiGroups:
+    - launcher.fabric8.io
+  resources:
+    - launchers
+  verbs:
+    - get
+    - create
+- apiGroups:
+    - "rbac.authorization.k8s.io"
+  resources:
+    - "rolebindings"
+  verbs:
+    - create #needed for creating rolebinding for dedicated-admins to view fuse
+    - update #needed for updating subject list to match changes to dedicated-admins users
+# This is used to allow the operator to create and update the rhmi-developers group with users
 - apiGroups:
     - user.openshift.io
   resources:
@@ -127,3 +223,5 @@ rules:
     - get
     - create
     - update
+    - delete
+# rhmi-developers group ends

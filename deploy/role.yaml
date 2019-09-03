@@ -5,64 +5,50 @@ metadata:
   name: integreatly-operator
 rules:
 - apiGroups:
-  - ""
+    - ""
   resources:
-  - pods
-  - services
-  - endpoints
-  - persistentvolumeclaims
-  - events
-  - configmaps
-  - secrets
+    - pods
+    - services
+    - endpoints
+    - persistentvolumeclaims
+    - events
+    - configmaps
+    - secrets
   verbs:
-  - '*'
+    - "*"
 - apiGroups:
-  - ""
+    - ""
   resources:
-  - namespaces
+    - namespaces
   verbs:
-  - get
+    - get
 - apiGroups:
-  - apps
+    - apps
   resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
+    - deployments
+    - daemonsets
+    - replicasets
+    - statefulsets
   verbs:
-  - '*'
+    - "*"
 - apiGroups:
-  - monitoring.coreos.com
+    - monitoring.coreos.com
   resources:
-  - servicemonitors
+    - servicemonitors
   verbs:
-  - get
-  - create
+    - get
+    - create
 - apiGroups:
-  - apps
+    - apps
   resourceNames:
-  - integreatly-operator
+    - integreatly-operator
   resources:
-  - deployments/finalizers
+    - deployments/finalizers
   verbs:
-  - update
+    - update
 - apiGroups:
-  - integreatly.org
+    - integreatly.org
   resources:
-  - '*'
+    - "*"
   verbs:
-  - '*'
-- apiGroups:
-  - enmasse.io
-  resources:
-  - '*'
-  - addressspaceplans
-  verbs:
-  - '*'
-- apiGroups:
-  - admin.enmasse.io
-  resources:
-  - '*'
-  - standardinfraconfigs
-  verbs:
-  - '*'
+    - "*"
