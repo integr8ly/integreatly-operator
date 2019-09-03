@@ -80,9 +80,8 @@ make code/run
 
 In the OpenShift UI, in `Projects > integreatly-rhsso > Networking > Routes`, select the `sso` route to open up the SSO login page.
 
-The username is `admin`, and the password can be retrieved by running:
-```sh
-oc get dc sso -n integreatly-rhsso -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SSO_ADMIN_PASSWORD")].value}'
+# Bootstrap the project
+make cluster/prepare/local
 ```
 
 ### Configuring Github OAuth
@@ -122,6 +121,7 @@ make setup/dedicated
 ```
 
 If you want to remove the dedicated admin operator, run:
+
 ```sh
 make clean/dedicated
 ```
@@ -139,11 +139,15 @@ Update the operator version in the following files:
 
 * Update [version/version.go](version/version.go) (`Version = "<version>"`)
 
-* Update `TAG` in the [Makefile](Makefile) 
+* Update `TAG` and `PREVIOUS_TAG` (the previous version) in the [Makefile](Makefile) 
 
 * Update the operator image version in [deploy/operator.yaml](deploy/operator.yaml)
 (`image: quay.io/integreatly/integreatly-operator:v<version>`)
 
+* Generate a new CSV:
+```sh
+make gen/csv
+```
 
 Commit changes and open pull request. When the PR is accepted, create a new release tag:
 

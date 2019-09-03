@@ -70,7 +70,7 @@ var (
 	OperatorVersionRHSSOUser             = "1.9.4"
 	OperatorVersionCodeReadyWorkspaces   = "1.2.2"
 	OperatorVersionFuse                  = "7.4.0"
-	OperatorVersion3Scale                = "1.9.7"
+	OperatorVersion3Scale                = "1.9.8"
 	OperatorVersionNexus                 = "0.9.0"
 	OperatorVersionLauncher              = "0.1.2"
 	OperatorVersionUPS                   = "0.2.0"
