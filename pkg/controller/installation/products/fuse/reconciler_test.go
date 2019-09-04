@@ -2,8 +2,9 @@ package fuse
 
 import (
 	"context"
-	v1 "github.com/openshift/api/apps/v1"
 	"testing"
+
+	v1 "github.com/openshift/api/apps/v1"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -20,6 +21,7 @@ import (
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +29,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
+	"bytes"
+	"fmt"
 	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -146,6 +150,113 @@ func TestReconciler_config(t *testing.T) {
 		})
 	}
 }
+
+func TestReconciler_reconcilePullSecret(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defPullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultOriginPullSecretName,
+			Namespace: defaultOriginPullSecretNamespace,
+		},
+		Data: map[string][]byte{
+			"test": {'t', 'e', 's', 't'},
+		},
+	}
+
+	customPullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"test": {'t', 'e', 's', 't'},
+		},
+	}
+
+	cases := []struct {
+		Name         string
+		Client       pkgclient.Client
+		Installation *integreatlyv1alpha1.Installation
+		Config       *config.ConfigReadWriterMock
+		Validate     func(c pkgclient.Client) error
+	}{
+		{
+			Name:   "test default pull secret details are used if not provided",
+			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
+			Installation: &integreatlyv1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testinstall",
+					Namespace: "testinstall",
+				},
+			},
+			Config: basicConfigMock(),
+			Validate: func(c pkgclient.Client) error {
+				s := &corev1.Secret{}
+				err := c.Get(context.TODO(), pkgclient.ObjectKey{Name: defaultFusePullSecret, Namespace: "testinstall"}, s)
+				if err != nil {
+					return err
+				}
+				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
+					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+				}
+				return nil
+			},
+		},
+		{
+			Name:   "test fuse pull secret is reconciled successfully",
+			Client: fakeclient.NewFakeClientWithScheme(scheme, customPullSecret),
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testinstall",
+					Namespace: "testinstall",
+				},
+				Spec: integreatlyv1alpha1.InstallationSpec{
+					PullSecret: integreatlyv1alpha1.PullSecretSpec{
+						Name:      "test",
+						Namespace: "test",
+					},
+				},
+			},
+			Config: basicConfigMock(),
+			Validate: func(c pkgclient.Client) error {
+				s := &corev1.Secret{}
+				err := c.Get(context.TODO(), pkgclient.ObjectKey{Name: defaultFusePullSecret, Namespace: "testinstall"}, s)
+				if err != nil {
+					return err
+				}
+				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
+					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.Config,
+				tc.Installation,
+				nil,
+			)
+			if err != nil {
+				t.Fatal("failed to create reconciler", err)
+			}
+			_, err = testReconciler.reconcilePullSecret(context.TODO(), tc.Installation.Namespace, tc.Installation, tc.Client)
+			if err != nil {
+				t.Fatal("failed to run pull secret reconcile", err)
+			}
+			if err = tc.Validate(tc.Client); err != nil {
+				t.Fatal("test validation failed", err)
+			}
+		})
+	}
+}
+
 func TestReconciler_reconcileCustomResource(t *testing.T) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -304,6 +415,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	pullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultOriginPullSecretName,
+			Namespace: defaultOriginPullSecretNamespace,
+		},
+		Data: map[string][]byte{
+			"test": {'t', 'e', 's', 't'},
+		},
+	}
+
 	test1User := &usersv1.User{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test1",
@@ -332,7 +453,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup, pullSecret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
