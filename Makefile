@@ -31,6 +31,10 @@ setup/moq:
 setup/dedicated:
 	cd ./scripts && ./dedicated-setup.sh
 
+.PHONY: clean/dedicated
+setup/dedicated:
+	cd ./scripts && ./dedicated-cleanup.sh
+
 .PHONY: setup/travis
 setup/travis:
 	@echo Installing Operator SDK
@@ -101,21 +105,22 @@ test/e2e:
 
 .PHONY: cluster/prepare
 cluster/prepare:
-	oc new-project $(NAMESPACE)
-	oc project $(NAMESPACE)
-	kubectl apply -f deploy/crds/*.crd.yaml
-	kubectl apply -f deploy/role.yaml
-	kubectl apply -f deploy/service_account.yaml
-	kubectl create --insecure-skip-tls-verify -f deploy/rbac.yaml -n $(NAMESPACE)
+	@oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+	@oc new-project $(NAMESPACE)
+	@oc project $(NAMESPACE)
+	@oc process -f deploy/s3-secrets.yaml \
+		-p INSTALLATION_NAMESPACE=$(NAMESPACE) \
+		-p AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
+		-p AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
+		-p AWS_BUCKET=$(AWS_BUCKET) \
+		-p AWS_REGION=eu-west-1 | oc apply -f -
+	@oc create secret generic github-oauth-secret \
+		--from-literal=clientId=$(GH_CLIENT_ID) \
+		--from-literal=secret=$(GH_CLIENT_SECRET)
 
-.PHONY: cluster/clean
-cluster/clean:
-	kubectl delete role integreatly-operator -n $(NAMESPACE)
-	kubectl delete rolebinding integreatly-operator -n $(NAMESPACE)
-	kubectl delete crd installations.integreatly.org
-	kubectl delete serviceaccount integreatly-operator -n $(NAMESPACE)
-	kubectl delete namespace $(NAMESPACE)
-
-.PHONY: cluster/create/examples
-cluster/create/examples:
-	kubectl create -f deploy/examples/installation.cr.yaml -n $(NAMESPACE)
+.PHONY: cluster/prepare/local
+cluster/prepare/local: cluster/prepare
+	@oc create -f deploy/crds/*.crd.yaml
+	@oc create -f deploy/service_account.yaml
+	@oc create -f deploy/role.yaml
+	@oc create -f deploy/role_binding.yaml
