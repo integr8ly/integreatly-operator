@@ -1,0 +1,23 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+approvers:
+- mikenairn
+- maleck13
+- philbrookes
+- aidenkeating
+- dimitraz
+- matskiv
+- JameelB
+- trepel
+- austincunningham
+
+reviewers:
+- mikenairn
+- maleck13
+- philbrookes
+- aidenkeating
+- dimitraz
+- matskiv
+- JameelB
+- trepel
+- austincunningham
