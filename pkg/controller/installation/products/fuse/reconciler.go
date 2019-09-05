@@ -28,12 +28,10 @@ import (
 )
 
 const (
-	defaultInstallationNamespace     = "fuse"
-	defaultSubscriptionName          = "integreatly-syndesis"
-	adminGroupName                   = "dedicated-admins"
-	defaultOriginPullSecretName      = "samples-registry-credentials"
-	defaultOriginPullSecretNamespace = "openshift"
-	defaultFusePullSecret            = "syndesis-pull-secret"
+	defaultInstallationNamespace = "fuse"
+	defaultSubscriptionName      = "integreatly-syndesis"
+	adminGroupName               = "dedicated-admins"
+	defaultFusePullSecret        = "syndesis-pull-secret"
 )
 
 type Reconciler struct {
@@ -85,7 +83,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
-	phase, err = r.reconcilePullSecret(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -194,44 +192,6 @@ func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.C
 		return v1alpha1.PhaseFailed, err
 	}
 	r.logger.Infof("The %s subjects were: %s", adminViewFuseRoleBinding.Name, or)
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilePullSecret(ctx context.Context, namespace string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	if inst.Spec.PullSecret.Name == "" {
-		inst.Spec.PullSecret.Name = defaultOriginPullSecretName
-	}
-	if inst.Spec.PullSecret.Namespace == "" {
-		inst.Spec.PullSecret.Namespace = defaultOriginPullSecretNamespace
-	}
-
-	originalSec := &v12.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      inst.Spec.PullSecret.Name,
-			Namespace: inst.Spec.PullSecret.Namespace,
-		},
-	}
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: originalSec.Name, Namespace: originalSec.Namespace}, originalSec)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve secret %s in namespace %s", originalSec.Name, originalSec.Namespace)
-	}
-
-	fusePullSec := &v12.Secret{
-		Type: v12.SecretTypeDockerConfigJson,
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      defaultFusePullSecret,
-			Namespace: namespace,
-		},
-	}
-	or, err := controllerutil.CreateOrUpdate(ctx, client, fusePullSec, func(existing runtime.Object) error {
-		sec := existing.(*v12.Secret)
-		sec.Data = originalSec.Data
-		return nil
-	})
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not reconcile fuse pull secret %s", fusePullSec.Name)
-	}
-	logrus.Infof("reconciled fuse pull secret %s, %s", fusePullSec.Name, or)
 	return v1alpha1.PhaseCompleted, nil
 }
 

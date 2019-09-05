@@ -3,17 +3,21 @@ package resources
 import (
 	"context"
 	"fmt"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	v13 "github.com/openshift/api/oauth/v1"
-	v1alpha12 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	DefaultOriginPullSecretName      = "samples-registry-credentials"
+	DefaultOriginPullSecretNamespace = "openshift"
 )
 
 // This is the base reconciler that all the other reconcilers extend. It handles things like namespace creation, subscription creation etc
@@ -28,7 +32,7 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 	}
 }
 
-func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, client *v13.OAuthClient, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, client *oauthv1.OAuthClient, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	if err := apiClient.Get(ctx, pkgclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
 			prepareObject(client, inst)
@@ -48,7 +52,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.In
 
 func (r *Reconciler) getNS(ctx context.Context, namespace string, client pkgclient.Client) (*v1.Namespace, error) {
 	ns := &v1.Namespace{
-		ObjectMeta: v12.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
@@ -122,9 +126,39 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 	return v1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	if inst.Spec.PullSecret.Name == "" {
+		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
+	}
+	if inst.Spec.PullSecret.Namespace == "" {
+		inst.Spec.PullSecret.Namespace = DefaultOriginPullSecretNamespace
+	}
+
+	openshiftSecret := &v1.Secret{}
+	err := client.Get(ctx, pkgclient.ObjectKey{Name: inst.Spec.PullSecret.Name, Namespace: inst.Spec.PullSecret.Namespace}, openshiftSecret)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not get secret '%s' from namespace '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
+	}
+
+	componentSecret := &v1.Secret{
+		Type: v1.SecretTypeDockerConfigJson,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      inst.Spec.PullSecret.Name,
+			Namespace: namespace,
+		},
+		Data: openshiftSecret.Data,
+	}
+	err = CreateOrUpdate(ctx, client, componentSecret)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "error creating/updating secret '%s' in namespace: '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, v1alpha12.ApprovalAutomatic)
+	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, operatorsv1alpha1.ApprovalAutomatic)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
@@ -137,7 +171,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.I
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))
 	}
 
-	if ip.Status.Phase != v1alpha12.InstallPlanPhaseComplete {
+	if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete {
 		logrus.Infof("%s install plan is not complete yet ", t.Pkg)
 		return v1alpha1.PhaseInProgress, nil
 	}
@@ -145,13 +179,13 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.I
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func prepareObject(ns v12.Object, install *v1alpha1.Installation) {
+func prepareObject(ns metav1.Object, install *v1alpha1.Installation) {
 	refs := ns.GetOwnerReferences()
 	labels := ns.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	ref := v12.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
+	ref := metav1.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
 	labels["integreatly"] = "true"
 	refExists := false
 	for _, er := range refs {
@@ -167,7 +201,7 @@ func prepareObject(ns v12.Object, install *v1alpha1.Installation) {
 	ns.SetLabels(labels)
 }
 
-func IsOwnedBy(o v12.Object, owner *v1alpha1.Installation) bool {
+func IsOwnedBy(o metav1.Object, owner *v1alpha1.Installation) bool {
 	for _, or := range o.GetOwnerReferences() {
 		if or.Name == owner.Name && or.APIVersion == owner.APIVersion {
 			return true
