@@ -464,6 +464,7 @@
     "apps/v1",
     "oauth/v1",
     "route/v1",
+    "user/v1",
   ]
   pruneopts = "NT"
   revision = "0d921e363e951d89f583292c60d013c318df64dc"
@@ -1234,6 +1235,7 @@
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/oauth/v1",
     "github.com/openshift/api/route/v1",
+    "github.com/openshift/api/user/v1",
     "github.com/openshift/client-go/apps/clientset/versioned/fake",
     "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1",
     "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake",
@@ -1285,6 +1287,7 @@
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/controller-runtime/pkg/controller",
+    "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil",
     "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
     "sigs.k8s.io/controller-runtime/pkg/reconcile",
