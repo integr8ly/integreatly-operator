@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
@@ -26,6 +27,20 @@ var configManagerConfigMap = &corev1.ConfigMap{
 	},
 	Data: map[string]string{
 		"rhsso": fmt.Sprintf("NAMESPACE: %s\nREALM: %s\nURL: %s", testRhssoNamespace, testRhssoRealm, testRhssoURL),
+	},
+}
+
+var OpenshiftDockerSecret = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      resources.DefaultOriginPullSecretName,
+		Namespace: resources.DefaultOriginPullSecretNamespace,
+	},
+}
+
+var ComponentDockerSecret = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      resources.DefaultOriginPullSecretName,
+		Namespace: resources.DefaultOriginPullSecretNamespace,
 	},
 }
 
@@ -165,5 +180,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		threeScaleServiceDiscoveryConfigMap,
 		systemEnvConfigMap,
 		testDedicatedAdminsGroup,
+		OpenshiftDockerSecret,
 	}
 }

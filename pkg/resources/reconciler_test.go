@@ -1,20 +1,23 @@
 package resources
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	v14 "github.com/openshift/api/oauth/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	v13 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 	"time"
 )
@@ -30,27 +33,34 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"URL":       "fuse.openshift-cluster.com",
 			}), nil
 		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
 	}
 }
 
-func buildScheme() *runtime.Scheme {
+func buildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	alpha1.AddToScheme(scheme)
-	v14.AddToScheme(scheme)
-	v13.SchemeBuilder.AddToScheme(scheme)
-
-	return scheme
+	err := alpha1.AddToScheme(scheme)
+	err = oauthv1.AddToScheme(scheme)
+	err = operatorsv1.SchemeBuilder.AddToScheme(scheme)
+	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	return scheme, err
 }
 
 func TestNewReconciler_ReconcileSubscription(t *testing.T) {
+	scheme, err := buildScheme()
+	if err != nil {
+		t.Fatalf("error creating scheme: %s", err.Error())
+	}
 	ownerInstall := &v1alpha1.Installation{
-		TypeMeta: v12.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Installation",
 		},
 	}
-	catalogSourceConfig := &v13.CatalogSourceConfig{
-		ObjectMeta: v12.ObjectMeta{
+	catalogSourceConfig := &operatorsv1.CatalogSourceConfig{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installed-integreatly-test-ns",
 			Namespace: "openshift-marketplace",
 		},
@@ -70,7 +80,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
@@ -92,17 +102,17 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
-			client: pkgclient.NewFakeClientWithScheme(buildScheme()),
+			client: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v13.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
 				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
-					return nil, &alpha1.Subscription{ObjectMeta: v12.ObjectMeta{
+					return nil, &alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{
 						// simulate the time has passed
-						CreationTimestamp: v12.Time{Time: time.Now().AddDate(0, 0, -1)},
-					}}, errors.NewNotFound(alpha1.Resource("installplan"), "my-install-plan")
+						CreationTimestamp: metav1.Time{Time: time.Now().AddDate(0, 0, -1)},
+					}}, k8serr.NewNotFound(alpha1.Resource("installplan"), "my-install-plan")
 				},
 			},
 			SubscriptionName: "something",
@@ -110,10 +120,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name: "test reconcile subscription returns waiting for operator when catalog source config not ready",
-			client: pkgclient.NewFakeClientWithScheme(buildScheme(), catalogSourceConfig, &alpha1.CatalogSourceList{
+			client: fakeclient.NewFakeClientWithScheme(scheme, catalogSourceConfig, &alpha1.CatalogSourceList{
 				Items: []alpha1.CatalogSource{
 					alpha1.CatalogSource{
-						ObjectMeta: v12.ObjectMeta{
+						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test",
 							Namespace: "test-ns",
 						},
@@ -151,15 +161,118 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 	}
 }
 
+func TestReconciler_reconcilePullSecret(t *testing.T) {
+	scheme, err := buildScheme()
+	if err != nil {
+		t.Fatalf("error building scheme: %s", err.Error())
+	}
+
+	defPullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      DefaultOriginPullSecretName,
+			Namespace: DefaultOriginPullSecretNamespace,
+		},
+		Data: map[string][]byte{
+			"test": {'t', 'e', 's', 't'},
+		},
+	}
+
+	customPullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			"test": {'t', 'e', 's', 't'},
+		},
+	}
+
+	cases := []struct {
+		Name         string
+		Client       client.Client
+		Installation *v1alpha1.Installation
+		Config       *config.ConfigReadWriterMock
+		Validate     func(c client.Client) error
+	}{
+		{
+			Name:   "test default pull secret details are used if not provided",
+			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testinstall",
+					Namespace: "testinstall",
+				},
+			},
+			Config: basicConfigMock(),
+			Validate: func(c client.Client) error {
+				s := &corev1.Secret{}
+				err := c.Get(context.TODO(), client.ObjectKey{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}, s)
+				if err != nil {
+					return err
+				}
+				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
+					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+				}
+				return nil
+			},
+		},
+		{
+			Name:   "test pull secret is reconciled successfully",
+			Client: fakeclient.NewFakeClientWithScheme(scheme, customPullSecret),
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testinstall",
+					Namespace: "testinstall",
+				},
+				Spec: v1alpha1.InstallationSpec{
+					PullSecret: v1alpha1.PullSecretSpec{
+						Name:      "test",
+						Namespace: "test",
+					},
+				},
+			},
+			Config: basicConfigMock(),
+			Validate: func(c client.Client) error {
+				s := &corev1.Secret{}
+				err := c.Get(context.TODO(), client.ObjectKey{Name: "test", Namespace: "test"}, s)
+				if err != nil {
+					return err
+				}
+				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
+					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler := NewReconciler(nil)
+			_, err := testReconciler.ReconcilePullSecret(context.TODO(), "test", tc.Installation, tc.Client)
+			if err != nil {
+				t.Fatal("failed to run pull secret reconcile: ", err)
+			}
+			if err = tc.Validate(tc.Client); err != nil {
+				t.Fatal("test validation failed: ", err)
+			}
+		})
+	}
+}
+
 func TestReconciler_ReconcileOauthClient(t *testing.T) {
-	existingClient := &v14.OAuthClient{
-		GrantMethod:  v14.GrantHandlerAuto,
+	scheme, err := buildScheme()
+	if err != nil {
+		t.Fatalf("error building scheme: %s", err.Error())
+	}
+	existingClient := &oauthv1.OAuthClient{
+		GrantMethod:  oauthv1.GrantHandlerAuto,
 		Secret:       "test",
 		RedirectURIs: []string{"http://test.com"},
 	}
 	cases := []struct {
 		Name           string
-		OauthClient    *v14.OAuthClient
+		OauthClient    *oauthv1.OAuthClient
 		ExpectErr      bool
 		ExpectedStatus v1alpha1.StatusPhase
 		client         client.Client
@@ -167,36 +280,36 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 	}{
 		{
 			Name: "test oauth client is reconciled correctly when it does not exist",
-			OauthClient: &v14.OAuthClient{
-				GrantMethod:  v14.GrantHandlerAuto,
+			OauthClient: &oauthv1.OAuthClient{
+				GrantMethod:  oauthv1.GrantHandlerAuto,
 				Secret:       "test",
 				RedirectURIs: []string{"http://test.com"},
 			},
 			Installation: &v1alpha1.Installation{
-				TypeMeta: v12.TypeMeta{
+				TypeMeta: metav1.TypeMeta{
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 					Kind:       "Installation",
 				},
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
 				},
 			},
-			client:         pkgclient.NewFakeClientWithScheme(buildScheme()),
+			client:         fakeclient.NewFakeClientWithScheme(scheme),
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
 			Name:        "test oauth client is reconciled correctly when it does exist",
 			OauthClient: existingClient,
 			Installation: &v1alpha1.Installation{
-				TypeMeta: v12.TypeMeta{
+				TypeMeta: metav1.TypeMeta{
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 					Kind:       "Installation",
 				},
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
 				},
 			},
-			client:         pkgclient.NewFakeClientWithScheme(buildScheme(), existingClient),
+			client:         fakeclient.NewFakeClientWithScheme(scheme, existingClient),
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 	}
@@ -220,7 +333,7 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 
 func TestReconciler_ReconcileNamespace(t *testing.T) {
 	nsName := "test-ns"
-	defaultInstallation := &v1alpha1.Installation{ObjectMeta: v12.ObjectMeta{Name: "install"}, TypeMeta: v12.TypeMeta{APIVersion: v1alpha1.SchemeGroupVersion.String()}}
+	defaultInstallation := &v1alpha1.Installation{ObjectMeta: metav1.ObjectMeta{Name: "install"}, TypeMeta: metav1.TypeMeta{APIVersion: v1alpha1.SchemeGroupVersion.String()}}
 	cases := []struct {
 		Name           string
 		client         client.Client
@@ -231,18 +344,18 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 	}{
 		{
 			Name: "Test namespace reconcile completes without error",
-			client: pkgclient.NewFakeClient(&v1.Namespace{
-				ObjectMeta: v12.ObjectMeta{
+			client: fakeclient.NewFakeClient(&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
-					OwnerReferences: []v12.OwnerReference{
+					OwnerReferences: []metav1.OwnerReference{
 						{
 							Name:       "install",
 							APIVersion: v1alpha1.SchemeGroupVersion.String(),
 						},
 					},
 				},
-				Status: v1.NamespaceStatus{
-					Phase: v1.NamespaceActive,
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
 				},
 			}),
 			Installation:   defaultInstallation,
@@ -250,29 +363,29 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns not ready",
-			client: pkgclient.NewFakeClient(&v1.Namespace{
-				ObjectMeta: v12.ObjectMeta{
+			client: fakeclient.NewFakeClient(&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
-					OwnerReferences: []v12.OwnerReference{
+					OwnerReferences: []metav1.OwnerReference{
 						{
 							Name:       "install",
 							APIVersion: v1alpha1.SchemeGroupVersion.String(),
 						},
 					},
 				},
-				Status: v1.NamespaceStatus{},
+				Status: corev1.NamespaceStatus{},
 			}),
 			Installation:   defaultInstallation,
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns is terminating",
-			client: pkgclient.NewFakeClient(&v1.Namespace{
-				ObjectMeta: v12.ObjectMeta{
+			client: fakeclient.NewFakeClient(&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
 				},
-				Status: v1.NamespaceStatus{
-					Phase: v1.NamespaceTerminating,
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceTerminating,
 				},
 			}),
 			Installation:   &v1alpha1.Installation{},
