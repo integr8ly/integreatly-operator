@@ -1,6 +1,7 @@
 .idea
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
+cmd/manager/debug
 build/_output
 build/_test
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode

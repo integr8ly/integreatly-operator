@@ -163,6 +163,15 @@ var systemEnvConfigMap = &corev1.ConfigMap{
 	},
 }
 
+var oauthClientSecrets = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "oauth-client-secrets",
+	},
+	Data: map[string][]byte{
+		"3scale": bytes.NewBufferString("test").Bytes(),
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -170,6 +179,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
 	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
+	oauthClientSecrets.Namespace = integreatlyOperatorNamespace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -181,5 +191,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		systemEnvConfigMap,
 		testDedicatedAdminsGroup,
 		OpenshiftDockerSecret,
+		oauthClientSecrets,
 	}
 }

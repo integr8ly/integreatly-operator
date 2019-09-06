@@ -17,9 +17,8 @@ const defaultHost = "https://openshift.default.svc"
 const rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
 type OauthResolver struct {
-	client   *http.Client
-	Host     string
-	InSecure bool
+	client *http.Client
+	Host   string
 }
 
 func NewOauthResolver(client *http.Client) *OauthResolver {

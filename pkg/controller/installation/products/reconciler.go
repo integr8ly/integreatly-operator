@@ -41,10 +41,8 @@ type Interface interface {
 func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
-	if instance.Spec.SelfSignedCerts {
-		oauthResolver.InSecure = true
-	}
 	oauthResolver.Host = rc.Host
+
 	switch product {
 	case v1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)

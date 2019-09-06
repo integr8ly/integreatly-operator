@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -126,7 +127,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	if instance.Status.Stages == nil {
-		instance.Status.Stages = map[string]*v1alpha1.InstallationStageStatus{}
+		instance.Status.Stages = map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{}
 	}
 
 	// If the CR is being deleted, cancel the current context
@@ -160,9 +161,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	for _, stage := range installType.GetStages() {
-		stagePhase, err := r.processStage(instance, &stage, configManager)
+		var err error
+		var stagePhase v1alpha1.StatusPhase
+		if stage.Name == v1alpha1.BootstrapStage {
+			stagePhase, err = r.bootstrapStage(instance, configManager)
+		} else {
+			stagePhase, err = r.processStage(instance, &stage, configManager)
+		}
+
 		if instance.Status.Stages == nil {
-			instance.Status.Stages = make(map[string]*v1alpha1.InstallationStageStatus)
+			instance.Status.Stages = make(map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus)
 		}
 		instance.Status.Stages[stage.Name] = &v1alpha1.InstallationStageStatus{
 			Name:     stage.Name,
@@ -300,6 +308,25 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	}
 	return foundProducts, nil
 }
+
+func (r *ReconcileInstallation) bootstrapStage(instance *v1alpha1.Installation, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
+	mpm := marketplace.NewManager()
+
+	reconciler, err := NewBootstrapReconciler(configManager, instance, mpm)
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to build a reconciler for Bootstrap")
+	}
+	serverClient, err := client.New(r.restConfig, client.Options{})
+	if err != nil {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
+	}
+	phase, err := reconciler.Reconcile(r.context, instance, serverClient)
+	if err != nil || phase == v1alpha1.PhaseFailed {
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "Bootstrap stage reconcile failed")
+	}
+	return phase, nil
+}
+
 func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	var mErr error

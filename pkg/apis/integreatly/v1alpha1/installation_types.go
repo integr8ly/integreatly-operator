@@ -9,6 +9,7 @@ type InstallationType string
 type ProductName string
 type ProductVersion string
 type PreflightStatus string
+type StageName string
 
 var (
 	PhaseNone                 StatusPhase = ""
@@ -23,6 +24,10 @@ var (
 
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"
+
+	BootstrapStage      StageName = "bootstrap"
+	AuthenticationStage StageName = "authentication"
+	ProductsStage       StageName = "products"
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"
@@ -76,15 +81,15 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages           map[string]*InstallationStageStatus `json:"stages"`
+	Stages           map[StageName]*InstallationStageStatus `json:"stages"`
 	PreflightStatus  PreflightStatus
 	PreflightMessage string
 }
 
 type InstallationStageStatus struct {
-	Name     string                                     `json:"name"`
+	Name     StageName                                  `json:"name"`
 	Phase    StatusPhase                                `json:"phase"`
-	Products map[ProductName]*InstallationProductStatus `json:"products"`
+	Products map[ProductName]*InstallationProductStatus `json:"products,omitempty"`
 }
 
 type InstallationProductStatus struct {
