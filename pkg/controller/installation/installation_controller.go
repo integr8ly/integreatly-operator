@@ -2,6 +2,7 @@ package installation
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -224,7 +225,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
 	}
-	requiredSecrets := []string{"s3-credentials", "s3-bucket"}
+	requiredSecrets := []string{"s3-credentials", "s3-bucket", "github-oauth-secret"}
 	for _, secretName := range requiredSecrets {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -235,8 +236,10 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
 			return result, err
 		} else if !exists {
+			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
 			installation.Status.PreflightStatus = v1alpha1.PreflightFail
-			installation.Status.PreflightMessage = "Could not find " + secret.Name + " secret in integreatly-operator namespace: " + installation.Namespace
+			installation.Status.PreflightMessage = preflightMessage
+			logrus.Info(preflightMessage)
 			_ = r.client.Status().Update(r.context, installation)
 			return result, err
 		}
