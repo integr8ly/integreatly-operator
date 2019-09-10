@@ -126,7 +126,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
 		RedirectURIs: []string{route},
-		Secret:       "test",
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		ObjectMeta: metav1.ObjectMeta{
 			Name: oauthClientName,
