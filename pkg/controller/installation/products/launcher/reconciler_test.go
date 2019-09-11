@@ -2,6 +2,8 @@ package launcher
 
 import (
 	"context"
+	"testing"
+
 	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -21,7 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 var (
@@ -37,8 +38,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = launcherv1alpha2.SchemeBuilder.AddToScheme(scheme)
-	err = routev1.SchemeBuilder.AddToScheme(scheme)
-	err = oauthv1.SchemeBuilder.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
+	err = oauthv1.AddToScheme(scheme)
 	return scheme, err
 }
 

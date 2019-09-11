@@ -39,6 +39,7 @@ type ConfigReadWriter interface {
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
 	ReadFuse() (*Fuse, error)
+	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
 	ReadNexus() (*Nexus, error)
 	ReadLauncher() (*Launcher, error)
@@ -78,6 +79,8 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadCodeReady()
 	case v1alpha1.ProductFuse:
 		return m.ReadFuse()
+	case v1alpha1.ProductFuseOnOpenshift:
+		return m.ReadFuseOnOpenshift()
 	case v1alpha1.ProductNexus:
 		return m.ReadNexus()
 	case v1alpha1.ProductSolutionExplorer:
@@ -129,6 +132,14 @@ func (m *Manager) ReadFuse() (*Fuse, error) {
 		return nil, err
 	}
 	return NewFuse(config), nil
+}
+
+func (m *Manager) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductFuseOnOpenshift)
+	if err != nil {
+		return nil, err
+	}
+	return NewFuseOnOpenshift(config), nil
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {

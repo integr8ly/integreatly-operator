@@ -14,6 +14,7 @@ var (
 	lockConfigReadWriterMockReadAMQStreams       sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady        sync.RWMutex
 	lockConfigReadWriterMockReadFuse             sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift  sync.RWMutex
 	lockConfigReadWriterMockReadLauncher         sync.RWMutex
 	lockConfigReadWriterMockReadNexus            sync.RWMutex
 	lockConfigReadWriterMockReadProduct          sync.RWMutex
@@ -49,6 +50,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
+//             },
+//             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
+// 	               panic("mock out the ReadFuseOnOpenshift method")
 //             },
 //             ReadLauncherFunc: func() (*Launcher, error) {
 // 	               panic("mock out the ReadLauncher method")
@@ -99,6 +103,9 @@ type ConfigReadWriterMock struct {
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
 
+	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
+	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
+
 	// ReadLauncherFunc mocks the ReadLauncher method.
 	ReadLauncherFunc func() (*Launcher, error)
 
@@ -142,6 +149,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
+		}
+		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
+		ReadFuseOnOpenshift []struct {
 		}
 		// ReadLauncher holds details about calls to the ReadLauncher method.
 		ReadLauncher []struct {
@@ -306,6 +316,32 @@ func (mock *ConfigReadWriterMock) ReadFuseCalls() []struct {
 	lockConfigReadWriterMockReadFuse.RLock()
 	calls = mock.calls.ReadFuse
 	lockConfigReadWriterMockReadFuse.RUnlock()
+	return calls
+}
+
+// ReadFuseOnOpenshift calls ReadFuseOnOpenshiftFunc.
+func (mock *ConfigReadWriterMock) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
+	if mock.ReadFuseOnOpenshiftFunc == nil {
+		panic("ConfigReadWriterMock.ReadFuseOnOpenshiftFunc: method is nil but ConfigReadWriter.ReadFuseOnOpenshift was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadFuseOnOpenshift.Lock()
+	mock.calls.ReadFuseOnOpenshift = append(mock.calls.ReadFuseOnOpenshift, callInfo)
+	lockConfigReadWriterMockReadFuseOnOpenshift.Unlock()
+	return mock.ReadFuseOnOpenshiftFunc()
+}
+
+// ReadFuseOnOpenshiftCalls gets all the calls that were made to ReadFuseOnOpenshift.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadFuseOnOpenshiftCalls())
+func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadFuseOnOpenshift.RLock()
+	calls = mock.calls.ReadFuseOnOpenshift
+	lockConfigReadWriterMockReadFuseOnOpenshift.RUnlock()
 	return calls
 }
 

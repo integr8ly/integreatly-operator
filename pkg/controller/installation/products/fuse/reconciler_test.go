@@ -2,8 +2,9 @@ package fuse
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	v1 "github.com/openshift/api/apps/v1"
 
@@ -64,9 +65,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = syn.SchemeBuilder.AddToScheme(scheme)
-	err = routev1.SchemeBuilder.AddToScheme(scheme)
-	err = v1.SchemeBuilder.AddToScheme(scheme)
-	err = usersv1.SchemeBuilder.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
+	err = v1.AddToScheme(scheme)
+	err = usersv1.AddToScheme(scheme)
 	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }

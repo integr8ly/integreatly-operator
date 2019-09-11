@@ -13,7 +13,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
+	imagev1 "github.com/openshift/api/image/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	templatev1 "github.com/openshift/api/template/v1"
+	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 
 	nexusv1 "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -43,13 +46,16 @@ func init() {
 		enmasseAdmin.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
 		solutionExplorer.SchemeBuilder.AddToScheme,
-		routev1.SchemeBuilder.AddToScheme,
+		routev1.AddToScheme,
 
 		appsv1.AddToScheme,
+		imagev1.AddToScheme,
 		oauthv1.AddToScheme,
+		templatev1.AddToScheme,
 		nexusv1.SchemeBuilder.AddToScheme,
 		rbacv1.SchemeBuilder.AddToScheme,
-		usersv1.SchemeBuilder.AddToScheme,
+		usersv1.AddToScheme,
 		launcherv1alpha2.SchemeBuilder.AddToScheme,
+		samplesv1.SchemeBuilder.AddToScheme,
 	)
 }

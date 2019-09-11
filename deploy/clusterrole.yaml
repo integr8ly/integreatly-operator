@@ -127,3 +127,26 @@ rules:
     - get
     - create
     - update
+- apiGroups:
+    - samples.operator.openshift.io
+  resources:
+    - configs
+  verbs:
+    - get
+    - update
+- apiGroups:
+    - image.openshift.io
+  resources:
+    - imagestreams
+  verbs:
+    - get
+    - create
+    - delete
+- apiGroups:
+    - template.openshift.io
+  resources:
+    - templates
+  verbs:
+    - get
+    - create
+    - delete
