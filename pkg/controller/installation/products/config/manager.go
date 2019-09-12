@@ -32,6 +32,7 @@ func NewManager(ctx context.Context, client pkgclient.Client, namespace string, 
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
 type ConfigReadWriter interface {
 	readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
+	GetOauthClientsSecretName() string
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
@@ -100,6 +101,10 @@ func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
 
 func (m *Manager) GetOperatorNamespace() string {
 	return m.Namespace
+}
+
+func (m *Manager) GetOauthClientsSecretName() string {
+	return "oauth-client-secrets"
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {

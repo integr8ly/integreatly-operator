@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,8 +32,6 @@ var (
 	customerAdminPassword               = "Password1"
 	keycloakName                        = "rhsso"
 	keycloakRealmName                   = "openshift"
-	oauthId                             = "rhsso"
-	clientSecret                        = "placeholder" // this should be replaced in INTLY-2784
 	defaultSubscriptionName             = "integreatly-rhsso"
 	idpAlias                            = "openshift-v4"
 	githubIdpAlias                      = "github"
@@ -101,7 +100,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, r.getOAuthClientName())
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -274,9 +273,26 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 }
 
 func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: r.ConfigManager.GetOauthClientsSecretName(),
+		},
+	}
+
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	if err != nil {
+		return pkgerr.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+	}
+
+	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
+	if !ok {
+		return pkgerr.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+	}
+	clientSecret := string(clientSecretBytes)
+
 	oauthc := &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: oauthId,
+			Name: r.getOAuthClientName(),
 		},
 		Secret: clientSecret,
 		RedirectURIs: []string{
@@ -285,7 +301,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		GrantMethod: oauthv1.GrantHandlerPrompt,
 	}
 
-	_, err := r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
+	_, err = r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
 	if err != nil {
 		return err
 	}
@@ -304,7 +320,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 			Config: map[string]string{
 				"hideOnLoginPage": "",
 				"baseUrl":         "https://openshift.default.svc.cluster.local",
-				"clientId":        oauthId,
+				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
 				"defaultScope":    "user:full",
@@ -315,6 +331,10 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		return serverClient.Update(ctx, kcr)
 	}
 	return nil
+}
+
+func (r *Reconciler) getOAuthClientName() string {
+	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
 func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {

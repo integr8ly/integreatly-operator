@@ -32,16 +32,10 @@ const (
 	packageName                  = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientId                     = "3scale"
-	oauthId                      = "3scale"
-	clientSecret                 = "placeholder" // this should be replaced in INTLY-2784
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
 	rhssoIntegrationName         = "rhsso"
 	finalizer                    = "finalizer.3scale.integreatly.org"
-)
-
-var (
-	sdConfig = fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthId, clientSecret)
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -90,7 +84,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	logrus.Infof("Reconciling %s", packageName)
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, finalizer, oauthId)
+		return resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, finalizer, r.getOAuthClientName())
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -133,9 +127,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
+	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	phase, err = r.ReconcileOauthClient(ctx, in, &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: oauthId,
+			Name: r.getOAuthClientName(),
 		},
 		Secret: clientSecret,
 		RedirectURIs: []string{
@@ -157,6 +155,26 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgclient.Client) (string, error) {
+
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: r.ConfigManager.GetOauthClientsSecretName(),
+		},
+	}
+
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	if err != nil {
+		return "", errors.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+	}
+
+	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
+	if !ok {
+		return "", errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+	}
+	return string(clientSecretBytes), nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -263,6 +281,11 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
 		logrus.Infof("Adding keycloak realm client")
+
+		clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
 
 		kcr.Spec.Clients = append(kcr.Spec.Clients, &aerogearv1.KeycloakClient{
 			KeycloakApiClient: &aerogearv1.KeycloakApiClient{
@@ -402,6 +425,10 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return v1alpha1.PhaseFailed, err
 	}
 
+	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
 	if err != nil && !tsIsNotFoundError(err) {
 		return v1alpha1.PhaseFailed, err
@@ -423,6 +450,10 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getOAuthClientName() string {
+	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
 func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -579,6 +610,12 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
+	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", r.getOAuthClientName(), clientSecret)
+
 	if system.Data["service_discovery.yml"] != sdConfig {
 		system.Data["service_discovery.yml"] = sdConfig
 		err := serverClient.Update(ctx, system)

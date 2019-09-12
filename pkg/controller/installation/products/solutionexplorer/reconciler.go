@@ -35,7 +35,7 @@ const (
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
 	finalizer               = "finalizer.webapp.integreatly.org"
-	oauthId                 = "integreatly-solution-explorer"
+	oauthClientName         = "integreatly-solution-explorer"
 )
 
 type Reconciler struct {
@@ -93,7 +93,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	logrus.Info("Reconciling solution explorer")
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthId)
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthClientName)
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -126,10 +126,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
 		RedirectURIs: []string{route},
-		Secret:       "test",
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: oauthId,
+			Name: oauthClientName,
 		},
 	}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
@@ -185,7 +184,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		cr.Spec.AppLabel = "tutorial-web-app"
 		cr.Spec.Template.Path = defaultTemplateLoc
 		cr.Spec.Template.Parameters = map[string]string{
-			paramOauthClient:        defaultSubNameAndPkg,
+			paramOauthClient:        oauthClientName,
 			paramSSORoute:           ssoConfig.GetHost(),
 			paramOpenShiftHost:      inst.Spec.MasterURL,
 			paramOpenShiftOauthHost: oauthURL,

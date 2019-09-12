@@ -11,13 +11,16 @@ import (
 
 type Stage struct {
 	Products map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus
-	Name     string
+	Name     v1alpha1.StageName
 }
 
 var (
 	allManagedStages = []Stage{
 		{
-			Name: "authentication",
+			Name: v1alpha1.BootstrapStage,
+		},
+		{
+			Name: v1alpha1.AuthenticationStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
 				v1alpha1.ProductRHSSO: {
 					Name: v1alpha1.ProductRHSSO,
@@ -25,7 +28,7 @@ var (
 			},
 		},
 		{
-			Name: "products",
+			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
 				v1alpha1.ProductLauncher:            {Name: v1alpha1.ProductLauncher},
 				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
@@ -38,9 +41,12 @@ var (
 			},
 		},
 	}
-	allWorkspaceStages = []Stage{
+	allWorkshopStages = []Stage{
 		{
-			Name: "authentication",
+			Name: v1alpha1.BootstrapStage,
+		},
+		{
+			Name: v1alpha1.AuthenticationStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
 				v1alpha1.ProductRHSSO: {
 					Name: v1alpha1.ProductRHSSO,
@@ -48,7 +54,7 @@ var (
 			},
 		},
 		{
-			Name: "products",
+			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
 				v1alpha1.ProductLauncher:            {Name: v1alpha1.ProductLauncher},
 				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
@@ -113,11 +119,15 @@ func newManagedType(products []string) *Type {
 func buildProducts(t *Type, products []string, installType v1alpha1.InstallationType) {
 	t.Stages = []Stage{
 		Stage{
-			Name:     "authentication",
+			Name:     v1alpha1.BootstrapStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
 		},
 		Stage{
-			Name:     "products",
+			Name:     v1alpha1.AuthenticationStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+		},
+		Stage{
+			Name:     v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
 		},
 	}
@@ -127,14 +137,14 @@ func buildProducts(t *Type, products []string, installType v1alpha1.Installation
 			if installType == v1alpha1.InstallationTypeManaged {
 				t.Stages = allManagedStages
 			} else if installType == v1alpha1.InstallationTypeWorkshop {
-				t.Stages = allWorkspaceStages
+				t.Stages = allWorkshopStages
 			}
 			break
 		}
 		if v1alpha1.ProductName(product) == v1alpha1.ProductRHSSO {
-			t.Stages[0].Products[v1alpha1.ProductRHSSO] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductRHSSO}
+			t.Stages[1].Products[v1alpha1.ProductRHSSO] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductRHSSO}
 		}
 
-		t.Stages[1].Products[v1alpha1.ProductName(product)] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductName(product)}
+		t.Stages[2].Products[v1alpha1.ProductName(product)] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductName(product)}
 	}
 }

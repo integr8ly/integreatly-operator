@@ -246,7 +246,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: v1alpha1.InstallationStatus{
-					Stages: map[string]*v1alpha1.InstallationStageStatus{
+					Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
 							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
@@ -281,7 +281,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					APIVersion: v1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: v1alpha1.InstallationStatus{
-					Stages: map[string]*v1alpha1.InstallationStageStatus{
+					Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
 							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{

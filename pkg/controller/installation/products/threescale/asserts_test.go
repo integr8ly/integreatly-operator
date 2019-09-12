@@ -36,6 +36,11 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return err
 	}
 
+	oauthId := installation.Spec.NamespacePrefix + string(tsConfig.GetProductName())
+	oauthClientSecrets := &corev1.Secret{}
+	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
+	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthId, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
+
 	// A namespace should have been created.
 	ns := &corev1.Namespace{}
 	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: tsConfig.GetNamespace()}, ns)
