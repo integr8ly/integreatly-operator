@@ -30,20 +30,21 @@ var (
 	ProductsStage         StageName = "products"
 	SolutionExplorerStage StageName = "solution-explorer"
 
-	ProductAMQStreams            ProductName = "amqstreams"
-	ProductAMQOnline             ProductName = "amqonline"
-	ProductSolutionExplorer      ProductName = "solution-explorer"
-	ProductRHSSO                 ProductName = "rhsso"
-	ProductRHSSOUser             ProductName = "rhssouser"
-	ProductCodeReadyWorkspaces   ProductName = "codeready-workspaces"
-	ProductFuse                  ProductName = "fuse"
-	ProductFuseOnOpenshift       ProductName = "fuse-on-openshift"
-	Product3Scale                ProductName = "3scale"
-	ProductNexus                 ProductName = "nexus"
-	ProductLauncher              ProductName = "launcher"
-	ProductUps                   ProductName = "ups"
-	ProductMonitoring            ProductName = "monitoring"
-	ProductMobileSecurityService ProductName = "mobilesecurityservice"
+	ProductAMQStreams             ProductName = "amqstreams"
+	ProductAMQOnline              ProductName = "amqonline"
+	ProductSolutionExplorer       ProductName = "solution-explorer"
+	ProductRHSSO                  ProductName = "rhsso"
+	ProductRHSSOUser              ProductName = "rhssouser"
+	ProductCodeReadyWorkspaces    ProductName = "codeready-workspaces"
+	ProductFuse                   ProductName = "fuse"
+	ProductFuseOnOpenshift        ProductName = "fuse-on-openshift"
+	Product3Scale                 ProductName = "3scale"
+	ProductNexus                  ProductName = "nexus"
+	ProductLauncher               ProductName = "launcher"
+	ProductUps                    ProductName = "ups"
+	ProductMonitoring             ProductName = "monitoring"
+	ProductMobileSecurityService  ProductName = "mobilesecurityservice"
+	ProductMobileDeveloperConsole ProductName = "mdc"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -74,6 +75,7 @@ var (
 	OperatorVersionLauncher              = "0.1.2"
 	OperatorVersionUPS                   = "0.2.0"
 	OperatorVersionMobileSecurityService = "0.4.1"
+	OperatorVersionMDC                   = "0.2.6"
 )
 
 // InstallationSpec defines the desired state of Installation

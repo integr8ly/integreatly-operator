@@ -71,6 +71,13 @@
   packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
   pruneopts = "NT"
   revision = "97ff907ad226b8812aa45a0933bcdec2541a5b10"
+[[projects]]
+  digest = "1:a0406619fc157a732f66082c2867beb6134fc6661cbccabaa12700c5d039f984"
+  name = "github.com/aerogear/mobile-developer-console-operator"
+  packages = ["pkg/apis/mdc/v1alpha1"]
+  pruneopts = "NT"
+  revision = "ee13c1abd67841099329b99405256ba1916379ea"
+  version = "0.2.6"
 
 [[projects]]
   digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"
@@ -1300,6 +1307,7 @@
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/olm",
     "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
+    "github.com/aerogear/mobile-developer-console-operator/pkg/apis/mdc/v1alpha1",
     "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1",
     "github.com/eclipse/che-operator/pkg/apis/org/v1",
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",

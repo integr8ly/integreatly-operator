@@ -19,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuseonopenshift"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/launcher"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/mobiledeveloperconsole"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/mobilesecurityservice"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/nexus"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
@@ -113,6 +114,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = nexus.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductUps:
 		reconciler, err = ups.NewReconciler(configManager, instance, mpm)
+	case v1alpha1.ProductMobileDeveloperConsole:
+		reconciler, err = mobiledeveloperconsole.NewReconciler(configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

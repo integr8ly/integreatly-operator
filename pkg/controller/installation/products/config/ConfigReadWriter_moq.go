@@ -4,30 +4,32 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"sync"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
-	lockConfigReadWriterMockGetOauthClientsSecretName sync.RWMutex
-	lockConfigReadWriterMockGetOperatorNamespace      sync.RWMutex
-	lockConfigReadWriterMockReadAMQOnline             sync.RWMutex
-	lockConfigReadWriterMockReadAMQStreams            sync.RWMutex
-	lockConfigReadWriterMockReadCodeReady             sync.RWMutex
-	lockConfigReadWriterMockReadFuse                  sync.RWMutex
-	lockConfigReadWriterMockReadFuseOnOpenshift       sync.RWMutex
-	lockConfigReadWriterMockReadLauncher              sync.RWMutex
-	lockConfigReadWriterMockReadMobileSecurityService sync.RWMutex
-	lockConfigReadWriterMockReadMonitoring            sync.RWMutex
-	lockConfigReadWriterMockReadNexus                 sync.RWMutex
-	lockConfigReadWriterMockReadProduct               sync.RWMutex
-	lockConfigReadWriterMockReadRHSSO                 sync.RWMutex
-	lockConfigReadWriterMockReadRHSSOUser             sync.RWMutex
-	lockConfigReadWriterMockReadSolutionExplorer      sync.RWMutex
-	lockConfigReadWriterMockReadThreeScale            sync.RWMutex
-	lockConfigReadWriterMockReadUps                   sync.RWMutex
-	lockConfigReadWriterMockWriteConfig               sync.RWMutex
-	lockConfigReadWriterMockreadConfigForProduct      sync.RWMutex
+	lockConfigReadWriterMockGetOauthClientsSecretName  sync.RWMutex
+	lockConfigReadWriterMockGetOperatorNamespace       sync.RWMutex
+	lockConfigReadWriterMockReadAMQOnline              sync.RWMutex
+	lockConfigReadWriterMockReadAMQStreams             sync.RWMutex
+	lockConfigReadWriterMockReadCodeReady              sync.RWMutex
+	lockConfigReadWriterMockReadFuse                   sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift        sync.RWMutex
+	lockConfigReadWriterMockReadLauncher               sync.RWMutex
+	lockConfigReadWriterMockReadMobileSecurityService  sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring             sync.RWMutex
+	lockConfigReadWriterMockReadNexus                  sync.RWMutex
+	lockConfigReadWriterMockReadProduct                sync.RWMutex
+	lockConfigReadWriterMockReadRHSSO                  sync.RWMutex
+	lockConfigReadWriterMockReadRHSSOUser              sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer       sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale             sync.RWMutex
+	lockConfigReadWriterMockReadUps                    sync.RWMutex
+	lockConfigReadWriterMockWriteConfig                sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct       sync.RWMutex
+	lockConfigReadWriterMockReadMobileDeveloperConsole sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -66,6 +68,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadMobileSecurityServiceFunc: func() (*MobileSecurityService, error) {
 // 	               panic("mock out the ReadMobileSecurityService method")
+// 			   },
+//             ReadMobileDeveloperConsoleFunc: func() (*MobileDeveloperConsole, error) {
+// 	               panic("mock out the ReadMobileDeveloperConsole method")
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
@@ -130,6 +135,8 @@ type ConfigReadWriterMock struct {
 
 	// ReadMobileSecurityServiceFunc mocks the ReadMobileSecurityService method.
 	ReadMobileSecurityServiceFunc func() (*MobileSecurityService, error)
+	// ReadMobileDeveloperConsoleFunc mocks the ReadMobileDeveloperConsole method.
+	ReadMobileDeveloperConsoleFunc func() (*MobileDeveloperConsole, error)
 
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
@@ -189,6 +196,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadMobileSecurityService holds details about calls to the ReadMobileSecurityService method.
 		ReadMobileSecurityService []struct {
+		}
+		// ReadMobileDeveloperConsole holds details about calls to the ReadMobileDeveloperConsole method.
+		ReadMobileDeveloperConsole []struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
@@ -460,6 +470,32 @@ func (mock *ConfigReadWriterMock) ReadMobileSecurityServiceCalls() []struct {
 	lockConfigReadWriterMockReadMobileSecurityService.RLock()
 	calls = mock.calls.ReadMobileSecurityService
 	lockConfigReadWriterMockReadMobileSecurityService.RUnlock()
+	return calls
+}
+
+// ReadMobileDeveloperConsole calls ReadMobileDeveloperConsoleFunc.
+func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
+	if mock.ReadMobileDeveloperConsoleFunc == nil {
+		panic("ConfigReadWriterMock.ReadMobileDeveloperConsoleFunc: method is nil but ConfigReadWriter.ReadMobileDeveloperConsole was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadMobileDeveloperConsole.Lock()
+	mock.calls.ReadMobileDeveloperConsole = append(mock.calls.ReadMobileDeveloperConsole, callInfo)
+	lockConfigReadWriterMockReadMobileDeveloperConsole.Unlock()
+	return mock.ReadMobileDeveloperConsoleFunc()
+}
+
+// ReadMobileDeveloperConsoleCalls gets all the calls that were made to ReadMobileDeveloperConsole.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadMobileDeveloperConsoleCalls())
+func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsoleCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadMobileDeveloperConsole.RLock()
+	calls = mock.calls.ReadMobileDeveloperConsole
+	lockConfigReadWriterMockReadMobileDeveloperConsole.RUnlock()
 	return calls
 }
 
