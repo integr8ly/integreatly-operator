@@ -4,6 +4,8 @@ PASSWORD=$(openssl rand -base64 12)
 
 echo Setting up htpasswd IDP
 
+oc get secret htpasswd-secret -n openshift-config -o 'go-template={{index .data "htpasswd"}}' | base64 --decode > htpasswd
+
 if [[ ! -f "htpasswd" ]]; then
   echo creating htpasswd file
   touch htpasswd
@@ -15,4 +17,4 @@ htpasswd -b htpasswd cluster-admin ${PASSWORD}
 echo user added customer-admin ${PASSWORD}
 oc delete secret htpasswd-secret -n openshift-config
 oc create secret generic htpasswd-secret --from-file=htpasswd=htpasswd -n openshift-config
-oc patch oauth cluster --type=merge -p '{ "spec": { "identityProviders": [{ "name": "Test Identity Provider", "challenge": true, "login": true, "mappingMethod": "claim", "type": "HTPasswd", "htpasswd": { "fileData": { "name": "htpasswd-secret" } } }] } }'
+oc patch oauth cluster --type=merge -p '{ "spec": { "identityProviders": [{ "name": "htpasswd_provider", "challenge": true, "login": true, "mappingMethod": "claim", "type": "HTPasswd", "htpasswd": { "fileData": { "name": "htpasswd-secret" } } }] } }'

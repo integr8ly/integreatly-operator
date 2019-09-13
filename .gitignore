@@ -1,4 +1,5 @@
 .idea
+scripts/htpasswd
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
 cmd/manager/debug
