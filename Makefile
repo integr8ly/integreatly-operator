@@ -88,8 +88,7 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
-	@echo Running tests:
-	go test -v -race -coverprofile=coverage.out ./pkg/...
+	@./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e
 test/e2e:

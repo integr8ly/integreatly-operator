@@ -10,24 +10,11 @@ env:
     - OPERATOR_NAME=integreatly-operator
 
 stages:
-- test
-- compile
 - name: push
   if: fork = false AND branch = master
 
 jobs:
   include:
-  - stage: test
-    script:
-    - cd $HOME/gopath/src/github.com/integr8ly/$OPERATOR_NAME && make setup/travis code/check
-    - go get github.com/mattn/goveralls
-    - go install github.com/mattn/goveralls
-    - go test -v -covermode=count -coverprofile=coverage.out ./...
-    - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN
-
-  - stage: compile
-    script:
-    - make setup/travis image/build TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
   - stage: push
     script:
     - docker login --password "$QUAY_PASSWORD" --username "$QUAY_USERNAME" quay.io
