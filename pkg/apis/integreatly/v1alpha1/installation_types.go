@@ -25,9 +25,10 @@ var (
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"
 
-	BootstrapStage      StageName = "bootstrap"
-	AuthenticationStage StageName = "authentication"
-	ProductsStage       StageName = "products"
+	BootstrapStage        StageName = "bootstrap"
+	AuthenticationStage   StageName = "authentication"
+	ProductsStage         StageName = "products"
+	SolutionExplorerStage StageName = "solution-explorer"
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"

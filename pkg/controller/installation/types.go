@@ -36,10 +36,15 @@ var (
 				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
 				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
 				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
-				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
 				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
 				v1alpha1.ProductMonitoring:          {Name: v1alpha1.ProductMonitoring},
 				v1alpha1.ProductUps:                 {Name: v1alpha1.ProductUps},
+			},
+		},
+		{
+			Name: v1alpha1.SolutionExplorerStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
 			},
 		},
 	}
@@ -64,12 +69,17 @@ var (
 				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
 				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
 				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
-				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
 				v1alpha1.ProductNexus:               {Name: v1alpha1.ProductNexus},
 				v1alpha1.ProductAMQStreams:          {Name: v1alpha1.ProductAMQStreams},
 				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
 				v1alpha1.ProductUps:                 {Name: v1alpha1.ProductUps},
 				v1alpha1.ProductMonitoring:          {Name: v1alpha1.ProductMonitoring},
+			},
+		},
+		{
+			Name: v1alpha1.SolutionExplorerStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
 			},
 		},
 	}
@@ -134,6 +144,10 @@ func buildProducts(t *Type, products []string, installType v1alpha1.Installation
 			Name:     v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
 		},
+		Stage{
+			Name:     v1alpha1.SolutionExplorerStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+		},
 	}
 	for _, p := range products {
 		product := strings.ToLower(strings.TrimSpace(p))
@@ -147,6 +161,9 @@ func buildProducts(t *Type, products []string, installType v1alpha1.Installation
 		}
 		if v1alpha1.ProductName(product) == v1alpha1.ProductRHSSO {
 			t.Stages[1].Products[v1alpha1.ProductRHSSO] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductRHSSO}
+		}
+		if v1alpha1.ProductName(product) == v1alpha1.ProductSolutionExplorer {
+			t.Stages[3].Products[v1alpha1.ProductSolutionExplorer] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductSolutionExplorer}
 		}
 
 		t.Stages[2].Products[v1alpha1.ProductName(product)] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductName(product)}
