@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -172,6 +173,21 @@ var oauthClientSecrets = &corev1.Secret{
 	},
 }
 
+var installation = &v1alpha1.Installation{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:       "test-installation",
+		Namespace:  "integreatly-operator-namespace",
+		Finalizers: []string{"finalizer.3scale.integreatly.org"},
+	},
+	TypeMeta: metav1.TypeMeta{
+		APIVersion: v1alpha1.SchemeGroupVersion.String(),
+	},
+	Spec: v1alpha1.InstallationSpec{
+		MasterURL:        "https://console.apps.example.com",
+		RoutingSubdomain: "apps.example.com",
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -180,6 +196,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
 	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
 	oauthClientSecrets.Namespace = integreatlyOperatorNamespace
+	installation.Namespace = integreatlyOperatorNamespace
 
 	return []runtime.Object{
 		s3BucketSecret,
@@ -192,5 +209,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		testDedicatedAdminsGroup,
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
+		installation,
 	}
 }

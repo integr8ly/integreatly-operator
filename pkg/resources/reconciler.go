@@ -96,7 +96,8 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() error
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, finalizer string, finalFunc finalizerFunc) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, finalFunc finalizerFunc) (v1alpha1.StatusPhase, error) {
+	finalizer := "finalizer." + string(product.Name) + ".integreatly.org"
 	// Add finalizer if not there
 	err := AddFinalizer(ctx, inst, client, product, finalizer)
 	if err != nil {
@@ -115,7 +116,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 
 			// Remove the finalizer to allow for deletion of the installation cr
 			logrus.Infof("Removing finalizer: %s", finalizer)
-			err = RemoveFinalizer(ctx, inst, client, finalizer)
+			err = RemoveProductFinalizer(ctx, inst, client, string(product.Name))
 			if err != nil {
 				return v1alpha1.PhaseFailed, err
 			}

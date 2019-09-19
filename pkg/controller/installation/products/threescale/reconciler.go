@@ -35,7 +35,6 @@ const (
 	s3BucketSecretName           = "s3-bucket"
 	s3CredentialsSecretName      = "s3-credentials"
 	rhssoIntegrationName         = "rhsso"
-	finalizer                    = "finalizer.3scale.integreatly.org"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -83,8 +82,8 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, finalizer, r.getOAuthClientName())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, product, func() error {
+		return resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

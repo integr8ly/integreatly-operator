@@ -413,6 +413,31 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "installation",
+			Namespace:  defaultRhssoNamespace,
+			Finalizers: []string{"finalizer.user-sso.integreatly.org"},
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+		Status: v1alpha1.InstallationStatus{
+			Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
+				"codeready-stage": {
+					Name: "codeready-stage",
+					Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+						v1alpha1.ProductCodeReadyWorkspaces: {
+							Name:   v1alpha1.ProductCodeReadyWorkspaces,
+							Status: v1alpha1.PhaseCreatingComponents,
+						},
+					},
+				},
+			},
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		ExpectError     bool
@@ -428,7 +453,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  v1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -496,7 +521,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
+				t.Fatalf("expected no errors, but got one: %v", err)
 			}
 
 			if err == nil && tc.ExpectError {

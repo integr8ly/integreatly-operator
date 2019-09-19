@@ -36,7 +36,6 @@ var (
 	idpAlias                            = "openshift-v4"
 	githubIdpAlias                      = "github"
 	githubOauthAppCredentialsSecretName = "github-oauth-secret"
-	finalizer                           = "finalizer.rhsso.integreatly.org"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -99,8 +98,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	logrus.Info("Reconciling rhsso")
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, r.getOAuthClientName())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

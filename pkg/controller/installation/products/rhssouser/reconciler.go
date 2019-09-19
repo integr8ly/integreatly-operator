@@ -28,7 +28,6 @@ var (
 	keycloakRealmName       = "user-sso"
 	defaultSubscriptionName = "integreatly-rhsso"
 	idpAlias                = "openshift-v4"
-	finalizer               = "finalizer.user-sso.integreatly.org"
 )
 
 type Reconciler struct {
@@ -77,8 +76,8 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, r.getOAuthClientName())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

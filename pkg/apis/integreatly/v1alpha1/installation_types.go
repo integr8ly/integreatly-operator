@@ -113,6 +113,15 @@ type Installation struct {
 	Status InstallationStatus `json:"status,omitempty"`
 }
 
+func (i *Installation) GetProductStatusObject(product ProductName) *InstallationProductStatus {
+	for _, stage := range i.Status.Stages {
+		if product, ok := stage.Products[product]; ok {
+			return product
+		}
+	}
+	return nil
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // InstallationList contains a list of Installation
