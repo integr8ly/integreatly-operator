@@ -382,13 +382,17 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "amq-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name: "amq-install-plan",
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{

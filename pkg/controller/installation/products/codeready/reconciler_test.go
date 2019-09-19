@@ -267,8 +267,8 @@ func TestCodeready_reconcileClient(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 		},
@@ -301,8 +301,8 @@ func TestCodeready_reconcileClient(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 		},
@@ -522,8 +522,8 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				if len(mockMPM.InstallOperatorCalls()) != 1 {
 					t.Fatalf("expected CreateSubscriptionCalls to be 1 bug got %d", len(mockMPM.InstallOperatorCalls()))
 				}
-				if len(mockMPM.GetSubscriptionInstallPlanCalls()) != 1 {
-					t.Fatalf("expected GetSubscriptionInstallPlanCalls to be 1 bug got %d", len(mockMPM.GetSubscriptionInstallPlanCalls()))
+				if len(mockMPM.GetSubscriptionInstallPlansCalls()) != 1 {
+					t.Fatalf("expected GetSubscriptionInstallPlansCalls to be 1 bug got %d", len(mockMPM.GetSubscriptionInstallPlansCalls()))
 				}
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -531,13 +531,17 @@ func TestCodeready_fullReconcile(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "codeready-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name: "codeready-install-plan",
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{

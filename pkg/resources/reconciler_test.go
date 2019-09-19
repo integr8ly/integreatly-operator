@@ -84,8 +84,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
-					return &alpha1.InstallPlan{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete}}, &alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{alpha1.InstallPlan{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete}}}}, &alpha1.Subscription{}, nil
 				},
 			},
 			SubscriptionName: "something",
@@ -95,8 +95,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				if len(mock.InstallOperatorCalls()) != 1 {
 					t.Fatalf("expected create subscription to be called once but was called %v", len(mock.InstallOperatorCalls()))
 				}
-				if len(mock.GetSubscriptionInstallPlanCalls()) != 1 {
-					t.Fatalf("expected GetSubscriptionInstallPlanCalls to be called once but was called %v", len(mock.GetSubscriptionInstallPlanCalls()))
+				if len(mock.GetSubscriptionInstallPlansCalls()) != 1 {
+					t.Fatalf("expected GetSubscriptionInstallPlansCalls to be called once but was called %v", len(mock.GetSubscriptionInstallPlansCalls()))
 				}
 			},
 		},
@@ -108,7 +108,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *alpha1.InstallPlan, subscription *alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
 					return nil, &alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{
 						// simulate the time has passed
 						CreationTimestamp: metav1.Time{Time: time.Now().AddDate(0, 0, -1)},
@@ -143,7 +143,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			reconciler := NewReconciler(
 				tc.FakeMPM,
 			)
-			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, tc.client)
+			version, _ := NewVersion("1.2.3")
+			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, tc.client, version)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}

@@ -156,13 +156,13 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace string, 
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.Installation, t marketplace.Target, client pkgclient.Client, maxVersion *Version) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, operatorsv1alpha1.ApprovalAutomatic)
+	err := r.mpm.InstallOperator(ctx, client, inst, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, operatorsv1alpha1.ApprovalManual)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
-	ip, _, err := r.mpm.GetSubscriptionInstallPlan(ctx, client, t.Pkg, t.Namespace)
+	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, t.Pkg, t.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(errors.Cause(err)) {
@@ -171,11 +171,22 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, inst *v1alpha1.I
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))
 	}
 
-	if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete {
-		logrus.Infof("%s install plan is not complete yet ", t.Pkg)
-		return v1alpha1.PhaseInProgress, nil
+	for _, ip := range ips.Items {
+		err = upgradeApproval(ctx, client, &ip, maxVersion)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "error approving installplan for "+t.Pkg)
+		}
+
+		//if it's approved but not complete, then it's in progress
+		if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete && ip.Spec.Approved {
+			logrus.Infof("%s install plan is not complete yet ", t.Pkg)
+			return v1alpha1.PhaseInProgress, nil
+			//if it's not approved by now, then it will not be approved by this version of the integreatly-operator
+		} else if !ip.Spec.Approved {
+			logrus.Infof("%s has an upgrade installplan above the maximum allowed version", t.Pkg)
+		}
 	}
-	logrus.Infof("%s install plan is complete. Installation ready ", t.Pkg)
+
 	return v1alpha1.PhaseCompleted, nil
 }
 

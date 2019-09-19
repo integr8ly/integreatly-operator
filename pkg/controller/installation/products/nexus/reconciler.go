@@ -69,7 +69,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client)
+	version, err := resources.NewVersion(v1alpha1.OperatorVersionNexus)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for nexus")
+	}
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -12,6 +12,7 @@ import (
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -75,8 +76,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
-
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient)
+	version, err := resources.NewVersion(v1alpha1.OperatorVersionLauncher)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
+	}
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

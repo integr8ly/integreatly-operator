@@ -74,7 +74,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient)
+	version, err := resources.NewVersion(v1alpha1.OperatorVersionAMQStreams)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for amq streams")
+	}
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

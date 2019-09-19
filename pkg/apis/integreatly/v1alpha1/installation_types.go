@@ -54,6 +54,17 @@ var (
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
 	PreflightFail       PreflightStatus = "failed"
+
+	OperatorVersionAMQStreams          = "1.1.0"
+	OperatorVersionAMQOnline           = "0.28.0"
+	OperatorVersionSolutionExplorer    = "0.0.27"
+	OperatorVersionRHSSO               = "1.8.2"
+	OperatorVersionRHSSOUser           = "1.8.2"
+	OperatorVersionCodeReadyWorkspaces = "1.2.2"
+	OperatorVersionFuse                = "7.4.0"
+	OperatorVersion3Scale              = "1.9.7"
+	OperatorVersionNexus               = "0.9.0"
+	OperatorVersionLauncher            = "0.1.2"
 )
 
 // InstallationSpec defines the desired state of Installation
