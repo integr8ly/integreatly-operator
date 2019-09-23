@@ -19,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuseonopenshift"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/launcher"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/mobilesecurityservice"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/nexus"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhssouser"
@@ -86,6 +87,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = launcher.NewReconciler(configManager, instance, appsv1, mpm)
 	case v1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, instance, mpm)
+	case v1alpha1.ProductMobileSecurityService:
+		reconciler, err = mobilesecurityservice.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

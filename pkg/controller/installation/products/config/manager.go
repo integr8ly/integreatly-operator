@@ -39,6 +39,7 @@ type ConfigReadWriter interface {
 	ReadRHSSOUser() (*RHSSOUser, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
+	ReadMobileSecurityService() (*MobileSecurityService, error)
 	ReadFuse() (*Fuse, error)
 	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
@@ -90,6 +91,8 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadSolutionExplorer()
 	case v1alpha1.ProductUps:
 		return m.ReadUps()
+	case v1alpha1.ProductMobileSecurityService:
+		return m.ReadMobileSecurityService()
 	}
 
 	return nil, errors2.New("no config found for product " + string(product))
@@ -206,6 +209,14 @@ func (m *Manager) ReadUps() (*Ups, error) {
 	}
 
 	return NewUps(config), nil
+}
+
+func (m *Manager) ReadMobileSecurityService() (*MobileSecurityService, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductMobileSecurityService)
+	if err != nil {
+		return nil, err
+	}
+	return NewMobileSecurityService(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {

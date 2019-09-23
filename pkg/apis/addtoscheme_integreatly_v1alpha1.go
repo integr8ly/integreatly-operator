@@ -1,6 +1,7 @@
 package apis
 
 import (
+	mobileSecurityService "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
@@ -49,6 +50,7 @@ func init() {
 		threescalev1.SchemeBuilder.AddToScheme,
 		solutionExplorer.SchemeBuilder.AddToScheme,
 		monitoring.SchemeBuilder.AddToScheme,
+		mobileSecurityService.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 
 		appsv1.AddToScheme,
