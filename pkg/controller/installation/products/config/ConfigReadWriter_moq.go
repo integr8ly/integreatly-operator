@@ -23,6 +23,7 @@ var (
 	lockConfigReadWriterMockReadRHSSOUser             sync.RWMutex
 	lockConfigReadWriterMockReadSolutionExplorer      sync.RWMutex
 	lockConfigReadWriterMockReadThreeScale            sync.RWMutex
+	lockConfigReadWriterMockReadUps                   sync.RWMutex
 	lockConfigReadWriterMockWriteConfig               sync.RWMutex
 	lockConfigReadWriterMockreadConfigForProduct      sync.RWMutex
 )
@@ -79,6 +80,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadThreeScaleFunc: func() (*ThreeScale, error) {
 // 	               panic("mock out the ReadThreeScale method")
 //             },
+//             ReadUpsFunc: func() (*Ups, error) {
+// 	               panic("mock out the ReadUps method")
+//             },
 //             WriteConfigFunc: func(config ConfigReadable) error {
 // 	               panic("mock out the WriteConfig method")
 //             },
@@ -134,6 +138,9 @@ type ConfigReadWriterMock struct {
 	// ReadThreeScaleFunc mocks the ReadThreeScale method.
 	ReadThreeScaleFunc func() (*ThreeScale, error)
 
+	// ReadUpsFunc mocks the ReadUps method.
+	ReadUpsFunc func() (*Ups, error)
+
 	// WriteConfigFunc mocks the WriteConfig method.
 	WriteConfigFunc func(config ConfigReadable) error
 
@@ -185,6 +192,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadThreeScale holds details about calls to the ReadThreeScale method.
 		ReadThreeScale []struct {
+		}
+		// ReadUps holds details about calls to the ReadUps method.
+		ReadUps []struct {
 		}
 		// WriteConfig holds details about calls to the WriteConfig method.
 		WriteConfig []struct {
@@ -565,6 +575,32 @@ func (mock *ConfigReadWriterMock) ReadThreeScaleCalls() []struct {
 	lockConfigReadWriterMockReadThreeScale.RLock()
 	calls = mock.calls.ReadThreeScale
 	lockConfigReadWriterMockReadThreeScale.RUnlock()
+	return calls
+}
+
+// ReadUps calls ReadUpsFunc.
+func (mock *ConfigReadWriterMock) ReadUps() (*Ups, error) {
+	if mock.ReadUpsFunc == nil {
+		panic("ConfigReadWriterMock.ReadUpsFunc: method is nil but ConfigReadWriter.ReadUps was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadUps.Lock()
+	mock.calls.ReadUps = append(mock.calls.ReadUps, callInfo)
+	lockConfigReadWriterMockReadUps.Unlock()
+	return mock.ReadUpsFunc()
+}
+
+// ReadUpsCalls gets all the calls that were made to ReadUps.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadUpsCalls())
+func (mock *ConfigReadWriterMock) ReadUpsCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadUps.RLock()
+	calls = mock.calls.ReadUps
+	lockConfigReadWriterMockReadUps.RUnlock()
 	return calls
 }
 
