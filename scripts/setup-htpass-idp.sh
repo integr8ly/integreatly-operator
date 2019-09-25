@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-PASSWORD=$(openssl rand -base64 12)
+if [ "$CUSTOM_PWD" ]; then PASSWORD="$CUSTOM_PWD"; else PASSWORD=$(openssl rand -base64 12); fi
 
 echo Setting up htpasswd IDP
 
