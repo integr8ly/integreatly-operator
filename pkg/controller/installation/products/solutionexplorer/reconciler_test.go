@@ -148,7 +148,7 @@ func TestSolutionExplorer(t *testing.T) {
 			},
 			Installation: installation,
 			FakeConfig:   basicConfigMock(),
-			client:       fake.NewFakeClient(webappNs, webappCR, installation, webappRoute, webappDC),
+			client:       fake.NewFakeClient(webappNs, webappCR, installation, webappRoute),
 			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}

@@ -4,7 +4,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	webappv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
-	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,30 +38,6 @@ var webappRoute = &routev1.Route{
 	ObjectMeta: v1.ObjectMeta{
 		Name:      defaultRouteName,
 		Namespace: defaultName,
-	},
-}
-
-var webappDC = &appsv1.DeploymentConfig{
-	ObjectMeta: v1.ObjectMeta{
-		Name:      defaultDeploymentConfigName,
-		Namespace: defaultName,
-	},
-	Spec: appsv1.DeploymentConfigSpec{
-		Template: &corev1.PodTemplateSpec{
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					corev1.Container{
-						Name: "tutorial-web-app",
-						Env: []corev1.EnvVar{
-							corev1.EnvVar{
-								Name:  "sample-env-var",
-								Value: "sample-value",
-							},
-						},
-					},
-				},
-			},
-		},
 	},
 }
 
