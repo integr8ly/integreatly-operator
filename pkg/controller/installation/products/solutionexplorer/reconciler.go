@@ -34,7 +34,6 @@ const (
 	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
-	finalizer               = "finalizer.webapp.integreatly.org"
 	oauthClientName         = "integreatly-solution-explorer"
 )
 
@@ -92,8 +91,8 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, finalizer, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, finalizer, oauthClientName)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, func() error {
+		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, oauthClientName)
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

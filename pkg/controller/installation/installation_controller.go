@@ -139,7 +139,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 		// Clean up the products which have finalizers associated to them
 		merr := &multiErr{}
-		for _, product := range resources.FinalizeProducts {
+		for _, productFinalizer := range instance.Finalizers {
+			if !strings.Contains(productFinalizer, "integreatly") {
+				continue
+			}
+			productName := strings.Split(productFinalizer, ".")[1]
+			product := instance.GetProductStatusObject(v1alpha1.ProductName(productName))
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 			if err != nil {
 				merr.Add(pkgerr.Wrapf(err, "Failed to build reconciler for product %s", product.Name))

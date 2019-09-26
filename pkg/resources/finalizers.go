@@ -11,9 +11,6 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// FinalizeProducts is a map of the products to finalise when the installation is deleted
-var FinalizeProducts = make(map[string]*v1alpha1.InstallationProductStatus)
-
 // AddFinalizer adds a finalizer to the custom resource. This allows us to clean up oauth clients
 // and other cluster level objects owned by the installation before the cr is deleted
 func AddFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, product *v1alpha1.InstallationProductStatus, finalizer string) error {
@@ -25,15 +22,12 @@ func AddFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgcl
 			return err
 		}
 	}
-	if _, ok := FinalizeProducts[finalizer]; !ok {
-		FinalizeProducts[finalizer] = product
-	}
 	return nil
 }
 
 // RemoveOauthClient deletes an oauth client owned by a product and removes its finalizer from
 // the installation custom resource
-func RemoveOauthClient(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, oauthClient oauthClient.OauthV1Interface, finalizer string, oauthId string) error {
+func RemoveOauthClient(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, oauthClient oauthClient.OauthV1Interface, oauthId string) error {
 	err := oauthClient.OAuthClients().Delete(oauthId, &metav1.DeleteOptions{})
 	if err != nil && !k8serr.IsNotFound(err) {
 		logrus.Error("Error cleaning up oauth client", err)
@@ -42,16 +36,15 @@ func RemoveOauthClient(ctx context.Context, inst *v1alpha1.Installation, client 
 	return nil
 }
 
-// RemoveFinalizer removes a given finalizer from the installation custom resource
-func RemoveFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, finalizer string) error {
+// RemoveProductFinalizer removes a given finalizer from the installation custom resource
+func RemoveProductFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, product string) error {
+	finalizer := "finalizer." + product + ".integreatly.org"
+	logrus.Infof("removing finalizer %s", finalizer)
 	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
 		logrus.Info("Error removing finalizer from custom resource", err)
 		return err
-	}
-	if _, ok := FinalizeProducts[finalizer]; ok {
-		delete(FinalizeProducts, finalizer)
 	}
 	return nil
 }
