@@ -90,10 +90,36 @@ image/build/test:
 test/unit:
 	@./scripts/ci/unit_test.sh
 
+# Generate namespace name for test
+tmp/test-namespace:
+	@echo -n "test-namespace-$(shell uuidgen | cut -c1-8)" > ./tmp/test-namespace
+
+.PHONY: get-test-namespace
+get-test-namespace: tmp/test-namespace
+	$(eval TEST_NAMESPACE := $(shell cat ./tmp/test-namespace))
+
+.PHONY: e2e-cleanup
+e2e-cleanup: get-test-namespace
+	@-oc delete namespace $(TEST_NAMESPACE) --timeout=45s --wait
+
+.PHONY: e2e-setup
+e2e-setup: e2e-cleanup
+	-oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+	@oc create namespace $(TEST_NAMESPACE)
+	@oc project $(TEST_NAMESPACE)
+	@oc process -f deploy/s3-secrets.yaml \
+		-p INSTALLATION_NAMESPACE=$(TEST_NAMESPACE) \
+		-p AWS_ACCESS_KEY_ID="12345678" \
+		-p AWS_SECRET_ACCESS_KEY="12345678" \
+		-p AWS_BUCKET="test-bucket" \
+		-p AWS_REGION=eu-west-1 | oc apply -f -
+	@oc create secret generic github-oauth-secret \
+		--from-literal=clientId="12345678" \
+		--from-literal=secret="12345678"
+
 .PHONY: test/e2e
-test/e2e:
-	kubectl apply -f deploy/test-e2e-pod.yaml -n $(PROJECT)
-	$(SHELL) ./scripts/stream-pod ${TEST_POD_NAME} $(PROJECT)
+test/e2e: e2e-setup
+	operator-sdk --verbose test local ./test/e2e --namespace $(TEST_NAMESPACE) --up-local --go-test-flags "-timeout=120m" --debug
 
 .PHONY: cluster/prepare
 cluster/prepare:
