@@ -39,6 +39,11 @@ func printVersion() {
 	log.Info(fmt.Sprintf("Version of operator-sdk: %v", sdkVersion.Version))
 }
 
+// isLeaderElectionEnabled based on environment variable INTEGREATLY_OPERATOR_DISABLE_ELECTION.
+func isLeaderElectionEnabled() bool {
+	return os.Getenv("INTEGREATLY_OPERATOR_DISABLE_ELECTION") == ""
+}
+
 func main() {
 	// Add the zap logger flag set to the CLI. The flag set must
 	// be added before calling pflag.Parse().
@@ -79,11 +84,15 @@ func main() {
 
 	ctx := context.TODO()
 
-	// Become the leader before proceeding
-	err = leader.Become(ctx, "integreatly-operator-lock")
-	if err != nil {
-		log.Error(err, "")
-		os.Exit(1)
+	if isLeaderElectionEnabled() {
+		// Become the leader before proceeding
+		err = leader.Become(ctx, "integreatly-operator-lock")
+		if err != nil {
+			log.Error(err, "")
+			os.Exit(1)
+		}
+	} else {
+		log.Info("Warning: Leader election is disabled")
 	}
 
 	// Create a new Cmd to provide shared dependencies and start components
