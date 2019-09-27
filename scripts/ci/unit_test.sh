@@ -34,11 +34,11 @@ if [[ ! -z "${REPORT_COVERAGE}" ]]; then
     go install -v github.com/mattn/goveralls
 
     if [[ ! -z "${PROW_JOB_ID}" ]]; then
-        report_coverage_prow
+        report_coverage_prow || echo "push to coveralls failed"
     fi
 
     if [[ ! -z "${TRAVIS_BUILD_NUMBER}" ]]; then
-        report_coverage_travis
+        report_coverage_travis || echo "push to coveralls failed"
     fi
 
 fi

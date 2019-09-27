@@ -21,7 +21,7 @@ jobs:
     - cd $HOME/gopath/src/github.com/integr8ly/$OPERATOR_NAME && make test/unit
     - go get github.com/mattn/goveralls
     - go install github.com/mattn/goveralls
-    - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN
+    - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN || echo "push to coveralls failed"
   - stage: push
     script:
     - docker login --password "$QUAY_PASSWORD" --username "$QUAY_USERNAME" quay.io
