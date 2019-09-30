@@ -38,8 +38,8 @@ setup/service_account:
 	@oc replace --force -f deploy/role.yaml -n $(NAMESPACE)
 	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
 	@oc replace --force -f deploy/role_binding.yaml -n $(NAMESPACE)
-	@oc replace --force -f deploy/clusterrole.yaml -n $(NAMESPACE)
-	@oc replace --force -f deploy/cluster_role_binding.yaml -n $(NAMESPACE)
+	@oc replace --force -f deploy/clusterrole.yaml
+	@cat deploy/cluster_role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
