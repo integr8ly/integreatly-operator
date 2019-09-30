@@ -45,7 +45,7 @@ func GetOperatorSources() *operatorSources {
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
 	InstallOperator(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
-	GetSubscriptionInstallPlan(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error)
+	GetSubscriptionInstallPlans(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
 }
 
 type MarketplaceManager struct{}
@@ -170,7 +170,7 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient p
 	return sub, nil
 }
 
-func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlan, *coreosv1alpha1.Subscription, error) {
+func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "GetSubscriptionInstallPlan")
@@ -179,14 +179,9 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlan(ctx context.Context, ser
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
 	}
 
-	ip := &coreosv1alpha1.InstallPlan{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      sub.Status.Install.Name,
-			Namespace: ns,
-		},
-	}
+	ip := &coreosv1alpha1.InstallPlanList{}
 
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: ip.Name, Namespace: ip.Namespace}, ip)
+	err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: ns}, ip)
 	if err != nil {
 		return nil, nil, err
 	}

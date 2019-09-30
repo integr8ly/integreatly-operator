@@ -323,6 +323,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	})
+	objs = append(objs, &operatorsv1alpha1.InstallPlan{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "nexus-install-plan",
+		},
+	})
 	for i := 0; i < 2; i++ {
 		objs = append(objs, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -361,13 +366,21 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "nexus-install-plan",
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name: "nexus-install-plan",
+									},
+									Spec: operatorsv1alpha1.InstallPlanSpec{
+										ClusterServiceVersionNames: []string{"nexus.v" + integreatlyv1alpha1.OperatorVersionNexus},
+										Approved:                   false,
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
@@ -405,7 +418,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
+				t.Fatalf("expected no errors but got one: %v", err)
 			}
 
 			if err == nil && tc.ExpectError {
@@ -469,8 +482,8 @@ func TestReconciler_testPhases(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},
@@ -486,8 +499,8 @@ func TestReconciler_testPhases(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{}, &operatorsv1alpha1.Subscription{}, nil
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},
@@ -503,14 +516,18 @@ func TestReconciler_testPhases(t *testing.T) {
 
 					return nil
 				},
-				GetSubscriptionInstallPlanFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlan, subscription *operatorsv1alpha1.Subscription, e error) {
-					return &operatorsv1alpha1.InstallPlan{
-							ObjectMeta: metav1.ObjectMeta{
-								Name:      "nexus-install-plan",
-								Namespace: defaultInstallationNamespace,
-							},
-							Status: operatorsv1alpha1.InstallPlanStatus{
-								Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name:      "nexus-install-plan",
+										Namespace: defaultInstallationNamespace,
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
 							},
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{

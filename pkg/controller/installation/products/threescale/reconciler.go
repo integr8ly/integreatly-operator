@@ -98,8 +98,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
-
-	phase, err = r.ReconcileSubscription(ctx, in, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient)
+	version, err := resources.NewVersion(v1alpha1.OperatorVersion3Scale)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
+	}
+	phase, err = r.ReconcileSubscription(ctx, in, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
