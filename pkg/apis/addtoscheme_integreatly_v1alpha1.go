@@ -1,6 +1,7 @@
 package apis
 
 import (
+	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	enmasse "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
@@ -57,5 +58,6 @@ func init() {
 		usersv1.AddToScheme,
 		launcherv1alpha2.SchemeBuilder.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
+		upsv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }

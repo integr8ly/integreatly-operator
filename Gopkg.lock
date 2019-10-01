@@ -57,6 +57,14 @@
   revision = "ea948e9684cd0f087ef899ee6ecb5406cd80bcea"
 
 [[projects]]
+  digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"
+  name = "github.com/aerogear/unifiedpush-operator"
+  packages = ["pkg/apis/push/v1alpha1"]
+  pruneopts = "NT"
+  revision = "0efd293d36346382a7421f9364599e541a20ad46"
+  version = "0.2.0"
+
+[[projects]]
   digest = "1:680b63a131506e668818d630d3ca36123ff290afa0afc9f4be21940adca3f27d"
   name = "github.com/appscode/jsonpatch"
   packages = ["."]
@@ -469,7 +477,9 @@
     "image/v1",
     "oauth/v1",
     "operator/v1",
+    "pkg/serialization",
     "route/v1",
+    "template/v1",
     "user/v1",
   ]
   pruneopts = "NT"
@@ -1239,6 +1249,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/olm",
+    "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1",
     "github.com/eclipse/che-operator/pkg/apis/org/v1",
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",
     "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1",
@@ -1249,6 +1260,7 @@
     "github.com/openshift/api/image/v1",
     "github.com/openshift/api/oauth/v1",
     "github.com/openshift/api/route/v1",
+    "github.com/openshift/api/template/v1",
     "github.com/openshift/api/user/v1",
     "github.com/openshift/client-go/apps/clientset/versioned/fake",
     "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1",
@@ -1286,6 +1298,7 @@
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/wait",
+    "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/plugin/pkg/client/auth",

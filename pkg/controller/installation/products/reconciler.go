@@ -22,6 +22,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/ups"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"k8s.io/client-go/rest"
 
@@ -104,6 +105,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = threescale.NewReconciler(configManager, instance, appsv1, oauthv1Client, tsClient, mpm)
 	case v1alpha1.ProductNexus:
 		reconciler, err = nexus.NewReconciler(configManager, instance, mpm)
+	case v1alpha1.ProductUps:
+		reconciler, err = ups.NewReconciler(configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

@@ -40,6 +40,7 @@ var (
 	Product3Scale              ProductName = "3scale"
 	ProductNexus               ProductName = "nexus"
 	ProductLauncher            ProductName = "launcher"
+	ProductUps                 ProductName = "ups"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -50,6 +51,7 @@ var (
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionNexus               ProductVersion = "3.16"
 	VersionLauncher            ProductVersion = "0.1.2"
+	VersionUps                 ProductVersion = "2.3.2"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -65,6 +67,7 @@ var (
 	OperatorVersion3Scale              = "1.9.7"
 	OperatorVersionNexus               = "0.9.0"
 	OperatorVersionLauncher            = "0.1.2"
+	OperatorVersionUPS                 = "0.2.0"
 )
 
 // InstallationSpec defines the desired state of Installation
