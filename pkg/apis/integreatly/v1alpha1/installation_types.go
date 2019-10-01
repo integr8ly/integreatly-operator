@@ -45,7 +45,7 @@ var (
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
-	VersionAMQOnline           ProductVersion = "0.28.0.redhat-00066"
+	VersionAMQOnline           ProductVersion = "1.2.2"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionFuseOnOpenshift     ProductVersion = "master"
@@ -58,7 +58,7 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	OperatorVersionAMQStreams          = "1.1.0"
-	OperatorVersionAMQOnline           = "0.28.0"
+	OperatorVersionAMQOnline           = "1.2.2"
 	OperatorVersionSolutionExplorer    = "0.0.27"
 	OperatorVersionRHSSO               = "1.8.2"
 	OperatorVersionRHSSOUser           = "1.8.2"
