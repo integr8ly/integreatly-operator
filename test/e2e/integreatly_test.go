@@ -113,6 +113,8 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 	}
 	//These test only that the operators themselves have came up. Further testing should be done to verify the individual parts of each product come up also (What the operator is creating).
 
+	time.Sleep(3 * time.Hour)
+
 	return err
 }
 

@@ -97,7 +97,7 @@ test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/prepare
-	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
+	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=240m" --debug
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
