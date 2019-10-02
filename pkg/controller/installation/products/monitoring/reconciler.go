@@ -67,39 +67,54 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
+	version, err := resources.NewVersion(v1alpha1.OperatorVersionMonitoring)
 
 	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	logrus.Infof("Phase: %s ReconcileNamespace", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, serverClient, version)
+	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileAlertManagerExtraResources(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileAlertManagerExtraResources", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcilePrometheusExtraResources(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcilePrometheusExtraResources", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcilePrometheusOperatorExtraResources(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcilePrometheusOperatorExtraResources", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileGrafanaExtraResources(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileGrafanaExtraResources", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
@@ -231,7 +246,7 @@ func (r *Reconciler) reconcilePrometheusExtraResources(ctx context.Context, inst
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcilePrometheusOperatorExtraResources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -298,7 +313,7 @@ func (r *Reconciler) reconcilePrometheusOperatorExtraResources(ctx context.Conte
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileAlertManagerExtraResources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -335,7 +350,7 @@ func (r *Reconciler) reconcileAlertManagerExtraResources(ctx context.Context, in
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) createClusterRole(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client, name string, rules []rbacv1.PolicyRule) error {
