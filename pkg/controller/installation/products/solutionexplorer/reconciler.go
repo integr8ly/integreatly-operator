@@ -231,9 +231,10 @@ func (r *Reconciler) getInstalledProducts(inst *v1alpha1.Installation) (string, 
 	installedProducts := inst.Status.Stages["products"].Products
 
 	// Ensure that amq online console is not added to the installed products, a per user amq online is used instead which is provisioned by the webapp
+	// Ensure that ups is not added to the installed products
 	products := make(map[v1alpha1.ProductName]productInfo)
 	for name, info := range installedProducts {
-		if name != v1alpha1.ProductAMQOnline && info.Host != "" {
+		if name != v1alpha1.ProductAMQOnline && name != v1alpha1.ProductUps && info.Host != "" {
 			id := r.getProductId(name)
 			products[id] = productInfo{
 				Host:    info.Host,
