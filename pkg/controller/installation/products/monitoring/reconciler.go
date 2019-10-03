@@ -195,7 +195,7 @@ func (r *Reconciler) reconcileGrafanaExtraResources(ctx context.Context, inst *v
 		return v1alpha1.PhaseFailed, err
 	}
 
-	return v1alpha1.PhaseInProgress, nil
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcilePrometheusExtraResources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
@@ -252,7 +252,7 @@ func (r *Reconciler) reconcilePrometheusExtraResources(ctx context.Context, inst
 func (r *Reconciler) reconcilePrometheusOperatorExtraResources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
-	err := r.createClusterRole(ctx, inst, serverClient, "prometheus-application-monitoring", []rbacv1.PolicyRule{
+	err := r.createClusterRole(ctx, inst, serverClient, "prometheus-application-monitoring-operator", []rbacv1.PolicyRule{
 		{
 			APIGroups: []string{"apiextensions.k8s.io"},
 			Resources: []string{"customresourcedefinitions"},
