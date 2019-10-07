@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	defaultMonitoringNamespace              = "middleware-monitoring"
+	defaultInstallationNamespace            = "middleware-monitoring"
 	defaultSubscriptionName                 = "integreatly-monitoring"
 	defaultMonitoringName                   = "middleware-monitoring"
 	defaultLabelSelector                    = "middleware"
@@ -51,7 +51,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}
 
 	if monitoringConfig.GetNamespace() == "" {
-		monitoringConfig.SetNamespace(defaultMonitoringNamespace)
+		monitoringConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())

@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+
 	//"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
@@ -100,6 +101,7 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 		"codeready-workspaces": "codeready-operator",
 		"fuse":                 "syndesis-operator",
 		"launcher":             "launcher-operator",
+		"monitoring":           "application-monitoring-operator",
 		"nexus":                "nexus-operator",
 		"solution-explorer":    "tutorial-web-app-operator",
 		"user-sso":             "keycloak-operator",
