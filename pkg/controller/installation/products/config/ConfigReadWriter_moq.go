@@ -4,8 +4,9 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"sync"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
@@ -26,6 +27,7 @@ var (
 	lockConfigReadWriterMockReadUps                   sync.RWMutex
 	lockConfigReadWriterMockWriteConfig               sync.RWMutex
 	lockConfigReadWriterMockreadConfigForProduct      sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring            sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -61,6 +63,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadLauncherFunc: func() (*Launcher, error) {
 // 	               panic("mock out the ReadLauncher method")
+//             },
+//             ReadMonitoringFunc: func() (*Monitoring, error) {
+// 	               panic("mock out the ReadMonitoring method")
 //             },
 //             ReadNexusFunc: func() (*Nexus, error) {
 // 	               panic("mock out the ReadNexus method")
@@ -120,6 +125,9 @@ type ConfigReadWriterMock struct {
 	// ReadLauncherFunc mocks the ReadLauncher method.
 	ReadLauncherFunc func() (*Launcher, error)
 
+	// ReadMonitoringFunc mocks the ReadMonitoring method.
+	ReadMonitoringFunc func() (*Monitoring, error)
+
 	// ReadNexusFunc mocks the ReadNexus method.
 	ReadNexusFunc func() (*Nexus, error)
 
@@ -172,6 +180,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadLauncher holds details about calls to the ReadLauncher method.
 		ReadLauncher []struct {
+		}
+		// ReadMonitoring holds details about calls to the ReadMonitoring method.
+		ReadMonitoring []struct {
 		}
 		// ReadNexus holds details about calls to the ReadNexus method.
 		ReadNexus []struct {
@@ -414,6 +425,32 @@ func (mock *ConfigReadWriterMock) ReadLauncherCalls() []struct {
 	lockConfigReadWriterMockReadLauncher.RLock()
 	calls = mock.calls.ReadLauncher
 	lockConfigReadWriterMockReadLauncher.RUnlock()
+	return calls
+}
+
+// ReadMonitoring calls ReadMonitoringFunc.
+func (mock *ConfigReadWriterMock) ReadMonitoring() (*Monitoring, error) {
+	if mock.ReadMonitoringFunc == nil {
+		panic("ConfigReadWriterMock.ReadMonitoringFunc: method is nil but ConfigReadWriter.ReadMonitoring was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadMonitoring.Lock()
+	mock.calls.ReadMonitoring = append(mock.calls.ReadMonitoring, callInfo)
+	lockConfigReadWriterMockReadMonitoring.Unlock()
+	return mock.ReadMonitoringFunc()
+}
+
+// ReadMonitoringCalls gets all the calls that were made to ReadMonitoring.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadMonitoringCalls())
+func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadMonitoring.RLock()
+	calls = mock.calls.ReadMonitoring
+	lockConfigReadWriterMockReadMonitoring.RUnlock()
 	return calls
 }
 

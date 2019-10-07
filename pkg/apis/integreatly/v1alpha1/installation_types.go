@@ -41,6 +41,7 @@ var (
 	ProductNexus               ProductName = "nexus"
 	ProductLauncher            ProductName = "launcher"
 	ProductUps                 ProductName = "ups"
+	ProductMonitoring          ProductName = "monitoring"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -59,6 +60,7 @@ var (
 
 	OperatorVersionAMQStreams          = "1.1.0"
 	OperatorVersionAMQOnline           = "1.2.2"
+	OperatorVersionMonitoring          = "0.0.26"
 	OperatorVersionSolutionExplorer    = "0.0.27"
 	OperatorVersionRHSSO               = "1.8.2"
 	OperatorVersionRHSSOUser           = "1.8.2"

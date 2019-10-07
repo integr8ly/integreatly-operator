@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+
 	//"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
@@ -94,16 +95,17 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 	}
 	//Product Stage - verify operators deploy
 	products := map[string]string{
-		"3scale":               "3scale-operator",
-		"amq-online":           "enmasse-operator",
-		"amq-streams":          "amq-streams-cluster-operator",
-		"codeready-workspaces": "codeready-operator",
-		"fuse":                 "syndesis-operator",
-		"launcher":             "launcher-operator",
-		"nexus":                "nexus-operator",
-		"solution-explorer":    "tutorial-web-app-operator",
-		"user-sso":             "keycloak-operator",
-		"ups":                  "unifiedpush-operator",
+		"3scale":                "3scale-operator",
+		"amq-online":            "enmasse-operator",
+		"amq-streams":           "amq-streams-cluster-operator",
+		"codeready-workspaces":  "codeready-operator",
+		"fuse":                  "syndesis-operator",
+		"launcher":              "launcher-operator",
+		"middleware-monitoring": "application-monitoring-operator",
+		"nexus":                 "nexus-operator",
+		"solution-explorer":     "tutorial-web-app-operator",
+		"user-sso":              "keycloak-operator",
+		"ups":                   "unifiedpush-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)

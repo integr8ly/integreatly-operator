@@ -46,6 +46,7 @@ type ConfigReadWriter interface {
 	ReadLauncher() (*Launcher, error)
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
+	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
 }
@@ -188,6 +189,14 @@ func (m *Manager) ReadLauncher() (*Launcher, error) {
 		return nil, err
 	}
 	return NewLauncher(config), nil
+}
+
+func (m *Manager) ReadMonitoring() (*Monitoring, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductMonitoring)
+	if err != nil {
+		return nil, err
+	}
+	return NewMonitoring(config), nil
 }
 
 func (m *Manager) ReadUps() (*Ups, error) {
