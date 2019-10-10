@@ -116,7 +116,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update monitoring custom resource")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update applicationmonitoring custom resource")
 	}
 
 	r.Logger.Infof("The operation result for monitoring %s was %s", m.Name, or)
