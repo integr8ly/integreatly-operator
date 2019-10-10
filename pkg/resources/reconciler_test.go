@@ -219,7 +219,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 		},
 		{
 			Name:   "test pull secret is reconciled successfully",
-			Client: fakeclient.NewFakeClientWithScheme(scheme, customPullSecret),
+			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, customPullSecret),
 			Installation: &v1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testinstall",

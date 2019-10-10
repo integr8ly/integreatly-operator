@@ -135,21 +135,8 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace string, 
 		inst.Spec.PullSecret.Namespace = DefaultOriginPullSecretNamespace
 	}
 
-	openshiftSecret := &v1.Secret{}
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: inst.Spec.PullSecret.Name, Namespace: inst.Spec.PullSecret.Namespace}, openshiftSecret)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not get secret '%s' from namespace '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
-	}
+	err := CopyDefaultPullSecretToNameSpace(namespace, inst.Spec.PullSecret.Name, client, ctx)
 
-	componentSecret := &v1.Secret{
-		Type: v1.SecretTypeDockerConfigJson,
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      inst.Spec.PullSecret.Name,
-			Namespace: namespace,
-		},
-		Data: openshiftSecret.Data,
-	}
-	err = CreateOrUpdate(ctx, client, componentSecret)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "error creating/updating secret '%s' in namespace: '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
 	}
