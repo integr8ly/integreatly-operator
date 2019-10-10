@@ -1,0 +1,10 @@
+apiVersion: integreatly.org/v1alpha1
+kind: Installation
+metadata:
+  name: example-installation
+spec:
+  type: workshop
+  namespacePrefix: integreatly-
+  routingSubdomain: ROUTING_SUBDOMAIN
+  masterUrl: MASTER_URL
+  selfSignedCerts: SELF_SIGNED_CERTS
