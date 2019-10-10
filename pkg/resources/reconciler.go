@@ -16,11 +16,6 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	DefaultOriginPullSecretName      = "samples-registry-credentials"
-	DefaultOriginPullSecretNamespace = "openshift"
-)
-
 // This is the base reconciler that all the other reconcilers extend. It handles things like namespace creation, subscription creation etc
 
 type Reconciler struct {
@@ -128,31 +123,15 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	if inst.Spec.PullSecret.Name == "" {
-		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
-	}
-	if inst.Spec.PullSecret.Namespace == "" {
-		inst.Spec.PullSecret.Namespace = DefaultOriginPullSecretNamespace
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	pullSecretName := DefaultOriginPullSecretName
+	if secretName != "" {
+		pullSecretName = secretName
 	}
 
-	openshiftSecret := &v1.Secret{}
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: inst.Spec.PullSecret.Name, Namespace: inst.Spec.PullSecret.Namespace}, openshiftSecret)
+	err := CopyDefaultPullSecretToNameSpace(namespace, pullSecretName, inst, client, ctx)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not get secret '%s' from namespace '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
-	}
-
-	componentSecret := &v1.Secret{
-		Type: v1.SecretTypeDockerConfigJson,
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      inst.Spec.PullSecret.Name,
-			Namespace: namespace,
-		},
-		Data: openshiftSecret.Data,
-	}
-	err = CreateOrUpdate(ctx, client, componentSecret)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "error creating/updating secret '%s' in namespace: '%s'", inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace)
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "error creating/updating secret '%s' in namespace: '%s'", pullSecretName, namespace)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
