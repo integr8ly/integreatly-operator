@@ -1,0 +1,10 @@
+apiVersion: integreatly.org/v1alpha1
+kind: Installation
+metadata:
+  name: example-installation
+spec:
+  type: workshop
+  namespacePrefix: integreatly-
+  routingSubdomain: apps.pbrookes.cloudservices.rhmw.io
+  masterUrl: https://console-openshift-console.apps.pbrookes.cloudservices.rhmw.io
+  selfSignedCerts: true

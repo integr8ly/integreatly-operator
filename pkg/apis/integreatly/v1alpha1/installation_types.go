@@ -24,6 +24,7 @@ var (
 
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"
+	InstallationTypeRHPDS    InstallationType = "RHPDS"
 
 	BootstrapStage      StageName = "bootstrap"
 	AuthenticationStage StageName = "authentication"

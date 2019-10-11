@@ -228,9 +228,11 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
 		}
 
-		err = r.setupGithubIDP(ctx, kcr, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Github IDP")
+		if inst.Spec.Type != string(v1alpha1.InstallationTypeRHPDS) {
+			err = r.setupGithubIDP(ctx, kcr, serverClient)
+			if err != nil {
+				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Github IDP")
+			}
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")

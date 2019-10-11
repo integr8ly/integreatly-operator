@@ -73,6 +73,32 @@ var (
 			},
 		},
 	}
+	allRHPDSStages = []Stage{
+		{
+			Name: v1alpha1.BootstrapStage,
+		},
+		{
+			Name: v1alpha1.AuthenticationStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductRHSSO: {
+					Name: v1alpha1.ProductRHSSO,
+				},
+			},
+		},
+		{
+			Name: v1alpha1.ProductsStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
+				v1alpha1.ProductFuseOnOpenshift:     {Name: v1alpha1.ProductFuseOnOpenshift},
+				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
+				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
+				v1alpha1.ProductSolutionExplorer:    {Name: v1alpha1.ProductSolutionExplorer},
+				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
+				v1alpha1.ProductUps:                 {Name: v1alpha1.ProductUps},
+				v1alpha1.ProductMonitoring:          {Name: v1alpha1.ProductMonitoring},
+			},
+		},
+	}
 )
 
 type Type struct {
@@ -96,9 +122,21 @@ func InstallationTypeFactory(installationType string, products []string) (error,
 		return nil, newWorkshopType(products)
 	case string(v1alpha1.InstallationTypeManaged):
 		return nil, newManagedType(products)
+	case string(v1alpha1.InstallationTypeRHPDS):
+		return nil, newRHPDSType(products)
 	default:
 		return errors.New("unknown installation type: " + installationType), nil
 	}
+}
+
+func newRHPDSType(products []string) *Type {
+	logrus.Info("installing RHPDS products ", products)
+	t := &Type{
+		Stages: []Stage{},
+	}
+
+	buildProducts(t, products, v1alpha1.InstallationTypeRHPDS)
+	return t
 }
 
 func newWorkshopType(products []string) *Type {
@@ -142,6 +180,9 @@ func buildProducts(t *Type, products []string, installType v1alpha1.Installation
 				t.Stages = allManagedStages
 			} else if installType == v1alpha1.InstallationTypeWorkshop {
 				t.Stages = allWorkshopStages
+			}
+			if installType == v1alpha1.InstallationTypeRHPDS {
+				t.Stages = allRHPDSStages
 			}
 			break
 		}

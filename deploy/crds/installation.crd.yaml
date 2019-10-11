@@ -35,6 +35,7 @@ spec:
               enum:
                 - workshop
                 - managed
+                - RHPDS
             selfSignedCerts:
               type: boolean
             routingSubdomain:

@@ -238,23 +238,27 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
 	}
-	requiredSecrets := []string{"s3-credentials", "s3-bucket", "github-oauth-secret"}
-	for _, secretName := range requiredSecrets {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: installation.Namespace,
-			},
-		}
-		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
-			return result, err
-		} else if !exists {
-			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
-			installation.Status.PreflightStatus = v1alpha1.PreflightFail
-			installation.Status.PreflightMessage = preflightMessage
-			logrus.Info(preflightMessage)
-			_ = r.client.Status().Update(r.context, installation)
-			return result, err
+
+	//no secrets required for RHPDS
+	if installation.Spec.Type != string(v1alpha1.InstallationTypeRHPDS) {
+		requiredSecrets := []string{"s3-credentials", "s3-bucket", "github-oauth-secret"}
+		for _, secretName := range requiredSecrets {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretName,
+					Namespace: installation.Namespace,
+				},
+			}
+			if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
+				return result, err
+			} else if !exists {
+				preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
+				installation.Status.PreflightStatus = v1alpha1.PreflightFail
+				installation.Status.PreflightMessage = preflightMessage
+				logrus.Info(preflightMessage)
+				_ = r.client.Status().Update(r.context, installation)
+				return result, err
+			}
 		}
 	}
 
