@@ -403,6 +403,14 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:f026f6572ebee5836b2d704fc3db1734d0c165f0ceb74c939f1613e56cef78ec"
+  name = "github.com/integr8ly/cloud-resource-operator"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "0df627515a70fe3b3424d037f3da91908f4d1c27"
+
+[[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
   name = "github.com/joho/godotenv"
   packages = ["."]
@@ -1297,6 +1305,7 @@
     "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1",
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
     "github.com/go-openapi/spec",
+    "github.com/integr8ly/cloud-resource-operator",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",

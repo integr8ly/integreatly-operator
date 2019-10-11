@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -94,6 +97,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
+	// setup smtp credential configmap
+	if in.Spec.UseExternalResources {
+		phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+	}
+
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -177,6 +188,64 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 		return "", errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	return string(clientSecretBytes), nil
+}
+
+func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// setup smtp credential set cr for the cloud resource operator
+	smtpCredName := fmt.Sprintf("3scale-smtp-%s", inst.Name)
+	smtpCred := &crov1.SMTPCredentialSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      smtpCredName,
+			Namespace: inst.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, smtpCred, func(existing runtime.Object) error {
+		c := existing.(*crov1.SMTPCredentialSet)
+		c.Spec.Type = inst.Spec.Type
+		c.Spec.Tier = "production"
+		c.Spec.SecretRef = &crov1.SecretRef{
+			Name:      fmt.Sprintf("3scale-smtp-%s", inst.Name),
+			Namespace: inst.Namespace,
+		}
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile smtp credential request")
+	}
+	// wait for the smtp credential set cr to reconcile
+	if smtpCred.Status.Phase != crov1.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret containing smtp credentials
+	credSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get smtp credential secret")
+	}
+	smtpCfgMap := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "smtp",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	// reconcile the smtp configmap for 3scale
+	controllerutil.CreateOrUpdate(ctx, serverClient, smtpCfgMap, func(existing runtime.Object) error {
+		cm := existing.(*v1.ConfigMap)
+		if cm.Data == nil {
+			cm.Data = map[string]string{}
+		}
+		cm.Data["address"] = string(credSec.Data["host"])
+		cm.Data["authentication"] = "login"
+		cm.Data["domain"] = fmt.Sprintf("3scale-admin.%s", inst.Spec.RoutingSubdomain)
+		cm.Data["openssl.verify.mode"] = ""
+		cm.Data["password"] = string(credSec.Data["password"])
+		cm.Data["port"] = string(credSec.Data["port"])
+		cm.Data["username"] = string(credSec.Data["username"])
+		return nil
+	})
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

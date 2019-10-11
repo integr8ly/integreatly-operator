@@ -20,6 +20,7 @@ import (
 	templatev1 "github.com/openshift/api/template/v1"
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	nexusv1 "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -61,5 +62,6 @@ func init() {
 		launcherv1alpha2.SchemeBuilder.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
 		upsv1alpha1.SchemeBuilder.AddToScheme,
+		crov1.SchemeBuilder.AddToScheme,
 	)
 }

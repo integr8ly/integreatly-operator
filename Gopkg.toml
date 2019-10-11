@@ -88,3 +88,7 @@ required = [
 [[constraint]]
   name = "github.com/aerogear/unifiedpush-operator"
   version = "0.2.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/integr8ly/cloud-resource-operator"
