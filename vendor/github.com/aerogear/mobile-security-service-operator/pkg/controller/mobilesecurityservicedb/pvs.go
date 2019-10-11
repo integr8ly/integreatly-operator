@@ -9,12 +9,16 @@ import (
 )
 
 //Returns the Deployment object for the Mobile Security Service Database
-func (r *ReconcileMobileSecurityServiceDB) buildPVCForDB(db *mobilesecurityservicev1alpha1.MobileSecurityServiceDB) *corev1.PersistentVolumeClaim {
-	ls := getDBLabels(db.Name)
+func (r *ReconcileMobileSecurityServiceDB) buildPVCForDB(m *mobilesecurityservicev1alpha1.MobileSecurityServiceDB) *corev1.PersistentVolumeClaim {
+	ls := getDBLabels(m.Name)
 	pv := &corev1.PersistentVolumeClaim{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "PersistentVolumeClaim",
+		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      db.Name,
-			Namespace: db.Namespace,
+			Name:      m.Name,
+			Namespace: m.Namespace,
 			Labels:    ls,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
@@ -23,12 +27,12 @@ func (r *ReconcileMobileSecurityServiceDB) buildPVCForDB(db *mobilesecurityservi
 			},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: resource.MustParse(db.Spec.DatabaseStorageRequest),
+					corev1.ResourceStorage: resource.MustParse(m.Spec.DatabaseStorageRequest),
 				},
 			},
 		},
 	}
-	// Set MobileSecurityServiceDB db as the owner and controller
-	controllerutil.SetControllerReference(db, pv, r.scheme)
+	// Set MobileSecurityServiceDB instance as the owner and controller
+	controllerutil.SetControllerReference(m, pv, r.scheme)
 	return pv
 }

@@ -2,59 +2,42 @@ package mobilesecurityservice
 
 import (
 	mobilesecurityservicev1alpha1 "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
-	"github.com/aerogear/mobile-security-service-operator/pkg/utils"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//buildService returns the service resource
-func (r *ReconcileMobileSecurityService) buildProxyService(mss *mobilesecurityservicev1alpha1.MobileSecurityService) *corev1.Service {
-	ls := getAppLabels(mss.Name)
-	targetPort := intstr.FromInt(oauthProxyPort)
+//buildAppService returns the service resource
+func (r *ReconcileMobileSecurityService) buildAppService(m *mobilesecurityservicev1alpha1.MobileSecurityService) *corev1.Service {
+	ls := getAppLabels(m.Name)
 	ser := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      utils.ProxyServiceInstanceName,
-			Namespace: mss.Namespace,
+			Name:      m.Name,
+			Namespace: m.Namespace,
 			Labels:    ls,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: ls,
+			Type:     corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
 				{
-					TargetPort: targetPort,
-					Port:       80,
-					Name:       "web",
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: m.Spec.Port,
+					},
+					Port:     m.Spec.Port,
+					Protocol: "TCP",
 				},
 			},
 		},
 	}
-	// Set MobileSecurityService mss as the owner and controller
-	controllerutil.SetControllerReference(mss, ser, r.scheme)
-	return ser
-}
-
-func (r *ReconcileMobileSecurityService) buildApplicationService(mss *mobilesecurityservicev1alpha1.MobileSecurityService) *corev1.Service {
-	ls := getAppLabels(mss.Name)
-	ser := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      utils.ApplicationServiceInstanceName,
-			Namespace: mss.Namespace,
-			Labels:    ls,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: ls,
-			Ports: []corev1.ServicePort{
-				{
-					Port: mss.Spec.Port,
-					Name: "server",
-				},
-			},
-		},
-	}
-	// Set MobileSecurityService mss as the owner and controller
-	controllerutil.SetControllerReference(mss, ser, r.scheme)
+	// Set MobileSecurityService instance as the owner and controller
+	controllerutil.SetControllerReference(m, ser, r.scheme)
 	return ser
 }

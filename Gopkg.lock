@@ -65,19 +65,20 @@
   revision = "ea948e9684cd0f087ef899ee6ecb5406cd80bcea"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ed10465df12e1ca943214d2de6e692286f2409c70ff6e07077e11bfb49fe62da"
-  name = "github.com/aerogear/mobile-security-service-operator"
-  packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
-  pruneopts = "NT"
-  revision = "97ff907ad226b8812aa45a0933bcdec2541a5b10"
-[[projects]]
   digest = "1:a0406619fc157a732f66082c2867beb6134fc6661cbccabaa12700c5d039f984"
   name = "github.com/aerogear/mobile-developer-console-operator"
   packages = ["pkg/apis/mdc/v1alpha1"]
   pruneopts = "NT"
   revision = "ee13c1abd67841099329b99405256ba1916379ea"
   version = "0.2.6"
+
+[[projects]]
+  branch = "AEROGEAR-8955"
+  digest = "1:0ab074960816dccd4836823e7a8a1db6e671861a1f18b8d6a103f6a611199ab0"
+  name = "github.com/aerogear/mobile-security-service-operator"
+  packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
+  pruneopts = "NT"
+  revision = "295906a9713e98e054dfe7647543deac792fee2f"
 
 [[projects]]
   digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"
@@ -416,6 +417,14 @@
   pruneopts = "NT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:f026f6572ebee5836b2d704fc3db1734d0c165f0ceb74c939f1613e56cef78ec"
+  name = "github.com/integr8ly/cloud-resource-operator"
+  packages = ["pkg/apis/integreatly/v1alpha1"]
+  pruneopts = "NT"
+  revision = "0df627515a70fe3b3424d037f3da91908f4d1c27"
 
 [[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
@@ -1306,8 +1315,8 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/olm",
-    "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
     "github.com/aerogear/mobile-developer-console-operator/pkg/apis/mdc/v1alpha1",
+    "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
     "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1",
     "github.com/eclipse/che-operator/pkg/apis/org/v1",
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",
@@ -1315,6 +1324,7 @@
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
     "github.com/go-openapi/spec",
     "github.com/google/uuid",
+    "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",
