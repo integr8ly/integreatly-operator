@@ -25,9 +25,10 @@ var (
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"
 
-	BootstrapStage      StageName = "bootstrap"
-	AuthenticationStage StageName = "authentication"
-	ProductsStage       StageName = "products"
+	BootstrapStage        StageName = "bootstrap"
+	AuthenticationStage   StageName = "authentication"
+	ProductsStage         StageName = "products"
+	SolutionExplorerStage StageName = "solution-explorer"
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"
@@ -61,7 +62,7 @@ var (
 	OperatorVersionAMQStreams          = "1.1.0"
 	OperatorVersionAMQOnline           = "1.2.2"
 	OperatorVersionMonitoring          = "0.0.27"
-	OperatorVersionSolutionExplorer    = "0.0.27"
+	OperatorVersionSolutionExplorer    = "0.0.31"
 	OperatorVersionRHSSO               = "1.8.2"
 	OperatorVersionRHSSOUser           = "1.8.2"
 	OperatorVersionCodeReadyWorkspaces = "1.2.2"

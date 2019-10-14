@@ -2,26 +2,28 @@ package solutionexplorer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	v1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
-	routev1 "github.com/openshift/api/route/v1"
-	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	appsv1 "github.com/openshift/api/apps/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	routev1 "github.com/openshift/api/route/v1"
+	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -32,6 +34,7 @@ const (
 	paramOpenShiftOauthHost = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient        = "OPENSHIFT_OAUTHCLIENT_ID"
 	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
+	paramInstalledServices  = "INSTALLED_SERVICES"
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
 	oauthClientName         = "integreatly-solution-explorer"
@@ -51,6 +54,11 @@ type Reconciler struct {
 //go:generate moq -out OauthResolver_moq.go . OauthResolver
 type OauthResolver interface {
 	GetOauthEndPoint() (*resources.OauthServerConfig, error)
+}
+
+type productInfo struct {
+	Host    string
+	Version v1alpha1.ProductVersion
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
@@ -80,7 +88,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
-	return &v1.DeploymentConfig{
+	return &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "tutorial-web-app",
 			Namespace: ns,
@@ -182,6 +190,10 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
 	logrus.Info("ReconcileCustomResource setting url for openshift host ", oauthURL)
 
+	installedServices, err := r.getInstalledProducts(inst)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to retrieve installed products information from %s CR", inst.Name)
+	}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func(existing runtime.Object) error {
 		cr := existing.(*webapp.WebApp)
 		cr.Spec.AppLabel = "tutorial-web-app"
@@ -192,6 +204,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 			paramOpenShiftHost:      inst.Spec.MasterURL,
 			paramOpenShiftOauthHost: oauthURL,
 			paramOpenShiftVersion:   "4",
+			paramInstalledServices:  installedServices,
 		}
 		return nil
 	})
@@ -212,4 +225,48 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 	}
 	return v1alpha1.PhaseInProgress, nil
 
+}
+
+func (r *Reconciler) getInstalledProducts(inst *v1alpha1.Installation) (string, error) {
+	installedProducts := inst.Status.Stages["products"].Products
+
+	// Ensure that amq online console is not added to the installed products, a per user amq online is used instead which is provisioned by the webapp
+	// Ensure that ups is not added to the installed products
+	products := make(map[v1alpha1.ProductName]productInfo)
+	for name, info := range installedProducts {
+		if name != v1alpha1.ProductAMQOnline && name != v1alpha1.ProductUps && info.Host != "" {
+			id := r.getProductId(name)
+			products[id] = productInfo{
+				Host:    info.Host,
+				Version: info.Version,
+			}
+		}
+	}
+
+	productsData, err := json.MarshalIndent(products, "", "  ")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal json data %s", products)
+	}
+
+	return string(productsData), nil
+}
+
+// Gets the product's id used by the webapp
+// https://github.com/integr8ly/tutorial-web-app/blob/master/src/product-info.js
+func (r *Reconciler) getProductId(name v1alpha1.ProductName) v1alpha1.ProductName {
+	id := name
+
+	if name == v1alpha1.ProductFuse {
+		id = "fuse-managed"
+	}
+
+	if name == v1alpha1.ProductCodeReadyWorkspaces {
+		id = "codeready"
+	}
+
+	if name == v1alpha1.ProductRHSSOUser {
+		id = "user-rhsso"
+	}
+
+	return id
 }
