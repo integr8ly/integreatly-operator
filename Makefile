@@ -111,15 +111,18 @@ test/e2e/olm: export AWS_SECRET_ACCESS_KEY := 1234
 test/e2e/olm: export AWS_BUCKET := dummy
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
-test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm deploy/integreatly-installation-cr.yml
+test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm deploy/integreatly-installation-cr.yml cluster/deploy/integreatly-installation-cr.yml
+
+.PHONY: cluster/deploy/integreatly-installation-cr.yml
+cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
+cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
 	oc create -f deploy/integreatly-installation-cr.yml
-	$(call wait_command, oc get Installation example-installation -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
-	$(call wait_command, oc get Installation example-installation -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
-	$(call wait_command, oc get Installation example-installation -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.products.phase}' | grep -q completed, products phase, 30m, 30)
+	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
+	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
+	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.products.phase}' | grep -q completed, products phase, 30m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/secrets
-	-oc create -f https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+cluster/prepare: cluster/prepare/project cluster/prepare/secrets cluster/prepare/osrc
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -138,6 +141,10 @@ cluster/prepare/secrets:
 		--from-literal=clientId=$(GH_CLIENT_ID) \
 		--from-literal=secret=$(GH_CLIENT_SECRET)
 
+.PHONY: cluster/prepare/osrc
+cluster/prepare/osrc:
+	oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc create -f - -n openshift-marketplace
+
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare
 	-oc create -f deploy/crds/*.crd.yaml
@@ -146,8 +153,7 @@ cluster/prepare/local: cluster/prepare
 	@oc create -f deploy/role_binding.yaml
 
 .PHONY: cluster/prepare/olm
-cluster/prepare/olm: cluster/prepare/project cluster/prepare/secrets
-	oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc create -f - -n openshift-marketplace
+cluster/prepare/olm: cluster/prepare/project cluster/prepare/secrets cluster/prepare/osrc
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
 	$(call wait_command, oc get crd installations.integreatly.org, installations.integreatly.org crd, 1m, 10)
 	$(call wait_command, oc get deployments integreatly-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, integreatly-operator ,2m, 10)
@@ -177,8 +183,12 @@ cluster/cleanup/crds:
 deploy/integreatly-installation-cr.yml: export MASTER_URL := https://$(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].host}")
 deploy/integreatly-installation-cr.yml: export ROUTING_SUBDOMAIN := $(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].routerCanonicalHostname}")
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
+deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
+deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := workshop
 deploy/integreatly-installation-cr.yml:
 	@echo "masterUrl = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s,MASTER_URL,$(MASTER_URL),g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/ROUTING_SUBDOMAIN/$(ROUTING_SUBDOMAIN)/g" | \
+	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" | \
+	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" > deploy/integreatly-installation-cr.yml
