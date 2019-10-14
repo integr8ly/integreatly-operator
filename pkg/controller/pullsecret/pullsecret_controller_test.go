@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	testNameSpace = "test-namespace"
+	nameSpaceWithoutLabel = "test-namespace"
+	nameSpaceWithLabel    = WebAppLabel + nameSpaceWithoutLabel
 )
 
 func getBuildScheme() (*runtime.Scheme, error) {
@@ -27,15 +28,23 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func basicReconcileRequest() reconcile.Request {
+func basicReconcileRequest(nameSpace string) reconcile.Request {
 	return reconcile.Request{
 		NamespacedName: types.NamespacedName{
-			Namespace: testNameSpace,
-			Name:      testNameSpace,
+			Namespace: nameSpace,
+			Name:      nameSpace,
 		},
 	}
 }
 
+func basicNameSpaceObject(nameSpace string) *corev1.Namespace {
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: nameSpace,
+			Name:      nameSpace,
+		},
+	}
+}
 func TestPullSecretReconciler(t *testing.T) {
 
 	scheme, err := getBuildScheme()
@@ -61,14 +70,9 @@ func TestPullSecretReconciler(t *testing.T) {
 		Verify       func(client client.Client, res reconcile.Result, err error, t *testing.T)
 	}{
 		{
-			Name:    "Pull Secret Controller does NOT add pull secret to namespace without WebApp label",
-			Request: basicReconcileRequest(),
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNameSpace,
-					Name:      testNameSpace,
-				},
-			}, defPullSecret),
+			Name:       "Pull Secret Controller does NOT add pull secret to namespace without WebApp label",
+			Request:    basicReconcileRequest(nameSpaceWithoutLabel),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, basicNameSpaceObject(nameSpaceWithoutLabel), defPullSecret),
 			Verify: func(c client.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -76,7 +80,7 @@ func TestPullSecretReconciler(t *testing.T) {
 
 				// Secret should not be created - therefore should return an error when trying to find secret in the namespace
 				s := &corev1.Secret{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: resources.DefaultOriginPullSecretName, Namespace: testNameSpace}, s)
+				err = c.Get(context.TODO(), client.ObjectKey{Name: resources.DefaultOriginPullSecretName, Namespace: nameSpaceWithoutLabel}, s)
 
 				if err == nil {
 					t.Fatal("expected err but got none")
@@ -84,15 +88,9 @@ func TestPullSecretReconciler(t *testing.T) {
 			},
 		},
 		{
-			Name:    "Pull Secret Controller does add pull secret to namespace with WebApp label",
-			Request: basicReconcileRequest(),
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNameSpace,
-					Name:      testNameSpace,
-					Labels:    map[string]string{WebAppLabel: "true"},
-				},
-			}, defPullSecret),
+			Name:       "Pull Secret Controller does add pull secret to namespace with WebApp label",
+			Request:    basicReconcileRequest(nameSpaceWithLabel),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, basicNameSpaceObject(nameSpaceWithLabel), defPullSecret),
 			Verify: func(c client.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -100,7 +98,7 @@ func TestPullSecretReconciler(t *testing.T) {
 
 				// Secret should be created - therefore should not return an error when trying to find secret in the namespace
 				s := &corev1.Secret{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: resources.DefaultOriginPullSecretName, Namespace: testNameSpace}, s)
+				err = c.Get(context.TODO(), client.ObjectKey{Name: resources.DefaultOriginPullSecretName, Namespace: nameSpaceWithLabel}, s)
 				if err != nil {
 					t.Fatal("expected no error but got one", err)
 				}
@@ -111,15 +109,9 @@ func TestPullSecretReconciler(t *testing.T) {
 			},
 		},
 		{
-			Name:    "Test get default pull secert error",
-			Request: basicReconcileRequest(),
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: testNameSpace,
-					Name:      testNameSpace,
-					Labels:    map[string]string{WebAppLabel: "true"},
-				},
-			}),
+			Name:       "Test get default pull secert error",
+			Request:    basicReconcileRequest(nameSpaceWithLabel),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, basicNameSpaceObject(nameSpaceWithLabel)),
 			Verify: func(c client.Client, res reconcile.Result, err error, t *testing.T) {
 				if err == nil {
 					t.Fatalf("Expexted secret not found error but was nil")

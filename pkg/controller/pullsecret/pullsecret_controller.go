@@ -2,6 +2,7 @@ package pullsecret
 
 import (
 	"context"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +24,7 @@ import (
 var log = logf.Log.WithName("controller_pullsecret")
 
 const (
-	WebAppLabel = "webapp"
+	WebAppLabel = "wa-"
 )
 
 /**
@@ -91,7 +92,7 @@ func (r *ReconcilePullSecret) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// Only for namespaces with the webapp label, copy the default pull secret and set as the default pull secret for namespace
-	if _, ok := instance.ObjectMeta.Labels[WebAppLabel]; ok {
+	if isWebAppNS := strings.HasPrefix(instance.ObjectMeta.Name, WebAppLabel); isWebAppNS {
 		reqLogger.Info("Found namespace with webapp label")
 
 		err = resources.CopyDefaultPullSecretToNameSpace(request.Name, resources.DefaultOriginPullSecretName, r.client, context.TODO())
