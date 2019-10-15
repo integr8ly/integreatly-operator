@@ -103,9 +103,18 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 		"launcher":              "launcher-operator",
 		"middleware-monitoring": "application-monitoring-operator",
 		"nexus":                 "nexus-operator",
-		"solution-explorer":     "tutorial-web-app-operator",
 		"user-sso":              "keycloak-operator",
 		"ups":                   "unifiedpush-operator",
+	}
+	for product, deploymentName := range products {
+		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
+		if err != nil {
+			break
+		}
+	}
+	//SolutionExplorer Stage - verify operators deploy
+	products = map[string]string{
+		"solution-explorer": "tutorial-web-app-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
