@@ -90,7 +90,7 @@ image/build/push: image/build image/push
 
 .PHONY: image/build/test
 image/build/test:
-	operator-sdk build --enable-tests $(REG)/$(ORG)/$(PROJECT):$(TAG)
+	operator-sdk build $(REG)/$(ORG)/$(PROJECT):$(TAG)
 
 .PHONY: test/unit
 test/unit:

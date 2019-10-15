@@ -65,6 +65,14 @@
   revision = "ea948e9684cd0f087ef899ee6ecb5406cd80bcea"
 
 [[projects]]
+  branch = "master"
+  digest = "1:ed10465df12e1ca943214d2de6e692286f2409c70ff6e07077e11bfb49fe62da"
+  name = "github.com/aerogear/mobile-security-service-operator"
+  packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
+  pruneopts = "NT"
+  revision = "97ff907ad226b8812aa45a0933bcdec2541a5b10"
+
+[[projects]]
   digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"
   name = "github.com/aerogear/unifiedpush-operator"
   packages = ["pkg/apis/push/v1alpha1"]
@@ -1291,12 +1299,14 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/olm",
+    "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
     "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1",
     "github.com/eclipse/che-operator/pkg/apis/org/v1",
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",
     "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1",
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
     "github.com/go-openapi/spec",
+    "github.com/google/uuid",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",
