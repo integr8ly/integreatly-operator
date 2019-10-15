@@ -201,7 +201,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 
 	mssDbCr := &mobilesecurityservice.MobileSecurityServiceDB{}
 
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dbClusterName, Namespace: defaultInstallationNamespace}, mssDbCr); err != nil {
+	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dbClusterName, Namespace: r.Config.GetNamespace()}, mssDbCr); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get mss db cr when reconciling custom resource")
 	}
 
@@ -213,7 +213,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 
 	mssCr := &mobilesecurityservice.MobileSecurityService{}
 
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: serverClusterName, Namespace: defaultInstallationNamespace}, mssCr); err != nil {
+	if err := client.Get(ctx, pkgclient.ObjectKey{Name: serverClusterName, Namespace: r.Config.GetNamespace()}, mssCr); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get mss cr when reconciling custom resource")
 	}
 
