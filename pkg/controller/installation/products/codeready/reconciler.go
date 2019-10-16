@@ -3,10 +3,12 @@ package codeready
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -163,8 +165,11 @@ func (r *Reconciler) reconcilePostgresSecret(ctx context.Context, serverClient p
 			postgresqlSecret.Data["POSTGRES_PASSWORD"] = []byte(env.Value)
 		case "POSTGRESQL_DATABASE":
 			postgresqlSecret.Data["POSTGRES_DATABASE"] = []byte(env.Value)
+		case "POSTGRESQL_ADMIN_PASSWORD":
+			postgresqlSecret.Data["POSTGRES_ADMIN_PASSWORD"] = []byte(env.Value)
 		}
 	}
+	fmt.Println("austin", deployment.Spec.Template.Spec.Containers[0].Env)
 
 	err = resources.CreateOrUpdate(ctx, serverClient, postgresqlSecret)
 	if err != nil {
@@ -204,8 +209,13 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 		}
-		if err = r.createCheCluster(ctx, kcConfig, kcRealm, inst, serverClient); err != nil {
+		cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, inst, serverClient)
+		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create checluster custom resource in namespace: %s", r.Config.GetNamespace()))
+		}
+		// che cluster hasn't reconciled yet
+		if cheCluster == nil {
+			return v1alpha1.PhaseAwaitingComponents, nil
 		}
 		return v1alpha1.PhaseInProgress, err
 	}
@@ -416,8 +426,27 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
+func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
 	selfSignedCerts := inst.Spec.SelfSignedCerts
+	cheDb := chev1.CheClusterSpecDB{
+		ExternalDB:            false,
+		ChePostgresDb:         "",
+		ChePostgresPassword:   "",
+		ChePostgresPort:       "",
+		ChePostgresUser:       "",
+		ChePostgresDBHostname: "",
+	}
+	// setup external postgres db if UseExternalResource set to true
+	if inst.Spec.UseExternalResources {
+		cheClusterExternalPostgres, err := r.reconcileExternalPostgres(ctx, inst, serverClient)
+		if err != nil{
+			return nil, err
+		}
+		if cheClusterExternalPostgres == nil {
+			return nil, nil
+		}
+		cheDb = cheClusterExternalPostgres.Spec.Database
+	}
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultCheClusterName,
@@ -437,14 +466,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 				TlsSupport:     true,
 				SelfSignedCert: selfSignedCerts,
 			},
-			Database: chev1.CheClusterSpecDB{
-				ExternalDB:            false,
-				ChePostgresDb:         "",
-				ChePostgresPassword:   "",
-				ChePostgresPort:       "",
-				ChePostgresUser:       "",
-				ChePostgresDBHostname: "",
-			},
+			Database: cheDb,
 			Auth: chev1.CheClusterSpecAuth{
 				OpenShiftOauth:   false,
 				ExternalKeycloak: true,
@@ -459,6 +481,67 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			},
 		},
 	}
+
 	ownerutil.EnsureOwner(cheCluster, inst)
-	return serverClient.Create(ctx, cheCluster)
+	if err := serverClient.Create(ctx, cheCluster); err != nil {
+		return nil, errors.Wrap(err, "failed to create che cluster resource")
+	}
+	return cheCluster, nil
+}
+
+// A
+func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
+	// have to do something to get postgres db values
+	// setup the postgres cr for cloud resource operator
+	postgresCredName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
+	postgresCred := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      postgresCredName,
+			Namespace: inst.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, postgresCred, func(existing runtime.Object) error {
+		c := existing.(*crov1.Postgres)
+		c.Spec.Type = inst.Spec.Type
+		c.Spec.Tier = "production"
+		c.Spec.SecretRef = &crov1.SecretRef{
+			Name:      postgresCredName,
+			Namespace: inst.Namespace,
+		}
+		return nil
+	})
+	if err != nil {
+		return nil , errors.Wrap(err, "failed to reconcile smtp credential request")
+	}
+	// phase is not complete, wait
+	if postgresCred.Status.Phase != crov1.PhaseComplete {
+		return nil, nil
+	}
+
+	secRef := postgresCred.Status.SecretRef
+	credSec := &v1.Secret{}
+	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: secRef.Name, Namespace: secRef.Namespace}, credSec); err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve credential secret for %s", postgresCredName)
+	}
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      "postgres",
+		},
+	}
+	fmt.Println("austin", deployment.Spec.Template.Spec.Containers[0].Env)
+	// set the values on the object and hope it doesn't overwrite the rest of object
+	cheCluster := &chev1.CheCluster{
+		Spec: chev1.CheClusterSpec{
+			Database: chev1.CheClusterSpecDB{
+				ExternalDB:            true,
+				ChePostgresDb:         string(credSec.Data["database"]),
+				ChePostgresPassword:   string(credSec.Data["password"]),
+				ChePostgresPort:       string(credSec.Data["port"]),
+				ChePostgresUser:       string(credSec.Data["username"]),
+				ChePostgresDBHostname: string(credSec.Data["host"]),
+			},
+		},
+	}
+	return cheCluster, nil
 }
