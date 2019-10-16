@@ -25,7 +25,7 @@ objects:
       csPublisher: Red Hat
       packages: integreatly
       targetNamespace: ${NAMESPACE}
-
+      source: ${OPERATOR_SOURCE_NAME}
 parameters:
   - description: The namespace to deploy into
     displayName: Namespace
