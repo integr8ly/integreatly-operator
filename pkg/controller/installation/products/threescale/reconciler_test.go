@@ -2,6 +2,9 @@ package threescale
 
 import (
 	"context"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
@@ -39,6 +42,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev2.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
+	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	return scheme, err
@@ -55,6 +59,41 @@ type ThreeScaleTestScenario struct {
 	Assert               AssertFunc
 	MPM                  marketplace.MarketplaceInterface
 	Product              *v1alpha1.InstallationProductStatus
+}
+
+func getTestInstallation() *v1alpha1.Installation {
+	return &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+		Spec: v1alpha1.InstallationSpec{
+			Type:                 "managed",
+			UseExternalResources: true,
+		},
+	}
+}
+
+func getTestBlobStorage() *crov1.BlobStorage {
+	return &crov1.BlobStorage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "3scale-s3-test",
+			Namespace: "test",
+		},
+		Status: crov1.BlobStorageStatus{
+			Phase: crov1.PhaseComplete,
+			SecretRef: &crov1.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+		Spec: crov1.BlobStorageSpec{
+			SecretRef: &crov1.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+	}
 }
 
 func TestThreeScale(t *testing.T) {
@@ -118,4 +157,159 @@ func TestThreeScale(t *testing.T) {
 		})
 	}
 
+}
+
+func TestReconciler_reconcileBlobStorage(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *v1alpha1.Installation
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "test successful reconcile",
+			fields: fields{
+				ConfigManager: nil,
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				mpm:           nil,
+				installation:  getTestInstallation(),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			},
+			args: args{
+				ctx:          context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage()),
+			},
+			want:    integreatlyv1alpha1.PhaseCompleted,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+			}
+			got, err := r.reconcileBlobStorage(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileBlobStorage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileBlobStorage() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileComponents(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type fields struct {
+		ConfigManager config.ConfigReadWriter
+		Config        *config.ThreeScale
+		mpm           marketplace.MarketplaceInterface
+		installation  *v1alpha1.Installation
+		tsClient      ThreeScaleInterface
+		appsv1Client  appsv1Client.AppsV1Interface
+		oauthv1Client oauthClient.OauthV1Interface
+		Reconciler    *resources.Reconciler
+	}
+	type args struct {
+		ctx          context.Context
+		serverClient client.Client
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    integreatlyv1alpha1.StatusPhase
+		wantErr bool
+	}{
+		{
+			name: "test successful reconcile of s3 blob storage",
+			fields: fields{
+				ConfigManager: nil,
+				Config: config.NewThreeScale(config.ProductConfig{
+					"NAMESPACE": "test",
+				}),
+				mpm:           nil,
+				installation:  getTestInstallation(),
+				tsClient:      nil,
+				appsv1Client:  nil,
+				oauthv1Client: nil,
+				Reconciler:    nil,
+			},
+			args: args{
+				ctx: context.TODO(),
+				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(), &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test",
+						Namespace: "test",
+					},
+					Data: map[string][]byte{
+						"credentialKeyID":     []byte("test"),
+						"credentialSecretKey": []byte("test"),
+					},
+				}),
+			},
+			want:    integreatlyv1alpha1.PhaseInProgress,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				ConfigManager: tt.fields.ConfigManager,
+				Config:        tt.fields.Config,
+				mpm:           tt.fields.mpm,
+				installation:  tt.fields.installation,
+				tsClient:      tt.fields.tsClient,
+				appsv1Client:  tt.fields.appsv1Client,
+				oauthv1Client: tt.fields.oauthv1Client,
+				Reconciler:    tt.fields.Reconciler,
+			}
+			got, err := r.reconcileComponents(tt.args.ctx, tt.args.serverClient)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileComponents() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileComponents() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
