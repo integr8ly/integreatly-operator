@@ -103,6 +103,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
+
+		phase, err = r.reconcileBlobStorage(ctx, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
 	}
 
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), in, serverClient)
@@ -171,7 +176,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgclient.Client) (string, error) {
-
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -191,6 +195,8 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 }
 
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling smtp")
+
 	// setup smtp credential set cr for the cloud resource operator
 	smtpCredName := fmt.Sprintf("3scale-smtp-%s", inst.Name)
 	smtpCred := &crov1.SMTPCredentialSet{
@@ -199,6 +205,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 			Namespace: inst.Namespace,
 		},
 	}
+
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, smtpCred, func(existing runtime.Object) error {
 		c := existing.(*crov1.SMTPCredentialSet)
 		c.Spec.Type = inst.Spec.Type
@@ -212,6 +219,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile smtp credential request")
 	}
+
 	// wait for the smtp credential set cr to reconcile
 	if smtpCred.Status.Phase != crov1.PhaseComplete {
 		return v1alpha1.PhaseAwaitingComponents, nil
@@ -249,45 +257,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	bucket := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: s3BucketSecretName,
-		},
-	}
-
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: bucket.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, bucket)
+	fss, err := r.getFileStorageSpec(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	s3SecretName := s3CredentialsSecretName
-	tsS3 := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      s3SecretName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: tsS3.Name, Namespace: tsS3.Namespace}, tsS3)
-	if err != nil && k8serr.IsNotFound(err) {
-		// We are copying the s3 details for now but this is not ideal as the secrets can get out of sync.
-		// We need to revise how this secret is set
-		s3 := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: s3SecretName,
-			},
-		}
-		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: s3.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, s3)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
-
-		tsS3.Data = s3.Data
-		err = serverClient.Create(ctx, tsS3)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
-	}
-
+	// create the 3scale api manager
 	resourceRequirements := false
 	apim := &threescalev1.APIManager{
 		ObjectMeta: metav1.ObjectMeta{
@@ -300,15 +275,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
 			System: &threescalev1.SystemSpec{
-				FileStorageSpec: &threescalev1.SystemFileStorageSpec{
-					S3: &threescalev1.SystemS3Spec{
-						AWSBucket: string(bucket.Data["AWS_BUCKET"]),
-						AWSRegion: string(bucket.Data["AWS_REGION"]),
-						AWSCredentials: v1.LocalObjectReference{
-							Name: s3SecretName,
-						},
-					},
-				},
+				FileStorageSpec: fss,
 			},
 		},
 	}
@@ -330,6 +297,146 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	}
 
 	return v1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling blob storage")
+
+	// setup blob storage cr for the cloud resource operator
+	blobStorageName := fmt.Sprintf("3scale-s3-%s", r.installation.Name)
+	blobStorage := &crov1.BlobStorage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      blobStorageName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	logrus.Info("Creating blob storage")
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, blobStorage, func(existing runtime.Object) error {
+		c := existing.(*crov1.BlobStorage)
+		c.Spec.Type = r.installation.Spec.Type
+		c.Spec.Tier = "production"
+		c.Spec.SecretRef = &crov1.SecretRef{
+			Name:      fmt.Sprintf("3scale-s3-%s", r.installation.Name),
+			Namespace: r.Config.GetNamespace(),
+		}
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile blob storage request")
+	}
+
+	// wait for the blob storage cr to reconcile
+	if blobStorage.Status.Phase != crov1.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getFileStorageSpec(ctx context.Context, serverClient pkgclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
+	// if cro is being used for blob storage
+	if r.installation.Spec.UseExternalResources {
+		// create blob storage cr
+		blobStorage := &crov1.BlobStorage{}
+		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: fmt.Sprintf("3scale-s3-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get blob storage custom resource")
+		}
+
+		// get blob storage connection secret
+		blobStorageSec := &v1.Secret{}
+		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Name, Namespace: r.Config.GetNamespace()}, blobStorageSec)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get blob storage connection secret")
+		}
+
+		// create s3 credentials secret
+		credSec := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      s3CredentialsSecretName,
+				Namespace: r.Config.GetNamespace(),
+			},
+			Data: map[string][]byte{},
+		}
+		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: credSec.Name, Namespace: credSec.Namespace}, credSec)
+		if err != nil && k8serr.IsNotFound(err) {
+			credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+			credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+
+			err = serverClient.Create(ctx, credSec)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create blob storage aws credentials secret")
+			}
+		}
+
+		// return the file storage spec
+		return &threescalev1.SystemFileStorageSpec{
+			S3: &threescalev1.SystemS3Spec{
+				AWSBucket: string(blobStorageSec.Data["bucketName"]),
+				AWSRegion: string(blobStorageSec.Data["bucketRegion"]),
+				AWSCredentials: v1.LocalObjectReference{
+					Name: s3CredentialsSecretName,
+				},
+			},
+		}, nil
+	}
+
+	// get existing aws bucket secret
+	bucket := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: s3BucketSecretName,
+		},
+	}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: bucket.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, bucket)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get aws bucket secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
+	}
+
+	// get existing aws credentials secret from the operator namespace
+	// and copy it into the 3scale namespace
+	namespaceCredSec := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s3CredentialsSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: namespaceCredSec.Name, Namespace: namespaceCredSec.Namespace}, namespaceCredSec)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return nil, errors.Wrapf(err, "failed to get aws credentials secret in namespace %s", namespaceCredSec.Namespace)
+		}
+
+		// We are copying the operatorCredSec details for now but this is not ideal as the secrets can get out of sync.
+		// We need to revise how this secret is set
+		operatorCredSec := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      s3CredentialsSecretName,
+				Namespace: r.ConfigManager.GetOperatorNamespace(),
+			},
+		}
+		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: operatorCredSec.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, operatorCredSec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get aws credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
+		}
+
+		// create the secret
+		namespaceCredSec.Data = operatorCredSec.Data
+		err = serverClient.Create(ctx, namespaceCredSec)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create aws credentials secret in namespace %s", namespaceCredSec.Namespace)
+		}
+	}
+
+	return &threescalev1.SystemFileStorageSpec{
+		S3: &threescalev1.SystemS3Spec{
+			AWSBucket: string(bucket.Data["AWS_BUCKET"]),
+			AWSRegion: string(bucket.Data["AWS_REGION"]),
+			AWSCredentials: v1.LocalObjectReference{
+				Name: s3CredentialsSecretName,
+			},
+		},
+	}, nil
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
