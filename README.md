@@ -113,6 +113,117 @@ spec:
   masterUrl: http://master.example.com
   selfSignedCerts: true
 ```
+## Manual Deployment to a Cluster
+### Create Namespace in Openshift Console
+From Home/Projects
+ 
+```sh
+Create Project
+```
+
+Input name 			e.g.   integreatly
+
+Input display name 	e.g.	integreatly
+
+```sh
+Create
+```
+### Install Operator in Openshift Console
+Goto Catalog/‘Installed Operators’   
+
+In top right corner Add/‘Import YAML’
+
+Copy the source code from:
+```sh
+https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
+```
+Should look like :
+```sh
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+  	name: integreatly-operators
+  	namespace: openshift-marketplace
+spec:
+  	authorizationToken: {}
+  	displayName: Integreatly Operators
+  	endpoint: 'https://quay.io/cnr'
+  	publisher: Integreatly Publisher
+  	registryNamespace: integreatly
+  	type: appregistry
+```
+Paste it into your console/ImportYAML
+```sh
+Create
+```
+Goto Catalog/OperatorHub
+
+Select the integreatly Operator   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *note :  you may need to refresh a couple of times before it becomes available.*
+
+Select Install
+
+Select ‘A specific namespace on the cluster’
+
+From dropdown menu select integreatly (the example name from create project above)
+
+```sh
+Subscribe
+```
+### Create Custom Resource
+From your terminal :
+```sh
+oc login 
+cd ~/go/src/github.com/integr8ly/integreatly-operator/deploy/crds/examples
+nano installation.cr.yaml
+```
+Edit the installation.cr.yaml with relevant details as required.
+Example :
+```sh
+apiVersion: integreatly.org/v1alpha1
+kind: Installation
+metadata:
+  name: example-installation
+spec:
+  type: managed
+  namespacePrefix: integreatly-
+  routingSubdomain: apps.<example>.cloudservices.rhmw.io
+  masterUrl: https://console-openshift-console.apps.<example>.cloudservices.rhmw.io
+  selfSignedCerts: true
+```
+Take note of metadata.name
+
+Save file and exit
+
+### Create the installation.cr.yaml in your integreatly namespace
+```sh
+oc create -f installation.cr.yaml  -n integreatly
+```
+Response should be
+
+$ installation.integreatly.org/example-installation created
+### Create AWS secrets
+The appropriate keys can be obtained from ~/.aws/credentials
+```sh
+cd  ~/go/src/github.com/integr8ly/integreatly-operator
+oc process -f deploy/s3-secrets.yaml -p INSTALLATION_NAMESPACE=integreatly -p AWS_ACCESS_KEY_ID=<your aws key> -p AWS_SECRET_ACCESS_KEY=<your aws secret key> -p AWS_BUCKET=<your aws bucket> -p AWS_REGION=eu-west-1 | oc apply -f -
+```
+### Create Github secrets
+```sh
+oc create secret generic github-oauth-secret --from-literal=clientId=<your github client oauth app client id> --from-literal=secret=<your github oauth app client secret> -n integreatly
+```
+### Monitor installaion
+Select the integreatly namespace
+
+Home/Search
+
+From drop down menu select Installation
+
+Select example-installation
+
+Select YAML
+
+You will see the YAML will update as the installation progresses.
+
 
 ## Set up dedicated admins 
 
