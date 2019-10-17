@@ -106,6 +106,8 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 		"solution-explorer":     "tutorial-web-app-operator",
 		"user-sso":              "keycloak-operator",
 		"ups":                   "unifiedpush-operator",
+		"mdc":                   "mobile-developer-console-operator",
+		"mss":                   "mobile-security-service-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)

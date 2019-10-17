@@ -2,6 +2,9 @@ package installation
 
 import (
 	"context"
+	"math/rand"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -13,9 +16,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"math/rand"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -57,6 +58,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 		v1alpha1.ProductRHSSO,
 		v1alpha1.ProductRHSSOUser,
 		v1alpha1.Product3Scale,
+		v1alpha1.ProductMobileDeveloperConsole,
 	}
 
 	oauthClientSecrets := &corev1.Secret{

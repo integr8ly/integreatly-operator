@@ -50,6 +50,7 @@ type ConfigReadWriter interface {
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
+	ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -93,6 +94,8 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadUps()
 	case v1alpha1.ProductMobileSecurityService:
 		return m.ReadMobileSecurityService()
+	case v1alpha1.ProductMobileDeveloperConsole:
+		return m.ReadMobileDeveloperConsole()
 	}
 
 	return nil, errors2.New("no config found for product " + string(product))
@@ -184,6 +187,14 @@ func (m *Manager) ReadNexus() (*Nexus, error) {
 		return nil, err
 	}
 	return NewNexus(config), nil
+}
+
+func (m *Manager) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
+	config, err := m.readConfigForProduct(v1alpha1.ProductMobileDeveloperConsole)
+	if err != nil {
+		return nil, err
+	}
+	return NewMobileDeveloperConsole(config), nil
 }
 
 func (m *Manager) ReadLauncher() (*Launcher, error) {
