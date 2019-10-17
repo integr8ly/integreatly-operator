@@ -117,28 +117,27 @@ spec:
 ### Create Namespace in Openshift Console
 From Home/Projects
  
-```sh
-Create Project
-```
+Select 'Create Project'
 
 Input name 			e.g.   integreatly
 
 Input display name 	e.g.	integreatly
 
-```sh
-Create
-```
+
+Select 'Create'
+
 ### Install Operator in Openshift Console
 Goto Catalog/‘Installed Operators’   
 
-In top right corner Add/‘Import YAML’
+In top right corner select 'Add/‘Import YAML’'
 
-Copy the source code from:
 ```sh
+#Copy the source code from:
 https://raw.githubusercontent.com/integr8ly/manifests/master/operator-source.yml
 ```
-Should look like :
+
 ```sh
+#Should look like :
 apiVersion: operators.coreos.com/v1
 kind: OperatorSource
 metadata:
@@ -152,33 +151,34 @@ spec:
   	registryNamespace: integreatly
   	type: appregistry
 ```
-Paste it into your console/ImportYAML
-```sh
-Create
-```
+
+
+Paste it into your console/'ImportYAML' then select 'Create'
+
 Goto Catalog/OperatorHub
 
-Select the integreatly Operator   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *note :  you may need to refresh a couple of times before it becomes available.*
+Select the 'integreatly' Operator   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *note :  you may need to refresh a couple of times before it becomes available
 
-Select Install
+Select 'Install'
 
 Select ‘A specific namespace on the cluster’
 
-From dropdown menu select integreatly (the example name from create project above)
+From dropdown menu select 'integreatly' (the example name from create project above)
 
-```sh
-Subscribe
-```
+
+Select 'Subscribe'
+
 ### Create Custom Resource
-From your terminal :
 ```sh
+#From your terminal :
 oc login 
 cd ~/go/src/github.com/integr8ly/integreatly-operator/deploy/crds/examples
 nano installation.cr.yaml
 ```
 Edit the installation.cr.yaml with relevant details as required.
-Example :
+
 ```sh
+#Example :
 apiVersion: integreatly.org/v1alpha1
 kind: Installation
 metadata:
@@ -186,8 +186,8 @@ metadata:
 spec:
   type: managed
   namespacePrefix: integreatly-
-  routingSubdomain: apps.<example>.cloudservices.rhmw.io
-  masterUrl: https://console-openshift-console.apps.<example>.cloudservices.rhmw.io
+  routingSubdomain: apps.tdavidso.cloudservices.rhmw.io
+  masterUrl: https://console-openshift-console.apps.tdavidso.cloudservices.rhmw.io
   selfSignedCerts: true
 ```
 Take note of metadata.name
@@ -198,29 +198,31 @@ Save file and exit
 ```sh
 oc create -f installation.cr.yaml  -n integreatly
 ```
-Response should be
-
+```sh
+#Response should be
 $ installation.integreatly.org/example-installation created
+```
+
 ### Create AWS secrets
 The appropriate keys can be obtained from ~/.aws/credentials
 ```sh
 cd  ~/go/src/github.com/integr8ly/integreatly-operator
-oc process -f deploy/s3-secrets.yaml -p INSTALLATION_NAMESPACE=integreatly -p AWS_ACCESS_KEY_ID=<your aws key> -p AWS_SECRET_ACCESS_KEY=<your aws secret key> -p AWS_BUCKET=<your aws bucket> -p AWS_REGION=eu-west-1 | oc apply -f -
+oc process -f deploy/s3-secrets.yaml -p INSTALLATION_NAMESPACE=integreatly -p AWS_ACCESS_KEY_ID=<your aws_access_key> -p AWS_SECRET_ACCESS_KEY=<your aws_secret_access_key> -p AWS_BUCKET=<your aws_bucket> -p AWS_REGION=eu-west-1 | oc apply -f -
 ```
 ### Create Github secrets
 ```sh
-oc create secret generic github-oauth-secret --from-literal=clientId=<your github client oauth app client id> --from-literal=secret=<your github oauth app client secret> -n integreatly
+oc create secret generic github-oauth-secret --from-literal=clientId=<your git_oauth_client_key> --from-literal=secret=<your git_oauth_client_secret_key> -n integreatly
 ```
 ### Monitor installaion
-Select the integreatly namespace
+Select the 'integreatly' namespace
 
-Home/Search
+Select 'Home/Search'
 
-From drop down menu select Installation
+From drop down menu select 'Installation'
 
-Select example-installation
+Select 'example-installation'
 
-Select YAML
+Select 'YAML'
 
 You will see the YAML will update as the installation progresses.
 
