@@ -59,7 +59,6 @@ type ThreeScaleTestScenario struct {
 	Product              *v1alpha1.InstallationProductStatus
 }
 
-
 func getTestInstallation() *v1alpha1.Installation {
 	return &v1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
@@ -81,6 +80,12 @@ func getTestBlobStorage() *crov1.BlobStorage {
 		},
 		Status: crov1.BlobStorageStatus{
 			Phase: crov1.PhaseComplete,
+		},
+		Spec: crov1.BlobStorageSpec{
+			SecretRef: &crov1.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
 		},
 	}
 }
@@ -182,7 +187,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm: nil,
+				mpm:           nil,
 				installation:  getTestInstallation(),
 				tsClient:      nil,
 				appsv1Client:  nil,
@@ -190,7 +195,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 				Reconciler:    nil,
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx:          context.TODO(),
 				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage()),
 			},
 			want:    integreatlyv1alpha1.PhaseCompleted,
@@ -255,8 +260,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				Config: config.NewThreeScale(config.ProductConfig{
 					"NAMESPACE": "test",
 				}),
-				mpm: nil,
-				installation: getTestInstallation(),
+				mpm:           nil,
+				installation:  getTestInstallation(),
 				tsClient:      nil,
 				appsv1Client:  nil,
 				oauthv1Client: nil,
@@ -266,7 +271,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				ctx: context.TODO(),
 				serverClient: fake.NewFakeClientWithScheme(scheme, getTestBlobStorage(), &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "3scale-s3-test",
+						Name:      "test",
 						Namespace: "test",
 					},
 					Data: map[string][]byte{

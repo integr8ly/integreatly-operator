@@ -338,49 +338,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 func (r *Reconciler) getFileStorageSpec(ctx context.Context, serverClient pkgclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
 	// if cro is being used for blob storage
 	if r.installation.Spec.UseExternalResources {
-		// create blob storage cr
-		blobStorage := &crov1.BlobStorage{}
-		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: fmt.Sprintf("3scale-s3-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get blob storage custom resource")
-		}
-
-		// get blob storage connection secret
-		blobStorageSec := &v1.Secret{}
-		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Name, Namespace: r.Config.GetNamespace()}, blobStorageSec)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get blob storage connection secret")
-		}
-
-		// create s3 credentials secret
-		credSec := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      s3CredentialsSecretName,
-				Namespace: r.Config.GetNamespace(),
-			},
-			Data: map[string][]byte{},
-		}
-		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: credSec.Name, Namespace: credSec.Namespace}, credSec)
-		if err != nil && k8serr.IsNotFound(err) {
-			credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
-			credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
-
-			err = serverClient.Create(ctx, credSec)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create blob storage aws credentials secret")
-			}
-		}
-
-		// return the file storage spec
-		return &threescalev1.SystemFileStorageSpec{
-			S3: &threescalev1.SystemS3Spec{
-				AWSBucket: string(blobStorageSec.Data["bucketName"]),
-				AWSRegion: string(blobStorageSec.Data["bucketRegion"]),
-				AWSCredentials: v1.LocalObjectReference{
-					Name: s3CredentialsSecretName,
-				},
-			},
-		}, nil
+		return r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	}
 
 	// get existing aws bucket secret
@@ -395,44 +353,83 @@ func (r *Reconciler) getFileStorageSpec(ctx context.Context, serverClient pkgcli
 	}
 
 	// get existing aws credentials secret from the operator namespace
-	// and copy it into the 3scale namespace
+	operatorCredSec := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s3CredentialsSecretName,
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: operatorCredSec.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, operatorCredSec)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get aws credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
+	}
+
+	// copy it into the 3scale namespace
 	namespaceCredSec := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s3CredentialsSecretName,
 			Namespace: r.Config.GetNamespace(),
 		},
+		Data: map[string][]byte{},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: namespaceCredSec.Name, Namespace: namespaceCredSec.Namespace}, namespaceCredSec)
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, namespaceCredSec, func(existing runtime.Object) error {
+		namespaceCredSec.Data["AWS_ACCESS_KEY_ID"] = operatorCredSec.Data["credentialKeyID"]
+		namespaceCredSec.Data["AWS_SECRET_ACCESS_KEY"] = operatorCredSec.Data["credentialSecretKey"]
+		return nil
+	})
 	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return nil, errors.Wrapf(err, "failed to get aws credentials secret in namespace %s", namespaceCredSec.Namespace)
-		}
-
-		// We are copying the operatorCredSec details for now but this is not ideal as the secrets can get out of sync.
-		// We need to revise how this secret is set
-		operatorCredSec := &v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      s3CredentialsSecretName,
-				Namespace: r.ConfigManager.GetOperatorNamespace(),
-			},
-		}
-		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: operatorCredSec.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, operatorCredSec)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get aws credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
-		}
-
-		// create the secret
-		namespaceCredSec.Data = operatorCredSec.Data
-		err = serverClient.Create(ctx, namespaceCredSec)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create aws credentials secret in namespace %s", namespaceCredSec.Namespace)
-		}
+		return nil, errors.Wrap(err, "failed to create or update blob storage aws credentials secret")
 	}
 
 	return &threescalev1.SystemFileStorageSpec{
 		S3: &threescalev1.SystemS3Spec{
 			AWSBucket: string(bucket.Data["AWS_BUCKET"]),
 			AWSRegion: string(bucket.Data["AWS_REGION"]),
+			AWSCredentials: v1.LocalObjectReference{
+				Name: s3CredentialsSecretName,
+			},
+		},
+	}, nil
+}
+
+func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient pkgclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
+	// create blob storage cr
+	blobStorage := &crov1.BlobStorage{}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: fmt.Sprintf("3scale-s3-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get blob storage custom resource")
+	}
+
+	// get blob storage connection secret
+	blobStorageSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Spec.SecretRef.Name, Namespace: r.Config.GetNamespace()}, blobStorageSec)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get blob storage connection secret")
+	}
+
+	// create s3 credentials secret
+	credSec := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s3CredentialsSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func(existing runtime.Object) error {
+		credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+		credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create or update blob storage aws credentials secret")
+	}
+
+	// return the file storage spec
+	return &threescalev1.SystemFileStorageSpec{
+		S3: &threescalev1.SystemS3Spec{
+			AWSBucket: string(blobStorageSec.Data["bucketName"]),
+			AWSRegion: string(blobStorageSec.Data["bucketRegion"]),
 			AWSCredentials: v1.LocalObjectReference{
 				Name: s3CredentialsSecretName,
 			},
