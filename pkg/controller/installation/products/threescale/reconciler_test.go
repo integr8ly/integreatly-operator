@@ -80,6 +80,10 @@ func getTestBlobStorage() *crov1.BlobStorage {
 		},
 		Status: crov1.BlobStorageStatus{
 			Phase: crov1.PhaseComplete,
+			SecretRef: &crov1.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
 		},
 		Spec: crov1.BlobStorageSpec{
 			SecretRef: &crov1.SecretRef{
