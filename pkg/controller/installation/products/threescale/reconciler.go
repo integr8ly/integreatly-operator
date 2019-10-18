@@ -319,7 +319,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 		c.Spec.Tier = "production"
 		c.Spec.SecretRef = &crov1.SecretRef{
 			Name:      fmt.Sprintf("3scale-s3-%s", r.installation.Name),
-			Namespace: r.Config.GetNamespace(),
+			Namespace: r.installation.Namespace,
 		}
 		return nil
 	})
@@ -402,7 +402,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 
 	// get blob storage connection secret
 	blobStorageSec := &v1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Spec.SecretRef.Name, Namespace: r.Config.GetNamespace()}, blobStorageSec)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get blob storage connection secret")
 	}
@@ -424,7 +424,6 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create or update blob storage aws credentials secret")
 	}
-
 	// return the file storage spec
 	return &threescalev1.SystemFileStorageSpec{
 		S3: &threescalev1.SystemS3Spec{
