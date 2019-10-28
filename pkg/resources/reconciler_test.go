@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -18,8 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-	"time"
 )
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -219,7 +220,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 		},
 		{
 			Name:   "test pull secret is reconciled successfully",
-			Client: fakeclient.NewFakeClientWithScheme(scheme, customPullSecret),
+			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, customPullSecret),
 			Installation: &v1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testinstall",
@@ -250,7 +251,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			testReconciler := NewReconciler(nil)
-			_, err := testReconciler.ReconcilePullSecret(context.TODO(), "test", tc.Installation, tc.Client)
+			_, err := testReconciler.ReconcilePullSecret(context.TODO(), "test", "new-pull-secret-name", tc.Installation, tc.Client)
 			if err != nil {
 				t.Fatal("failed to run pull secret reconcile: ", err)
 			}

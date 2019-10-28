@@ -83,7 +83,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultFusePullSecret, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
