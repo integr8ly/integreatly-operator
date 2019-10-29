@@ -1,9 +1,9 @@
 apiVersion: integreatly.org/v1alpha1
 kind: Installation
 metadata:
-  name: example-installation
+  name: INSTALLATION_NAME
 spec:
-  type: workshop
+  type: INSTALLATION_TYPE
   namespacePrefix: integreatly-
   routingSubdomain: ROUTING_SUBDOMAIN
   masterUrl: MASTER_URL
