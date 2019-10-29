@@ -207,6 +207,9 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 		},
 	}
 
+	// add owner ref
+	resources.PrepareObject(&smtpCred.ObjectMeta, r.installation)
+
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, smtpCred, func(existing runtime.Object) error {
 		c := existing.(*crov1.SMTPCredentialSet)
 		c.Spec.Type = inst.Spec.Type
@@ -311,6 +314,9 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 			Namespace: r.installation.Namespace,
 		},
 	}
+
+	// add owner ref
+	resources.PrepareObject(&blobStorage.ObjectMeta, r.installation)
 
 	logrus.Info("Creating blob storage")
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, blobStorage, func(existing runtime.Object) error {
