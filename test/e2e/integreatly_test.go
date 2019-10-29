@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"strings"
 
 	//"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
@@ -13,7 +14,10 @@ import (
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
@@ -27,6 +31,11 @@ var (
 	installationCleanupRetryInterval = time.Second * 20
 	installationCleanupTimeout       = time.Minute * 4 //Longer timeout required to allow for finalizers to execute
 	intlyNamespacePrefix             = "intly-"
+	installationName                 = "e2e-managed-installation"
+	bootstrapStage                   = "bootstrap"
+	authenticationStage              = "authentication"
+	productsStage                    = "products"
+	solutionExplorerStage            = "solution-explorer"
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -62,48 +71,58 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	return nil
 }
 
-func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
 	// create installation custom resource
-	workshopInstallation := &operator.Installation{
+	managedInstallation := &operator.Installation{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "e2e-workshop-installation",
+			Name:      installationName,
 			Namespace: namespace,
 		},
 		Spec: operator.InstallationSpec{
-			Type:             "workshop",
+			Type:             "managed",
 			NamespacePrefix:  intlyNamespacePrefix,
 			RoutingSubdomain: "apps.example.com",
-			MasterURL:        "http://console.apps.example.com",
+			MasterURL:        "https://console.apps.example.com",
 			SelfSignedCerts:  true,
 		},
 	}
 	// use TestCtx's create helper to create the object and add a cleanup function for the new object
-	err = f.Client.Create(goctx.TODO(), workshopInstallation, &framework.CleanupOptions{TestContext: ctx, Timeout: installationCleanupTimeout, RetryInterval: installationCleanupRetryInterval})
+	err = f.Client.Create(goctx.TODO(), managedInstallation, &framework.CleanupOptions{TestContext: ctx, Timeout: installationCleanupTimeout, RetryInterval: installationCleanupRetryInterval})
 	if err != nil {
 		return err
 	}
 
-	//Auth Stage - verify operators deploy
+	// wait for bootstrap phase to complete (5 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*5, bootstrapStage)
+	if err != nil {
+		return err
+	}
+
+	// wait for keycloak-operator to deploy
 	err = waitForProductDeployment(t, f, ctx, "rhsso", "keycloak-operator")
 	if err != nil {
 		return err
 	}
+
+	// wait for authentication phase to complete (15 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*15, authenticationStage)
+	if err != nil {
+		return err
+	}
+
 	//Product Stage - verify operators deploy
 	products := map[string]string{
 		"3scale":                "3scale-operator",
 		"amq-online":            "enmasse-operator",
-		"amq-streams":           "amq-streams-cluster-operator",
 		"codeready-workspaces":  "codeready-operator",
 		"fuse":                  "syndesis-operator",
 		"launcher":              "launcher-operator",
 		"middleware-monitoring": "application-monitoring-operator",
-		"nexus":                 "nexus-operator",
-		"solution-explorer":     "tutorial-web-app-operator",
 		"user-sso":              "keycloak-operator",
 		"ups":                   "unifiedpush-operator",
 		"mdc":                   "mobile-developer-console-operator",
@@ -112,12 +131,55 @@ func integreatlyWorkshopTest(t *testing.T, f *framework.Framework, ctx *framewor
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
 		if err != nil {
-			break
+			return err
 		}
 	}
-	//These test only that the operators themselves have came up. Further testing should be done to verify the individual parts of each product come up also (What the operator is creating).
 
+	// wait for products phase to complete (5 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*30, productsStage)
+	if err != nil {
+		return err
+	}
+
+	// wait for solution-explorer operator to deploy
+	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "solution-explorer")
+	if err != nil {
+		return err
+	}
+
+	// wait for solution-explorer phase to complete (10 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*10, solutionExplorerStage)
+	if err != nil {
+		return err
+	}
 	return err
+}
+
+func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, namespace string, retryInterval, timeout time.Duration, phase string) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		installation := &operator.Installation{}
+		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Logf("Waiting for availability of %s installation\n", installationName)
+				return false, nil
+			}
+			return false, err
+		}
+
+		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[operator.StageName(phase)])
+		if strings.Contains(phaseStatus, "completed") {
+			return true, nil
+		}
+
+		t.Logf("Waiting for completion of %s\n", phase)
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	t.Logf("%s phase completed \n", phase)
+	return nil
 }
 
 func IntegreatlyCluster(t *testing.T) {
@@ -139,8 +201,8 @@ func IntegreatlyCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if err = integreatlyWorkshopTest(t, f, ctx); err != nil {
+	// check that all of the operators deploy and all of the installation phases complete
+	if err = integreatlyManagedTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
 }
