@@ -169,7 +169,6 @@ func (r *Reconciler) reconcilePostgresSecret(ctx context.Context, serverClient p
 			postgresqlSecret.Data["POSTGRES_ADMIN_PASSWORD"] = []byte(env.Value)
 		}
 	}
-	fmt.Println("austin", deployment.Spec.Template.Spec.Containers[0].Env)
 
 	err = resources.CreateOrUpdate(ctx, serverClient, postgresqlSecret)
 	if err != nil {
@@ -523,13 +522,6 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: secRef.Name, Namespace: secRef.Namespace}, credSec); err != nil {
 		return nil, errors.Wrapf(err, "failed to retrieve credential secret for %s", postgresCredName)
 	}
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.Config.GetNamespace(),
-			Name:      "postgres",
-		},
-	}
-	fmt.Println("austin", deployment.Spec.Template.Spec.Containers[0].Env)
 	// set the values on the object and hope it doesn't overwrite the rest of object
 	cheCluster := &chev1.CheCluster{
 		Spec: chev1.CheClusterSpec{
