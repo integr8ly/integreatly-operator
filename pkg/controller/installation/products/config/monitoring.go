@@ -39,7 +39,7 @@ func (r *Monitoring) GetProductName() v1alpha1.ProductName {
 }
 
 func (r *Monitoring) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(v1alpha1.OperatorVersionMonitoring)
+	return v1alpha1.VersionMonitoring
 }
 
 func (r *Monitoring) SetProductVersion(version string) {
