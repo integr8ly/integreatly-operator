@@ -117,16 +117,16 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	//Product Stage - verify operators deploy
 	products := map[string]string{
-		"3scale":                "3scale-operator",
-		"amq-online":            "enmasse-operator",
-		"codeready-workspaces":  "codeready-operator",
-		"fuse":                  "syndesis-operator",
-		"launcher":              "launcher-operator",
-		"middleware-monitoring": "application-monitoring-operator",
-		"user-sso":              "keycloak-operator",
-		"ups":                   "unifiedpush-operator",
-		"mdc":                   "mobile-developer-console-operator",
-		"mss":                   "mobile-security-service-operator",
+		"3scale":                  "3scale-operator",
+		"amq-online":              "enmasse-operator",
+		"codeready-workspaces":    "codeready-operator",
+		"fuse":                    "syndesis-operator",
+		"launcher":                "launcher-operator",
+		"middleware-monitoring":   "application-monitoring-operator",
+		"user-sso":                "keycloak-operator",
+		"ups":                     "unifiedpush-operator",
+		"mdc":                     "mobile-developer-console-operator",
+		"mobile-security-service": "mobile-security-service-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
