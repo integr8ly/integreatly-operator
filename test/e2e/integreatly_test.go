@@ -98,7 +98,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*5, bootstrapStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, bootstrapStage)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for authentication phase to complete (15 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*15, authenticationStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, authenticationStage)
 	if err != nil {
 		return err
 	}
@@ -122,11 +122,11 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces":    "codeready-operator",
 		"fuse":                    "syndesis-operator",
 		"launcher":                "launcher-operator",
+		"mdc":                     "mobile-developer-console-operator",
 		"middleware-monitoring":   "application-monitoring-operator",
+		"mobile-security-service": "mobile-security-service-operator",
 		"user-sso":                "keycloak-operator",
 		"ups":                     "unifiedpush-operator",
-		"mdc":                     "mobile-developer-console-operator",
-		"mobile-security-service": "mobile-security-service-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
@@ -136,7 +136,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for products phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*30, productsStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout*2, productsStage)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for solution-explorer phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*10, solutionExplorerStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, solutionExplorerStage)
 	if err != nil {
 		return err
 	}
