@@ -1,6 +1,10 @@
 package config
 
-import "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+import (
+	"errors"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+)
 
 type Monitoring struct {
 	Config ProductConfig
@@ -35,7 +39,7 @@ func (r *Monitoring) GetProductName() v1alpha1.ProductName {
 }
 
 func (r *Monitoring) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(r.Config["VERSION"])
+	return v1alpha1.VersionMonitoring
 }
 
 func (r *Monitoring) SetProductVersion(version string) {
@@ -60,4 +64,20 @@ func (r *Monitoring) GetPrometheusRetention() string {
 
 func (r *Monitoring) GetPrometheusStorageRequest() string {
 	return "10Gi"
+}
+
+func (f *Monitoring) Validate() error {
+	if f.GetProductName() == "" {
+		return errors.New("config product name is not defined")
+	}
+
+	if f.GetNamespace() == "" {
+		return errors.New("config namespace is not defined")
+	}
+
+	if f.GetProductVersion() == "" {
+		return errors.New("config product version is not defined")
+	}
+
+	return nil
 }
