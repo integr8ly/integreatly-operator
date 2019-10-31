@@ -12,6 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	routev1 "github.com/openshift/api/route/v1"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -99,12 +100,31 @@ type ReconcileInstallation struct {
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	instance := &v1alpha1.Installation{}
 	err := r.client.Get(r.context, request.NamespacedName, instance)
+
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
 	}
+
+	// discover and set master url and routing subdomain
+	consoleRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "console",
+			Namespace: "openshift-console",
+		},
+	}
+	key := client.ObjectKey{Name: "console", Namespace: "openshift-console"}
+	err = r.client.Get(r.context, key, consoleRoute)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, pkgerr.Wrap(err, fmt.Sprintf("could not find route: %+v", key))
+		}
+		return reconcile.Result{}, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve route: %+v", key))
+	}
+	instance.Spec.MasterURL = consoleRoute.Status.Ingress[0].Host
+	instance.Spec.RoutingSubdomain = consoleRoute.Status.Ingress[0].RouterCanonicalHostname
 
 	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
 	if err != nil {

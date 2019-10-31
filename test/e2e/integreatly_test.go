@@ -3,7 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
-	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	//"sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,6 +13,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	operator "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
+	configv1 "github.com/openshift/api/config/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -56,13 +58,6 @@ func TestIntegreatly(t *testing.T) {
 
 }
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
 	namespace := intlyNamespacePrefix + product
 	t.Logf("Checking %s:%s", namespace, deploymentName)
@@ -86,8 +81,19 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
-	routingSubdomain := getEnv("ROUTING_SUBDOMAIN", "apps.example.com")
-	masterUrl := getEnv("MASTER_URL", "https://console.apps.example.com")
+	consoleRoute := &routev1.Route{}
+	err = f.Client.Get(goctx.TODO(), client.ObjectKey{Name: "console", Namespace: "openshift-console"}, consoleRoute)
+	if err != nil {
+		return fmt.Errorf("could not get console route: %deploymentName", err)
+	}
+	masterUrl := consoleRoute.Spec.Host
+
+	clusterIngress := &configv1.Ingress{}
+	err = f.Client.Get(goctx.TODO(), client.ObjectKey{Name: "cluster", Namespace: ""}, clusterIngress)
+	if err != nil {
+		return fmt.Errorf("could not get cluster ingress: %deploymentName", err)
+	}
+	routingSubdomain := clusterIngress.Spec.Domain
 
 	t.Logf("Creating installation CR with routingSubdomain:%s, masterUrl:%s\n", routingSubdomain, masterUrl)
 
