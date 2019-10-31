@@ -4,8 +4,19 @@ metadata:
   creationTimestamp: null
   name: integreatly-operator
 rules:
+## start backup permissions
 - apiGroups:
-  - batch
+    - "applicationmonitoring.integreatly.org"
+  resources:
+    - "applicationmonitorings"
+    - "blackboxtargets"
+  verbs:
+    - get
+    - create
+    - update
+    - list
+- apiGroups:
+    - batch
   resources:
     - cronjobs
   verbs:
@@ -33,18 +44,27 @@ rules:
   verbs:
     - create
     - update
+  ## end backup permissions
+- apiGroups:
+    - "integreatly.org"
+  resources:
+    - "*"
+  verbs:
+    - "*"
+# This is used to allow the operator to setup the ns needed for each product
 - apiGroups:
     - ""
   resources:
     - namespaces
     - namespaces/finalizers
-    - serviceaccounts
+    - "serviceaccounts"
   verbs:
     - list
     - create
     - watch
     - get
     - update
+# This is used to allow the operator to setup catalog source config and remove it if needed.
 - apiGroups:
     - operators.coreos.com
   resources:
@@ -238,3 +258,32 @@ rules:
     - get
     - create
     - delete
+- apiGroups:
+    - push.aerogear.org
+  resources:
+    - unifiedpushservers
+  verbs:
+    - get
+    - create
+# needed to access db and service crs in the mobile-security-service namespace
+- apiGroups:
+    - mobile-security-service.aerogear.org
+  resources:
+    - '*'
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
+# permissions for the mdc operator
+- apiGroups:
+    - mdc.aerogear.org
+  resources:
+    - '*'
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - create
