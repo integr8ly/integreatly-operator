@@ -142,7 +142,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for solution-explorer operator to deploy
-	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "solution-explorer")
+	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "tutorial-web-app-operator")
 	if err != nil {
 		return err
 	}
