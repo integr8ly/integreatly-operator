@@ -99,6 +99,7 @@ type ReconcileInstallation struct {
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	instance := &v1alpha1.Installation{}
 	err := r.client.Get(r.context, request.NamespacedName, instance)
+
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return reconcile.Result{}, nil
@@ -329,6 +330,7 @@ func (r *ReconcileInstallation) bootstrapStage(instance *v1alpha1.Installation, 
 	if err != nil || phase == v1alpha1.PhaseFailed {
 		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "Bootstrap stage reconcile failed")
 	}
+
 	return phase, nil
 }
 

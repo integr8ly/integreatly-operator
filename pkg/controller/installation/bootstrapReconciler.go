@@ -2,8 +2,11 @@ package installation
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
+
+	routev1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -11,11 +14,14 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	"github.com/pkg/errors"
+	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,6 +50,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 	logrus.Infof("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.retrieveConsoleUrlAndSubdomain(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -103,6 +114,34 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 	logrus.Info("Bootstrap OAuth client secrets successfully reconciled")
 
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// discover and set master url and routing subdomain
+	consoleRouteCR := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "console",
+			Namespace: "openshift-console",
+		},
+	}
+	key := client.ObjectKey{
+		Name:      consoleRouteCR.GetName(),
+		Namespace: consoleRouteCR.GetNamespace(),
+	}
+
+	err := serverClient.Get(ctx, key, consoleRouteCR)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not find route: %+v", key))
+		}
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve route: %+v", key))
+	}
+
+	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
+	r.installation.Spec.RoutingSubdomain = consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
+
+	return v1alpha1.PhaseCompleted, nil
+
 }
 
 func generateSecret(length int) string {

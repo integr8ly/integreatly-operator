@@ -88,8 +88,8 @@ type InstallationSpec struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Type             string         `json:"type"`
 	RoutingSubdomain string         `json:"routingSubdomain"`
-	MasterURL        string         `json:"masterUrl"`
-	NamespacePrefix  string         `json:"namespacePrefix"`
+	MasterURL        string         `json:"masterUrl,omitempty"`
+	NamespacePrefix  string         `json:"namespacePrefix,omitempty"`
 	SelfSignedCerts  bool           `json:"selfSignedCerts"`
 	PullSecret       PullSecretSpec `json:"pullSecret"`
 }
