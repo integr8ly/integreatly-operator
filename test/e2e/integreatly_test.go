@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"os"
 	"strings"
 
 	//"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +55,13 @@ func TestIntegreatly(t *testing.T) {
 
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
 	namespace := intlyNamespacePrefix + product
 	t.Logf("Checking %s:%s", namespace, deploymentName)
@@ -77,6 +85,11 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
+	routingSubdomain := getEnv("ROUTING_SUBDOMAIN", "apps.example.com")
+	masterUrl := getEnv("MASTER_URL", "https://console.apps.example.com")
+
+	t.Logf("Creating installation CR with routingSubdomain:%s, masterUrl:%s\n", routingSubdomain, masterUrl)
+
 	// create installation custom resource
 	managedInstallation := &operator.Installation{
 		ObjectMeta: metav1.ObjectMeta{
@@ -86,8 +99,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		Spec: operator.InstallationSpec{
 			Type:             "managed",
 			NamespacePrefix:  intlyNamespacePrefix,
-			RoutingSubdomain: "apps.example.com",
-			MasterURL:        "https://console.apps.example.com",
+			RoutingSubdomain: routingSubdomain,
+			MasterURL:        masterUrl,
 			SelfSignedCerts:  true,
 		},
 	}
