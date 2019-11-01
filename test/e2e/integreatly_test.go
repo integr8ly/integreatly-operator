@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"os"
 	"strings"
 
 	//"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,6 +55,13 @@ func TestIntegreatly(t *testing.T) {
 
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
 	namespace := intlyNamespacePrefix + product
 	t.Logf("Checking %s:%s", namespace, deploymentName)
@@ -77,6 +85,11 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
+	routingSubdomain := getEnv("ROUTING_SUBDOMAIN", "apps.example.com")
+	masterUrl := getEnv("MASTER_URL", "https://console.apps.example.com")
+
+	t.Logf("Creating installation CR with routingSubdomain:%s, masterUrl:%s\n", routingSubdomain, masterUrl)
+
 	// create installation custom resource
 	managedInstallation := &operator.Installation{
 		ObjectMeta: metav1.ObjectMeta{
@@ -86,8 +99,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		Spec: operator.InstallationSpec{
 			Type:             "managed",
 			NamespacePrefix:  intlyNamespacePrefix,
-			RoutingSubdomain: "apps.example.com",
-			MasterURL:        "https://console.apps.example.com",
+			RoutingSubdomain: routingSubdomain,
+			MasterURL:        masterUrl,
 			SelfSignedCerts:  true,
 		},
 	}
@@ -98,7 +111,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*5, bootstrapStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, bootstrapStage)
 	if err != nil {
 		return err
 	}
@@ -110,23 +123,23 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for authentication phase to complete (15 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*15, authenticationStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, authenticationStage)
 	if err != nil {
 		return err
 	}
 
 	//Product Stage - verify operators deploy
 	products := map[string]string{
-		"3scale":                "3scale-operator",
-		"amq-online":            "enmasse-operator",
-		"codeready-workspaces":  "codeready-operator",
-		"fuse":                  "syndesis-operator",
-		"launcher":              "launcher-operator",
-		"middleware-monitoring": "application-monitoring-operator",
-		"user-sso":              "keycloak-operator",
-		"ups":                   "unifiedpush-operator",
-		"mdc":                   "mobile-developer-console-operator",
-		"mss":                   "mobile-security-service-operator",
+		"3scale":                  "3scale-operator",
+		"amq-online":              "enmasse-operator",
+		"codeready-workspaces":    "codeready-operator",
+		"fuse":                    "syndesis-operator",
+		"launcher":                "launcher-operator",
+		"mdc":                     "mobile-developer-console-operator",
+		"middleware-monitoring":   "application-monitoring-operator",
+		"mobile-security-service": "mobile-security-service-operator",
+		"user-sso":                "keycloak-operator",
+		"ups":                     "unifiedpush-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
@@ -136,19 +149,19 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for products phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*30, productsStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout*2, productsStage)
 	if err != nil {
 		return err
 	}
 
 	// wait for solution-explorer operator to deploy
-	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "solution-explorer")
+	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "tutorial-web-app-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for solution-explorer phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentRetryInterval*10, solutionExplorerStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, solutionExplorerStage)
 	if err != nil {
 		return err
 	}

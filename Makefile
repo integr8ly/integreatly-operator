@@ -105,6 +105,8 @@ test/e2e: export AWS_SECRET_ACCESS_KEY := 1234
 test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
+test/e2e: export MASTER_URL := https://$(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].host}")
+test/e2e: export ROUTING_SUBDOMAIN := $(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].routerCanonicalHostname}")
 test/e2e: cluster/cleanup cluster/prepare
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
