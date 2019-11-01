@@ -104,7 +104,7 @@ test/e2e: export AWS_SECRET_ACCESS_KEY := 1234
 test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
-test/e2e: cluster/cleanup cluster/prepare
+test/e2e: cluster/cleanup cluster/prepare cluster/prepare/configmaps
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
 .PHONY: test/e2e/olm
@@ -113,7 +113,7 @@ test/e2e/olm: export AWS_SECRET_ACCESS_KEY := 1234
 test/e2e/olm: export AWS_BUCKET := dummy
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
-test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm deploy/integreatly-installation-cr.yml cluster/deploy/integreatly-installation-cr.yml
+test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps deploy/integreatly-installation-cr.yml cluster/deploy/integreatly-installation-cr.yml
 
 .PHONY: cluster/deploy/integreatly-installation-cr.yml
 cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
@@ -144,6 +144,10 @@ cluster/prepare/secrets:
 	@oc create secret generic github-oauth-secret \
 		--from-literal=clientId=$(GH_CLIENT_ID) \
 		--from-literal=secret=$(GH_CLIENT_SECRET)
+
+.PHONY: cluster/prepare/configmaps
+cluster/prepare/configmaps:
+	@oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) | oc apply -f -
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
