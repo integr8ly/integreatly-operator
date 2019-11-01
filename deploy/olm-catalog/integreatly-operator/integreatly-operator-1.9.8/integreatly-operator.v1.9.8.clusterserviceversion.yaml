@@ -34,6 +34,16 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
+          - applicationmonitoring.integreatly.org
+          resources:
+          - applicationmonitorings
+          - blackboxtargets
+          verbs:
+          - get
+          - create
+          - update
+          - list
+        - apiGroups:
           - batch
           resources:
           - cronjobs
@@ -271,6 +281,33 @@ spec:
           - get
           - create
           - delete
+        - apiGroups:
+          - push.aerogear.org
+          resources:
+          - unifiedpushservers
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - mobile-security-service.aerogear.org
+          resources:
+          - '*'
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+          - create
+        - apiGroups:
+          - mdc.aerogear.org
+          resources:
+          - '*'
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+          - create
         serviceAccountName: integreatly-operator
       deployments:
       - name: integreatly-operator
