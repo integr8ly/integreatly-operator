@@ -33,7 +33,7 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 
 	caCert, err := ioutil.ReadFile(rootCAFile)
 	// if running locally, CA certificate isn't available in expected path
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || os.Getenv("INTEGREATLY_OPERATOR_DISABLE_ELECTION") != "" {
 		logrus.Warn("GetOauthEndPoint() will skip certificate verification - this is acceptable only if operator is running locally")
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
