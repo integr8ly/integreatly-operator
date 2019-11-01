@@ -13,12 +13,11 @@ type MobileSecurityServiceAppSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	ClusterHost                   string `json:"clusterHost"`
-	HostSufix                     string `json:"hostSufix"`
-	Protocol                      string `json:"protocol"`
-	AppName                       string `json:"appName"`
-	AppId                         string `json:"appId"`
 
+	// Name of the app which will be created in the Service side
+	AppName string `json:"appName"`
+	// Unique Identifier for the app which will be created in the Service side
+	AppId string `json:"appId"`
 }
 
 // MobileSecurityServiceAppStatus defines the observed state of MobileSecurityServiceApp
@@ -27,7 +26,9 @@ type MobileSecurityServiceAppStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	SDKConfigMapName string `json:"sdkConfigMapName"`
+
+	// Will be as "OK when all objects are created successfully
+	// More info: https://github.com/aerogear/mobile-security-service-operator#status-definition-per-types
 	BindStatus string `json:"bindStatus"`
 }
 

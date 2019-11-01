@@ -3,27 +3,75 @@ package mobilesecurityservice
 import (
 	"context"
 	"fmt"
-	mobilesecurityservicev1alpha1 "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
-	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"reflect"
+
+	"github.com/aerogear/mobile-security-service-operator/pkg/utils"
+	"github.com/go-logr/logr"
+	routev1 "github.com/openshift/api/route/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//updateAppStatus returns error when status regards the all required resources could not be updated
-func (r *ReconcileMobileSecurityService) updateAppStatus(reqLogger logr.Logger, configMapStatus *corev1.ConfigMap, deploymentStatus *v1beta1.Deployment, serviceStatus *corev1.Service, ingressStatus *v1beta1.Ingress, instance *mobilesecurityservicev1alpha1.MobileSecurityService) error {
+//updateStatus returns error when status regards the all required resources could not be updated
+func (r *ReconcileMobileSecurityService) updateStatus(reqLogger logr.Logger, configMapStatus *corev1.ConfigMap, deploymentStatus *appsv1.Deployment, proxyServiceStatus *corev1.Service, applicationServiceStatus *corev1.Service, routeStatus *routev1.Route, request reconcile.Request) error {
 	reqLogger.Info("Updating App Status for the MobileSecurityService")
-	if len(configMapStatus.UID) < 1 && len(deploymentStatus.UID) < 1 && len(serviceStatus.UID) < 1 && len(ingressStatus.Name) < 1 {
-		err := fmt.Errorf("Failed to get OK Status for MobileSecurityService App")
-		reqLogger.Error(err, "One of the resources are not created", "MobileSecurityService.Namespace", instance.Namespace, "MobileSecurityService.Name", instance.Name)
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
+	if err != nil {
 		return err
 	}
-	status:= "OK"
-	if !reflect.DeepEqual(status, instance.Status.AppStatus) {
-		instance.Status.AppStatus = status
-		err := r.client.Status().Update(context.TODO(), instance)
+
+	//Check if all required objects are created
+	if len(configMapStatus.UID) < 1 && len(deploymentStatus.UID) < 1 && len(proxyServiceStatus.UID) < 1 && len(applicationServiceStatus.UID) < 1 && len(routeStatus.Name) < 1 {
+		err := fmt.Errorf("Failed to get OK Status for MobileSecurityService")
+		reqLogger.Error(err, "One of the resources are not created", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
+		return err
+	}
+	status := "OK"
+
+	// Update CR with the AppStatus == OK
+	if !reflect.DeepEqual(status, mss.Status.AppStatus) {
+		// Set the data
+		mss.Status.AppStatus = status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), mss)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Status for the MobileSecurityService App")
+			reqLogger.Error(err, "Failed to update Project Status for the MobileSecurityService")
+			return err
+		}
+	}
+	return nil
+}
+
+// updateBindStatusWithInvalidNamespace returns error when status regards the all required resources could not be updated
+func (r *ReconcileMobileSecurityService) updateStatusWithInvalidNamespace(reqLogger logr.Logger, request reconcile.Request) error {
+	reqLogger.Info("Updating Bind App Status for the MobileSecurityServiceApp")
+
+	// Get the latest version of CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
+	if err != nil {
+		return err
+	}
+
+	status := "Invalid Namespace"
+
+	//Update Bind CR Status with OK
+	if !reflect.DeepEqual(status, mss.Status.AppStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		instance, err := r.fetchMssInstance(reqLogger, request)
+		if err != nil {
+			return err
+		}
+
+		// Set the data
+		instance.Status.AppStatus = status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Status for the MobileSecurityService Bind")
 			return err
 		}
 	}
@@ -31,18 +79,36 @@ func (r *ReconcileMobileSecurityService) updateAppStatus(reqLogger logr.Logger, 
 }
 
 //updateConfigMapStatus returns error when status regards the ConfigMap resource could not be updated
-func (r *ReconcileMobileSecurityService) updateConfigMapStatus(reqLogger logr.Logger, instance *mobilesecurityservicev1alpha1.MobileSecurityService) (*corev1.ConfigMap, error) {
+func (r *ReconcileMobileSecurityService) updateConfigMapStatus(reqLogger logr.Logger, request reconcile.Request) (*corev1.ConfigMap, error) {
 	reqLogger.Info("Updating ConfigMap Status for the MobileSecurityService")
-	configMapStatus, err := r.fetchAppConfigMap(reqLogger, instance)
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get ConfigMap Name for Status", "MobileSecurityService.Namespace", instance.Namespace, "MobileSecurityService.Name", instance.Name)
+		return nil, err
+	}
+
+	// Get the ConfigMap object
+	configMapStatus, err := r.fetchConfigMap(reqLogger, mss)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get ConfigMap Name for Status", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
 		return configMapStatus, err
 	}
-	if !reflect.DeepEqual(configMapStatus.Name, instance.Status.ConfigMapName) {
-		instance.Status.ConfigMapName = configMapStatus.Name
-		err := r.client.Status().Update(context.TODO(), instance)
+
+	// Update ConfigMap Name
+	if configMapStatus.Name != mss.Status.ConfigMapName {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		instance, err := r.fetchMssInstance(reqLogger, request)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update ConfigMap Name Status for the MobileSecurityService")
+			return nil, err
+		}
+
+		// Set the data
+		instance.Status.ConfigMapName = configMapStatus.Name
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update ConfigMap Name and Status for the MobileSecurityService")
 			return configMapStatus, err
 		}
 	}
@@ -50,84 +116,154 @@ func (r *ReconcileMobileSecurityService) updateConfigMapStatus(reqLogger logr.Lo
 }
 
 //updateDeploymentStatus returns error when status regards the Deployment resource could not be updated
-func (r *ReconcileMobileSecurityService) updateDeploymentStatus(reqLogger logr.Logger, instance *mobilesecurityservicev1alpha1.MobileSecurityService) (*v1beta1.Deployment, error) {
+func (r *ReconcileMobileSecurityService) updateDeploymentStatus(reqLogger logr.Logger, request reconcile.Request) (*appsv1.Deployment, error) {
 	reqLogger.Info("Updating Deployment Status for the MobileSecurityService")
-	deploymentStatus, err := r.fetchAppDeployment(reqLogger, instance)
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get Deployment for Status", "MobileSecurityService.Namespace", instance.Namespace, "MobileSecurityService.Name", instance.Name)
+		return nil, err
+	}
+
+	// Get the deployment object
+	deploymentStatus, err := r.fetchDeployment(reqLogger, mss)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get Deployment for Status", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
 		return deploymentStatus, err
 	}
-	if !reflect.DeepEqual(deploymentStatus.Name, instance.Status.DeploymentName) {
+
+	// Update the Deployment Name and Status
+	if deploymentStatus.Name != mss.Status.DeploymentName || !reflect.DeepEqual(deploymentStatus.Status, mss.Status.DeploymentStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		instance, err := r.fetchMssInstance(reqLogger, request)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set the data
 		instance.Status.DeploymentName = deploymentStatus.Name
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			reqLogger.Error(err, "Failed to update Deployment Name Status for the MobileSecurityService")
-			return deploymentStatus, err
-		}
-	}
-	if !reflect.DeepEqual(deploymentStatus.Status, instance.Status.DeploymentStatus) {
 		instance.Status.DeploymentStatus = deploymentStatus.Status
-		err := r.client.Status().Update(context.TODO(), instance)
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Deployment Status for the MobileSecurityService")
+			reqLogger.Error(err, "Failed to update Deployment Name and Status for the MobileSecurityService")
 			return deploymentStatus, err
 		}
 	}
+
 	return deploymentStatus, nil
 }
 
-//updateServiceStatus returns error when status regards the Service resource could not be updated
-func (r *ReconcileMobileSecurityService) updateServiceStatus(reqLogger logr.Logger, instance *mobilesecurityservicev1alpha1.MobileSecurityService) (*corev1.Service, error) {
-	reqLogger.Info("Updating Service Status for the MobileSecurityService")
-	serviceStatus, err := r.fetchAppService(reqLogger, instance)
+//updateAppServiceStatus returns error when status regards the Service resource could not be updated
+func (r *ReconcileMobileSecurityService) updateAppServiceStatus(reqLogger logr.Logger, request reconcile.Request) (*corev1.Service, error) {
+	reqLogger.Info("Updating App Service Status for the MobileSecurityService")
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get Service for Status", "MobileSecurityService.Namespace", instance.Namespace, "MobileSecurityService.Name", instance.Name)
+		return nil, err
+	}
+	// Get the Service Object
+	serviceStatus, err := r.fetchService(reqLogger, mss, utils.ApplicationServiceInstanceName)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get App Service for Status", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
 		return serviceStatus, err
 	}
-	if !reflect.DeepEqual(serviceStatus.Name, instance.Status.ServiceName) {
-		instance.Status.ServiceName = serviceStatus.Name
-		err := r.client.Status().Update(context.TODO(), instance)
+
+	// Update the Deployment Name and Status
+	if serviceStatus.Name != mss.Status.ServiceName || !reflect.DeepEqual(serviceStatus.Status, mss.Status.ServiceStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		mss, err := r.fetchMssInstance(reqLogger, request)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Service Name Status for the MobileSecurityService")
+			return nil, err
+		}
+
+		// Set the data
+		mss.Status.ServiceName = serviceStatus.Name
+		mss.Status.ServiceStatus = serviceStatus.Status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), mss)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update App Service Name and Status for the MobileSecurityService")
 			return serviceStatus, err
 		}
 	}
-	if !reflect.DeepEqual(serviceStatus.Status, instance.Status.ServiceStatus) {
-		instance.Status.ServiceStatus = serviceStatus.Status
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			reqLogger.Error(err, "Failed to update Service Status for the MobileSecurityService")
-			return serviceStatus, err
-		}
-	}
+
 	return serviceStatus, nil
 }
 
-//updateIngressStatus returns error when status regards the ingress resource could not be updated
-func (r *ReconcileMobileSecurityService) updateIngressStatus(reqLogger logr.Logger, instance *mobilesecurityservicev1alpha1.MobileSecurityService) (*v1beta1.Ingress, error) {
-	reqLogger.Info("Updating Ingress Status for the MobileSecurityService")
-	ingressStatus, err := r.fetchAppIngress(reqLogger, instance)
+//updateAppServiceStatus returns error when status regards the Service resource could not be updated
+func (r *ReconcileMobileSecurityService) updateProxyServiceStatus(reqLogger logr.Logger, request reconcile.Request) (*corev1.Service, error) {
+	reqLogger.Info("Updating Proxy Service Status for the MobileSecurityService")
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get Ingress for Status", "MobileSecurityService.Namespace", instance.Namespace, "MobileSecurityService.Name", instance.Name)
-		return ingressStatus, err
+		return nil, err
 	}
-	if !reflect.DeepEqual(ingressStatus.Name, instance.Status.IngressName) {
-		instance.Status.IngressName = ingressStatus.Name
-		err := r.client.Status().Update(context.TODO(), instance)
+	// Get the Service Object
+	serviceStatus, err := r.fetchService(reqLogger, mss, utils.ProxyServiceInstanceName)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get Proxy Service for Status", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
+		return serviceStatus, err
+	}
+
+	// Update the Service Status and Name
+	if serviceStatus.Name != mss.Status.ProxyServiceName || !reflect.DeepEqual(serviceStatus.Status, mss.Status.ProxyServiceStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		mss, err := r.fetchMssInstance(reqLogger, request)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update Ingress Name Status for the MobileSecurityService")
-			return ingressStatus, err
+			return nil, err
+		}
+
+		// Set the data
+		mss.Status.ProxyServiceName = serviceStatus.Name
+		mss.Status.ProxyServiceStatus = serviceStatus.Status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), mss)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Proxy Service Name and Status for the MobileSecurityService")
+			return serviceStatus, err
 		}
 	}
-	if !reflect.DeepEqual(ingressStatus.Status, instance.Status.IngressStatus) {
-		instance.Status.IngressStatus = ingressStatus.Status
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			reqLogger.Error(err, "Failed to update Ingress Status for the MobileSecurityService")
-			return ingressStatus, err
-		}
-	}
-	return ingressStatus, nil
+
+	return serviceStatus, nil
 }
 
+//updateRouteStatus returns error when status regards the route resource could not be updated
+func (r *ReconcileMobileSecurityService) updateRouteStatus(reqLogger logr.Logger, request reconcile.Request) (*routev1.Route, error) {
+	reqLogger.Info("Updating Route Status for the MobileSecurityService")
+	// Get the latest version of the CR
+	mss, err := r.fetchMssInstance(reqLogger, request)
+	if err != nil {
+		return nil, err
+	}
 
+	//Get the route Object
+	route, err := r.fetchRoute(reqLogger, mss)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get Route for Status", "MobileSecurityService.Namespace", mss.Namespace, "MobileSecurityService.Name", mss.Name)
+		return route, err
+	}
+
+	// Update the Route Status and Name
+	if mss.Spec.RouteName != mss.Status.RouteName || !reflect.DeepEqual(route.Status, mss.Status.RouteStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		mss, err := r.fetchMssInstance(reqLogger, request)
+		if err != nil {
+			return nil, err
+		}
+
+		// Set the data
+		mss.Status.RouteName = mss.Spec.RouteName
+		mss.Status.RouteStatus = route.Status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), mss)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Route Name and Status for the MobileSecurityService")
+			return route, err
+		}
+	}
+	return route, nil
+}

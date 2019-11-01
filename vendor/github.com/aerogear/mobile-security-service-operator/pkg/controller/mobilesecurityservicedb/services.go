@@ -9,17 +9,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//Returns the Service object for the Mobile Security Service Database
-func (r *ReconcileMobileSecurityServiceDB) buildDBService(m *mobilesecurityservicev1alpha1.MobileSecurityServiceDB) *corev1.Service {
-	ls := getDBLabels(m.Name)
+// Returns the Service object for the Mobile Security Service Database
+func (r *ReconcileMobileSecurityServiceDB) buildDBService(db *mobilesecurityservicev1alpha1.MobileSecurityServiceDB) *corev1.Service {
+	ls := getDBLabels(db.Name)
 	ser := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
+			Name:      db.Name,
+			Namespace: db.Namespace,
 			Labels:    ls,
 		},
 		Spec: corev1.ServiceSpec{
@@ -27,18 +23,18 @@ func (r *ReconcileMobileSecurityServiceDB) buildDBService(m *mobilesecurityservi
 			Type:     corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
 				{
-					Name: m.Name,
+					Name: db.Name,
 					TargetPort: intstr.IntOrString{
 						Type:   intstr.Int,
-						IntVal: m.Spec.DatabasePort,
+						IntVal: db.Spec.DatabasePort,
 					},
-					Port:     m.Spec.DatabasePort,
+					Port:     db.Spec.DatabasePort,
 					Protocol: "TCP",
 				},
 			},
 		},
 	}
-	// Set MobileSecurityServiceDB instance as the owner and controller
-	controllerutil.SetControllerReference(m, ser, r.scheme)
+	// Set MobileSecurityServiceDB db as the owner and controller
+	controllerutil.SetControllerReference(db, ser, r.scheme)
 	return ser
 }

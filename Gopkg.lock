@@ -73,12 +73,12 @@
   version = "0.2.6"
 
 [[projects]]
-  branch = "AEROGEAR-8955"
-  digest = "1:0ab074960816dccd4836823e7a8a1db6e671861a1f18b8d6a103f6a611199ab0"
+  branch = "master"
+  digest = "1:ed10465df12e1ca943214d2de6e692286f2409c70ff6e07077e11bfb49fe62da"
   name = "github.com/aerogear/mobile-security-service-operator"
   packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
   pruneopts = "NT"
-  revision = "295906a9713e98e054dfe7647543deac792fee2f"
+  revision = "97ff907ad226b8812aa45a0933bcdec2541a5b10"
 
 [[projects]]
   digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"

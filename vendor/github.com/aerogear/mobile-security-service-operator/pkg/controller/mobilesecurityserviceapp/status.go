@@ -3,48 +3,84 @@ package mobilesecurityserviceapp
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	mobilesecurityservicev1alpha1 "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-//updateSDKConfigMapStatus returns error when status regards the ConfigMap resource could not be updated
-func (r *ReconcileMobileSecurityServiceApp) updateSDKConfigMapStatus(reqLogger logr.Logger, instance *mobilesecurityservicev1alpha1.MobileSecurityServiceApp) (*corev1.ConfigMap, error) {
-	reqLogger.Info("Updating SDKConfigMap Status for the MobileSecurityServiceApp")
-	SDKConfigMapStatus, err := r.fetchSDKConfigMap(reqLogger, instance)
+//updateAppStatus returns error when status regards the all required resources could not be updated
+func (r *ReconcileMobileSecurityServiceApp) updateBindStatus(serviceURL string, reqLogger logr.Logger, mssApp *mobilesecurityservicev1alpha1.MobileSecurityServiceApp, request reconcile.Request) error {
+	reqLogger.Info("Updating Bind App Status for the MobileSecurityServiceApp")
+
+	// Get the latest version of CR
+	mssApp, err := r.fetchMssAppInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get SDKConfigMap for Status", "MobileSecurityServiceApp.Namespace", instance.Namespace, "MobileSecurityServiceApp.Name", instance.Name)
-		return SDKConfigMapStatus, err
+		return err
 	}
-	if !reflect.DeepEqual(SDKConfigMapStatus.Name, instance.Status.SDKConfigMapName) {
-		instance.Status.SDKConfigMapName = SDKConfigMapStatus.Name
-		err := r.client.Status().Update(context.TODO(), instance)
+
+	// Get App created in the Rest Service
+	app, err := fetchBindAppRestServiceByAppID(serviceURL, mssApp, reqLogger)
+	if err != nil {
+		reqLogger.Error(err, "Failed to get App for Status", "MobileSecurityServiceApp.Namespace", mssApp.Namespace, "MobileSecurityServiceApp.Name", mssApp.Name)
+		return err
+	}
+
+	// Check if the App is created in the Rest Service
+	if len(mssApp.UID) < 1 && app.ID == "" {
+		err := fmt.Errorf("failed to get OK Status for MobileSecurityService Bind")
+		reqLogger.Error(err, "One of the resources are not created", "MobileSecurityServiceApp.Namespace", mssApp.Namespace, "MobileSecurityServiceApp.Name", mssApp.Name)
+		return err
+	}
+	status := "OK"
+
+	//Update Bind CR Status with OK
+	if !reflect.DeepEqual(status, mssApp.Status.BindStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		instance, err := r.fetchMssAppInstance(reqLogger, request)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update SDKConfigMap Status for the MobileSecurityServiceApp")
-			return SDKConfigMapStatus, err
+			return err
+		}
+
+		// Set the data
+		instance.Status.BindStatus = status
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to update Status for the MobileSecurityService Bind")
+			return err
 		}
 	}
-	return SDKConfigMapStatus, nil
+	return nil
 }
 
-//updateAppStatus returns error when status regards the all required resources could not be updated
-func (r *ReconcileMobileSecurityServiceApp) updateBindStatus(reqLogger logr.Logger, SDKConfigMapStatus *corev1.ConfigMap, instance *mobilesecurityservicev1alpha1.MobileSecurityServiceApp) error {
+// updateBindStatusWithInvalidNamespace returns error when status regards the all required resources could not be updated
+func (r *ReconcileMobileSecurityServiceApp) updateBindStatusWithInvalidNamespace(reqLogger logr.Logger, request reconcile.Request) error {
 	reqLogger.Info("Updating Bind App Status for the MobileSecurityServiceApp")
-	app, err := fetchBindAppRestServiceByAppID(instance, reqLogger)
+
+	// Get the latest version of CR
+	mssApp, err := r.fetchMssAppInstance(reqLogger, request)
 	if err != nil {
-		reqLogger.Error(err, "Failed to get App for Status", "MobileSecurityServiceApp.Namespace", instance.Namespace, "MobileSecurityServiceApp.Name", instance.Name)
 		return err
 	}
-	if len(SDKConfigMapStatus.UID) < 1 && !hasApp(app) {
-		err := fmt.Errorf("Failed to get OK Status for MobileSecurityService Bind.")
-		reqLogger.Error(err, "One of the resources are not created", "MobileSecurityServiceApp.Namespace", instance.Namespace, "MobileSecurityServiceApp.Name", instance.Name)
-		return err
-	}
-	status:= "OK"
-	if !reflect.DeepEqual(status, instance.Status.BindStatus) {
+
+	status := "Invalid Namespace"
+
+	//Update Bind CR Status with OK
+	if !reflect.DeepEqual(status, mssApp.Status.BindStatus) {
+		// Get the latest version of the CR in order to try to avoid errors when try to update the CR
+		instance, err := r.fetchMssAppInstance(reqLogger, request)
+		if err != nil {
+			return err
+		}
+
+		// Set the data
 		instance.Status.BindStatus = status
-		err := r.client.Status().Update(context.TODO(), instance)
+
+		// Update the CR
+		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update Status for the MobileSecurityService Bind")
 			return err

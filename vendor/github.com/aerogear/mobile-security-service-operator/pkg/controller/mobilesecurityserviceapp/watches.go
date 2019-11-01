@@ -8,8 +8,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-//Watch for changes to secondary resources and create the owner MobileSecurityService
-//Watch ConfigMap objects created in the project/namespace
+// Watch for changes to secondary resources and create the owner MobileSecurityService
+// Watch ConfigMap objects created in the project/namespace
 func watchConfigMap(c controller.Controller) error {
 	err := c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
@@ -17,4 +17,3 @@ func watchConfigMap(c controller.Controller) error {
 	})
 	return err
 }
-
