@@ -60,7 +60,7 @@ metadata:
   creationTimestamp: null
   name: integreatly-operator
 rules:
-  - ## start backup permissions
+  ## start backup permissions
   - apiGroups:
       - "applicationmonitoring.integreatly.org"
     resources:
