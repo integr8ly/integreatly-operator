@@ -81,6 +81,8 @@ make code/run
 In the OpenShift UI, in `Projects > integreatly-rhsso > Networking > Routes`, select the `sso` route to open up the SSO login page.
 
 # Bootstrap the project
+
+```sh
 make cluster/prepare/local
 ```
 
