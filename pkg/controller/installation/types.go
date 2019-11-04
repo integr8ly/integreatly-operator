@@ -30,7 +30,6 @@ var (
 		{
 			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductLauncher:               {Name: v1alpha1.ProductLauncher},
 				v1alpha1.ProductFuse:                   {Name: v1alpha1.ProductFuse},
 				v1alpha1.ProductFuseOnOpenshift:        {Name: v1alpha1.ProductFuseOnOpenshift},
 				v1alpha1.ProductCodeReadyWorkspaces:    {Name: v1alpha1.ProductCodeReadyWorkspaces},
@@ -65,7 +64,6 @@ var (
 		{
 			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductLauncher:               {Name: v1alpha1.ProductLauncher},
 				v1alpha1.ProductFuse:                   {Name: v1alpha1.ProductFuse},
 				v1alpha1.ProductFuseOnOpenshift:        {Name: v1alpha1.ProductFuseOnOpenshift},
 				v1alpha1.ProductCodeReadyWorkspaces:    {Name: v1alpha1.ProductCodeReadyWorkspaces},
