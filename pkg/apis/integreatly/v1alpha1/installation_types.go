@@ -74,9 +74,9 @@ var (
 	OperatorVersion3Scale                = "1.9.8"
 	OperatorVersionNexus                 = "0.9.0"
 	OperatorVersionLauncher              = "0.1.2"
-	OperatorVersionUPS                   = "0.2.0"
+	OperatorVersionUPS                   = "0.3.0"
 	OperatorVersionMobileSecurityService = "0.4.1"
-	OperatorVersionMDC                   = "0.2.6"
+	OperatorVersionMDC                   = "0.3.0"
 )
 
 // InstallationSpec defines the desired state of Installation
