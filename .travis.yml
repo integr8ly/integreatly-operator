@@ -11,8 +11,6 @@ env:
 
 stages:
 - test
-- name: push
-  if: fork = false AND branch = master
 
 jobs:
   include:
@@ -22,8 +20,3 @@ jobs:
     - go get github.com/mattn/goveralls
     - go install github.com/mattn/goveralls
     - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN || echo "push to coveralls failed"
-  - stage: push
-    script:
-    - docker login --password "$QUAY_PASSWORD" --username "$QUAY_USERNAME" quay.io
-    - export TAG=$(git rev-parse --short ${TRAVIS_COMMIT})
-    - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then make setup/dep setup/travis image/build/push; else make setup/dep setup/travis image/build/push TAG=$TAG; fi
