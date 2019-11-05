@@ -26,6 +26,7 @@ var (
 	InstallationTypeManaged  InstallationType = "managed"
 
 	BootstrapStage        StageName = "bootstrap"
+	MonitoringStage       StageName = "monitoring"
 	AuthenticationStage   StageName = "authentication"
 	ProductsStage         StageName = "products"
 	SolutionExplorerStage StageName = "solution-explorer"
