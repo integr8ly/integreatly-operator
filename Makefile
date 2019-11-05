@@ -123,6 +123,7 @@ cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := exam
 cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
 	oc create -f deploy/integreatly-installation-cr.yml
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
+	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.products.phase}' | grep -q completed, products phase, 30m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)

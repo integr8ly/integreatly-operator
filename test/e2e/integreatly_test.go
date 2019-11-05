@@ -34,6 +34,7 @@ var (
 	intlyNamespacePrefix             = "intly-"
 	installationName                 = "e2e-managed-installation"
 	bootstrapStage                   = "bootstrap"
+	monitoringStage                  = "monitoring"
 	authenticationStage              = "authentication"
 	productsStage                    = "products"
 	solutionExplorerStage            = "solution-explorer"
@@ -116,6 +117,18 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
+	// wait for middleware-monitoring to deploy
+	err = waitForProductDeployment(t, f, ctx, "middleware-monitoring", "application-monitoring-operator")
+	if err != nil {
+		return err
+	}
+
+	// wait for authentication phase to complete (15 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, monitoringStage)
+	if err != nil {
+		return err
+	}
+
 	// wait for keycloak-operator to deploy
 	err = waitForProductDeployment(t, f, ctx, "rhsso", "keycloak-operator")
 	if err != nil {
@@ -136,7 +149,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"fuse":                    "syndesis-operator",
 		"launcher":                "launcher-operator",
 		"mdc":                     "mobile-developer-console-operator",
-		"middleware-monitoring":   "application-monitoring-operator",
 		"mobile-security-service": "mobile-security-service-operator",
 		"user-sso":                "keycloak-operator",
 		"ups":                     "unifiedpush-operator",
