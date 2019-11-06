@@ -61,10 +61,10 @@ required = [
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
   # branch = "v0.8.x" #osdk_branch_annotation
-  version = "=v0.8.1" #osdk_version_annotation
+  version = ">=v0.8.0" #osdk_version_annotation
 
 
-[[constraint]]
+[[override]]
   name = "github.com/openshift/api"
   # Latest version has package operator/v1 and config/v1 which are dependencies of the cluster-samples-operator package
   branch = "release-4.3"
@@ -88,3 +88,11 @@ required = [
 [[constraint]]
   name = "github.com/aerogear/unifiedpush-operator"
   version = "0.2.0"
+
+[[constraint]]
+  name = "github.com/aerogear/mobile-security-service-operator"
+  revision = "a2ca36e6de3c890361ebca7597e1b376711415fc"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/operator-framework/operator-marketplace"

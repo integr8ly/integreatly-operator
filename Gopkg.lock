@@ -65,19 +65,19 @@
   revision = "ea948e9684cd0f087ef899ee6ecb5406cd80bcea"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ed10465df12e1ca943214d2de6e692286f2409c70ff6e07077e11bfb49fe62da"
-  name = "github.com/aerogear/mobile-security-service-operator"
-  packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
-  pruneopts = "NT"
-  revision = "97ff907ad226b8812aa45a0933bcdec2541a5b10"
-[[projects]]
   digest = "1:a0406619fc157a732f66082c2867beb6134fc6661cbccabaa12700c5d039f984"
   name = "github.com/aerogear/mobile-developer-console-operator"
   packages = ["pkg/apis/mdc/v1alpha1"]
   pruneopts = "NT"
   revision = "ee13c1abd67841099329b99405256ba1916379ea"
   version = "0.2.6"
+
+[[projects]]
+  digest = "1:e8a61830203d7459ed898231e4e59aba90d0f10f79da8ab3ec6f9463f1f99263"
+  name = "github.com/aerogear/mobile-security-service-operator"
+  packages = ["pkg/apis/mobilesecurityservice/v1alpha1"]
+  pruneopts = "NT"
+  revision = "a2ca36e6de3c890361ebca7597e1b376711415fc"
 
 [[projects]]
   digest = "1:f2b8c45643fcd8a70c7234a514cf9b44d35496974978fb5b61e15c11081b4a1d"
@@ -565,14 +565,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c07c04914de188ccd01f6e4e336a09290c2aa0a1b156e3d4d5a8678828744aa5"
+  digest = "1:0f3e7e29feff9c64ce14670f4e5c2157f4c0f34796b92d5d9393ec3d0542be25"
   name = "github.com/operator-framework/operator-marketplace"
-  packages = ["pkg/apis/operators/v1"]
+  packages = [
+    "pkg/apis/operators/shared",
+    "pkg/apis/operators/v1",
+    "pkg/apis/operators/v2",
+  ]
   pruneopts = "NT"
-  revision = "3abdf2c5deaec090656e533f9bb7ae97d4b1c7fd"
+  revision = "530c85d41ce7a6840bdf641287e0948980013fdb"
 
 [[projects]]
-  digest = "1:fe3c97fb1956829a81d7b8221b4710c40d6dae2c6c3b4d222db5b7f96c975d99"
+  digest = "1:ce4e43d2eef4a4c40c6e8439c724e34e6fd7e48959a340038e3cd02762cdb437"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "internal/pkg/scaffold",
@@ -591,8 +595,8 @@
     "version",
   ]
   pruneopts = "NT"
-  revision = "33b3bfe10176f8647f5354516fff29dea42b6342"
-  version = "v0.8.1"
+  revision = "78c472461e75e6c64589cfadf577a2004b8a26b3"
+  version = "v0.8.0"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -1306,8 +1310,8 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/olm",
-    "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
     "github.com/aerogear/mobile-developer-console-operator/pkg/apis/mdc/v1alpha1",
+    "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1",
     "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1",
     "github.com/eclipse/che-operator/pkg/apis/org/v1",
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",
@@ -1332,6 +1336,7 @@
     "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1",
     "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil",
     "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1",
+    "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",

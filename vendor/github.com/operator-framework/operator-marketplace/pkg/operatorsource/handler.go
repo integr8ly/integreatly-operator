@@ -3,10 +3,14 @@ package operatorsource
 import (
 	"context"
 
-	marketplace "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/shared"
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/operator-framework/operator-marketplace/pkg/appregistry"
 	"github.com/operator-framework/operator-marketplace/pkg/datastore"
+	"github.com/operator-framework/operator-marketplace/pkg/defaults"
+	"github.com/operator-framework/operator-marketplace/pkg/operatorhub"
 	"github.com/operator-framework/operator-marketplace/pkg/phase"
+	"github.com/operator-framework/operator-marketplace/pkg/status"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -45,7 +49,7 @@ func NewHandler(mgr manager.Manager, client client.Client) Handler {
 // ctx represents the parent context.
 // event encapsulates the event fired by operator sdk.
 type Handler interface {
-	Handle(ctx context.Context, operatorSource *marketplace.OperatorSource) error
+	Handle(ctx context.Context, operatorSource *v1.OperatorSource) (bool, error)
 }
 
 // operatorsourcehandler implements the Handler interface
@@ -59,43 +63,45 @@ type operatorsourcehandler struct {
 	newCacheReconciler NewOutOfSyncCacheReconcilerFunc
 }
 
-func (h *operatorsourcehandler) Handle(ctx context.Context, in *marketplace.OperatorSource) error {
+func (h *operatorsourcehandler) Handle(ctx context.Context, in *v1.OperatorSource) (bool, error) {
 	logger := log.WithFields(log.Fields{
 		"type":      in.TypeMeta.Kind,
 		"namespace": in.GetNamespace(),
 		"name":      in.GetName(),
 	})
 
+	defaults.New(defaults.GetGlobalDefinitions(), operatorhub.GetSingleton().Get()).RestoreSpecIfDefault(in)
+
 	outOfSyncCacheReconciler := h.newCacheReconciler(logger, h.datastore, h.client)
-	out, status, err := outOfSyncCacheReconciler.Reconcile(ctx, in)
+	out, status, _, err := outOfSyncCacheReconciler.Reconcile(ctx, in)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// The out of sync cache reconciler has handled the event. So we should
 	// transition into the new phase and return.
 	if status != nil {
-		return h.transition(ctx, logger, out, status, err)
+		return false, h.transition(ctx, logger, out, status, err)
 	}
 
 	// The out of sync cache reconciler has not handled the event, so let's use
 	// the regular phase reconciler to handle this event.
 	phaseReconciler, err := h.factory.GetPhaseReconciler(logger, in)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	out, status, err = phaseReconciler.Reconcile(ctx, in)
+	out, status, requeue, err := phaseReconciler.Reconcile(ctx, in)
 	if out == nil {
 		// If the reconciler didn't return an object, that means it must have been deleted.
 		// In that case, we should just return without attempting to modify it.
-		return err
+		return false, err
 	}
 
-	return h.transition(ctx, logger, out, status, err)
+	return requeue, h.transition(ctx, logger, out, status, err)
 }
 
-func (h *operatorsourcehandler) transition(ctx context.Context, logger *log.Entry, opsrc *marketplace.OperatorSource, nextPhase *marketplace.Phase, reconciliationErr error) error {
+func (h *operatorsourcehandler) transition(ctx context.Context, logger *log.Entry, opsrc *v1.OperatorSource, nextPhase *shared.Phase, reconciliationErr error) error {
 	// If reconciliation threw an error, we can't quit just yet. We need to
 	// figure out whether the OperatorSource object needs to be updated.
 
@@ -108,14 +114,17 @@ func (h *operatorsourcehandler) transition(ctx context.Context, logger *log.Entr
 	// either completed successfully or failed.
 	// In either case, we need to update the modified OperatorSource object.
 	if updateErr := h.client.Update(ctx, opsrc); updateErr != nil {
+		logger.Errorf("Failed to update object - %v", updateErr)
+
+		// Error updating the object - report a failed sync.
+		status.SendSyncMessage(updateErr)
+
 		if reconciliationErr == nil {
 			// No reconciliation err, but update of object has failed!
 			return updateErr
 		}
 
 		// Presence of both Reconciliation error and object update error.
-		logger.Errorf("Failed to update object - %v", updateErr)
-
 		// TODO: find a way to chain the update error?
 		return reconciliationErr
 	}

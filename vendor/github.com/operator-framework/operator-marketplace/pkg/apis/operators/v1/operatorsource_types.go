@@ -3,6 +3,7 @@ package v1
 import (
 	"strings"
 
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -74,7 +75,7 @@ type OperatorSourceAuthorizationToken struct {
 // OperatorSourceStatus defines the observed state of OperatorSource
 type OperatorSourceStatus struct {
 	// Current phase of the OperatorSource object
-	CurrentPhase ObjectPhase `json:"currentPhase,omitempty"`
+	CurrentPhase shared.ObjectPhase `json:"currentPhase,omitempty"`
 
 	// Packages is a comma separated list of package(s) each of which has been
 	// downloaded and processed by Marketplace operator from the specified
@@ -95,10 +96,21 @@ func (opsrc *OperatorSource) EnsureGVK() {
 	opsrc.SetGroupVersionKind(gvk)
 }
 
+// ForceUpdate forces the OperatorSource object to be reconciled.
+func (opsrc *OperatorSource) ForceUpdate() {
+	// Drop the existing Status field so that reconciliation can start anew.
+	opsrc.Status = OperatorSourceStatus{}
+}
+
 // GetCurrentPhaseName returns the name of the current phase of the
 // given OperatorSource object.
 func (opsrc *OperatorSource) GetCurrentPhaseName() string {
 	return opsrc.Status.CurrentPhase.Name
+}
+
+// GetPackages returns the list of packages from the Status block
+func (opsrc *OperatorSource) GetPackages() []string {
+	return strings.Split(opsrc.Status.Packages, ",")
 }
 
 // IsEqual returns true if the Spec specified in this is the same as the other.
@@ -114,7 +126,10 @@ func (s *OperatorSourceSpec) IsEqual(other *OperatorSourceSpec) bool {
 	}
 	if strings.EqualFold(s.Endpoint, other.Endpoint) &&
 		strings.EqualFold(s.RegistryNamespace, other.RegistryNamespace) &&
-		strings.EqualFold(s.Type, other.Type) {
+		strings.EqualFold(s.Type, other.Type) &&
+		strings.EqualFold(s.AuthorizationToken.SecretName, other.AuthorizationToken.SecretName) &&
+		strings.EqualFold(s.DisplayName, other.DisplayName) &&
+		strings.EqualFold(s.Publisher, other.Publisher) {
 		return true
 	}
 	return false
@@ -123,14 +138,21 @@ func (s *OperatorSourceSpec) IsEqual(other *OperatorSourceSpec) bool {
 // RemoveFinalizer removes the operator source finalizer from the
 // OperatorSource ObjectMeta.
 func (s *OperatorSource) RemoveFinalizer() {
-	removeFinalizer(&s.ObjectMeta, OpSrcFinalizer)
+	shared.RemoveFinalizer(&s.ObjectMeta, OpSrcFinalizer)
 }
 
 // EnsureFinalizer ensures that the operator source finalizer is included
 // in the ObjectMeta Finalizers slice. If it already exists, no state change occurs.
 // If it doesn't, the finalizer is appended to the slice.
 func (s *OperatorSource) EnsureFinalizer() {
-	ensureFinalizer(&s.ObjectMeta, OpSrcFinalizer)
+	shared.EnsureFinalizer(&s.ObjectMeta, OpSrcFinalizer)
+}
+
+// HasFinalizer checks to see if the OpSrc finalizer
+// exists on the OpSrc. Returns true if the finalizer
+// can be found on the Opsrc's ObjectMeta.Finalizers list.
+func (s *OperatorSource) HasFinalizer() bool {
+	return shared.HasFinalizer(&s.ObjectMeta, OpSrcFinalizer)
 }
 
 func init() {

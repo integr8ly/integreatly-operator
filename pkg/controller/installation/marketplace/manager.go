@@ -10,6 +10,7 @@ import (
 	of "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -60,17 +61,18 @@ type Target struct {
 
 func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, os marketplacev1.OperatorSource, client pkgclient.Client) (string, error) {
 
-	csc := &marketplacev1.CatalogSourceConfig{
+	csc := &marketplacev2.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "installed-" + os.Labels[providerLabel] + "-" + t.Namespace + "-",
 			Namespace:    "openshift-marketplace",
 			Labels:       map[string]string{"integreatly": "true"},
 		},
-		Spec: marketplacev1.CatalogSourceConfigSpec{
+		Spec: marketplacev2.CatalogSourceConfigSpec{
 			DisplayName:     os.Spec.DisplayName,
 			Publisher:       os.Spec.Publisher,
 			Packages:        t.Pkg,
 			TargetNamespace: t.Namespace,
+			Source:          os.Name,
 		},
 	}
 	csList := &of.CatalogSourceList{
