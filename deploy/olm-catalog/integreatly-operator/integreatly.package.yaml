@@ -1,4 +1,4 @@
 packageName: integreatly
 channels:
   - name: integreatly
-    currentCSV: integreatly-operator.v1.10.1
+    currentCSV: integreatly-operator.v1.11.0
