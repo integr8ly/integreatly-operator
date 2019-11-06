@@ -33,6 +33,8 @@ go get -u .
 go install github.com/matryer/moq
 ```
 
+TEST IGNORE
+
 ## Local Setup
 
 Download the integreatly-operator project:
