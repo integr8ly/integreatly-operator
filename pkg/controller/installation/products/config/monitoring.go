@@ -66,6 +66,14 @@ func (r *Monitoring) GetPrometheusStorageRequest() string {
 	return "10Gi"
 }
 
+func (r *Monitoring) GetTemplateList() []string {
+	template_list := []string{
+		"test-secret",
+		"test-secret-2",
+	}
+	return template_list
+}
+
 func (f *Monitoring) Validate() error {
 	if f.GetProductName() == "" {
 		return errors.New("config product name is not defined")
