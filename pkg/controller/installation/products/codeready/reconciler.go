@@ -438,7 +438,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	// setup external postgres db if UseExternalResource set to true
 	if inst.Spec.UseExternalResources {
 		cheClusterExternalPostgres, err := r.reconcileExternalPostgres(ctx, inst, serverClient)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
 		if cheClusterExternalPostgres == nil {
@@ -510,7 +510,7 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 		return nil
 	})
 	if err != nil {
-		return nil , errors.Wrap(err, "failed to reconcile smtp credential request")
+		return nil, errors.Wrap(err, "failed to reconcile smtp credential request")
 	}
 	// phase is not complete, wait
 	if postgresCred.Status.Phase != crov1.PhaseComplete {
