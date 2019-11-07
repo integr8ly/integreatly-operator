@@ -459,7 +459,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgresSecret, func(existing runtime.Object) error {
 		username := postgresCredSec.Data["username"]
 		password := postgresCredSec.Data["password"]
-		url := fmt.Sprintf("postgresql://%s:%s@%s:5432/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["database"])
+		url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
 
 		postgresSecret.Data["URL"] = []byte(url)
 		postgresSecret.Data["DB_USER"] = username
