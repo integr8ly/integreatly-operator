@@ -6,7 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	marketplace "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/shared"
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/operator-framework/operator-marketplace/pkg/datastore"
 
 	"github.com/operator-framework/operator-marketplace/pkg/appregistry"
@@ -21,7 +22,7 @@ type PhaseReconcilerFactory interface {
 	// The following chain shows how an OperatorSource object progresses through
 	// a series of transitions from the initial phase to complete reconciled state.
 	//
-	//  Initial --> Validating --> Downloading --> Configuring --> Succeeded
+	//  Initial --> Validating --> Configuring --> Succeeded
 	//     ^
 	//     |
 	//  Purging
@@ -30,7 +31,7 @@ type PhaseReconcilerFactory interface {
 	// opsrc represents the given OperatorSource object
 	//
 	// On error, the object is transitioned into "Failed" phase.
-	GetPhaseReconciler(logger *log.Entry, opsrc *marketplace.OperatorSource) (Reconciler, error)
+	GetPhaseReconciler(logger *log.Entry, opsrc *v1.OperatorSource) (Reconciler, error)
 }
 
 // phaseReconcilerFactory implements PhaseReconcilerFactory interface.
@@ -41,7 +42,19 @@ type phaseReconcilerFactory struct {
 	refresher             PackageRefreshNotificationSender
 }
 
-func (s *phaseReconcilerFactory) GetPhaseReconciler(logger *log.Entry, opsrc *marketplace.OperatorSource) (Reconciler, error) {
+func (s *phaseReconcilerFactory) GetPhaseReconciler(logger *log.Entry, opsrc *v1.OperatorSource) (Reconciler, error) {
+	objectInOtherNamespace, err := shared.IsObjectInOtherNamespace(opsrc.GetNamespace())
+	if err != nil {
+		return nil, err
+	}
+
+	// We will only reconcile objects in the operator's namespace. If the object
+	// was created in some other namespace, invoke the other namespace
+	// reconciler that will place it in the failed phase.
+	if objectInOtherNamespace {
+		return NewOtherNamespaceReconciler(logger), nil
+	}
+
 	currentPhase := opsrc.GetCurrentPhaseName()
 
 	// If the object has a deletion timestamp, it means it has been marked for
@@ -59,17 +72,14 @@ func (s *phaseReconcilerFactory) GetPhaseReconciler(logger *log.Entry, opsrc *ma
 	case phase.OperatorSourceValidating:
 		return NewValidatingReconciler(logger, s.datastore), nil
 
-	case phase.OperatorSourceDownloading:
-		return NewDownloadingReconciler(logger, s.registryClientFactory, s.datastore, s.client, s.refresher), nil
-
 	case phase.Configuring:
-		return NewConfiguringReconciler(logger, s.datastore, s.client), nil
+		return NewConfiguringReconciler(logger, s.registryClientFactory, s.datastore, datastore.Cache, s.client, s.refresher), nil
 
 	case phase.OperatorSourcePurging:
 		return NewPurgingReconciler(logger, s.datastore, s.client), nil
 
 	case phase.Succeeded:
-		return NewSucceededReconciler(logger), nil
+		return NewSucceededReconciler(logger, s.client), nil
 
 	case phase.Failed:
 		return NewFailedReconciler(logger), nil

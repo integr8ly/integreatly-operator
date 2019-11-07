@@ -4,24 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/rest"
 	"os"
 	"runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/aerogear/mobile-security-service-operator/pkg/apis"
 	"github.com/aerogear/mobile-security-service-operator/pkg/controller"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	monclientv1 "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	"github.com/spf13/pflag"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -33,9 +24,8 @@ import (
 
 // Change below variables to serve metrics on different host or port.
 var (
-	metricsHost               = "0.0.0.0"
-	metricsPort         int32 = 8383
-	operatorMetricsPort int32 = 8686
+	metricsHost       = "0.0.0.0"
+	metricsPort int32 = 8383
 )
 var log = logf.Log.WithName("cmd")
 
@@ -91,7 +81,6 @@ func main() {
 	// NOTE: See the PR which we are working on to update the deps and have this feature: https://github.com/operator-framework/operator-sdk/pull/1388
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          "",
-		MapperProvider:     restmapper.NewDynamicRESTMapper,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
 	})
 	if err != nil {
@@ -102,43 +91,10 @@ func main() {
 	//Add schemes to the manager
 	addSchemeToManager(mgr)
 
-	operatorNamespace, err := k8sutil.GetOperatorNamespace()
+	// Create Service object to expose the metrics port.
+	_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
 	if err != nil {
 		log.Info(err.Error())
-		log.Error(err, "")
-	}
-
-	if err = serveCRMetrics(cfg); err != nil {
-		log.Info("Could not generate and serve custom resource metrics", "error", err.Error())
-	}
-
-	// Add to the below struct any other metrics ports you want to expose.
-	servicePorts := []v1.ServicePort{
-		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
-		{Port: operatorMetricsPort, Name: metrics.CRPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: operatorMetricsPort}},
-	}
-
-	// Create Service object to expose the metrics port(s).
-	service, err := metrics.CreateMetricsService(ctx, cfg, servicePorts)
-	if err != nil {
-		log.Info("Could not create metrics Service", "error", err.Error())
-	}
-
-	if service != nil {
-		err = addMonitoringKeyLabelToService(cfg, operatorNamespace, service)
-		if err != nil {
-			log.Error(err, "Could not add monitoring-key label to operator metrics Service")
-		}
-
-		err = createServiceMonitor(cfg, operatorNamespace, service)
-		if err != nil {
-			log.Info("Could not create ServiceMonitor object", "error", err.Error())
-			// If this operator is deployed to a cluster without the prometheus-operator running, it will return
-			// ErrServiceMonitorNotPresent, which can be used to safely skip ServiceMonitor creation.
-			if err == metrics.ErrServiceMonitorNotPresent {
-				log.Info("Install prometheus-operator in you cluster to create ServiceMonitor objects", "error", err.Error())
-			}
-		}
 	}
 
 	log.Info("Starting the Cmd.")
@@ -168,68 +124,4 @@ func addSchemeToManager(mgr manager.Manager) {
 		log.Error(err, "")
 		os.Exit(1)
 	}
-}
-
-func addMonitoringKeyLabelToService(cfg *rest.Config, ns string, service *v1.Service) error {
-	kclient, err := client.New(cfg, client.Options{})
-	if err != nil {
-		return err
-	}
-
-	updatedLabels := map[string]string{"monitoring-key": "middleware"}
-	for k, v := range service.ObjectMeta.Labels {
-		updatedLabels[k] = v
-	}
-	service.ObjectMeta.Labels = updatedLabels
-
-	err = kclient.Update(context.TODO(), service)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// createServiceMonitor is a temporary fix until the version in the
-// operator-sdk is fixed to have the correct Path set on the Endpoints
-func createServiceMonitor(config *rest.Config, ns string, service *v1.Service) error {
-	mclient := monclientv1.NewForConfigOrDie(config)
-
-	sm := metrics.GenerateServiceMonitor(service)
-	eps := []monitoringv1.Endpoint{}
-	for _, ep := range sm.Spec.Endpoints {
-		eps = append(eps, monitoringv1.Endpoint{Port: ep.Port, Path: "/metrics"})
-	}
-	sm.Spec.Endpoints = eps
-
-	_, err := mclient.ServiceMonitors(ns).Create(sm)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// serveCRMetrics gets the Operator/CustomResource GVKs and generates metrics based on those types.
-// It serves those metrics on "http://metricsHost:operatorMetricsPort".
-func serveCRMetrics(cfg *rest.Config) error {
-	// Below function returns filtered operator/CustomResource specific GVKs.
-	// For more control override the below GVK list with your own custom logic.
-	filteredGVK, err := k8sutil.GetGVKsFromAddToScheme(apis.AddToScheme)
-	if err != nil {
-		return err
-	}
-	// Get the namespace the operator is currently deployed in.
-	operatorNs, err := k8sutil.GetOperatorNamespace()
-	if err != nil {
-		return err
-	}
-	// To generate metrics in other namespaces, add the values below.
-	ns := []string{operatorNs}
-	// Generate and serve custom resource specific metrics.
-	err = kubemetrics.GenerateAndServeCRMetrics(cfg, ns, filteredGVK, metricsHost, operatorMetricsPort)
-	if err != nil {
-		return err
-	}
-	return nil
 }

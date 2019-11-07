@@ -4,9 +4,8 @@
 package config
 
 import (
-	"sync"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"sync"
 )
 
 var (
@@ -18,6 +17,7 @@ var (
 	lockConfigReadWriterMockReadFuse                   sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift        sync.RWMutex
 	lockConfigReadWriterMockReadLauncher               sync.RWMutex
+	lockConfigReadWriterMockReadMobileDeveloperConsole sync.RWMutex
 	lockConfigReadWriterMockReadMobileSecurityService  sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring             sync.RWMutex
 	lockConfigReadWriterMockReadNexus                  sync.RWMutex
@@ -29,7 +29,6 @@ var (
 	lockConfigReadWriterMockReadUps                    sync.RWMutex
 	lockConfigReadWriterMockWriteConfig                sync.RWMutex
 	lockConfigReadWriterMockreadConfigForProduct       sync.RWMutex
-	lockConfigReadWriterMockReadMobileDeveloperConsole sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -66,11 +65,11 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadLauncherFunc: func() (*Launcher, error) {
 // 	               panic("mock out the ReadLauncher method")
 //             },
-//             ReadMobileSecurityServiceFunc: func() (*MobileSecurityService, error) {
-// 	               panic("mock out the ReadMobileSecurityService method")
-// 			   },
 //             ReadMobileDeveloperConsoleFunc: func() (*MobileDeveloperConsole, error) {
 // 	               panic("mock out the ReadMobileDeveloperConsole method")
+//             },
+//             ReadMobileSecurityServiceFunc: func() (*MobileSecurityService, error) {
+// 	               panic("mock out the ReadMobileSecurityService method")
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
@@ -133,10 +132,11 @@ type ConfigReadWriterMock struct {
 	// ReadLauncherFunc mocks the ReadLauncher method.
 	ReadLauncherFunc func() (*Launcher, error)
 
-	// ReadMobileSecurityServiceFunc mocks the ReadMobileSecurityService method.
-	ReadMobileSecurityServiceFunc func() (*MobileSecurityService, error)
 	// ReadMobileDeveloperConsoleFunc mocks the ReadMobileDeveloperConsole method.
 	ReadMobileDeveloperConsoleFunc func() (*MobileDeveloperConsole, error)
+
+	// ReadMobileSecurityServiceFunc mocks the ReadMobileSecurityService method.
+	ReadMobileSecurityServiceFunc func() (*MobileSecurityService, error)
 
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
@@ -194,11 +194,11 @@ type ConfigReadWriterMock struct {
 		// ReadLauncher holds details about calls to the ReadLauncher method.
 		ReadLauncher []struct {
 		}
-		// ReadMobileSecurityService holds details about calls to the ReadMobileSecurityService method.
-		ReadMobileSecurityService []struct {
-		}
 		// ReadMobileDeveloperConsole holds details about calls to the ReadMobileDeveloperConsole method.
 		ReadMobileDeveloperConsole []struct {
+		}
+		// ReadMobileSecurityService holds details about calls to the ReadMobileSecurityService method.
+		ReadMobileSecurityService []struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
@@ -447,32 +447,6 @@ func (mock *ConfigReadWriterMock) ReadLauncherCalls() []struct {
 	return calls
 }
 
-// ReadMobileSecurityService calls ReadMobileSecurityServiceFunc.
-func (mock *ConfigReadWriterMock) ReadMobileSecurityService() (*MobileSecurityService, error) {
-	if mock.ReadMobileSecurityServiceFunc == nil {
-		panic("ConfigReadWriterMock.ReadMobileSecurityServiceFunc: method is nil but ConfigReadWriter.ReadMobileSecurityService was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockReadMobileSecurityService.Lock()
-	mock.calls.ReadMobileSecurityService = append(mock.calls.ReadMobileSecurityService, callInfo)
-	lockConfigReadWriterMockReadMobileSecurityService.Unlock()
-	return mock.ReadMobileSecurityServiceFunc()
-}
-
-// ReadMobileSecurityServiceCalls gets all the calls that were made to ReadMobileSecurityService.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadMobileSecurityServiceCalls())
-func (mock *ConfigReadWriterMock) ReadMobileSecurityServiceCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockReadMobileSecurityService.RLock()
-	calls = mock.calls.ReadMobileSecurityService
-	lockConfigReadWriterMockReadMobileSecurityService.RUnlock()
-	return calls
-}
-
 // ReadMobileDeveloperConsole calls ReadMobileDeveloperConsoleFunc.
 func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
 	if mock.ReadMobileDeveloperConsoleFunc == nil {
@@ -496,6 +470,32 @@ func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsoleCalls() []struct {
 	lockConfigReadWriterMockReadMobileDeveloperConsole.RLock()
 	calls = mock.calls.ReadMobileDeveloperConsole
 	lockConfigReadWriterMockReadMobileDeveloperConsole.RUnlock()
+	return calls
+}
+
+// ReadMobileSecurityService calls ReadMobileSecurityServiceFunc.
+func (mock *ConfigReadWriterMock) ReadMobileSecurityService() (*MobileSecurityService, error) {
+	if mock.ReadMobileSecurityServiceFunc == nil {
+		panic("ConfigReadWriterMock.ReadMobileSecurityServiceFunc: method is nil but ConfigReadWriter.ReadMobileSecurityService was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadMobileSecurityService.Lock()
+	mock.calls.ReadMobileSecurityService = append(mock.calls.ReadMobileSecurityService, callInfo)
+	lockConfigReadWriterMockReadMobileSecurityService.Unlock()
+	return mock.ReadMobileSecurityServiceFunc()
+}
+
+// ReadMobileSecurityServiceCalls gets all the calls that were made to ReadMobileSecurityService.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadMobileSecurityServiceCalls())
+func (mock *ConfigReadWriterMock) ReadMobileSecurityServiceCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadMobileSecurityService.RLock()
+	calls = mock.calls.ReadMobileSecurityService
+	lockConfigReadWriterMockReadMobileSecurityService.RUnlock()
 	return calls
 }
 

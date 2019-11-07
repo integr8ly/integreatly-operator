@@ -13,7 +13,8 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	operatorsv1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -44,7 +45,8 @@ func buildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := alpha1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
-	err = operatorsv1.SchemeBuilder.AddToScheme(scheme)
+	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
+	err = marketplacev2.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
@@ -60,7 +62,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Kind:       "Installation",
 		},
 	}
-	catalogSourceConfig := &operatorsv1.CatalogSourceConfig{
+	catalogSourceConfig := &marketplacev2.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installed-integreatly-test-ns",
 			Namespace: "openshift-marketplace",
@@ -81,7 +83,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
@@ -105,7 +107,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
 			client: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},

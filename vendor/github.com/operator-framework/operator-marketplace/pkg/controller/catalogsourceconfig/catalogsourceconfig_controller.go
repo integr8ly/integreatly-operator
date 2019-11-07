@@ -3,9 +3,10 @@ package catalogsourceconfig
 import (
 	"context"
 
-	marketplace "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 	catalogsourceconfighandler "github.com/operator-framework/operator-marketplace/pkg/catalogsourceconfig"
 	"github.com/operator-framework/operator-marketplace/pkg/status"
+	"github.com/operator-framework/operator-marketplace/pkg/watches"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,8 +28,8 @@ func Add(mgr manager.Manager) error {
 	return add(mgr, reconciler)
 }
 
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
+// newReconciler returns a new ReconcileCatalogSourceConfig
+func newReconciler(mgr manager.Manager) (*ReconcileCatalogSourceConfig, error) {
 	// The default client serves read requests from the cache which contains
 	// objects only from the namespace the operator is watching. Given we need
 	// to query other namespaces for CatalogSources, we create our own client
@@ -49,8 +50,8 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	}, nil
 }
 
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
+// add adds a new Controller to mgr with r as the ReconcileCatalogSourceConfig
+func add(mgr manager.Manager, r *ReconcileCatalogSourceConfig) error {
 	// Create a new controller
 	c, err := controller.New("catalogsourceconfig-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -58,7 +59,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource CatalogSourceConfig
-	err = c.Watch(&source.Kind{Type: &marketplace.CatalogSourceConfig{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &v2.CatalogSourceConfig{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+
+	// Watch for child resource deletions
+	err = watches.WatchChildResourcesDeletionEvents(c, r.client, v2.CatalogSourceConfigKind)
 	if err != nil {
 		return err
 	}
@@ -84,16 +91,9 @@ func (r *ReconcileCatalogSourceConfig) Reconcile(request reconcile.Request) (rec
 	// Reconcile kicked off, message Sync Channel
 	status.SendSyncMessage(nil)
 
-	// If err is not nil at the end of this function message the syncCh channel
-	var err error
-	defer func() {
-		if err != nil {
-			status.SendSyncMessage(err)
-		}
-	}()
 	// Fetch the CatalogSourceConfig instance
-	instance := &marketplace.CatalogSourceConfig{}
-	err = r.client.Get(context.TODO(), request.NamespacedName, instance)
+	instance := &v2.CatalogSourceConfig{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -101,7 +101,8 @@ func (r *ReconcileCatalogSourceConfig) Reconcile(request reconcile.Request) (rec
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
+		// Error reading the object - report a failed sync and requeue the request.
+		status.SendSyncMessage(err)
 		return reconcile.Result{}, err
 	}
 

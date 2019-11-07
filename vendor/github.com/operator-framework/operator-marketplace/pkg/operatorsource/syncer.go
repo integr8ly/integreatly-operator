@@ -3,13 +3,13 @@ package operatorsource
 import (
 	"time"
 
+	wrapper "github.com/operator-framework/operator-marketplace/pkg/client"
 	"github.com/operator-framework/operator-marketplace/pkg/datastore"
 	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NewRegistrySyncer returns a new instance of RegistrySyncer interface.
-func NewRegistrySyncer(client client.Client, initialWait time.Duration, resyncInterval time.Duration, updateNotificationSendWait time.Duration, sender PackageUpdateNotificationSender, refresher PackageRefreshNotificationSender) RegistrySyncer {
+func NewRegistrySyncer(client wrapper.Client, initialWait time.Duration, resyncInterval time.Duration, updateNotificationSendWait time.Duration, sender PackageUpdateNotificationSender, refresher PackageRefreshNotificationSender) RegistrySyncer {
 	return &registrySyncer{
 		initialWait:    initialWait,
 		resyncInterval: resyncInterval,
@@ -33,7 +33,7 @@ type PackageUpdateNotificationSender interface {
 // blocking operation. When this notification is sent, all non datastore
 // catalogsourceconfigs check their version map in the status against the datastore.
 type PackageRefreshNotificationSender interface {
-	SendRefresh()
+	SendRefresh(opSrc string)
 }
 
 // RegistrySyncer is an interface that wraps the Sync method.
