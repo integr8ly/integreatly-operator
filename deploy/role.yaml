@@ -308,12 +308,6 @@ rules:
       - delete
       - update
   - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
-      - get
-  - apiGroups:
       - template.openshift.io
     resources:
       - templates

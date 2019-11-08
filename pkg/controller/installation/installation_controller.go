@@ -109,12 +109,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// discover and set master url and routing subdomain
-	consoleRoute := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "console",
-			Namespace: "openshift-console",
-		},
-	}
+	consoleRoute := &routev1.Route{}
 	key := client.ObjectKey{Name: "console", Namespace: "openshift-console"}
 	err = r.client.Get(r.context, key, consoleRoute)
 	if err != nil {
