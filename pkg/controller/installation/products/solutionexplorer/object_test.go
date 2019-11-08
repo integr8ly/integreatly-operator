@@ -4,25 +4,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	webappv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
-
-var webappNs = &corev1.Namespace{
-	ObjectMeta: v1.ObjectMeta{
-		Name: defaultName,
-		OwnerReferences: []v1.OwnerReference{
-			{
-				Name:       installation.Name,
-				APIVersion: installation.APIVersion,
-			},
-		},
-	},
-	Status: corev1.NamespaceStatus{
-		Phase: corev1.NamespaceActive,
-	},
-}
 
 var webappCR = &webappv1alpha1.WebApp{
 	ObjectMeta: v1.ObjectMeta{
@@ -49,6 +36,7 @@ var installation = &v1alpha1.Installation{
 	ObjectMeta: v1.ObjectMeta{
 		Name:      "example-installation",
 		Namespace: "integreatly-operator",
+		UID:       types.UID("xyz"),
 	},
 	Status: v1alpha1.InstallationStatus{
 		Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
@@ -95,5 +83,17 @@ var installation = &v1alpha1.Installation{
 				},
 			},
 		},
+	},
+}
+
+var webappNs = &corev1.Namespace{
+	ObjectMeta: v1.ObjectMeta{
+		Name: defaultName,
+		Labels: map[string]string{
+			resources.OwnerLabelKey: string(installation.GetUID()),
+		},
+	},
+	Status: corev1.NamespaceStatus{
+		Phase: corev1.NamespaceActive,
 	},
 }

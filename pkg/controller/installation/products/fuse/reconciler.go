@@ -17,7 +17,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	usersv1 "github.com/openshift/api/user/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
@@ -80,7 +79,18 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // Reconcile reads that state of the cluster for fuse and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		return v1alpha1.PhaseCompleted, nil
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -93,11 +103,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionFuse)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for fuse")
 	}
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -321,7 +336,6 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 			},
 		},
 	}
-	ownerutil.EnsureOwner(cr, install)
 
 	// attempt to create the custom resource
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {

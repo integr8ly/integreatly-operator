@@ -20,6 +20,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -337,7 +338,15 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 
 func TestReconciler_ReconcileNamespace(t *testing.T) {
 	nsName := "test-ns"
-	defaultInstallation := &v1alpha1.Installation{ObjectMeta: metav1.ObjectMeta{Name: "install"}, TypeMeta: metav1.TypeMeta{APIVersion: v1alpha1.SchemeGroupVersion.String()}}
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "install",
+			UID:  types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
 	cases := []struct {
 		Name           string
 		client         client.Client
@@ -351,18 +360,15 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			client: fakeclient.NewFakeClient(&corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Name:       "install",
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						},
+					Labels: map[string]string{
+						OwnerLabelKey: string(installation.GetUID()),
 					},
 				},
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceActive,
 				},
 			}),
-			Installation:   defaultInstallation,
+			Installation:   installation,
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 		},
 		{
@@ -370,16 +376,13 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			client: fakeclient.NewFakeClient(&corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Name:       "install",
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						},
+					Labels: map[string]string{
+						OwnerLabelKey: string(installation.GetUID()),
 					},
 				},
 				Status: corev1.NamespaceStatus{},
 			}),
-			Installation:   defaultInstallation,
+			Installation:   installation,
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 		},
 		{
@@ -387,6 +390,9 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			client: fakeclient.NewFakeClient(&corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: nsName,
+					Labels: map[string]string{
+						OwnerLabelKey: string(installation.GetUID()),
+					},
 				},
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,

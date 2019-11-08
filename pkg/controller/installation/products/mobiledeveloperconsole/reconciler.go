@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,34 +63,48 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-
-	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
+func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		return v1alpha1.PhaseCompleted, nil
+	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionMDC)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for mdc")
 	}
 	phase, err = r.ReconcileSubscription(
 		ctx,
-		inst,
+		namespace,
 		marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()},
-		client,
+		serverClient,
 		version,
 	)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, client, inst)
+	phase, err = r.reconcileComponents(ctx, serverClient, inst)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.handleProgress(ctx, client)
+	phase, err = r.handleProgress(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -142,8 +157,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 			Name:      resourceName,
 		},
 	}
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: resourceName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
-		return v1alpha1.PhaseInProgress, errors.Wrap(err, "dc isn't available yet for "+resourceName)
+
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: resourceName, Namespace: r.Config.GetNamespace()}, dc)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, err
+		}
+		return v1alpha1.PhaseInProgress, nil
 	}
 	for i, container := range dc.Spec.Template.Spec.Containers {
 		if container.Name == defaultInstallationNamespace {
@@ -155,8 +175,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 			}
 		}
 	}
-	if err := client.Update(ctx, dc); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update dc for mdc")
+	err = client.Update(ctx, dc)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update dc for mdc")
+		}
+		return v1alpha1.PhaseInProgress, nil
 	}
 
 	route := &routev1.Route{
@@ -165,8 +189,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
-		return v1alpha1.PhaseInProgress, errors.Wrap(err, "could not read mdc route")
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not read mdc route")
+		}
+		return v1alpha1.PhaseInProgress, nil
 	}
 
 	var url string

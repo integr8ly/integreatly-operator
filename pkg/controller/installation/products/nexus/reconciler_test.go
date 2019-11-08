@@ -13,6 +13,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -21,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -309,14 +311,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	// initialise runtime objects
 	objs := []runtime.Object{}
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
+	objs = append(objs, installation)
 	objs = append(objs, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -391,17 +402,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: &v1alpha1.Installation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultInstallationNamespace,
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Installation: installation,
+			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -465,17 +467,11 @@ func TestReconciler_testPhases(t *testing.T) {
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaultInstallationNamespace,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Name:       "installation",
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						},
-					},
 				},
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,
 				},
-			}),
+			}, inst),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

@@ -14,6 +14,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -60,6 +61,7 @@ func basicInstallation() *v1alpha1.Installation {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
@@ -192,7 +194,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			Installation:   &v1alpha1.Installation{},
 			ExpectedStatus: v1alpha1.PhaseInProgress,
-			ExpectError:    true,
+			ExpectError:    false,
 		},
 		{
 			Name:           "Test reconcile custom resource returns in progress when route CR is not available",
@@ -200,7 +202,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			Installation:   &v1alpha1.Installation{},
 			ExpectedStatus: v1alpha1.PhaseInProgress,
-			ExpectError:    true,
+			ExpectError:    false,
 		},
 	}
 	for _, tc := range cases {
@@ -323,11 +325,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	objs = append(objs, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -353,7 +352,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		}, Status: mdc.MobileDeveloperConsoleStatus{
 			Phase: mdc.PhaseComplete,
 		},
-	}, getOauthClientSecret(), getOperatorDC(), getRoute())
+	}, getOauthClientSecret(), getOperatorDC(), getRoute(), basicInstallation())
 
 	cases := []struct {
 		Name           string
@@ -444,17 +443,11 @@ func TestReconciler_testPhases(t *testing.T) {
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaultInstallationNamespace,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Name:       "installation",
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						},
-					},
 				},
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,
 				},
-			}),
+			}, basicInstallation()),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -470,7 +463,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test subscription creating returns phase in progress",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -486,7 +479,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test components creating returns phase in progress",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, basicInstallation(), getOauthClientSecret()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

@@ -67,15 +67,32 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		return v1alpha1.PhaseCompleted, nil
+	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
+	}
+
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
 	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionCodeReadyWorkspaces)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for codeready")
 	}
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -89,7 +106,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackups(ctx, inst, serverClient)
+	phase, err = r.reconcileBackups(ctx, inst, serverClient, namespace)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -101,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
 	backupConfig := resources.BackupConfig{
 		Namespace:     r.Config.GetNamespace(),
 		Name:          "codeready",
@@ -124,7 +141,7 @@ func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Instal
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to reconcile postgres component backup secret")
 	}
-	err = resources.ReconcileBackup(ctx, serverClient, inst, backupConfig)
+	err = resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for codeready")
 	}
@@ -416,6 +433,27 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	return v1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) getBackupConfig() resources.BackupConfig {
+	return resources.BackupConfig{
+		Namespace:     r.Config.GetNamespace(),
+		Name:          r.Config.GetNamespace(), //reusing namespace name because it already contains product name and is prefixed
+		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
+		Components: []resources.BackupComponent{
+			{
+				Name:     "codeready-postgres-backup",
+				Type:     "postgres",
+				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+			{
+				Name:     "codeready-pv-backup",
+				Type:     "codeready_pv",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+		},
+	}
+}
+
 func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
 	selfSignedCerts := inst.Spec.SelfSignedCerts
 	cheCluster := &chev1.CheCluster{
@@ -459,6 +497,5 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			},
 		},
 	}
-	ownerutil.EnsureOwner(cheCluster, inst)
 	return serverClient.Create(ctx, cheCluster)
 }

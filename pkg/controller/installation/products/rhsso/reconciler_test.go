@@ -16,6 +16,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
@@ -369,14 +370,37 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "installation",
+			Namespace:  defaultRhssoNamespace,
+			Finalizers: []string{"finalizer.rhsso.integreatly.org"},
+			UID:        types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+		Status: v1alpha1.InstallationStatus{
+			Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
+				"codeready-stage": {
+					Name: "codeready-stage",
+					Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+						v1alpha1.ProductCodeReadyWorkspaces: {
+							Name:   v1alpha1.ProductCodeReadyWorkspaces,
+							Status: v1alpha1.PhaseCreatingComponents,
+						},
+					},
+				},
+			},
+		},
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultRhssoNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -412,31 +436,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 		Data: map[string][]byte{
 			"3scale": bytes.NewBufferString("test").Bytes(),
-		},
-	}
-
-	installation := &v1alpha1.Installation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       "installation",
-			Namespace:  defaultRhssoNamespace,
-			Finalizers: []string{"finalizer.rhsso.integreatly.org"},
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-		},
-		Status: v1alpha1.InstallationStatus{
-			Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
-				"codeready-stage": {
-					Name: "codeready-stage",
-					Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-						v1alpha1.ProductCodeReadyWorkspaces: {
-							Name:   v1alpha1.ProductCodeReadyWorkspaces,
-							Status: v1alpha1.PhaseCreatingComponents,
-						},
-					},
-				},
-			},
 		},
 	}
 
@@ -484,31 +483,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: &v1alpha1.Installation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:       "installation",
-					Namespace:  defaultRhssoNamespace,
-					Finalizers: []string{"finalizer.rhsso.integreatly.org"},
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-				Status: v1alpha1.InstallationStatus{
-					Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
-						"codeready-stage": {
-							Name: "codeready-stage",
-							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-								v1alpha1.ProductCodeReadyWorkspaces: {
-									Name:   v1alpha1.ProductCodeReadyWorkspaces,
-									Status: v1alpha1.PhaseCreatingComponents,
-								},
-							},
-						},
-					},
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Installation: installation,
+			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}
 

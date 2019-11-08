@@ -31,7 +31,7 @@ func assertInstallationSuccessfullyReconciled(scenario LauncherTestScenario, con
 
 	// A namespace should have been created.
 	ns := &corev1.Namespace{}
-	err = scenario.FakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: launcherConfig.GetNamespace()}, ns)
+	err = scenario.FakeClient.Get(ctx, pkgclient.ObjectKey{Name: launcherConfig.GetNamespace()}, ns)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("%s namespace should have been created", launcherConfig.GetNamespace()))
 	}
@@ -42,7 +42,7 @@ func assertInstallationSuccessfullyReconciled(scenario LauncherTestScenario, con
 	}
 
 	launcherInst := &launcherv1alpha2.Launcher{}
-	err = scenario.FakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: defaultLauncherName, Namespace: launcherConfig.GetNamespace()}, launcherInst)
+	err = scenario.FakeClient.Get(ctx, pkgclient.ObjectKey{Name: defaultLauncherName, Namespace: launcherConfig.GetNamespace()}, launcherInst)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("%s custom resource was not created", defaultLauncherName))
 	}
@@ -56,14 +56,14 @@ func assertInstallationSuccessfullyReconciled(scenario LauncherTestScenario, con
 		return errors.New("Error getting RHSSO config")
 	}
 	kcr := &aerogearv1.KeycloakRealm{}
-	err = scenario.FakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
+	err = scenario.FakeClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
 	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
 		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
 	}
 
 	// Launcher route should have been written to the Launcher config
 	launcherRoute := &routev1.Route{}
-	err = scenario.FakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: launcherRouteName, Namespace: launcherConfig.GetNamespace()}, launcherRoute)
+	err = scenario.FakeClient.Get(ctx, pkgclient.ObjectKey{Name: launcherRouteName, Namespace: launcherConfig.GetNamespace()}, launcherRoute)
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -59,7 +58,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
 	err = aerogearv1.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err = v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
@@ -73,6 +72,11 @@ func getBuildScheme() (*runtime.Scheme, error) {
 }
 
 func TestReconciler_config(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -109,7 +113,16 @@ func TestReconciler_config(t *testing.T) {
 					return errors.New("dummy error")
 				},
 			},
-			FakeClient: fakeclient.NewFakeClient(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &v1alpha1.Installation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "installation",
+					Namespace: defaultInstallationNamespace,
+				},
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "installation",
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				},
+			}),
 			FakeConfig: basicConfigMock(),
 			Product:    &v1alpha1.InstallationProductStatus{},
 		},
@@ -280,14 +293,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -347,7 +369,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup, pullSecret),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup, pullSecret, installation),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -375,17 +397,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: &v1alpha1.Installation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultInstallationNamespace,
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Installation: installation,
+			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}
 

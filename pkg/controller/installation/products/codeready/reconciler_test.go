@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
@@ -96,6 +97,7 @@ func buildScheme() *runtime.Scheme {
 }
 
 func TestReconciler_config(t *testing.T) {
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -435,9 +437,23 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 }
 
 func TestCodeready_fullReconcile(t *testing.T) {
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
 		},
 		Status: corev1.NamespaceStatus{
 			Phase: corev1.NamespaceActive,
@@ -501,14 +517,9 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful installation without errors",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Installation: &v1alpha1.Installation{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
-				},
-			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster),
-			FakeConfig: basicConfigMock(),
+			Installation:   installation,
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation),
+			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
 					t.Fatalf("expected 1 call to readCodeReady config, got: %d", len(mockConfig.ReadCodeReadyCalls()))

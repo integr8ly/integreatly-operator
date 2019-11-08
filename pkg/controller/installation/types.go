@@ -142,7 +142,7 @@ func InstallationTypeFactory(installationType string, products []string) (error,
 }
 
 func newWorkshopType(products []string) *Type {
-	logrus.Info("installing workshop products ", products)
+	logrus.Info("Reconciling workshop products ", products)
 	t := &Type{
 		Stages: []Stage{},
 	}
@@ -152,7 +152,7 @@ func newWorkshopType(products []string) *Type {
 }
 
 func newManagedType(products []string) *Type {
-	logrus.Info("installing managed products ", products)
+	logrus.Info("Reconciling managed products ", products)
 	t := &Type{
 		Stages: []Stage{},
 	}

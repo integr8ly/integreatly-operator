@@ -19,12 +19,14 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -392,14 +394,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	installation := &v1alpha1.Installation{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
+		},
+		TypeMeta: v1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []v1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -421,7 +432,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc, installation),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -449,17 +460,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: &v1alpha1.Installation{
-				ObjectMeta: v1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultInstallationNamespace,
-				},
-				TypeMeta: v1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Installation: installation,
+			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}
 

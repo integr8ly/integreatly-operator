@@ -14,7 +14,6 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -95,11 +94,19 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling rhsso")
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+		return v1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -109,11 +116,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	namespace, err := resources.GetNS(ctx, ns, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionRHSSO)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for rhsso")
 	}
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -143,7 +155,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	ownerutil.EnsureOwner(kc, inst)
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func(existing runtime.Object) error {
 		kc := existing.(*aerogearv1.Keycloak)
 		kc.Spec.Plugins = []string{
@@ -164,7 +175,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	ownerutil.EnsureOwner(kcr, inst)
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
 		kcr := existing.(*aerogearv1.KeycloakRealm)
 		kcr.Spec.CreateOnly = false

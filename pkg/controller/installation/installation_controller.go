@@ -139,6 +139,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		r.cancel()
 
 		// Clean up the products which have finalizers associated to them
+		allCompleted := true
 		merr := &multiErr{}
 		for _, productFinalizer := range instance.Finalizers {
 			if !strings.Contains(productFinalizer, "integreatly") {
@@ -154,16 +155,23 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			if err != nil {
 				merr.Add(pkgerr.Wrapf(err, "Failed to create server client for %s", product.Name))
 			}
-			_, err = reconciler.Reconcile(context.TODO(), instance, product, serverClient)
+			phase, err := reconciler.Reconcile(context.TODO(), instance, product, serverClient)
 			if err != nil {
 				merr.Add(pkgerr.Wrapf(err, "Failed to reconcile product %s", product.Name))
 			}
+			if phase != v1alpha1.PhaseCompleted {
+				allCompleted = false
+			}
 		}
 
-		if len(merr.errors) == 0 {
+		if len(merr.errors) == 0 && allCompleted {
 			return reconcile.Result{}, nil
 		}
-		return reconcile.Result{}, merr
+
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: time.Second * 10,
+		}, nil
 	}
 
 	for _, stage := range installType.GetStages() {
