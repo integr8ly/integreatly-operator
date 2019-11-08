@@ -69,6 +69,9 @@ make cluster/prepare/local
 
 An `Installation` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
 ```sh
+# Create the installation custom resource definition
+oc create -f deploy/crds/installation.crd.yaml   
+
 # Create the installation custom resource
 oc create -f deploy/crds/examples/installation.cr.yaml
 
