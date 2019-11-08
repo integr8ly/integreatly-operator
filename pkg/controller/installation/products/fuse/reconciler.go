@@ -3,6 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
+	v13 "github.com/openshift/api/image/v1"
 	"strings"
 
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -100,6 +101,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
+	phase, err = r.reconcileImageVersion(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -115,6 +122,58 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Info("FUSE POSTGRES: reconciling postgres version")
+	dc := &appsv1.DeploymentConfig{}
+	err := client.Get(ctx, pkgclient.ObjectKey{
+		Namespace: r.Config.GetNamespace(),
+		Name:      "syndesis-db",
+	}, dc)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseCompleted, nil
+		}
+		r.logger.Info("FUSE POSTGRES: error getting DC: " + err.Error())
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error retrieving syndesis-db deployment config")
+	}
+
+	for i, trigger := range dc.Spec.Triggers {
+		if trigger.ImageChangeParams != nil {
+			if trigger.ImageChangeParams.From.Name == "postgresql:9.5" {
+				//found old image, update DC
+				_, err = controllerutil.CreateOrUpdate(ctx, client, dc, func(existing runtime.Object) error {
+					dc := existing.(*appsv1.DeploymentConfig)
+					dc.Spec.Triggers[i].ImageChangeParams.From.Name = "postgresql:9.6"
+					return nil
+				})
+				if err != nil {
+					return v1alpha1.PhaseFailed, errors.Wrap(err, "error updating postgres image to 9.6")
+				}
+			}
+		}
+	}
+
+	is := &v13.ImageStream{}
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: "fuse-komodo-server", Namespace: r.Config.GetNamespace()}, is)
+
+	for i, tag := range is.Spec.Tags {
+		if tag.Name == "latest" && tag.From.Name != "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4" {
+			_, err = controllerutil.CreateOrUpdate(ctx, client, is, func(existing runtime.Object) error {
+				is := existing.(*v13.ImageStream)
+				is.Spec.Tags[i].From.Name = "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4"
+				return nil
+			})
+			if err != nil {
+				return v1alpha1.PhaseFailed, errors.Wrap(err, "error updating komodo server image to 1.4")
+			}
+			return v1alpha1.PhaseCompleted, nil
+		}
+		return v1alpha1.PhaseCompleted, nil
+	}
+
+	return v1alpha1.PhaseFailed, errors.New("Could not find trigger for postgres:9.5 in deploymentconfig")
 }
 
 func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {

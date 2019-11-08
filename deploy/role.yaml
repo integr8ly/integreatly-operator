@@ -306,6 +306,7 @@ rules:
       - get
       - create
       - delete
+      - update
   - apiGroups:
       - template.openshift.io
     resources:
