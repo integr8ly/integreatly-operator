@@ -53,11 +53,6 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	if !inst.Spec.UseExternalResources {
-		r.logger.Info("useExternalResources is not enabled, skipping cloud resource operator deployment")
-		return v1alpha1.PhaseCompleted, nil
-	}
-
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

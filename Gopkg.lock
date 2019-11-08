@@ -426,6 +426,17 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:3e05ecc667b904cb451cd80989ad794f9db4f80103c7a17b1dfa6644afd92689"
+  name = "github.com/integr8ly/cloud-resource-operator"
+  packages = [
+    "pkg/apis/integreatly/v1alpha1",
+    "pkg/apis/integreatly/v1alpha1/types",
+  ]
+  pruneopts = "NT"
+  revision = "8ef0a32b195434a58fc0bc4c6f932670c6c04687"
+
+[[projects]]
   digest = "1:0593bf5934f1d8f69082b80d2e40858f42e3beb770ca532069ddfb513b564799"
   name = "github.com/integr8ly/grafana-operator"
   packages = ["pkg/apis/integreatly/v1alpha1"]
@@ -1333,8 +1344,10 @@
     "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1",
     "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1",
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
+    "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/google/uuid",
+    "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
@@ -1376,6 +1389,7 @@
     "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+    "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
