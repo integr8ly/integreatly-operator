@@ -418,6 +418,14 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4647546c9126948431081f16ceaea355647c4438ee967db2ba7887931d211846"
+  name = "github.com/integr8ly/cloud-resource-operator"
+  packages = ["pkg/apis/integreatly/v1alpha1"]
+  pruneopts = "NT"
+  revision = "0f8d116a1a421bc9050578d9f9587182c66abd1f"
+
+[[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
   name = "github.com/joho/godotenv"
   packages = ["."]
@@ -1319,6 +1327,7 @@
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
     "github.com/go-openapi/spec",
     "github.com/google/uuid",
+    "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",
