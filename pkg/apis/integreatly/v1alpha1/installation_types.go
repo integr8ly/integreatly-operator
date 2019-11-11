@@ -143,7 +143,9 @@ func (i *Installation) GetProductStatusObject(product ProductName) *Installation
 			return product
 		}
 	}
-	return nil
+	return &InstallationProductStatus{
+		Name: product,
+	}
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
