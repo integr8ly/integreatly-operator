@@ -207,6 +207,7 @@ deploy/integreatly-installation-cr.yml:
 gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
+	sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
 	operator-sdk olm-catalog gen-csv --csv-version $(TAG) --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly.package.yaml
