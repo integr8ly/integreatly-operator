@@ -104,7 +104,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 
 	// setup smtp credential configmap
 	if in.Spec.UseExternalResources {
-		phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
+		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -205,12 +205,12 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 	return string(clientSecretBytes), nil
 }
 
-func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling smtp")
-	ns := inst.Namespace
+	ns := r.installation.Namespace
 
 	// setup smtp credential set cr for the cloud resource operator
-	smtpCredName := fmt.Sprintf("3scale-smtp-%s", ns)
+	smtpCredName := fmt.Sprintf("3scale-smtp-%s", r.installation.Name)
 	smtpCred, err := croUtil.ReconcileSMTPCredentialSet(ctx, serverClient, r.installation.Spec.Type, tier, smtpCredName, ns, smtpCredName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -245,7 +245,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 		}
 		cm.Data["address"] = string(credSec.Data["host"])
 		cm.Data["authentication"] = "login"
-		cm.Data["domain"] = fmt.Sprintf("3scale-admin.%s", inst.Spec.RoutingSubdomain)
+		cm.Data["domain"] = fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain)
 		cm.Data["openssl.verify.mode"] = ""
 		cm.Data["password"] = string(credSec.Data["password"])
 		cm.Data["port"] = string(credSec.Data["port"])
@@ -313,7 +313,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 	ns := r.installation.Namespace
 
 	// setup blob storage cr for the cloud resource operator
-	blobStorageName := fmt.Sprintf("3scale-s3-%s", ns)
+	blobStorageName := fmt.Sprintf("3scale-s3-%s", r.installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, r.installation.Spec.Type, tier, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -337,7 +337,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// setup backend redis custom resource
 	// this will be used by the cloud resources operator to provision an elasticache instance
 	logrus.Info("Creating backend elasticache instance")
-	backendRedisName := fmt.Sprintf("3scale-backend-redis-%s", ns)
+	backendRedisName := fmt.Sprintf("3scale-backend-redis-%s", r.installation.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -349,7 +349,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision an elasticache instance
 	logrus.Info("Creating system elasticache instance")
-	systemRedisName := fmt.Sprintf("3scale-redis-%s", ns)
+	systemRedisName := fmt.Sprintf("3scale-redis-%s", r.installation.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -361,7 +361,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision an rds instance
 	logrus.Info("Creating rds instance")
-	postgresName := fmt.Sprintf("3scale-postgres-%s", ns)
+	postgresName := fmt.Sprintf("3scale-postgres-%s", r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil

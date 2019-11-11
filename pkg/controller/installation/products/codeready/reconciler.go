@@ -3,12 +3,13 @@ package codeready
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -29,6 +30,7 @@ const (
 	defaultClientName            = "che-client"
 	defaultCheClusterName        = "integreatly-cluster"
 	defaultSubscriptionName      = "integreatly-codeready-workspaces"
+	tier                         = "production"
 )
 
 type Reconciler struct {
@@ -435,6 +437,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		ChePostgresUser:       "",
 		ChePostgresDBHostname: "",
 	}
+
 	// setup external postgres db if UseExternalResource set to true
 	if inst.Spec.UseExternalResources {
 		cheClusterExternalPostgres, err := r.reconcileExternalPostgres(ctx, inst, serverClient)
@@ -446,6 +449,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		}
 		cheDb = cheClusterExternalPostgres.Spec.Database
 	}
+
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultCheClusterName,
@@ -488,40 +492,31 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	return cheCluster, nil
 }
 
-// A
 func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
-	// have to do something to get postgres db values
-	// setup the postgres cr for cloud resource operator
-	postgresCredName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
-	postgresCred := &crov1.Postgres{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      postgresCredName,
-			Namespace: inst.Namespace,
-		},
-	}
-	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, postgresCred, func(existing runtime.Object) error {
-		c := existing.(*crov1.Postgres)
-		c.Spec.Type = inst.Spec.Type
-		c.Spec.Tier = "production"
-		c.Spec.SecretRef = &crov1.SecretRef{
-			Name:      postgresCredName,
-			Namespace: inst.Namespace,
-		}
+	ns := inst.Namespace
+
+	// setup postgres cr for the cloud resource operator
+	postgresName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		resources.PrepareObject(cr, inst)
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to reconcile smtp credential request")
+		return nil, errors.Wrap(err, "failed to reconcile postgres request")
 	}
+
 	// phase is not complete, wait
-	if postgresCred.Status.Phase != crov1.PhaseComplete {
+	if postgres.Status.Phase != crov1.PhaseComplete {
 		return nil, nil
 	}
 
-	secRef := postgresCred.Status.SecretRef
+	// get the secret containing postgres connection details
+	secRef := postgres.Status.SecretRef
 	credSec := &v1.Secret{}
 	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: secRef.Name, Namespace: secRef.Namespace}, credSec); err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve credential secret for %s", postgresCredName)
+		return nil, errors.Wrapf(err, "failed to retrieve credential secret for %s", postgresName)
 	}
+
 	// set the values on the object and hope it doesn't overwrite the rest of object
 	cheCluster := &chev1.CheCluster{
 		Spec: chev1.CheClusterSpec{
