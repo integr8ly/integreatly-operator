@@ -2,7 +2,6 @@ package cloudresources
 
 import (
 	"context"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -16,6 +15,7 @@ import (
 )
 
 const (
+	defaultInstallationNamespace = "cloud-resources"
 	defaultSubscriptionName = "cloud-resources"
 )
 
@@ -27,17 +27,14 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCloudResources()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not read cloud resources config")
 	}
-
-	ns, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not read watched namespace")
+	if config.GetNamespace() == "" {
+		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	config.SetNamespace(ns)
 
 	logger := logrus.WithFields(logrus.Fields{"product": config.GetProductName()})
 
@@ -55,12 +52,17 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionCloudResources)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for cloud resources operator")
 	}
 
-	phase, err := r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client, version)
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
