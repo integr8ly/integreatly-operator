@@ -110,8 +110,6 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
-  routingSubdomain: example.com
-  masterUrl: http://master.example.com
   selfSignedCerts: true
 ```
 

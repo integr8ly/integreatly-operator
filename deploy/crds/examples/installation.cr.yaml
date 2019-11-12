@@ -5,6 +5,4 @@ metadata:
 spec:
   type: workshop
   namespacePrefix: integreatly-
-  routingSubdomain: apps.example.com
-  masterUrl: http://console.apps.example.com
   selfSignedCerts: true
