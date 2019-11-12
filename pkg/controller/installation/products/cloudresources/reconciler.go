@@ -16,7 +16,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	defaultSubscriptionName = "cloud-resources"
+	defaultSubscriptionName      = "cloud-resources"
 )
 
 type Reconciler struct {
@@ -52,6 +52,11 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	if !inst.Spec.UseExternalResources {
+		r.logger.Info("useExternalResources is not enabled, skipping cloud resource operator deployment")
+		return v1alpha1.PhaseCompleted, nil
+	}
+
 	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -59,7 +64,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionCloudResources)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for cloud resources operator")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for cloud resource operator")
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client, version)
