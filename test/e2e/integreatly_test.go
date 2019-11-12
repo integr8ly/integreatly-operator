@@ -3,18 +3,20 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	//"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
 
+	routev1 "github.com/openshift/api/route/v1"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
+
 	operator "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
-	configv1 "github.com/openshift/api/config/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -81,19 +83,22 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
-	consoleRoute := &routev1.Route{}
-	err = f.Client.Get(goctx.TODO(), client.ObjectKey{Name: "console", Namespace: "openshift-console"}, consoleRoute)
+	consoleRouteCR := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "console",
+			Namespace: "openshift-console",
+		},
+	}
+	key := client.ObjectKey{
+		Name:      consoleRouteCR.GetName(),
+		Namespace: consoleRouteCR.GetNamespace(),
+	}
+	err = f.Client.Get(goctx.TODO(), key, consoleRouteCR)
 	if err != nil {
 		return fmt.Errorf("could not get console route: %deploymentName", err)
 	}
-	masterUrl := consoleRoute.Spec.Host
-
-	clusterIngress := &configv1.Ingress{}
-	err = f.Client.Get(goctx.TODO(), client.ObjectKey{Name: "cluster", Namespace: ""}, clusterIngress)
-	if err != nil {
-		return fmt.Errorf("could not get cluster ingress: %deploymentName", err)
-	}
-	routingSubdomain := clusterIngress.Spec.Domain
+	masterUrl := consoleRouteCR.Status.Ingress[0].Host
+	routingSubdomain := consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
 
 	t.Logf("Creating installation CR with routingSubdomain:%s, masterUrl:%s\n", routingSubdomain, masterUrl)
 

@@ -117,6 +117,23 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 }
 
 func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+
+	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not find CR route"))
+		}
+		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve CR route"))
+	}
+
+	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
+	r.installation.Spec.RoutingSubdomain = consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
+
+	return v1alpha1.PhaseCompleted, nil
+
+}
+
+func getConsoleRouteCR(ctx context.Context, serverClient pkgclient.Client) (*routev1.Route, error) {
 	// discover and set master url and routing subdomain
 	consoleRouteCR := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -131,17 +148,9 @@ func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverC
 
 	err := serverClient.Get(ctx, key, consoleRouteCR)
 	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not find route: %+v", key))
-		}
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve route: %+v", key))
+		return nil, err
 	}
-
-	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host
-	r.installation.Spec.RoutingSubdomain = consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
-
-	return v1alpha1.PhaseCompleted, nil
-
+	return consoleRouteCR, nil
 }
 
 func generateSecret(length int) string {
