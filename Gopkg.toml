@@ -96,3 +96,7 @@ required = [
 [[constraint]]
   branch = "master"
   name = "github.com/operator-framework/operator-marketplace"
+
+[[constraint]]
+  version = "=v1.3.1"
+  name = "github.com/integr8ly/grafana-operator"

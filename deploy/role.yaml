@@ -71,6 +71,7 @@ rules:
       - create
       - update
       - list
+      - delete
   - apiGroups:
       - batch
     resources:

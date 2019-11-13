@@ -104,6 +104,14 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:dafc9bfdb2d9816587ca63844a722b36525183e14423b1f356fd9a8a805b6230"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
+  version = "v3.6.1"
+
+[[projects]]
   digest = "1:13af3d205c774ec0bbda45fee1a4089f3cd9a55c5367b527698b34550ec15e71"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
@@ -416,6 +424,14 @@
   pruneopts = "NT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  digest = "1:0593bf5934f1d8f69082b80d2e40858f42e3beb770ca532069ddfb513b564799"
+  name = "github.com/integr8ly/grafana-operator"
+  packages = ["pkg/apis/integreatly/v1alpha1"]
+  pruneopts = "NT"
+  revision = "46ed4ce780838e9a5cc2218ed571ed1b085d7385"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
@@ -1319,6 +1335,7 @@
     "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2",
     "github.com/go-openapi/spec",
     "github.com/google/uuid",
+    "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",

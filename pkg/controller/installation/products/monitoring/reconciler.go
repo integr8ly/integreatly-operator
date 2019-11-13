@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -13,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -31,11 +33,12 @@ const (
 )
 
 type Reconciler struct {
-	Config       *config.Monitoring
-	extraParams  map[string]string
-	Logger       *logrus.Entry
-	mpm          marketplace.MarketplaceInterface
-	installation *v1alpha1.Installation
+	Config        *config.Monitoring
+	extraParams   map[string]string
+	ConfigManager config.ConfigReadWriter
+	Logger        *logrus.Entry
+	mpm           marketplace.MarketplaceInterface
+	installation  *v1alpha1.Installation
 	*resources.Reconciler
 }
 
@@ -57,17 +60,56 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		Config:       monitoringConfig,
-		extraParams:  make(map[string]string),
-		Logger:       logger,
-		installation: instance,
-		mpm:          mpm,
-		Reconciler:   resources.NewReconciler(mpm),
+		Config:        monitoringConfig,
+		extraParams:   make(map[string]string),
+		ConfigManager: configManager,
+		Logger:        logger,
+		installation:  instance,
+		mpm:           mpm,
+		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		dashboards := &grafanav1alpha1.GrafanaDashboardList{}
+		selector := labels.Set(map[string]string{"monitoring-key": "middleware"}).AsSelector()
+		err := serverClient.List(ctx, &pkgclient.ListOptions{LabelSelector: selector}, dashboards)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+		if len(dashboards.Items) > 0 {
+			return v1alpha1.PhaseInProgress, nil
+		}
+
+		fuseConfig, err := r.ConfigManager.ReadFuse()
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+
+		err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: fuseConfig.GetNamespace()}, dashboards)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+		if len(dashboards.Items) > 0 {
+			return v1alpha1.PhaseInProgress, nil
+		}
+
+		m := &monitoring_v1alpha1.ApplicationMonitoring{}
+		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
+		if err != nil && !kerrors.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, err
+		}
+		if !kerrors.IsNotFound(err) {
+			if m.DeletionTimestamp == nil {
+				err = serverClient.Delete(ctx, m)
+				if err != nil {
+					return v1alpha1.PhaseFailed, err
+				}
+			}
+			return v1alpha1.PhaseInProgress, nil
+		}
+
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
@@ -166,10 +208,6 @@ func (r *Reconciler) createResource(inst *v1alpha1.Installation, resourceName st
 	if err != nil {
 		return nil, errors.Wrap(err, "createResource failed")
 	}
-
-	// Set the CR as the owner of this resource so that when
-	// the CR is deleted this resource also gets removed
-	ownerutil.EnsureOwner(resource.(v1.Object), inst)
 
 	err = serverClient.Create(context.TODO(), resource)
 	if err != nil {
