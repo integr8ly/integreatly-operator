@@ -6,13 +6,15 @@ import (
 
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -34,6 +36,7 @@ const (
 	defaultSubscriptionName      = "integreatly-codeready-workspaces"
 	manifestPackage              = "integreatly-codeready-workspaces"
 	tier                         = "production"
+	defaultKeycloakClientName    = "integreatly-codeready-client"
 )
 
 type Reconciler struct {
@@ -369,130 +372,23 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 		}
 	}
 
-	// retrieve the sso config so we can find the keycloakrealm custom resource to update
-	kcRealm := &keycloakv1.KeycloakRealm{
+	kcClient := &keycloakv1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcConfig.GetRealm(),
+			Name:      defaultKeycloakClientName,
 			Namespace: kcConfig.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}, kcRealm)
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = getKeycloakClientSpec(cheURL)
+		return nil
+	})
+
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloakrealm for keycloak client update")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not create/update codeready keycloak client")
 	}
 
-	// Create a che client that can be used in keycloak for che to login with
-	if !keycloakv1.ContainsClient(kcRealm.Spec.Clients, defaultClientName) {
-		r.logger.Infof("creating che client, %s, in keycloak", defaultClientName)
-		kcRealm.Spec.Clients = append(kcRealm.Spec.Clients, &keycloakv1.KeycloakClient{
-			KeycloakApiClient: &keycloakv1.KeycloakApiClient{
-				ID:                        defaultClientName,
-				ClientID:                  defaultClientName,
-				ClientAuthenticatorType:   "client-secret",
-				Enabled:                   true,
-				PublicClient:              true,
-				DirectAccessGrantsEnabled: true,
-				RedirectUris:              []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
-				WebOrigins:                []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
-				StandardFlowEnabled:       true,
-				RootURL:                   cheURL,
-				FullScopeAllowed:          true,
-				Access: map[string]bool{
-					"view":      true,
-					"configure": true,
-					"manage":    true,
-				},
-				ProtocolMappers: []keycloakv1.KeycloakProtocolMapper{
-					{
-						Name:            "given name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${givenName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "firstName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "given_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "full name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-full-name-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${fullName}",
-						Config: map[string]string{
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"userinfo.token.claim": "true",
-						},
-					},
-					{
-						Name:            "family name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "lastName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "family_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "role list",
-						Protocol:        "saml",
-						ProtocolMapper:  "saml-role-list-mapper",
-						ConsentRequired: false,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"single":               "false",
-							"attribute.nameformat": "Basic",
-							"attribute.name":       "Role",
-						},
-					},
-					{
-						Name:            "email",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${email}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "email",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "email",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "username",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: false,
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "username",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "preferred_username",
-							"jsonType.label":       "String",
-						},
-					},
-				},
-			},
-		})
-		if err = serverClient.Update(ctx, kcRealm); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update keycloakrealm custom resource with codeready client")
-		}
-	}
+	r.logger.Infof("The operation result for keycloakclient %s was %s", kcClient.Name, or)
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -627,4 +523,115 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 		},
 	}
 	return cheCluster, nil
+}
+
+func getKeycloakClientSpec(cheURL string) keycloakv1.KeycloakClientSpec {
+	return keycloakv1.KeycloakClientSpec{
+		RealmSelector: &metav1.LabelSelector{
+			MatchLabels: rhsso.GetInstanceLabels(),
+		},
+		Client: &keycloakv1.KeycloakAPIClient{
+			ID:                        defaultClientName,
+			ClientID:                  defaultClientName,
+			ClientAuthenticatorType:   "client-secret",
+			Enabled:                   true,
+			PublicClient:              true,
+			DirectAccessGrantsEnabled: true,
+			RedirectUris:              []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
+			WebOrigins:                []string{cheURL, fmt.Sprintf("%s/*", cheURL)},
+			StandardFlowEnabled:       true,
+			RootURL:                   cheURL,
+			FullScopeAllowed:          true,
+			Access: map[string]bool{
+				"view":      true,
+				"configure": true,
+				"manage":    true,
+			},
+			ProtocolMappers: []keycloakv1.KeycloakProtocolMapper{
+				{
+					Name:            "given name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${givenName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "firstName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "given_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "full name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-full-name-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${fullName}",
+					Config: map[string]string{
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"userinfo.token.claim": "true",
+					},
+				},
+				{
+					Name:            "family name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "lastName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "family_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "role list",
+					Protocol:        "saml",
+					ProtocolMapper:  "saml-role-list-mapper",
+					ConsentRequired: false,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"single":               "false",
+						"attribute.nameformat": "Basic",
+						"attribute.name":       "Role",
+					},
+				},
+				{
+					Name:            "email",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${email}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "email",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "email",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "username",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: false,
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "username",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "preferred_username",
+						"jsonType.label":       "String",
+					},
+				},
+			},
+		},
+	}
 }

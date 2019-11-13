@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
+	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -64,7 +64,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	err = keycloak.SchemeBuilder.AddToScheme(scheme)
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
@@ -230,15 +230,15 @@ func TestReconciler_handleProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
 	}
 
-	kcr := getKcr(aerogearv1.KeycloakRealmStatus{
-		Phase: aerogearv1.PhaseReconcile,
+	kcr := getKcr(keycloak.KeycloakRealmStatus{
+		Phase: keycloak.PhaseReconciling,
 	})
 
 	secret := &v1.Secret{
@@ -287,7 +287,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:            "test unready kcr cr returns phase in progress",
 			ExpectedStatus:  v1alpha1.PhaseInProgress,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed}), githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
@@ -405,7 +405,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
@@ -451,7 +451,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  v1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -514,15 +514,14 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 }
 
-func getKcr(status aerogearv1.KeycloakRealmStatus) *aerogearv1.KeycloakRealm {
-	return &aerogearv1.KeycloakRealm{
+func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
+	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: defaultRhssoNamespace,
 		},
-		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly: true,
-			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
+		Spec: keycloak.KeycloakRealmSpec{
+			Realm: &keycloak.KeycloakAPIRealm{
 				ID:          keycloakRealmName,
 				Realm:       keycloakRealmName,
 				DisplayName: keycloakRealmName,
@@ -530,7 +529,6 @@ func getKcr(status aerogearv1.KeycloakRealmStatus) *aerogearv1.KeycloakRealm {
 				EventsListeners: []string{
 					"metrics-listener",
 				},
-				Users: []*aerogearv1.KeycloakUser{},
 			},
 		},
 		Status: status,
