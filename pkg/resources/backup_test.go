@@ -24,20 +24,15 @@ func basicClient(objects ...runtime.Object) client.Client {
 	return fakeclient.NewFakeClientWithScheme(scheme, objects...)
 }
 
-func basicInstallationObject() *v1alpha1.Installation {
-	return &v1alpha1.Installation{
+func TestBackups(t *testing.T) {
+	ownerNS := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "installation",
-			Namespace: "installation-namespace",
+			Name: "product",
 		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "installation",
-			APIVersion: "integreatly.org",
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
 		},
 	}
-}
-
-func TestBackups(t *testing.T) {
 
 	scenarios := []struct {
 		Name         string
@@ -48,10 +43,9 @@ func TestBackups(t *testing.T) {
 		Validation   func(e error, t *testing.T)
 	}{
 		{
-			Name:     "test backups reconcile without errors",
-			Context:  context.TODO(),
-			Instance: basicInstallationObject(),
-			Client:   basicClient(),
+			Name:    "test backups reconcile without errors",
+			Context: context.TODO(),
+			Client:  basicClient(ownerNS),
 			BackupConfig: BackupConfig{
 				Name:      "test-backups",
 				Namespace: "backups",
@@ -73,10 +67,9 @@ func TestBackups(t *testing.T) {
 			},
 		},
 		{
-			Name:     "test backups reconcile without errors when objects already exist",
-			Context:  context.TODO(),
-			Instance: basicInstallationObject(),
-			Client: basicClient(
+			Name:    "test backups reconcile without errors when objects already exist",
+			Context: context.TODO(),
+			Client: basicClient(ownerNS,
 				&rbacv1.ClusterRole{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "backupjob",
@@ -107,7 +100,7 @@ func TestBackups(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			err := ReconcileBackup(scenario.Context, scenario.Client, scenario.Instance, scenario.BackupConfig)
+			err := ReconcileBackup(scenario.Context, scenario.Client, scenario.BackupConfig, ownerNS)
 
 			if scenario.Validation != nil {
 				scenario.Validation(err, t)

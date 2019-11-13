@@ -82,8 +82,17 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, product, func() error {
-		return resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, in, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		err = resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+		return v1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -99,11 +108,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersion3Scale)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
 	}
-	phase, err = r.ReconcileSubscription(ctx, in, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

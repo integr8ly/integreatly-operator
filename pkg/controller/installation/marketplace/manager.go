@@ -118,7 +118,6 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient p
 		Package:                t.Pkg,
 		CatalogSourceNamespace: t.Namespace,
 	}
-	ownerutil.EnsureOwner(sub, owner)
 
 	csName, err := m.createAndWaitCatalogSource(ctx, owner, t, os, serverClient)
 	if err != nil {
@@ -137,7 +136,6 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient p
 			TargetNamespaces: operatorGroupNamespaces,
 		},
 	}
-	ownerutil.EnsureOwner(og, owner)
 	err = serverClient.Create(ctx, og)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		logrus.Infof("error creating operator group")

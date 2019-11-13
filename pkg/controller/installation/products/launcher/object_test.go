@@ -54,6 +54,7 @@ func getClusterPreReqObjects(integreatlyOperatorNamespace string) []runtime.Obje
 		configManagerConfigMap,
 		keycloakrealm,
 		launcherConfigMap,
+		mockLauncherRoute,
 	}
 }
 

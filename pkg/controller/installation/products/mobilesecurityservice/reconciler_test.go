@@ -10,6 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,7 @@ func basicInstallation() *v1alpha1.Installation {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
@@ -342,11 +344,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
@@ -410,7 +409,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, route, mssDb, mssServer),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, route, mssDb, mssServer, basicInstallation()),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMobileSecurityServiceFunc: func() (ready *config.MobileSecurityService, e error) {
 					return config.NewMobileSecurityService(config.ProductConfig{
@@ -427,6 +426,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "MobileSecurityService",
 								APIVersion: mss.SchemeGroupVersion.String(),
+							},
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name: "mss-install-plan",
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
 							},
 							ListMeta: metav1.ListMeta{},
 						}, &operatorsv1alpha1.Subscription{
@@ -486,17 +495,11 @@ func TestReconciler_testPhases(t *testing.T) {
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaultInstallationNamespace,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							Name:       "installation",
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						},
-					},
 				},
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,
 				},
-			}),
+			}, basicInstallation()),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -512,7 +515,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test subscription creating returns phase in progress",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -528,7 +531,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test components creating returns phase in progress",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

@@ -14,7 +14,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,18 +63,33 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 // Reconcile reads that state of the cluster for mobile security service and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+		return v1alpha1.PhaseCompleted, nil
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	ns := r.Config.GetNamespace()
 	if ns == "" {
 		return v1alpha1.PhaseFailed, errors.New("namespace: value blank")
 	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionMobileSecurityService)
 
-	phase, err := r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
+	namespace, err := resources.GetNS(ctx, ns, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -134,7 +148,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 			Size:                   1,
 		},
 	}
-	ownerutil.EnsureOwner(mssDb, inst)
 
 	// attempt to create the mss db custom resource
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, mssDb, func(existing runtime.Object) error {
@@ -182,7 +195,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 			Size:                          1,
 		},
 	}
-	ownerutil.EnsureOwner(mss, inst)
 
 	// attempt to create the mss custom resource
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, mss, func(existing runtime.Object) error {

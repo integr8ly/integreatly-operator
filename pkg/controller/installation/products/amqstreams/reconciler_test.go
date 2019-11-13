@@ -13,6 +13,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -22,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -52,6 +54,21 @@ func getBuildScheme() (*runtime.Scheme, error) {
 }
 
 func TestReconciler_config(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -87,7 +104,7 @@ func TestReconciler_config(t *testing.T) {
 					return errors.New("dummy")
 				},
 			},
-			FakeClient: fakeclient.NewFakeClient(),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, installation),
 			FakeConfig: basicConfigMock(),
 			Product:    &v1alpha1.InstallationProductStatus{},
 		},
@@ -329,21 +346,29 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	objs := []runtime.Object{}
 
+	installation := &v1alpha1.Installation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: defaultInstallationNamespace,
+			UID:       types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "installation",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					Name:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
 		},
 		Status: corev1.NamespaceStatus{
 			Phase: corev1.NamespaceActive,
 		},
 	}
-	objs = append(objs, ns)
+	objs = append(objs, ns, installation)
 
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{
@@ -403,17 +428,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: &v1alpha1.Installation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "installation",
-					Namespace: defaultInstallationNamespace,
-				},
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Installation: installation,
+			Product:      &v1alpha1.InstallationProductStatus{},
 		},
 	}
 

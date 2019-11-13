@@ -71,6 +71,7 @@ rules:
       - create
       - update
       - list
+      - delete
   - apiGroups:
       - batch
     resources:
@@ -86,6 +87,7 @@ rules:
     verbs:
       - create
       - update
+      - delete
   - apiGroups:
       - "*"
     resources:
@@ -120,6 +122,7 @@ rules:
       - watch
       - get
       - update
+      - delete
   # This is used to allow the operator to setup catalog source config and remove it if needed.
   - apiGroups:
       - operators.coreos.com

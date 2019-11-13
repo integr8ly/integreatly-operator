@@ -9,8 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -27,7 +25,6 @@ func LoadKubernetesResource(jsonData []byte, namespace string, install *v1alpha1
 	}
 	u.SetNamespace(namespace)
 	setIntegreatlyLabel(&u)
-	setIntegreatlyOwnerRef(&u, install)
 	if u.GetObjectKind().GroupVersionKind().Kind == "ImageStream" {
 		u.SetAPIVersion("image.openshift.io/v1")
 	}
@@ -74,20 +71,4 @@ func setIntegreatlyLabel(u *unstructured.Unstructured) {
 	}
 	labels["integreatly"] = "true"
 	u.SetLabels(labels)
-}
-
-func setIntegreatlyOwnerRef(u *unstructured.Unstructured, install *v1alpha1.Installation) {
-	refs := u.GetOwnerReferences()
-	ref := metav1.NewControllerRef(install, v1alpha1.SchemaGroupVersionKind)
-	refExists := false
-	for _, er := range refs {
-		if er.Name == ref.Name {
-			refExists = true
-			break
-		}
-	}
-	if !refExists {
-		refs = append(refs, *ref)
-		u.SetOwnerReferences(refs)
-	}
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +36,6 @@ const (
 	paramInstalledServices  = "INSTALLED_SERVICES"
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
-	oauthClientName         = "integreatly-solution-explorer"
 )
 
 type Reconciler struct {
@@ -49,6 +47,7 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 	OauthResolver OauthResolver
+	installation  *v1alpha1.Installation
 }
 
 //go:generate moq -out OauthResolver_moq.go . OauthResolver
@@ -84,6 +83,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		Reconciler:    resources.NewReconciler(mpm),
 		OauthResolver: resolver,
 		oauthv1Client: oauthv1Client,
+		installation:  instance,
 	}, nil
 }
 
@@ -99,8 +99,17 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, product, func() error {
-		return resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, oauthClientName)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+		return v1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -111,11 +120,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
 	version, err := resources.NewVersion(v1alpha1.OperatorVersionSolutionExplorer)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for solution explorer")
 	}
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -139,7 +152,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		RedirectURIs: []string{route},
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: oauthClientName,
+			Name: r.getOAuthClientName(),
 		},
 	}, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
@@ -186,7 +199,6 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 			Name:      defaultName,
 		},
 	}
-	ownerutil.AddOwner(seCR, inst, true, true)
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
 	logrus.Info("ReconcileCustomResource setting url for openshift host ", oauthURL)
 
@@ -199,7 +211,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		cr.Spec.AppLabel = "tutorial-web-app"
 		cr.Spec.Template.Path = defaultTemplateLoc
 		cr.Spec.Template.Parameters = map[string]string{
-			paramOauthClient:        oauthClientName,
+			paramOauthClient:        r.getOAuthClientName(),
 			paramSSORoute:           ssoConfig.GetHost(),
 			paramOpenShiftHost:      inst.Spec.MasterURL,
 			paramOpenShiftOauthHost: oauthURL,
@@ -269,4 +281,8 @@ func (r *Reconciler) getProductId(name v1alpha1.ProductName) v1alpha1.ProductNam
 	}
 
 	return id
+}
+
+func (r *Reconciler) getOAuthClientName() string {
+	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
