@@ -20,6 +20,14 @@ var (
 			Name: v1alpha1.BootstrapStage,
 		},
 		{
+			Name: v1alpha1.CloudResourcesStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductCloudResources: {
+					Name: v1alpha1.ProductCloudResources,
+				},
+			},
+		},
+		{
 			Name: v1alpha1.MonitoringStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
 				v1alpha1.ProductMonitoring: {Name: v1alpha1.ProductMonitoring},
@@ -58,6 +66,14 @@ var (
 	allWorkshopStages = []Stage{
 		{
 			Name: v1alpha1.BootstrapStage,
+		},
+		{
+			Name: v1alpha1.CloudResourcesStage,
+			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+				v1alpha1.ProductCloudResources: {
+					Name: v1alpha1.ProductCloudResources,
+				},
+			},
 		},
 		{
 			Name: v1alpha1.MonitoringStage,

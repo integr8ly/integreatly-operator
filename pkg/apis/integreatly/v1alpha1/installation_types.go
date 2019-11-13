@@ -26,6 +26,7 @@ var (
 	InstallationTypeManaged  InstallationType = "managed"
 
 	BootstrapStage        StageName = "bootstrap"
+	CloudResourcesStage   StageName = "cloud-resources"
 	MonitoringStage       StageName = "monitoring"
 	AuthenticationStage   StageName = "authentication"
 	ProductsStage         StageName = "products"
@@ -46,6 +47,7 @@ var (
 	ProductMonitoring             ProductName = "monitoring"
 	ProductMobileSecurityService  ProductName = "mobilesecurityservice"
 	ProductMobileDeveloperConsole ProductName = "mdc"
+	ProductCloudResources         ProductName = "cloud-resources"
 
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
@@ -59,6 +61,7 @@ var (
 	VersionLauncher              ProductVersion = "0.1.2"
 	VersionUps                   ProductVersion = "2.3.2"
 	VersionMobileSecurityService ProductVersion = "0.2.2"
+	VersionCloudResources        ProductVersion = "0.1.0"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -78,6 +81,7 @@ var (
 	OperatorVersionUPS                   = "0.3.0"
 	OperatorVersionMobileSecurityService = "0.4.1"
 	OperatorVersionMDC                   = "0.3.0"
+	OperatorVersionCloudResources        = "0.1.0"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -86,12 +90,13 @@ type InstallationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type             string         `json:"type"`
-	RoutingSubdomain string         `json:"routingSubdomain"`
-	MasterURL        string         `json:"masterUrl,omitempty"`
-	NamespacePrefix  string         `json:"namespacePrefix,omitempty"`
-	SelfSignedCerts  bool           `json:"selfSignedCerts"`
-	PullSecret       PullSecretSpec `json:"pullSecret"`
+	Type                 string         `json:"type"`
+	RoutingSubdomain     string         `json:"routingSubdomain"`
+	MasterURL            string         `json:"masterUrl,omitempty"`
+	NamespacePrefix      string         `json:"namespacePrefix,omitempty"`
+	SelfSignedCerts      bool           `json:"selfSignedCerts"`
+	PullSecret           PullSecretSpec `json:"pullSecret"`
+	UseExternalResources bool           `json:"useExternalResources"`
 }
 
 type PullSecretSpec struct {

@@ -13,6 +13,7 @@ var (
 	lockConfigReadWriterMockGetOperatorNamespace       sync.RWMutex
 	lockConfigReadWriterMockReadAMQOnline              sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams             sync.RWMutex
+	lockConfigReadWriterMockReadCloudResources         sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady              sync.RWMutex
 	lockConfigReadWriterMockReadFuse                   sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift        sync.RWMutex
@@ -52,6 +53,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
 // 	               panic("mock out the ReadAMQStreams method")
+//             },
+//             ReadCloudResourcesFunc: func() (*CloudResources, error) {
+// 	               panic("mock out the ReadCloudResources method")
 //             },
 //             ReadCodeReadyFunc: func() (*CodeReady, error) {
 // 	               panic("mock out the ReadCodeReady method")
@@ -120,6 +124,9 @@ type ConfigReadWriterMock struct {
 	// ReadAMQStreamsFunc mocks the ReadAMQStreams method.
 	ReadAMQStreamsFunc func() (*AMQStreams, error)
 
+	// ReadCloudResourcesFunc mocks the ReadCloudResources method.
+	ReadCloudResourcesFunc func() (*CloudResources, error)
+
 	// ReadCodeReadyFunc mocks the ReadCodeReady method.
 	ReadCodeReadyFunc func() (*CodeReady, error)
 
@@ -181,6 +188,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadAMQStreams holds details about calls to the ReadAMQStreams method.
 		ReadAMQStreams []struct {
+		}
+		// ReadCloudResources holds details about calls to the ReadCloudResources method.
+		ReadCloudResources []struct {
 		}
 		// ReadCodeReady holds details about calls to the ReadCodeReady method.
 		ReadCodeReady []struct {
@@ -340,6 +350,32 @@ func (mock *ConfigReadWriterMock) ReadAMQStreamsCalls() []struct {
 	lockConfigReadWriterMockReadAMQStreams.RLock()
 	calls = mock.calls.ReadAMQStreams
 	lockConfigReadWriterMockReadAMQStreams.RUnlock()
+	return calls
+}
+
+// ReadCloudResources calls ReadCloudResourcesFunc.
+func (mock *ConfigReadWriterMock) ReadCloudResources() (*CloudResources, error) {
+	if mock.ReadCloudResourcesFunc == nil {
+		panic("ConfigReadWriterMock.ReadCloudResourcesFunc: method is nil but ConfigReadWriter.ReadCloudResources was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadCloudResources.Lock()
+	mock.calls.ReadCloudResources = append(mock.calls.ReadCloudResources, callInfo)
+	lockConfigReadWriterMockReadCloudResources.Unlock()
+	return mock.ReadCloudResourcesFunc()
+}
+
+// ReadCloudResourcesCalls gets all the calls that were made to ReadCloudResources.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadCloudResourcesCalls())
+func (mock *ConfigReadWriterMock) ReadCloudResourcesCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadCloudResources.RLock()
+	calls = mock.calls.ReadCloudResources
+	lockConfigReadWriterMockReadCloudResources.RUnlock()
 	return calls
 }
 

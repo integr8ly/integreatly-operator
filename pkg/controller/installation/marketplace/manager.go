@@ -60,7 +60,6 @@ type Target struct {
 }
 
 func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, os marketplacev1.OperatorSource, client pkgclient.Client) (string, error) {
-
 	csc := &marketplacev2.CatalogSourceConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "installed-" + os.Labels[providerLabel] + "-" + t.Namespace + "-",

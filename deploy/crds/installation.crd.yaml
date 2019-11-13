@@ -50,6 +50,8 @@ spec:
                   type: string
                 namespace:
                   type: string
+            useExternalResources:
+              type: boolean
           required:
             - type
         status:
