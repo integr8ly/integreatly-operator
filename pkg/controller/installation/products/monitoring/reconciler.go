@@ -2,15 +2,17 @@ package monitoring
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,6 +33,7 @@ const (
 
 type Reconciler struct {
 	Config       *config.Monitoring
+	extraParams  map[string]string
 	Logger       *logrus.Entry
 	mpm          marketplace.MarketplaceInterface
 	installation *v1alpha1.Installation
@@ -56,6 +59,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 	return &Reconciler{
 		Config:       monitoringConfig,
+		extraParams:  make(map[string]string),
 		Logger:       logger,
 		installation: instance,
 		mpm:          mpm,
@@ -88,6 +92,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -95,9 +106,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	return v1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// Interate over template_list
+	for _, template := range r.Config.GetTemplateList() {
+		// create it
+		_, err := r.createResource(inst, template, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+		}
+		r.Logger.Infof("Reconciling the monitoring template %s was successful", template)
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
-	m := &v1alpha12.ApplicationMonitoring{
+	m := &monitoring_v1alpha1.ApplicationMonitoring{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      defaultMonitoringName,
 			Namespace: r.Config.GetNamespace(),
@@ -105,8 +129,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	}
 	ownerutil.EnsureOwner(m, inst)
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func(existing runtime.Object) error {
-		monitoring := existing.(*v1alpha12.ApplicationMonitoring)
-		monitoring.Spec = v1alpha12.ApplicationMonitoringSpec{
+		monitoring := existing.(*monitoring_v1alpha1.ApplicationMonitoring)
+		monitoring.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
 			LabelSelector:                    defaultLabelSelector,
 			AdditionalScrapeConfigSecretName: defaultAdditionalScrapeConfigSecretName,
 			AdditionalScrapeConfigSecretKey:  defaultAdditionalScrapeConfigSecretKey,
@@ -120,6 +144,29 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	}
 
 	r.Logger.Infof("The operation result for monitoring %s was %s", m.Name, or)
-
 	return v1alpha1.PhaseCompleted, nil
+}
+
+// CreateResource Creates a generic kubernetes resource from a templates
+func (r *Reconciler) createResource(inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+	templateHelper := newTemplateHelper(inst, r.extraParams, r.Config)
+	resourceHelper := newResourceHelper(inst, templateHelper)
+	resource, err := resourceHelper.createResource(resourceName)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "createResource failed")
+	}
+
+	// Set the CR as the owner of this resource so that when
+	// the CR is deleted this resource also gets removed
+	ownerutil.EnsureOwner(resource.(v1.Object), inst)
+
+	err = serverClient.Create(context.TODO(), resource)
+	if err != nil {
+		if !kerrors.IsAlreadyExists(err) {
+			return nil, errors.Wrap(err, "error creating resource")
+		}
+	}
+
+	return resource, nil
 }
