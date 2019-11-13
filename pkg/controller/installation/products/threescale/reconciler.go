@@ -12,14 +12,15 @@ import (
 	ocv1 "github.com/openshift/api/apps/v1"
 	v12 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
@@ -37,23 +38,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	defaultInstallationNamespace = "3scale"
-	packageName                  = "integreatly-3scale"
-	manifestPackage              = "integreatly-3scale"
-	apiManagerName               = "3scale"
-	clientId                     = "3scale"
-	rhssoIntegrationName         = "rhsso"
-
-	tier                           = "production"
+	defaultInstallationNamespace   = "3scale"
+	packageName                    = "integreatly-3scale"
+	manifestPackage                = "integreatly-3scale"
+	apiManagerName                 = "3scale"
+	clientId                       = "3scale"
+	rhssoIntegrationName           = "rhsso"
 	s3BucketSecretName             = "s3-bucket"
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
+	tier                           = "production"
+	defaultKeycloakClientName      = "integreatly-3scale-client"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -67,6 +67,9 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 		configManager.WriteConfig(tsConfig)
 	}
 	tsConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        tsConfig,
@@ -75,6 +78,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
+		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
@@ -87,6 +91,7 @@ type Reconciler struct {
 	tsClient      ThreeScaleInterface
 	appsv1Client  appsv1Client.AppsV1Interface
 	oauthv1Client oauthClient.OauthV1Interface
+	logger        *logrus.Entry
 	*resources.Reconciler
 	extraParams map[string]string
 }
@@ -620,151 +625,29 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 	rhssoNamespace := rhssoConfig.GetNamespace()
 	rhssoRealm := rhssoConfig.GetRealm()
-	if rhssoNamespace == "" || rhssoRealm == "" {
-		logrus.Info("Cannot configure SSO integration without SSO namespace and SSO realm")
-		return v1alpha1.PhaseInProgress, nil
+
+	kcClient := &keycloak.KeycloakClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultKeycloakClientName,
+			Namespace: rhssoNamespace,
+		},
 	}
 
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
+	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
-		logrus.Infof("Adding keycloak realm client")
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
+		return nil
+	})
 
-		clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
-
-		kcr.Spec.Clients = append(kcr.Spec.Clients, &aerogearv1.KeycloakClient{
-			KeycloakApiClient: &aerogearv1.KeycloakApiClient{
-				ID:                      clientId,
-				ClientID:                clientId,
-				Enabled:                 true,
-				Secret:                  clientSecret,
-				ClientAuthenticatorType: "client-secret",
-				RedirectUris: []string{
-					fmt.Sprintf("https://3scale-admin.%s/*", r.installation.Spec.RoutingSubdomain),
-				},
-				StandardFlowEnabled: true,
-				RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
-				FullScopeAllowed:    true,
-				Access: map[string]bool{
-					"view":      true,
-					"configure": true,
-					"manage":    true,
-				},
-				ProtocolMappers: []aerogearv1.KeycloakProtocolMapper{
-					{
-						Name:            "given name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${givenName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "firstName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "given_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "email verified",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${emailVerified}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "emailVerified",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "email_verified",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "full name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-full-name-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${fullName}",
-						Config: map[string]string{
-							"id.token.claim":     "true",
-							"access.token.claim": "true",
-						},
-					},
-					{
-						Name:            "family name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "lastName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "family_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "role list",
-						Protocol:        "saml",
-						ProtocolMapper:  "saml-role-list-mapper",
-						ConsentRequired: false,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"single":               "false",
-							"attribute.nameformat": "Basic",
-							"attribute.name":       "Role",
-						},
-					},
-					{
-						Name:            "email",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${email}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "email",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "email",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "org_name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: false,
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "org_name",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "org_name",
-							"jsonType.label":       "String",
-						},
-					},
-				},
-			},
-			OutputSecret: clientId + "-secret",
-		})
-
-		err = serverClient.Update(ctx, kcr)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not create/update 3scale keycloak client")
 	}
+
+	r.logger.Infof("The operation result for keycloakclient %s was %s", kcClient.Name, or)
 
 	r.Config.SetHost(fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
 	err = r.ConfigManager.WriteConfig(r.Config)
@@ -777,10 +660,6 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return v1alpha1.PhaseFailed, err
 	}
 
-	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
 	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
 	if err != nil && !tsIsNotFoundError(err) {
 		return v1alpha1.PhaseFailed, err
@@ -820,15 +699,21 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 		return v1alpha1.PhaseInProgress, nil
 	}
 
-	kcr := &aerogearv1.KeycloakRealm{}
+	kcr := &keycloak.KeycloakRealm{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	kcUsers := filterUsers(kcr.Spec.Users, func(u *aerogearv1.KeycloakUser) bool {
+	kcUsers, err := rhsso.GetKeycloakUsers(ctx, serverClient, rhssoNamespace)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	kcUsers = filterUsers(kcUsers, func(u *keycloak.KeycloakAPIUser) bool {
 		return u.UserName == rhsso.CustomerAdminUser.UserName
 	})
+
 	if len(kcUsers) == 1 {
 		s := &corev1.Secret{}
 		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
@@ -879,13 +764,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 		return v1alpha1.PhaseFailed, err
 	}
 
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
+	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	accessToken, err := r.GetAdminToken(ctx, serverClient)
+	kcu, err := rhsso.GetKeycloakUsers(ctx, serverClient, rhssoConfig.GetNamespace())
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -895,7 +779,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 		return v1alpha1.PhaseFailed, err
 	}
 
-	added, deleted := r.getUserDiff(kcr.Spec.Users, tsUsers.Users)
+	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
 		if kcUser.UserName == rhsso.CustomerAdminUser.UserName {
 			continue
@@ -1126,10 +1010,10 @@ func (r *Reconciler) RolloutDeployment(name string) error {
 	return err
 }
 
-type predicateFunc func(*aerogearv1.KeycloakUser) bool
+type predicateFunc func(*keycloak.KeycloakAPIUser) bool
 
-func filterUsers(u []*aerogearv1.KeycloakUser, predicate predicateFunc) []*aerogearv1.KeycloakUser {
-	var result []*aerogearv1.KeycloakUser
+func filterUsers(u []*keycloak.KeycloakAPIUser, predicate predicateFunc) []*keycloak.KeycloakAPIUser {
+	var result []*keycloak.KeycloakAPIUser
 	for _, s := range u {
 		if predicate(s) {
 			result = append(result, s)
@@ -1139,8 +1023,8 @@ func filterUsers(u []*aerogearv1.KeycloakUser, predicate predicateFunc) []*aerog
 	return result
 }
 
-func (r *Reconciler) getUserDiff(kcUsers []*aerogearv1.KeycloakUser, tsUsers []*User) ([]*aerogearv1.KeycloakUser, []*User) {
-	var added []*aerogearv1.KeycloakUser
+func (r *Reconciler) getUserDiff(kcUsers []*keycloak.KeycloakAPIUser, tsUsers []*User) ([]*keycloak.KeycloakAPIUser, []*User) {
+	var added []*keycloak.KeycloakAPIUser
 	for _, kcUser := range kcUsers {
 		if !tsContainsKc(tsUsers, kcUser) {
 			added = append(added, kcUser)
@@ -1157,7 +1041,7 @@ func (r *Reconciler) getUserDiff(kcUsers []*aerogearv1.KeycloakUser, tsUsers []*
 	return added, deleted
 }
 
-func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
+func kcContainsTs(kcUsers []*keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == tsUser.UserDetails.Username {
 			return true
@@ -1167,7 +1051,7 @@ func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
 	return false
 }
 
-func tsContainsKc(tsusers []*User, kcUser *aerogearv1.KeycloakUser) bool {
+func tsContainsKc(tsusers []*User, kcUser *keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
 		if tsu.UserDetails.Username == kcUser.UserName {
 			return true
@@ -1185,4 +1069,130 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	}
 
 	return false
+}
+
+func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.KeycloakClientSpec {
+	return keycloak.KeycloakClientSpec{
+		RealmSelector: &metav1.LabelSelector{
+			MatchLabels: rhsso.GetInstanceLabels(),
+		},
+		Client: &keycloak.KeycloakAPIClient{
+			ID:                      clientId,
+			ClientID:                clientId,
+			Enabled:                 true,
+			Secret:                  clientSecret,
+			ClientAuthenticatorType: "client-secret",
+			RedirectUris: []string{
+				fmt.Sprintf("https://3scale-admin.%s/*", r.installation.Spec.RoutingSubdomain),
+			},
+			StandardFlowEnabled: true,
+			RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
+			FullScopeAllowed:    true,
+			Access: map[string]bool{
+				"view":      true,
+				"configure": true,
+				"manage":    true,
+			},
+			ProtocolMappers: []keycloak.KeycloakProtocolMapper{
+				{
+					Name:            "given name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${givenName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "firstName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "given_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "email verified",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${emailVerified}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "emailVerified",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "email_verified",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "full name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-full-name-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${fullName}",
+					Config: map[string]string{
+						"id.token.claim":     "true",
+						"access.token.claim": "true",
+					},
+				},
+				{
+					Name:            "family name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "lastName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "family_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "role list",
+					Protocol:        "saml",
+					ProtocolMapper:  "saml-role-list-mapper",
+					ConsentRequired: false,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"single":               "false",
+						"attribute.nameformat": "Basic",
+						"attribute.name":       "Role",
+					},
+				},
+				{
+					Name:            "email",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${email}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "email",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "email",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "org_name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: false,
+					ConsentText:     "n.a.",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "org_name",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "org_name",
+						"jsonType.label":       "String",
+					},
+				},
+			},
+		},
+	}
 }

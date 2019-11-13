@@ -13,7 +13,7 @@ objects:
       displayName: Integreatly Operators
       endpoint: 'https://quay.io/cnr'
       publisher: Integreatly Publisher
-      registryNamespace: ${OPERATOR_SOURCE_REGISTRY_NAMESPACE}
+      registryNamespace: pb82
       type: appregistry
   - apiVersion: operators.coreos.com/v1
     kind: CatalogSourceConfig

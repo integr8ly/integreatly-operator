@@ -12,7 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -72,23 +72,6 @@ var s3CredentialsSecret = &corev1.Secret{
 	},
 }
 
-var keycloakrealm = &aerogearv1.KeycloakRealm{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      testRhssoRealm,
-		Namespace: testRhssoNamespace,
-	},
-	Spec: aerogearv1.KeycloakRealmSpec{
-		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
-			Users: []*aerogearv1.KeycloakUser{
-				rhsso.CustomerAdminUser,
-				rhssoTest1,
-				rhssoTest2,
-			},
-			Clients: []*aerogearv1.KeycloakClient{},
-		},
-	},
-}
-
 var threeScaleAdminDetailsSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-seed",
@@ -117,17 +100,21 @@ var threeScaleDefaultAdminUser = &User{
 	},
 }
 
-var rhssoTest1 = &aerogearv1.KeycloakUser{
-	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-		UserName: "test1",
-		Email:    "test1@example.com",
+var rhssoTest1 = &keycloak.KeycloakUser{
+	Spec: keycloak.KeycloakUserSpec{
+		User: keycloak.KeycloakAPIUser{
+			UserName: "test1",
+			Email:    "test1@example.com",
+		},
 	},
 }
 
-var rhssoTest2 = &aerogearv1.KeycloakUser{
-	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-		UserName: "test2",
-		Email:    "test2@example.com",
+var rhssoTest2 = &keycloak.KeycloakUser{
+	Spec: keycloak.KeycloakUserSpec{
+		User: keycloak.KeycloakAPIUser{
+			UserName: "test2",
+			Email:    "test2@example.com",
+		},
 	},
 }
 
@@ -136,7 +123,7 @@ var testDedicatedAdminsGroup = &usersv1.Group{
 		Name: "dedicated-admins",
 	},
 	Users: []string{
-		rhssoTest1.UserName,
+		rhssoTest1.Spec.User.UserName,
 	},
 }
 
@@ -383,7 +370,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	return []runtime.Object{
 		s3BucketSecret,
 		s3CredentialsSecret,
-		keycloakrealm,
 		configManagerConfigMap,
 		threeScaleAdminDetailsSecret,
 		threeScaleServiceDiscoveryConfigMap,
