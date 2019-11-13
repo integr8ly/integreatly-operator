@@ -2,9 +2,10 @@ package rhssouser
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -27,6 +28,11 @@ var (
 	keycloakRealmName       = "user-sso"
 	defaultSubscriptionName = "integreatly-rhsso"
 	idpAlias                = "openshift-v4"
+)
+
+const (
+	userSsoLabelKey   = "sso"
+	userSsoLabelValue = "user"
 )
 
 type Reconciler struct {
@@ -129,18 +135,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
-		kc.Spec.Plugins = []string{
+		kc.Spec.Extensions = []string{
 			"keycloak-metrics-spi",
-			"openshift4-idp",
 		}
-		kc.Spec.Provision = true
+		kc.Labels = getInstanceLabels()
+		kc.Spec.Instances = 1
+		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
+		kc.Spec.Profile = rhsso.RHSSOProfile
 		return nil
 	})
 	if err != nil {
@@ -148,25 +156,38 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 
-	kcr := &aerogearv1.KeycloakRealm{
+	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
-		kcr.Spec.CreateOnly = false
-		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
-
-		if kcr.Spec.KeycloakApiRealm == nil {
-			kcr.Spec.KeycloakApiRealm = &aerogearv1.KeycloakApiRealm{}
+		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
+			{
+				IdentityProvider: idpAlias,
+				ForFlow:          "browser",
+			},
 		}
-		kcr.Spec.ID = keycloakRealmName
-		kcr.Spec.Realm = keycloakRealmName
-		kcr.Spec.DisplayName = keycloakRealmName
-		kcr.Spec.Enabled = true
-		kcr.Spec.EventsListeners = []string{
-			"metrics-listener",
+
+		kcr.Spec.InstanceSelector = &metav1.LabelSelector{
+			MatchLabels: getInstanceLabels(),
+		}
+		kcr.Labels = getInstanceLabels()
+		kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
+			ID:              keycloakRealmName,
+			Realm:           keycloakRealmName,
+			Enabled:         true,
+			DisplayName:     keycloakRealmName,
+			EventsListeners: []string{"metrics-listener"},
+		}
+
+		// The identity providers need to be set up before the realm CR gets
+		// created because the Keycloak operator does not allow updates to
+		// the realms
+		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
+		if err != nil {
+			return errors.Wrap(err, "failed to setup Openshift IDP for user-sso")
 		}
 
 		return nil
@@ -180,7 +201,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	kc := &aerogearv1.Keycloak{}
+	kc := &keycloak.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
@@ -193,22 +214,17 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 	}
 
 	r.logger.Info("checking ready status for user-sso")
-	kcr := &aerogearv1.KeycloakRealm{}
+	kcr := &keycloak.KeycloakRealm{}
 
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get keycloak realm custom resource")
 	}
 
-	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
+	if kcr.Status.Phase == keycloak.PhaseReconciling {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write user-sso config")
-		}
-
-		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP for user-sso")
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm for user-sso")
@@ -220,7 +236,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 }
 
 func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Client) error {
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
@@ -230,21 +246,8 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	if err != nil {
 		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config for user-sso")
 	}
-	kcAdminCredSecretName := kc.Spec.AdminCredentials
-
-	kcAdminCredSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcAdminCredSecretName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
-	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak admin credential secret for keycloak config for user-sso")
-	}
-	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetHost(string(kcURLBytes))
+	r.Config.SetHost(kc.Status.InternalURL)
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
 		return pkgerr.Wrap(err, "could not update keycloak config for user-sso")
@@ -252,7 +255,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient pkgclient.Client) error {
 	oauthClientSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -285,10 +288,10 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
 	}
 
-	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {
+	if !containsIdentityProvider(kcr.Spec.Realm.IdentityProviders, idpAlias) {
 		logrus.Infof("Adding keycloak realm client")
 
-		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
+		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
 			Alias:                     idpAlias,
 			ProviderID:                "openshift-v4",
 			Enabled:                   true,
@@ -316,11 +319,17 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, alias string) bool {
+func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
 	for _, p := range providers {
 		if p.Alias == alias {
 			return true
 		}
 	}
 	return false
+}
+
+func getInstanceLabels() map[string]string {
+	return map[string]string{
+		userSsoLabelKey: userSsoLabelValue,
+	}
 }

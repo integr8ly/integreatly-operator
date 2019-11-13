@@ -150,6 +150,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	}
 	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, t.Pkg, t.Namespace)
 	if err != nil {
+
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(errors.Cause(err)) {
 			return v1alpha1.PhaseAwaitingOperator, nil
