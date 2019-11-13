@@ -74,6 +74,12 @@ func (r *Monitoring) GetJobTemplates() []string {
 	return []string{
 		"jobs/3scale",
 		"jobs/openshift_monitoring_federation",
+		"endpointsdetailed",
+		"endpointsreport",
+		"endpointssummary",
+		"resources-by-namespace",
+		"resources-by-pod",
+		"cluster-resources",
 	}
 }
 
