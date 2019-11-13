@@ -2,7 +2,6 @@ package launcher
 
 import (
 	"fmt"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -26,18 +25,6 @@ var configManagerConfigMap = &corev1.ConfigMap{
 	},
 }
 
-var keycloakrealm = &aerogearv1.KeycloakRealm{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      testRhssoRealm,
-		Namespace: testRhssoNamespace,
-	},
-	Spec: aerogearv1.KeycloakRealmSpec{
-		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
-			Clients: []*aerogearv1.KeycloakClient{},
-		},
-	},
-}
-
 var installPlanForLauncherSubscription = &coreosv1alpha1.InstallPlan{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "installplan-for-launcher",
@@ -52,7 +39,6 @@ func getClusterPreReqObjects(integreatlyOperatorNamespace string) []runtime.Obje
 
 	return []runtime.Object{
 		configManagerConfigMap,
-		keycloakrealm,
 		launcherConfigMap,
 		mockLauncherRoute,
 	}
