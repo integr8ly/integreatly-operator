@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	Answer = "Yes"
+	Placeholder = "XXX"
 )
 
 type Parameters struct {
-	Answer        string
+	Placeholder   string
 	Namespace     string
 	MonitoringKey string
 	ExtraParams   map[string]string
@@ -35,7 +35,7 @@ type TemplateHelper struct {
 // by the user in the custom resource
 func newTemplateHelper(cr *v1alpha1.Installation, extraParams map[string]string, config *config.Monitoring) *TemplateHelper {
 	param := Parameters{
-		Answer:        Answer,
+		Placeholder:   Placeholder,
 		Namespace:     config.GetNamespace(),
 		MonitoringKey: config.GetLabelSelector(),
 		ExtraParams:   extraParams,

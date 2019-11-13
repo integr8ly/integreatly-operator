@@ -67,10 +67,7 @@ func (r *Monitoring) GetPrometheusStorageRequest() string {
 }
 
 func (r *Monitoring) GetTemplateList() []string {
-	template_list := []string{
-		"test-secret",
-		"test-secret-2",
-	}
+	template_list := []string{}
 	return template_list
 }
 
