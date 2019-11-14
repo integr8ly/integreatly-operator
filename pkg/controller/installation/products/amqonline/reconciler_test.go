@@ -23,7 +23,10 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -43,6 +46,9 @@ func buildScheme() *runtime.Scheme {
 	enmassev1.SchemeBuilder.AddToScheme(scheme)
 	enmassev1beta1.SchemeBuilder.AddToScheme(scheme)
 	enmassev1beta2.SchemeBuilder.AddToScheme(scheme)
+	rbacv1.SchemeBuilder.AddToScheme(scheme)
+	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
+	appsv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 
@@ -52,6 +58,9 @@ const (
 
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
+		GetOperatorNamespaceFunc: func() string {
+			return "integreatly-operator"
+		},
 		ReadAMQOnlineFunc: func() (ready *config.AMQOnline, e error) {
 			return config.NewAMQOnline(config.ProductConfig{
 				"NAMESPACE": defaultNamespace,
