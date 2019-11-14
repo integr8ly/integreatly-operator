@@ -1,0 +1,191 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[{"apiVersion":"mobile-security-service.aerogear.org/v1alpha1","kind":"MobileSecurityService","metadata":{"name":"mobile-security-service"},"spec":{"accessControlAllowCredentials":"false","accessControlAllowOrigin":"*","clusterProtocol":"https","configMapName":"mobile-security-service-config","containerName":"application","databaseHost":"mobile-security-service-db","databaseName":"mobile_security_service","databasePassword":"postgres","databaseUser":"postgresql","image":"quay.io/aerogear/mobile-security-service:0.2.2","logFormat":"json","logLevel":"info","memoryLimit":"128Mi","memoryRequest":"64Mi","oAuthContainerName":"oauth-proxy","oAuthImage":"docker.io/openshift/oauth-proxy:v1.1.0","oAuthMemoryLimit":"64Mi","oAuthMemoryRequest":"32Mi","oAuthResourceCpu":"10m","oAuthResourceCpuLimit":"20m","port":3000,"resourceCpu":"10m","resourceCpuLimit":"20m","routeName":"route","size":1}},{"apiVersion":"mobile-security-service.aerogear.org/v1alpha1","kind":"MobileSecurityServiceApp","metadata":{"name":"mobile-security-service-app"},"spec":{"appId":"appid.example.com","appName":"example-appname"}},{"apiVersion":"mobile-security-service.aerogear.org/v1alpha1","kind":"MobileSecurityServiceBackup","metadata":{"name":"mobile-security-service-backup"},"spec":{"awsAccessKeyId":"example-awsAccessKeyId","awsS3BucketName":"example-awsS3BucketName","awsSecretAccessKey":"example-awsSecretAccessKey","databaseVersion":"9.6","image":"quay.io/integreatly/backup-container:1.0.8","productName":"mss","schedule":"0
+      0 * * *"}},{"apiVersion":"mobile-security-service.aerogear.org/v1alpha1","kind":"MobileSecurityServiceDB","metadata":{"name":"mobile-security-service-db"},"spec":{"containerName":"database","databaseMemoryLimit":"512Mi","databaseMemoryRequest":"512Mi","databaseName":"mobile_security_service","databaseNameParam":"POSTGRESQL_DATABASE","databasePassword":"postgres","databasePasswordParam":"POSTGRESQL_PASSWORD","databasePort":5432,"databaseStorageRequest":"1Gi","databaseUser":"postgresql","databaseUserParam":"POSTGRESQL_USER","image":"centos/postgresql-96-centos7","size":1}}]'
+    categories: Security
+    description: 'Operator for the Aerogear Mobile Security Service, a service to view, enable and disable specific versions of mobile applications on demand'
+    capabilities: Basic Install
+    containerImage: quay.io/aerogear/mobile-security-service:0.4.1
+    createdAt: "2019-09-13 12:45:00"
+    support: "Red Hat, Inc."
+    certified: "false"
+  name: mobile-security-service-operator.0.4.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+      - kind: MobileSecurityService
+        name: mobilesecurityservices.mobile-security-service.aerogear.org
+        version: v1alpha1
+        description: Placeholder description
+        displayName: Mobile Security Service
+      - kind: MobileSecurityServiceApp
+        name: mobilesecurityserviceapps.mobile-security-service.aerogear.org
+        version: v1alpha1
+        description: Placeholder description
+        displayName: Mobile Security Service App
+      - kind: MobileSecurityServiceBackup
+        name: mobilesecurityservicebackups.mobile-security-service.aerogear.org
+        version: v1alpha1
+        description: Placeholder description
+        displayName: Mobile Security Service Backup
+      - kind: MobileSecurityServiceDB
+        name: mobilesecurityservicedbs.mobile-security-service.aerogear.org
+        version: v1alpha1
+        description: Placeholder description
+        displayName: Mobile Security Service DB
+  description: Placeholder description
+  displayName: Mobile Security Service Operator
+  icon:
+  install:
+    spec:
+      clusterPermissions:
+        - rules:
+            - apiGroups:
+                - mobile-security-service.aerogear.org
+              resources:
+                - '*'
+              verbs:
+                - get
+                - list
+                - watch
+                - update
+            - apiGroups:
+                - ""
+              resources:
+                - services
+                - persistentvolumeclaims
+                - events
+                - configmaps
+                - secrets
+                - serviceaccounts
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - batch
+              resources:
+                - cronjobs
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - route.openshift.io
+              resources:
+                - routes
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - patch
+                - delete
+            - apiGroups:
+                - ""
+              resources:
+                - pods
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
+                - apps
+              resources:
+                - replicasets
+              verbs:
+                - get
+            - apiGroups:
+                - apps
+              resourceNames:
+                - mobile-security-service-operator
+              resources:
+                - deployments/finalizers
+              verbs:
+                - update
+            - apiGroups:
+                - ""
+              resources:
+                - namespaces
+              verbs:
+                - get
+          serviceAccountName: mobile-security-service-operator
+      deployments:
+        - name: mobile-security-service-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: mobile-security-service-operator
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  name: mobile-security-service-operator
+              spec:
+                containers:
+                  - command:
+                      - mobile-security-service-operator
+                    env:
+                      - name: WATCH_NAMESPACE
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.namespace
+                      - name: APP_NAMESPACES
+                        value: mobile-security-service-apps
+                      - name: POD_NAME
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
+                      - name: OPERATOR_NAME
+                        value: mobile-security-service-operator
+                    image: quay.io/aerogear/mobile-security-service-operator:0.4.1
+                    imagePullPolicy: Always
+                    name: mobile-security-service-operator
+                    resources:
+                      limits:
+                        cpu: 60m
+                        memory: 128Mi
+                      requests:
+                        cpu: 30m
+                        memory: 64Mi
+                serviceAccountName: mobile-security-service-operator
+    strategy: deployment
+  installModes:
+    - supported: true
+      type: OwnNamespace
+    - supported: true
+      type: SingleNamespace
+    - supported: false
+      type: MultiNamespace
+    - supported: true
+      type: AllNamespaces
+  keywords:
+  maturity: alpha
+  provider: {}
+  version: 0.4.1

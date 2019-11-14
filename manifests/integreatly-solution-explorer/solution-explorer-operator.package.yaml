@@ -1,0 +1,4 @@
+packageName: integreatly-solution-explorer
+channels:
+- currentCSV: solution-explorer-operator.v0.0.34
+  name: integreatly

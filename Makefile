@@ -1,3 +1,5 @@
+include ./manifests/manifests.mk
+
 ORG=integreatly
 NAMESPACE=integreatly
 PROJECT=integreatly-operator
@@ -218,3 +220,6 @@ push/csv:
 
 .PHONY: gen/push/csv
 gen/push/csv: gen/csv push/csv
+
+.PHONY: push/all
+push/all: push/csv push/manifests/all

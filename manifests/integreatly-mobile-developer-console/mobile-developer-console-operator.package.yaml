@@ -1,0 +1,4 @@
+packageName: integreatly-mobile-developer-console
+channels:
+  - name: integreatly
+    currentCSV: mobile-developer-console-operator.v0.3.0
