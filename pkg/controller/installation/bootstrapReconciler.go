@@ -13,6 +13,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	usersv1 "github.com/openshift/api/user/v1"
 	"github.com/pkg/errors"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -23,6 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	dedicatedAdminsGroupName = "dedicated-admins"
+	rhmiAdminsGroupName      = "rhmi-admins"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -55,6 +62,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, s
 	}
 
 	phase, err = r.retrieveConsoleUrlAndSubdomain(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileRHMIAdminsGroup(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -131,6 +143,52 @@ func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverC
 
 	return v1alpha1.PhaseCompleted, nil
 
+}
+
+// Reconciles RHMI user group which contains users that are expected to be admins in the integreatly product suite.
+// This group should include all users from the dedicated-admins group
+func (r *Reconciler) reconcileRHMIAdminsGroup(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infoln("reconciling RHMI user group")
+
+	rhmiAdminsGroup := &usersv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: rhmiAdminsGroupName,
+		},
+	}
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhmiAdminsGroup.Name}, rhmiAdminsGroup)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get %s group", rhmiAdminsGroup.Name)
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiAdminsGroup, func(existing runtime.Object) error {
+		// Get users from the dedicated-admins group
+		dedicatedAdminGroup := &usersv1.Group{}
+		if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: dedicatedAdminsGroupName}, dedicatedAdminGroup); err != nil {
+			return err
+		}
+
+		rhmiAdminsGroup := existing.(*usersv1.Group)
+		rhmiAdminUsers := []string{}
+		rhmiAdminUsers = append(rhmiAdminUsers, rhmiAdminsGroup.Users...)
+
+		// Ensure all users from dedicated-admins group are added to the rhmi-admins group
+		for _, user := range dedicatedAdminGroup.Users {
+			if !resources.Contains(rhmiAdminUsers, user) {
+				rhmiAdminUsers = append(rhmiAdminUsers, user)
+			}
+		}
+
+		rhmiAdminsGroup.Users = rhmiAdminUsers
+
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update %s group", rhmiAdminsGroup.Name)
+	}
+
+	logrus.Infoln("The operation result for group " + rhmiAdminsGroup.Name + " was " + string(or))
+
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func getConsoleRouteCR(ctx context.Context, serverClient pkgclient.Client) (*routev1.Route, error) {
