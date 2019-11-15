@@ -67,8 +67,14 @@ func (r *Monitoring) GetPrometheusStorageRequest() string {
 }
 
 func (r *Monitoring) GetTemplateList() []string {
-	template_list := []string{}
-	return template_list
+	return []string{}
+}
+
+func (r *Monitoring) GetJobTemplates() []string {
+	return []string{
+		"jobs/3scale",
+		"jobs/openshift_monitoring_federation",
+	}
 }
 
 func (f *Monitoring) Validate() error {

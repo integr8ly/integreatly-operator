@@ -2,7 +2,11 @@ package monitoring
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/operator-framework/operator-marketplace/pkg/client"
+	v12 "k8s.io/api/core/v1"
+	"strings"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -30,6 +34,9 @@ const (
 	defaultPrometheusRetention              = "15d"
 	defaultPrometheusStorageRequest         = "10Gi"
 	packageName                             = "monitoring"
+	openshiftMonitoringNamespace            = "openshift-monitoring"
+	grafanaDataSourceSecretName             = "grafana-datasources"
+	grafanaDataSourceSecretKey              = "prometheus.yaml"
 )
 
 type Reconciler struct {
@@ -145,8 +152,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.populateParams(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s populateParams", phase)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileScrapeConfigs(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileScrapeConfigs", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
@@ -156,6 +177,50 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.Version = r.Config.GetProductVersion()
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
+	return v1alpha1.PhaseCompleted, nil
+}
+
+// Create the integreatly additional scrape config secret which is reconciled
+// by the application monitoring operator and passed to prometheus
+func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	templateHelper := newTemplateHelper(inst, r.extraParams, r.Config)
+
+	jobs := strings.Builder{}
+	for _, job := range r.Config.GetJobTemplates() {
+		bytes, err := templateHelper.loadTemplate(job)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+
+		jobs.Write(bytes)
+		jobs.WriteByte('\n')
+	}
+
+	scrapeConfigSecret := &v12.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      defaultAdditionalScrapeConfigSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, scrapeConfigSecret, func(existing runtime.Object) error {
+		secret := existing.(*v12.Secret)
+		secret.Data = map[string][]byte{
+			defaultAdditionalScrapeConfigSecretKey: []byte(jobs.String()),
+		}
+		secret.Type = "Opaque"
+		secret.Labels = map[string]string{
+			"monitoring-key": defaultLabelSelector,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating additional scrape config secret")
+	}
+
+	r.Logger.Info(fmt.Sprintf("operation result of creating additional scrape config secret was %v", or))
+
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -217,4 +282,63 @@ func (r *Reconciler) createResource(inst *v1alpha1.Installation, resourceName st
 	}
 
 	return resource, nil
+}
+
+// Read the credentials of the Prometheus instance in the openshift-monitoring
+// namespace from the grafana datasource secret
+func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, serverClient pkgclient.Client) (*monitoring_v1alpha1.GrafanaDataSourceSecret, error) {
+	secret := &v12.Secret{}
+
+	selector := client.ObjectKey{
+		Namespace: openshiftMonitoringNamespace,
+		Name:      grafanaDataSourceSecretName,
+	}
+
+	err := serverClient.Get(ctx, selector, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	prometheusConfig := secret.Data[grafanaDataSourceSecretKey]
+	datasources := monitoring_v1alpha1.GrafanaDataSourceSecret{}
+
+	err = json.Unmarshal(prometheusConfig, &datasources)
+	if err != nil {
+		return nil, err
+	}
+
+	return &datasources, err
+}
+
+// Populate the extra params for templating
+func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// Obtain the prometheus credentials from openshift-monitoring
+	datasources, err := r.readFederatedPrometheusCredentials(ctx, serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	if len(datasources.DataSources) < 1 {
+		return v1alpha1.PhaseFailed, errors.New("cannot obtain prometheus credentials")
+	}
+
+	// Obtain the 3scale config and namespace
+	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+
+	// Try to get the threescale namespace from the config and if not possible,
+	// use a default value
+	threeScaleNs := threeScaleConfig.GetNamespace()
+	if threeScaleNs == "" {
+		threeScaleNs = inst.Spec.NamespacePrefix + "3scale"
+	}
+
+	r.extraParams["threescale_namespace"] = threeScaleNs
+	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
+	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
+	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
+
+	return v1alpha1.PhaseCompleted, nil
 }
