@@ -35,7 +35,7 @@ func (mdc *MobileDeveloperConsole) SetProductVersion(version string) {
 }
 
 func (mdc *MobileDeveloperConsole) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(mdc.config["VERSION"])
+	return v1alpha1.VersionMDC
 }
 
 func (mdc *MobileDeveloperConsole) GetOperatorVersion() v1alpha1.OperatorVersion {

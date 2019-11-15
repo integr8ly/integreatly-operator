@@ -178,9 +178,7 @@ deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
 deploy/integreatly-installation-cr.yml:
-	@echo "masterURL = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
-	sed "s,MASTER_URL,$(MASTER_URL),g" deploy/crds/examples/integreatly-installation-cr.yaml | \
-	sed "s/ROUTING_SUBDOMAIN/$(ROUTING_SUBDOMAIN)/g" | \
+	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" > deploy/integreatly-installation-cr.yml
