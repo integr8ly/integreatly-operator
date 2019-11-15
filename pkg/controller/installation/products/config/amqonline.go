@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
@@ -39,6 +40,14 @@ func (a *AMQOnline) GetProductName() v1alpha1.ProductName {
 
 func (a *AMQOnline) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionAMQOnline
+}
+
+func (c *AMQOnline) GetBackendSecretName() string {
+	return "s3-credentials"
+}
+
+func (c *AMQOnline) GetBackupSchedule() string {
+	return "30 2 * * *"
 }
 
 func (a *AMQOnline) Validate() error {

@@ -3,6 +3,7 @@ package amqonline
 import (
 	"context"
 	"fmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -124,6 +126,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileBackup(ctx, inst, serverClient, namespace)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -209,6 +216,31 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not persist config")
 		}
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBackup(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
+	backupConfig := resources.BackupConfig{
+		Namespace: r.Config.GetNamespace(),
+		Name:      string(r.Config.GetProductName()),
+		BackendSecret: resources.BackupSecretLocation{
+			Name:      r.Config.GetBackendSecretName(),
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+		Components: []resources.BackupComponent{
+			{
+				Name:     "enmasse-pv-backup",
+				Type:     "enmasse_pv",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+		},
+	}
+
+	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for amq-online")
 	}
 
 	return v1alpha1.PhaseCompleted, nil
