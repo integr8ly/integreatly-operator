@@ -2,6 +2,7 @@ package cloudresources
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -16,7 +17,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	defaultSubscriptionName      = "cloud-resources"
+	defaultSubscriptionName      = "integreatly-cloud-resources"
 )
 
 type Reconciler struct {
