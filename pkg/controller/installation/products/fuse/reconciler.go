@@ -3,8 +3,9 @@ package fuse
 import (
 	"context"
 	"fmt"
-	v13 "github.com/openshift/api/image/v1"
 	"strings"
+
+	v13 "github.com/openshift/api/image/v1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
@@ -30,7 +31,7 @@ import (
 const (
 	defaultInstallationNamespace = "fuse"
 	defaultSubscriptionName      = "integreatly-syndesis"
-	adminGroupName               = "dedicated-admins"
+	adminGroupName               = "rhmi-admins"
 	defaultFusePullSecret        = "syndesis-pull-secret"
 )
 

@@ -123,7 +123,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return errors.New(fmt.Sprintf("Service discovery config is misconfigured"))
 	}
 
-	// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
+	// rhsso users should be users in 3scale. If an rhsso user is also in rhmi-admins group that user should be an admin in 3scale.
 	tsUsers, _ := fakeThreeScaleClient.GetUsers("accessToken")
 	if len(tsUsers.Users) != len(kcr.Spec.Users) {
 		return errors.New(fmt.Sprintf("Rhsso users should be mapped into 3scale users"))

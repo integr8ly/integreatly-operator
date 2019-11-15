@@ -448,7 +448,7 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 	}
 
 	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "rhmi-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, err
 	}

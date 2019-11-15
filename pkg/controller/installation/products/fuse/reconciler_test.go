@@ -348,7 +348,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 	openshiftAdminGroup := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "dedicated-admins",
+			Name: "rhmi-admins",
 		},
 		Users: []string{
 			test1User.Name,

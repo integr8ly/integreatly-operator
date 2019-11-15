@@ -578,7 +578,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 	}
 
 	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "rhmi-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return v1alpha1.PhaseFailed, err
 	}

@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -127,7 +128,7 @@ var rhssoTest2 = &aerogearv1.KeycloakUser{
 
 var testDedicatedAdminsGroup = &usersv1.Group{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "dedicated-admins",
+		Name: "rhmi-admins",
 	},
 	Users: []string{
 		rhssoTest1.UserName,
