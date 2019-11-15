@@ -370,7 +370,7 @@ func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient pkg
 
 	if key == "SkippedImagestreams" {
 		for _, v := range value {
-			if !r.contains(clusterSampleCR.Spec.SkippedImagestreams, v) {
+			if !resources.Contains(clusterSampleCR.Spec.SkippedImagestreams, v) {
 				clusterSampleCR.Spec.SkippedImagestreams = append(clusterSampleCR.Spec.SkippedImagestreams, v)
 			}
 		}
@@ -378,7 +378,7 @@ func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient pkg
 
 	if key == "SkippedTemplates" {
 		for _, v := range value {
-			if !r.contains(clusterSampleCR.Spec.SkippedTemplates, v) {
+			if !resources.Contains(clusterSampleCR.Spec.SkippedTemplates, v) {
 				clusterSampleCR.Spec.SkippedTemplates = append(clusterSampleCR.Spec.SkippedTemplates, v)
 			}
 		}
@@ -404,15 +404,5 @@ func (r *Reconciler) resourceHasLabel(labels map[string]string, key, value strin
 	if val, ok := labels[key]; ok && val == value {
 		return true
 	}
-	return false
-}
-
-func (r *Reconciler) contains(list []string, value string) bool {
-	for _, v := range list {
-		if v == value {
-			return true
-		}
-	}
-
 	return false
 }
