@@ -370,12 +370,14 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	// check products stage operator versions
 	stage = operator.StageName("products")
 	productOperators := map[string]string{
-		"3scale":               string(operator.OperatorVersion3Scale),
-		"amqonline":            string(operator.OperatorVersionAMQOnline),
-		"codeready-workspaces": string(operator.OperatorVersionCodeReadyWorkspaces),
-		"fuse-on-openshift":    string(operator.OperatorVersionFuse),
-		"ups":                  string(operator.OperatorVersionUPS),
-		"rhssouser":            string(operator.OperatorVersionRHSSOUser),
+		"3scale":                string(operator.OperatorVersion3Scale),
+		"amqonline":             string(operator.OperatorVersionAMQOnline),
+		"codeready-workspaces":  string(operator.OperatorVersionCodeReadyWorkspaces),
+		"fuse-on-openshift":     string(operator.OperatorVersionFuse),
+		"ups":                   string(operator.OperatorVersionUPS),
+		"rhssouser":             string(operator.OperatorVersionRHSSOUser),
+		"mdc":                   string(operator.OperatorVersionMDC),
+		"mobilesecurityservice": string(operator.OperatorVersionMobileSecurityService),
 	}
 	err = checkOperatorVersions(t, f, namespace, stage, productOperators)
 	if err != nil {
@@ -415,12 +417,14 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	// check products stage operands versions
 	stage = operator.StageName("products")
 	productOperands := map[string]string{
-		"3scale":               "1.9.8",
-		"amqonline":            string(operator.VersionAMQOnline),
-		"codeready-workspaces": string(operator.VersionCodeReadyWorkspaces),
-		"fuse-on-openshift":    string(operator.VersionFuseOnOpenshift),
-		"ups":                  string(operator.VersionUps),
-		"rhssouser":            "v7.3.2.GA",
+		"3scale":                "1.9.8",
+		"amqonline":             string(operator.VersionAMQOnline),
+		"codeready-workspaces":  string(operator.VersionCodeReadyWorkspaces),
+		"fuse-on-openshift":     string(operator.VersionFuseOnOpenshift),
+		"ups":                   string(operator.VersionUps),
+		"rhssouser":             "v7.3.2.GA",
+		"mdc":                   string(operator.VersionMDC),
+		"mobilesecurityservice": string(operator.VersionMobileSecurityService),
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {
