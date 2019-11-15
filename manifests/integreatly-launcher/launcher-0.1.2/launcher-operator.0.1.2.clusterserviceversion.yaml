@@ -1,0 +1,180 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    capabilities: Basic Install
+    categories: Developer Tools
+    certified: 'false'
+    containerImage: fabric8/launcher-operator:v0.1.2
+    createdAt: '2019-04-30 15:13:01'
+    description: A project generator for cloud-native application development on OpenShift.
+    support: 'Red Hat, Inc.'
+  name: launcher.v0.1.2
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Represents Launcher.
+      displayName: Launcher
+      kind: Launcher
+      name: launchers.launcher.fabric8.io
+      version: v1alpha2
+  description: >-
+    Red Hat Developer Launcher provides you with cloud-native runtimes and prescribes
+    approaches to developing, building and deploying applications that use those cloud-native
+    runtimes on OpenShift.
+  displayName: Red Hat Developer Launcher
+  icon:
+    - base64data: >-
+        iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAEdElEQVR4nOzcTWtcZR/H8Wse8nCnoc2NxIS2NhSR0iK40pXYlbMQ3LgTFPQFuLO+Cl+EYEEXunEhNFlZ3BTdiBRXWmuLTHwoFtsmEzOOWxf6Y05OmDPjfD7r65zrn4FvOItzru5gcDAqwD9qNz0ATDOBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoGg2/QAVR3u75eHu/1a9zixsVm6y8tjr3/Q75fhYL/WnnUtD4el1ek0OkNd3Y3N0q7wu0+DmQvkxxs3yge9F2vd49XtnXLu8uWx13/y+mvlzvXrtfas66VGdz8e57d3ymqF330aeMSCQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIGgNBgejpoeo4kG/X25tb9e6x/ler6xubo69/rtr18rD3d1ae9Z1ejgs7Rn/YGq11ysLFX73aTBzgcAkecSCQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQzNzZvMdh76M3y+hBs+9WrbzxaaX1j96rdzpva31Q2mutWvdoWvvxXll46p2J7jmXgQzvflFG939oeoxKhrc/r3V9e/RHKcPhsc3ThNbK1sT39IgFgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBIK5fN29c/bZMlo71/QYlXS2nq91/X/he5DW6oXJ7+lsXvh3HrEgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEE38X68792+Xe3q9Hvn6xs1gurj899vqD4aB88/PNI+93HBYXDsqp/w0anWEaPLb0TFnqrDU9RiUTD+TDm1fLzrfVDm7+u40Tm+X9Vz4ee/29vXvlys5bR97vOFw6s18uPvF1ozNMg5fP7JTTK5ebHqMSj1gQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBBM/m9cHU/NrFj+Ycng1BB6xIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBBM/m7eur37aK29/1m90ht7Warny3PrY66/d+r28++UvtfY8fPJU6bZbte5Rx8Ziu1y9dKqx/Zsyc4H8NvizXL/7sNEZtk4uVFq/++iw/szrJ+pdX9PW8nw+bMznXw1jEggEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQDBzr7uvLbXLC2ebffX7wv+XKq3fWOnWnvnwZLfx70HmkbN5IZjPfwswJoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgaBbSvm+6SFgWv0VAAD//9ySpTprFDf/AAAAAElFTkSuQmCC
+      mediatype: image/png
+  install:
+    spec:
+      deployments:
+      - name: launcher-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: launcher-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: launcher-operator
+            spec:
+              containers:
+              - command:
+                - launcher-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: launcher-operator
+                - name: TEMPLATE_PATH
+                  value: /usr/local/bin/templates
+                image: fabric8/launcher-operator:v0.1.2
+                imagePullPolicy: Always
+                name: launcher-operator
+                ports:
+                - containerPort: 60000
+                  name: metrics
+                readinessProbe:
+                  exec:
+                    command:
+                    - stat
+                    - /tmp/operator-sdk-ready
+                  failureThreshold: 1
+                  initialDelaySeconds: 4
+                  periodSeconds: 10
+                resources: {}
+              serviceAccountName: launcher-operator
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - processedtemplates.template.openshift.io
+          verbs:
+          - '*'
+        - apiGroups:
+          - template.openshift.io
+          resources:
+          - processedtemplates
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - deletecollection
+          - watch
+        - apiGroups:
+          - ""
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          - deploymentconfigs/instantiate
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - deletecollection
+          - watch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          - routes/custom-host
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+          - deletecollection
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - launcher.fabric8.io
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: launcher-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: true
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+    - launcher
+    - devtools
+    - developer
+  maturity: alpha
+  provider: 
+    name: 'Red Hat, Inc.'
+  version: 0.1.2

@@ -1,0 +1,4 @@
+packageName: integreatly-amq-online
+channels:
+- name: integreatly
+  currentCSV: amqonline.1.2.2

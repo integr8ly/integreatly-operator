@@ -1,0 +1,4 @@
+packageName: integreatly-mobile-security-service
+channels:
+  - name: integreatly
+    currentCSV: mobile-security-service-operator.0.4.1

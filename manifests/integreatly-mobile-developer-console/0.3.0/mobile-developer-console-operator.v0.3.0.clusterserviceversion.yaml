@@ -1,0 +1,269 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[{"apiVersion":"mdc.aerogear.org/v1alpha1","kind":"MobileDeveloperConsole","metadata":{"name":"example-mdc"},"spec":{"oAuthClientId":"mobile-developer-console","oAuthClientSecret":"foobar"}}]'
+    capabilities: Basic Install
+  name: mobile-developer-console-operator.v0.3.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Represents an installation of the Mobile Developer Console
+      displayName: Mobile Developer Console
+      kind: MobileDeveloperConsole
+      name: mobiledeveloperconsoles.mdc.aerogear.org
+      version: v1alpha1
+    - description: Represents a mobile application configured through the Mobile Developer
+        Console
+      displayName: Mobile Client
+      kind: MobileClient
+      name: mobileclients.mdc.aerogear.org
+      version: v1alpha1
+  description: Manages the AeroGear Mobile Developer Console on OpenShift.
+  displayName: Mobile Developer Console
+  icon:
+  - base64data: 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
+    mediatype: image/png
+  install:
+    spec:
+      deployments:
+      - name: mobile-developer-console-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: mobile-developer-console-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: mobile-developer-console-operator
+            spec:
+              containers:
+              - command:
+                - mobile-developer-console-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: mobile-developer-console-operator
+                - name: OPENSHIFT_HOST
+                  value: ${OPENSHIFT_HOST}
+                - name: UPS_DOCUMENTATION_URL
+                  value: https://docs.aerogear.org/limited-availability/downstream/ups.html
+                - name: IDM_DOCUMENTATION_URL
+                  value: https://docs.aerogear.org/limited-availability/downstream/idm.html
+                - name: SYNC_DOCUMENTATION_URL
+                  value: https://docs.aerogear.org/limited-availability/downstream/sync.html
+                - name: MSS_DOCUMENTATION_URL
+                  value: https://docs.aerogear.org/limited-availability/downstream/mss.html
+                image: quay.io/aerogear/mobile-developer-console-operator:0.3.0
+                imagePullPolicy: Always
+                name: mobile-developer-console-operator
+                resources:
+                  limits:
+                    cpu: 40m
+                    memory: 64Mi
+                  requests:
+                    cpu: 20m
+                    memory: 32Mi
+              serviceAccountName: mobile-developer-console-operator
+      permissions:
+      - rules:
+        - apiGroups:
+          - mdc.aerogear.org
+          resources:
+          - '*'
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          - services
+          - services/finalizers
+          - serviceaccounts
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - apps
+          resources:
+          - replicasets
+          - deployments
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resourceNames:
+          - mobile-developer-console-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - mdc.aerogear.org
+          resources:
+          - mobileclients
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+          - patch
+        - apiGroups:
+          - push.aerogear.org
+          resources:
+          - pushapplications
+          - androidvariants
+          - iosvariants
+          - webpushvariants
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - mobile-security-service.aerogear.org
+          resources:
+          - mobilesecurityserviceapps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          - prometheusrules
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - integreatly.org
+          resources:
+          - grafanadashboards
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        serviceAccountName: mobile-developer-console-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - mobile
+  maintainers:
+  - email: aerogear@googlegroups.com
+    name: AeroGear
+  maturity: alpha
+  provider:
+    name: AeroGear
+  version: 0.3.0
