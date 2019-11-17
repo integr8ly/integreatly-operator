@@ -164,6 +164,17 @@
   version = "v3.2.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:72b674cb4faedad73fdb82e7a4d04f40bd2c06b8e75de601f5e6ac4526bb2cb0"
+  name = "github.com/docker/spdystream"
+  packages = [
+    ".",
+    "spdy",
+  ]
+  pruneopts = "NT"
+  revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
+
+[[projects]]
   digest = "1:85c3164cb43dc296665998d4fc9b6e00dbe1b6f7cd7c47b80afac491e653bef2"
   name = "github.com/eclipse/che-operator"
   packages = ["pkg/apis/org/v1"]
@@ -432,6 +443,7 @@
   packages = [
     "pkg/apis/integreatly/v1alpha1",
     "pkg/apis/integreatly/v1alpha1/types",
+    "pkg/resources",
   ]
   pruneopts = "NT"
   revision = "8ef0a32b195434a58fc0bc4c6f932670c6c04687"
@@ -1095,11 +1107,14 @@
     "pkg/util/diff",
     "pkg/util/errors",
     "pkg/util/framer",
+    "pkg/util/httpstream",
+    "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
     "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
+    "pkg/util/remotecommand",
     "pkg/util/runtime",
     "pkg/util/sets",
     "pkg/util/strategicpatch",
@@ -1111,6 +1126,7 @@
     "pkg/version",
     "pkg/watch",
     "third_party/forked/golang/json",
+    "third_party/forked/golang/netutil",
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NT"
@@ -1185,10 +1201,13 @@
     "tools/pager",
     "tools/record",
     "tools/reference",
+    "tools/remotecommand",
     "transport",
+    "transport/spdy",
     "util/buffer",
     "util/cert",
     "util/connrotation",
+    "util/exec",
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
@@ -1348,6 +1367,8 @@
     "github.com/go-openapi/spec",
     "github.com/google/uuid",
     "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1",
+    "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types",
+    "github.com/integr8ly/cloud-resource-operator/pkg/resources",
     "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
