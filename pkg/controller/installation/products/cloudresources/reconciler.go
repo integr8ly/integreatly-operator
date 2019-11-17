@@ -17,7 +17,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	defaultSubscriptionName      = "integreatly-cloud-resources"
+	defaultSubscriptionName      = "cloud-resources"
 )
 
 type Reconciler struct {
