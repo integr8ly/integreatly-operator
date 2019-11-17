@@ -92,6 +92,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		ctx,
 		namespace,
 		marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()},
+		r.Config.GetNamespace(),
 		serverClient,
 		version,
 	)

@@ -109,11 +109,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	}
 
 	// setup smtp credential configmap
-	if in.Spec.UseExternalResources {
-		phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
-		if err != nil || phase != v1alpha1.PhaseCompleted {
-			return phase, err
-		}
+	phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", in, serverClient)
@@ -129,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, r.Config.GetNamespace(), serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -187,7 +185,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgclient.Client) (string, error) {
-
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
