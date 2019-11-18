@@ -18,6 +18,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -73,6 +74,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
 
 	return scheme, err
 }
@@ -89,6 +91,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *v1alpha1.Installation
 		Product         *v1alpha1.InstallationProductStatus
+		ApiUrl          string
 	}{
 		{
 			Name:            "test error on failed config",
@@ -104,6 +107,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},
+			ApiUrl:  "https://serverurl",
 		},
 	}
 
@@ -114,6 +118,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -150,6 +155,27 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kcr := getKcr(keycloak.KeycloakRealmStatus{
+		Phase: keycloak.PhaseReconciling,
+	})
+
+	githubOauthSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "github-oauth-secret",
+			Namespace: defaultOperatorNamespace,
+		},
+	}
+
+	oauthClientSecrets := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "oauth-client-secrets",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{
+			"rhssouser": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		FakeClient      client.Client
@@ -160,10 +186,11 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		ExpectedError   string
 		ExpectedStatus  v1alpha1.StatusPhase
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
+		ApiUrl          string
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &v1alpha1.Installation{
@@ -173,6 +200,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ApiUrl:         "https://serverurl",
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -194,6 +222,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
 			ExpectedStatus: v1alpha1.PhaseFailed,
+			ApiUrl:         "https://serverurl",
 		},
 	}
 	for _, tc := range cases {
@@ -203,6 +232,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.ApiUrl,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -275,6 +305,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *v1alpha1.Installation
+		ApiUrl          string
 	}{
 		{
 			Name:            "test ready kcr returns phase complete",
@@ -283,6 +314,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test unready kcr cr returns phase in progress",
@@ -291,6 +323,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test missing kc cr returns phase failed",
@@ -300,6 +333,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test missing kcr cr returns phase failed",
@@ -309,6 +343,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &v1alpha1.Installation{},
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test failed config write",
@@ -329,6 +364,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				},
 			},
 			Installation: &v1alpha1.Installation{},
+			ApiUrl:       "https://serverurl",
 		},
 	}
 
@@ -339,6 +375,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -447,6 +484,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *v1alpha1.Installation
 		Product         *v1alpha1.InstallationProductStatus
+		ApiUrl          string
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -482,6 +520,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &v1alpha1.InstallationProductStatus{},
+			ApiUrl:       "https://serverurl",
 		},
 	}
 
@@ -492,6 +531,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

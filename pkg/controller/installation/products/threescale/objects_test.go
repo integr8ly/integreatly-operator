@@ -101,6 +101,13 @@ var threeScaleDefaultAdminUser = &User{
 }
 
 var rhssoTest1 = &keycloak.KeycloakUser{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-user1",
+		Namespace: testRhssoNamespace,
+		Labels: map[string]string{
+			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
+		},
+	},
 	Spec: keycloak.KeycloakUserSpec{
 		User: keycloak.KeycloakAPIUser{
 			UserName: "test1",
@@ -110,11 +117,31 @@ var rhssoTest1 = &keycloak.KeycloakUser{
 }
 
 var rhssoTest2 = &keycloak.KeycloakUser{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-user2",
+		Namespace: testRhssoNamespace,
+		Labels: map[string]string{
+			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
+		},
+	},
 	Spec: keycloak.KeycloakUserSpec{
 		User: keycloak.KeycloakAPIUser{
 			UserName: "test2",
 			Email:    "test2@example.com",
 		},
+	},
+}
+
+var rhssoCustomerAdmin = &keycloak.KeycloakUser{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "customer-admin",
+		Namespace: testRhssoNamespace,
+		Labels: map[string]string{
+			rhsso.SSOLabelKey: rhsso.SSOLabelValue,
+		},
+	},
+	Spec: keycloak.KeycloakUserSpec{
+		User: rhsso.CustomerAdminUser,
 	},
 }
 
@@ -390,5 +417,8 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		redisSec,
 		backendRedis,
 		backendRedisSec,
+		rhssoTest2,
+		rhssoTest1,
+		rhssoCustomerAdmin,
 	}
 }

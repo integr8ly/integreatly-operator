@@ -38,7 +38,19 @@ import (
 var testKeycloakClient = &keycloak.KeycloakClient{
 	Spec: keycloak.KeycloakClientSpec{
 		Client: &keycloak.KeycloakAPIClient{
-			Name: defaultClientName,
+			Name: defaultKeycloakClientName,
+		},
+	},
+}
+
+var testKeycloakRealm = &keycloak.KeycloakRealm{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "openshift",
+		Namespace: "rhsso",
+	},
+	Spec: keycloak.KeycloakRealmSpec{
+		Realm: &keycloak.KeycloakAPIRealm{
+			Realm: defaultKeycloakClientName,
 		},
 	},
 }
@@ -195,7 +207,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm),
 			FakeConfig: basicConfigMock(),
 		},
 	}
@@ -261,7 +273,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				},
 			},
 			ExpectedError: "could not retrieve checluster for keycloak client update: checlusters.org.eclipse.che \"integreatly-cluster\" not found",
-			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient),
+			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm),
 			FakeConfig:    basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -295,7 +307,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					},
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, &testCheCluster),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, &testCheCluster, testKeycloakRealm),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -329,7 +341,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.reconcileKeycloakClient(context.TODO(), scenario.FakeClient)
+			status, err := testReconciler.reconcileKeycloakClient(context.TODO(), scenario.Installation, scenario.FakeClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}
@@ -365,7 +377,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, &testCheCluster),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, &testCheCluster, testKeycloakRealm),
 			FakeConfig: basicConfigMock(),
 		},
 		{
@@ -517,7 +529,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:           "test successful installation without errors",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			Installation:   installation,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, dep, ns, cluster, installation),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, dep, ns, cluster, installation),
 			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
