@@ -13,8 +13,11 @@ const (
 	OperatorGroupNamespaceAnnotationKey    = "olm.operatorNamespace"
 	OperatorGroupTargetsAnnotationKey      = "olm.targetNamespaces"
 	OperatorGroupProvidedAPIsAnnotationKey = "olm.providedAPIs"
+
+	OperatorGroupKind = "OperatorGroup"
 )
 
+// OperatorGroupSpec is the spec for an OperatorGroup resource.
 type OperatorGroupSpec struct {
 	// Selector selects the OperatorGroup's target namespaces.
 	// +optional
@@ -33,12 +36,10 @@ type OperatorGroupSpec struct {
 	StaticProvidedAPIs bool `json:"staticProvidedAPIs,omitempty"`
 }
 
+// OperatorGroupStatus is the status for an OperatorGroupResource.
 type OperatorGroupStatus struct {
 	// Namespaces is the set of target namespaces for the OperatorGroup.
 	Namespaces []string `json:"namespaces,omitempty"`
-
-	// ProvidedAPIs represents the set of APIs provided by the OperatorGroup's member CSVs.
-	// ProvidedAPIs []metav1.TypeMeta `json:"providedAPIs,omitempty"`
 
 	// LastUpdated is a timestamp of the last time the OperatorGroup's status was Updated.
 	LastUpdated metav1.Time `json:"lastUpdated"`
@@ -46,6 +47,9 @@ type OperatorGroupStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient
+
+// OperatorGroup is the unit of multitenancy for OLM managed operators.
+// It constrains the installation of operators in its namespace to a specified set of target namespaces.
 type OperatorGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -55,6 +59,8 @@ type OperatorGroup struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// OperatorGroupList is a list of OperatorGroup resources.
 type OperatorGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

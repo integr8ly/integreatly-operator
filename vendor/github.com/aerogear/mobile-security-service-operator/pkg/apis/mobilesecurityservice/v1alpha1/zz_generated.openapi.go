@@ -812,7 +812,7 @@ func schema_pkg_apis_mobilesecurityservice_v1alpha1_MobileSecurityServiceSpec(re
 					},
 					"oAuthImage": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Oauth image:tag E.g docker.io/openshift/oauth-proxy:v1.1.0 More info: https://github.com/openshift/oauth-proxy",
+							Description: "Oauth image:tag E.g quay.io/openshift/origin-oauth-proxy:4.2.0 More info: https://github.com/openshift/oauth-proxy",
 							Type:        []string{"string"},
 							Format:      "",
 						},

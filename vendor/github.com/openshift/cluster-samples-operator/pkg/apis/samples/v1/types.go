@@ -58,6 +58,16 @@ const (
 	// X86Architecture is the value used to specify the x86_64 hardware architecture
 	// in the Architectures array field.
 	X86Architecture = "x86_64"
+	// AMDArchitecture is the golang value for x86 64 bit hardware architecture; for the purposes
+	// of this operator, it is equivalent to X86Architecture, which is kept for historical/migration
+	// purposes
+	AMDArchitecture = "amd64"
+	// PPCArchitecture is the value used to specify the x86_64 hardware architecture
+	// in the Architectures array field.
+	PPCArchitecture = "ppc64le"
+	// S390Architecture is the value used to specify the s390x hardware architecture
+	// in the Architecture array field.
+	S390Architecture = "s390x"
 	// ConfigFinalizer is the text added to the Config.Finalizer field
 	// to enable finalizer processing.
 	ConfigFinalizer = GroupName + "/finalizer"
@@ -74,6 +84,8 @@ const (
 	// in the openshift namespace does not exist.  This will initiate creation of the credential
 	// in the openshift namespace.
 	SamplesRecreateCredentialAnnotation = GroupName + "/recreate"
+	// OperatorNamespace is the namespace the operator runs in.
+	OperatorNamespace = "openshift-cluster-samples-operator"
 )
 
 type ConfigSpec struct {
@@ -92,8 +104,8 @@ type ConfigSpec struct {
 	// defaults to registry.redhat.io.
 	SamplesRegistry string `json:"samplesRegistry,omitempty" protobuf:"bytes,2,opt,name=samplesRegistry"`
 
-	// Architectures determine which hardware architecture(s) to install, where x86_64 is the only
-	// supported choice currently.
+	// Architectures determine which hardware architecture(s) to install, where x86_64, ppc64le, and s390x are the only
+	// supported choices currently.
 	Architectures []string `json:"architectures,omitempty" protobuf:"bytes,4,opt,name=architectures"`
 
 	// SkippedImagestreams specifies names of image streams that should NOT be
@@ -334,7 +346,7 @@ const (
 	installedButNotManaged = "Samples installation was previously successful at %s but the samples operator is now %s"
 	moving                 = "Samples processing to %s"
 	removing               = "Deleting samples at %s"
-	doneImportsFailed      = "Samples installed at %s, with image import failures for these imagestreams: %s"
+	doneImportsFailed      = "Samples installed at %s, with image import failures for these imagestreams: %s; last import attempt %s"
 	failedImageImports     = "FailedImageImports"
 	currentlyNotManaged    = "Currently%s"
 )
@@ -421,7 +433,7 @@ func (s *Config) ClusterOperatorStatusDegradedCondition() (configv1.ConditionSta
 		now := metav1.Now()
 		twoHrsAgo := now.Time.Add(-2 * time.Hour)
 		if impErrCon.LastTransitionTime.Time.Before(twoHrsAgo) {
-			msg := fmt.Sprintf(doneImportsFailed, s.Status.Version, impErrCon.Reason)
+			msg := fmt.Sprintf(doneImportsFailed, s.Status.Version, impErrCon.Reason, impErrCon.LastUpdateTime.String())
 			return trueRC, failedImageImports, msg
 		}
 
@@ -471,7 +483,7 @@ func (s *Config) ClusterOperatorStatusProgressingCondition(degradedState string,
 		reason := ""
 		if s.ConditionTrue(ImportImageErrorsExist) {
 			importErrors := s.Condition(ImportImageErrorsExist)
-			msg = fmt.Sprintf(doneImportsFailed, s.Status.Version, importErrors.Reason)
+			msg = fmt.Sprintf(doneImportsFailed, s.Status.Version, importErrors.Reason, importErrors.LastUpdateTime.String())
 			reason = failedImageImports
 		}
 		return configv1.ConditionFalse, reason, msg
