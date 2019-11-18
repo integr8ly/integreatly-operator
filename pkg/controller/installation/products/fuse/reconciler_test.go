@@ -9,8 +9,8 @@ import (
 	v1 "github.com/openshift/api/apps/v1"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	usersv1 "github.com/openshift/api/user/v1"
 	"github.com/pkg/errors"
 

@@ -3,22 +3,23 @@ package codeready
 import (
 	"context"
 	"fmt"
-
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	resources2 "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
+
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -264,7 +265,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 
 	r.logger.Infof("creating required custom resources in namespace: %s", r.Config.GetNamespace())
 
-	kcRealm := &keycloakv1.KeycloakRealm{}
+	kcRealm := &keycloak.KeycloakRealm{}
 	key := pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}
 	err = serverClient.Get(ctx, key, kcRealm)
 	if err != nil {
@@ -372,7 +373,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 		}
 	}
 
-	kcClient := &keycloakv1.KeycloakClient{
+	kcClient := &keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultKeycloakClientName,
 			Namespace: kcConfig.GetNamespace(),
@@ -430,7 +431,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
+func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloak.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
 	selfSignedCerts := inst.Spec.SelfSignedCerts
 
 	// setup external postgres db using cloud-resources-operator default is Openshift
@@ -490,7 +491,7 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 
 	// setup the postgres cr for cloud resource operator
 	postgresName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+	postgres, err := resources2.ReconcilePostgres(ctx, serverClient, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		ownerutil.EnsureOwner(cr, inst)
 		return nil
 	})
@@ -499,7 +500,7 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 	}
 
 	// phase is not complete, wait
-	if postgres.Status.Phase != cro1types.PhaseComplete {
+	if postgres.Status.Phase != types.PhaseComplete {
 		return nil, nil
 	}
 
@@ -525,12 +526,12 @@ func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alph
 	return cheCluster, nil
 }
 
-func getKeycloakClientSpec(cheURL string) keycloakv1.KeycloakClientSpec {
-	return keycloakv1.KeycloakClientSpec{
+func getKeycloakClientSpec(cheURL string) keycloak.KeycloakClientSpec {
+	return keycloak.KeycloakClientSpec{
 		RealmSelector: &metav1.LabelSelector{
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
-		Client: &keycloakv1.KeycloakAPIClient{
+		Client: &keycloak.KeycloakAPIClient{
 			ID:                        defaultClientName,
 			ClientID:                  defaultClientName,
 			ClientAuthenticatorType:   "client-secret",
@@ -547,7 +548,7 @@ func getKeycloakClientSpec(cheURL string) keycloakv1.KeycloakClientSpec {
 				"configure": true,
 				"manage":    true,
 			},
-			ProtocolMappers: []keycloakv1.KeycloakProtocolMapper{
+			ProtocolMappers: []keycloak.KeycloakProtocolMapper{
 				{
 					Name:            "given name",
 					Protocol:        "openid-connect",

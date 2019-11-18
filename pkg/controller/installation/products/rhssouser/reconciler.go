@@ -5,10 +5,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -26,9 +26,9 @@ var (
 	defaultRhssoNamespace   = "user-sso"
 	keycloakName            = "rhssouser"
 	keycloakRealmName       = "user-sso"
-	defaultSubscriptionName = "integreatly-rhsso"
+	defaultSubscriptionName = "keycloak-rhsso"
 	idpAlias                = "openshift-v4"
-	manifestPackage         = "integreatly-rhsso"
+	manifestPackage         = "keycloak-rhsso"
 )
 
 const (
@@ -206,10 +206,6 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 		r.Config.SetProductVersion(kc.Status.Version)
 		r.ConfigManager.WriteConfig(r.Config)
 	}
-	if err == nil && string(r.Config.GetOperatorVersion()) != kc.Status.OperatorVersion {
-		r.Config.SetOperatorVersion(kc.Status.OperatorVersion)
-		r.ConfigManager.WriteConfig(r.Config)
-	}
 
 	r.logger.Info("checking ready status for user-sso")
 	kcr := &keycloak.KeycloakRealm{}
@@ -307,8 +303,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 				"useJwksUrl":      "true",
 			},
 		})
-
-		return serverClient.Update(ctx, kcr)
 	}
 	return nil
 }
