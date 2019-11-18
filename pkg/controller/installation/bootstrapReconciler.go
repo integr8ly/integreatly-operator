@@ -163,15 +163,21 @@ func (r *Reconciler) reconcileRHMIAdminsGroup(ctx context.Context, serverClient 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiAdminsGroup, func(existing runtime.Object) error {
 		// Get users from the dedicated-admins group
 		dedicatedAdminGroup := &usersv1.Group{}
-		if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: dedicatedAdminsGroupName}, dedicatedAdminGroup); err != nil {
+		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: dedicatedAdminsGroupName}, dedicatedAdminGroup)
+		if err != nil && !k8serr.IsNotFound(err) {
 			return err
 		}
 
+		// dedicated-admins group doesn't exist, no users to reconcile
+		if k8serr.IsNotFound(err) {
+			return nil
+		}
+
+		// Ensure all users from dedicated-admins group are added to the rhmi-admins group
 		rhmiAdminsGroup := existing.(*usersv1.Group)
 		rhmiAdminUsers := []string{}
 		rhmiAdminUsers = append(rhmiAdminUsers, rhmiAdminsGroup.Users...)
 
-		// Ensure all users from dedicated-admins group are added to the rhmi-admins group
 		for _, user := range dedicatedAdminGroup.Users {
 			if !resources.Contains(rhmiAdminUsers, user) {
 				rhmiAdminUsers = append(rhmiAdminUsers, user)
