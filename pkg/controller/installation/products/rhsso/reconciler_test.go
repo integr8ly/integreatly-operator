@@ -157,6 +157,23 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	oauthClientSecrets := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "oauth-client-secrets",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{
+			"rhsso": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
+	githubOauthSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "github-oauth-secret",
+			Namespace: defaultOperatorNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		FakeClient      client.Client
@@ -170,7 +187,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &v1alpha1.Installation{
