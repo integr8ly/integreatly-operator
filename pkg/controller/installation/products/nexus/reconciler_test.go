@@ -148,7 +148,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		{
 			Name: "Test reconcile custom resource returns failed when cr status is failed",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -245,7 +245,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			ExpectedError:  "failed to check nexus installation",
 			ExpectError:    true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				ListFunc: func(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+				ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 					return errors.New("dummy create error")
 				},
 			},

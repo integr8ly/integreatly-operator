@@ -199,7 +199,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
 
 	openshiftUsers := &usersv1.UserList{}
-	err := client.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	err := client.List(ctx, openshiftUsers)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}

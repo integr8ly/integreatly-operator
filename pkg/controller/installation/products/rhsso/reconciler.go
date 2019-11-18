@@ -443,7 +443,7 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 
 func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient pkgclient.Client) ([]*aerogearv1.KeycloakUser, error) {
 	openshiftUsers := &usersv1.UserList{}
-	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
 		return nil, err
 	}

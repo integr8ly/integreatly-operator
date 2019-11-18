@@ -25,17 +25,17 @@ func NewSigsClientMoqWithScheme(clientScheme *runtime.Scheme, initObjs ...runtim
 		GetFunc: func(ctx context.Context, key sigs.ObjectKey, obj runtime.Object) error {
 			return sigsClient.Get(ctx, key, obj)
 		},
-		CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+		CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...sigs.CreateOption) error {
 			return sigsClient.Create(ctx, obj)
 		},
-		UpdateFunc: func(ctx context.Context, obj runtime.Object) error {
+		UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...sigs.UpdateOption) error {
 			return sigsClient.Update(ctx, obj)
 		},
-		DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...sigs.DeleteOptionFunc) error {
+		DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...sigs.DeleteOption) error {
 			return sigsClient.Delete(ctx, obj)
 		},
-		ListFunc: func(ctx context.Context, opts *sigs.ListOptions, list runtime.Object) error {
-			return sigsClient.List(ctx, opts, list)
+		ListFunc: func(ctx context.Context, list runtime.Object, opts ...sigs.ListOption) error {
+			return sigsClient.List(ctx, list, opts...)
 		},
 		StatusFunc: func() sigs.StatusWriter {
 			return sigsClient.Status()

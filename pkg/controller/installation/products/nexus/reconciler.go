@@ -148,7 +148,10 @@ func (r *Reconciler) handleProgress(ctx context.Context, client pkgclient.Client
 	r.logger.Debug("checking nexus pods are running")
 
 	pods := &corev1.PodList{}
-	err := client.List(ctx, &pkgclient.ListOptions{Namespace: r.Config.GetNamespace()}, pods)
+	listOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(r.Config.GetNamespace()),
+	}
+	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to list pods in nexus namespace")
 	}
