@@ -310,7 +310,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 
 	// Create / update the synchronized users
 	for _, user := range users {
-		or, err = r.createOrUpdateKeycloakUser(*user, inst, ctx, serverClient)
+		or, err = r.createOrUpdateKeycloakUser(user, inst, ctx, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
 		} else {
@@ -504,7 +504,7 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 	return false
 }
 
-func getUserDiff(keycloakUsers []*keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
 	var added []usersv1.User
 	for _, osUser := range openshiftUsers {
 		if !kcContainsOsUser(keycloakUsers, osUser) {
@@ -522,7 +522,7 @@ func getUserDiff(keycloakUsers []*keycloak.KeycloakAPIUser, openshiftUsers []use
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(keycloakUsers []*keycloak.KeycloakAPIUser, ctx context.Context, serverClient pkgclient.Client) ([]*keycloak.KeycloakAPIUser, error) {
+func syncronizeWithOpenshiftUsers(keycloakUsers []keycloak.KeycloakAPIUser, ctx context.Context, serverClient pkgclient.Client) ([]keycloak.KeycloakAPIUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
@@ -539,7 +539,7 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*keycloak.KeycloakAPIUser, ctx
 		if !strings.Contains(email, "@") {
 			email = email + "@example.com"
 		}
-		keycloakUsers = append(keycloakUsers, &keycloak.KeycloakAPIUser{
+		keycloakUsers = append(keycloakUsers, keycloak.KeycloakAPIUser{
 			Enabled:       true,
 			UserName:      osUser.Name,
 			EmailVerified: true,
@@ -570,12 +570,12 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*keycloak.KeycloakAPIUser, ctx
 	return keycloakUsers, nil
 }
 
-func remove(index int, kcUsers []*keycloak.KeycloakAPIUser) []*keycloak.KeycloakAPIUser {
+func remove(index int, kcUsers []keycloak.KeycloakAPIUser) []keycloak.KeycloakAPIUser {
 	kcUsers[index] = kcUsers[len(kcUsers)-1]
 	return kcUsers[:len(kcUsers)-1]
 }
 
-func kcContainsOsUser(kcUsers []*keycloak.KeycloakAPIUser, osUser usersv1.User) bool {
+func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == osUser.Name {
 			return true
@@ -585,7 +585,7 @@ func kcContainsOsUser(kcUsers []*keycloak.KeycloakAPIUser, osUser usersv1.User) 
 	return false
 }
 
-func OsUserInKc(osUsers []usersv1.User, kcUser *keycloak.KeycloakAPIUser) bool {
+func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, osu := range osUsers {
 		if osu.Name == kcUser.UserName {
 			return true
@@ -595,7 +595,7 @@ func OsUserInKc(osUsers []usersv1.User, kcUser *keycloak.KeycloakAPIUser) bool {
 	return false
 }
 
-func isOpenshiftAdmin(kcUser *keycloak.KeycloakAPIUser, adminGroup *usersv1.Group) bool {
+func isOpenshiftAdmin(kcUser keycloak.KeycloakAPIUser, adminGroup *usersv1.Group) bool {
 	for _, name := range adminGroup.Users {
 		if kcUser.UserName == name {
 			return true
@@ -624,9 +624,8 @@ func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, i
 	})
 }
 
-func GetKeycloakUsers(ctx context.Context, serverClient pkgclient.Client, ns string) ([]*keycloak.KeycloakAPIUser, error) {
+func GetKeycloakUsers(ctx context.Context, serverClient pkgclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	var users keycloak.KeycloakUserList
-	var mappedUsers []*keycloak.KeycloakAPIUser
 
 	labelSelector, err := labels.Parse(fmt.Sprintf("%v=%v", SSOLabelKey, SSOLabelValue))
 	if err != nil {
@@ -642,8 +641,9 @@ func GetKeycloakUsers(ctx context.Context, serverClient pkgclient.Client, ns str
 		return nil, err
 	}
 
-	for _, user := range users.Items {
-		mappedUsers = append(mappedUsers, &user.Spec.User)
+	mappedUsers := make([]keycloak.KeycloakAPIUser, len(users.Items))
+	for i, user := range users.Items {
+		mappedUsers[i] = user.Spec.User
 	}
 
 	return mappedUsers, nil

@@ -710,7 +710,7 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 		return v1alpha1.PhaseFailed, err
 	}
 
-	kcUsers = filterUsers(kcUsers, func(u *keycloak.KeycloakAPIUser) bool {
+	kcUsers = filterUsers(kcUsers, func(u keycloak.KeycloakAPIUser) bool {
 		return u.UserName == rhsso.CustomerAdminUser.UserName
 	})
 
@@ -1010,10 +1010,10 @@ func (r *Reconciler) RolloutDeployment(name string) error {
 	return err
 }
 
-type predicateFunc func(*keycloak.KeycloakAPIUser) bool
+type predicateFunc func(keycloak.KeycloakAPIUser) bool
 
-func filterUsers(u []*keycloak.KeycloakAPIUser, predicate predicateFunc) []*keycloak.KeycloakAPIUser {
-	var result []*keycloak.KeycloakAPIUser
+func filterUsers(u []keycloak.KeycloakAPIUser, predicate predicateFunc) []keycloak.KeycloakAPIUser {
+	var result []keycloak.KeycloakAPIUser
 	for _, s := range u {
 		if predicate(s) {
 			result = append(result, s)
@@ -1023,8 +1023,8 @@ func filterUsers(u []*keycloak.KeycloakAPIUser, predicate predicateFunc) []*keyc
 	return result
 }
 
-func (r *Reconciler) getUserDiff(kcUsers []*keycloak.KeycloakAPIUser, tsUsers []*User) ([]*keycloak.KeycloakAPIUser, []*User) {
-	var added []*keycloak.KeycloakAPIUser
+func (r *Reconciler) getUserDiff(kcUsers []keycloak.KeycloakAPIUser, tsUsers []*User) ([]keycloak.KeycloakAPIUser, []*User) {
+	var added []keycloak.KeycloakAPIUser
 	for _, kcUser := range kcUsers {
 		if !tsContainsKc(tsUsers, kcUser) {
 			added = append(added, kcUser)
@@ -1041,7 +1041,7 @@ func (r *Reconciler) getUserDiff(kcUsers []*keycloak.KeycloakAPIUser, tsUsers []
 	return added, deleted
 }
 
-func kcContainsTs(kcUsers []*keycloak.KeycloakAPIUser, tsUser *User) bool {
+func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == tsUser.UserDetails.Username {
 			return true
@@ -1051,7 +1051,7 @@ func kcContainsTs(kcUsers []*keycloak.KeycloakAPIUser, tsUser *User) bool {
 	return false
 }
 
-func tsContainsKc(tsusers []*User, kcUser *keycloak.KeycloakAPIUser) bool {
+func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
 		if tsu.UserDetails.Username == kcUser.UserName {
 			return true
