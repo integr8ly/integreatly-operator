@@ -19,7 +19,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,7 +31,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "codeready-workspaces"
-	defaultClientName            = "che-client"
 	defaultCheClusterName        = "integreatly-cluster"
 	defaultSubscriptionName      = "integreatly-codeready-workspaces"
 	manifestPackage              = "integreatly-codeready-workspaces"
@@ -299,7 +297,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 		!cheCluster.Spec.Auth.OpenShiftOauth &&
 		cheCluster.Spec.Auth.KeycloakURL == kcConfig.GetHost() &&
 		cheCluster.Spec.Auth.KeycloakRealm == kcConfig.GetRealm() &&
-		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
+		cheCluster.Spec.Auth.KeycloakClientId == defaultKeycloakClientName {
 		logrus.Debug("skipping checluster custom resource update as all values are correct")
 		return v1alpha1.PhaseCompleted, nil
 	}
@@ -309,7 +307,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Ins
 	cheCluster.Spec.Auth.OpenShiftOauth = false
 	cheCluster.Spec.Auth.KeycloakURL = kcConfig.GetHost()
 	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
-	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
+	cheCluster.Spec.Auth.KeycloakClientId = defaultKeycloakClientName
 	if err = serverClient.Update(ctx, cheCluster); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 	}
@@ -469,7 +467,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 				ExternalKeycloak: true,
 				KeycloakURL:      kcCfg.GetHost(),
 				KeycloakRealm:    kr.Name,
-				KeycloakClientId: defaultClientName,
+				KeycloakClientId: defaultKeycloakClientName,
 			},
 			Storage: chev1.CheClusterSpecStorage{
 				PvcStrategy:       "per-workspace",
@@ -532,8 +530,8 @@ func getKeycloakClientSpec(cheURL string) keycloak.KeycloakClientSpec {
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
 		Client: &keycloak.KeycloakAPIClient{
-			ID:                        defaultClientName,
-			ClientID:                  defaultClientName,
+			ID:                        defaultKeycloakClientName,
+			ClientID:                  defaultKeycloakClientName,
 			ClientAuthenticatorType:   "client-secret",
 			Enabled:                   true,
 			PublicClient:              true,
