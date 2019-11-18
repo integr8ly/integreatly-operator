@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	oauthv1 "github.com/openshift/api/oauth/v1"

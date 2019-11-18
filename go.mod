@@ -13,7 +13,8 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/uuid v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
-	github.com/integr8ly/grafana-operator v1.3.1
+	github.com/integr8ly/grafana-operator v1.4.0
+	github.com/keycloak/keycloak-operator v0.0.0-20191127130843-fb19ff486ee2
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -28,7 +29,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
-	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 	sigs.k8s.io/controller-runtime v0.3.0
 )
