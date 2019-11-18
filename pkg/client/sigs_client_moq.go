@@ -14,9 +14,11 @@ import (
 var (
 	lockSigsClientInterfaceMockCreate        sync.RWMutex
 	lockSigsClientInterfaceMockDelete        sync.RWMutex
+	lockSigsClientInterfaceMockDeleteAllOf   sync.RWMutex
 	lockSigsClientInterfaceMockGet           sync.RWMutex
 	lockSigsClientInterfaceMockGetSigsClient sync.RWMutex
 	lockSigsClientInterfaceMockList          sync.RWMutex
+	lockSigsClientInterfaceMockPatch         sync.RWMutex
 	lockSigsClientInterfaceMockStatus        sync.RWMutex
 	lockSigsClientInterfaceMockUpdate        sync.RWMutex
 )
@@ -31,11 +33,14 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //
 //         // make and configure a mocked SigsClientInterface
 //         mockedSigsClientInterface := &SigsClientInterfaceMock{
-//             CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+//             CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
 // 	               panic("mock out the Create method")
 //             },
-//             DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOptionFunc) error {
+//             DeleteFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 // 	               panic("mock out the Delete method")
+//             },
+//             DeleteAllOfFunc: func(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+// 	               panic("mock out the DeleteAllOf method")
 //             },
 //             GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 // 	               panic("mock out the Get method")
@@ -43,13 +48,16 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //             GetSigsClientFunc: func() client.Client {
 // 	               panic("mock out the GetSigsClient method")
 //             },
-//             ListFunc: func(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+//             ListFunc: func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 // 	               panic("mock out the List method")
+//             },
+//             PatchFunc: func(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+// 	               panic("mock out the Patch method")
 //             },
 //             StatusFunc: func() client.StatusWriter {
 // 	               panic("mock out the Status method")
 //             },
-//             UpdateFunc: func(ctx context.Context, obj runtime.Object) error {
+//             UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 // 	               panic("mock out the Update method")
 //             },
 //         }
@@ -60,10 +68,13 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //     }
 type SigsClientInterfaceMock struct {
 	// CreateFunc mocks the Create method.
-	CreateFunc func(ctx context.Context, obj runtime.Object) error
+	CreateFunc func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
 
 	// DeleteFunc mocks the Delete method.
-	DeleteFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOptionFunc) error
+	DeleteFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error
+
+	// DeleteAllOfFunc mocks the DeleteAllOf method.
+	DeleteAllOfFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error
 
 	// GetFunc mocks the Get method.
 	GetFunc func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
@@ -72,13 +83,16 @@ type SigsClientInterfaceMock struct {
 	GetSigsClientFunc func() client.Client
 
 	// ListFunc mocks the List method.
-	ListFunc func(ctx context.Context, opts *client.ListOptions, list runtime.Object) error
+	ListFunc func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error
+
+	// PatchFunc mocks the Patch method.
+	PatchFunc func(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error
 
 	// StatusFunc mocks the Status method.
 	StatusFunc func() client.StatusWriter
 
 	// UpdateFunc mocks the Update method.
-	UpdateFunc func(ctx context.Context, obj runtime.Object) error
+	UpdateFunc func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -88,6 +102,8 @@ type SigsClientInterfaceMock struct {
 			Ctx context.Context
 			// Obj is the obj argument value.
 			Obj runtime.Object
+			// Opts is the opts argument value.
+			Opts []client.CreateOption
 		}
 		// Delete holds details about calls to the Delete method.
 		Delete []struct {
@@ -96,7 +112,16 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.DeleteOptionFunc
+			Opts []client.DeleteOption
+		}
+		// DeleteAllOf holds details about calls to the DeleteAllOf method.
+		DeleteAllOf []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Obj is the obj argument value.
+			Obj runtime.Object
+			// Opts is the opts argument value.
+			Opts []client.DeleteAllOfOption
 		}
 		// Get holds details about calls to the Get method.
 		Get []struct {
@@ -114,10 +139,21 @@ type SigsClientInterfaceMock struct {
 		List []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Opts is the opts argument value.
-			Opts *client.ListOptions
 			// List is the list argument value.
 			List runtime.Object
+			// Opts is the opts argument value.
+			Opts []client.ListOption
+		}
+		// Patch holds details about calls to the Patch method.
+		Patch []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Obj is the obj argument value.
+			Obj runtime.Object
+			// Patch is the patch argument value.
+			Patch client.Patch
+			// Opts is the opts argument value.
+			Opts []client.PatchOption
 		}
 		// Status holds details about calls to the Status method.
 		Status []struct {
@@ -128,38 +164,44 @@ type SigsClientInterfaceMock struct {
 			Ctx context.Context
 			// Obj is the obj argument value.
 			Obj runtime.Object
+			// Opts is the opts argument value.
+			Opts []client.UpdateOption
 		}
 	}
 }
 
 // Create calls CreateFunc.
-func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Object) error {
+func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
 	if mock.CreateFunc == nil {
 		panic("SigsClientInterfaceMock.CreateFunc: method is nil but SigsClientInterface.Create was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		Obj runtime.Object
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.CreateOption
 	}{
-		Ctx: ctx,
-		Obj: obj,
+		Ctx:  ctx,
+		Obj:  obj,
+		Opts: opts,
 	}
 	lockSigsClientInterfaceMockCreate.Lock()
 	mock.calls.Create = append(mock.calls.Create, callInfo)
 	lockSigsClientInterfaceMockCreate.Unlock()
-	return mock.CreateFunc(ctx, obj)
+	return mock.CreateFunc(ctx, obj, opts...)
 }
 
 // CreateCalls gets all the calls that were made to Create.
 // Check the length with:
 //     len(mockedSigsClientInterface.CreateCalls())
 func (mock *SigsClientInterfaceMock) CreateCalls() []struct {
-	Ctx context.Context
-	Obj runtime.Object
+	Ctx  context.Context
+	Obj  runtime.Object
+	Opts []client.CreateOption
 } {
 	var calls []struct {
-		Ctx context.Context
-		Obj runtime.Object
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.CreateOption
 	}
 	lockSigsClientInterfaceMockCreate.RLock()
 	calls = mock.calls.Create
@@ -168,14 +210,14 @@ func (mock *SigsClientInterfaceMock) CreateCalls() []struct {
 }
 
 // Delete calls DeleteFunc.
-func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOptionFunc) error {
+func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
 	if mock.DeleteFunc == nil {
 		panic("SigsClientInterfaceMock.DeleteFunc: method is nil but SigsClientInterface.Delete was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteOptionFunc
+		Opts []client.DeleteOption
 	}{
 		Ctx:  ctx,
 		Obj:  obj,
@@ -193,16 +235,55 @@ func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Obj
 func (mock *SigsClientInterfaceMock) DeleteCalls() []struct {
 	Ctx  context.Context
 	Obj  runtime.Object
-	Opts []client.DeleteOptionFunc
+	Opts []client.DeleteOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteOptionFunc
+		Opts []client.DeleteOption
 	}
 	lockSigsClientInterfaceMockDelete.RLock()
 	calls = mock.calls.Delete
 	lockSigsClientInterfaceMockDelete.RUnlock()
+	return calls
+}
+
+// DeleteAllOf calls DeleteAllOfFunc.
+func (mock *SigsClientInterfaceMock) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+	if mock.DeleteAllOfFunc == nil {
+		panic("SigsClientInterfaceMock.DeleteAllOfFunc: method is nil but SigsClientInterface.DeleteAllOf was just called")
+	}
+	callInfo := struct {
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.DeleteAllOfOption
+	}{
+		Ctx:  ctx,
+		Obj:  obj,
+		Opts: opts,
+	}
+	lockSigsClientInterfaceMockDeleteAllOf.Lock()
+	mock.calls.DeleteAllOf = append(mock.calls.DeleteAllOf, callInfo)
+	lockSigsClientInterfaceMockDeleteAllOf.Unlock()
+	return mock.DeleteAllOfFunc(ctx, obj, opts...)
+}
+
+// DeleteAllOfCalls gets all the calls that were made to DeleteAllOf.
+// Check the length with:
+//     len(mockedSigsClientInterface.DeleteAllOfCalls())
+func (mock *SigsClientInterfaceMock) DeleteAllOfCalls() []struct {
+	Ctx  context.Context
+	Obj  runtime.Object
+	Opts []client.DeleteAllOfOption
+} {
+	var calls []struct {
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.DeleteAllOfOption
+	}
+	lockSigsClientInterfaceMockDeleteAllOf.RLock()
+	calls = mock.calls.DeleteAllOf
+	lockSigsClientInterfaceMockDeleteAllOf.RUnlock()
 	return calls
 }
 
@@ -272,23 +353,23 @@ func (mock *SigsClientInterfaceMock) GetSigsClientCalls() []struct {
 }
 
 // List calls ListFunc.
-func (mock *SigsClientInterfaceMock) List(ctx context.Context, opts *client.ListOptions, list runtime.Object) error {
+func (mock *SigsClientInterfaceMock) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
 	if mock.ListFunc == nil {
 		panic("SigsClientInterfaceMock.ListFunc: method is nil but SigsClientInterface.List was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
-		Opts *client.ListOptions
 		List runtime.Object
+		Opts []client.ListOption
 	}{
 		Ctx:  ctx,
-		Opts: opts,
 		List: list,
+		Opts: opts,
 	}
 	lockSigsClientInterfaceMockList.Lock()
 	mock.calls.List = append(mock.calls.List, callInfo)
 	lockSigsClientInterfaceMockList.Unlock()
-	return mock.ListFunc(ctx, opts, list)
+	return mock.ListFunc(ctx, list, opts...)
 }
 
 // ListCalls gets all the calls that were made to List.
@@ -296,17 +377,60 @@ func (mock *SigsClientInterfaceMock) List(ctx context.Context, opts *client.List
 //     len(mockedSigsClientInterface.ListCalls())
 func (mock *SigsClientInterfaceMock) ListCalls() []struct {
 	Ctx  context.Context
-	Opts *client.ListOptions
 	List runtime.Object
+	Opts []client.ListOption
 } {
 	var calls []struct {
 		Ctx  context.Context
-		Opts *client.ListOptions
 		List runtime.Object
+		Opts []client.ListOption
 	}
 	lockSigsClientInterfaceMockList.RLock()
 	calls = mock.calls.List
 	lockSigsClientInterfaceMockList.RUnlock()
+	return calls
+}
+
+// Patch calls PatchFunc.
+func (mock *SigsClientInterfaceMock) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+	if mock.PatchFunc == nil {
+		panic("SigsClientInterfaceMock.PatchFunc: method is nil but SigsClientInterface.Patch was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Obj   runtime.Object
+		Patch client.Patch
+		Opts  []client.PatchOption
+	}{
+		Ctx:   ctx,
+		Obj:   obj,
+		Patch: patch,
+		Opts:  opts,
+	}
+	lockSigsClientInterfaceMockPatch.Lock()
+	mock.calls.Patch = append(mock.calls.Patch, callInfo)
+	lockSigsClientInterfaceMockPatch.Unlock()
+	return mock.PatchFunc(ctx, obj, patch, opts...)
+}
+
+// PatchCalls gets all the calls that were made to Patch.
+// Check the length with:
+//     len(mockedSigsClientInterface.PatchCalls())
+func (mock *SigsClientInterfaceMock) PatchCalls() []struct {
+	Ctx   context.Context
+	Obj   runtime.Object
+	Patch client.Patch
+	Opts  []client.PatchOption
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Obj   runtime.Object
+		Patch client.Patch
+		Opts  []client.PatchOption
+	}
+	lockSigsClientInterfaceMockPatch.RLock()
+	calls = mock.calls.Patch
+	lockSigsClientInterfaceMockPatch.RUnlock()
 	return calls
 }
 
@@ -337,33 +461,37 @@ func (mock *SigsClientInterfaceMock) StatusCalls() []struct {
 }
 
 // Update calls UpdateFunc.
-func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Object) error {
+func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
 	if mock.UpdateFunc == nil {
 		panic("SigsClientInterfaceMock.UpdateFunc: method is nil but SigsClientInterface.Update was just called")
 	}
 	callInfo := struct {
-		Ctx context.Context
-		Obj runtime.Object
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.UpdateOption
 	}{
-		Ctx: ctx,
-		Obj: obj,
+		Ctx:  ctx,
+		Obj:  obj,
+		Opts: opts,
 	}
 	lockSigsClientInterfaceMockUpdate.Lock()
 	mock.calls.Update = append(mock.calls.Update, callInfo)
 	lockSigsClientInterfaceMockUpdate.Unlock()
-	return mock.UpdateFunc(ctx, obj)
+	return mock.UpdateFunc(ctx, obj, opts...)
 }
 
 // UpdateCalls gets all the calls that were made to Update.
 // Check the length with:
 //     len(mockedSigsClientInterface.UpdateCalls())
 func (mock *SigsClientInterfaceMock) UpdateCalls() []struct {
-	Ctx context.Context
-	Obj runtime.Object
+	Ctx  context.Context
+	Obj  runtime.Object
+	Opts []client.UpdateOption
 } {
 	var calls []struct {
-		Ctx context.Context
-		Obj runtime.Object
+		Ctx  context.Context
+		Obj  runtime.Object
+		Opts []client.UpdateOption
 	}
 	lockSigsClientInterfaceMockUpdate.RLock()
 	calls = mock.calls.Update

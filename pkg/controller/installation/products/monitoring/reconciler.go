@@ -19,7 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -83,8 +82,10 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
 		dashboards := &grafanav1alpha1.GrafanaDashboardList{}
-		selector := labels.Set(map[string]string{"monitoring-key": "middleware"}).AsSelector()
-		err := serverClient.List(ctx, &pkgclient.ListOptions{LabelSelector: selector}, dashboards)
+		dashboardListOpts := []pkgclient.ListOption{
+			pkgclient.MatchingLabels(map[string]string{"monitoring-key": "middleware"}),
+		}
+		err := serverClient.List(ctx, dashboards, dashboardListOpts...)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
@@ -97,7 +98,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			return v1alpha1.PhaseFailed, err
 		}
 
-		err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: fuseConfig.GetNamespace()}, dashboards)
+		fuseDashboardlistOpts := []pkgclient.ListOption{
+			pkgclient.InNamespace(fuseConfig.GetNamespace()),
+		}
+		err = serverClient.List(ctx, dashboards, fuseDashboardlistOpts...)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
