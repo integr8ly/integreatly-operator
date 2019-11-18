@@ -14,7 +14,7 @@ import (
 	solutionExplorer "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -42,7 +42,7 @@ func init() {
 		marketplacev1.SchemeBuilder.AddToScheme,
 		marketplacev2.SchemeBuilder.AddToScheme,
 		kafkav1.SchemeBuilder.AddToScheme,
-		aerogearv1.SchemeBuilder.AddToScheme,
+		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syn.SchemeBuilder.AddToScheme,
 		enmasse.SchemeBuilder.AddToScheme,

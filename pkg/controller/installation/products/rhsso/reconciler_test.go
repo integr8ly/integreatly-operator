@@ -3,6 +3,7 @@ package rhsso
 import (
 	"bytes"
 	"context"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -12,7 +13,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
-	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -235,6 +235,8 @@ func TestReconciler_handleProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	Keycloak
 
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
