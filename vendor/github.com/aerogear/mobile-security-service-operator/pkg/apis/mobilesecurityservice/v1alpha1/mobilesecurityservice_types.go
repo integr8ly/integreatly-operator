@@ -73,7 +73,7 @@ type MobileSecurityServiceSpec struct {
 	OAuthResourceCpuLimit string `json:"oAuthResourceCpuLimit,omitempty"`
 	// CPU resource which will be available for the OAuth container
 	OAuthResourceCpu string `json:"oAuthResourceCpu,omitempty"`
-	// Oauth image:tag E.g docker.io/openshift/oauth-proxy:v1.1.0
+	// Oauth image:tag E.g quay.io/openshift/origin-oauth-proxy:4.2.0
 	// More info: https://github.com/openshift/oauth-proxy
 	OAuthImage string `json:"oAuthImage,omitempty"`
 	// Name of the container which will be created for the Service pod as sidecar
