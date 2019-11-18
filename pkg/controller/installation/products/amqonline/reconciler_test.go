@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-	enmassev1 "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
+	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
