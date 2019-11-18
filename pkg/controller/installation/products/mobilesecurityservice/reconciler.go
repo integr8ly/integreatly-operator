@@ -152,7 +152,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 	}
 
 	// attempt to create the mss db custom resource
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, mssDb, func(existing runtime.Object) error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, mssDb, func() error {
 		return nil
 	}); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a mobile security service db custom resource")
@@ -199,7 +199,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 	}
 
 	// attempt to create the mss custom resource
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, mss, func(existing runtime.Object) error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, mss, func() error {
 		return nil
 	}); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a mobile security service custom resource")

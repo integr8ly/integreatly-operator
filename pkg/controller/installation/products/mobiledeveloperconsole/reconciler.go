@@ -146,7 +146,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client pkgclient.C
 	}
 
 	//  creates the custom resource
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, cr, func(existing runtime.Object) error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		return nil
 	}); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a mdc custom resource")

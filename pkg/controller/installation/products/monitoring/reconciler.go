@@ -268,9 +268,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func(existing runtime.Object) error {
-		monitoring := existing.(*monitoring_v1alpha1.ApplicationMonitoring)
-		monitoring.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func() error {
+		m.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
 			LabelSelector:                    defaultLabelSelector,
 			AdditionalScrapeConfigSecretName: defaultAdditionalScrapeConfigSecretName,
 			AdditionalScrapeConfigSecretKey:  defaultAdditionalScrapeConfigSecretKey,
