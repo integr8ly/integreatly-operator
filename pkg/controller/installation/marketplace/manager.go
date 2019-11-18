@@ -83,7 +83,10 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 	}
 	ownerutil.EnsureOwner(csc, owner)
 
-	if err := client.List(ctx, &pkgclient.ListOptions{Namespace: t.Namespace}, csList); err != nil {
+	csListOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(t.Namespace),
+	}
+	if err := client.List(ctx, csList, csListOpts...); err != nil {
 		return "", err
 	}
 	// as each operator is the only that should be installed in that we assume the catalog source is present if more than 0 returned
@@ -95,7 +98,7 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 
 	var catalogSourceName string
 	return catalogSourceName, wait.Poll(time.Second, time.Minute*5, func() (done bool, err error) {
-		err = client.List(ctx, &pkgclient.ListOptions{Namespace: t.Namespace}, csList)
+		err = client.List(ctx, csList, csListOpts...)
 		if err == nil && len(csList.Items) > 0 {
 			catalogSourceName = csList.Items[0].Name
 			return true, nil
@@ -180,7 +183,10 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, se
 
 	ip := &coreosv1alpha1.InstallPlanList{}
 
-	err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: ns}, ip)
+	ipListOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(ns),
+	}
+	err = serverClient.List(ctx, ip, ipListOpts...)
 	if err != nil {
 		return nil, nil, err
 	}
