@@ -233,11 +233,10 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to retrieve installed products information from %s CR", inst.Name)
 	}
-	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func(existing runtime.Object) error {
-		cr := existing.(*webapp.WebApp)
-		cr.Spec.AppLabel = "tutorial-web-app"
-		cr.Spec.Template.Path = defaultTemplateLoc
-		cr.Spec.Template.Parameters = map[string]string{
+	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func() error {
+		seCR.Spec.AppLabel = "tutorial-web-app"
+		seCR.Spec.Template.Path = defaultTemplateLoc
+		seCR.Spec.Template.Parameters = map[string]string{
 			paramOauthClient:        r.getOAuthClientName(),
 			paramSSORoute:           ssoConfig.GetHost(),
 			paramOpenShiftHost:      inst.Spec.MasterURL,

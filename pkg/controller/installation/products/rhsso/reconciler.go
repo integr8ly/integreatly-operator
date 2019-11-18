@@ -163,8 +163,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func(existing runtime.Object) error {
-		kc := existing.(*aerogearv1.Keycloak)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Plugins = []string{
 			"keycloak-metrics-spi",
 			"openshift4-idp",
@@ -183,8 +182,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
-		kcr := existing.(*aerogearv1.KeycloakRealm)
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
 		kcr.Spec.CreateOnly = false
 		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
 
