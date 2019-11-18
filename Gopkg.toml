@@ -104,3 +104,7 @@ required = [
 [[constraint]]
   branch = "master"
   name = "github.com/integr8ly/cloud-resource-operator"
+
+[[constraint]]
+  version = "=7.0.1"
+  name = "github.com/keycloak/keycloak-operator"

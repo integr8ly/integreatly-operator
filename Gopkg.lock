@@ -473,6 +473,14 @@
   version = "v1.1.6"
 
 [[projects]]
+  digest = "1:74aab9ec98889750ee7c2a3bb45d113ca7c9f2b2ba4a6a2caeabc568a10ebab0"
+  name = "github.com/keycloak/keycloak-operator"
+  packages = ["pkg/apis/keycloak/v1alpha1"]
+  pruneopts = "NT"
+  revision = "67404e08c7acdbb007dbe5fc602d7abf1b3378fb"
+  version = "7.0.1"
+
+[[projects]]
   digest = "1:58999a98719fddbac6303cb17e8d85b945f60b72f48e3a2df6b950b97fa926f1"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
@@ -610,6 +618,7 @@
     "pkg/apis/operators/shared",
     "pkg/apis/operators/v1",
     "pkg/apis/operators/v2",
+    "pkg/client",
   ]
   pruneopts = "NT"
   revision = "530c85d41ce7a6840bdf641287e0948980013fdb"
@@ -1370,6 +1379,7 @@
     "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types",
     "github.com/integr8ly/cloud-resource-operator/pkg/resources",
     "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1",
+    "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1",
     "github.com/matryer/moq",
     "github.com/openshift/api/apps/v1",
     "github.com/openshift/api/image/v1",
@@ -1388,6 +1398,7 @@
     "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil",
     "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1",
     "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2",
+    "github.com/operator-framework/operator-marketplace/pkg/client",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",

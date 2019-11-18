@@ -5,7 +5,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	keycloak "github.com/integr8ly/integreatly-operator/pkg/apis/keycloak/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -208,10 +208,6 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
 		r.Config.SetProductVersion(kc.Status.Version)
-		r.ConfigManager.WriteConfig(r.Config)
-	}
-	if err == nil && string(r.Config.GetOperatorVersion()) != kc.Status.OperatorVersion {
-		r.Config.SetOperatorVersion(kc.Status.OperatorVersion)
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
