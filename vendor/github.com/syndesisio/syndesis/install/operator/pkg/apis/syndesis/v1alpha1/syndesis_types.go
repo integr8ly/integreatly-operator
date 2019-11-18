@@ -1,7 +1,22 @@
+/*
+ * Copyright (C) 2019 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package v1alpha1
 
 import (
-	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -9,21 +24,23 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // SyndesisSpec defines the desired state of Syndesis
+// +k8s:openapi-gen=true
 type SyndesisSpec struct {
-	RouteHostName        string          `json:"routeHostname,omitempty"`
-	DemoData             *bool           `json:"demoData,omitempty"`
-	DeployIntegrations   *bool           `json:"deployIntegrations,omitempty"`
-	TestSupport          *bool           `json:"testSupport,omitempty"`
-	ImageStreamNamespace string          `json:"imageStreamNamespace,omitempty"`
-	Integration          IntegrationSpec `json:"integration,omitempty"`
-	Registry             string          `json:"registry,omitempty"`
-	Components           ComponentsSpec  `json:"components,omitempty"`
-	OpenShiftConsoleUrl  string          `json:"openShiftConsoleUrl,omitempty"`
-	SarNamespace         string          `json:"sarNamespace,omitempty"`
-	Addons               AddonsSpec      `json:"addons,omitempty"`
+	ImageStreamNamespace string `json:"imageStreamNamespace,omitempty"`
+
+	// Components is used to configure all the core components of Syndesis
+	Components ComponentsSpec `json:"components,omitempty"`
+
+	// Optional add on features that can be enabled.
+	Addons AddonsSpec `json:"addons,omitempty"`
+
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
 // SyndesisStatus defines the observed state of Syndesis
+// +k8s:openapi-gen=true
 type SyndesisStatus struct {
 	Phase              SyndesisPhase        `json:"phase,omitempty"`
 	UpgradeAttempts    int32                `json:"upgradeAttempts,omitempty"`
@@ -33,31 +50,44 @@ type SyndesisStatus struct {
 	Description        string               `json:"description,omitempty"`
 	Version            string               `json:"version,omitempty"`
 	TargetVersion      string               `json:"targetVersion,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 }
 
 // =============================================================================
 
-type IntegrationSpec struct {
-	Limit              *int `json:"limit,omitempty"`
-	StateCheckInterval *int `json:"stateCheckInterval,omitempty"`
-}
-
+// +k8s:openapi-gen=true
 type ComponentsSpec struct {
-	Db         DbConfiguration         `json:"db,omitempty"`
-	Prometheus PrometheusConfiguration `json:"prometheus,omitempty"`
-	Grafana    GrafanaConfiguration    `json:"grafana,omitempty"`
+	Oauth      OauthConfiguration      `json:"oauth,omitempty"`
 	Server     ServerConfiguration     `json:"server,omitempty"`
 	Meta       MetaConfiguration       `json:"meta,omitempty"`
+	Database   DatabaseConfiguration   `json:"database,omitempty"`
+	Prometheus PrometheusConfiguration `json:"prometheus,omitempty"`
+	Grafana    GrafanaConfiguration    `json:"grafana,omitempty"`
 	Upgrade    UpgradeConfiguration    `json:"upgrade,omitempty"`
 }
 
-type DbConfiguration struct {
-	Resources            ResourcesWithVolume `json:"resources,omitempty"`
-	User                 string              `json:"user,omitempty"`
-	Database             string              `json:"database,omitempty"`
-	ImageStreamNamespace string              `json:"imageStreamNamespace,omitempty"`
+type OauthConfiguration struct {
+	DisableSarCheck bool   `json:"disable-sar-check,omitempty"`
+	SarNamespace    string `json:"sarNamespace,omitempty"`
 }
+
+type DvConfiguration struct {
+	Enabled   bool      `json:"enabled,omitempty"`
+	Resources Resources `json:"resources,omitempty"`
+}
+
+type DatabaseConfiguration struct {
+	User          string              `json:"user,omitempty"`
+	Name          string              `json:"name,omitempty"`
+	URL           string              `url:"url,omitempty"`
+	ExternalDbURL string              `json:"externalDbURL,omitempty"`
+	Resources     ResourcesWithVolume `json:"resources,omitempty"`
+}
+
 type PrometheusConfiguration struct {
+	Rules     string              `json:"rules,omitempty"`
 	Resources ResourcesWithVolume `json:"resources,omitempty"`
 }
 
@@ -79,12 +109,12 @@ type UpgradeConfiguration struct {
 }
 
 type Resources struct {
-	v1.ResourceRequirements `json:",inline,omitempty"`
+	Memory string `json:",inline,omitempty"`
 }
 
 type ResourcesWithVolume struct {
-	v1.ResourceRequirements `json:",inline,omitempty"`
-	VolumeCapacity          string `json:"volumeCapacity,omitempty"`
+	Memory         string `json:",inline,omitempty"`
+	VolumeCapacity string `json:"volumeCapacity,omitempty"`
 }
 
 type VolumeOnlyResources struct {
@@ -92,14 +122,34 @@ type VolumeOnlyResources struct {
 }
 
 type ServerFeatures struct {
-	ExposeVia3Scale bool `json:"exposeVia3Scale,omitempty"`
+	MavenRepositories map[string]string `json:"mavenRepositories,omitempty"`
 }
 
-type AddonsSpec map[string]Parameters
+type AddonsSpec struct {
+	Jaeger  JaegerConfiguration `json:"jaeger,omitempty"`
+	Ops     AddonSpec           `json:"ops,omitempty"`
+	Todo    AddonSpec           `json:"todo,omitempty"`
+	Knative AddonSpec           `json:"knative,omitempty"`
+	DV      DvConfiguration     `json:"dv,omitempty"`
+	CamelK  CamelKConfiguration `json:"camelk,omitempty"`
+}
 
-type Parameters []Parameter
+type JaegerConfiguration struct {
+	Enabled      bool   `json:"enabled,omitempty"`
+	SamplerType  string `json:"samplerType,omitempty"`
+	SamplerParam string `json:"samplerParam,omitempty"`
+}
 
-type Parameter map[string]string
+type AddonSpec struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type CamelKConfiguration struct {
+	Enabled       bool   `json:"enabled,omitempty"`
+	CamelVersion  string `json:"camelVersion,omitempty"`
+	CamelKRuntime string `json:"camelkRuntime,omitempty"`
+	Image         string `json:"image,omitempty"`
+}
 
 // =============================================================================
 
@@ -108,7 +158,6 @@ type SyndesisPhase string
 const (
 	SyndesisPhaseMissing               SyndesisPhase = ""
 	SyndesisPhaseInstalling            SyndesisPhase = "Installing"
-	SyndesisPhaseUpgradingLegacy       SyndesisPhase = "UpgradingLegacy"
 	SyndesisPhaseStarting              SyndesisPhase = "Starting"
 	SyndesisPhaseStartupFailed         SyndesisPhase = "StartupFailed"
 	SyndesisPhaseInstalled             SyndesisPhase = "Installed"
@@ -132,8 +181,10 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Syndesis is the Schema for the syndesises API
+// Syndesis is the Schema for the syndeses API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Syndesis struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
