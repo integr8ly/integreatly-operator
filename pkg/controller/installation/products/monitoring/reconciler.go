@@ -235,6 +235,28 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 	return v1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileBlackboxTargets() (v1alpha1.StatusPhase, error) {
+	// Gather blackbox target urls
+
+	// Solution explorer
+	webappConfig, err := r.ConfigManager.ReadSolutionExplorer()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	webappRoute := webappConfig.GetHost()
+
+	// Launcher
+	launcherConfig, err := r.ConfigManager.ReadLauncher()
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	launcherRoute := launcherConfig.GetHost()
+
+
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
