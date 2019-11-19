@@ -72,6 +72,7 @@ code/compile:
 .PHONY: code/gen
 code/gen:
 	operator-sdk generate k8s
+	operator-sdk generate openapi
 	@go generate ./...
 
 .PHONY: code/check
@@ -194,7 +195,7 @@ deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
 deploy/integreatly-installation-cr.yml:
-	@echo "masterUrl = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
+	@echo "masterURL = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s,MASTER_URL,$(MASTER_URL),g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/ROUTING_SUBDOMAIN/$(ROUTING_SUBDOMAIN)/g" | \
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" | \

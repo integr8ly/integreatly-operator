@@ -248,7 +248,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return errors.New("dummy get error")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
