@@ -3,7 +3,8 @@ package amqonline
 import (
 	"context"
 	"fmt"
-
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -24,9 +25,11 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "amq-online"
-	defaultSubscriptionName      = "integreatly-amq-online"
-	defaultConsoleSvcName        = "console"
+	defaultInstallationNamespace    = "amq-online"
+	defaultSubscriptionName         = "integreatly-amq-online"
+	defaultConsoleSvcName           = "console"
+	defaultEnmasseKeycloakRouteName = "keycloak"
+	defaultBlackboxtargetName       = "integreatly-amq-online-blackboxtarget"
 )
 
 type Reconciler struct {
@@ -127,6 +130,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	phase, err = r.reconcileBackup(ctx, inst, serverClient, namespace)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -242,6 +250,23 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, inst *v1alpha1.Install
 	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for amq-online")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget(defaultBlackboxtargetName, v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: defaultInstallationNamespace,
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating enmasse blackbox target")
 	}
 
 	return v1alpha1.PhaseCompleted, nil

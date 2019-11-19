@@ -7,8 +7,10 @@ import (
 	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -30,6 +32,7 @@ const (
 	defaultLauncherConfigMapName         = "launcher"
 	launcherRouteName                    = "launcher"
 	clientId                             = "launcher"
+	defaultBlackboxtargetName            = "integreatly-launcher-blackboxtarget"
 )
 
 type Reconciler struct {
@@ -107,6 +110,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	phase, err = r.handleProgressPhase(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -205,6 +213,23 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 	}
 
 	return v1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget(defaultBlackboxtargetName, v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: defaultLauncherName,
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating launcher blackbox target")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {

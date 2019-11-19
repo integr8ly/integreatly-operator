@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-marketplace/pkg/client"
 	v12 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
@@ -37,6 +39,7 @@ const (
 	openshiftMonitoringNamespace            = "openshift-monitoring"
 	grafanaDataSourceSecretName             = "grafana-datasources"
 	grafanaDataSourceSecretKey              = "prometheus.yaml"
+	defaultBlackboxModule                   = "http_2xx"
 )
 
 type Reconciler struct {
@@ -177,6 +180,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update monitoring config")
+	}
+
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -231,28 +239,6 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 	}
 
 	r.Logger.Info(fmt.Sprintf("operation result of creating additional scrape config secret was %v", or))
-
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileBlackboxTargets() (v1alpha1.StatusPhase, error) {
-	// Gather blackbox target urls
-
-	// Solution explorer
-	webappConfig, err := r.ConfigManager.ReadSolutionExplorer()
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-	webappRoute := webappConfig.GetHost()
-
-	// Launcher
-	launcherConfig, err := r.ConfigManager.ReadLauncher()
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-	launcherRoute := launcherConfig.GetHost()
-
-
 
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -367,4 +353,68 @@ func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installa
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
+	monitoring := monitoring_v1alpha1.ApplicationMonitoring{}
+
+	selector := pkgclient.ObjectKey{
+		Namespace: cfg.GetNamespace(),
+		Name:      defaultMonitoringName,
+	}
+
+	err := client.Get(ctx, selector, &monitoring)
+	if err != nil {
+		return nil, err
+	}
+
+	return &monitoring, nil
+}
+
+func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, client pkgclient.Client) error {
+	if cfg.GetNamespace() == "" {
+		return errors.New("monitoring not ready")
+	}
+
+	// default policy is to require a 2xx http return code
+	module := target.Module
+	if module == "" {
+		module = defaultBlackboxModule
+	}
+
+	// prepare the template
+	extraParams := map[string]string{
+		"name":    name,
+		"url":     target.Url,
+		"service": target.Service,
+		"module":  module,
+	}
+
+	templateHelper := newTemplateHelper(inst, extraParams, cfg)
+	resourceHelper := newResourceHelper(inst, templateHelper)
+	obj, err := resourceHelper.createResource("blackbox/target")
+	if err != nil {
+		return errors.Wrap(err, "error creating resource from template")
+	}
+
+	// Set the owner of the resource to the application monitoring cr as blocking:
+	// this should allow the monitoring operator to clean up the blackboxtarget
+	// before itself gets deleted
+	ownerCr, err := getMonitoringCr(ctx, cfg, client)
+	if err != nil {
+		return errors.Wrap(err, "error getting owner monitoring cr")
+	}
+	ownerutil.AddOwner(obj.(*unstructured.Unstructured), ownerCr, true, false)
+
+	// try to create the blackbox target. If if fails with already exist do nothing
+	err = client.Create(ctx, obj)
+	if err != nil {
+		if kerrors.IsAlreadyExists(err) {
+			// The target already exists. Nothing else to do
+			return nil
+		}
+		return errors.Wrap(err, "error creating blackbox target")
+	}
+
+	return nil
 }

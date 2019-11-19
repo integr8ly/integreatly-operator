@@ -1,0 +1,12 @@
+apiVersion: applicationmonitoring.integreatly.org/v1alpha1
+kind: BlackboxTarget
+metadata:
+  name: {{ index .ExtraParams "name"  }}
+  namespace: {{ .Namespace }}
+  labels:
+    monitoring-key: {{ .MonitoringKey }}
+spec:
+  blackboxTargets:
+    - service: {{ index .ExtraParams "service"  }}
+      url: {{ index .ExtraParams "url" }}
+      module: {{ index .ExtraParams "module" }}
