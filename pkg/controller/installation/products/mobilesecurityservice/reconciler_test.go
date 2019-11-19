@@ -156,7 +156,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		{
 			Name: "Test reconcile custom resource returns failed when cr status is failed",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {

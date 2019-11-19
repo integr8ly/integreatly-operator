@@ -617,7 +617,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 // Generate a fake k8s client with a fuse custom resource in a specific phase
 func getFakeClient(scheme *runtime.Scheme, objs []runtime.Object) *moqclient.SigsClientInterfaceMock {
 	sigsFakeClient := moqclient.NewSigsClientMoqWithScheme(scheme, objs...)
-	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object) error {
+	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 		switch obj := obj.(type) {
 		case *chev1.CheCluster:
 			obj.Status.CheURL = "https://test.com"
