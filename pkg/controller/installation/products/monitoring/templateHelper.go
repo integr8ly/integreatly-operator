@@ -94,5 +94,3 @@ func (h *TemplateHelper) loadTemplate(name string) ([]byte, error) {
 
 	return buffer.Bytes(), nil
 }
-
-
