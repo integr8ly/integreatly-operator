@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,13 +17,6 @@ type UnifiedPushServerSpec struct {
 
 	// UseMessageBroker can be set to true to use managed queues, if you are using enmasse. Defaults to false.
 	UseMessageBroker bool `json:"useMessageBroker,omitempty"`
-
-	UnifiedPushResourceRequirements corev1.ResourceRequirements `json:"unifiedPushResourceRequirements,omitempty"`
-	OAuthResourceRequirements       corev1.ResourceRequirements `json:"oAuthResourceRequirements,omitempty"`
-	PostgresResourceRequirements    corev1.ResourceRequirements `json:"postgresResourceRequirements,omitempty"`
-
-	// PVC size for Postgres service
-	PostgresPVCSize string `json:"postgresPVCSize,omitempty"`
 }
 
 // UnifiedPushServerStatus defines the observed state of UnifiedPushServer
