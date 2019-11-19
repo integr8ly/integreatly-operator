@@ -184,7 +184,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 					return errors.New("failed to create keycloak custom resource")
 				},
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {

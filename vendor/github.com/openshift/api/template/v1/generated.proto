@@ -16,6 +16,7 @@ option go_package = "v1";
 // BrokerTemplateInstance holds the service broker-related state associated with
 // a TemplateInstance.  BrokerTemplateInstance is part of an experimental API.
 message BrokerTemplateInstance {
+  // Standard object metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec describes the state of this BrokerTemplateInstance.
@@ -24,6 +25,7 @@ message BrokerTemplateInstance {
 
 // BrokerTemplateInstanceList is a list of BrokerTemplateInstance objects.
 message BrokerTemplateInstanceList {
+  // Standard object metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of BrokerTemplateInstances
@@ -100,6 +102,7 @@ message Parameter {
 
 // Template contains the inputs needed to produce a Config.
 message Template {
+  // Standard object's metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // message is an optional instructional message that will
@@ -116,7 +119,6 @@ message Template {
   // is, or contains, a ${PARAMETER_REFERENCE}, the resolved
   // value after parameter substitution will be respected and the object
   // will be created in that namespace.
-  // +kubebuilder:pruning:PreserveUnknownFields
   repeated k8s.io.apimachinery.pkg.runtime.RawExtension objects = 3;
 
   // parameters is an optional array of Parameters used during the
@@ -131,6 +133,7 @@ message Template {
 // TemplateInstance requests and records the instantiation of a Template.
 // TemplateInstance is part of an experimental API.
 message TemplateInstance {
+  // Standard object metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec describes the desired state of this TemplateInstance.
@@ -164,6 +167,7 @@ message TemplateInstanceCondition {
 
 // TemplateInstanceList is a list of TemplateInstance objects.
 message TemplateInstanceList {
+  // Standard object metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of Templateinstances
@@ -222,6 +226,7 @@ message TemplateInstanceStatus {
 
 // TemplateList is a list of Template objects.
 message TemplateList {
+  // Standard object's metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of templates

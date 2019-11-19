@@ -57,3 +57,5 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918201353-5cc279503896
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.3.0
 )
+
+replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
