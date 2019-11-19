@@ -93,10 +93,10 @@ type InstallationSpec struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Type             string         `json:"type"`
 	RoutingSubdomain string         `json:"routingSubdomain,omitempty"`
-	MasterURL        string         `json:"masterUrl,omitempty"`
-	NamespacePrefix  string         `json:"namespacePrefix,omitempty"`
+	MasterURL        string         `json:"masterURL,omitempty"`
+	NamespacePrefix  string         `json:"namespacePrefix"`
 	SelfSignedCerts  bool           `json:"selfSignedCerts"`
-	PullSecret       PullSecretSpec `json:"pullSecret"`
+	PullSecret       PullSecretSpec `json:"pullSecret,omitempty"`
 }
 
 type PullSecretSpec struct {
@@ -111,8 +111,8 @@ type InstallationStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Stages           map[StageName]*InstallationStageStatus `json:"stages"`
-	PreflightStatus  PreflightStatus
-	PreflightMessage string
+	PreflightStatus  PreflightStatus                        `json:"preflightStatus,omitempty"`
+	PreflightMessage string                                 `json:"preflightMessage,omitempty"`
 }
 
 type InstallationStageStatus struct {
@@ -135,6 +135,8 @@ type InstallationProductStatus struct {
 
 // Installation is the Schema for the installations API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:path=installations,scope=Namespaced
 type Installation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

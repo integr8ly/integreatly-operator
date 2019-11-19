@@ -40,7 +40,7 @@ func (in *BrokeredInfraConfig) DeepCopyObject() runtime.Object {
 func (in *BrokeredInfraConfigList) DeepCopyInto(out *BrokeredInfraConfigList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]BrokeredInfraConfig, len(*in))
@@ -202,7 +202,7 @@ func (in *StandardInfraConfig) DeepCopyObject() runtime.Object {
 func (in *StandardInfraConfigList) DeepCopyInto(out *StandardInfraConfigList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]StandardInfraConfig, len(*in))

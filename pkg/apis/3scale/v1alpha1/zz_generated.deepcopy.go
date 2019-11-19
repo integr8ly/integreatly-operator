@@ -92,7 +92,7 @@ func (in *APIManagerCondition) DeepCopy() *APIManagerCondition {
 func (in *APIManagerList) DeepCopyInto(out *APIManagerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]APIManager, len(*in))
