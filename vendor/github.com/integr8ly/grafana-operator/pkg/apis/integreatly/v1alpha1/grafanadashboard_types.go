@@ -16,7 +16,6 @@ type GrafanaDashboardSpec struct {
 	Json    string     `json:"json"`
 	Name    string     `json:"name"`
 	Plugins PluginList `json:"plugins,omitempty"`
-	Url     string     `json:"url,omitempty"`
 }
 
 // GrafanaDashboardStatus defines the observed state of GrafanaDashboard

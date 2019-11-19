@@ -5,15 +5,14 @@ go 1.13
 require (
 	github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e
 	github.com/aerogear/mobile-developer-console-operator v0.0.0-20191112104059-b2ac382d666a
-	github.com/aerogear/mobile-security-service-operator v0.0.0-20191107125005-e74272a6c7ad
-	github.com/aerogear/unifiedpush-operator v0.0.0-20191115172337-dde4a2e46a99
-	github.com/eclipse/che-operator v0.0.0-20191115104040-d273007e7e91
-	github.com/fabric8-launcher/launcher-operator v0.1.3
+	github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c
+	github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634
+	github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5
+	github.com/fabric8-launcher/launcher-operator v0.1.2
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/uuid v1.1.1
-	github.com/integr8ly/grafana-operator v2.0.0+incompatible
-	github.com/matryer/moq v0.0.0-20191106032847-0e0395200ade // indirect
+	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -23,7 +22,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
-	github.com/syndesisio/syndesis/install/operator v0.0.0-20191118082300-030400fcc362
+	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0

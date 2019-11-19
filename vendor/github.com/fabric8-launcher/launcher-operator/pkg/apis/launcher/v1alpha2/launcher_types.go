@@ -16,7 +16,6 @@ type LauncherSpec struct {
 	OAuth     OAuthConfig     `json:"oauth,omitempty"`
 	Catalog   CatalogConfig   `json:"catalog,omitempty"`
 	Filter    FilterConfig    `json:"filter,omitempty"`
-	ImageTag  string          `json:"imageTag,omitempty"`
 }
 
 // OAuthConfig defines the OAuth configuration
