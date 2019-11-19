@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+
 	v1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -283,6 +284,92 @@ var threescaleRoute2 = &v1.Route{
 	},
 }
 
+var postgres = &crov1.Postgres{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "threescale-postgres-test-installation",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Status: crov1.PostgresStatus{
+		Message:  "reconcile complete",
+		Phase:    types.PhaseComplete,
+		Provider: "openshift-postgres",
+		SecretRef: &types.SecretRef{
+			Name:      "test-postgres",
+			Namespace: "integreatly-operator-namespace",
+		},
+		Strategy: "openshift",
+	},
+}
+
+var postgresSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-postgres",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Data: map[string][]byte{
+		"host":     []byte("test"),
+		"password": []byte("test"),
+		"port":     []byte("test"),
+		"tls":      []byte("test"),
+		"username": []byte("test"),
+	},
+}
+
+var redis = &crov1.Redis{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "threescale-redis-test-installation",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Status: crov1.RedisStatus{
+		Message:  "reconcile complete",
+		Phase:    types.PhaseComplete,
+		Provider: "openshift-redis",
+		SecretRef: &types.SecretRef{
+			Name:      "test-redis",
+			Namespace: "integreatly-operator-namespace",
+		},
+		Strategy: "openshift",
+	},
+}
+
+var redisSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-redis",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Data: map[string][]byte{
+		"uri":  []byte("test"),
+		"port": []byte("test"),
+	},
+}
+
+var backendRedis = &crov1.Redis{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "threescale-backend-redis-test-installation",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Status: crov1.RedisStatus{
+		Message: "reconcile complete",
+		Phase:   types.PhaseComplete,
+		SecretRef: &types.SecretRef{
+			Name:      "test-backend-redis",
+			Namespace: "integreatly-operator-namespace",
+		},
+		Strategy: "openshift",
+	},
+}
+
+var backendRedisSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-backend-redis",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Data: map[string][]byte{
+		"uri":  []byte("test"),
+		"port": []byte("test"),
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -311,5 +398,11 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		blobStorageSec,
 		threescaleRoute1,
 		threescaleRoute2,
+		postgres,
+		postgresSec,
+		redis,
+		redisSec,
+		backendRedis,
+		backendRedisSec,
 	}
 }

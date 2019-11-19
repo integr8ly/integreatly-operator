@@ -447,7 +447,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	// setup backend redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating backend redis instance")
-	backendRedisName := fmt.Sprintf("3scale-backend-redis-%s", inst.Name)
+	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", inst.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -459,7 +459,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
-	systemRedisName := fmt.Sprintf("3scale-redis-%s", inst.Name)
+	systemRedisName := fmt.Sprintf("threescale-redis-%s", inst.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
@@ -471,7 +471,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision a postgres instance
 	logrus.Info("Creating postgres instance")
-	postgresName := fmt.Sprintf("3scale-postgres-%s", ns)
+	postgresName := fmt.Sprintf("threescale-postgres-%s", inst.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		resources.PrepareObject(cr, r.installation)
 		return nil
