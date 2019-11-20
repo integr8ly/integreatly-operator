@@ -5,9 +5,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/pkg/errors"
@@ -86,10 +89,46 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileS3BlobStorage(ctx, inst, client)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileS3BlobStorage(ctx context.Context, installation *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	s3BucketSecretName := "s3-bucket"
+	s3CredentialsSecretName := "s3-credentials"
+	tier := "production"
+	operatorNamespace := installation.GetNamespace()
+	blobStorage, err := croUtil.ReconcileBlobStorage(
+		ctx,
+		serverClient,
+		installation.Spec.Type,
+		tier,
+		s3BucketSecretName,
+		operatorNamespace,
+		s3CredentialsSecretName,
+		operatorNamespace,
+		func(cr metav1.Object) error {
+			resources.AddOwner(cr, installation)
+			return nil
+		},
+	)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile blob storage request")
+	}
+
+	// wait for the blob storage cr to reconcile
+	if blobStorage.Status.Phase != types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
 	return v1alpha1.PhaseCompleted, nil
 }

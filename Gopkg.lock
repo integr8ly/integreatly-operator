@@ -610,6 +610,7 @@
     "pkg/apis/operators/shared",
     "pkg/apis/operators/v1",
     "pkg/apis/operators/v2",
+    "pkg/client",
   ]
   pruneopts = "NT"
   revision = "530c85d41ce7a6840bdf641287e0948980013fdb"
@@ -1388,6 +1389,7 @@
     "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil",
     "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1",
     "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2",
+    "github.com/operator-framework/operator-marketplace/pkg/client",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",

@@ -102,18 +102,12 @@ test/unit:
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e
-test/e2e: export AWS_ACCESS_KEY_ID := 1234
-test/e2e: export AWS_SECRET_ACCESS_KEY := 1234
-test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/prepare cluster/prepare/configmaps
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
 .PHONY: test/e2e/olm
-test/e2e/olm: export AWS_ACCESS_KEY_ID := 1234
-test/e2e/olm: export AWS_SECRET_ACCESS_KEY := 1234
-test/e2e/olm: export AWS_BUCKET := dummy
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
 test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps deploy/integreatly-installation-cr.yml cluster/deploy/integreatly-installation-cr.yml
@@ -193,6 +187,8 @@ deploy/integreatly-installation-cr.yml: export ROUTING_SUBDOMAIN := $(shell oc g
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
+deploy/integreatly-installation-cr.yml: export AWS_REGION := eu-west-1
+deploy/integreatly-installation-cr.yml: export AWS_BUCKET_NAME := integreatly
 deploy/integreatly-installation-cr.yml:
 	@echo "masterUrl = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s,MASTER_URL,$(MASTER_URL),g" deploy/crds/examples/integreatly-installation-cr.yaml | \
