@@ -2,6 +2,7 @@ package launcher
 
 import (
 	"context"
+
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -95,7 +96,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, r.Config.GetNamespace(), serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

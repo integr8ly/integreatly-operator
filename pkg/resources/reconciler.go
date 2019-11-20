@@ -36,7 +36,7 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, client *oauthv1.OAuthClient, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	if err := apiClient.Get(ctx, pkgclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
-			prepareObject(client, inst)
+			PrepareObject(client, inst)
 			if err := apiClient.Create(ctx, client); err != nil {
 				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create oauth client: %s", client.Name)
 			}
@@ -44,7 +44,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.In
 		}
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get oauth client: %s", client.Name)
 	}
-	prepareObject(client, inst)
+	PrepareObject(client, inst)
 	if err := apiClient.Update(ctx, client); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to update oauth client: %s", client.Name)
 	}
@@ -71,7 +71,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		if !k8serr.IsNotFound(err) {
 			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve namespace: %s", ns.Name)
 		}
-		prepareObject(ns, inst)
+		PrepareObject(ns, inst)
 		if err = client.Create(ctx, ns); err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create namespace: %s", ns.Name)
 		}
@@ -85,7 +85,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
 		return v1alpha1.PhaseInProgress, nil
 	}
-	prepareObject(ns, inst)
+	PrepareObject(ns, inst)
 	if err := client.Update(ctx, ns); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update the ns definition ")
 	}
@@ -142,9 +142,9 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, client pkgclient.Client, maxVersion *Version) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client pkgclient.Client, maxVersion *Version) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, owner, marketplace.GetOperatorSources().Integreatly, t, []string{t.Namespace}, operatorsv1alpha1.ApprovalManual)
+	err := r.mpm.InstallOperator(ctx, client, owner, marketplace.GetOperatorSources().Integreatly, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
@@ -180,7 +180,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func prepareObject(ns metav1.Object, install *v1alpha1.Installation) {
+func PrepareObject(ns metav1.Object, install *v1alpha1.Installation) {
 	labels := ns.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}

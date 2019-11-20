@@ -133,7 +133,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, ns, serverClient, version)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -39,6 +40,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev2.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
+	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	return scheme, err

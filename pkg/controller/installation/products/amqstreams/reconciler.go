@@ -3,6 +3,7 @@ package amqstreams
 import (
 	"context"
 	"fmt"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -91,7 +92,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for amq streams")
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, serverClient, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, ns, serverClient, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -100,3 +100,7 @@ required = [
 [[constraint]]
   version = "=v1.3.1"
   name = "github.com/integr8ly/grafana-operator"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/integr8ly/cloud-resource-operator"

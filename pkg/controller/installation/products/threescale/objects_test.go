@@ -3,6 +3,10 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -188,6 +192,37 @@ var installation = &v1alpha1.Installation{
 	},
 }
 
+var smtpCred = &crov1.SMTPCredentialSet{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-smtp-test-installation",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Status: crov1.SMTPCredentialSetStatus{
+		Message:  "reconcile complete",
+		Phase:    types.PhaseComplete,
+		Provider: "openshift-smtp",
+		SecretRef: &types.SecretRef{
+			Name:      "test-smtp",
+			Namespace: "integreatly-operator-namespace",
+		},
+		Strategy: "openshift",
+	},
+}
+
+var smtpSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "test-smtp",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Data: map[string][]byte{
+		"host":     []byte("test"),
+		"password": []byte("test"),
+		"port":     []byte("test"),
+		"tls":      []byte("test"),
+		"username": []byte("test"),
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -210,5 +245,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
 		installation,
+		smtpSec,
+		smtpCred,
 	}
 }

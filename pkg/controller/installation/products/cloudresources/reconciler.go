@@ -17,7 +17,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	defaultSubscriptionName      = "integreatly-cloud-resources"
+	defaultSubscriptionName      = "cloud-resources"
 )
 
 type Reconciler struct {
@@ -53,12 +53,18 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	if !inst.Spec.UseExternalResources {
-		r.logger.Info("useExternalResources is not enabled, skipping cloud resource operator deployment")
+	phase, err := r.ReconcileFinalizer(ctx, client, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, inst, client, r.Config.GetNamespace())
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
 		return v1alpha1.PhaseCompleted, nil
+	})
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
-	phase, err := r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -68,7 +74,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for cloud resource operator")
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, client, version)
+	phase, err = r.ReconcileSubscription(ctx, inst, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, inst.Namespace, client, version)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -7,6 +7,7 @@ import (
 	enmasseAdmin "github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta1"
 	enmasse "github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
 	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -55,6 +56,7 @@ func init() {
 		monitoring.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		mobileSecurityService.SchemeBuilder.AddToScheme,
+		crov1.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 
 		appsv1.AddToScheme,

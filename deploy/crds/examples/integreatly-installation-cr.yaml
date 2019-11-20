@@ -5,6 +5,4 @@ metadata:
 spec:
   type: INSTALLATION_TYPE
   namespacePrefix: integreatly-
-  routingSubdomain: ROUTING_SUBDOMAIN
-  masterUrl: MASTER_URL
   selfSignedCerts: SELF_SIGNED_CERTS
