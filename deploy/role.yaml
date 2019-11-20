@@ -239,6 +239,7 @@ rules:
     verbs:
       - get
       - update
+      - create
   - apiGroups:
       - apps.openshift.io
     resources:
