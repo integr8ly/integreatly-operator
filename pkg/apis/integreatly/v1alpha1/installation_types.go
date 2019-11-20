@@ -91,7 +91,7 @@ type InstallationSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Type             string         `json:"type"`
-	RoutingSubdomain string         `json:"routingSubdomain"`
+	RoutingSubdomain string         `json:"routingSubdomain,omitempty"`
 	MasterURL        string         `json:"masterUrl,omitempty"`
 	NamespacePrefix  string         `json:"namespacePrefix,omitempty"`
 	SelfSignedCerts  bool           `json:"selfSignedCerts"`
