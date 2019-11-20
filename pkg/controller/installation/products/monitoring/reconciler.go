@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-marketplace/pkg/client"
 	v12 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
@@ -396,15 +394,6 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}
-
-	// Set the owner of the resource to the application monitoring cr as blocking:
-	// this should allow the monitoring operator to clean up the blackboxtarget
-	// before itself gets deleted
-	ownerCr, err := getMonitoringCr(ctx, cfg, client)
-	if err != nil {
-		return errors.Wrap(err, "error getting owner monitoring cr")
-	}
-	ownerutil.AddOwner(obj.(*unstructured.Unstructured), ownerCr, true, false)
 
 	// try to create the blackbox target. If if fails with already exist do nothing
 	err = client.Create(ctx, obj)
