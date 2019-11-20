@@ -184,12 +184,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 // by the application monitoring operator and passed to prometheus
 func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	templateHelper := newTemplateHelper(inst, r.extraParams, r.Config)
+	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading config")
+	}
+
 
 	jobs := strings.Builder{}
 	for _, job := range r.Config.GetJobTemplates() {
+		// Don't include the 3scale extra scrape config if the product is not installed
+		if strings.Contains(job, "3scale") && threeScaleConfig.GetNamespace() == "" {
+			r.Logger.Info("skipping 3scale additional scrape config")
+			continue
+		}
+
 		bytes, err := templateHelper.loadTemplate(job)
 		if err != nil {
-			return v1alpha1.PhaseFailed, err
+			return v1alpha1.PhaseFailed, errors.Wrap(err, "error loading template")
 		}
 
 		jobs.Write(bytes)
