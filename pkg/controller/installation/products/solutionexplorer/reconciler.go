@@ -38,7 +38,6 @@ const (
 	paramInstalledServices    = "INSTALLED_SERVICES"
 	paramSSORoute             = "SSO_ROUTE"
 	defaultRouteName          = "tutorial-web-app"
-	defaultBlackboxtargetName = "integreatly-solution-explorer-blackboxtarget"
 )
 
 type Reconciler struct {
@@ -182,10 +181,10 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *v1alpha1
 
 	target := v1alpha12.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
-		Service: defaultName,
+		Service: "webapp-ui",
 	}
 
-	err = monitoring.CreateBlackboxTarget(defaultBlackboxtargetName, target, ctx, cfg, inst, client)
+	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, inst, client)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating solution explorer blackbox target")
 	}

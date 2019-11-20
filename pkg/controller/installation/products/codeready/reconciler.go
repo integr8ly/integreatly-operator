@@ -29,8 +29,6 @@ const (
 	defaultClientName            = "che-client"
 	defaultCheClusterName        = "integreatly-cluster"
 	defaultSubscriptionName      = "integreatly-codeready-workspaces"
-	defaultBlackboxtargetName    = "integreatly-codeready-blackboxtarget"
-	defaultBlackboxtargetService = "codeready"
 )
 
 type Reconciler struct {
@@ -471,9 +469,9 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
 	}
 
-	err = monitoring.CreateBlackboxTarget(defaultBlackboxtargetName, v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-codeready", v1alpha12.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
-		Service: defaultBlackboxtargetService,
+		Service: "codeready-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating codeready blackbox target")

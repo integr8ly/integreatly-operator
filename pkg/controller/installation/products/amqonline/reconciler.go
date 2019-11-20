@@ -28,8 +28,6 @@ const (
 	defaultInstallationNamespace    = "amq-online"
 	defaultSubscriptionName         = "integreatly-amq-online"
 	defaultConsoleSvcName           = "console"
-	defaultEnmasseKeycloakRouteName = "keycloak"
-	defaultBlackboxtargetName       = "integreatly-amq-online-blackboxtarget"
 )
 
 type Reconciler struct {
@@ -261,9 +259,9 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
 	}
 
-	err = monitoring.CreateBlackboxTarget(defaultBlackboxtargetName, v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", v1alpha12.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
-		Service: defaultInstallationNamespace,
+		Service: "amq-service-broker",
 	}, ctx, cfg, inst, client)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating enmasse blackbox target")

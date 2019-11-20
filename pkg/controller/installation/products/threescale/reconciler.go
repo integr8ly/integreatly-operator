@@ -3,6 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
+	v12 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -146,6 +150,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	logrus.Infof("%s is successfully deployed", packageName)
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -751,6 +760,69 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	}
 
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "3scale-admin-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target")
+	}
+
+	// Create a blackbox target for the developer console ui
+	route, err := r.getThreescaleRoute(ctx, client, "system-developer")
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error getting threescale system-developer route")
+	}
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", v1alpha12.BlackboxtargetData{
+		Url:     "https://" + route.Spec.Host,
+		Service: "3scale-developer-console-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target (system-developer)")
+	}
+
+	// Create a blackbox target for the master console ui
+	route, err = r.getThreescaleRoute(ctx, client, "system-master")
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error getting threescale system-master route")
+	}
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", v1alpha12.BlackboxtargetData{
+		Url:     "https://" + route.Spec.Host,
+		Service: "3scale-system-admin-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target (system-master)")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgclient.Client, label string) (*v12.Route, error) {
+	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
+	if err != nil {
+		return nil, err
+	}
+
+	opts := pkgclient.ListOptions{
+		LabelSelector: selector,
+		Namespace:     r.Config.GetNamespace(),
+	}
+
+	routes := v12.RouteList{}
+	err = serverClient.List(ctx, &opts, &routes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &routes.Items[0], nil
 }
 
 func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient pkgclient.Client) (*string, *string, error) {
