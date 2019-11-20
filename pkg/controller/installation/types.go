@@ -92,12 +92,12 @@ var (
 		{
 			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductLauncher:            {Name: v1alpha1.ProductLauncher},
-				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
-				v1alpha1.ProductFuseOnOpenshift:     {Name: v1alpha1.ProductFuseOnOpenshift},
-				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
-				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
-				// v1alpha1.Product3Scale:                 {Name: v1alpha1.Product3Scale},
+				v1alpha1.ProductLauncher:               {Name: v1alpha1.ProductLauncher},
+				v1alpha1.ProductFuse:                   {Name: v1alpha1.ProductFuse},
+				v1alpha1.ProductFuseOnOpenshift:        {Name: v1alpha1.ProductFuseOnOpenshift},
+				v1alpha1.ProductCodeReadyWorkspaces:    {Name: v1alpha1.ProductCodeReadyWorkspaces},
+				v1alpha1.ProductAMQOnline:              {Name: v1alpha1.ProductAMQOnline},
+				v1alpha1.Product3Scale:                 {Name: v1alpha1.Product3Scale},
 				v1alpha1.ProductNexus:                  {Name: v1alpha1.ProductNexus},
 				v1alpha1.ProductAMQStreams:             {Name: v1alpha1.ProductAMQStreams},
 				v1alpha1.ProductRHSSOUser:              {Name: v1alpha1.ProductRHSSOUser},

@@ -13,7 +13,7 @@ import (
 
 const GroupVersion = "v1beta1"
 
-var SchemeGroupVersion = schema.GroupVersion{Group: "enmasse.io", Version: GroupVersion}
+var SchemeGroupVersion = schema.GroupVersion{Group: "admin.enmasse.io", Version: GroupVersion}
 
 func Kind(kind string) schema.GroupKind {
 	return SchemeGroupVersion.WithKind(kind).GroupKind()

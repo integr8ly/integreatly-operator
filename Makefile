@@ -150,14 +150,14 @@ cluster/prepare/configmaps:
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
-	oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc create -f - -n openshift-marketplace
+	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | kubectl apply -f - -n openshift-marketplace
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare
-	-oc create -f deploy/crds/*.crd.yaml
-	@oc create -f deploy/service_account.yaml
-	@oc create -f deploy/role.yaml
-	@oc create -f deploy/role_binding.yaml
+	-kubectl apply -f deploy/crds/*_crd.yaml
+	@kubectl apply -f deploy/service_account.yaml
+	@kubectl apply -f deploy/role.yaml
+	@kubectl apply -f deploy/role_binding.yaml
 
 .PHONY: cluster/prepare/olm
 cluster/prepare/olm: cluster/prepare/project cluster/prepare/secrets cluster/prepare/osrc
