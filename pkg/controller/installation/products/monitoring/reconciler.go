@@ -189,7 +189,6 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading config")
 	}
 
-
 	jobs := strings.Builder{}
 	for _, job := range r.Config.GetJobTemplates() {
 		// Don't include the 3scale extra scrape config if the product is not installed
@@ -339,14 +338,7 @@ func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installa
 		return v1alpha1.PhaseFailed, err
 	}
 
-	// Try to get the threescale namespace from the config and if not possible,
-	// use a default value
-	threeScaleNs := threeScaleConfig.GetNamespace()
-	if threeScaleNs == "" {
-		threeScaleNs = inst.Spec.NamespacePrefix + "3scale"
-	}
-
-	r.extraParams["threescale_namespace"] = threeScaleNs
+	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
 	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword

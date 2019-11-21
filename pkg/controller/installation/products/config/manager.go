@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -15,7 +16,7 @@ import (
 
 type ProductConfig map[string]string
 
-func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string) (*Manager, error) {
+func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, inst *v1alpha1.Installation) (*Manager, error) {
 	cfgmap := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -26,7 +27,7 @@ func NewManager(ctx context.Context, client pkgclient.Client, namespace string, 
 	if !errors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
-	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap, context: ctx}, nil
+	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap, context: ctx, installation: inst}, nil
 }
 
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
@@ -63,10 +64,11 @@ type ConfigReadable interface {
 }
 
 type Manager struct {
-	Client    pkgclient.Client
-	Namespace string
-	cfgmap    *v1.ConfigMap
-	context   context.Context
+	Client       pkgclient.Client
+	Namespace    string
+	cfgmap       *v1.ConfigMap
+	context      context.Context
+	installation *v1alpha1.Installation
 }
 
 func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
@@ -246,12 +248,14 @@ func (m *Manager) WriteConfig(config ConfigReadable) error {
 	err = m.Client.Get(m.context, pkgclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
 	if errors.IsNotFound(err) {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}
+		ownerutil.EnsureOwner(m.cfgmap, m.installation)
 		return m.Client.Create(m.context, m.cfgmap)
 	} else {
 		if m.cfgmap.Data == nil {
 			m.cfgmap.Data = map[string]string{}
 		}
 		m.cfgmap.Data[string(config.GetProductName())] = string(stringConfig)
+		ownerutil.EnsureOwner(m.cfgmap, m.installation)
 		return m.Client.Update(m.context, m.cfgmap)
 	}
 }
