@@ -26,7 +26,8 @@ report_coverage_travis() {
 }
 
 echo Running tests:
-go test -v -covermode=count -coverprofile=$COVER_PROFILE ./pkg/...
+go test -v -covermode=count -coverpkg=./pkg/... -coverprofile=$COVER_PROFILE.tmp ./pkg/...
+cat $COVER_PROFILE.tmp | grep -v "zz_generated" > $COVER_PROFILE
 
 if [[ ! -z "${REPORT_COVERAGE}" ]]; then
 
