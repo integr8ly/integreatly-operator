@@ -216,7 +216,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 	// setup smtp credential set cr for the cloud resource operator
 	smtpCredName := fmt.Sprintf("threescale-smtp-%s", inst.Name)
 	smtpCred, err := croUtil.ReconcileSMTPCredentialSet(ctx, serverClient, r.installation.Spec.Type, tier, smtpCredName, ns, smtpCredName, ns, func(cr metav1.Object) error {
-		resources.PrepareObject(cr, r.installation)
+		resources.AddOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -313,7 +313,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 	// setup blob storage cr for the cloud resource operator
 	blobStorageName := fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, r.installation.Spec.Type, tier, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
-		resources.PrepareObject(cr, r.installation)
+		resources.AddOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
