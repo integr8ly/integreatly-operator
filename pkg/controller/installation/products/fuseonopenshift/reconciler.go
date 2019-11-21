@@ -121,6 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	logrus.Infof("%s successfully reconciled", v1alpha1.ProductFuseOnOpenshift)
 	return v1alpha1.PhaseCompleted, nil

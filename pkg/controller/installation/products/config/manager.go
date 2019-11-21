@@ -59,6 +59,7 @@ type ConfigReadable interface {
 	Read() ProductConfig
 	GetProductName() v1alpha1.ProductName
 	GetProductVersion() v1alpha1.ProductVersion
+	GetOperatorVersion() v1alpha1.OperatorVersion
 	GetHost() string
 }
 

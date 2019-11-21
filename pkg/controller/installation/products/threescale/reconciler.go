@@ -179,6 +179,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
@@ -677,6 +678,10 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-environment", Namespace: r.Config.GetNamespace()}, cm)
 	if err == nil && string(r.Config.GetProductVersion()) != cm.Data["AMP_RELEASE"] {
 		r.Config.SetProductVersion(cm.Data["AMP_RELEASE"])
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+	if err == nil && string(r.Config.GetOperatorVersion()) != string(v1alpha1.OperatorVersion3Scale) {
+		r.Config.SetOperatorVersion(string(v1alpha1.OperatorVersion3Scale))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 

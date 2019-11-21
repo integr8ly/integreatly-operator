@@ -35,8 +35,13 @@ func (c *CodeReady) Read() ProductConfig {
 func (c *CodeReady) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductCodeReadyWorkspaces
 }
+
 func (c *CodeReady) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionCodeReadyWorkspaces
+}
+
+func (c *CodeReady) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionCodeReadyWorkspaces
 }
 
 func (c *CodeReady) GetBackendSecretName() string {

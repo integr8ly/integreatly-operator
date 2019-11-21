@@ -135,6 +135,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
@@ -309,6 +310,10 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: "syndesis-global-config", Namespace: r.Config.GetNamespace()}, st)
 	if err == nil && string(r.Config.GetProductVersion()) != string(st.Data["syndesis"]) {
 		r.Config.SetProductVersion(string(st.Data["syndesis"]))
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+	if err == nil && string(r.Config.GetOperatorVersion()) != string(v1alpha1.OperatorVersionFuse) {
+		r.Config.SetOperatorVersion(string(v1alpha1.OperatorVersionFuse))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 

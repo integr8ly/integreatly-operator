@@ -49,8 +49,16 @@ func (r *RHSSO) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(r.Config["VERSION"])
 }
 
+func (r *RHSSO) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionRHSSO
+}
+
 func (r *RHSSO) SetProductVersion(version string) {
 	r.Config["VERSION"] = version
+}
+
+func (r *RHSSO) SetOperatorVersion(operator string) {
+	r.Config["OPERATOR"] = operator
 }
 
 func (r *RHSSO) Validate() error {

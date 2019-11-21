@@ -42,6 +42,10 @@ func (r *Monitoring) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionMonitoring
 }
 
+func (r *Monitoring) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionMonitoring
+}
+
 func (r *Monitoring) SetProductVersion(version string) {
 	r.Config["VERSION"] = version
 }

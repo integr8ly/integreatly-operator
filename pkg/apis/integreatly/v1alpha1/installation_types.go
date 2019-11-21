@@ -8,6 +8,7 @@ type StatusPhase string
 type InstallationType string
 type ProductName string
 type ProductVersion string
+type OperatorVersion string
 type PreflightStatus string
 type StageName string
 
@@ -67,21 +68,21 @@ var (
 	PreflightSuccess    PreflightStatus = "successful"
 	PreflightFail       PreflightStatus = "failed"
 
-	OperatorVersionAMQStreams            = "1.1.0"
-	OperatorVersionAMQOnline             = "1.2.2"
-	OperatorVersionMonitoring            = "0.0.28"
-	OperatorVersionSolutionExplorer      = "0.0.34"
-	OperatorVersionRHSSO                 = "1.9.5"
-	OperatorVersionRHSSOUser             = "1.9.5"
-	OperatorVersionCodeReadyWorkspaces   = "1.2.2"
-	OperatorVersionFuse                  = "1.4.0"
-	OperatorVersion3Scale                = "1.9.8"
-	OperatorVersionNexus                 = "0.9.0"
-	OperatorVersionLauncher              = "0.1.2"
-	OperatorVersionUPS                   = "0.3.0"
-	OperatorVersionMobileSecurityService = "0.4.1"
-	OperatorVersionMDC                   = "0.3.0"
-	OperatorVersionCloudResources        = "0.1.0"
+	OperatorVersionAMQStreams            OperatorVersion = "1.1.0"
+	OperatorVersionAMQOnline             OperatorVersion = "1.2.2"
+	OperatorVersionMonitoring            OperatorVersion = "0.0.28"
+	OperatorVersionSolutionExplorer      OperatorVersion = "0.0.34"
+	OperatorVersionRHSSO                 OperatorVersion = "1.9.5"
+	OperatorVersionRHSSOUser             OperatorVersion = "1.9.5"
+	OperatorVersionCodeReadyWorkspaces   OperatorVersion = "1.2.2"
+	OperatorVersionFuse                  OperatorVersion = "1.4.0"
+	OperatorVersion3Scale                OperatorVersion = "1.9.8"
+	OperatorVersionNexus                 OperatorVersion = "0.9.0"
+	OperatorVersionLauncher              OperatorVersion = "0.1.2"
+	OperatorVersionUPS                   OperatorVersion = "0.3.0"
+	OperatorVersionMobileSecurityService OperatorVersion = "0.4.1"
+	OperatorVersionMDC                   OperatorVersion = "0.3.0"
+	OperatorVersionCloudResources        OperatorVersion = "0.1.0"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -121,12 +122,13 @@ type InstallationStageStatus struct {
 }
 
 type InstallationProductStatus struct {
-	Name    ProductName    `json:"name"`
-	Version ProductVersion `json:"version"`
-	Host    string         `json:"host"`
-	Type    string         `json:"type,omitempty"`
-	Mobile  bool           `json:"mobile,omitempty"`
-	Status  StatusPhase    `json:"status"`
+	Name            ProductName     `json:"name"`
+	OperatorVersion OperatorVersion `json:"operator,omitempty"`
+	Version         ProductVersion  `json:"version"`
+	Host            string          `json:"host"`
+	Type            string          `json:"type,omitempty"`
+	Mobile          bool            `json:"mobile,omitempty"`
+	Status          StatusPhase     `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

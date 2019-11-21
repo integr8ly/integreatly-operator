@@ -37,3 +37,7 @@ func (a *MobileSecurityService) GetProductName() v1alpha1.ProductName {
 func (c *MobileSecurityService) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionMobileSecurityService
 }
+
+func (c *MobileSecurityService) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionMobileSecurityService
+}

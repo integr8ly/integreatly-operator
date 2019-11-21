@@ -9,10 +9,11 @@ import (
 )
 
 var (
-	lockConfigReadableMockGetHost           sync.RWMutex
-	lockConfigReadableMockGetProductName    sync.RWMutex
-	lockConfigReadableMockGetProductVersion sync.RWMutex
-	lockConfigReadableMockRead              sync.RWMutex
+	lockConfigReadableMockGetHost            sync.RWMutex
+	lockConfigReadableMockGetOperatorVersion sync.RWMutex
+	lockConfigReadableMockGetProductName     sync.RWMutex
+	lockConfigReadableMockGetProductVersion  sync.RWMutex
+	lockConfigReadableMockRead               sync.RWMutex
 )
 
 // Ensure, that ConfigReadableMock does implement ConfigReadable.
@@ -27,6 +28,9 @@ var _ ConfigReadable = &ConfigReadableMock{}
 //         mockedConfigReadable := &ConfigReadableMock{
 //             GetHostFunc: func() string {
 // 	               panic("mock out the GetHost method")
+//             },
+//             GetOperatorVersionFunc: func() v1alpha1.OperatorVersion {
+// 	               panic("mock out the GetOperatorVersion method")
 //             },
 //             GetProductNameFunc: func() v1alpha1.ProductName {
 // 	               panic("mock out the GetProductName method")
@@ -47,6 +51,9 @@ type ConfigReadableMock struct {
 	// GetHostFunc mocks the GetHost method.
 	GetHostFunc func() string
 
+	// GetOperatorVersionFunc mocks the GetOperatorVersion method.
+	GetOperatorVersionFunc func() v1alpha1.OperatorVersion
+
 	// GetProductNameFunc mocks the GetProductName method.
 	GetProductNameFunc func() v1alpha1.ProductName
 
@@ -60,6 +67,9 @@ type ConfigReadableMock struct {
 	calls struct {
 		// GetHost holds details about calls to the GetHost method.
 		GetHost []struct {
+		}
+		// GetOperatorVersion holds details about calls to the GetOperatorVersion method.
+		GetOperatorVersion []struct {
 		}
 		// GetProductName holds details about calls to the GetProductName method.
 		GetProductName []struct {
@@ -96,6 +106,32 @@ func (mock *ConfigReadableMock) GetHostCalls() []struct {
 	lockConfigReadableMockGetHost.RLock()
 	calls = mock.calls.GetHost
 	lockConfigReadableMockGetHost.RUnlock()
+	return calls
+}
+
+// GetOperatorVersion calls GetOperatorVersionFunc.
+func (mock *ConfigReadableMock) GetOperatorVersion() v1alpha1.OperatorVersion {
+	if mock.GetOperatorVersionFunc == nil {
+		panic("ConfigReadableMock.GetOperatorVersionFunc: method is nil but ConfigReadable.GetOperatorVersion was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadableMockGetOperatorVersion.Lock()
+	mock.calls.GetOperatorVersion = append(mock.calls.GetOperatorVersion, callInfo)
+	lockConfigReadableMockGetOperatorVersion.Unlock()
+	return mock.GetOperatorVersionFunc()
+}
+
+// GetOperatorVersionCalls gets all the calls that were made to GetOperatorVersion.
+// Check the length with:
+//     len(mockedConfigReadable.GetOperatorVersionCalls())
+func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadableMockGetOperatorVersion.RLock()
+	calls = mock.calls.GetOperatorVersion
+	lockConfigReadableMockGetOperatorVersion.RUnlock()
 	return calls
 }
 

@@ -38,6 +38,10 @@ func (mdc *MobileDeveloperConsole) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(mdc.config["VERSION"])
 }
 
+func (mdc *MobileDeveloperConsole) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionMDC
+}
+
 func (mdc *MobileDeveloperConsole) GetHost() string {
 	return mdc.config["HOST"]
 }
