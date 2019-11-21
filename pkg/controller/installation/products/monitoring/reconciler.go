@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-marketplace/pkg/client"
 	v12 "k8s.io/api/core/v1"
 	"strings"
@@ -47,6 +48,7 @@ type Reconciler struct {
 	Logger        *logrus.Entry
 	mpm           marketplace.MarketplaceInterface
 	installation  *v1alpha1.Installation
+	monitoring    *monitoring_v1alpha1.ApplicationMonitoring
 	*resources.Reconciler
 }
 
@@ -271,6 +273,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			PrometheusRetention:              defaultPrometheusRetention,
 			PrometheusStorageRequest:         defaultPrometheusStorageRequest,
 		}
+		r.monitoring = monitoring
 		return nil
 	})
 	if err != nil {
@@ -388,12 +391,27 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		"module":  module,
 	}
 
+	cr, err := getMonitoringCr(ctx, cfg, client)
+	if err != nil {
+		// Retry later
+		if kerrors.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrap(err, "error getting monitoring cr")
+	}
+
 	templateHelper := newTemplateHelper(inst, extraParams, cfg)
 	resourceHelper := newResourceHelper(inst, templateHelper)
 	obj, err := resourceHelper.createResource("blackbox/target")
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}
+
+	cr.TypeMeta = v1.TypeMeta{
+		Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
+		APIVersion: monitoring_v1alpha1.SchemeGroupVersion.Version,
+	}
+	ownerutil.EnsureOwner(obj.(v1.Object), cr)
 
 	// try to create the blackbox target. If if fails with already exist do nothing
 	err = client.Create(ctx, obj)

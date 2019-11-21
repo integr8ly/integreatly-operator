@@ -2,6 +2,8 @@ package ups
 
 import (
 	"context"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -111,6 +113,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -170,6 +177,23 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.C
 	}
 
 	logrus.Info("Successfully set unified push server host")
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-ups", v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "ups-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating ups blackbox target")
+	}
 
 	return v1alpha1.PhaseCompleted, nil
 }

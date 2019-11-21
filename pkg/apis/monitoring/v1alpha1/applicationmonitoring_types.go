@@ -7,6 +7,10 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const (
+	ApplicationMonitoringKind = "ApplicationMonitoring"
+)
+
 // ApplicationMonitoringSpec defines the desired state of ApplicationMonitoring
 type ApplicationMonitoringSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
