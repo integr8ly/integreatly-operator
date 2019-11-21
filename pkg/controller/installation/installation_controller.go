@@ -247,7 +247,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
 	}
-	requiredSecrets := []string{"s3-credentials", "s3-bucket", "github-oauth-secret"}
+	requiredSecrets := []string{"github-oauth-secret"}
 	for _, secretName := range requiredSecrets {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
