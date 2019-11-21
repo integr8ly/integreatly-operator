@@ -48,6 +48,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"URL":       "fuse.openshift-cluster.com",
 			}), nil
 		},
+		ReadMonitoringFunc: func() (*config.Monitoring, error) {
+			return config.NewMonitoring(config.ProductConfig{
+				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},

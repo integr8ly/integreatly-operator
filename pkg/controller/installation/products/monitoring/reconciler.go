@@ -374,7 +374,8 @@ func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclie
 
 func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, client pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
-		return errors.New("monitoring not ready")
+		// Retry later
+		return nil
 	}
 
 	// default policy is to require a 2xx http return code

@@ -25,9 +25,9 @@ import (
 )
 
 const (
-	defaultInstallationNamespace    = "amq-online"
-	defaultSubscriptionName         = "integreatly-amq-online"
-	defaultConsoleSvcName           = "console"
+	defaultInstallationNamespace = "amq-online"
+	defaultSubscriptionName      = "integreatly-amq-online"
+	defaultConsoleSvcName        = "console"
 )
 
 type Reconciler struct {

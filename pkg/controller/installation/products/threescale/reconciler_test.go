@@ -16,6 +16,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
@@ -47,6 +48,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
 	return scheme, err
 }
 

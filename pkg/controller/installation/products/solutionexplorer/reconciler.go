@@ -28,16 +28,16 @@ import (
 )
 
 const (
-	defaultName               = "solution-explorer"
-	defaultSubNameAndPkg      = "integreatly-solution-explorer"
-	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	paramOpenShiftHost        = "OPENSHIFT_HOST"
-	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
-	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
-	paramOpenShiftVersion     = "OPENSHIFT_VERSION"
-	paramInstalledServices    = "INSTALLED_SERVICES"
-	paramSSORoute             = "SSO_ROUTE"
-	defaultRouteName          = "tutorial-web-app"
+	defaultName             = "solution-explorer"
+	defaultSubNameAndPkg    = "integreatly-solution-explorer"
+	defaultTemplateLoc      = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
+	paramOpenShiftHost      = "OPENSHIFT_HOST"
+	paramOpenShiftOauthHost = "OPENSHIFT_OAUTH_HOST"
+	paramOauthClient        = "OPENSHIFT_OAUTHCLIENT_ID"
+	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
+	paramInstalledServices  = "INSTALLED_SERVICES"
+	paramSSORoute           = "SSO_ROUTE"
+	defaultRouteName        = "tutorial-web-app"
 )
 
 type Reconciler struct {

@@ -32,6 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 )
 
 func buildScheme() *runtime.Scheme {
@@ -49,6 +51,7 @@ func buildScheme() *runtime.Scheme {
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
 	appsv1.SchemeBuilder.AddToScheme(scheme)
+	monitoring.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 
@@ -74,6 +77,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
+		},
+		ReadMonitoringFunc: func() (*config.Monitoring, error) {
+			return config.NewMonitoring(config.ProductConfig{
+				"NAMESPACE": "middleware-monitoring",
+			}), nil
 		},
 	}
 }

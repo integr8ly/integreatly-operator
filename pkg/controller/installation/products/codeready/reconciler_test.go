@@ -29,6 +29,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 
+	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 )
@@ -74,6 +75,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"HOST":      "rhsso.openshift-cluster.com",
 			}), nil
 		},
+		ReadMonitoringFunc: func() (*config.Monitoring, error) {
+			return config.NewMonitoring(config.ProductConfig{
+				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -93,6 +99,7 @@ func buildScheme() *runtime.Scheme {
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
 	appsv1.SchemeBuilder.AddToScheme(scheme)
+	monitoring.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 

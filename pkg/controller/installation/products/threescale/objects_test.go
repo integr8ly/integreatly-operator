@@ -3,6 +3,7 @@ package threescale
 import (
 	"bytes"
 	"fmt"
+	v1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
@@ -256,6 +257,32 @@ var blobStorageSec = &corev1.Secret{
 	},
 }
 
+var threescaleRoute1 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-master-route",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-master",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "system-master",
+	},
+}
+
+var threescaleRoute2 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-developer-route",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-developer",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "system-developer",
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -282,5 +309,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		smtpCred,
 		blobStorage,
 		blobStorageSec,
+		threescaleRoute1,
+		threescaleRoute2,
 	}
 }
