@@ -38,6 +38,15 @@ type ApplicationMonitoring struct {
 	Status ApplicationMonitoringStatus `json:"status,omitempty"`
 }
 
+type GrafanaDataSource struct {
+	BasicAuthPassword string `json:"basicAuthPassword"`
+	BasicAuthUser     string `json:"basicAuthUSer"`
+}
+
+type GrafanaDataSourceSecret struct {
+	DataSources []GrafanaDataSource `json:"datasources"`
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ApplicationMonitoringList contains a list of ApplicationMonitoring

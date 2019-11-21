@@ -31,6 +31,8 @@ func TestWriteConfig(t *testing.T) {
 		},
 	}
 
+	fakeInst := &v1alpha1.Installation{}
+
 	tests := []struct {
 		productName       string
 		existingResources []runtime.Object
@@ -76,7 +78,7 @@ func TestWriteConfig(t *testing.T) {
 	for _, test := range tests {
 		fakeClient := fake.NewFakeClient(test.existingResources...)
 
-		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName)
+		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName, fakeInst)
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)
 		}
@@ -104,6 +106,8 @@ func TestWriteConfig(t *testing.T) {
 }
 
 func TestReadConfigForProduct(t *testing.T) {
+	fakeInst := &v1alpha1.Installation{}
+
 	tests := []struct {
 		productName       string
 		existingResources []runtime.Object
@@ -131,7 +135,7 @@ func TestReadConfigForProduct(t *testing.T) {
 
 	for _, test := range tests {
 		fakeClient := fake.NewFakeClient(test.existingResources...)
-		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName)
+		mgr, err := NewManager(context.TODO(), fakeClient, mockNamespaceName, mockConfigMapName, fakeInst)
 		if err != nil {
 			t.Fatalf("could not create manager %v", err)
 		}

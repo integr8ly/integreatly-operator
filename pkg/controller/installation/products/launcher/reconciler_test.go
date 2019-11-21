@@ -126,7 +126,7 @@ func TestLauncher(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			ctx := context.TODO()
-			configManager, err := config.NewManager(context.TODO(), scenario.FakeClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name)
+			configManager, err := config.NewManager(context.TODO(), scenario.FakeClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name, scenario.Installation)
 			if err != nil {
 				t.Fatalf("Error creating config manager")
 			}

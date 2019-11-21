@@ -116,7 +116,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = instance.Spec.NamespacePrefix + defaultInstallationConfigMapName
 	}
 
-	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap)
+	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, instance)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
