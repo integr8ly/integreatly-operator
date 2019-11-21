@@ -186,6 +186,7 @@ func PrepareObject(ns metav1.Object, install *v1alpha1.Installation) {
 		labels = map[string]string{}
 	}
 	labels["integreatly"] = "true"
+	labels["monitoring-key"] = "middleware"
 	labels[OwnerLabelKey] = string(install.GetUID())
 	ns.SetLabels(labels)
 }

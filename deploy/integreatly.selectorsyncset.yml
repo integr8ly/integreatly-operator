@@ -12,6 +12,8 @@ spec:
       kind: Namespace
       metadata:
         name: integreatly-operator
+        labels:
+          monitoring-key: middleware
     - apiVersion: operators.coreos.com/v1
       kind: OperatorSource
       metadata:

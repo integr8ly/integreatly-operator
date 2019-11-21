@@ -133,6 +133,7 @@ cluster/prepare: cluster/prepare/project cluster/prepare/secrets cluster/prepare
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
 	@oc new-project $(NAMESPACE)
+	@oc label namespace $(NAMESPACE) monitoring-key=middleware
 	@oc project $(NAMESPACE)
 
 .PHONY: cluster/prepare/secrets
