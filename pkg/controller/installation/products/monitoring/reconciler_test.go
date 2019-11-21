@@ -211,6 +211,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
+	grafanadatasourcesecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grafana-datasources",
+			Namespace: "openshift-monitoring",
+		},
+		Data: map[string][]byte{
+			"prometheus.yaml": []byte("{\"datasources\":[{\"basicAuthUser\":\"testuser\",\"basicAuthPassword\":\"testpass\"}]}"),
+		},
+	}
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -225,10 +234,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, grafanadatasourcesecret, basicInstallation()),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
+						"NAMESPACE": "",
+					}), nil
+				},
+				ReadThreeScaleFunc: func() (ready *config.ThreeScale, e error) {
+					return config.NewThreeScale(config.ProductConfig{
 						"NAMESPACE": "",
 					}), nil
 				},
@@ -277,7 +291,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			status, err := reconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
+				t.Fatalf("expected no error but got one: %v", err)
 			}
 			if err == nil && tc.ExpectError {
 				t.Fatal("expected error but got none")
