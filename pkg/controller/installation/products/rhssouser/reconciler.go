@@ -26,7 +26,7 @@ var (
 	defaultRhssoNamespace   = "user-sso"
 	keycloakName            = "rhssouser"
 	keycloakRealmName       = "user-sso"
-	defaultSubscriptionName = "integreatly-rhsso"
+	defaultSubscriptionName = "keycloak-rhsso"
 	idpAlias                = "openshift-v4"
 )
 
@@ -307,8 +307,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 				"useJwksUrl":      "true",
 			},
 		})
-
-		return serverClient.Update(ctx, kcr)
 	}
 	return nil
 }
