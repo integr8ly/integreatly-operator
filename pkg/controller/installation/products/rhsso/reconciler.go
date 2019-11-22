@@ -142,6 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return v1alpha1.PhaseCompleted, nil
@@ -216,6 +217,10 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
 		r.Config.SetProductVersion(kc.Status.Version)
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+	if err == nil && string(r.Config.GetOperatorVersion()) != kc.Status.OperatorVersion {
+		r.Config.SetOperatorVersion(kc.Status.OperatorVersion)
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 

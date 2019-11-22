@@ -42,6 +42,10 @@ func (a *AMQOnline) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionAMQOnline
 }
 
+func (a *AMQOnline) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionAMQOnline
+}
+
 func (c *AMQOnline) GetBackendSecretName() string {
 	return "s3-credentials"
 }

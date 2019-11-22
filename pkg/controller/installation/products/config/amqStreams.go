@@ -37,3 +37,7 @@ func (a *AMQStreams) GetProductName() v1alpha1.ProductName {
 func (a *AMQStreams) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionAMQStreams
 }
+
+func (a *AMQStreams) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionAMQStreams
+}

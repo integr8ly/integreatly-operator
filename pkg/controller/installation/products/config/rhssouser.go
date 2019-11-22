@@ -49,9 +49,18 @@ func (r *RHSSOUser) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(r.Config["VERSION"])
 }
 
+func (r *RHSSOUser) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionRHSSOUser
+}
+
 func (r *RHSSOUser) SetProductVersion(version string) {
 	r.Config["VERSION"] = version
 }
+
+func (r *RHSSOUser) SetOperatorVersion(operator string) {
+	r.Config["OPERATOR"] = operator
+}
+
 func (r *RHSSOUser) Validate() error {
 	if r.GetProductName() == "" {
 		return errors.New("config product name is not defined")

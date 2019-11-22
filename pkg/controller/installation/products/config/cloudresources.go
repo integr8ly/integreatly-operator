@@ -39,3 +39,7 @@ func (c *CloudResources) GetProductName() v1alpha1.ProductName {
 func (c *CloudResources) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionCloudResources
 }
+
+func (c *CloudResources) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionCloudResources
+}

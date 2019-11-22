@@ -41,6 +41,14 @@ func (t *ThreeScale) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(t.config["VERSION"])
 }
 
+func (t *ThreeScale) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersion(t.config["OPERATOR"])
+}
+
+func (t *ThreeScale) SetOperatorVersion(operator string) {
+	t.config["OPERATOR"] = operator
+}
+
 func (t *ThreeScale) SetProductVersion(newVersion string) {
 	t.config["VERSION"] = newVersion
 }

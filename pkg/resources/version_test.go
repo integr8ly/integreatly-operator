@@ -1,6 +1,9 @@
 package resources
 
-import "testing"
+import (
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"testing"
+)
 
 func TestVersion(t *testing.T) {
 	scenarios := []struct {
@@ -85,7 +88,7 @@ func TestVersion(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			version, err := NewVersion(scenario.TestVersion)
+			version, err := NewVersion(v1alpha1.OperatorVersion(scenario.TestVersion))
 			scenario.Verifier(version, err, t)
 		})
 	}
@@ -291,8 +294,8 @@ func TestComparisons(t *testing.T) {
 	}
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			v1, _ := NewVersion(scenario.V1)
-			v2, _ := NewVersion(scenario.V2)
+			v1, _ := NewVersion(v1alpha1.OperatorVersion(scenario.V1))
+			v2, _ := NewVersion(v1alpha1.OperatorVersion(scenario.V2))
 			scenario.Verifier(v1, v2, t)
 		})
 	}

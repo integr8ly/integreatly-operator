@@ -385,7 +385,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 										Name: "nexus-install-plan",
 									},
 									Spec: operatorsv1alpha1.InstallPlanSpec{
-										ClusterServiceVersionNames: []string{"nexus.v" + integreatlyv1alpha1.OperatorVersionNexus},
+										ClusterServiceVersionNames: []string{"nexus.v" + string(integreatlyv1alpha1.OperatorVersionNexus)},
 										Approved:                   false,
 									},
 									Status: operatorsv1alpha1.InstallPlanStatus{

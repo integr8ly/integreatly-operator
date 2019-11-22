@@ -41,6 +41,10 @@ func (s *SolutionExplorer) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(s.config["VERSION"])
 }
 
+func (s *SolutionExplorer) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionSolutionExplorer
+}
+
 func (s *SolutionExplorer) SetProductVersion(newVersion string) {
 	s.config["VERSION"] = newVersion
 }

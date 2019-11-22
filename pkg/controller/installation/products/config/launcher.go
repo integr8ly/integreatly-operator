@@ -37,3 +37,7 @@ func (a *Launcher) GetProductName() v1alpha1.ProductName {
 func (c *Launcher) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionLauncher
 }
+
+func (c *Launcher) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionLauncher
+}

@@ -41,6 +41,10 @@ func (u *Ups) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionUps
 }
 
+func (u *Ups) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionUPS
+}
+
 func (u *Ups) Validate() error {
 	if u.GetNamespace() == "" {
 		return errors.New("config namespace is not defined")

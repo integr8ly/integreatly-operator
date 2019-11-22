@@ -42,6 +42,10 @@ func (n *Nexus) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionNexus
 }
 
+func (n *Nexus) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionNexus
+}
+
 func (n *Nexus) Validate() error {
 	if n.GetProductName() == "" {
 		return errors.New("config product name is not defined")

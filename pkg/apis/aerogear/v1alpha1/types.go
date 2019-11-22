@@ -246,8 +246,9 @@ type GenericStatus struct {
 	Message  string      `json:"message"`
 	Attempts int         `json:"attempts"`
 	// marked as true when all work is done on it
-	Ready   bool   `json:"ready"`
-	Version string `json:"version"`
+	Ready           bool   `json:"ready"`
+	Version         string `json:"version"`
+	OperatorVersion string `json:"operator"`
 }
 
 type KeycloakStatus struct {

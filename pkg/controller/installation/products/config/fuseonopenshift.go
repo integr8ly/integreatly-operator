@@ -37,6 +37,10 @@ func (f *FuseOnOpenshift) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.VersionFuseOnOpenshift
 }
 
+func (f *FuseOnOpenshift) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersionFuse
+}
+
 func (f *FuseOnOpenshift) Validate() error {
 	if f.GetProductName() == "" {
 		return errors.New("config product name is not defined")

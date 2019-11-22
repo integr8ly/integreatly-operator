@@ -41,8 +41,16 @@ func (f *Fuse) GetProductVersion() v1alpha1.ProductVersion {
 	return v1alpha1.ProductVersion(f.config["VERSION"])
 }
 
+func (f *Fuse) GetOperatorVersion() v1alpha1.OperatorVersion {
+	return v1alpha1.OperatorVersion(f.config["VERSION"])
+}
+
 func (f *Fuse) SetProductVersion(newVersion string) {
 	f.config["VERSION"] = newVersion
+}
+
+func (f *Fuse) SetOperatorVersion(operator string) {
+	f.config["OPERATOR"] = operator
 }
 
 func (f *Fuse) Validate() error {
