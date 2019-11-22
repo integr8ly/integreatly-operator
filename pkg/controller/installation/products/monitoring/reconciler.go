@@ -378,6 +378,11 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		return nil
 	}
 
+	if target.Url == "" {
+		// Retry later if the URL is not yet known
+		return nil
+	}
+
 	// default policy is to require a 2xx http return code
 	module := target.Module
 	if module == "" {
