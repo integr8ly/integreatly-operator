@@ -6,6 +6,8 @@ ENV OPERATOR=/usr/local/bin/integreatly-operator \
 
 # install operator binary
 COPY build/_output/bin/integreatly-operator ${OPERATOR}
+# copy templates
+COPY templates /usr/local/bin/templates
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
