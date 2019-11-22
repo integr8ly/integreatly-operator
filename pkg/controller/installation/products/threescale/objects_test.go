@@ -194,7 +194,7 @@ var installation = &v1alpha1.Installation{
 
 var smtpCred = &crov1.SMTPCredentialSet{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "3scale-smtp-test-installation",
+		Name:      "threescale-smtp-test-installation",
 		Namespace: "integreatly-operator-namespace",
 	},
 	Status: crov1.SMTPCredentialSetStatus{
@@ -223,6 +223,39 @@ var smtpSec = &corev1.Secret{
 	},
 }
 
+var blobStorage = &crov1.BlobStorage{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "threescale-blobstorage-test-installation",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Status: crov1.BlobStorageStatus{
+		Phase: types.PhaseComplete,
+		SecretRef: &types.SecretRef{
+			Name:      "threescale-blobstorage-test",
+			Namespace: "integreatly-operator-namespace",
+		},
+	},
+	Spec: crov1.BlobStorageSpec{
+		SecretRef: &types.SecretRef{
+			Name:      "threescale-blobstorage-test",
+			Namespace: "integreatly-operator-namespace",
+		},
+	},
+}
+
+var blobStorageSec = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "threescale-blobstorage-test",
+		Namespace: "integreatly-operator-namespace",
+	},
+	Data: map[string][]byte{
+		"bucketName":          []byte("test"),
+		"bucketRegion":        []byte("test"),
+		"credentialKeyID":     []byte("test"),
+		"credentialSecretKey": []byte("test"),
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -247,5 +280,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		installation,
 		smtpSec,
 		smtpCred,
+		blobStorage,
+		blobStorageSec,
 	}
 }

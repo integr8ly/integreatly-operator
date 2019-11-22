@@ -137,12 +137,6 @@ cluster/prepare/project:
 
 .PHONY: cluster/prepare/secrets
 cluster/prepare/secrets:
-	@oc process -f deploy/s3-secrets.yaml \
-		-p INSTALLATION_NAMESPACE=$(NAMESPACE) \
-		-p AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) \
-		-p AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) \
-		-p AWS_BUCKET=$(AWS_BUCKET) \
-		-p AWS_REGION=eu-west-1 | oc apply -f -
 	@oc create secret generic github-oauth-secret \
 		--from-literal=clientId=$(GH_CLIENT_ID) \
 		--from-literal=secret=$(GH_CLIENT_SECRET)

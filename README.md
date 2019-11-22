@@ -44,19 +44,13 @@ cd integreatly-operator
 ```
 
 Some products require certain credentials to be present in the namespace before installation can proceed: 
-* 3scale requires AWS credentials for backups to an S3 bucket. The bucket should have all public access turned off
 * RHSSO requires Github OAuth credentials to create a Github Identity Provider for Launcher (see [here](https://github.com/integr8ly/installation/#51-create-github-oauth-to-enable-github-authorization-for-launcher) for creating a Github OAuth app) and Codeready
 
-**Note:** If these secrets aren't created, the integreatly preflight checks will fail
+**Note:** If this secret isn't created, the integreatly preflight checks will fail
 
 ```sh
 # The project name for the integreatly operator to watch 
 export NAMESPACE="integreatly-test"
-
-# 3scale requires AWS credentials for backups to S3
-export AWS_ACCESS_KEY_ID=<access key>
-export AWS_SECRET_ACCESS_KEY=<access secret>
-export AWS_BUCKET=<bucket name>
 
 # RHSSO requires Github OAuth credentials to setup a Github identity provider
 # for Fabric8 Launcher and Codeready
@@ -66,6 +60,15 @@ export GH_CLIENT_SECRET=<client secret>
 # Bootstrap the project
 make cluster/prepare/local
 ```
+
+
+* 3scale requires AWS credentials for backups to an S3 bucket. The bucket should have all public access turned off.
+Currently this secret (`threescale-blobstorage-<installation-name>`) is created with dummy credentials by the [cloud resource operator](https://github.com/integr8ly/cloud-resource-operator), in the namespace the integreatly operator is deployed into. In order for this feature to work, these credentials should be replaced:
+    * _bucketName_: The name of the AWS bucket
+    * _bucketRegion_: The AWS region where the bucket has been created
+    * _credentialKeyID_: The AWS access key
+    * _credentialSecretKey_: The AWS secret key
+   
 
 An `Installation` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
 ```sh

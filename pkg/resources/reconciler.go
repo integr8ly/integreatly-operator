@@ -190,6 +190,22 @@ func PrepareObject(ns metav1.Object, install *v1alpha1.Installation) {
 	ns.SetLabels(labels)
 }
 
+func AddOwner(obj metav1.Object, inst *v1alpha1.Installation) {
+	refs := obj.GetOwnerReferences()
+	ref := metav1.NewControllerRef(inst, v1alpha1.SchemaGroupVersionKind)
+	refExists := false
+	for _, er := range refs {
+		if er.Name == ref.Name {
+			refExists = true
+			break
+		}
+	}
+	if !refExists {
+		refs = append(refs, *ref)
+		obj.SetOwnerReferences(refs)
+	}
+}
+
 func IsOwnedBy(o metav1.Object, owner *v1alpha1.Installation) bool {
 	// TODO change logic to check for our finalizer?
 	for k, v := range o.GetLabels() {
