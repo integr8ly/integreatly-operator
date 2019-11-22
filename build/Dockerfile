@@ -2,10 +2,13 @@ FROM registry.access.redhat.com/ubi8/ubi:8.0
 
 ENV OPERATOR=/usr/local/bin/integreatly-operator \
     USER_UID=1001 \
-    USER_NAME=integreatly-operator
+    USER_NAME=integreatly-operator \
+    TEMPLATE_PATH=/usr/local/bin/templates/monitoring
 
 # install operator binary
 COPY build/_output/bin/integreatly-operator ${OPERATOR}
+# copy templates
+COPY templates /usr/local/bin/templates
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
