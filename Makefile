@@ -13,6 +13,7 @@ TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.10.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
+TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -98,7 +99,7 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
-	@./scripts/ci/unit_test.sh
+	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e
 test/e2e: export AWS_ACCESS_KEY_ID := 1234
