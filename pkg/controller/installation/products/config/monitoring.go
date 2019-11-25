@@ -116,6 +116,10 @@ func (r *Monitoring) GetJobTemplates() []string {
 	}
 }
 
+func (r *Monitoring) GetConfigTemplate() string {
+	return "config/alertmanager.yaml"
+}
+
 func (f *Monitoring) Validate() error {
 	if f.GetProductName() == "" {
 		return errors.New("config product name is not defined")

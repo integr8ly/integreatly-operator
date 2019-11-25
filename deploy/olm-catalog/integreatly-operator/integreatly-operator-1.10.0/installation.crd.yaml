@@ -50,6 +50,21 @@ spec:
                   type: string
                 namespace:
                   type: string
+            alertManager:
+              type: object
+              properties:
+                alertManagerToEmail:
+                  type: string
+                dmsWebHookURL:
+                  type: string
+                pdServiceKey:
+                  type: string
+                smtpAuthPassword:
+                  type: string
+                smtpAuthUsername:
+                  type: string
+                smtpSmartHost:
+                  type: string
           required:
             - type
         status:

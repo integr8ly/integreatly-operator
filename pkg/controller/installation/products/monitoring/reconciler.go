@@ -15,8 +15,10 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +36,9 @@ const (
 	grafanaDataSourceSecretKey   = "prometheus.yaml"
 	defaultBlackboxModule        = "http_2xx"
 	manifestPackagae             = "integreatly-monitoring"
+	alertManagerConfigSecretName = "alertmanager-application-monitoring"
+	alertManagerRoute            = "alertmanager-route"
+	alertManagerTemplateName     = "alertmanager"
 )
 
 type Reconciler struct {
@@ -182,6 +187,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	phase, err = r.reconcileScrapeConfigs(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileScrapeConfigs", phase)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileAlertManagerConfig(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileAlertManagerConfig", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
@@ -445,4 +457,51 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 	}
 
 	return nil
+}
+
+func (r *Reconciler) reconcileAlertManagerConfig(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// Obtain the alertmanager-route
+	route := &routev1.Route{}
+
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: alertManagerRoute, Namespace: r.Config.GetNamespace()}, route)
+	if k8serr.IsNotFound(err) {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// Params required by the alertmanager template
+	r.extraParams["alertmanager_route"] = route.Spec.Host
+	r.extraParams["alertmanager_to_email"] = inst.Spec.AlertManager.AlertmanagerToEmail
+	r.extraParams["dms_webhook_url"] = inst.Spec.AlertManager.DMSWebHookURL
+	r.extraParams["pd_service_key"] = inst.Spec.AlertManager.PDServiceKey
+	r.extraParams["smtp_smarthost"] = inst.Spec.AlertManager.SMTPSmarthost
+	r.extraParams["smtp_auth_username"] = inst.Spec.AlertManager.SMTPauthUsername
+	r.extraParams["smtp_auth_password"] = inst.Spec.AlertManager.SMTPauthPassword
+
+	job := strings.Builder{}
+	templateHelper := NewTemplateHelper(inst, r.extraParams)
+	bytes, err := templateHelper.loadTemplate(alertManagerTemplateName)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error loading template")
+	}
+
+	job.Write(bytes)
+
+	alertManagerConfigSecret := &v12.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      alertManagerConfigSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, alertManagerConfigSecret, func() error {
+		alertManagerConfigSecret.Data = map[string][]byte{
+			alertManagerConfigSecretName: []byte(job.String()),
+		}
+
+		return nil
+	})
+
+	r.Logger.Info(fmt.Sprintf("The operation result of creating alertmanager config secret was %v", or))
+
+	return v1alpha1.PhaseCompleted, nil
 }

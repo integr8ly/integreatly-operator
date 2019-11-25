@@ -1,0 +1,41 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: {{ index .Params "smtp_smarthost" }}
+  smtp_from: noreply@{{ index .Params "alertmanager_route" }}
+  smtp_auth_username: {{ index .Params "smtp_auth_username" }}
+  smtp_auth_password: {{ index .Params "smtp_auth_password" }}
+route:
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: default
+  routes:
+  - match:
+      severity: critical
+    receiver: critical
+  - match:
+      alertname: DeadMansSwitch
+    repeat_interval: 5m
+    receiver: deadmansswitch
+receivers:
+- name: default
+  email_configs:
+  - send_resolved: true
+    to: {{ index .Params "alertmanager_to_email" }}
+- name: critical
+  pagerduty_configs:
+  - service_key: {{ index .Params "pd_service_key" }}
+  email_configs:
+  - send_resolved: true
+    to: {{ index .Params "alertmanager_to_email" }}
+- name: deadmansswitch
+  webhook_configs:
+    - url: {{index .Params "dms_webhook_url" }}
+inhibit_rules:
+- source_match:
+    alertname: 'JobRunningTimeExceeded'
+    severity: 'critical'
+  target_match:
+    alertname: 'JobRunningTimeExceeded'
+    severity: 'warning'
+  equal: ['alertname', 'job', 'label_cronjob_name']
