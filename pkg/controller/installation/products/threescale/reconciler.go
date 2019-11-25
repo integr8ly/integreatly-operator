@@ -361,7 +361,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func(existing runtime.Object) error {
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 		credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
 		credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
 		return nil
@@ -816,7 +816,7 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgcli
 	}
 
 	routes := v12.RouteList{}
-	err = serverClient.List(ctx, &opts, &routes)
+	err = serverClient.List(ctx, &routes, &opts)
 	if err != nil {
 		return nil, err
 	}

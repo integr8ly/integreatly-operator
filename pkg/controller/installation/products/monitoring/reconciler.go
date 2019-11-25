@@ -276,7 +276,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			PrometheusRetention:              defaultPrometheusRetention,
 			PrometheusStorageRequest:         defaultPrometheusStorageRequest,
 		}
-		r.monitoring = monitoring
+		r.monitoring = m
 		return nil
 	})
 	if err != nil {
