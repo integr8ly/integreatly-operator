@@ -3,6 +3,8 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"strings"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -131,6 +133,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -352,6 +359,23 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 
 func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "rhsso-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating rhsso blackbox target")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {

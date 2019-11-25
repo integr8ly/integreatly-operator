@@ -3,7 +3,8 @@ package amqonline
 import (
 	"context"
 	"fmt"
-
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -131,6 +132,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -242,6 +248,23 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, inst *v1alpha1.Install
 	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for amq-online")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "amq-service-broker",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating enmasse blackbox target")
 	}
 
 	return v1alpha1.PhaseCompleted, nil

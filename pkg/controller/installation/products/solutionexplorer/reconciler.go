@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -159,9 +161,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileBlackboxTarget(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	target := v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "webapp-ui",
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating solution explorer blackbox target")
+	}
 
 	return v1alpha1.PhaseCompleted, nil
 }

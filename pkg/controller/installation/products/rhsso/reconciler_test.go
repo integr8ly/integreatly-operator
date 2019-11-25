@@ -13,6 +13,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
+	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -53,6 +54,11 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"URL":       "rhsso.openshift-cluster.com",
 			}), nil
 		},
+		ReadMonitoringFunc: func() (*config.Monitoring, error) {
+			return config.NewMonitoring(config.ProductConfig{
+				"NAMESPACE": "middleware-monitoring",
+			}), nil
+		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -74,6 +80,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
+	err = monitoring.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 

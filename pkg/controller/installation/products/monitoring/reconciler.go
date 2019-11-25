@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-marketplace/pkg/client"
 	v12 "k8s.io/api/core/v1"
 	"strings"
@@ -37,6 +38,7 @@ const (
 	openshiftMonitoringNamespace            = "openshift-monitoring"
 	grafanaDataSourceSecretName             = "grafana-datasources"
 	grafanaDataSourceSecretKey              = "prometheus.yaml"
+	defaultBlackboxModule                   = "http_2xx"
 )
 
 type Reconciler struct {
@@ -46,6 +48,7 @@ type Reconciler struct {
 	Logger        *logrus.Entry
 	mpm           marketplace.MarketplaceInterface
 	installation  *v1alpha1.Installation
+	monitoring    *monitoring_v1alpha1.ApplicationMonitoring
 	*resources.Reconciler
 }
 
@@ -177,6 +180,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update monitoring config")
+	}
+
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -265,6 +273,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			PrometheusRetention:              defaultPrometheusRetention,
 			PrometheusStorageRequest:         defaultPrometheusStorageRequest,
 		}
+		r.monitoring = monitoring
 		return nil
 	})
 	if err != nil {
@@ -345,4 +354,80 @@ func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installa
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
 	return v1alpha1.PhaseCompleted, nil
+}
+
+func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
+	monitoring := monitoring_v1alpha1.ApplicationMonitoring{}
+
+	selector := pkgclient.ObjectKey{
+		Namespace: cfg.GetNamespace(),
+		Name:      defaultMonitoringName,
+	}
+
+	err := client.Get(ctx, selector, &monitoring)
+	if err != nil {
+		return nil, err
+	}
+
+	return &monitoring, nil
+}
+
+func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, client pkgclient.Client) error {
+	if cfg.GetNamespace() == "" {
+		// Retry later
+		return nil
+	}
+
+	if target.Url == "" {
+		// Retry later if the URL is not yet known
+		return nil
+	}
+
+	// default policy is to require a 2xx http return code
+	module := target.Module
+	if module == "" {
+		module = defaultBlackboxModule
+	}
+
+	// prepare the template
+	extraParams := map[string]string{
+		"name":    name,
+		"url":     target.Url,
+		"service": target.Service,
+		"module":  module,
+	}
+
+	cr, err := getMonitoringCr(ctx, cfg, client)
+	if err != nil {
+		// Retry later
+		if kerrors.IsNotFound(err) {
+			return nil
+		}
+		return errors.Wrap(err, "error getting monitoring cr")
+	}
+
+	templateHelper := newTemplateHelper(inst, extraParams, cfg)
+	resourceHelper := newResourceHelper(inst, templateHelper)
+	obj, err := resourceHelper.createResource("blackbox/target")
+	if err != nil {
+		return errors.Wrap(err, "error creating resource from template")
+	}
+
+	cr.TypeMeta = v1.TypeMeta{
+		Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
+		APIVersion: monitoring_v1alpha1.SchemeGroupVersion.Version,
+	}
+	ownerutil.EnsureOwner(obj.(v1.Object), cr)
+
+	// try to create the blackbox target. If if fails with already exist do nothing
+	err = client.Create(ctx, obj)
+	if err != nil {
+		if kerrors.IsAlreadyExists(err) {
+			// The target already exists. Nothing else to do
+			return nil
+		}
+		return errors.Wrap(err, "error creating blackbox target")
+	}
+
+	return nil
 }

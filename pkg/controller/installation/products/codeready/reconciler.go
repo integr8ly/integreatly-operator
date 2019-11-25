@@ -3,6 +3,8 @@ package codeready
 import (
 	"context"
 	"fmt"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -101,7 +103,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -453,6 +461,23 @@ func (r *Reconciler) getBackupConfig() resources.BackupConfig {
 			},
 		},
 	}
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+	}
+
+	err = monitoring.CreateBlackboxTarget("integreatly-codeready", v1alpha12.BlackboxtargetData{
+		Url:     r.Config.GetHost(),
+		Service: "codeready-ui",
+	}, ctx, cfg, inst, client)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating codeready blackbox target")
+	}
+
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
