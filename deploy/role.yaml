@@ -60,7 +60,13 @@ metadata:
   creationTimestamp: null
   name: integreatly-operator
 rules:
-  ## start backup permissions
+  - apiGroups:
+      - "integreatly.org"
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  ## Start monitoring
   - apiGroups:
       - "applicationmonitoring.integreatly.org"
     resources:
@@ -72,6 +78,8 @@ rules:
       - update
       - list
       - delete
+  ## End monitoring
+  ## Start backup permissions
   - apiGroups:
       - batch
     resources:
@@ -81,13 +89,17 @@ rules:
       - update
   - apiGroups:
       - "rbac.authorization.k8s.io"
+    # these are required so the operator can create a clusterrole to assign to the backup jobs serviceaccount
+    # and enable the backup to see the items it needs to backup
     resources:
-      - "clusterroles"
-      - "clusterrolebindings"
+      - "clusterroles" # may be able to do this with roles instead
+      - "clusterrolebindings" # may be able to do this with rolebindings instead
     verbs:
       - create
       - update
       - delete
+  # integreatly-operator doesn't require these permissions, but must have them to be able to grant them to the back
+  # service accounts it creates and assigns.
   - apiGroups:
       - "*"
     resources:
@@ -103,13 +115,7 @@ rules:
       - create
       - update
     ## end backup permissions
-  - apiGroups:
-      - "integreatly.org"
-    resources:
-      - "*"
-    verbs:
-      - "*"
-  # This is used to allow the operator to setup the ns needed for each product
+  # Start NS reconciliation - This is used to allow the operator to setup the ns needed for each product
   - apiGroups:
       - ""
     resources:
@@ -123,24 +129,25 @@ rules:
       - get
       - update
       - delete
-  # This is used to allow the operator to setup catalog source config and remove it if needed.
+  # End NS reconciliation
+  # Start subscription creation - This is used to allow the operator to setup catalog source config and remove it if needed.
   - apiGroups:
       - operators.coreos.com
     resources:
-      - catalogsourceconfigs
+      - catalogsourceconfigs # required to create catalogsourceconfigs in openshift-marketplace namespace
     verbs:
       - list
       - create
       - watch
-      - delete
+      - delete # for uninstallation, these are not cleaned up automatically
   - apiGroups:
       - ""
     resources:
       - pods
       - secrets
     verbs:
-      - list
-      - get
+      - list # needed to get secret for pulling images from default namespace
+      - get # needed to get secret for pulling images from default namespace
   - apiGroups:
       - operators.coreos.com
     resources:
@@ -160,6 +167,7 @@ rules:
       - get
       - delete
       - update
+  # End subscription creation
   - apiGroups:
       - aerogear.org
     resources:
@@ -277,8 +285,8 @@ rules:
     resources:
       - "rolebindings"
     verbs:
-      - create #needed for creating rolebinding for dedicated-admins to view fuse
-      - update #needed for updating subject list to match changes to dedicated-admins users
+      - create # needed for creating rolebinding for dedicated-admins to view fuse
+      - update # needed for updating subject list to match changes to dedicated-admins users
   # This is used to allow the operator to create and update the rhmi-developers group with users
   - apiGroups:
       - user.openshift.io
@@ -302,6 +310,8 @@ rules:
     verbs:
       - get # needed for updating the samples operator config cr to ignore fuse imagestreams and templates
       - update # needed for updating the samples operator config cr to ignore fuse imagestreams and templates
+  # in Opensihft 4.2 some imagestreams are missing required images.
+  # Until this is fixed in the product operator, we fix it in the integreatly-operator
   - apiGroups:
       - image.openshift.io
     resources:
@@ -311,6 +321,7 @@ rules:
       - create
       - delete
       - update
+  # end of imagestreams fix permissions
   - apiGroups:
       - template.openshift.io
     resources:
@@ -326,6 +337,7 @@ rules:
     verbs:
       - get
       - create
+  # to be removed
   # needed to access db and service crs in the mobile-security-service namespace
   - apiGroups:
       - mobile-security-service.aerogear.org
@@ -348,3 +360,4 @@ rules:
       - watch
       - update
       - create
+  # remove to here
