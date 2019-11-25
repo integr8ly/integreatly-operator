@@ -161,7 +161,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 						Resource: "ApplicationMonitoring",
 					}, key.Name)
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},

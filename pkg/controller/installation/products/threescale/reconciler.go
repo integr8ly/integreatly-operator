@@ -252,18 +252,17 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 	}
 
 	// reconcile the smtp configmap for 3scale
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, smtpCfgMap, func(existing runtime.Object) error {
-		cm := existing.(*v1.ConfigMap)
-		if cm.Data == nil {
-			cm.Data = map[string]string{}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, smtpCfgMap, func() error {
+		if smtpCfgMap.Data == nil {
+			smtpCfgMap.Data = map[string]string{}
 		}
-		cm.Data["address"] = string(credSec.Data["host"])
-		cm.Data["authentication"] = "login"
-		cm.Data["domain"] = fmt.Sprintf("3scale-admin.%s", inst.Spec.RoutingSubdomain)
-		cm.Data["openssl.verify.mode"] = ""
-		cm.Data["password"] = string(credSec.Data["password"])
-		cm.Data["port"] = string(credSec.Data["port"])
-		cm.Data["username"] = string(credSec.Data["username"])
+		smtpCfgMap.Data["address"] = string(credSec.Data["host"])
+		smtpCfgMap.Data["authentication"] = "login"
+		smtpCfgMap.Data["domain"] = fmt.Sprintf("3scale-admin.%s", inst.Spec.RoutingSubdomain)
+		smtpCfgMap.Data["openssl.verify.mode"] = ""
+		smtpCfgMap.Data["password"] = string(credSec.Data["password"])
+		smtpCfgMap.Data["port"] = string(credSec.Data["port"])
+		smtpCfgMap.Data["username"] = string(credSec.Data["username"])
 		return nil
 	})
 	if err != nil {
@@ -362,7 +361,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		Data: map[string][]byte{},
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func(existing runtime.Object) error {
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 		credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
 		credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
 		return nil
@@ -817,7 +816,7 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgcli
 	}
 
 	routes := v12.RouteList{}
-	err = serverClient.List(ctx, &opts, &routes)
+	err = serverClient.List(ctx, &routes, &opts)
 	if err != nil {
 		return nil, err
 	}
