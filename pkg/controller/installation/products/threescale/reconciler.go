@@ -449,7 +449,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	logrus.Info("Creating backend redis instance")
 	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", inst.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
-		resources.PrepareObject(cr, r.installation)
+		resources.AddOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -461,7 +461,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	logrus.Info("Creating system redis instance")
 	systemRedisName := fmt.Sprintf("threescale-redis-%s", inst.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
-		resources.PrepareObject(cr, r.installation)
+		resources.AddOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -473,7 +473,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	logrus.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("threescale-postgres-%s", inst.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		resources.PrepareObject(cr, r.installation)
+		resources.AddOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
