@@ -346,9 +346,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name: "test1",
 		},
 	}
-	openshiftAdminGroup := &usersv1.Group{
+	rhmiDevelopersGroup := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "dedicated-admins",
+			Name: "rhmi-developers",
 		},
 		Users: []string{
 			test1User.Name,
@@ -369,7 +369,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, openshiftAdminGroup, pullSecret, installation),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os operatorsv1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

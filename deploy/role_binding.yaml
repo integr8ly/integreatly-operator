@@ -23,3 +23,17 @@ roleRef:
   kind: ClusterRole
   name: integreatly-operator
   apiGroup: rbac.authorization.k8s.io
+---
+# This is required for granting view access permission to the Fuse namespace for rhmi-developer users.
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: integreatly-operator-cluster-view
+subjects:
+  - kind: ServiceAccount
+    name: integreatly-operator
+    namespace: integreatly
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io

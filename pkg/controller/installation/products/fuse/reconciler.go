@@ -31,8 +31,9 @@ import (
 const (
 	defaultInstallationNamespace = "fuse"
 	defaultSubscriptionName      = "integreatly-syndesis"
-	adminGroupName               = "dedicated-admins"
 	defaultFusePullSecret        = "syndesis-pull-secret"
+	developersGroupName          = "rhmi-developers"
+	clusterViewRoleName          = "view"
 )
 
 type Reconciler struct {
@@ -100,7 +101,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileAdminPerms(ctx, serverClient)
+	phase, err = r.reconcileViewFusePerms(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -193,69 +194,39 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 	return v1alpha1.PhaseFailed, errors.New("Could not find trigger for postgres:9.5 in deploymentconfig")
 }
 
-func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	r.logger.Infof("Reconciling permissions for %s group on %s namespace", adminGroupName, r.Config.GetNamespace())
-
-	roleName := adminGroupName + "-view-fuse"
-	adminViewFuseRole := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: roleName,
-		},
-	}
-	or, err := controllerutil.CreateOrUpdate(ctx, client, adminViewFuseRole, func(existing runtime.Object) error {
-		cr := existing.(*rbacv1.ClusterRole)
-
-		cr.Rules = []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"*"},
-				Resources: []string{"namespaces"},
-				Verbs:     []string{"get"},
-			},
-			{
-				APIGroups: []string{"*"},
-				Resources: []string{"pods"},
-				Verbs:     []string{"get", "list"},
-			},
-			{
-				APIGroups: []string{"*"},
-				Resources: []string{"pods/log"},
-				Verbs:     []string{"get"},
-			},
-		}
-
-		return nil
-	})
-	r.logger.Infof("The %s role perms were: %s", adminViewFuseRole.Name, or)
+// Ensures all users in rhmi-developers group have view Fuse permissions
+func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
 
 	openshiftUsers := &usersv1.UserList{}
-	err = client.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	err := client.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	openshiftAdminGroup := &usersv1.Group{}
-	err = client.Get(ctx, pkgclient.ObjectKey{Name: adminGroupName}, openshiftAdminGroup)
+	rhmiDevelopersGroup := &usersv1.Group{}
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: developersGroupName}, rhmiDevelopersGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return v1alpha1.PhaseFailed, err
 	}
 
-	adminViewFuseRoleBinding := &rbacv1.RoleBinding{
+	viewFuseRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleName,
+			Name:      developersGroupName + "-fuse-view",
 			Namespace: r.Config.GetNamespace(),
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     roleName,
+			Name:     clusterViewRoleName,
 		},
 	}
-	or, err = controllerutil.CreateOrUpdate(ctx, client, adminViewFuseRoleBinding, func(existing runtime.Object) error {
+	or, err := controllerutil.CreateOrUpdate(ctx, client, viewFuseRoleBinding, func(existing runtime.Object) error {
 		rb := existing.(*rbacv1.RoleBinding)
 
 		subjects := []rbacv1.Subject{}
 		for _, osUser := range openshiftUsers.Items {
-			if userIsOpenshiftAdmin(osUser, openshiftAdminGroup) {
+			if groupContainsUser(osUser, rhmiDevelopersGroup) {
 				subjects = append(subjects, rbacv1.Subject{
 					APIGroup: "rbac.authorization.k8s.io",
 					Name:     osUser.Name,
@@ -270,7 +241,7 @@ func (r *Reconciler) reconcileAdminPerms(ctx context.Context, client pkgclient.C
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	r.logger.Infof("The %s subjects were: %s", adminViewFuseRoleBinding.Name, or)
+	r.logger.Infof("The %s subjects were: %s", viewFuseRoleBinding.Name, or)
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -388,8 +359,8 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func userIsOpenshiftAdmin(user usersv1.User, adminGroup *usersv1.Group) bool {
-	for _, userName := range adminGroup.Users {
+func groupContainsUser(user usersv1.User, group *usersv1.Group) bool {
+	for _, userName := range group.Users {
 		if user.Name == userName {
 			return true
 		}
