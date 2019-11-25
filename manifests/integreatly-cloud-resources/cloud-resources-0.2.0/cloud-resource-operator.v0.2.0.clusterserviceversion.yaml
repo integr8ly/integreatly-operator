@@ -6,11 +6,11 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     description: Operator to provision cloud provider resources in an abstracted manner
-    containerImage: quay.io/integreatly/cloud-resource-operator:0.1.0
+    containerImage: quay.io/integreatly/cloud-resource-operator:0.2.0
     support: Integreatly
     createdAt: 2019-10-07 12:34:56
     certified: 'false'
-  name: cloud-resources.v0.1.0
+  name: cloud-resources.v0.2.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -115,7 +115,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: cloud-resource-operator
-                    image: quay.io/integreatly/cloud-resource-operator:0.1.0
+                    image: quay.io/integreatly/cloud-resource-operator:0.2.0
                     imagePullPolicy: Always
                     name: cloud-resource-operator
                     resources: {}
@@ -236,4 +236,4 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  version: 0.1.0
+  version: 0.2.0
