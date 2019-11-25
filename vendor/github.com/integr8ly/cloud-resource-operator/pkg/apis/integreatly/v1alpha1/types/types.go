@@ -14,11 +14,12 @@ var (
 
 // SecretRef Represents a namespace-scoped Secret
 type SecretRef struct {
-	Name      string `json:"name,omitempty"`
+	Name      string `json:"name"`
 	Namespace string `json:"namespace,omitempty"`
 }
 
 // ResourceTypeSpec Represents the basic information required to provision a resource type
+// +k8s:openapi-gen=true
 type ResourceTypeSpec struct {
 	Type      string     `json:"type"`
 	Tier      string     `json:"tier"`
@@ -37,6 +38,7 @@ func (sm StatusMessage) WrapError(err error) StatusMessage {
 }
 
 // ResourceTypeStatus Represents the basic status information provided by a resource provider
+// +k8s:openapi-gen=true
 type ResourceTypeStatus struct {
 	Strategy  string        `json:"strategy,omitempty"`
 	Provider  string        `json:"provider,omitempty"`

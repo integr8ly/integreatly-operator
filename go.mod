@@ -12,13 +12,13 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/google/uuid v1.1.1
-	github.com/integr8ly/cloud-resource-operator v0.0.0-20191120160651-f4c63f607064
+	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190605231540-b8a4faf68e36
-	github.com/operator-framework/operator-marketplace v0.0.0-20191110204144-8bb630bf8a91
+	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
