@@ -246,6 +246,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						"NAMESPACE": "",
 					}), nil
 				},
+				WriteConfigFunc: func(config config.ConfigReadable) error {
+					return nil
+				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
