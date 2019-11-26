@@ -9,15 +9,19 @@ MOBILE_DEVELOPER_CONSOLE_VERSION=0.3.0
 MOBILE_SECURITY_SERVICE_VERSION=0.4.1
 MONITORING_VERSION=0.0.28
 NEXUS_VERSION=0.9.0
-RHSSO_VERSION=1.9.5
 TUTORIAL_WEB_APP_VERSION=0.0.34
 UPS_VERSION=0.3.0
+KEYCLOAK_RHSSO_VERSION=7.0.1
 
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 
 MANIFESTS_DIR=./manifests
 
-push/manifests/all: push/amqstreams push/3scale push/fuse push/rhsso push/codeready push/amqonline push/nexus push/launcher push/solution-explorer push/mobile-security-service push/unifiedpush push/mobile-developer-console push/monitoring push/cloud-resources
+push/manifests/all: push/amqstreams push/3scale push/fuse push/codeready push/amqonline push/nexus push/launcher push/solution-explorer push/mobile-security-service push/unifiedpush push/mobile-developer-console push/monitoring push/cloud-resources push/keycloak-rhsso
+
+push/keycloak-rhsso:
+	operator-courier verify keycloak-rhsso
+	-operator-courier push keycloak-rhsso/ $(REPO) keycloak-rhsso $(KEYCLOAK_RHSSO_VERSION) "$(AUTH_TOKEN)"
 
 push/3scale:
 	operator-courier verify $(MANIFESTS_DIR)/integreatly-3scale
@@ -62,10 +66,6 @@ push/monitoring:
 push/nexus:
 	operator-courier verify $(MANIFESTS_DIR)/integreatly-nexus
 	-operator-courier push $(MANIFESTS_DIR)/integreatly-nexus/ $(REPO) integreatly-nexus $(NEXUS_VERSION) "$(AUTH_TOKEN)"
-
-push/rhsso:
-	operator-courier verify $(MANIFESTS_DIR)/integreatly-rhsso
-	-operator-courier push $(MANIFESTS_DIR)/integreatly-rhsso/ $(REPO) integreatly-rhsso $(RHSSO_VERSION) "$(AUTH_TOKEN)"
 
 push/solution-explorer:
 	operator-courier verify $(MANIFESTS_DIR)/integreatly-solution-explorer
