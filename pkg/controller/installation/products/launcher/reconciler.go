@@ -371,7 +371,7 @@ func getKeycloakClientSpec(launcherUrl string) keycloak.KeycloakClientSpec {
 					Protocol:        "openid-connect",
 					ProtocolMapper:  "oidc-usermodel-property-mapper",
 					ConsentRequired: false,
-					ConsentText: "n.a.",
+					ConsentText:     "n.a.",
 					Config: map[string]string{
 						"userinfo.token.claim": "true",
 						"user.attribute":       "username",
