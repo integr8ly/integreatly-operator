@@ -40,6 +40,7 @@ var (
 	namespaceLabel                   = "integreatly"
 	installationName                 = "integreatly-operator"
 	bootstrapStage                   = "bootstrap"
+	cloudResourcesStage              = "cloud-resources"
 	monitoringStage                  = "monitoring"
 	authenticationStage              = "authentication"
 	productsStage                    = "products"
@@ -226,6 +227,18 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
+	}
+
+	// wait for bootstrap phase to complete (5 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, cloudResourcesStage)
+	if err != nil {
+		return err
+	}
+
+	// wait for middleware-monitoring to deploy
+	err = waitForProductDeployment(t, f, ctx, "cloud-resources", "cloud-resource-operator")
+	if err != nil {
+		return err
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)
