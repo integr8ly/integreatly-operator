@@ -100,6 +100,8 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
+	operator-sdk version
+	go version
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e
