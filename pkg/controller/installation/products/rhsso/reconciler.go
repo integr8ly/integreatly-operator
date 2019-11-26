@@ -177,7 +177,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func(existing runtime.Object) error {
 		kc := existing.(*keycloak.Keycloak)
 		kc.Spec.Extensions = []string{
-			"keycloak-metrics-spi",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
 		}
 		kc.Labels = GetInstanceLabels()
 		kc.Spec.Instances = 1
