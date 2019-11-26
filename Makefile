@@ -11,7 +11,7 @@ PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
-OPERATOR_SDK_VERSION=0.10.0
+OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 
@@ -150,14 +150,14 @@ cluster/prepare/configmaps:
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
-	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | kubectl apply -f - -n openshift-marketplace
+	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc apply -f - -n openshift-marketplace
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare
-	-kubectl apply -f deploy/crds/*_crd.yaml
-	@kubectl apply -f deploy/service_account.yaml
-	@kubectl apply -f deploy/role.yaml
-	@kubectl apply -f deploy/role_binding.yaml
+	-oc create -f deploy/crds/*_crd.yaml
+	@oc create -f deploy/service_account.yaml
+	@oc create -f deploy/role.yaml
+	@oc create -f deploy/role_binding.yaml
 
 .PHONY: cluster/prepare/olm
 cluster/prepare/olm: cluster/prepare/project cluster/prepare/secrets cluster/prepare/osrc
