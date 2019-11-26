@@ -13,3 +13,9 @@ operator-sdk version: v0.8.1, commit: 33b3bfe10176f8647f5354516fff29dea42b6342
 go version go1.12.9 linux/amd64
 SUCCESS!
 ```
+
+## Create Image Stream
+
+```bash
+oc new-app -p GITHUB_ORG=integr8ly -p GITHUB_REF=master -f openshift-ci/templates/base-image-build-template.yml -n integr8ly
+```

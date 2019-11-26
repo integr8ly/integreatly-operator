@@ -1,0 +1,58 @@
+---
+apiVersion: v1
+kind: Template
+labels:
+  template: intly-base-image-build-template
+metadata:
+  name: intly-base-image-build
+objects:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: ${IMAGE_NAME}
+    annotations:
+        slave-label: ${AGENT_LABEL}
+    labels:
+      role: jenkins-slave
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: ${IMAGE_NAME}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${IMAGE_NAME}:latest
+    runPolicy: Serial
+    source:
+      git:
+        uri: https://github.com/${GITHUB_ORG}/integreatly-operator
+        ref: ${GITHUB_REF}
+      contextDir: ${CONTEXT_DIR}
+      type: Git
+    strategy:
+      dockerStrategy:
+          noCache: true
+          forcePull: true
+          dockerfilePath: Dockerfile.tools
+      type: Docker
+    triggers:
+    - type: ImageChange
+    - type: ConfigChange
+
+parameters:
+- description: The name of the github organization to reference in the configuration
+  displayName: Github Organization
+  name: GITHUB_ORG
+  value: integr8ly
+- description: The name of the repository branch to reference in the configuration
+  displayName: Branch
+  name: GITHUB_REF
+  value: master
+- description: The name of the OpenShift Service exposed for the Jenkins container.
+  displayName: Service Name
+  name: IMAGE_NAME
+  value: intly-operator-base-image
+- description: The directory that houses the Dockerfile
+  name: CONTEXT_DIR
+  value: openshift-ci

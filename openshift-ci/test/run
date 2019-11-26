@@ -6,6 +6,10 @@
 # The image has to be available before this script is executed.
 #
 
+docker run -u $UID --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'echo $GOPATH'
+docker run -u $UID --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'ls -la $GOPATH'
+docker run -u $UID --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'go get golang.org/x/text'
+
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'operator-sdk version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'go version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /go/src/; mkdir hello; cd hello;
