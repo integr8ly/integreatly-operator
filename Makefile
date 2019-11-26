@@ -109,6 +109,8 @@ test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/prepare cluster/prepare/configmaps
+	operator-sdk version
+	go version
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
 .PHONY: test/e2e/olm
