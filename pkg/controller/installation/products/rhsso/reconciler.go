@@ -163,8 +163,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func(existing runtime.Object) error {
-		kc := existing.(*aerogearv1.Keycloak)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Plugins = []string{
 			"keycloak-metrics-spi",
 			"openshift4-idp",
@@ -183,8 +182,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func(existing runtime.Object) error {
-		kcr := existing.(*aerogearv1.KeycloakRealm)
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
 		kcr.Spec.CreateOnly = false
 		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
 
@@ -443,7 +441,7 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 
 func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient pkgclient.Client) ([]*aerogearv1.KeycloakUser, error) {
 	openshiftUsers := &usersv1.UserList{}
-	err := serverClient.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
 		return nil, err
 	}

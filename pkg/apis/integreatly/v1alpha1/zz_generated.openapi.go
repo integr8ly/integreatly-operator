@@ -81,7 +81,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 							Format: "",
 						},
 					},
-					"masterUrl": {
+					"masterURL": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
@@ -105,7 +105,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 						},
 					},
 				},
-				Required: []string{"type", "routingSubdomain", "masterUrl", "namespacePrefix", "selfSignedCerts", "pullSecret"},
+				Required: []string{"type", "namespacePrefix", "selfSignedCerts"},
 			},
 		},
 		Dependencies: []string{
@@ -134,20 +134,20 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 							},
 						},
 					},
-					"PreflightStatus": {
+					"preflightStatus": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
-					"PreflightMessage": {
+					"preflightMessage": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
 				},
-				Required: []string{"stages", "PreflightStatus", "PreflightMessage"},
+				Required: []string{"stages"},
 			},
 		},
 		Dependencies: []string{

@@ -47,16 +47,15 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 			Namespace: secNs,
 		},
 	}
-	_, err := controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func(existing runtime.Object) error {
-		e := existing.(*v1.Secret)
-		if ownerRefErr := controllerutil.SetControllerReference(obj, e, r.Scheme); ownerRefErr != nil {
+	_, err := controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func() error {
+		if ownerRefErr := controllerutil.SetControllerReference(obj, sec, r.Scheme); ownerRefErr != nil {
 			if updateErr := UpdatePhase(ctx, r.Client, o, types.PhaseFailed, "setting secret data"); updateErr != nil {
 				return updateErr
 			}
 			return errors.Wrapf(ownerRefErr, "failed to set owner on secret %s", sec.Name)
 		}
-		e.Data = d
-		e.Type = v1.SecretTypeOpaque
+		sec.Data = d
+		sec.Type = v1.SecretTypeOpaque
 		return nil
 	})
 	if err != nil {

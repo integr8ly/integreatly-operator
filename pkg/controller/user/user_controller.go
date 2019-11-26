@@ -2,18 +2,18 @@ package user
 
 import (
 	"context"
-	"sigs.k8s.io/controller-runtime"
+
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	usersv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -67,15 +67,14 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 			Name: "rhmi-developers",
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, c, rhmiGroup, func(existing runtime.Object) error {
+	or, err := controllerutil.CreateOrUpdate(ctx, c, rhmiGroup, func() error {
 		users := &usersv1.UserList{}
-		err := c.List(ctx, &client.ListOptions{}, users)
+		err := c.List(ctx, users)
 		if err != nil {
 			return err
 		}
 
-		g := existing.(*usersv1.Group)
-		g.Users = mapUserNames(users)
+		rhmiGroup.Users = mapUserNames(users)
 
 		return nil
 	})

@@ -11,7 +11,7 @@ PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
-OPERATOR_SDK_VERSION=0.10.0
+OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 
@@ -72,6 +72,7 @@ code/compile:
 .PHONY: code/gen
 code/gen:
 	operator-sdk generate k8s
+	operator-sdk generate openapi
 	@go generate ./...
 
 .PHONY: code/check
@@ -149,11 +150,11 @@ cluster/prepare/configmaps:
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
-	oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc create -f - -n openshift-marketplace
+	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc apply -f - -n openshift-marketplace
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare
-	-oc create -f deploy/crds/*.crd.yaml
+	-oc create -f deploy/crds/*_crd.yaml
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -194,7 +195,7 @@ deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
 deploy/integreatly-installation-cr.yml:
-	@echo "masterUrl = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
+	@echo "masterURL = $(MASTER_URL), routingSubdomain = $(ROUTING_SUBDOMAIN), selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s,MASTER_URL,$(MASTER_URL),g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/ROUTING_SUBDOMAIN/$(ROUTING_SUBDOMAIN)/g" | \
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" | \

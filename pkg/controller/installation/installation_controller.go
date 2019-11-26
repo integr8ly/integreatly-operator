@@ -268,7 +268,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 	}
 
 	namespaces := &corev1.NamespaceList{}
-	err := r.client.List(r.context, &client.ListOptions{}, namespaces)
+	err := r.client.List(r.context, namespaces)
 	if err != nil {
 		// could not list namespaces, keep trying
 		logrus.Infof("error listing namespaces, will retry")

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-marketplace/pkg/client"
-	v12 "k8s.io/api/core/v1"
 	"strings"
+
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
+	v12 "k8s.io/api/core/v1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -19,7 +20,6 @@ import (
 	"github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -83,8 +83,10 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
 		dashboards := &grafanav1alpha1.GrafanaDashboardList{}
-		selector := labels.Set(map[string]string{"monitoring-key": "middleware"}).AsSelector()
-		err := serverClient.List(ctx, &pkgclient.ListOptions{LabelSelector: selector}, dashboards)
+		dashboardListOpts := []pkgclient.ListOption{
+			pkgclient.MatchingLabels(map[string]string{"monitoring-key": "middleware"}),
+		}
+		err := serverClient.List(ctx, dashboards, dashboardListOpts...)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
@@ -97,7 +99,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			return v1alpha1.PhaseFailed, err
 		}
 
-		err = serverClient.List(ctx, &pkgclient.ListOptions{Namespace: fuseConfig.GetNamespace()}, dashboards)
+		fuseDashboardlistOpts := []pkgclient.ListOption{
+			pkgclient.InNamespace(fuseConfig.GetNamespace()),
+		}
+		err = serverClient.List(ctx, dashboards, fuseDashboardlistOpts...)
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
@@ -222,13 +227,12 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, scrapeConfigSecret, func(existing runtime.Object) error {
-		secret := existing.(*v12.Secret)
-		secret.Data = map[string][]byte{
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, scrapeConfigSecret, func() error {
+		scrapeConfigSecret.Data = map[string][]byte{
 			defaultAdditionalScrapeConfigSecretKey: []byte(jobs.String()),
 		}
-		secret.Type = "Opaque"
-		secret.Labels = map[string]string{
+		scrapeConfigSecret.Type = "Opaque"
+		scrapeConfigSecret.Labels = map[string]string{
 			"monitoring-key": defaultLabelSelector,
 		}
 		return nil
@@ -264,16 +268,15 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func(existing runtime.Object) error {
-		monitoring := existing.(*monitoring_v1alpha1.ApplicationMonitoring)
-		monitoring.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func() error {
+		m.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
 			LabelSelector:                    defaultLabelSelector,
 			AdditionalScrapeConfigSecretName: defaultAdditionalScrapeConfigSecretName,
 			AdditionalScrapeConfigSecretKey:  defaultAdditionalScrapeConfigSecretKey,
 			PrometheusRetention:              defaultPrometheusRetention,
 			PrometheusStorageRequest:         defaultPrometheusStorageRequest,
 		}
-		r.monitoring = monitoring
+		r.monitoring = m
 		return nil
 	})
 	if err != nil {
@@ -309,7 +312,7 @@ func (r *Reconciler) createResource(inst *v1alpha1.Installation, resourceName st
 func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, serverClient pkgclient.Client) (*monitoring_v1alpha1.GrafanaDataSourceSecret, error) {
 	secret := &v12.Secret{}
 
-	selector := client.ObjectKey{
+	selector := pkgclient.ObjectKey{
 		Namespace: openshiftMonitoringNamespace,
 		Name:      grafanaDataSourceSecretName,
 	}
@@ -356,7 +359,7 @@ func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installa
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
+func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, serverClient pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
 	monitoring := monitoring_v1alpha1.ApplicationMonitoring{}
 
 	selector := pkgclient.ObjectKey{
@@ -364,7 +367,7 @@ func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclie
 		Name:      defaultMonitoringName,
 	}
 
-	err := client.Get(ctx, selector, &monitoring)
+	err := serverClient.Get(ctx, selector, &monitoring)
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +375,7 @@ func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, client pkgclie
 	return &monitoring, nil
 }
 
-func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, client pkgclient.Client) error {
+func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
 		return nil
@@ -397,7 +400,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		"module":  module,
 	}
 
-	cr, err := getMonitoringCr(ctx, cfg, client)
+	cr, err := getMonitoringCr(ctx, cfg, serverClient)
 	if err != nil {
 		// Retry later
 		if kerrors.IsNotFound(err) {
@@ -420,7 +423,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 	ownerutil.EnsureOwner(obj.(v1.Object), cr)
 
 	// try to create the blackbox target. If if fails with already exist do nothing
-	err = client.Create(ctx, obj)
+	err = serverClient.Create(ctx, obj)
 	if err != nil {
 		if kerrors.IsAlreadyExists(err) {
 			// The target already exists. Nothing else to do

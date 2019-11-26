@@ -161,8 +161,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 		if trigger.ImageChangeParams != nil {
 			if trigger.ImageChangeParams.From.Name == "postgresql:9.5" {
 				//found old image, update DC
-				_, err = controllerutil.CreateOrUpdate(ctx, client, dc, func(existing runtime.Object) error {
-					dc := existing.(*appsv1.DeploymentConfig)
+				_, err = controllerutil.CreateOrUpdate(ctx, client, dc, func() error {
 					dc.Spec.Triggers[i].ImageChangeParams.From.Name = "postgresql:9.6"
 					return nil
 				})
@@ -178,8 +177,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 
 	for i, tag := range is.Spec.Tags {
 		if tag.Name == "latest" && tag.From.Name != "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4" {
-			_, err = controllerutil.CreateOrUpdate(ctx, client, is, func(existing runtime.Object) error {
-				is := existing.(*v13.ImageStream)
+			_, err = controllerutil.CreateOrUpdate(ctx, client, is, func() error {
 				is.Spec.Tags[i].From.Name = "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4"
 				return nil
 			})
@@ -199,7 +197,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
 
 	openshiftUsers := &usersv1.UserList{}
-	err := client.List(ctx, &pkgclient.ListOptions{}, openshiftUsers)
+	err := client.List(ctx, openshiftUsers)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
@@ -221,9 +219,8 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 			Name:     clusterViewRoleName,
 		},
 	}
-	or, err := controllerutil.CreateOrUpdate(ctx, client, viewFuseRoleBinding, func(existing runtime.Object) error {
-		rb := existing.(*rbacv1.RoleBinding)
 
+	or, err := controllerutil.CreateOrUpdate(ctx, client, viewFuseRoleBinding, func() error {
 		subjects := []rbacv1.Subject{}
 		for _, osUser := range openshiftUsers.Items {
 			if groupContainsUser(osUser, rhmiDevelopersGroup) {
@@ -235,7 +232,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 			}
 		}
 
-		rb.Subjects = subjects
+		viewFuseRoleBinding.Subjects = subjects
 		return nil
 	})
 	if err != nil {

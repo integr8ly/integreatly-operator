@@ -7,7 +7,6 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -35,11 +34,10 @@ func ReconcileBlobStorage(ctx context.Context, client client.Client, deploymentT
 	}
 
 	// Create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, bs, func(existing runtime.Object) error {
-		c := existing.(*v1alpha1.BlobStorage)
-		c.Spec.Type = deploymentType
-		c.Spec.Tier = tier
-		c.Spec.SecretRef = &types.SecretRef{
+	_, err := controllerutil.CreateOrUpdate(ctx, client, bs, func() error {
+		bs.Spec.Type = deploymentType
+		bs.Spec.Tier = tier
+		bs.Spec.SecretRef = &types.SecretRef{
 			Name:      secretName,
 			Namespace: secretNs,
 		}
@@ -71,11 +69,10 @@ func ReconcileSMTPCredentialSet(ctx context.Context, client client.Client, deplo
 	}
 
 	// Create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, smtp, func(existing runtime.Object) error {
-		c := existing.(*v1alpha1.SMTPCredentialSet)
-		c.Spec.Type = deploymentType
-		c.Spec.Tier = tier
-		c.Spec.SecretRef = &types.SecretRef{
+	_, err := controllerutil.CreateOrUpdate(ctx, client, smtp, func() error {
+		smtp.Spec.Type = deploymentType
+		smtp.Spec.Tier = tier
+		smtp.Spec.SecretRef = &types.SecretRef{
 			Name:      secretName,
 			Namespace: secretNs,
 		}
@@ -107,11 +104,10 @@ func ReconcilePostgres(ctx context.Context, client client.Client, deploymentType
 	}
 
 	// Create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, pg, func(existing runtime.Object) error {
-		c := existing.(*v1alpha1.Postgres)
-		c.Spec.Type = deploymentType
-		c.Spec.Tier = tier
-		c.Spec.SecretRef = &types.SecretRef{
+	_, err := controllerutil.CreateOrUpdate(ctx, client, pg, func() error {
+		pg.Spec.Type = deploymentType
+		pg.Spec.Tier = tier
+		pg.Spec.SecretRef = &types.SecretRef{
 			Name:      secretName,
 			Namespace: secretNs,
 		}
@@ -143,11 +139,10 @@ func ReconcileRedis(ctx context.Context, client client.Client, deploymentType, t
 	}
 
 	// Create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, r, func(existing runtime.Object) error {
-		c := existing.(*v1alpha1.Redis)
-		c.Spec.Type = deploymentType
-		c.Spec.Tier = tier
-		c.Spec.SecretRef = &types.SecretRef{
+	_, err := controllerutil.CreateOrUpdate(ctx, client, r, func() error {
+		r.Spec.Type = deploymentType
+		r.Spec.Tier = tier
+		r.Spec.SecretRef = &types.SecretRef{
 			Name:      secretName,
 			Namespace: secretNs,
 		}

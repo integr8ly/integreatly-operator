@@ -23,7 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var (
@@ -45,9 +44,6 @@ var (
 )
 
 func TestIntegreatly(t *testing.T) {
-
-	logf.SetLogger(logf.ZapLogger(true))
-
 	installationList := &operator.InstallationList{}
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, installationList)
 	if err != nil {
@@ -97,10 +93,10 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	if err != nil {
 		return fmt.Errorf("could not get console route: %deploymentName", err)
 	}
-	masterUrl := consoleRouteCR.Status.Ingress[0].Host
+	masterURL := consoleRouteCR.Status.Ingress[0].Host
 	routingSubdomain := consoleRouteCR.Status.Ingress[0].RouterCanonicalHostname
 
-	t.Logf("Creating installation CR with routingSubdomain:%s, masterUrl:%s\n", routingSubdomain, masterUrl)
+	t.Logf("Creating installation CR with routingSubdomain:%s, masterURL:%s\n", routingSubdomain, masterURL)
 
 	// create installation custom resource
 	managedInstallation := &operator.Installation{
@@ -112,7 +108,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 			Type:             "managed",
 			NamespacePrefix:  intlyNamespacePrefix,
 			RoutingSubdomain: routingSubdomain,
-			MasterURL:        masterUrl,
+			MasterURL:        masterURL,
 			SelfSignedCerts:  true,
 		},
 	}

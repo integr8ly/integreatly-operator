@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -109,7 +110,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "unifiedpushserver")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
