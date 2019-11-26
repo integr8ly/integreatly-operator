@@ -107,6 +107,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - ""
     resources:
@@ -361,3 +362,11 @@ rules:
       - update
       - create
   # remove to here
+  # Needed for granting fuse only view
+  - apiGroups:
+      - build.openshift.io
+    resources:
+      - jenkins
+    verbs:
+      - "*"
+  # end permissions for granting fuse only view
