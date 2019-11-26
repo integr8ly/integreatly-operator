@@ -7,6 +7,6 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && cd $GOPATH/src/github.com/operator-framework \
     && git clone --depth 1 -b $OPERATOR_SDK_VERSION https://github.com/operator-framework/operator-sdk \
     && cd operator-sdk \
-    && make dep \
+    && make tidy \
     && make install \
     && rm -rf $GOPATH/.cache
