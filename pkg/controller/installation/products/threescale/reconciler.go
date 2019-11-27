@@ -407,9 +407,8 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return v1alpha1.PhaseFailed, err
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func(existing runtime.Object) error {
-		client := existing.(*keycloak.KeycloakClient)
-		client.Spec = r.getKeycloakClientSpec(clientSecret)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
 		return nil
 	})
 

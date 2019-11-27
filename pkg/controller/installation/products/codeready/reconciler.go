@@ -324,9 +324,8 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func(existing runtime.Object) error {
-		client := existing.(*keycloak.KeycloakClient)
-		client.Spec = getKeycloakClientSpec(cheURL)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = getKeycloakClientSpec(cheURL)
 		return nil
 	})
 

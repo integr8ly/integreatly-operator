@@ -3,11 +3,11 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"k8s.io/apimachinery/pkg/labels"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -568,12 +568,11 @@ func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, i
 	}
 
 	ownerutil.EnsureOwner(selector, inst)
-	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func(existing runtime.Object) error {
-		keycloakUser := existing.(*keycloak.KeycloakUser)
-		keycloakUser.Spec.RealmSelector = &metav1.LabelSelector{
+	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func() error {
+		selector.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
-		keycloakUser.Spec.User = user
+		selector.Spec.User = user
 		return nil
 	})
 }
@@ -581,16 +580,11 @@ func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, i
 func GetKeycloakUsers(ctx context.Context, serverClient pkgclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	var users keycloak.KeycloakUserList
 
-	labelSelector, err := labels.Parse(fmt.Sprintf("%v=%v", SSOLabelKey, SSOLabelValue))
-	if err != nil {
-		return nil, err
+	listOptions := []pkgclient.ListOption{
+		pkgclient.MatchingLabels(GetInstanceLabels()),
+		pkgclient.InNamespace(ns),
 	}
-
-	listOptions := pkgclient.ListOptions{
-		LabelSelector: labelSelector,
-		Namespace:     ns,
-	}
-	err = serverClient.List(ctx, &listOptions, &users)
+	err := serverClient.List(ctx, &users, listOptions...)
 	if err != nil {
 		return nil, err
 	}

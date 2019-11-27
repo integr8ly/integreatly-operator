@@ -593,7 +593,7 @@ func (in *KeycloakIdentityProvider) DeepCopy() *KeycloakIdentityProvider {
 func (in *KeycloakList) DeepCopyInto(out *KeycloakList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Keycloak, len(*in))
@@ -677,7 +677,7 @@ func (in *KeycloakRealm) DeepCopyObject() runtime.Object {
 func (in *KeycloakRealmList) DeepCopyInto(out *KeycloakRealmList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]KeycloakRealm, len(*in))
