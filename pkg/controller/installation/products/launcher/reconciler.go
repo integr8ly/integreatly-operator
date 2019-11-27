@@ -255,9 +255,8 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func(existing runtime.Object) error {
-		client := existing.(*keycloak.KeycloakClient)
-		client.Spec = getKeycloakClientSpec(launcherUrl)
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		kcClient.Spec = getKeycloakClientSpec(launcherUrl)
 		return nil
 	})
 
