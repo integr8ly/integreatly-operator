@@ -35,6 +35,7 @@ const (
 	defaultFusePullSecret        = "syndesis-pull-secret"
 	developersGroupName          = "rhmi-developers"
 	clusterViewRoleName          = "view"
+	manifestPackage              = "integreatly-fuse"
 )
 
 type Reconciler struct {
@@ -98,6 +99,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultFusePullSecret, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -112,11 +114,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionFuse)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for fuse")
-	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, r.Config.GetNamespace(), serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -1,5 +1,3 @@
-include ./manifests/manifests.mk
-
 ORG=integreatly
 NAMESPACE=integreatly
 PROJECT=integreatly-operator
@@ -153,7 +151,7 @@ cluster/prepare/osrc:
 	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc apply -f - -n openshift-marketplace
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare
+cluster/prepare/local: cluster/prepare/project cluster/prepare/secrets
 	-oc create -f deploy/crds/*_crd.yaml
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
@@ -223,4 +221,4 @@ push/csv:
 gen/push/csv: gen/csv push/csv
 
 .PHONY: push/all
-push/all: push/csv push/manifests/all
+push/all: push/csv 

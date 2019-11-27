@@ -33,6 +33,7 @@ const (
 	defaultLauncherConfigMapName         = "launcher"
 	launcherRouteName                    = "launcher"
 	clientId                             = "launcher"
+	manifestPackage                      = "integreatly-launcher"
 )
 
 type Reconciler struct {
@@ -92,15 +93,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
+
 	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionLauncher)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for launcher")
-	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, r.Config.GetNamespace(), serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

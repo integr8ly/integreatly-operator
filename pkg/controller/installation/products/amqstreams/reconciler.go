@@ -24,6 +24,7 @@ var (
 	defaultInstallationNamespace = "amq-streams"
 	defaultSubscriptionName      = "integreatly-amq-streams"
 	clusterName                  = "integreatly-cluster"
+	manifestPackage              = "integreatly-amq-streams"
 )
 
 type Reconciler struct {
@@ -88,11 +89,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionAMQStreams)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for amq streams")
-	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, ns, serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, ns, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

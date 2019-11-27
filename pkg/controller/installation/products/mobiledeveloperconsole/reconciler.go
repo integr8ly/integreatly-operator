@@ -27,6 +27,7 @@ const (
 	defaultSubscriptionName      = "integreatly-mobile-developer-console"
 	resourceName                 = "mobiledeveloperconsole"
 	routeResourceName            = "mobiledeveloperconsole-mdc-proxy"
+	manifestPackage              = "integreatly-mobile-developer-console"
 )
 
 type Reconciler struct {
@@ -84,18 +85,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionMDC)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for mdc")
-	}
+
 	phase, err = r.ReconcileSubscription(
 		ctx,
 		namespace,
-		marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()},
+		marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage},
 		r.Config.GetNamespace(),
 		serverClient,
-		version,
 	)
+
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -7,7 +7,6 @@ import (
 	"context"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sync"
 )
@@ -30,7 +29,7 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //             GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error) {
 // 	               panic("mock out the GetSubscriptionInstallPlans method")
 //             },
-//             InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+//             InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 // 	               panic("mock out the InstallOperator method")
 //             },
 //         }
@@ -44,7 +43,7 @@ type MarketplaceInterfaceMock struct {
 	GetSubscriptionInstallPlansFunc func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error)
 
 	// InstallOperatorFunc mocks the InstallOperator method.
-	InstallOperatorFunc func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
+	InstallOperatorFunc func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -67,8 +66,6 @@ type MarketplaceInterfaceMock struct {
 			ServerClient client.Client
 			// Owner is the owner argument value.
 			Owner ownerutil.Owner
-			// Os is the os argument value.
-			Os v1.OperatorSource
 			// T is the t argument value.
 			T Target
 			// OperatorGroupNamespaces is the operatorGroupNamespaces argument value.
@@ -123,7 +120,7 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struc
 }
 
 // InstallOperator calls InstallOperatorFunc.
-func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os v1.OperatorSource, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 	if mock.InstallOperatorFunc == nil {
 		panic("MarketplaceInterfaceMock.InstallOperatorFunc: method is nil but MarketplaceInterface.InstallOperator was just called")
 	}
@@ -131,7 +128,6 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 		Ctx                     context.Context
 		ServerClient            client.Client
 		Owner                   ownerutil.Owner
-		Os                      v1.OperatorSource
 		T                       Target
 		OperatorGroupNamespaces []string
 		ApprovalStrategy        v1alpha1.Approval
@@ -139,7 +135,6 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 		Ctx:                     ctx,
 		ServerClient:            serverClient,
 		Owner:                   owner,
-		Os:                      os,
 		T:                       t,
 		OperatorGroupNamespaces: operatorGroupNamespaces,
 		ApprovalStrategy:        approvalStrategy,
@@ -147,7 +142,7 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 	lockMarketplaceInterfaceMockInstallOperator.Lock()
 	mock.calls.InstallOperator = append(mock.calls.InstallOperator, callInfo)
 	lockMarketplaceInterfaceMockInstallOperator.Unlock()
-	return mock.InstallOperatorFunc(ctx, serverClient, owner, os, t, operatorGroupNamespaces, approvalStrategy)
+	return mock.InstallOperatorFunc(ctx, serverClient, owner, t, operatorGroupNamespaces, approvalStrategy)
 }
 
 // InstallOperatorCalls gets all the calls that were made to InstallOperator.
@@ -157,7 +152,6 @@ func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 	Ctx                     context.Context
 	ServerClient            client.Client
 	Owner                   ownerutil.Owner
-	Os                      v1.OperatorSource
 	T                       Target
 	OperatorGroupNamespaces []string
 	ApprovalStrategy        v1alpha1.Approval
@@ -166,7 +160,6 @@ func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 		Ctx                     context.Context
 		ServerClient            client.Client
 		Owner                   ownerutil.Owner
-		Os                      v1.OperatorSource
 		T                       Target
 		OperatorGroupNamespaces []string
 		ApprovalStrategy        v1alpha1.Approval

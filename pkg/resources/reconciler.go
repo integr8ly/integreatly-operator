@@ -142,9 +142,10 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client pkgclient.Client, maxVersion *Version) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, owner, marketplace.GetOperatorSources().Integreatly, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
+	err := r.mpm.InstallOperator(ctx, client, owner, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
+
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
 	}
@@ -162,7 +163,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	}
 
 	for _, ip := range ips.Items {
-		err = upgradeApproval(ctx, client, &ip, maxVersion)
+		err = upgradeApproval(ctx, client, &ip)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, "error approving installplan for "+t.Pkg)
 		}

@@ -26,6 +26,7 @@ var (
 	defaultSubscriptionName      = "integreatly-mobile-security-service"
 	serverClusterName            = "mobile-security-service"
 	dbClusterName                = "mobile-security-service-db"
+	manifestPackage              = "integreatly-mobile-security-service"
 )
 
 type Reconciler struct {
@@ -79,7 +80,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if ns == "" {
 		return v1alpha1.PhaseFailed, errors.New("namespace: value blank")
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionMobileSecurityService)
 
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
@@ -90,7 +90,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName}, ns, serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, ns, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

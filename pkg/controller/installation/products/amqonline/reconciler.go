@@ -29,6 +29,7 @@ const (
 	defaultInstallationNamespace = "amq-online"
 	defaultSubscriptionName      = "integreatly-amq-online"
 	defaultConsoleSvcName        = "console"
+	manifestPackage              = "integreatly-amq-online"
 )
 
 type Reconciler struct {
@@ -95,11 +96,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionAMQOnline)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for amq online")
-	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: ns, Channel: marketplace.IntegreatlyChannel}, ns, serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: ns, Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, ns, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

@@ -40,6 +40,7 @@ const (
 	paramInstalledServices  = "INSTALLED_SERVICES"
 	paramSSORoute           = "SSO_ROUTE"
 	defaultRouteName        = "tutorial-web-app"
+	manifestPackage         = "integreatly-solution-explorer"
 )
 
 type Reconciler struct {
@@ -129,11 +130,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionSolutionExplorer)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for solution explorer")
-	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace()}, r.Config.GetNamespace(), serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

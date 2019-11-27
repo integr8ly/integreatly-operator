@@ -123,6 +123,7 @@ rules:
       - namespaces
       - namespaces/finalizers
       - serviceaccounts
+      - configmaps
     verbs:
       - list
       - create
@@ -132,6 +133,16 @@ rules:
       - delete
   # End NS reconciliation
   # Start subscription creation - This is used to allow the operator to setup catalog source config and remove it if needed.
+  # This is used to allow the operator to setup catalog source and remove it if needed.
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+    verbs:
+      - create
+      - get
+      - update
+  # This is used to allow the operator to setup catalog source config and remove it if needed.
   - apiGroups:
       - operators.coreos.com
     resources:

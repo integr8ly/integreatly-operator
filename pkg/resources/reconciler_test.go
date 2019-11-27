@@ -84,7 +84,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
@@ -108,7 +108,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
 			client: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, os marketplacev1.OperatorSource, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
@@ -147,8 +147,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			reconciler := NewReconciler(
 				tc.FakeMPM,
 			)
-			version, _ := NewVersion("1.2.3")
-			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, "test-ns", tc.client, version)
+
+			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, "test-ns", tc.client)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}
