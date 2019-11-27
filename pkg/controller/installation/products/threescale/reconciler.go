@@ -279,7 +279,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	}
 
 	// create the 3scale api manager
-	resourceRequirements := false
+	resourceRequirements := true
 	apim := &threescalev1.APIManager{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apiManagerName,
