@@ -15,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
 
 	"github.com/integr8ly/integreatly-operator/version"
+
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"

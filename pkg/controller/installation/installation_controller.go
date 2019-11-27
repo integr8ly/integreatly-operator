@@ -12,6 +12,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -31,6 +32,7 @@ import (
 
 const (
 	defaultInstallationConfigMapName = "integreatly-installation-config"
+	defaultInstallationName          = "integreatly-operator"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -62,6 +64,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	// Creates a new managed install CR if it is not available
+	cl, err := client.New(controllerruntime.GetConfigOrDie(), client.Options{})
+	err = createsInstallationCR(context.TODO(), cl)
+	if err != nil {
+		return err
+	}
+
 	// Watch for changes to primary resource Installation
 	err = c.Watch(&source.Kind{Type: &v1alpha1.Installation{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
@@ -75,6 +84,49 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func createsInstallationCR(ctx context.Context, serverClient client.Client) error {
+	namespace, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Looking for installation CR in %s namespace", namespace)
+
+	installationList := &v1alpha1.InstallationList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(namespace),
+	}
+	err = serverClient.List(ctx, installationList, listOpts...)
+	if err != nil {
+		return pkgerr.Wrap(err, "Could not get a list of installation CR")
+	}
+
+	// Creates installation CR in case there is none
+	if len(installationList.Items) == 0 {
+
+		logrus.Infof("Creating a %s installation CR as none CR installation was found in %s namespace", string(v1alpha1.InstallationTypeManaged), namespace)
+
+		instance := &v1alpha1.Installation{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      defaultInstallationName,
+				Namespace: namespace,
+			},
+			Spec: v1alpha1.InstallationSpec{
+				Type:            string(v1alpha1.InstallationTypeManaged),
+				NamespacePrefix: "rhmi-",
+				SelfSignedCerts: true,
+			},
+		}
+
+		err = serverClient.Create(ctx, instance)
+		if err != nil {
+			return pkgerr.Wrap(err, fmt.Sprintf("Could not create installation CR in %s namespace", namespace))
+		}
 	}
 
 	return nil

@@ -12,12 +12,11 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"strings"
 
+	routev1 "github.com/openshift/api/route/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"testing"
 	"time"
-
-	routev1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -41,9 +39,9 @@ var (
 	cleanupTimeout                   = time.Second * 5
 	installationCleanupRetryInterval = time.Second * 20
 	installationCleanupTimeout       = time.Minute * 8 //Longer timeout required to allow for finalizers to execute
-	intlyNamespacePrefix             = "intly-"
+	intlyNamespacePrefix             = "rhmi-"
 	namespaceLabel                   = "integreatly"
-	installationName                 = "e2e-managed-installation"
+	installationName                 = "integreatly-operator"
 	bootstrapStage                   = "bootstrap"
 	monitoringStage                  = "monitoring"
 	authenticationStage              = "authentication"
@@ -231,27 +229,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
-	}
-
-	t.Logf("Creating installation CR\n")
-
-	// create installation custom resource
-	managedInstallation := &operator.Installation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      installationName,
-			Namespace: namespace,
-		},
-		Spec: operator.InstallationSpec{
-			Type:            "managed",
-			NamespacePrefix: intlyNamespacePrefix,
-			SelfSignedCerts: true,
-		},
-	}
-
-	// use TestCtx's create helper to create the object and add a cleanup function for the new object
-	err = f.Client.Create(goctx.TODO(), managedInstallation, &framework.CleanupOptions{TestContext: ctx, Timeout: installationCleanupTimeout, RetryInterval: installationCleanupRetryInterval})
-	if err != nil {
-		return err
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)

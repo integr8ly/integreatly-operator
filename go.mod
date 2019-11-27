@@ -22,6 +22,7 @@ require (
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/common v0.6.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
