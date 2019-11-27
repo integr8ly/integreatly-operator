@@ -43,10 +43,11 @@ type Reconciler struct {
 	installation  *v1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
+	ApiUrl        string
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, apiUrl string) (*Reconciler, error) {
 	rhssoUserConfig, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
@@ -64,6 +65,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		installation:  instance,
 		logger:        logger,
 		oauthv1Client: oauthv1Client,
+		ApiUrl:        apiUrl,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
@@ -295,7 +297,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://openshift.default.svc.cluster.local",
+				"baseUrl":         r.ApiUrl,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,

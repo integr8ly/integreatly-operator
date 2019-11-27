@@ -35,7 +35,7 @@ const (
 	defaultSubscriptionName      = "integreatly-codeready-workspaces"
 	manifestPackage              = "integreatly-codeready-workspaces"
 	tier                         = "production"
-	defaultKeycloakClientName    = "integreatly-codeready-client"
+	defaultKeycloakClientName    = "che-client"
 )
 
 type Reconciler struct {

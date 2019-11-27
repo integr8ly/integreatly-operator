@@ -3,8 +3,6 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -13,20 +11,21 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
+	v13 "github.com/openshift/api/oauth/v1"
+	v12 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 )
 
 var (
@@ -71,10 +70,12 @@ type Reconciler struct {
 	installation  *v1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
+	KeycloakHost  string
+	ApiUrl        string
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, apiUrl string) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -93,6 +94,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:        logger,
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
+		ApiUrl:        apiUrl,
 	}, nil
 }
 
@@ -146,7 +148,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
+	phase, err = r.createKeycloakRoute(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -155,6 +157,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
+	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -189,7 +196,7 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
+		if !errors2.IsAlreadyExists(err) {
 			return nil, errors.Wrap(err, "error creating resource")
 		}
 	}
@@ -207,6 +214,93 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+// workaround: the keycloak operator creates a route with TLS passthrough config
+// this should use the same valid certs as the cluster itself but for some reason the
+// signing operator gives out self signed certs
+// to circumvent this we create another keycloak route with edge termination
+func (r *Reconciler) createKeycloakRoute(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// We need to create a workaround service to allow accessing keycloak on
+	// the http port
+	httpService := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-http",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	// We need a route with edge termination to serve the correct cluster certificate
+	edgeRoute := &v12.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-edge",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, httpService, func() error {
+		clusterIp := httpService.Spec.ClusterIP
+		httpService.Annotations = map[string]string{
+			"service.alpha.openshift.io/serving-cert-secret-name": "sso-x509-https-secret",
+		}
+		httpService.Spec = v1.ServiceSpec{
+			ClusterIP: clusterIp,
+			Ports: []v1.ServicePort{
+				{
+					Name:       "keycloak",
+					Protocol:   v1.ProtocolTCP,
+					Port:       8443,
+					TargetPort: intstr.FromInt(8443),
+				},
+			},
+			Selector: map[string]string{
+				"app":       "keycloak",
+				"component": "keycloak",
+			},
+			Type: v1.ServiceTypeClusterIP,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
+	}
+	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", httpService.Name, or))
+
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
+		host := edgeRoute.Spec.Host
+		edgeRoute.Spec = v12.RouteSpec{
+			Host: host,
+			To: v12.RouteTargetReference{
+				Kind: "Service",
+				Name: "keycloak-http",
+			},
+			Port: &v12.RoutePort{
+				TargetPort: intstr.FromString("keycloak"),
+			},
+			TLS: &v12.TLSConfig{
+				Termination: v12.TLSTerminationReencrypt,
+			},
+			WildcardPolicy: v12.WildcardPolicyNone,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
+	}
+	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
+
+	if edgeRoute.Spec.Host == "" {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// Override the keycloak host to the host of the edge route (instead of the
+	// operator generated route)
+	r.KeycloakHost = fmt.Sprintf("https://%v", edgeRoute.Spec.Host)
+
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -362,20 +456,25 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
+		return errors.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
 	}
 
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetHost(kc.Status.InternalURL)
+
+	// TODO: once the keycloak operator generates a route with a valid certificate, that
+	// should be reverted back to using the InternalURL
+	// r.Config.SetHost(kc.Status.InternalURL)
+	r.Config.SetHost(r.KeycloakHost)
+
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not update keycloak config")
+		return errors.Wrap(err, "could not update keycloak config")
 	}
 	return nil
 }
 
 func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient pkgclient.Client) error {
-	oauthClientSecrets := &corev1.Secret{
+	oauthClientSecrets := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
 		},
@@ -383,16 +482,16 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return pkgerr.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+		return errors.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return pkgerr.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	clientSecret := string(clientSecretBytes)
 
-	oauthc := &oauthv1.OAuthClient{
+	oauthc := &v13.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.getOAuthClientName(),
 		},
@@ -400,7 +499,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		RedirectURIs: []string{
 			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
 		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
+		GrantMethod: v13.GrantHandlerPrompt,
 	}
 
 	_, err = r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
@@ -423,7 +522,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://openshift.default.svc.cluster.local",
+				"baseUrl":         r.ApiUrl,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
@@ -554,7 +653,7 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []keycloak.KeycloakAPIUser, ctx 
 
 	openshiftAdminGroup := &usersv1.Group{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
-	if err != nil && !k8serr.IsNotFound(err) {
+	if err != nil && !errors2.IsNotFound(err) {
 		return nil, err
 	}
 	for _, kcUser := range keycloakUsers {
