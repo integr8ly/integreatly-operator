@@ -12,14 +12,14 @@ type ResourceHelper struct {
 	cr             *v1alpha1.Installation
 }
 
-func newResourceHelper(cr *v1alpha1.Installation, th *TemplateHelper) *ResourceHelper {
+func NewResourceHelper(cr *v1alpha1.Installation, th *TemplateHelper) *ResourceHelper {
 	return &ResourceHelper{
 		templateHelper: th,
 		cr:             cr,
 	}
 }
 
-func (r *ResourceHelper) createResource(template string) (runtime.Object, error) {
+func (r *ResourceHelper) CreateResource(template string) (runtime.Object, error) {
 	tpl, err := r.templateHelper.loadTemplate(template)
 	if err != nil {
 		return nil, err

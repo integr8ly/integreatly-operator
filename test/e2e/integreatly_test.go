@@ -33,7 +33,7 @@ var (
 	cleanupRetryInterval             = time.Second * 1
 	cleanupTimeout                   = time.Second * 5
 	installationCleanupRetryInterval = time.Second * 20
-	installationCleanupTimeout       = time.Minute * 4 //Longer timeout required to allow for finalizers to execute
+	installationCleanupTimeout       = time.Minute * 8 //Longer timeout required to allow for finalizers to execute
 	intlyNamespacePrefix             = "intly-"
 	installationName                 = "e2e-managed-installation"
 	bootstrapStage                   = "bootstrap"

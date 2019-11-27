@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -14,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -46,6 +48,7 @@ type Reconciler struct {
 	oauthv1Client oauthClient.OauthV1Interface
 	Config        *config.SolutionExplorer
 	ConfigManager config.ConfigReadWriter
+	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 	OauthResolver OauthResolver
@@ -166,10 +169,54 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
+	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		logrus.Infof("Error: %s", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
+	return v1alpha1.PhaseCompleted, nil
+}
+
+// CreateResource Creates a generic kubernetes resource from a template
+func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+	r.extraParams = map[string]string{}
+	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
+	r.extraParams["Namespace"] = r.Config.GetNamespace()
+
+	templateHelper := monitoring.NewTemplateHelper(inst, r.extraParams)
+	resourceHelper := monitoring.NewResourceHelper(inst, templateHelper)
+	resource, err := resourceHelper.CreateResource(resourceName)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "createResource failed")
+	}
+
+	err = serverClient.Create(ctx, resource)
+	if err != nil {
+		if !k8serr.IsAlreadyExists(err) {
+			return nil, errors.Wrap(err, "error creating resource")
+		}
+	}
+
+	return resource, nil
+}
+
+func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// Interate over template_list
+	for _, template := range r.Config.GetTemplateList() {
+		// create it
+		_, err := r.createResource(ctx, inst, template, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+		}
+		logrus.Infof("Reconciling the monitoring template %s was successful", template)
+	}
 	return v1alpha1.PhaseCompleted, nil
 }
 

@@ -24,6 +24,17 @@ func (c *CodeReady) GetNamespace() string {
 	return c.Config["NAMESPACE"]
 }
 
+func (r *CodeReady) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *CodeReady) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_codeready_alerts.yaml",
+	}
+	return template_list
+}
+
 func (c *CodeReady) SetNamespace(newNamespace string) {
 	c.Config["NAMESPACE"] = newNamespace
 }

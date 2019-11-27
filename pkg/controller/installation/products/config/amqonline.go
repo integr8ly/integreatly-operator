@@ -26,6 +26,17 @@ func (a *AMQOnline) GetNamespace() string {
 	return a.config["NAMESPACE"]
 }
 
+func (r *AMQOnline) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *AMQOnline) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_amqonline_alerts.yaml",
+	}
+	return template_list
+}
+
 func (a *AMQOnline) SetNamespace(newNamespace string) {
 	a.config["NAMESPACE"] = newNamespace
 }

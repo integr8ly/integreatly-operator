@@ -33,6 +33,17 @@ func (f *Fuse) Read() ProductConfig {
 	return f.config
 }
 
+func (r *Fuse) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *Fuse) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_fuse_online_alerts.yaml",
+	}
+	return template_list
+}
+
 func (f *Fuse) GetProductName() v1alpha1.ProductName {
 	return v1alpha1.ProductFuse
 }

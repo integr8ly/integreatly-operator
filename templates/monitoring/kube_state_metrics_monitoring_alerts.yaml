@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    monitoring-key: {{ index .Params "MonitoringKey" }}
+  name: ksm-monitoring-alerts
+  namespace: {{ index .Params "Namespace" }}
+spec:
+  groups:
+    - name: mointoring.rules
+      rules:
+        - alert: MiddlewareMonitoringPodCount
+          annotations:
+            sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
+            message: Pod count for namespace {{ "{{" }} $labels.namespace {{ "}}" }} is {{ "{{" }} printf "%.0f" $value {{ "}}" }}. Expected exactly 6 pods.
+          expr: |
+            (1-absent(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"})) or sum(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"}) != 6
+          for: 5m
+          labels:
+            severity: critical

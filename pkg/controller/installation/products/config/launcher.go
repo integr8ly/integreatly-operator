@@ -14,6 +14,17 @@ func (a *Launcher) GetHost() string {
 	return a.config["HOST"]
 }
 
+func (r *Launcher) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *Launcher) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_launcher_alerts.yaml",
+	}
+	return template_list
+}
+
 func (a *Launcher) SetHost(newHost string) {
 	a.config["HOST"] = newHost
 }
