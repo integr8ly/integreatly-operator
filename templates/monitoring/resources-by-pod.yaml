@@ -2,9 +2,9 @@ apiVersion: integreatly.org/v1alpha1
 kind: GrafanaDashboard
 metadata:
   name: resources-by-pod
-  namespace: {{ .Namespace }}
+  namespace: {{ index .Params "Namespace" }}
   labels:
-    monitoring-key: {{ .MonitoringKey }}
+    monitoring-key: {{ index .Params "MonitoringKey" }}
 spec:
   name: resources-by-pod.json
   json: >

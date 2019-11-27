@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
@@ -23,6 +24,17 @@ func (t *ThreeScale) SetHost(newHost string) {
 
 func (t *ThreeScale) GetNamespace() string {
 	return t.config["NAMESPACE"]
+}
+
+func (r *ThreeScale) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *ThreeScale) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_3scale_alerts.yaml",
+	}
+	return template_list
 }
 
 func (t *ThreeScale) SetNamespace(newNamespace string) {

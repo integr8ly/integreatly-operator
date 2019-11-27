@@ -3,7 +3,7 @@
     - role: pod
       namespaces:
         names:
-          - {{ index .ExtraParams "threescale_namespace" }}
+          - {{ index .Params "threescale_namespace" }}
   relabel_configs:
     - action: labelmap
       regex: __meta_kubernetes_pod_label_(.+)

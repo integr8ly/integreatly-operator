@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
@@ -39,6 +40,17 @@ func (r *RHSSO) SetHost(newHost string) {
 
 func (r *RHSSO) Read() ProductConfig {
 	return r.Config
+}
+
+func (r *RHSSO) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *RHSSO) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_rhsso_alerts.yaml",
+	}
+	return template_list
 }
 
 func (r *RHSSO) GetProductName() v1alpha1.ProductName {

@@ -8,21 +8,12 @@ import (
 	"strings"
 	"text/template"
 
-	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-)
-
-const (
-	Placeholder = "XXX"
+	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 )
 
 type Parameters struct {
-	Placeholder   string
-	Namespace     string
-	MonitoringKey string
-	ExtraParams   map[string]string
+	Params map[string]string
 }
 
 type TemplateHelper struct {
@@ -33,22 +24,17 @@ type TemplateHelper struct {
 // Creates a new templates helper and populates the values for all
 // templates properties. Some of them (like the hostname) are set
 // by the user in the custom resource
-func newTemplateHelper(cr *v1alpha1.Installation, extraParams map[string]string, config *config.Monitoring) *TemplateHelper {
+func NewTemplateHelper(cr *v1alpha1.Installation, extraParams map[string]string) *TemplateHelper {
 	param := Parameters{
-		Placeholder:   Placeholder,
-		Namespace:     config.GetNamespace(),
-		MonitoringKey: config.GetLabelSelector(),
-		ExtraParams:   extraParams,
+		Params: extraParams,
 	}
 
-	templatePath, exists := os.LookupEnv("TEMPLATE_PATH")
-	if !exists {
-		templatePath = "./templates/monitoring"
-	}
-
-	monitoringKey, exists := os.LookupEnv("MONITORING_KEY")
-	if exists {
-		param.MonitoringKey = monitoringKey
+	templatePath := "./templates/monitoring"
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		templatePath = "../../../../../templates/monitoring"
+		if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+			panic("cannot find templates")
+		}
 	}
 
 	return &TemplateHelper{
@@ -70,7 +56,7 @@ func joinQuote(values []monitoring_v1alpha1.BlackboxtargetData) string {
 // load a templates from a given resource name. The templates must be located
 // under ./templates and the filename must be <resource-name>.yaml
 func (h *TemplateHelper) loadTemplate(name string) ([]byte, error) {
-	path := fmt.Sprintf("%s/%s.yaml", h.TemplatePath, name)
+	path := fmt.Sprintf("%s/%s", h.TemplatePath, name)
 	tpl, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

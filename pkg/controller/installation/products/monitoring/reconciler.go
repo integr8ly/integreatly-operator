@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	v12 "k8s.io/api/core/v1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
@@ -26,19 +25,14 @@ import (
 )
 
 const (
-	defaultInstallationNamespace            = "middleware-monitoring"
-	defaultSubscriptionName                 = "integreatly-monitoring"
-	defaultMonitoringName                   = "middleware-monitoring"
-	defaultLabelSelector                    = "middleware"
-	defaultAdditionalScrapeConfigSecretName = "integreatly-additional-scrape-configs"
-	defaultAdditionalScrapeConfigSecretKey  = "integreatly-additional.yaml"
-	defaultPrometheusRetention              = "15d"
-	defaultPrometheusStorageRequest         = "10Gi"
-	packageName                             = "monitoring"
-	openshiftMonitoringNamespace            = "openshift-monitoring"
-	grafanaDataSourceSecretName             = "grafana-datasources"
-	grafanaDataSourceSecretKey              = "prometheus.yaml"
-	defaultBlackboxModule                   = "http_2xx"
+	defaultInstallationNamespace = "middleware-monitoring"
+	defaultSubscriptionName      = "integreatly-monitoring"
+	defaultMonitoringName        = "middleware-monitoring"
+	packageName                  = "monitoring"
+	openshiftMonitoringNamespace = "openshift-monitoring"
+	grafanaDataSourceSecretName  = "grafana-datasources"
+	grafanaDataSourceSecretKey   = "prometheus.yaml"
+	defaultBlackboxModule        = "http_2xx"
 )
 
 type Reconciler struct {
@@ -57,17 +51,15 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+	logger := logrus.NewEntry(logrus.StandardLogger())
 	monitoringConfig, err := configManager.ReadMonitoring()
 
 	if err != nil {
 		return nil, err
 	}
 
-	if monitoringConfig.GetNamespace() == "" {
-		monitoringConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
-	}
-
-	logger := logrus.NewEntry(logrus.StandardLogger())
+	monitoringConfig.SetNamespacePrefix(instance.Spec.NamespacePrefix)
+	monitoringConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 
 	return &Reconciler{
 		Config:        monitoringConfig,
@@ -91,6 +83,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			return v1alpha1.PhaseFailed, err
 		}
 		if len(dashboards.Items) > 0 {
+			// do something to delete these dashboards
+			for _, gdb := range dashboards.Items {
+				g := &grafanav1alpha1.GrafanaDashboard{}
+				err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: gdb.Name, Namespace: r.Config.GetNamespace()}, g)
+				if err != nil {
+					return v1alpha1.PhaseFailed, err
+				}
+
+				err = serverClient.Delete(ctx, g)
+				if err != nil {
+					return v1alpha1.PhaseFailed, err
+				}
+			}
 			return v1alpha1.PhaseInProgress, nil
 		}
 
@@ -168,7 +173,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
-	logrus.Infof("Phase: %s reconcileComponents", phase)
+	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
@@ -197,7 +202,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 // Create the integreatly additional scrape config secret which is reconciled
 // by the application monitoring operator and passed to prometheus
 func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	templateHelper := newTemplateHelper(inst, r.extraParams, r.Config)
+	templateHelper := NewTemplateHelper(inst, r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading config")
@@ -222,18 +227,18 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 
 	scrapeConfigSecret := &v12.Secret{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      defaultAdditionalScrapeConfigSecretName,
+			Name:      r.Config.GetAdditionalScrapeConfigSecretName(),
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, scrapeConfigSecret, func() error {
 		scrapeConfigSecret.Data = map[string][]byte{
-			defaultAdditionalScrapeConfigSecretKey: []byte(jobs.String()),
+			r.Config.GetAdditionalScrapeConfigSecretKey(): []byte(jobs.String()),
 		}
 		scrapeConfigSecret.Type = "Opaque"
 		scrapeConfigSecret.Labels = map[string]string{
-			"monitoring-key": defaultLabelSelector,
+			"monitoring-key": r.Config.GetLabelSelector(),
 		}
 		return nil
 	})
@@ -251,7 +256,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(inst, template, serverClient)
+		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
 		}
@@ -270,11 +275,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func() error {
 		m.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
-			LabelSelector:                    defaultLabelSelector,
-			AdditionalScrapeConfigSecretName: defaultAdditionalScrapeConfigSecretName,
-			AdditionalScrapeConfigSecretKey:  defaultAdditionalScrapeConfigSecretKey,
-			PrometheusRetention:              defaultPrometheusRetention,
-			PrometheusStorageRequest:         defaultPrometheusStorageRequest,
+			LabelSelector:                    r.Config.GetLabelSelector(),
+			AdditionalScrapeConfigSecretName: r.Config.GetAdditionalScrapeConfigSecretName(),
+			AdditionalScrapeConfigSecretKey:  r.Config.GetAdditionalScrapeConfigSecretKey(),
+			PrometheusRetention:              r.Config.GetPrometheusRetention(),
+			PrometheusStorageRequest:         r.Config.GetPrometheusStorageRequest(),
 		}
 		r.monitoring = m
 		return nil
@@ -287,17 +292,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	return v1alpha1.PhaseCompleted, nil
 }
 
-// CreateResource Creates a generic kubernetes resource from a templates
-func (r *Reconciler) createResource(inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
-	templateHelper := newTemplateHelper(inst, r.extraParams, r.Config)
-	resourceHelper := newResourceHelper(inst, templateHelper)
-	resource, err := resourceHelper.createResource(resourceName)
+// CreateResource Creates a generic kubernetes resource from a template
+func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
+	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
+	r.extraParams["Namespace"] = r.Config.GetNamespace()
+
+	templateHelper := NewTemplateHelper(inst, r.extraParams)
+	resourceHelper := NewResourceHelper(inst, templateHelper)
+	resource, err := resourceHelper.CreateResource(resourceName)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "createResource failed")
 	}
 
-	err = serverClient.Create(context.TODO(), resource)
+	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !kerrors.IsAlreadyExists(err) {
 			return nil, errors.Wrap(err, "error creating resource")
@@ -394,10 +405,12 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 
 	// prepare the template
 	extraParams := map[string]string{
-		"name":    name,
-		"url":     target.Url,
-		"service": target.Service,
-		"module":  module,
+		"Namespace":     cfg.GetNamespace(),
+		"MonitoringKey": cfg.GetLabelSelector(),
+		"name":          name,
+		"url":           target.Url,
+		"service":       target.Service,
+		"module":        module,
 	}
 
 	cr, err := getMonitoringCr(ctx, cfg, serverClient)
@@ -409,9 +422,9 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		return errors.Wrap(err, "error getting monitoring cr")
 	}
 
-	templateHelper := newTemplateHelper(inst, extraParams, cfg)
-	resourceHelper := newResourceHelper(inst, templateHelper)
-	obj, err := resourceHelper.createResource("blackbox/target")
+	templateHelper := NewTemplateHelper(inst, extraParams)
+	resourceHelper := NewResourceHelper(inst, templateHelper)
+	obj, err := resourceHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}

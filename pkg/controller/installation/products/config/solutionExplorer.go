@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
@@ -27,6 +28,17 @@ func (s *SolutionExplorer) Read() ProductConfig {
 
 func (s *SolutionExplorer) GetHost() string {
 	return s.config["HOST"]
+}
+
+func (r *SolutionExplorer) GetLabelSelector() string {
+	return "middleware"
+}
+
+func (r *SolutionExplorer) GetTemplateList() []string {
+	template_list := []string{
+		"kube_state_metrics_solution_explorer_alerts.yaml",
+	}
+	return template_list
 }
 
 func (s *SolutionExplorer) SetHost(newHost string) {

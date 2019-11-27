@@ -14,12 +14,32 @@ func NewMonitoring(config ProductConfig) *Monitoring {
 	return &Monitoring{Config: config}
 }
 
+func (r *Monitoring) GetExtraParam(key string) string {
+	return r.Config[key]
+}
+
+func (r *Monitoring) SetExtraParam(key string, val string) {
+	r.Config[key] = val
+}
+
 func (r *Monitoring) GetNamespace() string {
 	return r.Config["NAMESPACE"]
 }
 
 func (r *Monitoring) SetNamespace(newNamespace string) {
 	r.Config["NAMESPACE"] = newNamespace
+}
+
+func (r *Monitoring) GetNamespacePrefix() string {
+	return r.Config["NAMESPACE_PREFIX"]
+}
+
+func (r *Monitoring) SetNamespacePrefix(newNamespacePrefix string) {
+	r.Config["NAMESPACE_PREFIX"] = newNamespacePrefix
+}
+
+func (r *Monitoring) GetMonitoringConfigurationNamespace() string {
+	return r.Config["NAMESPACE_PREFIX"] + r.Config["NAMESPACE"] + "-config"
 }
 
 func (r *Monitoring) GetHost() string {
@@ -71,19 +91,23 @@ func (r *Monitoring) GetPrometheusStorageRequest() string {
 }
 
 func (r *Monitoring) GetTemplateList() []string {
-	return []string{}
+	template_list := []string{
+		"kube_state_metrics_alerts.yaml",
+		"kube_state_metrics_monitoring_alerts.yaml",
+		"endpointsdetailed.yaml",
+		"endpointsreport.yaml",
+		"endpointssummary.yaml",
+		"resources-by-namespace.yaml",
+		"resources-by-pod.yaml",
+		"cluster-resources.yaml",
+	}
+	return template_list
 }
 
 func (r *Monitoring) GetJobTemplates() []string {
 	return []string{
-		"jobs/3scale",
-		"jobs/openshift_monitoring_federation",
-		"endpointsdetailed",
-		"endpointsreport",
-		"endpointssummary",
-		"resources-by-namespace",
-		"resources-by-pod",
-		"cluster-resources",
+		"jobs/3scale.yaml",
+		"jobs/openshift_monitoring_federation.yaml",
 	}
 }
 
