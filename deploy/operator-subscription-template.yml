@@ -44,7 +44,7 @@ parameters:
     displayName: Subscription Name
     name: SUBSCRIPTION_NAME
     value: integreatly-operator
-   - description: The name of the channel
-     displayName: Channel Name
-     name: CHANNEL
-     value: integreatly
+  - description: The name of the channel
+    displayName: Channel Name
+    name: CHANNEL
+    value: integreatly
