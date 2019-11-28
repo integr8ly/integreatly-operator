@@ -1,5 +1,5 @@
 channels:
-- currentCSV: integreatly-operator.v1.13.0
-  name: alpha
-defaultChannel: alpha
+- currentCSV: integreatly-operator.v1.13.1
+  name: integreatly
+defaultChannel: integreatly
 packageName: integreatly
