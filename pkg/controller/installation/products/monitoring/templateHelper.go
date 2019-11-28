@@ -36,7 +36,10 @@ func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		templatePath = "../../../../../templates/monitoring"
 		if _, err := os.Stat(templatePath); os.IsNotExist(err) {
-			panic("cannot find templates")
+			templatePath = "/usr/local/bin/templates/monitoring"
+			if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+				panic("cannot find templates")
+			}
 		}
 	}
 
