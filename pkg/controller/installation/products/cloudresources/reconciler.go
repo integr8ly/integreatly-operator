@@ -18,6 +18,7 @@ import (
 const (
 	defaultInstallationNamespace = "cloud-resources"
 	defaultSubscriptionName      = "integreatly-cloud-resources"
+	manifestPackage              = "integreatly-cloud-resources"
 )
 
 type Reconciler struct {
@@ -76,12 +77,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return v1alpha1.PhaseFailed, err
 	}
 
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionCloudResources)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "invalid version number for cloud resource operator")
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, inst.Namespace, client, version)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, inst.Namespace, client)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}

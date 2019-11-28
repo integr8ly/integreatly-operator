@@ -33,6 +33,7 @@ const (
 	grafanaDataSourceSecretName  = "grafana-datasources"
 	grafanaDataSourceSecretKey   = "prometheus.yaml"
 	defaultBlackboxModule        = "http_2xx"
+	manifestPackagae             = "integreatly-monitoring"
 )
 
 type Reconciler struct {
@@ -141,7 +142,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	}
 
 	ns := r.Config.GetNamespace()
-	version, err := resources.NewVersion(v1alpha1.OperatorVersionMonitoring)
 
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
@@ -153,7 +153,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns}, ns, serverClient, version)
+
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns, ManifestPackage: manifestPackagae}, ns, serverClient)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
