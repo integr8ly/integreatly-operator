@@ -19,24 +19,9 @@ define wait_command
 	@echo $(2) ready!
 endef
 
-.PHONY: setup/dep
-setup/dep:
-	@echo Installing dep
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-	@echo setup complete
-
 .PHONY: setup/moq
 setup/moq:
-	dep ensure
-	cd vendor/github.com/matryer/moq/ && go install .
-
-.PHONY: setup/dedicated
-setup/dedicated:
-	cd ./scripts && ./dedicated-setup.sh
-
-.PHONY: clean/dedicated
-clean/dedicated:
-	cd ./scripts && ./dedicated-cleanup.sh
+	go get github.com/matryer/moq
 
 .PHONY: setup/travis
 setup/travis:
@@ -220,6 +205,3 @@ push/csv:
 
 .PHONY: gen/push/csv
 gen/push/csv: gen/csv push/csv
-
-.PHONY: push/all
-push/all: push/csv 

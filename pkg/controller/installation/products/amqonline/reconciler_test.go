@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 )
 
@@ -52,6 +53,7 @@ func buildScheme() *runtime.Scheme {
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
 	appsv1.SchemeBuilder.AddToScheme(scheme)
 	monitoring.SchemeBuilder.AddToScheme(scheme)
+	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 

@@ -8,8 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+
+	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Parameters struct {
@@ -24,7 +27,7 @@ type TemplateHelper struct {
 // Creates a new templates helper and populates the values for all
 // templates properties. Some of them (like the hostname) are set
 // by the user in the custom resource
-func NewTemplateHelper(cr *v1alpha1.Installation, extraParams map[string]string) *TemplateHelper {
+func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 	param := Parameters{
 		Params: extraParams,
 	}
@@ -79,4 +82,20 @@ func (h *TemplateHelper) loadTemplate(name string) ([]byte, error) {
 	}
 
 	return buffer.Bytes(), nil
+}
+
+func (h *TemplateHelper) CreateResource(template string) (runtime.Object, error) {
+	tpl, err := h.loadTemplate(template)
+	if err != nil {
+		return nil, err
+	}
+
+	resource := unstructured.Unstructured{}
+	err = yaml.Unmarshal(tpl, &resource)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &resource, nil
 }

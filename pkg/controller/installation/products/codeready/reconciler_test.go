@@ -28,6 +28,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 
+	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -99,6 +100,7 @@ func buildScheme() *runtime.Scheme {
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
 	appsv1.SchemeBuilder.AddToScheme(scheme)
 	monitoring.SchemeBuilder.AddToScheme(scheme)
+	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 

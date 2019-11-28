@@ -2,6 +2,9 @@ package resources
 
 import (
 	"context"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -10,7 +13,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type BackupConfig struct {
@@ -56,6 +61,11 @@ func ReconcileBackup(ctx context.Context, serverClient pkgclient.Client, config 
 	}
 
 	err = reconcileCronjobs(ctx, serverClient, config)
+	if err != nil {
+		return err
+	}
+
+	err = reconcileCronjobAlerts(ctx, serverClient, config)
 	if err != nil {
 		return err
 	}
@@ -128,12 +138,15 @@ func reconcileCronjobs(ctx context.Context, serverClient pkgclient.Client, confi
 	}
 	return nil
 }
+
 func reconcileCronjob(ctx context.Context, serverClient pkgclient.Client, config BackupConfig, component BackupComponent) error {
+	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
+
 	cronjob := &v1beta1.CronJob{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      component.Name,
 			Namespace: config.Namespace,
-			Labels:    map[string]string{"integreatly": "yes"},
+			Labels:    map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()},
 		},
 		Spec: v1beta1.CronJobSpec{
 			Schedule:          component.Schedule,
@@ -208,4 +221,43 @@ func reconcileCronjob(ctx context.Context, serverClient pkgclient.Client, config
 	}
 
 	return CreateOrUpdate(ctx, serverClient, cronjob)
+}
+
+func reconcileCronjobAlerts(ctx context.Context, serverClient pkgclient.Client, config BackupConfig) error {
+	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
+
+	rules := []monitoringv1.Rule{}
+	for _, component := range config.Components {
+		rules = append(rules, monitoringv1.Rule{
+			Alert: "CronJobExists_" + config.Namespace + "_" + component.Name,
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"message": "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} does not exist",
+			},
+			Expr:   intstr.FromString("absent(kube_cronjob_info{cronjob=\"" + component.Name + "\", namespace=\"" + config.Namespace + "\"})"),
+			For:    "60s",
+			Labels: map[string]string{"severity": "critical"},
+		})
+	}
+
+	rule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "backupjobs-exist-alerts",
+			Namespace: config.Namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				monitoringv1.RuleGroup{
+					Name:  "general.rules",
+					Rules: rules,
+				},
+			},
+		}
+		return nil
+	})
+	return err
 }

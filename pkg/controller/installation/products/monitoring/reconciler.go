@@ -77,7 +77,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
 		dashboards := &grafanav1alpha1.GrafanaDashboardList{}
 		dashboardListOpts := []pkgclient.ListOption{
-			pkgclient.MatchingLabels(map[string]string{"monitoring-key": "middleware"}),
+			pkgclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
 		}
 		err := serverClient.List(ctx, dashboards, dashboardListOpts...)
 		if err != nil {
@@ -160,27 +160,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, inst, serverClient)
+	phase, err = r.reconcileComponents(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.populateParams(ctx, inst, serverClient)
+	phase, err = r.populateParams(ctx, serverClient)
 	logrus.Infof("Phase: %s populateParams", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	phase, err = r.reconcileTemplates(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileScrapeConfigs(ctx, inst, serverClient)
+	phase, err = r.reconcileScrapeConfigs(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileScrapeConfigs", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -202,8 +202,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 // Create the integreatly additional scrape config secret which is reconciled
 // by the application monitoring operator and passed to prometheus
-func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	templateHelper := NewTemplateHelper(inst, r.extraParams)
+func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	templateHelper := NewTemplateHelper(r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading config")
@@ -239,7 +239,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 		}
 		scrapeConfigSecret.Type = "Opaque"
 		scrapeConfigSecret.Labels = map[string]string{
-			"monitoring-key": r.Config.GetLabelSelector(),
+			r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector(),
 		}
 		return nil
 	})
@@ -253,11 +253,11 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, inst *v1alpha1.
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, template, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
 		}
@@ -266,7 +266,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
 	m := &monitoring_v1alpha1.ApplicationMonitoring{
 		ObjectMeta: v1.ObjectMeta{
@@ -294,16 +294,15 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
-	templateHelper := NewTemplateHelper(inst, r.extraParams)
-	resourceHelper := NewResourceHelper(inst, templateHelper)
-	resource, err := resourceHelper.CreateResource(resourceName)
+	templateHelper := NewTemplateHelper(r.extraParams)
+	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "createResource failed")
@@ -346,7 +345,7 @@ func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, ser
 }
 
 // Populate the extra params for templating
-func (r *Reconciler) populateParams(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// Obtain the prometheus credentials from openshift-monitoring
 	datasources, err := r.readFederatedPrometheusCredentials(ctx, serverClient)
 	if err != nil {
@@ -423,9 +422,8 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		return errors.Wrap(err, "error getting monitoring cr")
 	}
 
-	templateHelper := NewTemplateHelper(inst, extraParams)
-	resourceHelper := NewResourceHelper(inst, templateHelper)
-	obj, err := resourceHelper.CreateResource("blackbox/target.yaml")
+	templateHelper := NewTemplateHelper(extraParams)
+	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}

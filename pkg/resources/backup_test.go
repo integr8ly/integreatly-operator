@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -21,6 +22,7 @@ func basicClient(objects ...runtime.Object) client.Client {
 	corev1.SchemeBuilder.AddToScheme(scheme)
 	batchv1.SchemeBuilder.AddToScheme(scheme)
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
+	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	return fakeclient.NewFakeClientWithScheme(scheme, objects...)
 }
 
