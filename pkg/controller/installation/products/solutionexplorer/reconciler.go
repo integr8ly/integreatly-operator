@@ -22,7 +22,6 @@ import (
 
 	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -151,13 +150,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
-	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
-		RedirectURIs: []string{route},
-		GrantMethod:  oauthv1.GrantHandlerAuto,
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.getOAuthClientName(),
-		},
-	}, serverClient)
+	phase, err = r.ReconcileOauthClient(ctx, inst, r.getOAuthClientName(), "", []string{route}, serverClient)
+
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
