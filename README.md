@@ -19,11 +19,11 @@ Currently the operator installs the following products:
 - Integreatly solution explorer
 
 ## Prerequisites
-- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.10.0.
-- [go](https://golang.org/dl/) version 1.12+
+- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.12.0.
+- [go](https://golang.org/dl/) version 1.13.4+
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/3.11/cli_reference/get_started_cli.html#cli-reference-get-started-cli) version v3.11+
-- Access to an Openshift v4.1.0+ cluster
+- Access to an Openshift v4.2.0+ cluster
 - A user with administrative privileges in the OpenShift cluster
 - AWS account with permissions to create S3 buckets
 
@@ -121,16 +121,7 @@ spec:
 
 ## Set up dedicated admins 
 
-To setup your cluster to have dedicated admins run the `setup/dedicated` target which installs the dedicated admin operator:
-```sh
-make setup/dedicated
-```
-
-If you want to remove the dedicated admin operator, run:
-
-```sh
-make clean/dedicated
-```
+To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
 
 ## Tests
 
