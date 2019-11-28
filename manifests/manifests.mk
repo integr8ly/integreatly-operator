@@ -20,8 +20,8 @@ MANIFESTS_DIR=./manifests
 push/manifests/all: push/amqstreams push/3scale push/fuse push/codeready push/amqonline push/nexus push/launcher push/solution-explorer push/mobile-security-service push/unifiedpush push/mobile-developer-console push/monitoring push/cloud-resources push/keycloak-rhsso
 
 push/keycloak-rhsso:
-	operator-courier verify keycloak-rhsso
-	-operator-courier push keycloak-rhsso/ $(REPO) keycloak-rhsso $(KEYCLOAK_RHSSO_VERSION) "$(AUTH_TOKEN)"
+	operator-courier verify $(MANIFESTS_DIR)/keycloak-rhsso
+	-operator-courier push $(MANIFESTS_DIR)/keycloak-rhsso/ $(REPO) keycloak-rhsso $(KEYCLOAK_RHSSO_VERSION) "$(AUTH_TOKEN)"
 
 push/3scale:
 	operator-courier verify $(MANIFESTS_DIR)/integreatly-3scale

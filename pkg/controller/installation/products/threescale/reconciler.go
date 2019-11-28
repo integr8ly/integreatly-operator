@@ -1182,6 +1182,7 @@ func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.Keycloa
 					Protocol:        "openid-connect",
 					ProtocolMapper:  "oidc-usermodel-property-mapper",
 					ConsentRequired: false,
+					ConsentText:     "n.a.",
 					Config: map[string]string{
 						"userinfo.token.claim": "true",
 						"user.attribute":       "org_name",
