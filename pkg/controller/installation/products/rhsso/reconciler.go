@@ -13,7 +13,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -392,18 +391,13 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 	}
 	clientSecret := string(clientSecretBytes)
 
-	oauthc := &oauthv1.OAuthClient{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.getOAuthClientName(),
-		},
-		Secret: clientSecret,
-		RedirectURIs: []string{
-			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
+	redirectUris := []string{
+		r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
 	}
 
-	_, err = r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
+	_, err = r.ReconcileOauthClient(ctx, inst, r.getOAuthClientName(),
+		clientSecret, redirectUris, serverClient)
+
 	if err != nil {
 		return err
 	}

@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -34,21 +35,24 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 	}
 }
 
-func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, client *oauthv1.OAuthClient, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	if err := apiClient.Get(ctx, pkgclient.ObjectKey{Name: client.Name}, client); err != nil {
-		if k8serr.IsNotFound(err) {
-			PrepareObject(client, inst)
-			if err := apiClient.Create(ctx, client); err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create oauth client: %s", client.Name)
-			}
-			return v1alpha1.PhaseCompleted, nil
-		}
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get oauth client: %s", client.Name)
+func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.Installation, name, secret string, redirectUris []string, apiClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	oauthClient := &oauthv1.OAuthClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
 	}
-	PrepareObject(client, inst)
-	if err := apiClient.Update(ctx, client); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to update oauth client: %s", client.Name)
+	or, err := controllerutil.CreateOrUpdate(ctx, apiClient, oauthClient, func() error {
+		PrepareObject(oauthClient, inst)
+		oauthClient.Secret = secret
+		oauthClient.RedirectURIs = redirectUris
+		oauthClient.GrantMethod = oauthv1.GrantHandlerPrompt
+		return nil
+	})
+
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to %v oauth client: %s", or, oauthClient.Name)
 	}
+
 	return v1alpha1.PhaseCompleted, nil
 }
 
