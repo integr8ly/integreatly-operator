@@ -37,6 +37,7 @@ const (
 	defaultBlackboxModule        = "http_2xx"
 	manifestPackagae             = "integreatly-monitoring"
 	alertManagerConfigSecretName = "alertmanager-application-monitoring"
+	alertManagerConfigSecretKey  = "alertmanager.yaml"
 	alertManagerRoute            = "alertmanager-route"
 	alertManagerTemplateName     = "alertmanager"
 )
@@ -194,7 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	phase, err = r.reconcileAlertManagerConfig(ctx, inst, serverClient)
 	logrus.Infof("Phase: %s reconcileAlertManagerConfig", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase == v1alpha1.PhaseFailed {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
@@ -464,8 +465,13 @@ func (r *Reconciler) reconcileAlertManagerConfig(ctx context.Context, inst *v1al
 	route := &routev1.Route{}
 
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: alertManagerRoute, Namespace: r.Config.GetNamespace()}, route)
-	if k8serr.IsNotFound(err) {
-		return v1alpha1.PhaseInProgress, nil
+
+	// Wait until the route is available before progressing
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseInProgress, nil
+		}
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating alertmanager config")
 	}
 
 	// Params required by the alertmanager template
@@ -477,14 +483,13 @@ func (r *Reconciler) reconcileAlertManagerConfig(ctx context.Context, inst *v1al
 	r.extraParams["smtp_auth_username"] = inst.Spec.AlertManager.SMTPauthUsername
 	r.extraParams["smtp_auth_password"] = inst.Spec.AlertManager.SMTPauthPassword
 
-	job := strings.Builder{}
-	templateHelper := NewTemplateHelper(inst, r.extraParams)
-	bytes, err := templateHelper.loadTemplate(alertManagerTemplateName)
+	templateHelper := NewTemplateHelper(r.extraParams)
+	job := r.Config.GetConfigTemplate()
+
+	bytes, err := templateHelper.loadTemplate(job)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error loading template")
 	}
-
-	job.Write(bytes)
 
 	alertManagerConfigSecret := &v12.Secret{
 		ObjectMeta: v1.ObjectMeta{
@@ -495,11 +500,15 @@ func (r *Reconciler) reconcileAlertManagerConfig(ctx context.Context, inst *v1al
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, alertManagerConfigSecret, func() error {
 		alertManagerConfigSecret.Data = map[string][]byte{
-			alertManagerConfigSecretName: []byte(job.String()),
+			alertManagerConfigSecretKey: bytes,
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating alertmanager config secret")
+	}
 
 	r.Logger.Info(fmt.Sprintf("The operation result of creating alertmanager config secret was %v", or))
 
