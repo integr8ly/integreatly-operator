@@ -3,6 +3,7 @@ package apis
 import (
 	mobileSecurityService "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
+	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -69,5 +70,6 @@ func init() {
 		launcherv1alpha2.SchemeBuilder.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
 		upsv1alpha1.SchemeBuilder.AddToScheme,
+		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 	)
 }

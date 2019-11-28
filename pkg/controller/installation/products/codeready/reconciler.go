@@ -152,9 +152,8 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
-	templateHelper := monitoring.NewTemplateHelper(inst, r.extraParams)
-	resourceHelper := monitoring.NewResourceHelper(inst, templateHelper)
-	resource, err := resourceHelper.CreateResource(resourceName)
+	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
+	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "createResource failed")

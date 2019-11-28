@@ -7,6 +7,7 @@ require (
 	github.com/aerogear/mobile-developer-console-operator v0.0.0-20191112104059-b2ac382d666a
 	github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c
 	github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634
+	github.com/coreos/prometheus-operator v0.29.0
 	github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5
 	github.com/fabric8-launcher/launcher-operator v0.1.2
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4

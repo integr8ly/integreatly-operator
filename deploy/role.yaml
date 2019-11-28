@@ -381,3 +381,11 @@ rules:
     verbs:
       - "*"
   # end permissions for granting fuse only view
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - prometheusrules
+    verbs:
+      - get
+      - create
+      - update

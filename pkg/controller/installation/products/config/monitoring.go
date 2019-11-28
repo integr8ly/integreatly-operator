@@ -74,6 +74,10 @@ func (r *Monitoring) GetLabelSelector() string {
 	return "middleware"
 }
 
+func (r *Monitoring) GetLabelSelectorKey() string {
+	return "monitoring-key"
+}
+
 func (r *Monitoring) GetAdditionalScrapeConfigSecretName() string {
 	return "integreatly-additional-scrape-configs"
 }
@@ -100,6 +104,7 @@ func (r *Monitoring) GetTemplateList() []string {
 		"resources-by-namespace.yaml",
 		"resources-by-pod.yaml",
 		"cluster-resources.yaml",
+		"backup-monitoring-alerts.yaml",
 	}
 	return template_list
 }

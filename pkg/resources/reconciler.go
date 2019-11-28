@@ -6,6 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -189,6 +190,8 @@ func PrepareObject(ns metav1.Object, install *v1alpha1.Installation) {
 	labels["integreatly"] = "true"
 	labels["monitoring-key"] = "middleware"
 	labels[OwnerLabelKey] = string(install.GetUID())
+	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
+	labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
 	ns.SetLabels(labels)
 }
 

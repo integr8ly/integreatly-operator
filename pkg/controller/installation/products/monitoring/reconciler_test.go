@@ -12,6 +12,7 @@ import (
 
 	"testing"
 
+	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
@@ -61,6 +62,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
+	err = prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -179,7 +181,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				t.Fatal("unexpected err ", err)
 			}
 
-			phase, err := reconciler.reconcileComponents(context.TODO(), tc.Installation, tc.FakeClient)
+			phase, err := reconciler.reconcileComponents(context.TODO(), tc.FakeClient)
 			if tc.ExpectError && err == nil {
 				t.Fatal("expected an error but got none")
 			}
