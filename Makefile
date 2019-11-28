@@ -5,8 +5,8 @@ NAMESPACE=integreatly
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-PREVIOUS_TAG=1.12.0
-TAG=1.13.0
+PREVIOUS_TAG=1.13.0
+TAG=1.13.1
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -207,8 +207,8 @@ deploy/integreatly-installation-cr.yml:
 gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
-	operator-sdk olm-catalog gen-csv --csv-version $(TAG) --update-crds --from-version $(PREVIOUS_TAG)
+	@sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
+	operator-sdk olm-catalog gen-csv --csv-version $(TAG) --default-channel --csv-channel=integreatly --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml

@@ -17,7 +17,7 @@ objects:
       name: ${SUBSCRIPTION_NAME}
       namespace: ${NAMESPACE}
     spec:
-      channel: integreatly
+      channel: ${CHANNEL}
       installPlanApproval: Automatic
       name: integreatly
       source: ${CATALOG_SOURCE_CONFIG_NAME}
@@ -44,3 +44,7 @@ parameters:
     displayName: Subscription Name
     name: SUBSCRIPTION_NAME
     value: integreatly-operator
+   - description: The name of the channel
+     displayName: Channel Name
+     name: CHANNEL
+     value: integreatly
