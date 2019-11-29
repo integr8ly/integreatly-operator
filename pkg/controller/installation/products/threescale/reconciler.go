@@ -52,7 +52,7 @@ const (
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
 	tier                           = "production"
-	defaultKeycloakClientName      = "integreatly-3scale-client"
+	defaultKeycloakClientName      = "3scale"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -196,7 +196,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		r.installation.Spec.MasterURL,
 	}
 	phase, err = r.ReconcileOauthClient(ctx, in, r.getOAuthClientName(), clientSecret, redirectUris, serverClient)
-	
+
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
