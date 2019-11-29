@@ -5,7 +5,6 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
-	launcherv1alpha2 "github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2"
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
@@ -24,7 +23,6 @@ import (
 	templatev1 "github.com/openshift/api/template/v1"
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 
-	nexusv1 "github.com/integr8ly/integreatly-operator/pkg/apis/gpte/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -64,10 +62,8 @@ func init() {
 		imagev1.AddToScheme,
 		oauthv1.AddToScheme,
 		templatev1.AddToScheme,
-		nexusv1.SchemeBuilder.AddToScheme,
 		rbacv1.SchemeBuilder.AddToScheme,
 		usersv1.AddToScheme,
-		launcherv1alpha2.SchemeBuilder.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
 		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,

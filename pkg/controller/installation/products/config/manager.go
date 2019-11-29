@@ -44,8 +44,6 @@ type ConfigReadWriter interface {
 	ReadFuse() (*Fuse, error)
 	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
-	ReadNexus() (*Nexus, error)
-	ReadLauncher() (*Launcher, error)
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
 	ReadMonitoring() (*Monitoring, error)
@@ -90,8 +88,6 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadFuse()
 	case v1alpha1.ProductFuseOnOpenshift:
 		return m.ReadFuseOnOpenshift()
-	case v1alpha1.ProductNexus:
-		return m.ReadNexus()
 	case v1alpha1.ProductSolutionExplorer:
 		return m.ReadSolutionExplorer()
 	case v1alpha1.ProductUps:
@@ -187,28 +183,12 @@ func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
 	return NewAMQOnline(config), nil
 }
 
-func (m *Manager) ReadNexus() (*Nexus, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductNexus)
-	if err != nil {
-		return nil, err
-	}
-	return NewNexus(config), nil
-}
-
 func (m *Manager) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
 	config, err := m.readConfigForProduct(v1alpha1.ProductMobileDeveloperConsole)
 	if err != nil {
 		return nil, err
 	}
 	return NewMobileDeveloperConsole(config), nil
-}
-
-func (m *Manager) ReadLauncher() (*Launcher, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductLauncher)
-	if err != nil {
-		return nil, err
-	}
-	return NewLauncher(config), nil
 }
 
 func (m *Manager) ReadMonitoring() (*Monitoring, error) {

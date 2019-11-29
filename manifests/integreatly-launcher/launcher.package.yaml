@@ -1,4 +1,0 @@
-packageName: integreatly-launcher
-channels:
-  - name: integreatly
-    currentCSV: launcher.v0.1.2

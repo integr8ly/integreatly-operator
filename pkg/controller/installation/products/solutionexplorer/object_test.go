@@ -44,12 +44,6 @@ var installation = &v1alpha1.Installation{
 				Name:  "products",
 				Phase: v1alpha1.PhaseCompleted,
 				Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-					v1alpha1.ProductLauncher: &v1alpha1.InstallationProductStatus{
-						Name:    v1alpha1.ProductLauncher,
-						Host:    "http://launcher.example.com",
-						Status:  v1alpha1.PhaseCompleted,
-						Version: "0.0.1",
-					},
 					v1alpha1.ProductFuse: &v1alpha1.InstallationProductStatus{
 						Name:    v1alpha1.ProductFuse,
 						Host:    "http://syndesis.example.com",
