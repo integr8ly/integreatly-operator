@@ -44,8 +44,6 @@ var (
 	Product3Scale                 ProductName = "3scale"
 	ProductUps                    ProductName = "ups"
 	ProductMonitoring             ProductName = "monitoring"
-	ProductMobileSecurityService  ProductName = "mobilesecurityservice"
-	ProductMobileDeveloperConsole ProductName = "mdc"
 	ProductCloudResources         ProductName = "cloud-resources"
 
 	// PBrookes 08/08/2019:
@@ -57,9 +55,8 @@ var (
 	VersionFuseOnOpenshift       ProductVersion = "master"
 	VersionMonitoring            ProductVersion = "1.0.0"
 	VersionUps                   ProductVersion = "2.3.2"
-	VersionMobileSecurityService ProductVersion = "0.2.2"
-	VersionMDC                   ProductVersion = "1.1.11"
 	VersionCloudResources        ProductVersion = "0.4.0"
+
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -75,8 +72,6 @@ var (
 	OperatorVersionFuse                  OperatorVersion = "1.4.0"
 	OperatorVersion3Scale                OperatorVersion = "1.9.8"
 	OperatorVersionUPS                   OperatorVersion = "0.3.0"
-	OperatorVersionMobileSecurityService OperatorVersion = "0.4.1"
-	OperatorVersionMDC                   OperatorVersion = "0.3.0"
 	OperatorVersionCloudResources        OperatorVersion = "0.4.0"
 )
 
