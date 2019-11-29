@@ -154,7 +154,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"amq-online":              "enmasse-operator",
 		"codeready-workspaces":    "codeready-operator",
 		"fuse":                    "syndesis-operator",
-		"launcher":                "launcher-operator",
 		"mdc":                     "mobile-developer-console-operator",
 		"mobile-security-service": "mobile-security-service-operator",
 		"user-sso":                "keycloak-operator",

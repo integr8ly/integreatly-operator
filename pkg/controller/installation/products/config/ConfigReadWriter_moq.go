@@ -17,11 +17,9 @@ var (
 	lockConfigReadWriterMockReadCodeReady              sync.RWMutex
 	lockConfigReadWriterMockReadFuse                   sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift        sync.RWMutex
-	lockConfigReadWriterMockReadLauncher               sync.RWMutex
 	lockConfigReadWriterMockReadMobileDeveloperConsole sync.RWMutex
 	lockConfigReadWriterMockReadMobileSecurityService  sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring             sync.RWMutex
-	lockConfigReadWriterMockReadNexus                  sync.RWMutex
 	lockConfigReadWriterMockReadProduct                sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO                  sync.RWMutex
 	lockConfigReadWriterMockReadRHSSOUser              sync.RWMutex
@@ -66,9 +64,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
 // 	               panic("mock out the ReadFuseOnOpenshift method")
 //             },
-//             ReadLauncherFunc: func() (*Launcher, error) {
-// 	               panic("mock out the ReadLauncher method")
-//             },
 //             ReadMobileDeveloperConsoleFunc: func() (*MobileDeveloperConsole, error) {
 // 	               panic("mock out the ReadMobileDeveloperConsole method")
 //             },
@@ -77,9 +72,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
-//             },
-//             ReadNexusFunc: func() (*Nexus, error) {
-// 	               panic("mock out the ReadNexus method")
 //             },
 //             ReadProductFunc: func(product v1alpha1.ProductName) (ConfigReadable, error) {
 // 	               panic("mock out the ReadProduct method")
@@ -136,9 +128,6 @@ type ConfigReadWriterMock struct {
 	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
 	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
 
-	// ReadLauncherFunc mocks the ReadLauncher method.
-	ReadLauncherFunc func() (*Launcher, error)
-
 	// ReadMobileDeveloperConsoleFunc mocks the ReadMobileDeveloperConsole method.
 	ReadMobileDeveloperConsoleFunc func() (*MobileDeveloperConsole, error)
 
@@ -147,9 +136,6 @@ type ConfigReadWriterMock struct {
 
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
-
-	// ReadNexusFunc mocks the ReadNexus method.
-	ReadNexusFunc func() (*Nexus, error)
 
 	// ReadProductFunc mocks the ReadProduct method.
 	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
@@ -201,9 +187,6 @@ type ConfigReadWriterMock struct {
 		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
 		ReadFuseOnOpenshift []struct {
 		}
-		// ReadLauncher holds details about calls to the ReadLauncher method.
-		ReadLauncher []struct {
-		}
 		// ReadMobileDeveloperConsole holds details about calls to the ReadMobileDeveloperConsole method.
 		ReadMobileDeveloperConsole []struct {
 		}
@@ -212,9 +195,6 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
-		}
-		// ReadNexus holds details about calls to the ReadNexus method.
-		ReadNexus []struct {
 		}
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
@@ -457,32 +437,6 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
 	return calls
 }
 
-// ReadLauncher calls ReadLauncherFunc.
-func (mock *ConfigReadWriterMock) ReadLauncher() (*Launcher, error) {
-	if mock.ReadLauncherFunc == nil {
-		panic("ConfigReadWriterMock.ReadLauncherFunc: method is nil but ConfigReadWriter.ReadLauncher was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockReadLauncher.Lock()
-	mock.calls.ReadLauncher = append(mock.calls.ReadLauncher, callInfo)
-	lockConfigReadWriterMockReadLauncher.Unlock()
-	return mock.ReadLauncherFunc()
-}
-
-// ReadLauncherCalls gets all the calls that were made to ReadLauncher.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadLauncherCalls())
-func (mock *ConfigReadWriterMock) ReadLauncherCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockReadLauncher.RLock()
-	calls = mock.calls.ReadLauncher
-	lockConfigReadWriterMockReadLauncher.RUnlock()
-	return calls
-}
-
 // ReadMobileDeveloperConsole calls ReadMobileDeveloperConsoleFunc.
 func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
 	if mock.ReadMobileDeveloperConsoleFunc == nil {
@@ -558,32 +512,6 @@ func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
 	lockConfigReadWriterMockReadMonitoring.RLock()
 	calls = mock.calls.ReadMonitoring
 	lockConfigReadWriterMockReadMonitoring.RUnlock()
-	return calls
-}
-
-// ReadNexus calls ReadNexusFunc.
-func (mock *ConfigReadWriterMock) ReadNexus() (*Nexus, error) {
-	if mock.ReadNexusFunc == nil {
-		panic("ConfigReadWriterMock.ReadNexusFunc: method is nil but ConfigReadWriter.ReadNexus was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockReadNexus.Lock()
-	mock.calls.ReadNexus = append(mock.calls.ReadNexus, callInfo)
-	lockConfigReadWriterMockReadNexus.Unlock()
-	return mock.ReadNexusFunc()
-}
-
-// ReadNexusCalls gets all the calls that were made to ReadNexus.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadNexusCalls())
-func (mock *ConfigReadWriterMock) ReadNexusCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockReadNexus.RLock()
-	calls = mock.calls.ReadNexus
-	lockConfigReadWriterMockReadNexus.RUnlock()
 	return calls
 }
 
