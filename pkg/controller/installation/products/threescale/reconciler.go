@@ -40,13 +40,17 @@ import (
 const (
 	defaultInstallationNamespace = "3scale"
 	packageName                  = "integreatly-3scale"
+	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientId                     = "3scale"
-	s3BucketSecretName           = "s3-bucket"
-	s3CredentialsSecretName      = "s3-credentials"
 	rhssoIntegrationName         = "rhsso"
-	tier                         = "production"
-	manifestPackage              = "integreatly-3scale"
+
+	tier                           = "production"
+	s3BucketSecretName             = "s3-bucket"
+	s3CredentialsSecretName        = "s3-credentials"
+	externalRedisSecretName        = "system-redis"
+	externalBackendRedisSecretName = "backend-redis"
+	externalPostgresSecretName     = "system-database"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -116,8 +120,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
-	// setup smtp credential configmap
 	phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileExternalDatasources(ctx, in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -329,11 +337,17 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: threescalev1.APIManagerSpec{
+			HighAvailability: &threescalev1.HighAvailabilitySpec{
+				Enabled: true,
+			},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
 				WildcardDomain:              r.installation.Spec.RoutingSubdomain,
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
 			System: &threescalev1.SystemSpec{
+				DatabaseSpec: &threescalev1.SystemDatabaseSpec{
+					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
+				},
 				FileStorageSpec: fss,
 			},
 		},
@@ -422,6 +436,150 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 			},
 		},
 	}, nil
+}
+
+// reconcileExternalDatasources provisions 2 redis caches and a postgres instance
+// which are used when 3scale HighAvailability mode is enabled
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling external datastores")
+	ns := r.installation.Namespace
+
+	// setup backend redis custom resource
+	// this will be used by the cloud resources operator to provision a redis instance
+	logrus.Info("Creating backend redis instance")
+	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", inst.Name)
+	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
+		resources.AddOwner(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile backend redis request")
+	}
+
+	// setup system redis custom resource
+	// this will be used by the cloud resources operator to provision a redis instance
+	logrus.Info("Creating system redis instance")
+	systemRedisName := fmt.Sprintf("threescale-redis-%s", inst.Name)
+	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
+		resources.AddOwner(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile system redis request")
+	}
+
+	// setup postgres cr for the cloud resource operator
+	// this will be used by the cloud resources operator to provision a postgres instance
+	logrus.Info("Creating postgres instance")
+	postgresName := fmt.Sprintf("threescale-postgres-%s", inst.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		resources.AddOwner(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres request")
+	}
+
+	// wait for the backend redis cr to reconcile
+	if backendRedis.Status.Phase != types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	// containing backend redis connection details
+	credSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: backendRedis.Status.SecretRef.Name, Namespace: backendRedis.Status.SecretRef.Namespace}, credSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get backend redis credential secret")
+	}
+
+	// create backend redis external connection secret needed for the 3scale apimanager
+	backendRedisSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      externalBackendRedisSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, backendRedisSecret, func() error {
+		uri := credSec.Data["uri"]
+		port := credSec.Data["port"]
+		backendRedisSecret.Data["REDIS_STORAGE_URL"] = []byte(fmt.Sprintf("redis://%s:%s/0", uri, port))
+		backendRedisSecret.Data["REDIS_QUEUES_URL"] = []byte(fmt.Sprintf("redis://%s:%s/1", uri, port))
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalBackendRedisSecretName)
+	}
+
+	// wait for the system redis cr to reconcile
+	if systemRedis.Status.Phase != types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	// containing system redis connection details
+	systemCredSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: systemRedis.Status.SecretRef.Name, Namespace: systemRedis.Status.SecretRef.Namespace}, systemCredSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get system redis credential secret")
+	}
+
+	// create system redis external connection secret needed for the 3scale apimanager
+	redisSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      externalRedisSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, redisSecret, func() error {
+		uri := systemCredSec.Data["uri"]
+		port := systemCredSec.Data["port"]
+		conn := fmt.Sprintf("redis://%s:%s/1", uri, port)
+		redisSecret.Data["URL"] = []byte(conn)
+		redisSecret.Data["MESSAGE_BUS_URL"] = []byte(conn)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalRedisSecretName)
+	}
+
+	// wait for the postgres cr to reconcile
+	if postgres.Status.Phase != types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret containing redis credentials
+	postgresCredSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresCredSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
+	}
+
+	// create postgres external connection secret
+	postgresSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      externalPostgresSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, postgresSecret, func() error {
+		username := postgresCredSec.Data["username"]
+		password := postgresCredSec.Data["password"]
+		url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", username, password, postgresCredSec.Data["host"], postgresCredSec.Data["port"], postgresCredSec.Data["database"])
+
+		postgresSecret.Data["URL"] = []byte(url)
+		postgresSecret.Data["DB_USER"] = username
+		postgresSecret.Data["DB_PASSWORD"] = password
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalPostgresSecretName)
+	}
+
+	return v1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
