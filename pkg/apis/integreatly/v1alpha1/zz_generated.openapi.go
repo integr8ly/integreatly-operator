@@ -104,12 +104,17 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
 						},
 					},
+					"alertManager": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertManagerConfig"),
+						},
+					},
 				},
 				Required: []string{"type", "namespacePrefix", "selfSignedCerts"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertManagerConfig", "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
 	}
 }
 
