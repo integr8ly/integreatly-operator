@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -57,7 +58,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, client, ns)
+		// ensure resources are cleaned up before deleting the namespace
+		phase, err := r.cleanupResources(ctx, inst, client)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		// remove the namespace
+		phase, err = resources.RemoveNamespace(ctx, inst, client, ns)
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -87,5 +95,68 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) cleanupResources(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	r.logger.Info("ensuring cloud resources are cleaned up")
+
+	// ensure postgres instances are cleaned up
+	postgresInstances := &crov1.PostgresList{}
+	postgresInstanceOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(inst.Namespace),
+	}
+	err := client.List(ctx, postgresInstances, postgresInstanceOpts...)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(postgresInstances.Items) > 0 {
+		r.logger.Info("deletion of postgres instances in progress")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// ensure redis instances are cleaned up
+	redisInstances := &crov1.RedisList{}
+	redisInstanceOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(inst.Namespace),
+	}
+	err = client.List(ctx, redisInstances, redisInstanceOpts...)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(redisInstances.Items) > 0 {
+		r.logger.Info("deletion of redis instances in progress")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// ensure blob storage instances are cleaned up
+	blobStorages := &crov1.BlobStorageList{}
+	blobStorageOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(inst.Namespace),
+	}
+	err = client.List(ctx, blobStorages, blobStorageOpts...)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(blobStorages.Items) > 0 {
+		r.logger.Info("deletion of blob storage instances in progress")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// ensure blob storage instances are cleaned up
+	smtpCredentialSets := &crov1.SMTPCredentialSetList{}
+	smtpOpts := []pkgclient.ListOption{
+		pkgclient.InNamespace(inst.Namespace),
+	}
+	err = client.List(ctx, smtpCredentialSets, smtpOpts...)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(smtpCredentialSets.Items) > 0 {
+		r.logger.Info("deletion of smtp credential sets in progress")
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// everything has been cleaned up, delete the ns
 	return v1alpha1.PhaseCompleted, nil
 }
