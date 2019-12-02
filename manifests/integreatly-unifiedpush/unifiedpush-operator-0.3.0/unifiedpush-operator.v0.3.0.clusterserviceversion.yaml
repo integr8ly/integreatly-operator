@@ -40,6 +40,11 @@ spec:
       kind: WebPushVariant
       name: webpushvariants.push.aerogear.org
       version: v1alpha1
+    - description: Represents a UPS IOS Token Variant
+      displayName: IOS Token Variant
+      kind: IOSTokenVariant
+      name: iostokenvariants.push.aerogear.org
+      version: v1alpha1
   description: The UnifiedPush Operator for Kubernetes provides an easy way to install
     and manage an AeroGear UnifiedPush Server on OpenShift.
   displayName: UnifiedPush Operator
@@ -237,7 +242,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: unifiedpush-operator
-                image: quay.io/aerogear/unifiedpush-operator:0.3.0
+                image: quay.io/dimitra/unifiedpush-operator:f1d88ec
                 imagePullPolicy: Always
                 name: unifiedpush-operator
                 resources:

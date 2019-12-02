@@ -2,12 +2,19 @@ package ups
 
 import (
 	"context"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	routev1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -29,6 +36,7 @@ const (
 	defaultSubscriptionName      = "integreatly-unifiedpush"
 	defaultRoutename             = defaultUpsName + "-unifiedpush-proxy"
 	manifestPackage              = "integreatly-unifiedpush"
+	tier                         = "production"
 )
 
 type Reconciler struct {
@@ -100,7 +108,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileCustomResource(ctx, serverClient)
+	phase, err = r.reconcileComponents(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -124,17 +132,54 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// Reconcile Ups custom resource
+func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Info("Reconciling external postgres")
+	ns := inst.Namespace
+
+	// setup postgres custom resource
+	// this will be used by the cloud resources operator to provision a postgres instance
+	postgresName := fmt.Sprintf("ups-postgres-%s", inst.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, client, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		resources.AddOwner(cr, inst)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres request")
+	}
+
+	// wait for the postgres instance to reconcile
+	if postgres.Status.Phase != types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	// containing postgres connection details
+	connSec := &v1.Secret{}
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
+	}
+
+	// Reconcile ups custom resource
 	logrus.Info("Reconciling unified push server cr")
 	cr := &upsv1alpha1.UnifiedPushServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultUpsName,
 			Namespace: r.Config.GetNamespace(),
 		},
+		Spec: upsv1alpha1.UnifiedPushServerSpec{
+			ExternalDB: true,
+			Database: upsv1alpha1.UnifiedPushServerDatabase{
+				Name:     string(connSec.Data["database"]),
+				Password: string(connSec.Data["password"]),
+				User:     string(connSec.Data["username"]),
+				Host:     string(connSec.Data["host"]),
+				Port:     intstr.FromString(string(connSec.Data["port"])),
+			},
+		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr)
+	err = client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr)
 	if err != nil {
 		// If the error is not an isNotFound error
 		if !k8serr.IsNotFound(err) {
@@ -142,19 +187,18 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, serverClient p
 		}
 
 		// Otherwise create the cr
-		if err := serverClient.Create(ctx, cr); err != nil {
+		if err := client.Create(ctx, cr); err != nil {
 			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to create unified push server custom resource during reconcile")
 		}
 	}
 
 	// Wait till the ups cr status is complete
-	if cr.Status.Phase != upsv1alpha1.PhaseComplete {
+	if cr.Status.Phase != upsv1alpha1.PhaseReconciling {
 		logrus.Info("Waiting for unified push server cr phase to complete")
 		return v1alpha1.PhaseInProgress, nil
 	}
 
 	logrus.Info("Successfully reconciled unified push server custom resource")
-
 	return v1alpha1.PhaseCompleted, nil
 }
 

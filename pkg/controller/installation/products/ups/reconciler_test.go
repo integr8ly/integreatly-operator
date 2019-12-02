@@ -5,11 +5,13 @@ import (
 	"testing"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
-	routev1 "github.com/openshift/api/route/v1"
-
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	routev1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/pkg/errors"
@@ -27,6 +29,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := upsv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
+	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -77,6 +80,39 @@ func mockUpsCRWithStatus(phase upsv1alpha1.StatusPhase) *upsv1alpha1.UnifiedPush
 	}
 }
 
+func getTestPostgres() *crov1.Postgres {
+	return &crov1.Postgres{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "ups-postgres-test",
+			Namespace: "ups",
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      "test-postgres",
+				Namespace: "ups",
+			},
+			Strategy: "openshift",
+		},
+	}
+}
+
+func getTestPostgresSec() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-postgres",
+			Namespace: "ups",
+		},
+		Data: map[string][]byte{
+			"host":     []byte("test"),
+			"password": []byte("test"),
+			"port":     []byte("test"),
+			"tls":      []byte("test"),
+			"username": []byte("test"),
+		},
+	}
+}
+
 func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -96,9 +132,14 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: test custom resource is reconciled and phase complete returned",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
-			FakeConfig:     basicConfigMock(),
-			FakeClient:     fake.NewFakeClientWithScheme(scheme, mockUpsCRWithStatus(upsv1alpha1.PhaseComplete)),
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test",
+					Namespace: "ups",
+				},
+			},
+			FakeConfig: basicConfigMock(),
+			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseReconciling)),
 		},
 		{
 			Name:           "UPS Test: Phase failed when error in creating custom resource",
@@ -133,9 +174,14 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: Phase in progress when custom resource is not in phase complete",
 			ExpectedStatus: v1alpha1.PhaseInProgress,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
-			FakeConfig:     basicConfigMock(),
-			FakeClient:     fake.NewFakeClientWithScheme(scheme, mockUpsCRWithStatus(upsv1alpha1.PhaseProvision)),
+			Installation: &v1alpha1.Installation{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test",
+					Namespace: "ups",
+				},
+			},
+			FakeConfig: basicConfigMock(),
+			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseInitializing)),
 		},
 	}
 
@@ -145,7 +191,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
-			status, err := reconciler.reconcileCustomResource(context.TODO(), tc.FakeClient)
+			status, err := reconciler.reconcileComponents(context.TODO(), tc.Installation, tc.FakeClient)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}

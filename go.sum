@@ -41,6 +41,8 @@ github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca3
 github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c/go.mod h1:MECaSGMQcK7fwLfVBA6uKuezh1tTFSloYPdh6tRuUx0=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634 h1:w9eXZ6Vybn2iFUY7oXEiSl32dWdPE+TkUtKheB49ET8=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634/go.mod h1:XwokItBSp11dqdpaBix9+Viw4tMbuEowPedbuiKXYhc=
+github.com/aerogear/unifiedpush-operator v0.0.0-20191122164751-f1d88ec7f14f h1:Nst4xsshP4S3HsPg90UsB85N9zEbx6Tq7yvni5GdqSY=
+github.com/aerogear/unifiedpush-operator v0.0.0-20191122164751-f1d88ec7f14f/go.mod h1:XwokItBSp11dqdpaBix9+Viw4tMbuEowPedbuiKXYhc=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
