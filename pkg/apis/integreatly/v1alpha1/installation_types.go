@@ -67,7 +67,7 @@ var (
 
 	OperatorVersionAMQStreams            OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline             OperatorVersion = "1.2.2"
-	OperatorVersionMonitoring            OperatorVersion = "0.0.28"
+	OperatorVersionMonitoring            OperatorVersion = "1.0.0"
 	OperatorVersionSolutionExplorer      OperatorVersion = "0.0.34"
 	OperatorVersionRHSSO                 OperatorVersion = "1.9.5"
 	OperatorVersionRHSSOUser             OperatorVersion = "1.9.5"
