@@ -24,7 +24,6 @@ spec:
         "editable": true,
         "gnetId": null,
         "graphTooltip": 0,
-        "id": 6,
         "iteration": 1561564976678,
         "links": [],
         "panels": [
@@ -1645,9 +1644,7 @@ spec:
                 {
                 "selected": true,
                 "text": "All",
-                "value": [
-                  "$__all"
-                ]
+                "value": "$__all"
                 }
             ],
             "query": "label_values(probe_success, service)",
