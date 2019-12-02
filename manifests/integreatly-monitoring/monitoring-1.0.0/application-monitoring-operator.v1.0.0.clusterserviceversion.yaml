@@ -5,7 +5,7 @@ metadata:
     capabilities: Basic Install
     categories: Monitoring stack
     description: Operator managed and installs Prometheus, Alertmanager, Grafana
-    containerImage: quay.io/integreatly/application-monitoring-operator:1.0.0-beta
+    containerImage: quay.io/integreatly/application-monitoring-operator:v1.0.0-beta
     createdAt: 2019-09-26 10:51:00 
     support: Red Hat, Inc.
     certified: "false"
@@ -77,7 +77,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: application-monitoring-operator
-                image: quay.io/integreatly/application-monitoring-operator:1.0.0-beta
+                image: quay.io/integreatly/application-monitoring-operator:v1.0.0-beta
                 imagePullPolicy: Always
                 name: application-monitoring-operator
                 ports:
