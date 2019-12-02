@@ -23,7 +23,6 @@ spec:
             "x": 0,
             "y": 0
           },
-          "id": 4,
           "panels": [],
           "repeat": null,
           "title": "CPU Usage",
