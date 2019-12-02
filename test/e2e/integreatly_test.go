@@ -30,7 +30,7 @@ import (
 
 var (
 	retryInterval                    = time.Second * 5
-	timeout                          = time.Second * 60
+	timeout                          = time.Second * 75
 	deploymentRetryInterval          = time.Second * 30
 	deploymentTimeout                = time.Minute * 20
 	cleanupRetryInterval             = time.Second * 1
