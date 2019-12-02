@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -101,6 +102,7 @@ func buildScheme() *runtime.Scheme {
 	appsv1.SchemeBuilder.AddToScheme(scheme)
 	monitoring.SchemeBuilder.AddToScheme(scheme)
 	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
+	crov1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 
@@ -196,8 +198,8 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
-			Name:           "test phase in progress when che cluster is missing",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			Name:           "test phase Awaiting Components when che cluster is missing",
+			ExpectedStatus: v1alpha1.PhaseAwaitingComponents,
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
@@ -481,8 +483,8 @@ func TestCodeready_fullReconcile(t *testing.T) {
 
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: defaultInstallationNamespace,
-			Name:      "postgres",
+			Namespace: "integreatly-operator",
+			Name:      "codeready-postgres-installation",
 		},
 		Spec: appsv1.DeploymentSpec{
 			Template: corev1.PodTemplateSpec{
