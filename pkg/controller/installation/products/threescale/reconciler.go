@@ -232,7 +232,9 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 
 // CreateResource Creates a generic kubernetes resource from a template
 func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
-	r.extraParams = map[string]string{}
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
