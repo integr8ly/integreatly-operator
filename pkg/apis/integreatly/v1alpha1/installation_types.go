@@ -58,6 +58,7 @@ var (
 	VersionMonitoring            ProductVersion = "0.0.28"
 	VersionUps                   ProductVersion = "2.3.2"
 	VersionMobileSecurityService ProductVersion = "0.2.2"
+	VersionMDC                   ProductVersion = "1.1.11"
 	VersionCloudResources        ProductVersion = "0.3.0"
 
 	PreflightInProgress PreflightStatus = ""
