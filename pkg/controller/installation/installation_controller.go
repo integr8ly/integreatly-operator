@@ -31,6 +31,7 @@ import (
 
 const (
 	defaultInstallationConfigMapName = "integreatly-installation-config"
+	deletionFinalizer                = "foregroundDeletion"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -121,6 +122,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	err = resources.AddFinalizer(r.context, instance, r.client, deletionFinalizer)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// either not checked, or rechecking preflight checks
 	if instance.Status.PreflightStatus == v1alpha1.PreflightInProgress ||
 		instance.Status.PreflightStatus == v1alpha1.PreflightFail {
@@ -165,6 +171,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		if len(merr.errors) == 0 && allCompleted {
+			for _, productFinalizer := range instance.Finalizers {
+				if productFinalizer == deletionFinalizer {
+					err := resources.RemoveFinalizer(r.context, instance, r.client, deletionFinalizer)
+					merr.Add(pkgerr.Wrap(err, "Failed to remove finalizer"))
+				}
+			}
+
 			return reconcile.Result{}, nil
 		}
 

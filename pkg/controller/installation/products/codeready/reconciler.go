@@ -587,21 +587,19 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	return cheCluster, nil
 }
 
-// A
 func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
-	// have to do something to get postgres db values
 	ns := inst.Namespace
+
 	// setup the postgres cr for cloud resource operator
 	postgresName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
-
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, inst)
-		resources.PrepareObject(cr, inst)
+		ownerutil.EnsureOwner(cr, inst)
 		return nil
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to reconcile postgres credential request")
 	}
+
 	// phase is not complete, wait
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return nil, nil
