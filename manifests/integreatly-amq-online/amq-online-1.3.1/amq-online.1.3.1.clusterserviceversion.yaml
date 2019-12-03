@@ -609,8 +609,6 @@ spec:
                   value: "quay.io/pusher/oauth2_proxy:latest"
                 - name: CONSOLE_HTTPD_IMAGE
                   value: "registry.redhat.io/amq7/amq-online-1-console-httpd:1.3"
-                - name: FS_GROUP_OVERRIDE
-                  value: "185"
       - name: user-api-server
         spec:
           replicas: 1
@@ -837,8 +835,6 @@ spec:
                   value: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.3
                 - name: MQTT_LWT_IMAGE
                   value: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.3
-                - name: FS_GROUP_OVERRIDE
-                  value: "185"
                 image: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.3
                 imagePullPolicy: Always
                 livenessProbe:
