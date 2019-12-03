@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	ocv1 "github.com/openshift/api/apps/v1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
+	ocv1 "github.com/openshift/api/apps/v1"
 	v12 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -123,12 +124,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
-	phase, err = r.reconcileSMTPCredentials(ctx, in, serverClient)
+	phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileExternalDatasources(ctx, in, serverClient)
+	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -275,14 +276,14 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 	return string(clientSecretBytes), nil
 }
 
-func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling smtp")
-	ns := inst.Namespace
+	ns := r.installation.Namespace
 
 	// setup smtp credential set cr for the cloud resource operator
-	smtpCredName := fmt.Sprintf("threescale-smtp-%s", inst.Name)
+	smtpCredName := fmt.Sprintf("threescale-smtp-%s", r.installation.Name)
 	smtpCred, err := croUtil.ReconcileSMTPCredentialSet(ctx, serverClient, r.installation.Spec.Type, tier, smtpCredName, ns, smtpCredName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, r.installation)
+		ownerutil.EnsureOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -314,7 +315,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, inst *v1alpha
 		}
 		smtpCfgMap.Data["address"] = string(credSec.Data["host"])
 		smtpCfgMap.Data["authentication"] = "login"
-		smtpCfgMap.Data["domain"] = fmt.Sprintf("3scale-admin.%s", inst.Spec.RoutingSubdomain)
+		smtpCfgMap.Data["domain"] = fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain)
 		smtpCfgMap.Data["openssl.verify.mode"] = ""
 		smtpCfgMap.Data["password"] = string(credSec.Data["password"])
 		smtpCfgMap.Data["port"] = string(credSec.Data["port"])
@@ -407,7 +408,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 	// setup blob storage cr for the cloud resource operator
 	blobStorageName := fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, r.installation.Spec.Type, tier, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, r.installation)
+		ownerutil.EnsureOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -468,16 +469,16 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance
 // which are used when 3scale HighAvailability mode is enabled
-func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling external datastores")
 	ns := r.installation.Namespace
 
 	// setup backend redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating backend redis instance")
-	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", inst.Name)
+	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", r.installation.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, r.installation)
+		ownerutil.EnsureOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -487,9 +488,9 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
-	systemRedisName := fmt.Sprintf("threescale-redis-%s", inst.Name)
+	systemRedisName := fmt.Sprintf("threescale-redis-%s", r.installation.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, r.installation)
+		ownerutil.EnsureOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
@@ -499,9 +500,9 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, inst *v1a
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision a postgres instance
 	logrus.Info("Creating postgres instance")
-	postgresName := fmt.Sprintf("threescale-postgres-%s", inst.Name)
+	postgresName := fmt.Sprintf("threescale-postgres-%s", r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		resources.AddOwner(cr, r.installation)
+		ownerutil.EnsureOwner(cr, r.installation)
 		return nil
 	})
 	if err != nil {
