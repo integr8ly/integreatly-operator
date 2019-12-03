@@ -698,6 +698,7 @@ func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, i
 		selector.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
+		selector.Labels = GetInstanceLabels()
 		selector.Spec.User = user
 		return nil
 	})
