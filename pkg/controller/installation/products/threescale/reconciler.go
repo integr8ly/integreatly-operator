@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	ocv1 "github.com/openshift/api/apps/v1"
+
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	v12 "github.com/openshift/api/route/v1"
@@ -365,7 +367,30 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		}
 	}
 
-	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
+	// workaround to avoid a bug in 3scale 2.6 which causes postgres pods to be deployed even when HA mode is enabled
+	// this causes the postgres pods to crash because they attempt to connect with credentials for the cro postgres instances
+	if len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Starting) == 1 && apim.Status.Deployments.Starting[0] == "system-postgresql" {
+		// get the postgresql deployment
+		dep := &ocv1.DeploymentConfig{}
+		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-postgresql", Namespace: r.Config.GetNamespace()}, dep)
+		if err != nil {
+			// complete anyway
+			return v1alpha1.PhaseCompleted, errors.Wrap(err, "failed to get 3scale postgresql deployment")
+		}
+
+		// scale down the pods
+		dep.Spec.Replicas = int32(0)
+		err = serverClient.Update(ctx, dep)
+		if err != nil {
+			// complete anyway
+			return v1alpha1.PhaseCompleted, errors.Wrap(err, "failed to update 3scale postgresql deployment")
+		}
+
+		return v1alpha1.PhaseCompleted, nil
+	}
+
+	if (len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0) ||
+		(len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 1 && apim.Status.Deployments.Stopped[0] == "system-postgresql") {
 		return v1alpha1.PhaseCompleted, nil
 	}
 
