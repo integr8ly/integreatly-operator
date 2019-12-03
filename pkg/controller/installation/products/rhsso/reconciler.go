@@ -70,10 +70,12 @@ type Reconciler struct {
 	installation  *v1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
+	KeycloakHost  string
+	ApiUrl        string
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, apiUrl string) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -92,6 +94,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		logger:        logger,
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
+		ApiUrl:        apiUrl,
 	}, nil
 }
 
@@ -271,7 +274,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, inst *v1alpha1.Ins
 				TargetPort: intstr.FromString("keycloak"),
 			},
 			TLS: &v12.TLSConfig{
-				Termination:                   v12.TLSTerminationReencrypt,
+				Termination: v12.TLSTerminationReencrypt,
 			},
 			WildcardPolicy: v12.WildcardPolicyNone,
 		}
@@ -470,7 +473,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 		return pkgerr.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
 	}
 
-
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
 		return pkgerr.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
@@ -503,7 +505,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://openshift.default.svc.cluster.local",
+				"baseUrl":         r.ApiUrl,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,

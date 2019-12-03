@@ -53,14 +53,14 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 			return nil, err
 		}
 
-		reconciler, err = rhsso.NewReconciler(configManager, instance, oauthv1Client, mpm)
+		reconciler, err = rhsso.NewReconciler(configManager, instance, oauthv1Client, mpm, rc.Host)
 	case v1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
-		reconciler, err = rhssouser.NewReconciler(configManager, instance, oauthv1Client, mpm)
+		reconciler, err = rhssouser.NewReconciler(configManager, instance, oauthv1Client, mpm, rc.Host)
 	case v1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductFuse:
