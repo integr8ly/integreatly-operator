@@ -26,7 +26,7 @@ var (
 	keycloakRealmName       = "user-sso"
 	defaultSubscriptionName = "keycloak-rhsso"
 	idpAlias                = "openshift-v4"
-	manifestPackage         = "integreatly-rhsso"
+	manifestPackage         = "keycloak-rhsso"
 )
 
 const (

@@ -37,7 +37,7 @@ var (
 	idpAlias                            = "openshift-v4"
 	githubIdpAlias                      = "github"
 	githubOauthAppCredentialsSecretName = "github-oauth-secret"
-	manifestPackage                     = "integreatly-rhsso"
+	manifestPackage                     = "keycloak-rhsso"
 )
 
 const (
