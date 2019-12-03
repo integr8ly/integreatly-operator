@@ -22,6 +22,14 @@ func (t *ThreeScale) SetHost(newHost string) {
 	t.config["HOST"] = newHost
 }
 
+func (t *ThreeScale) GetBlackboxTargetPathForAdminUI() string {
+	return t.config["BLACKBOX_TARGET_PATH_ADMIN_UI"]
+}
+
+func (t *ThreeScale) SetBlackboxTargetPathForAdminUI(newBlackboxTargetPath string) {
+	t.config["BLACKBOX_TARGET_PATH_ADMIN_UI"] = newBlackboxTargetPath
+}
+
 func (t *ThreeScale) GetNamespace() string {
 	return t.config["NAMESPACE"]
 }

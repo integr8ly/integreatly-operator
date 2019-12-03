@@ -65,6 +65,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 		tsConfig.SetNamespace(ns)
 		configManager.WriteConfig(tsConfig)
 	}
+	tsConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        tsConfig,
@@ -996,7 +997,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", v1alpha12.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {

@@ -21,6 +21,14 @@ func (u *Ups) SetHost(newHost string) {
 	u.config["HOST"] = newHost
 }
 
+func (u *Ups) GetBlackboxTargetPath() string {
+	return u.config["BLACKBOX_TARGET_PATH"]
+}
+
+func (u *Ups) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	u.config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
+}
+
 func (u *Ups) GetNamespace() string {
 	return u.config["NAMESPACE"]
 }
