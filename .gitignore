@@ -1,5 +1,6 @@
 .idea
 scripts/htpasswd
+.DS_Store
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
 cmd/manager/debug
