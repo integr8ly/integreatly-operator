@@ -60,3 +60,4 @@ spec:
               properties:
                 name:
                   type: string
+
