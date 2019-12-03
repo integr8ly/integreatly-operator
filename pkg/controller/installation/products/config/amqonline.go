@@ -22,6 +22,14 @@ func (a *AMQOnline) SetHost(newHost string) {
 	a.config["HOST"] = newHost
 }
 
+func (a *AMQOnline) GetBlackboxTargetPath() string {
+	return a.config["BLACKBOX_TARGET_PATH"]
+}
+
+func (a *AMQOnline) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	a.config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
+}
+
 func (a *AMQOnline) GetNamespace() string {
 	return a.config["NAMESPACE"]
 }
