@@ -265,19 +265,17 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, inst *v1alpha1.Ins
 	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", httpService.Name, or))
 
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
-		edgeRoute.Spec = v12.RouteSpec{
-			To: v12.RouteTargetReference{
-				Kind: "Service",
-				Name: "keycloak-http",
-			},
-			Port: &v12.RoutePort{
-				TargetPort: intstr.FromString("keycloak"),
-			},
-			TLS: &v12.TLSConfig{
-				Termination: v12.TLSTerminationReencrypt,
-			},
-			WildcardPolicy: v12.WildcardPolicyNone,
+		edgeRoute.Spec.To = v12.RouteTargetReference{
+			Kind: "Service",
+			Name: "keycloak-http",
 		}
+		edgeRoute.Spec.Port = &v12.RoutePort{
+			TargetPort: intstr.FromString("keycloak"),
+		}
+		edgeRoute.Spec.TLS = &v12.TLSConfig{
+			Termination: v12.TLSTerminationReencrypt,
+		}
+		edgeRoute.Spec.WildcardPolicy = v12.WildcardPolicyNone
 		return nil
 	})
 

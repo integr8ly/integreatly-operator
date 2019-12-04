@@ -322,7 +322,8 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			reconciler := NewReconciler(nil)
-			phase, err := reconciler.ReconcileOauthClient(context.TODO(), tc.Installation, tc.OauthClient, tc.client)
+			oauthClientName := "integreatly-product"
+			phase, err := reconciler.ReconcileOauthClient(context.TODO(), tc.Installation, oauthClientName, "", []string{}, tc.client)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}
