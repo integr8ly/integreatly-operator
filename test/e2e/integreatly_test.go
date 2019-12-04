@@ -358,14 +358,14 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// check auth stage operand versions
-	stage = operator.StageName("authentication")
-	authOperands := map[string]string{
-		"rhsso": "v7.3.2.GA",
-	}
-	err = checkOperandVersions(t, f, namespace, stage, authOperands)
-	if err != nil {
-		return err
-	}
+	// stage = operator.StageName("authentication")
+	// authOperands := map[string]string{
+	// 	"rhsso": "v7.3.2.GA",
+	// }
+	// err = checkOperandVersions(t, f, namespace, stage, authOperands)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// check cloud resources stage operand versions
 	stage = operator.StageName("cloud-resources")
@@ -395,7 +395,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces": string(operator.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(operator.VersionFuseOnOpenshift),
 		"ups":                  string(operator.VersionUps),
-		"rhssouser":            "v7.3.2.GA",
+		// "rhssouser":             "v7.3.2.GA",
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {
@@ -410,7 +410,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces":  1,
 		"fuse":                  2,
 		"middleware-monitoring": 3,
-		"rhsso":                 1,
+		"rhsso":                 2,
 		"solution-explorer":     1,
 		"ups":                   1,
 		"user-sso":              1,
