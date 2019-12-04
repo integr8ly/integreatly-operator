@@ -281,6 +281,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 			AdditionalScrapeConfigSecretKey:  r.Config.GetAdditionalScrapeConfigSecretKey(),
 			PrometheusRetention:              r.Config.GetPrometheusRetention(),
 			PrometheusStorageRequest:         r.Config.GetPrometheusStorageRequest(),
+			AlertmanagerInstanceNamespaces:   r.Config.GetNamespace(),
+			PrometheusInstanceNamespaces:     r.Config.GetNamespace(),
 		}
 		r.monitoring = m
 		return nil
