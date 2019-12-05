@@ -1,14 +1,19 @@
 package e2e
 
 import (
+	"bytes"
 	goctx "context"
+	"encoding/json"
 	"fmt"
 	"strconv"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/remotecommand"
 	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	//"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
 
@@ -21,7 +26,6 @@ import (
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -75,6 +79,152 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 
 	t.Logf("%s:%s up, waited %d", namespace, deploymentName, elapsed)
 	return nil
+}
+
+func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+	// Define the json output of the prometheus api call
+	type Labels struct {
+		Alertname string `json:"alertname,omitempty"`
+		Severity  string `json:"severity,omitempty"`
+	}
+
+	type Annotations struct {
+		Message string `json:"message,omitempty"`
+	}
+
+	type Alerts struct {
+		Labels      Labels      `json:"labels,omitempty"`
+		State       string      `json:"state,omitempty"`
+		Annotations Annotations `json:"annotations,omitempty"`
+		ActiveAt    string      `json:"activeAt,omitempty"`
+		Value       string      `json:"value,omitempty"`
+	}
+
+	type Data struct {
+		Alerts []Alerts `json:"alerts,omitempty"`
+	}
+
+	type Output struct {
+		Status string `json:"status"`
+		Data   Data   `json:"data"`
+	}
+
+	output, err := execToPod("curl localhost:9090/api/v1/alerts",
+		"prometheus-application-monitoring-0",
+		intlyNamespacePrefix+"middleware-monitoring",
+		"prometheus", f)
+	if err != nil {
+		return fmt.Errorf("failed to exec to pod: %s", err)
+	}
+
+	var promApiCallOutput Output
+	err = json.Unmarshal([]byte(output), &promApiCallOutput)
+	if err != nil {
+		t.Logf("Failed to unmarshall json: %s", err)
+	}
+
+	// Check if any alerts other than DeadMansSwitch are firing or pending
+	var firingalerts []string
+	var pendingalerts []string
+	var deadmanswitchfiring = false
+	for a := 0; a < len(promApiCallOutput.Data.Alerts); a++ {
+		if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "DeadMansSwitch" && promApiCallOutput.Data.Alerts[a].State == "firing" {
+			deadmanswitchfiring = true
+		}
+		if promApiCallOutput.Data.Alerts[a].Labels.Alertname != "DeadMansSwitch" {
+			// ESPodCount will always fail since that alert is for OSD
+			// so it shouldn't cause our test to fail
+			if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "ESPodCount" {
+				continue
+			}
+			if promApiCallOutput.Data.Alerts[a].State == "firing" {
+				firingalerts = append(firingalerts, promApiCallOutput.Data.Alerts[a].Labels.Alertname)
+			}
+			if promApiCallOutput.Data.Alerts[a].State == "pending" {
+				pendingalerts = append(pendingalerts, promApiCallOutput.Data.Alerts[a].Labels.Alertname)
+			}
+		}
+	}
+
+	var status []string
+	if len(firingalerts) > 0 {
+		falert := fmt.Sprint(string(len(firingalerts))+"Firing alerts: ", firingalerts)
+		status = append(status, falert)
+	}
+	if len(pendingalerts) > 0 {
+		palert := fmt.Sprint(string(len(pendingalerts))+"Pending alerts: ", pendingalerts)
+		status = append(status, palert)
+	}
+	if deadmanswitchfiring == false {
+		dms := fmt.Sprint("DeadMansSwitch is not firing")
+		status = append(status, dms)
+	}
+
+	if len(status) > 0 {
+		return fmt.Errorf("alert tests failed: %s", status)
+	}
+
+	t.Logf("No unexpected alerts found")
+	return nil
+}
+
+func execToPod(command string, podname string, namespace string, container string, f *framework.Framework) (string, error) {
+	req := f.KubeClient.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podname).
+		Namespace(namespace).
+		SubResource("exec").
+		Param("container", container)
+	scheme := runtime.NewScheme()
+	if err := v1.AddToScheme(scheme); err != nil {
+		return "", fmt.Errorf("error adding to scheme: %v", err)
+	}
+	parameterCodec := runtime.NewParameterCodec(scheme)
+	req.VersionedParams(&v1.PodExecOptions{
+		Container: container,
+		Command:   strings.Fields(command),
+		Stdin:     false,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       false,
+	}, parameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(f.KubeConfig, "POST", req.URL())
+	if err != nil {
+		return "", fmt.Errorf("error while creating Executor: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error in Stream: %v", err)
+	}
+
+	return stdout.String(), nil
+}
+
+func getConfigMap(name string, namespace string, f *framework.Framework) (map[string]string, error) {
+	configmap := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	key := client.ObjectKey{
+		Name:      configmap.GetName(),
+		Namespace: configmap.GetNamespace(),
+	}
+	err := f.Client.Get(goctx.TODO(), key, configmap)
+	if err != nil {
+		return map[string]string{}, fmt.Errorf("could not get configmap: %configmapname", err)
+	}
+
+	return configmap.Data, nil
 }
 
 func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
@@ -442,6 +592,13 @@ func IntegreatlyCluster(t *testing.T) {
 	}
 	// check that all of the operators deploy and all of the installation phases complete
 	if err = integreatlyManagedTest(t, f, ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log("Waiting for alerts to normalise")
+	time.Sleep(5 * time.Minute)
+
+	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
 }

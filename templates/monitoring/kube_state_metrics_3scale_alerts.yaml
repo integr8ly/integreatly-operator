@@ -49,36 +49,6 @@ spec:
         for: 5m
         labels:
           severity: critical
-      - alert: ThreeScaleBackendRedisPod
-        annotations:
-          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
-          message: >-
-            3Scale backend-redis has no pods in a ready state.
-        expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"backend-redis.*"})
-        for: 5m
-        labels:
-          severity: critical
-      - alert: ThreeScaleSystemRedisPod
-        annotations:
-          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
-          message: >-
-            3Scale system-redis has no pods in a ready state.
-        expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"system-redis.*"})
-        for: 5m
-        labels:
-          severity: critical
-      - alert: ThreeScaleSystemMySQLPod
-        annotations:
-          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
-          message: >-
-            3Scale system-mysql has no pods in a ready state.
-        expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"system-mysql.*"})
-        for: 5m
-        labels:
-          severity: critical
       - alert: ThreeScaleSystemAppPod
         annotations:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
