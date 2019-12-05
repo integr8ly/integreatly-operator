@@ -336,6 +336,7 @@ github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882 
 github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882/go.mod h1:/kzF/oFvvEJI8vUTNIyB8f0D+uR7YfsJZFRNnjtqdRo=
 github.com/integr8ly/grafana-operator v1.3.1 h1:3fknUP3pI9/H0/HTxOOR5hzJVo1wPs5HMfBUlMYpzWk=
 github.com/integr8ly/grafana-operator v1.3.1/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
+github.com/integr8ly/grafana-operator v2.0.0+incompatible h1:wSqKpcr5wE6pws35iJeOYGVBMJbSNEhcE6hlD0zF9NU=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
 github.com/joefitzgerald/rainbow-reporter v0.1.0/go.mod h1:481CNgqmVHQZzdIbN52CupLJyoVwB10FQ/IQlF1pdL8=
