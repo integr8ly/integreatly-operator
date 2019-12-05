@@ -13,6 +13,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -24,6 +25,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -327,7 +329,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, inst *v1alpha1.Ins
 	}
 
 	// We need a route with edge termination to serve the correct cluster certificate
-	edgeRoute := &v12.Route{
+	edgeRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak-edge",
 			Namespace: r.Config.GetNamespace(),
@@ -365,19 +367,19 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, inst *v1alpha1.Ins
 
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
 		host := edgeRoute.Spec.Host
-		edgeRoute.Spec = v12.RouteSpec{
+		edgeRoute.Spec = routev1.RouteSpec{
 			Host: host,
-			To: v12.RouteTargetReference{
+			To: routev1.RouteTargetReference{
 				Kind: "Service",
 				Name: "keycloak-http",
 			},
-			Port: &v12.RoutePort{
+			Port: &routev1.RoutePort{
 				TargetPort: intstr.FromString("keycloak"),
 			},
-			TLS: &v12.TLSConfig{
-				Termination: v12.TLSTerminationReencrypt,
+			TLS: &routev1.TLSConfig{
+				Termination: routev1.TLSTerminationReencrypt,
 			},
-			WildcardPolicy: v12.WildcardPolicyNone,
+			WildcardPolicy: routev1.WildcardPolicyNone,
 		}
 		return nil
 	})

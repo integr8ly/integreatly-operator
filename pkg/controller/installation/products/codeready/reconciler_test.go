@@ -341,7 +341,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				return
 			}
 
-			status, err := testReconciler.reconcileKeycloakClient(context.TODO(), scenario.FakeClient)
+			status, err := testReconciler.reconcileKeycloakClient(context.TODO(), scenario.Installation, scenario.FakeClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}
