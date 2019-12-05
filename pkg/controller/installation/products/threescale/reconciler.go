@@ -102,6 +102,8 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
+
+	logrus.Info("Reconciling ")
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, in, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
@@ -112,30 +114,26 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		if err != nil {
 			return v1alpha1.PhaseFailed, err
 		}
+
+		logrus.Info("phaaase completed ")
 		return v1alpha1.PhaseCompleted, nil
 	})
+	logrus.Infof("phase from reconcile finalizer is %s ", phase)
+
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	logrus.Info("reconcile namespace ")
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	phase, err = r.reconcileBlobStorage(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
+	logrus.Info("get namespace ")
+	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", in, serverClient)
@@ -143,16 +141,32 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, err
-	}
-
+	logrus.Info("reconcile sub ")
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	logrus.Info("reconcile smtp ")
+	phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	logrus.Info("reconcile db ")
+	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	logrus.Info("reconcile bs ")
+	phase, err = r.reconcileBlobStorage(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+
+	logrus.Info("reconcile componetn ")
 	phase, err = r.reconcileComponents(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

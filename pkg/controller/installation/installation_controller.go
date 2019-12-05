@@ -144,8 +144,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		// and use a new context to handle deletion logic
 		r.cancel()
 
+		logrus.Info("deleting installation")
+
 		// Clean up the products which have finalizers associated to them
-		allCompleted := true
 		merr := &multiErr{}
 		for _, productFinalizer := range instance.Finalizers {
 			if !strings.Contains(productFinalizer, "integreatly") {
@@ -165,19 +166,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			if err != nil {
 				merr.Add(pkgerr.Wrapf(err, "Failed to reconcile product %s", product.Name))
 			}
-			if phase != v1alpha1.PhaseCompleted {
-				allCompleted = false
-			}
+			fmt.Println("phase", phase, "for product", productName)
 		}
 
-		if len(merr.errors) == 0 && allCompleted {
-			for _, productFinalizer := range instance.Finalizers {
-				if productFinalizer == deletionFinalizer {
-					err := resources.RemoveFinalizer(r.context, instance, r.client, deletionFinalizer)
-					merr.Add(pkgerr.Wrap(err, "Failed to remove finalizer"))
-				}
+		logrus.Infof("current finalizers ", instance.Finalizers)
+		if len(merr.errors) == 0 && len(instance.Finalizers) == 1 && instance.Finalizers[0] == deletionFinalizer {
+			fmt.Println("deletion finalizer found ", instance.Finalizers)
+			if err := resources.RemoveFinalizer(r.context, instance, r.client, deletionFinalizer); err != nil {
+				merr.Add(pkgerr.Wrap(err, "Failed to remove finalizer"))
 			}
-
+			logrus.Info("removing finalizer", deletionFinalizer)
 			return reconcile.Result{}, nil
 		}
 

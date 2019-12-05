@@ -64,7 +64,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:0.3.0
+    containerImage: quay.io/dimitra/cloud-resource-operator:fix-oc
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
@@ -186,7 +186,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: cloud-resource-operator
-                image: quay.io/integreatly/cloud-resource-operator:0.3.0
+                image: quay.io/dimitra/cloud-resource-operator:fix-oc
                 imagePullPolicy: Always
                 name: cloud-resource-operator
                 resources: {}

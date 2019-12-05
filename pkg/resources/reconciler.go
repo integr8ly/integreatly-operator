@@ -124,8 +124,10 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 			}
 		}
 		// Don't continue reconciling the product
+		logrus.Info("dont reconcile anymore bs ")
 		return v1alpha1.PhaseNone, nil
 	}
+
 	return v1alpha1.PhaseCompleted, nil
 }
 

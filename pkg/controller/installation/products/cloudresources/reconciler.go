@@ -2,6 +2,7 @@ package cloudresources
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -60,12 +61,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	phase, err := r.ReconcileFinalizer(ctx, client, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
 		// ensure resources are cleaned up before deleting the namespace
 		phase, err := r.cleanupResources(ctx, inst, client)
+		fmt.Println("cleanupResources, returnned phase", phase)
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
 		// remove the namespace
 		phase, err = resources.RemoveNamespace(ctx, inst, client, ns)
+		fmt.Println("removeNamespace, returnned phase", phase)
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -152,6 +155,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, inst *v1alpha1.Instal
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
+	fmt.Println("SMTP Credential sets", smtpCredentialSets)
 	if len(smtpCredentialSets.Items) > 0 {
 		r.logger.Info("deletion of smtp credential sets in progress")
 		return v1alpha1.PhaseInProgress, nil

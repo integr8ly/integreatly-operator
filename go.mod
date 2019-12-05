@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.3.1
+	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -26,6 +27,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
 	golang.org/x/net v0.0.0-20191003171128-d98b1b443823
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
