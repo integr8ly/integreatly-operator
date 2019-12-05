@@ -3,6 +3,7 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"net/http"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -167,7 +168,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 
 	logrus.Infof("%s is successfully deployed", packageName)
 
-	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
+	phase, err = r.reconcileRHSSOIntegration(ctx, in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -613,7 +614,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
@@ -634,6 +635,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		ownerutil.EnsureOwner(kcClient, inst)
 		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
 		return nil
 	})
