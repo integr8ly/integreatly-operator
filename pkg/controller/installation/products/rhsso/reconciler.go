@@ -112,7 +112,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		phase, err := r.cleanupKeycloakResources(ctx, inst, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -174,6 +184,95 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	if inst.DeletionTimestamp == nil {
+		return v1alpha1.PhaseCompleted, nil
+	}
+
+	opts := &pkgclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	// Delete all users
+	users := &keycloak.KeycloakUserList{}
+	err := serverClient.List(ctx, users, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	for _, user := range users.Items {
+		err = serverClient.Delete(ctx, &user)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Delete all clients
+	clients := &keycloak.KeycloakClientList{}
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	for _, client := range clients.Items {
+		err = serverClient.Delete(ctx, &client)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Delete all realms
+	realms := &keycloak.KeycloakRealmList{}
+	err = serverClient.List(ctx, realms, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, nil
+	}
+	for _, realm := range realms.Items {
+		err = serverClient.Delete(ctx, &realm)
+		if err != nil {
+			return v1alpha1.PhaseFailed, err
+		}
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) isKeycloakResourcesDeleted(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	opts := &pkgclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	// Check if users are all gone
+	users := &keycloak.KeycloakUserList{}
+	err := serverClient.List(ctx, users, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(users.Items) > 0 {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// Check if clients are all gone
+	clients := &keycloak.KeycloakClientList{}
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, err
+	}
+	if len(clients.Items) > 0 {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
+	// Check if realms are all gone
+	realms := &keycloak.KeycloakRealmList{}
+	err = serverClient.List(ctx, realms, opts)
+	if err != nil {
+		return v1alpha1.PhaseFailed, nil
+	}
+	if len(realms.Items) > 0 {
+		return v1alpha1.PhaseInProgress, nil
+	}
+
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -312,6 +411,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		},
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
+		ownerutil.EnsureOwner(kc, inst)
 		kc.Spec.Extensions = []string{
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
 		}
@@ -335,6 +435,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		},
 	}
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
+		ownerutil.EnsureOwner(kcr, inst)
 		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
 			{
 				IdentityProvider: idpAlias,
@@ -704,8 +805,8 @@ func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, i
 		},
 	}
 
-	ownerutil.EnsureOwner(selector, inst)
 	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func() error {
+		ownerutil.EnsureOwner(selector, inst)
 		selector.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}

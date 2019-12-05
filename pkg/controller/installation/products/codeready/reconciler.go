@@ -109,7 +109,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
+	phase, err = r.reconcileKeycloakClient(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -336,7 +336,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient pkgcl
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Infof("checking keycloak client exists for che")
 	kcConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
@@ -379,6 +379,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		ownerutil.EnsureOwner(kcClient, inst)
 		kcClient.Spec = getKeycloakClientSpec(cheURL)
 		return nil
 	})
