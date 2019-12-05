@@ -74,12 +74,12 @@ var (
 				},
 			},
 		},
-		{
-			Name: v1alpha1.MonitoringStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductMonitoring: {Name: v1alpha1.ProductMonitoring},
-			},
-		},
+		//{
+		//	Name: v1alpha1.MonitoringStage,
+		//	Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+		//		v1alpha1.ProductMonitoring: {Name: v1alpha1.ProductMonitoring},
+		//	},
+		//},
 		{
 			Name: v1alpha1.AuthenticationStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
@@ -91,24 +91,24 @@ var (
 		{
 			Name: v1alpha1.ProductsStage,
 			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductFuse:                   {Name: v1alpha1.ProductFuse},
-				v1alpha1.ProductFuseOnOpenshift:        {Name: v1alpha1.ProductFuseOnOpenshift},
-				v1alpha1.ProductCodeReadyWorkspaces:    {Name: v1alpha1.ProductCodeReadyWorkspaces},
-				v1alpha1.ProductAMQOnline:              {Name: v1alpha1.ProductAMQOnline},
-				v1alpha1.Product3Scale:                 {Name: v1alpha1.Product3Scale},
-				v1alpha1.ProductAMQStreams:             {Name: v1alpha1.ProductAMQStreams},
-				v1alpha1.ProductRHSSOUser:              {Name: v1alpha1.ProductRHSSOUser},
-				v1alpha1.ProductUps:                    {Name: v1alpha1.ProductUps},
-				v1alpha1.ProductMobileSecurityService:  {Name: v1alpha1.ProductMobileSecurityService},
-				v1alpha1.ProductMobileDeveloperConsole: {Name: v1alpha1.ProductMobileDeveloperConsole},
+				//v1alpha1.ProductFuse:                   {Name: v1alpha1.ProductFuse},
+				//v1alpha1.ProductFuseOnOpenshift:        {Name: v1alpha1.ProductFuseOnOpenshift},
+				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
+				//v1alpha1.ProductAMQOnline:              {Name: v1alpha1.ProductAMQOnline},
+				v1alpha1.Product3Scale: {Name: v1alpha1.Product3Scale},
+				//v1alpha1.ProductAMQStreams:             {Name: v1alpha1.ProductAMQStreams},
+				//v1alpha1.ProductRHSSOUser:              {Name: v1alpha1.ProductRHSSOUser},
+				//v1alpha1.ProductUps:                    {Name: v1alpha1.ProductUps},
+				//v1alpha1.ProductMobileSecurityService:  {Name: v1alpha1.ProductMobileSecurityService},
+				//v1alpha1.ProductMobileDeveloperConsole: {Name: v1alpha1.ProductMobileDeveloperConsole},
 			},
 		},
-		{
-			Name: v1alpha1.SolutionExplorerStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
-			},
-		},
+		//{
+		//	Name: v1alpha1.SolutionExplorerStage,
+		//	Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
+		//		v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
+		//	},
+		//},
 	}
 )
 
