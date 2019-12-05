@@ -129,6 +129,7 @@ spec:
           - get
           - create
           - list
+          - watch
         - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:

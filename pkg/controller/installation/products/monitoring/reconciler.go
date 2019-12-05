@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	v12 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -363,22 +362,6 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, serverClient pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
-	monitoring := monitoring_v1alpha1.ApplicationMonitoring{}
-
-	selector := pkgclient.ObjectKey{
-		Namespace: cfg.GetNamespace(),
-		Name:      defaultMonitoringName,
-	}
-
-	err := serverClient.Get(ctx, selector, &monitoring)
-	if err != nil {
-		return nil, err
-	}
-
-	return &monitoring, nil
-}
-
 func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
@@ -406,26 +389,11 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		"module":        module,
 	}
 
-	cr, err := getMonitoringCr(ctx, cfg, serverClient)
-	if err != nil {
-		// Retry later
-		if kerrors.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrap(err, "error getting monitoring cr")
-	}
-
 	templateHelper := NewTemplateHelper(extraParams)
 	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}
-
-	cr.TypeMeta = v1.TypeMeta{
-		Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
-		APIVersion: monitoring_v1alpha1.SchemeGroupVersion.Version,
-	}
-	ownerutil.EnsureOwner(obj.(v1.Object), cr)
 
 	// try to create the blackbox target. If if fails with already exist do nothing
 	err = serverClient.Create(ctx, obj)
