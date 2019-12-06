@@ -169,8 +169,6 @@ cluster/cleanup/crds:
 	@-oc delete crd installations.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 
-deploy/integreatly-installation-cr.yml: export MASTER_URL := https://$(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].host}")
-deploy/integreatly-installation-cr.yml: export ROUTING_SUBDOMAIN := $(shell oc get route console -n openshift-console -o jsonpath="{.status.ingress[].routerCanonicalHostname}")
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
