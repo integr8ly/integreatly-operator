@@ -65,6 +65,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 		tsConfig.SetNamespace(ns)
 		configManager.WriteConfig(tsConfig)
 	}
+	tsConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        tsConfig,
@@ -232,7 +233,9 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 
 // CreateResource Creates a generic kubernetes resource from a template
 func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
-	r.extraParams = map[string]string{}
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
@@ -994,7 +997,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", v1alpha12.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {

@@ -49,6 +49,8 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		upsConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
+	upsConfig.SetBlackboxTargetPath("/rest/auth/config/")
+
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
@@ -185,7 +187,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-ups", v1alpha12.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "ups-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {

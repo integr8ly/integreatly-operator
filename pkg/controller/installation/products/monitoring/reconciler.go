@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	v12 "k8s.io/api/core/v1"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -75,24 +73,29 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
-		dashboards := &grafanav1alpha1.GrafanaDashboardList{}
-		dashboardListOpts := []pkgclient.ListOption{
+		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
+		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
+		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
+		blackboxtargetsListOpts := []pkgclient.ListOption{
 			pkgclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
 		}
-		err := serverClient.List(ctx, dashboards, dashboardListOpts...)
+		err := serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
 		if err != nil {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
 			return v1alpha1.PhaseFailed, err
 		}
-		if len(dashboards.Items) > 0 {
+		if len(blackboxtargets.Items) > 0 {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
 			// do something to delete these dashboards
-			for _, gdb := range dashboards.Items {
-				g := &grafanav1alpha1.GrafanaDashboard{}
-				err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: gdb.Name, Namespace: r.Config.GetNamespace()}, g)
+			for _, bbt := range blackboxtargets.Items {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
+				b := &monitoring_v1alpha1.BlackboxTarget{}
+				err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetNamespace()}, b)
 				if err != nil {
 					return v1alpha1.PhaseFailed, err
 				}
 
-				err = serverClient.Delete(ctx, g)
+				err = serverClient.Delete(ctx, b)
 				if err != nil {
 					return v1alpha1.PhaseFailed, err
 				}
@@ -100,29 +103,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			return v1alpha1.PhaseInProgress, nil
 		}
 
-		fuseConfig, err := r.ConfigManager.ReadFuse()
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
-
-		fuseDashboardlistOpts := []pkgclient.ListOption{
-			pkgclient.InNamespace(fuseConfig.GetNamespace()),
-		}
-		err = serverClient.List(ctx, dashboards, fuseDashboardlistOpts...)
-		if err != nil {
-			return v1alpha1.PhaseFailed, err
-		}
-		if len(dashboards.Items) > 0 {
-			return v1alpha1.PhaseInProgress, nil
-		}
-
 		m := &monitoring_v1alpha1.ApplicationMonitoring{}
 		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
 		if err != nil && !kerrors.IsNotFound(err) {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
 			return v1alpha1.PhaseFailed, err
 		}
 		if !kerrors.IsNotFound(err) {
 			if m.DeletionTimestamp == nil {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
 				err = serverClient.Delete(ctx, m)
 				if err != nil {
 					return v1alpha1.PhaseFailed, err
@@ -131,6 +120,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			return v1alpha1.PhaseInProgress, nil
 		}
 
+		logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
@@ -281,6 +271,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 			AdditionalScrapeConfigSecretKey:  r.Config.GetAdditionalScrapeConfigSecretKey(),
 			PrometheusRetention:              r.Config.GetPrometheusRetention(),
 			PrometheusStorageRequest:         r.Config.GetPrometheusStorageRequest(),
+			AlertmanagerInstanceNamespaces:   r.Config.GetNamespace(),
+			PrometheusInstanceNamespaces:     r.Config.GetNamespace(),
 		}
 		r.monitoring = m
 		return nil
@@ -370,22 +362,6 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func getMonitoringCr(ctx context.Context, cfg *config.Monitoring, serverClient pkgclient.Client) (*monitoring_v1alpha1.ApplicationMonitoring, error) {
-	monitoring := monitoring_v1alpha1.ApplicationMonitoring{}
-
-	selector := pkgclient.ObjectKey{
-		Namespace: cfg.GetNamespace(),
-		Name:      defaultMonitoringName,
-	}
-
-	err := serverClient.Get(ctx, selector, &monitoring)
-	if err != nil {
-		return nil, err
-	}
-
-	return &monitoring, nil
-}
-
 func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
@@ -413,26 +389,11 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		"module":        module,
 	}
 
-	cr, err := getMonitoringCr(ctx, cfg, serverClient)
-	if err != nil {
-		// Retry later
-		if kerrors.IsNotFound(err) {
-			return nil
-		}
-		return errors.Wrap(err, "error getting monitoring cr")
-	}
-
 	templateHelper := NewTemplateHelper(extraParams)
 	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
 		return errors.Wrap(err, "error creating resource from template")
 	}
-
-	cr.TypeMeta = v1.TypeMeta{
-		Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
-		APIVersion: monitoring_v1alpha1.SchemeGroupVersion.Version,
-	}
-	ownerutil.EnsureOwner(obj.(v1.Object), cr)
 
 	// try to create the blackbox target. If if fails with already exist do nothing
 	err = serverClient.Create(ctx, obj)

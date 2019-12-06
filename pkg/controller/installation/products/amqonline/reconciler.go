@@ -52,6 +52,8 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 		amqOnlineConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
+	amqOnlineConfig.SetBlackboxTargetPath("/oauth/healthz")
+
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
@@ -153,7 +155,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 // CreateResource Creates a generic kubernetes resource from a template
 func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
-	r.extraParams = map[string]string{}
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
 	r.extraParams["Namespace"] = r.Config.GetNamespace()
 
@@ -303,7 +307,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", v1alpha12.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "amq-service-broker",
 	}, ctx, cfg, inst, client)
 	if err != nil {
