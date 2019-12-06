@@ -134,7 +134,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 		if promApiCallOutput.Data.Alerts[a].Labels.Alertname != "DeadMansSwitch" {
 			// ESPodCount will always fail since that alert is for OSD
 			// so it shouldn't cause our test to fail
-			if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "ESPodCount" {
+			if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "KubePodCrashLooping" {
 				continue
 			}
 			if promApiCallOutput.Data.Alerts[a].State == "firing" {
