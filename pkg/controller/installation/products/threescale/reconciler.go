@@ -139,19 +139,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		return phase, err
 	}
 
-	phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
+	if r.installation.GetDeletionTimestamp() == nil {
+		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
 
-	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
-	}
+		phase, err = r.reconcileExternalDatasources(ctx, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
 
-	phase, err = r.reconcileBlobStorage(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
-		return phase, err
+		phase, err = r.reconcileBlobStorage(ctx, serverClient)
+		if err != nil || phase != v1alpha1.PhaseCompleted {
+			return phase, err
+		}
 	}
 
 	phase, err = r.reconcileComponents(ctx, serverClient)
