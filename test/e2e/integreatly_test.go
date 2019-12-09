@@ -351,8 +351,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"fuse-on-openshift":     string(operator.OperatorVersionFuse),
 		"ups":                   string(operator.OperatorVersionUPS),
 		"rhssouser":             string(operator.OperatorVersionRHSSOUser),
-		"mdc":                   string(operator.OperatorVersionMDC),
-		"mobilesecurityservice": string(operator.OperatorVersionMobileSecurityService),
 	}
 	err = checkOperatorVersions(t, f, namespace, stage, productOperators)
 	if err != nil {
@@ -398,8 +396,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"fuse-on-openshift":     string(operator.VersionFuseOnOpenshift),
 		"ups":                   string(operator.VersionUps),
 		"rhssouser":             "v7.3.2.GA",
-		"mdc":                   string(operator.VersionMDC),
-		"mobilesecurityservice": string(operator.VersionMobileSecurityService),
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {
