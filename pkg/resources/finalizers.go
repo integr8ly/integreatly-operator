@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/sirupsen/logrus"
@@ -62,6 +63,17 @@ func RemoveNamespace(ctx context.Context, inst *v1alpha1.Installation, client pk
 // RemoveProductFinalizer removes a given finalizer from the installation custom resource
 func RemoveProductFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, product string) error {
 	finalizer := "finalizer." + product + ".integreatly.org"
+	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
+	err := client.Update(ctx, inst)
+	if err != nil {
+		logrus.Info("Error removing finalizer from custom resource", err)
+		return err
+	}
+	return nil
+}
+
+// RemoveFinalizer removes a given finalizer from the installation custom resource
+func RemoveFinalizer(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client, finalizer string) error {
 	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {

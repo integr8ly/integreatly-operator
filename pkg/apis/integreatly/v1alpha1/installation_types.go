@@ -59,7 +59,7 @@ var (
 	VersionUps                   ProductVersion = "2.3.2"
 	VersionMobileSecurityService ProductVersion = "0.2.2"
 	VersionMDC                   ProductVersion = "1.1.11"
-	VersionCloudResources        ProductVersion = "0.3.0"
+	VersionCloudResources        ProductVersion = "0.4.0"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -77,7 +77,7 @@ var (
 	OperatorVersionUPS                   OperatorVersion = "0.3.0"
 	OperatorVersionMobileSecurityService OperatorVersion = "0.4.1"
 	OperatorVersionMDC                   OperatorVersion = "0.3.0"
-	OperatorVersionCloudResources        OperatorVersion = "0.3.0"
+	OperatorVersionCloudResources        OperatorVersion = "0.4.0"
 )
 
 // InstallationSpec defines the desired state of Installation
