@@ -1,7 +1,6 @@
 package apis
 
 import (
-	mobileSecurityService "github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1"
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -54,7 +53,6 @@ func init() {
 		solutionExplorer.SchemeBuilder.AddToScheme,
 		monitoring.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
-		mobileSecurityService.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 

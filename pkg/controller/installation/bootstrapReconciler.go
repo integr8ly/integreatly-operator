@@ -69,7 +69,6 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 		v1alpha1.ProductRHSSO,
 		v1alpha1.ProductRHSSOUser,
 		v1alpha1.Product3Scale,
-		v1alpha1.ProductMobileDeveloperConsole,
 	}
 
 	oauthClientSecrets := &corev1.Secret{

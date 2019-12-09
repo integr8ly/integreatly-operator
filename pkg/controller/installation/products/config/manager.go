@@ -40,7 +40,6 @@ type ConfigReadWriter interface {
 	ReadRHSSOUser() (*RHSSOUser, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
-	ReadMobileSecurityService() (*MobileSecurityService, error)
 	ReadFuse() (*Fuse, error)
 	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
@@ -49,7 +48,6 @@ type ConfigReadWriter interface {
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
-	ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error)
 	ReadCloudResources() (*CloudResources, error)
 }
 
@@ -92,10 +90,6 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadSolutionExplorer()
 	case v1alpha1.ProductUps:
 		return m.ReadUps()
-	case v1alpha1.ProductMobileSecurityService:
-		return m.ReadMobileSecurityService()
-	case v1alpha1.ProductMobileDeveloperConsole:
-		return m.ReadMobileDeveloperConsole()
 	case v1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
 	}
@@ -183,14 +177,6 @@ func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
 	return NewAMQOnline(config), nil
 }
 
-func (m *Manager) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductMobileDeveloperConsole)
-	if err != nil {
-		return nil, err
-	}
-	return NewMobileDeveloperConsole(config), nil
-}
-
 func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 	config, err := m.readConfigForProduct(v1alpha1.ProductMonitoring)
 	if err != nil {
@@ -206,14 +192,6 @@ func (m *Manager) ReadUps() (*Ups, error) {
 	}
 
 	return NewUps(config), nil
-}
-
-func (m *Manager) ReadMobileSecurityService() (*MobileSecurityService, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductMobileSecurityService)
-	if err != nil {
-		return nil, err
-	}
-	return NewMobileSecurityService(config), nil
 }
 
 func (m *Manager) ReadCloudResources() (*CloudResources, error) {

@@ -9,25 +9,23 @@ import (
 )
 
 var (
-	lockConfigReadWriterMockGetOauthClientsSecretName  sync.RWMutex
-	lockConfigReadWriterMockGetOperatorNamespace       sync.RWMutex
-	lockConfigReadWriterMockReadAMQOnline              sync.RWMutex
-	lockConfigReadWriterMockReadAMQStreams             sync.RWMutex
-	lockConfigReadWriterMockReadCloudResources         sync.RWMutex
-	lockConfigReadWriterMockReadCodeReady              sync.RWMutex
-	lockConfigReadWriterMockReadFuse                   sync.RWMutex
-	lockConfigReadWriterMockReadFuseOnOpenshift        sync.RWMutex
-	lockConfigReadWriterMockReadMobileDeveloperConsole sync.RWMutex
-	lockConfigReadWriterMockReadMobileSecurityService  sync.RWMutex
-	lockConfigReadWriterMockReadMonitoring             sync.RWMutex
-	lockConfigReadWriterMockReadProduct                sync.RWMutex
-	lockConfigReadWriterMockReadRHSSO                  sync.RWMutex
-	lockConfigReadWriterMockReadRHSSOUser              sync.RWMutex
-	lockConfigReadWriterMockReadSolutionExplorer       sync.RWMutex
-	lockConfigReadWriterMockReadThreeScale             sync.RWMutex
-	lockConfigReadWriterMockReadUps                    sync.RWMutex
-	lockConfigReadWriterMockWriteConfig                sync.RWMutex
-	lockConfigReadWriterMockreadConfigForProduct       sync.RWMutex
+	lockConfigReadWriterMockGetOauthClientsSecretName sync.RWMutex
+	lockConfigReadWriterMockGetOperatorNamespace      sync.RWMutex
+	lockConfigReadWriterMockReadAMQOnline             sync.RWMutex
+	lockConfigReadWriterMockReadAMQStreams            sync.RWMutex
+	lockConfigReadWriterMockReadCloudResources        sync.RWMutex
+	lockConfigReadWriterMockReadCodeReady             sync.RWMutex
+	lockConfigReadWriterMockReadFuse                  sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift       sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring            sync.RWMutex
+	lockConfigReadWriterMockReadProduct               sync.RWMutex
+	lockConfigReadWriterMockReadRHSSO                 sync.RWMutex
+	lockConfigReadWriterMockReadRHSSOUser             sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer      sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale            sync.RWMutex
+	lockConfigReadWriterMockReadUps                   sync.RWMutex
+	lockConfigReadWriterMockWriteConfig               sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct      sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -63,12 +61,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
 // 	               panic("mock out the ReadFuseOnOpenshift method")
-//             },
-//             ReadMobileDeveloperConsoleFunc: func() (*MobileDeveloperConsole, error) {
-// 	               panic("mock out the ReadMobileDeveloperConsole method")
-//             },
-//             ReadMobileSecurityServiceFunc: func() (*MobileSecurityService, error) {
-// 	               panic("mock out the ReadMobileSecurityService method")
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
@@ -128,12 +120,6 @@ type ConfigReadWriterMock struct {
 	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
 	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
 
-	// ReadMobileDeveloperConsoleFunc mocks the ReadMobileDeveloperConsole method.
-	ReadMobileDeveloperConsoleFunc func() (*MobileDeveloperConsole, error)
-
-	// ReadMobileSecurityServiceFunc mocks the ReadMobileSecurityService method.
-	ReadMobileSecurityServiceFunc func() (*MobileSecurityService, error)
-
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
 
@@ -186,12 +172,6 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
 		ReadFuseOnOpenshift []struct {
-		}
-		// ReadMobileDeveloperConsole holds details about calls to the ReadMobileDeveloperConsole method.
-		ReadMobileDeveloperConsole []struct {
-		}
-		// ReadMobileSecurityService holds details about calls to the ReadMobileSecurityService method.
-		ReadMobileSecurityService []struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
@@ -434,58 +414,6 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
 	lockConfigReadWriterMockReadFuseOnOpenshift.RLock()
 	calls = mock.calls.ReadFuseOnOpenshift
 	lockConfigReadWriterMockReadFuseOnOpenshift.RUnlock()
-	return calls
-}
-
-// ReadMobileDeveloperConsole calls ReadMobileDeveloperConsoleFunc.
-func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsole() (*MobileDeveloperConsole, error) {
-	if mock.ReadMobileDeveloperConsoleFunc == nil {
-		panic("ConfigReadWriterMock.ReadMobileDeveloperConsoleFunc: method is nil but ConfigReadWriter.ReadMobileDeveloperConsole was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockReadMobileDeveloperConsole.Lock()
-	mock.calls.ReadMobileDeveloperConsole = append(mock.calls.ReadMobileDeveloperConsole, callInfo)
-	lockConfigReadWriterMockReadMobileDeveloperConsole.Unlock()
-	return mock.ReadMobileDeveloperConsoleFunc()
-}
-
-// ReadMobileDeveloperConsoleCalls gets all the calls that were made to ReadMobileDeveloperConsole.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadMobileDeveloperConsoleCalls())
-func (mock *ConfigReadWriterMock) ReadMobileDeveloperConsoleCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockReadMobileDeveloperConsole.RLock()
-	calls = mock.calls.ReadMobileDeveloperConsole
-	lockConfigReadWriterMockReadMobileDeveloperConsole.RUnlock()
-	return calls
-}
-
-// ReadMobileSecurityService calls ReadMobileSecurityServiceFunc.
-func (mock *ConfigReadWriterMock) ReadMobileSecurityService() (*MobileSecurityService, error) {
-	if mock.ReadMobileSecurityServiceFunc == nil {
-		panic("ConfigReadWriterMock.ReadMobileSecurityServiceFunc: method is nil but ConfigReadWriter.ReadMobileSecurityService was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockReadMobileSecurityService.Lock()
-	mock.calls.ReadMobileSecurityService = append(mock.calls.ReadMobileSecurityService, callInfo)
-	lockConfigReadWriterMockReadMobileSecurityService.Unlock()
-	return mock.ReadMobileSecurityServiceFunc()
-}
-
-// ReadMobileSecurityServiceCalls gets all the calls that were made to ReadMobileSecurityService.
-// Check the length with:
-//     len(mockedConfigReadWriter.ReadMobileSecurityServiceCalls())
-func (mock *ConfigReadWriterMock) ReadMobileSecurityServiceCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockReadMobileSecurityService.RLock()
-	calls = mock.calls.ReadMobileSecurityService
-	lockConfigReadWriterMockReadMobileSecurityService.RUnlock()
 	return calls
 }
 
