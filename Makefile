@@ -86,9 +86,6 @@ test/unit:
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e
-test/e2e: export AWS_ACCESS_KEY_ID := 1234
-test/e2e: export AWS_SECRET_ACCESS_KEY := 1234
-test/e2e: export AWS_BUCKET := dummy
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/prepare cluster/prepare/configmaps
