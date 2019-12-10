@@ -37,6 +37,8 @@ github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e/go.mod h1:
 github.com/Rican7/retry v0.1.0/go.mod h1:FgOROf8P5bebcC1DS0PdOQiqGUridaZvikzUmkFW6gg=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634 h1:w9eXZ6Vybn2iFUY7oXEiSl32dWdPE+TkUtKheB49ET8=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634/go.mod h1:XwokItBSp11dqdpaBix9+Viw4tMbuEowPedbuiKXYhc=
+github.com/aerogear/unifiedpush-operator v0.0.0-20191203164915-f8b3254fed3a h1:r68wPUI6cKPSxnSzGsJJAZOjYrOT0tnLghzwI3QPP5Q=
+github.com/aerogear/unifiedpush-operator v0.0.0-20191203164915-f8b3254fed3a/go.mod h1:XwokItBSp11dqdpaBix9+Viw4tMbuEowPedbuiKXYhc=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc h1:cAKDfWh5VpdgMhJosfJnn5/FoN2SRZ4p7fJNX58YPaU=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=

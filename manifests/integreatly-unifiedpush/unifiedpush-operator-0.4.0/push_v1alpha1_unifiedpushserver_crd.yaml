@@ -69,6 +69,30 @@ spec:
                 - backendSecretName
                 type: object
               type: array
+            database:
+              properties:
+                host:
+                  description: Host for external database support
+                  type: string
+                name:
+                  description: Name for external database support
+                  type: string
+                password:
+                  description: Password for external database support
+                  type: string
+                port:
+                  anyOf:
+                  - type: string
+                  - type: integer
+                  description: Port for external database support
+                user:
+                  description: User for external database support
+                  type: string
+              type: object
+            externalDB:
+              description: ExternalDB can be set to true to use details from Database
+                and connect to external db
+              type: boolean
             oAuthResourceRequirements:
               type: object
             postgresPVCSize:
@@ -85,8 +109,29 @@ spec:
           type: object
         status:
           properties:
-            phase:
+            message:
+              description: Message is a more human-readable message indicating details
+                about current phase or error.
               type: string
+            phase:
+              description: Phase indicates whether the CR is reconciling(good), failing(bad),
+                or initializing.
+              type: string
+            ready:
+              description: Ready is True if all resources are in a ready state and
+                all work is done (phase should be "reconciling"). The type in the
+                Go code here is deliberately a pointer so that we can distinguish
+                between false and "not set", since it's an optional field.
+              type: boolean
+            secondaryResources:
+              additionalProperties:
+                items:
+                  type: string
+                type: array
+              description: 'SecondaryResources is a map of all the secondary resources
+                types and names created for this CR.  e.g "Deployment": [ "DeploymentName1",
+                "DeploymentName2" ]'
+              type: object
           required:
           - phase
           type: object

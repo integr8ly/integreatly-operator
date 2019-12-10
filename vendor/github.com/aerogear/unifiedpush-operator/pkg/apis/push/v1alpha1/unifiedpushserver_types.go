@@ -1,7 +1,9 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -12,17 +14,56 @@ type UnifiedPushServerSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 
+	//ExternalDB can be set to true to use details from Database and connect to external db
+	ExternalDB bool `json:"externalDB,omitempty"`
+
+	Database UnifiedPushServerDatabase `json:"database,omitempty"`
+
 	// Backups is an array of configs that will be used to create CronJob resource instances
 	Backups []UnifiedPushServerBackup `json:"backups,omitempty"`
 
 	// UseMessageBroker can be set to true to use managed queues, if you are using enmasse. Defaults to false.
 	UseMessageBroker bool `json:"useMessageBroker,omitempty"`
+
+	UnifiedPushResourceRequirements corev1.ResourceRequirements `json:"unifiedPushResourceRequirements,omitempty"`
+	OAuthResourceRequirements       corev1.ResourceRequirements `json:"oAuthResourceRequirements,omitempty"`
+	PostgresResourceRequirements    corev1.ResourceRequirements `json:"postgresResourceRequirements,omitempty"`
+
+	// PVC size for Postgres service
+	PostgresPVCSize string `json:"postgresPVCSize,omitempty"`
+}
+
+// UnifiedPushServerDatabase contains the data needed to connect to external database
+type UnifiedPushServerDatabase struct {
+	//Name for external database support
+	Name string `json:"name,omitempty"`
+	//Password for external database support
+	Password string `json:"password,omitempty"`
+	//User for external database support
+	User string `json:"user,omitempty"`
+	//Host for external database support
+	Host string `json:"host,omitempty"`
+	//Port for external database support
+	Port intstr.IntOrString `json:"port,omitempty"`
 }
 
 // UnifiedPushServerStatus defines the observed state of UnifiedPushServer
 // +k8s:openapi-gen=true
 type UnifiedPushServerStatus struct {
+	// Phase indicates whether the CR is reconciling(good), failing(bad), or initializing.
 	Phase StatusPhase `json:"phase"`
+
+	// Message is a more human-readable message indicating details about current phase or error.
+	Message string `json:"message,omitempty"`
+
+	// Ready is True if all resources are in a ready state and all work is done (phase should be
+	// "reconciling"). The type in the Go code here is deliberately a pointer so that we can
+	// distinguish between false and "not set", since it's an optional field.
+	Ready *bool `json:"ready,omitempty"`
+
+	// SecondaryResources is a map of all the secondary resources types and names created for
+	// this CR.  e.g "Deployment": [ "DeploymentName1", "DeploymentName2" ]
+	SecondaryResources map[string][]string `json:"secondaryResources,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -82,9 +123,10 @@ type UnifiedPushServerBackup struct {
 type StatusPhase string
 
 var (
-	PhaseEmpty     StatusPhase = ""
-	PhaseComplete  StatusPhase = "Complete"
-	PhaseProvision StatusPhase = "Provisioning"
+	PhaseEmpty        StatusPhase
+	PhaseFailing      StatusPhase = "Failing"
+	PhaseReconciling  StatusPhase = "Reconciling"
+	PhaseInitializing StatusPhase = "Initializing"
 )
 
 func init() {

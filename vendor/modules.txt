@@ -15,11 +15,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e
 github.com/RHsyseng/operator-utils/pkg/olm
-# github.com/aerogear/mobile-developer-console-operator v0.0.0-20191112104059-b2ac382d666a
-github.com/aerogear/mobile-developer-console-operator/pkg/apis/mdc/v1alpha1
-# github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c
-github.com/aerogear/mobile-security-service-operator/pkg/apis/mobilesecurityservice/v1alpha1
-# github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634
+# github.com/aerogear/unifiedpush-operator v0.0.0-20191203164915-f8b3254fed3a
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
@@ -44,8 +40,6 @@ github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
 # github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
-# github.com/fabric8-launcher/launcher-operator v0.1.2
-github.com/fabric8-launcher/launcher-operator/pkg/apis/launcher/v1alpha2
 # github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 github.com/ghodss/yaml
 # github.com/go-logr/logr v0.1.0

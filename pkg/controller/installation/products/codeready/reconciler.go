@@ -534,7 +534,6 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgresName, Namespace: r.installation.Namespace}, pcr)
 	if err != nil {
-		fmt.Println("boop")
 		return nil, errors.Wrap(err, "failed to find postgres custom resource")
 	}
 
