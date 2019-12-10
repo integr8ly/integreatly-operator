@@ -104,58 +104,72 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 	logrus.Infof("Reconciling %s", packageName)
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		fmt.Println("removing 3scale product namespace")
 		phase, err := resources.RemoveNamespace(ctx, in, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
+			fmt.Printf("phase for RemoveNamespace() is %s, err is %s\n", phase, err)
 			return phase, err
 		}
 
 		err = resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
+			fmt.Printf("err for RemoveOauthClient(): %s\n", err)
 			return v1alpha1.PhaseFailed, err
 		}
+
+		fmt.Println("finalFunc() returning phase complete")
 		return v1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
+		fmt.Printf("phase for ReconcileFinalizer() is %s, err is %s", phase, err)
 		return phase, err
 	}
 
+	fmt.Println("reconcile namespace")
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	fmt.Println("get namespace")
 	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 	if err != nil {
 		return v1alpha1.PhaseFailed, err
 	}
 
+	fmt.Println("reconcile pull secret")
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", in, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	fmt.Println("reconcile subscription")
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	if r.installation.GetDeletionTimestamp() == nil {
-		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
-		if err != nil || phase != v1alpha1.PhaseCompleted {
-			return phase, err
-		}
-
-		phase, err = r.reconcileExternalDatasources(ctx, serverClient)
-		if err != nil || phase != v1alpha1.PhaseCompleted {
-			return phase, err
-		}
-
-		phase, err = r.reconcileBlobStorage(ctx, serverClient)
-		if err != nil || phase != v1alpha1.PhaseCompleted {
-			return phase, err
-		}
+	//if r.installation.GetDeletionTimestamp() == nil {
+	fmt.Println("reconcile smtp")
+	phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
 	}
 
+	fmt.Println("reconcile datasources")
+	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	fmt.Println("reconcile blobstorage")
+	phase, err = r.reconcileBlobStorage(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+	//}
+
+	fmt.Println("reconcile components")
 	phase, err = r.reconcileComponents(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err

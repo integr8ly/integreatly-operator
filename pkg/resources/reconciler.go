@@ -100,6 +100,7 @@ type finalizerFunc func() (v1alpha1.StatusPhase, error)
 
 func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation, productName string, finalFunc finalizerFunc) (v1alpha1.StatusPhase, error) {
 	finalizer := "finalizer." + productName + ".integreatly.org"
+
 	// Add finalizer if not there
 	err := AddFinalizer(ctx, inst, client, finalizer)
 	if err != nil {
@@ -110,22 +111,30 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 	// Run finalization logic. If it fails, don't remove the finalizer
 	// so that we can retry during the next reconciliation
 	if inst.GetDeletionTimestamp() != nil {
+		fmt.Println("deletion timestamp is not nil")
 		if contains(inst.GetFinalizers(), finalizer) {
+			fmt.Println("finalizer exists, calling finalFunc()")
 			phase, err := finalFunc()
 			if err != nil || phase != v1alpha1.PhaseCompleted {
+				fmt.Printf("phase for finalFunc() is %s, err is %s\n", phase, err)
 				return phase, err
 			}
 
 			// Remove the finalizer to allow for deletion of the installation cr
+			fmt.Println("removing finalizer")
 			logrus.Infof("Removing finalizer: %s", finalizer)
 			err = RemoveProductFinalizer(ctx, inst, client, productName)
 			if err != nil {
+				fmt.Println("error removing finalizer", err)
 				return v1alpha1.PhaseFailed, err
 			}
 		}
+
 		// Don't continue reconciling the product
+		fmt.Println("returning phase none")
 		return v1alpha1.PhaseNone, nil
 	}
+
 	return v1alpha1.PhaseCompleted, nil
 }
 

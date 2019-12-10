@@ -76,17 +76,21 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		fmt.Println("removing codeready namespace")
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
+			fmt.Printf("phase for codeready RemoveNamespace() is %s, err is %s\n", phase, err)
 			return phase, err
 		}
 
+		fmt.Println("returning codeready phase complete")
 		return v1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	fmt.Println("reconcile ns")
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -97,16 +101,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return v1alpha1.PhaseFailed, err
 	}
 
+	fmt.Println("reconcile sub")
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	fmt.Println("reconcile che cluster")
 	phase, err = r.reconcileCheCluster(ctx, inst, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
+	fmt.Println("reconcile keycloak client")
 	phase, err = r.reconcileKeycloakClient(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
@@ -538,6 +545,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	selfSignedCerts := inst.Spec.SelfSignedCerts
 
 	// setup external postgres db using cloud-resources-operator default is Openshift
+	fmt.Println("creating new postgres")
 	cheClusterExternalPostgres, err := r.reconcileExternalPostgres(ctx, inst, serverClient)
 	if err != nil {
 		return nil, err
@@ -547,6 +555,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	}
 	cheDb := cheClusterExternalPostgres.Spec.Database
 
+	fmt.Println("reconcile create che cluster")
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultCheClusterName,
