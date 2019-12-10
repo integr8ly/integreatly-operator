@@ -19,8 +19,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuseonopenshift"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/mobiledeveloperconsole"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/mobilesecurityservice"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
@@ -80,8 +78,6 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, oauthv1Client, mpm, oauthResolver)
 	case v1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductMobileSecurityService:
-		reconciler, err = mobilesecurityservice.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {
@@ -104,8 +100,6 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		reconciler, err = threescale.NewReconciler(configManager, instance, appsv1, oauthv1Client, tsClient, mpm)
 	case v1alpha1.ProductUps:
 		reconciler, err = ups.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductMobileDeveloperConsole:
-		reconciler, err = mobiledeveloperconsole.NewReconciler(configManager, instance, mpm)
 	case v1alpha1.ProductCloudResources:
 		reconciler, err = cloudresources.NewReconciler(configManager, instance, mpm)
 	default:

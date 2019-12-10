@@ -35,10 +35,6 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdko
 github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e h1:B2XS5wquMi9luwljw0mgnReBUelIgIe0znj3hLh83rQ=
 github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e/go.mod h1:E+hCtYz+9UsXfAGnRjX2LGuaa5gSGNKHCVTmGZR79vY=
 github.com/Rican7/retry v0.1.0/go.mod h1:FgOROf8P5bebcC1DS0PdOQiqGUridaZvikzUmkFW6gg=
-github.com/aerogear/mobile-developer-console-operator v0.0.0-20191112104059-b2ac382d666a h1:lUGEMXdjSp3q+xHt8gcWltxwCG7mLVVgvTaz/3FERuY=
-github.com/aerogear/mobile-developer-console-operator v0.0.0-20191112104059-b2ac382d666a/go.mod h1:heAyG2tutLWgGmc28yplpW7/0qHoeeFJVyE8T7OnIQo=
-github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c h1:lvBLvY/nGvE0YA0RzsSEy0M4JLw7nq+g/tOw1LssUzA=
-github.com/aerogear/mobile-security-service-operator v0.0.0-20190927105148-a2ca36e6de3c/go.mod h1:MECaSGMQcK7fwLfVBA6uKuezh1tTFSloYPdh6tRuUx0=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634 h1:w9eXZ6Vybn2iFUY7oXEiSl32dWdPE+TkUtKheB49ET8=
 github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634/go.mod h1:XwokItBSp11dqdpaBix9+Viw4tMbuEowPedbuiKXYhc=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc h1:cAKDfWh5VpdgMhJosfJnn5/FoN2SRZ4p7fJNX58YPaU=
@@ -397,6 +393,8 @@ github.com/markbates/inflect v1.0.4 h1:5fh1gzTFhfae06u3hzHYO9xe3l3v3nW5Pwt3naLTP
 github.com/markbates/inflect v1.0.4/go.mod h1:1fR9+pO2KHEO9ZRtto13gDwwZaAKstQzferVeWqbgNs=
 github.com/marstr/guid v0.0.0-20170427235115-8bdf7d1a087c/go.mod h1:74gB1z2wpxxInTG6yaqA7KrtM0NZ+RbrcqDvYHefzho=
 github.com/martinlindhe/base36 v0.0.0-20180729042928-5cda0030da17/go.mod h1:+AtEs8xrBpCeYgSLoY/aJ6Wf37jtBuR0s35750M27+8=
+github.com/matryer/moq v0.0.0-20191106032847-0e0395200ade h1:wSuUwxiJD6WFQCsfUJENubSIDr2zkWjs6uFpPV7QOHw=
+github.com/matryer/moq v0.0.0-20191106032847-0e0395200ade/go.mod h1:9ELz6aaclSIGnZBoaSLZ3NAl1VTufbOrXBPvtcy6WiQ=
 github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a/go.mod h1:M1qoD/MqPgTZIk0EWKB38wE28ACRfVcn+cU08jyArI0=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
 github.com/mattn/go-isatty v0.0.8/go.mod h1:Iq45c/XA43vh69/j3iqttzPXn0bhXyGjM0Hdxcsrc5s=
