@@ -3,7 +3,7 @@ package codeready
 import (
 	"context"
 	"fmt"
-
+	v1alpha13 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
@@ -146,64 +146,52 @@ func (r *Reconciler) Reconcile(ctx context.Context, instance *v1alpha1.Installat
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, r.installation, template, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return v1alpha1.PhaseCompleted, nil
-}
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("Reconciling external datastore")
+	ns := r.installation.Namespace
 
-func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
-	if r.extraParams == nil {
-		r.extraParams = map[string]string{}
-	}
-	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
-	r.extraParams["Namespace"] = r.Config.GetNamespace()
-
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
-	resource, err := templateHelper.CreateResource(resourceName)
-
+	// setup postgres custom resource
+	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		ownerutil.EnsureOwner(cr, r.installation)
+		return nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres")
 	}
 
-	err = serverClient.Create(ctx, resource)
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	croSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
 	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
-		}
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
 	}
 
-	return resource, nil
-}
-
-func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
-	backupConfig := resources.BackupConfig{
-		Namespace:     r.Config.GetNamespace(),
-		Name:          "codeready",
-		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
-		Components: []resources.BackupComponent{
-			{
-				Name:     "codeready-postgres-backup",
-				Type:     "postgres",
-				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-			{
-				Name:     "codeready-pv-backup",
-				Type:     "codeready_pv",
-				Schedule: r.Config.GetBackupSchedule(),
-			},
+	// create backup secret
+	logrus.Info("Reconciling codeready backup secret")
+	cheBackUpSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetPostgresBackupSecretName(),
+			Namespace: r.Config.GetNamespace(),
 		},
+		Data: map[string][]byte{},
 	}
-	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for codeready")
+
+	// create or update backup secret
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, cheBackUpSecret, func() error {
+		cheBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
+		cheBackUpSecret.Data["POSTGRESQL_USER"] = croSec.Data["username"]
+		cheBackUpSecret.Data["POSTGRESQL_PASSWORD"] = croSec.Data["password"]
+		cheBackUpSecret.Data["POSTGRESQL_DATABASE"] = croSec.Data["database"]
+		cheBackUpSecret.Data["POSTGRESQL_PORT"] = croSec.Data["port"]
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update %s connection secret", r.Config.GetPostgresBackupSecretName())
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -267,6 +255,69 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient pkgcl
 	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
 	if err = serverClient.Update(ctx, cheCluster); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	// Interate over template_list
+	for _, template := range r.Config.GetTemplateList() {
+		// create it
+		_, err := r.createResource(ctx, r.installation, template, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+		}
+		logrus.Infof("Reconciling the monitoring template %s was successful", template)
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
+	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
+	r.extraParams["Namespace"] = r.Config.GetNamespace()
+
+	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
+	resource, err := templateHelper.CreateResource(resourceName)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "createResource failed")
+	}
+
+	err = serverClient.Create(ctx, resource)
+	if err != nil {
+		if !k8serr.IsAlreadyExists(err) {
+			return nil, errors.Wrap(err, "error creating resource")
+		}
+	}
+
+	return resource, nil
+}
+
+func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
+	backupConfig := resources.BackupConfig{
+		Namespace:     r.Config.GetNamespace(),
+		Name:          "codeready",
+		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
+		Components: []resources.BackupComponent{
+			{
+				Name:     "codeready-postgres-backup",
+				Type:     "postgres",
+				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+			{
+				Name:     "codeready-pv-backup",
+				Type:     "codeready_pv",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+		},
+	}
+	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for codeready")
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -455,27 +506,6 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getBackupConfig() resources.BackupConfig {
-	return resources.BackupConfig{
-		Namespace:     r.Config.GetNamespace(),
-		Name:          r.Config.GetNamespace(), //reusing namespace name because it already contains product name and is prefixed
-		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
-		Components: []resources.BackupComponent{
-			{
-				Name:     "codeready-postgres-backup",
-				Type:     "postgres",
-				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-			{
-				Name:     "codeready-pv-backup",
-				Type:     "codeready_pv",
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-		},
-	}
-}
-
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
@@ -496,10 +526,18 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client pkgcli
 func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
 	selfSignedCerts := r.installation.Spec.SelfSignedCerts
 
+	// get postgres cloud resource cr
+	pcr := &v1alpha13.Postgres{}
+	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgresName, Namespace: r.installation.Namespace}, pcr)
+	if err != nil {
+		fmt.Println("boop")
+		return nil, errors.Wrap(err, "failed to find postgres custom resource")
+	}
+
 	// get the postgres cloud resources operator cr
 	croSec := &v1.Secret{}
-	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgresName, Namespace: r.installation.Namespace}, croSec)
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: pcr.Status.SecretRef.Name, Namespace: pcr.Status.SecretRef.Namespace}, croSec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get postgres credential secret")
 	}
@@ -551,56 +589,4 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		return nil, errors.Wrap(err, "failed to create che cluster resource")
 	}
 	return cheCluster, nil
-}
-
-func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling external datastore")
-	ns := r.installation.Namespace
-
-	// setup postgres custom resource
-	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
-		return nil
-	})
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres")
-	}
-
-	if postgres.Status.Phase != cro1types.PhaseComplete {
-		return v1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// get the secret created by the cloud resources operator
-	croSec := &v1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
-	}
-
-	logrus.Info("Reconciling codeready backup secret")
-	// create backup secret
-	cheBackUpSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.Config.GetPostgresBackupSecretName(),
-			Namespace: r.Config.GetNamespace(),
-		},
-		Data: map[string][]byte{},
-	}
-
-	// create or update backup secret
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, cheBackUpSecret, func() error {
-		cheBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
-		cheBackUpSecret.Data["POSTGRESQL_USER"] = croSec.Data["username"]
-		cheBackUpSecret.Data["POSTGRESQL_PASSWORD"] = croSec.Data["password"]
-		cheBackUpSecret.Data["POSTGRESQL_DATABASE"] = croSec.Data["database"]
-		cheBackUpSecret.Data["POSTGRESQL_PORT"] = croSec.Data["port"]
-		return nil
-	})
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update %s connection secret", r.Config.GetPostgresBackupSecretName())
-	}
-
-	// get the secret created by
-	return v1alpha1.PhaseCompleted, nil
 }
