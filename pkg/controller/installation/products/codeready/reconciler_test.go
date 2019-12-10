@@ -2,6 +2,7 @@ package codeready
 
 import (
 	"context"
+	types2 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"testing"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -187,6 +188,21 @@ func TestReconciler_config(t *testing.T) {
 }
 
 func TestCodeready_reconcileCluster(t *testing.T) {
+
+	pg := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "codeready-postgres-",
+			Namespace: "codeready-workspaces",
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: types2.PhaseComplete,
+			SecretRef: &types2.SecretRef{
+				Name: "codeready-postgres-",
+			},
+		},
+	}
+
 	scenarios := []struct {
 		Name           string
 		ExpectedStatus v1alpha1.StatusPhase
@@ -198,15 +214,19 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
-			Name:           "test phase Awaiting Components when che cluster is missing",
-			ExpectedStatus: v1alpha1.PhaseAwaitingComponents,
+			Name:           "test phase in progress when che cluster is missing",
+			ExpectedStatus: v1alpha1.PhaseInProgress,
 			Installation: &v1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, pg, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "codeready-postgres-",
+				},
+			}),
 			FakeConfig: basicConfigMock(),
 		},
 	}
@@ -222,7 +242,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
 			}
 
-			status, err := testReconciler.reconcileCheCluster(context.TODO(), scenario.Installation, scenario.FakeClient)
+			status, err := testReconciler.reconcileCheCluster(context.TODO(), scenario.FakeClient)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error: %v, expected: %v", err, scenario.ExpectedError)
 			}
@@ -512,6 +532,28 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		},
 	}
 
+	pg := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "codeready-postgres-installation",
+			Namespace: "codeready-workspaces",
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: types2.PhaseComplete,
+			SecretRef: &types2.SecretRef{
+				Name:      "test",
+				Namespace: "test",
+			},
+		},
+	}
+
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+		},
+	}
+
 	scenarios := []struct {
 		Name                string
 		ExpectedStatus      v1alpha1.StatusPhase
@@ -528,7 +570,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:           "test successful installation without errors",
 			ExpectedStatus: v1alpha1.PhaseCompleted,
 			Installation:   installation,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation, pg, sec),
 			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
@@ -615,20 +657,4 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Generate a fake k8s client with a fuse custom resource in a specific phase
-func getFakeClient(scheme *runtime.Scheme, objs []runtime.Object) *moqclient.SigsClientInterfaceMock {
-	sigsFakeClient := moqclient.NewSigsClientMoqWithScheme(scheme, objs...)
-	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
-		switch obj := obj.(type) {
-		case *chev1.CheCluster:
-			obj.Status.CheURL = "https://test.com"
-			return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-		}
-
-		return sigsFakeClient.GetSigsClient().Create(ctx, obj)
-	}
-
-	return sigsFakeClient
 }

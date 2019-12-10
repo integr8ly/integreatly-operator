@@ -3,6 +3,8 @@ package codeready
 import (
 	"context"
 	"fmt"
+	v1alpha13 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 
@@ -39,6 +41,7 @@ const (
 type Reconciler struct {
 	Config        *config.CodeReady
 	ConfigManager config.ConfigReadWriter
+	installation  *v1alpha1.Installation
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
@@ -59,6 +62,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
+		installation:  instance,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -74,9 +78,9 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+func (r *Reconciler) Reconcile(ctx context.Context, instance *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, r.installation, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, r.installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != v1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -87,7 +91,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), r.installation, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -102,7 +106,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileCheCluster(ctx, inst, serverClient)
+	phase, err = r.reconcileExternalDatasources(ctx, serverClient)
+	if err != nil || phase != v1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	phase, err = r.reconcileCheCluster(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -112,17 +121,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, serverClient)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackups(ctx, inst, serverClient, namespace)
+	phase, err = r.reconcileBackups(ctx, serverClient, namespace)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	phase, err = r.reconcileTemplates(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -137,11 +146,125 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	logrus.Infof("Reconciling external datastore")
+	ns := r.installation.Namespace
+
+	// setup postgres custom resource
+	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		ownerutil.EnsureOwner(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres")
+	}
+
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	croSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
+	}
+
+	// create backup secret
+	logrus.Info("Reconciling codeready backup secret")
+	cheBackUpSecret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetPostgresBackupSecretName(),
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+
+	// create or update backup secret
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, cheBackUpSecret, func() error {
+		cheBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
+		cheBackUpSecret.Data["POSTGRESQL_USER"] = croSec.Data["username"]
+		cheBackUpSecret.Data["POSTGRESQL_PASSWORD"] = croSec.Data["password"]
+		cheBackUpSecret.Data["POSTGRESQL_DATABASE"] = croSec.Data["database"]
+		cheBackUpSecret.Data["POSTGRESQL_PORT"] = croSec.Data["port"]
+		return nil
+	})
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update %s connection secret", r.Config.GetPostgresBackupSecretName())
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+	kcConfig, err := r.ConfigManager.ReadRHSSO()
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloak config")
+	}
+	if err = kcConfig.Validate(); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, "keycloak config is not valid")
+	}
+
+	r.logger.Infof("creating required custom resources in namespace: %s", r.Config.GetNamespace())
+
+	kcRealm := &keycloakv1.KeycloakRealm{}
+	key := pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}
+	err = serverClient.Get(ctx, key, kcRealm)
+	if err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve: %+v", key))
+	}
+
+	cheCluster := &chev1.CheCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultCheClusterName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
+		}
+		cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, serverClient)
+		if err != nil {
+			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create checluster custom resource in namespace: %s", r.Config.GetNamespace()))
+		}
+		// che cluster hasn't reconciled yet
+		if cheCluster == nil {
+			return v1alpha1.PhaseAwaitingComponents, nil
+		}
+		return v1alpha1.PhaseInProgress, err
+	}
+
+	// check cr values
+	if cheCluster.Spec.Auth.ExternalKeycloak &&
+		!cheCluster.Spec.Auth.OpenShiftOauth &&
+		cheCluster.Spec.Auth.KeycloakURL == kcConfig.GetHost() &&
+		cheCluster.Spec.Auth.KeycloakRealm == kcConfig.GetRealm() &&
+		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
+		logrus.Debug("skipping checluster custom resource update as all values are correct")
+		return v1alpha1.PhaseCompleted, nil
+	}
+
+	// update cr values
+	cheCluster.Spec.Auth.ExternalKeycloak = true
+	cheCluster.Spec.Auth.OpenShiftOauth = false
+	cheCluster.Spec.Auth.KeycloakURL = kcConfig.GetHost()
+	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
+	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
+	if err = serverClient.Update(ctx, cheCluster); err != nil {
+		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, r.installation, template, serverClient)
 		if err != nil {
 			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
 		}
@@ -174,7 +297,7 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner) (v1alpha1.StatusPhase, error) {
 	backupConfig := resources.BackupConfig{
 		Namespace:     r.Config.GetNamespace(),
 		Name:          "codeready",
@@ -193,121 +316,8 @@ func (r *Reconciler) reconcileBackups(ctx context.Context, inst *v1alpha1.Instal
 			},
 		},
 	}
-	err := r.reconcilePostgresSecret(ctx, inst, serverClient)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to reconcile postgres component backup secret")
-	}
-	err = resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
-	if err != nil {
+	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for codeready")
-	}
-
-	return v1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilePostgresSecret(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
-	//get values from deployment
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-			Name:      fmt.Sprintf("codeready-postgres-%s", inst.Name),
-		},
-	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Namespace: deployment.Namespace, Name: deployment.Name}, deployment)
-	if err != nil {
-		return errors.Wrapf(err, "could not get postgres deployment to reconcile component backup secret")
-	}
-
-	postgresqlSecret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.Config.GetPostgresBackupSecretName(),
-			Namespace: r.Config.GetNamespace(),
-		},
-		Data: map[string][]byte{
-			"POSTGRES_HOST": []byte("postgres." + r.Config.GetNamespace() + ".svc"),
-		},
-	}
-
-	for _, env := range deployment.Spec.Template.Spec.Containers[0].Env {
-		switch env.Name {
-		case "POSTGRESQL_USER":
-			postgresqlSecret.Data["POSTGRES_USERNAME"] = []byte(env.Value)
-		case "POSTGRESQL_PASSWORD":
-			postgresqlSecret.Data["POSTGRES_PASSWORD"] = []byte(env.Value)
-		case "POSTGRESQL_DATABASE":
-			postgresqlSecret.Data["POSTGRES_DATABASE"] = []byte(env.Value)
-		case "POSTGRESQL_ADMIN_PASSWORD":
-			postgresqlSecret.Data["POSTGRES_ADMIN_PASSWORD"] = []byte(env.Value)
-		}
-	}
-
-	err = resources.CreateOrUpdate(ctx, serverClient, postgresqlSecret)
-	if err != nil {
-		return errors.Wrapf(err, "error reconciling postgres component backup secret")
-	}
-	logrus.Infof("codeready postgres component backup secret successfully reconciled")
-
-	return nil
-}
-
-func (r *Reconciler) reconcileCheCluster(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	kcConfig, err := r.ConfigManager.ReadRHSSO()
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not retrieve keycloak config")
-	}
-	if err = kcConfig.Validate(); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "keycloak config is not valid")
-	}
-
-	r.logger.Infof("creating required custom resources in namespace: %s", r.Config.GetNamespace())
-
-	kcRealm := &keycloakv1.KeycloakRealm{}
-	key := pkgclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}
-	err = serverClient.Get(ctx, key, kcRealm)
-	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve: %+v", key))
-	}
-
-	cheCluster := &chev1.CheCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      defaultCheClusterName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
-	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve checluster custom resource in namespace: %s", r.Config.GetNamespace()))
-		}
-		cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, inst, serverClient)
-		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create checluster custom resource in namespace: %s", r.Config.GetNamespace()))
-		}
-		// che cluster hasn't reconciled yet
-		if cheCluster == nil {
-			return v1alpha1.PhaseAwaitingComponents, nil
-		}
-		return v1alpha1.PhaseInProgress, err
-	}
-
-	// check cr values
-	if cheCluster.Spec.Auth.ExternalKeycloak &&
-		!cheCluster.Spec.Auth.OpenShiftOauth &&
-		cheCluster.Spec.Auth.KeycloakURL == kcConfig.GetHost() &&
-		cheCluster.Spec.Auth.KeycloakRealm == kcConfig.GetRealm() &&
-		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
-		logrus.Debug("skipping checluster custom resource update as all values are correct")
-		return v1alpha1.PhaseCompleted, nil
-	}
-
-	// update cr values
-	cheCluster.Spec.Auth.ExternalKeycloak = true
-	cheCluster.Spec.Auth.OpenShiftOauth = false
-	cheCluster.Spec.Auth.KeycloakURL = kcConfig.GetHost()
-	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
-	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
-	if err = serverClient.Update(ctx, cheCluster); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not update checluster custom resource in namespace: %s", r.Config.GetNamespace()))
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -496,28 +506,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient p
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getBackupConfig() resources.BackupConfig {
-	return resources.BackupConfig{
-		Namespace:     r.Config.GetNamespace(),
-		Name:          r.Config.GetNamespace(), //reusing namespace name because it already contains product name and is prefixed
-		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
-		Components: []resources.BackupComponent{
-			{
-				Name:     "codeready-postgres-backup",
-				Type:     "postgres",
-				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-			{
-				Name:     "codeready-pv-backup",
-				Type:     "codeready_pv",
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-		},
-	}
-}
-
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
@@ -526,7 +515,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	err = monitoring.CreateBlackboxTarget("integreatly-codeready", v1alpha12.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "codeready-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, r.installation, client)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating codeready blackbox target")
 	}
@@ -534,18 +523,24 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
-	selfSignedCerts := inst.Spec.SelfSignedCerts
+func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, kr *keycloakv1.KeycloakRealm, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
+	selfSignedCerts := r.installation.Spec.SelfSignedCerts
 
-	// setup external postgres db using cloud-resources-operator default is Openshift
-	cheClusterExternalPostgres, err := r.reconcileExternalPostgres(ctx, inst, serverClient)
+	// get postgres cloud resource cr
+	pcr := &v1alpha13.Postgres{}
+	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
+	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgresName, Namespace: r.installation.Namespace}, pcr)
 	if err != nil {
-		return nil, err
+		fmt.Println("boop")
+		return nil, errors.Wrap(err, "failed to find postgres custom resource")
 	}
-	if cheClusterExternalPostgres == nil {
-		return nil, nil
+
+	// get the postgres cloud resources operator cr
+	croSec := &v1.Secret{}
+	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: pcr.Status.SecretRef.Name, Namespace: pcr.Status.SecretRef.Namespace}, croSec)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get postgres credential secret")
 	}
-	cheDb := cheClusterExternalPostgres.Spec.Database
 
 	cheCluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -566,7 +561,14 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 				TlsSupport:     true,
 				SelfSignedCert: selfSignedCerts,
 			},
-			Database: cheDb,
+			Database: chev1.CheClusterSpecDB{
+				ExternalDB:            true,
+				ChePostgresDb:         string(croSec.Data["database"]),
+				ChePostgresPassword:   string(croSec.Data["password"]),
+				ChePostgresPort:       string(croSec.Data["port"]),
+				ChePostgresUser:       string(croSec.Data["username"]),
+				ChePostgresDBHostname: string(croSec.Data["host"]),
+			},
 			Auth: chev1.CheClusterSpecAuth{
 				OpenShiftOauth:   false,
 				ExternalKeycloak: true,
@@ -582,49 +584,9 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		},
 	}
 
-	ownerutil.EnsureOwner(cheCluster, inst)
+	ownerutil.EnsureOwner(cheCluster, r.installation)
 	if err := serverClient.Create(ctx, cheCluster); err != nil {
 		return nil, errors.Wrap(err, "failed to create che cluster resource")
-	}
-	return cheCluster, nil
-}
-
-func (r *Reconciler) reconcileExternalPostgres(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (*chev1.CheCluster, error) {
-	ns := inst.Namespace
-
-	// setup the postgres cr for cloud resource operator
-	postgresName := fmt.Sprintf("codeready-postgres-%s", inst.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, inst)
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to reconcile postgres credential request")
-	}
-
-	// phase is not complete, wait
-	if postgres.Status.Phase != cro1types.PhaseComplete {
-		return nil, nil
-	}
-
-	secRef := postgres.Status.SecretRef
-	credSec := &v1.Secret{}
-	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: secRef.Name, Namespace: secRef.Namespace}, credSec); err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve credential secret for %s", postgresName)
-	}
-
-	// set the values on the object and hope it doesn't overwrite the rest of object
-	cheCluster := &chev1.CheCluster{
-		Spec: chev1.CheClusterSpec{
-			Database: chev1.CheClusterSpecDB{
-				ExternalDB:            true,
-				ChePostgresDb:         string(credSec.Data["database"]),
-				ChePostgresPassword:   string(credSec.Data["password"]),
-				ChePostgresPort:       string(credSec.Data["port"]),
-				ChePostgresUser:       string(credSec.Data["username"]),
-				ChePostgresDBHostname: string(credSec.Data["host"]),
-			},
-		},
 	}
 	return cheCluster, nil
 }
