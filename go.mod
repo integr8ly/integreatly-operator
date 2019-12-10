@@ -7,13 +7,11 @@ require (
 	github.com/aerogear/unifiedpush-operator v0.0.0-20190909105857-0efd293d3634
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5
-	github.com/fabric8-launcher/launcher-operator v0.1.2
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.4.0
 	github.com/keycloak/keycloak-operator v0.0.0-20191127130843-fb19ff486ee2
-	github.com/matryer/moq v0.0.0-20191106032847-0e0395200ade // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -21,7 +19,6 @@ require (
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/common v0.7.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4

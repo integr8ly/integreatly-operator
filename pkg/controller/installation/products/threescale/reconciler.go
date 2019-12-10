@@ -195,7 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *v1alpha1.Installation, p
 		r.installation.Spec.MasterURL,
 	}
 	phase, err = r.ReconcileOauthClient(ctx, in, r.getOAuthClientName(), clientSecret, redirectUris, serverClient)
-	
+
 	if err != nil || phase != v1alpha1.PhaseCompleted {
 		return phase, err
 	}
