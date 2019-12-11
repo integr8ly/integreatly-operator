@@ -5,7 +5,7 @@ metadata:
     alm-examples: '[{"apiVersion":"push.aerogear.org/v1alpha1","kind":"UnifiedPushServer","metadata":{"name":"example-unifiedpushserver"},"spec":{"useMessageBroker":false}},{"apiVersion":"push.aerogear.org/v1alpha1","kind":"UnifiedPushServer","metadata":{"name":"example-ups-with-backups"},"spec":{"backups":[{"backendSecretName":"example-aws-key","backendSecretNamespace":"unifiedpush","encryptionKeySecretName":"example-encryption-key","encryptionKeySecretNamespace":"unifiedpush","name":"ups-daily-at-midnight","schedule":"0
       0 * * *"}]}},{"apiVersion":"push.aerogear.org/v1alpha1","kind":"UnifiedPushServer","metadata":{"name":"ups-with-enmasse"},"spec":{"useMessageBroker":true}},{"apiVersion":"push.aerogear.org/v1alpha1","kind":"UnifiedPushServer","metadata":{"name":"example-unifiedpushserver"},"spec":{"database":{"host":"example-host","name":"example-name","password":"password","port":5432,"user":"user"},"externalDB":true,"useMessageBroker":false}},{"apiVersion":"push.aerogear.org/v1alpha1","kind":"UnifiedPushServer","metadata":{"name":"example-unifiedpushserver"},"spec":{"oAuthResourceRequirements":{"limits":{"cpu":"100m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"64Mi"}},"postgresPVCSize":"10Gi","postgresResourceRequirements":{"limits":{"cpu":"2","memory":"2Gi"},"requests":{"cpu":"1","memory":"1Gi"}},"unifiedPushResourceRequirements":{"limits":{"cpu":"2","memory":"3Gi"},"requests":{"cpu":"1","memory":"1Gi"}}}}]'
     capabilities: Basic Install
-  name: unifiedpush-operator.v0.4.0
+  name: unifiedpush-operator.v0.4.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -51,7 +51,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: unifiedpush-operator
-                image: quay.io/aerogear/unifiedpush-operator:0.4.0
+                image: quay.io/aerogear/unifiedpush-operator:0.4.1
                 imagePullPolicy: Always
                 name: unifiedpush-operator
                 resources:
@@ -256,4 +256,4 @@ spec:
   maturity: alpha
   provider:
     name: AeroGear
-  version: 0.4.0
+  version: 0.4.1
