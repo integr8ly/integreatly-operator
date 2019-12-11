@@ -49,7 +49,7 @@ type KeycloakSpec struct {
 	AdminCredentials string           `json:"adminCredentials"`
 	Plugins          []string         `json:"plugins,omitempty"`
 	Backups          []KeycloakBackup `json:"backups,omitempty"`
-	Provision        bool             `json:"provision, omitempty"`
+	Provision        bool             `json:"provision,omitempty"`
 }
 
 //KeycloakBackup details of a backup task
@@ -133,8 +133,8 @@ type KeycloakIdentityProviderPair struct {
 
 type KeycloakUser struct {
 	*KeycloakApiUser
-	OutputSecret        string              `json:"outputSecret, omitempty"`
-	Password            *string             `json:"password, omitempty"`
+	OutputSecret        string              `json:"outputSecret,omitempty"`
+	Password            *string             `json:"password,omitempty"`
 	FederatedIdentities []FederatedIdentity `json:"federatedIdentities,omitempty"`
 }
 
@@ -187,7 +187,7 @@ type KeycloakProtocolMapper struct {
 
 type KeycloakClient struct {
 	*KeycloakApiClient
-	OutputSecret string `json:"outputSecret, omitempty"`
+	OutputSecret string `json:"outputSecret,omitempty"`
 }
 
 type KeycloakApiClient struct {

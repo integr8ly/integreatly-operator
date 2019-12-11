@@ -61,6 +61,7 @@ code/gen:
 .PHONY: code/check
 code/check:
 	@diff -u <(echo -n) <(gofmt -d `find . -type f -name '*.go' -not -path "./vendor/*"`)
+	go vet ./...
 
 .PHONY: code/fix
 code/fix:
