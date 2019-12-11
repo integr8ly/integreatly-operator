@@ -3,7 +3,7 @@ package resources
 import (
 	pkgerr "github.com/pkg/errors"
 
-	"golang.org/x/net/context"
+	"context"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
