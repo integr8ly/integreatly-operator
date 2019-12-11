@@ -14,7 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -176,7 +176,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.logger.Debug("checking amq streams pods are running")
 
-	pods := &v1.PodList{}
+	pods := &corev1.PodList{}
 	listOpts := []pkgclient.ListOption{
 		pkgclient.InNamespace(r.Config.GetNamespace()),
 	}
@@ -194,8 +194,8 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 checkPodStatus:
 	for _, pod := range pods.Items {
 		for _, cnd := range pod.Status.Conditions {
-			if cnd.Type == v1.ContainersReady {
-				if cnd.Status != v1.ConditionStatus("True") {
+			if cnd.Type == corev1.ContainersReady {
+				if cnd.Status != corev1.ConditionStatus("True") {
 					return v1alpha1.PhaseInProgress, nil
 				}
 				break checkPodStatus

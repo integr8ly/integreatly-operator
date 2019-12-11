@@ -20,7 +20,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -174,11 +174,11 @@ func execToPod(command string, podname string, namespace string, container strin
 		SubResource("exec").
 		Param("container", container)
 	scheme := runtime.NewScheme()
-	if err := v1.AddToScheme(scheme); err != nil {
+	if err := corev1.AddToScheme(scheme); err != nil {
 		return "", fmt.Errorf("error adding to scheme: %v", err)
 	}
 	parameterCodec := runtime.NewParameterCodec(scheme)
-	req.VersionedParams(&v1.PodExecOptions{
+	req.VersionedParams(&corev1.PodExecOptions{
 		Container: container,
 		Command:   strings.Fields(command),
 		Stdin:     false,
@@ -207,7 +207,7 @@ func execToPod(command string, podname string, namespace string, container strin
 }
 
 func getConfigMap(name string, namespace string, f *framework.Framework) (map[string]string, error) {
-	configmap := &v1.ConfigMap{
+	configmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -442,7 +442,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 
 func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
 	for _, namespaceName := range namespaces {
-		namespace := &v1.Namespace{}
+		namespace := &corev1.Namespace{}
 		err := f.Client.Get(goctx.TODO(), client.ObjectKey{Name: intlyNamespacePrefix + namespaceName}, namespace)
 		if err != nil {
 			return errors.Wrap(err, "Error getting namespace: "+namespaceName+" from cluster")
@@ -505,7 +505,7 @@ func checkRoutes(t *testing.T, f *framework.Framework, product string, numberRou
 
 func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
 	for _, pvcNamespace := range pvcNamespaces {
-		pvcs := &v1.PersistentVolumeClaimList{}
+		pvcs := &corev1.PersistentVolumeClaimList{}
 		err := f.Client.List(goctx.TODO(), pvcs, &client.ListOptions{Namespace: intlyNamespacePrefix + pvcNamespace})
 		if err != nil {
 			return errors.Wrap(err, "Error getting PVCs for namespace: "+pvcNamespace)

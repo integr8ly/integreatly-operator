@@ -29,7 +29,6 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -250,21 +249,21 @@ func TestReconciler_handleProgress(t *testing.T) {
 		Phase: aerogearv1.PhaseReconcile,
 	})
 
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
 			Namespace: defaultRhssoNamespace,
 		},
 	}
 
-	githubOauthSecret := &v1.Secret{
+	githubOauthSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "github-oauth-secret",
 			Namespace: defaultOperatorNamespace,
 		},
 	}
 
-	oauthClientSecrets := &v1.Secret{
+	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
 			Namespace: defaultOperatorNamespace,
@@ -424,21 +423,21 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	secret := &v1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
 			Namespace: defaultRhssoNamespace,
 		},
 	}
 
-	githubOauthSecret := &v1.Secret{
+	githubOauthSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "github-oauth-secret",
 			Namespace: defaultOperatorNamespace,
 		},
 	}
 
-	oauthClientSecrets := &v1.Secret{
+	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
 			Namespace: defaultOperatorNamespace,

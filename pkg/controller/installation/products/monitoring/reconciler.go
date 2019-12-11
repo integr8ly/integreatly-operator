@@ -15,7 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -217,7 +217,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 		jobs.WriteByte('\n')
 	}
 
-	scrapeConfigSecret := &v12.Secret{
+	scrapeConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetAdditionalScrapeConfigSecretName(),
 			Namespace: r.Config.GetNamespace(),
@@ -314,7 +314,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 // Read the credentials of the Prometheus instance in the openshift-monitoring
 // namespace from the grafana datasource secret
 func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, serverClient pkgclient.Client) (*monitoring_v1alpha1.GrafanaDataSourceSecret, error) {
-	secret := &v12.Secret{}
+	secret := &corev1.Secret{}
 
 	selector := pkgclient.ObjectKey{
 		Namespace: openshiftMonitoringNamespace,

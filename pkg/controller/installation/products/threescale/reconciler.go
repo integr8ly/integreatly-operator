@@ -33,7 +33,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -300,12 +299,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	}
 
 	// get the secret containing smtp credentials
-	credSec := &v1.Secret{}
+	credSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get smtp credential secret")
 	}
-	smtpCfgMap := &v1.ConfigMap{
+	smtpCfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "smtp",
 			Namespace: r.Config.GetNamespace(),
@@ -436,14 +435,14 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	}
 
 	// get blob storage connection secret
-	blobStorageSec := &v1.Secret{}
+	blobStorageSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get blob storage connection secret")
 	}
 
 	// create s3 credentials secret
-	credSec := &v1.Secret{
+	credSec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s3CredentialsSecretName,
 			Namespace: r.Config.GetNamespace(),
@@ -464,7 +463,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		S3: &threescalev1.SystemS3Spec{
 			AWSBucket: string(blobStorageSec.Data["bucketName"]),
 			AWSRegion: string(blobStorageSec.Data["bucketRegion"]),
-			AWSCredentials: v1.LocalObjectReference{
+			AWSCredentials: corev1.LocalObjectReference{
 				Name: s3CredentialsSecretName,
 			},
 		},
@@ -520,14 +519,14 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// get the secret created by the cloud resources operator
 	// containing backend redis connection details
-	credSec := &v1.Secret{}
+	credSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: backendRedis.Status.SecretRef.Name, Namespace: backendRedis.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get backend redis credential secret")
 	}
 
 	// create backend redis external connection secret needed for the 3scale apimanager
-	backendRedisSecret := &v1.Secret{
+	backendRedisSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      externalBackendRedisSecretName,
 			Namespace: r.Config.GetNamespace(),
@@ -552,14 +551,14 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// get the secret created by the cloud resources operator
 	// containing system redis connection details
-	systemCredSec := &v1.Secret{}
+	systemCredSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: systemRedis.Status.SecretRef.Name, Namespace: systemRedis.Status.SecretRef.Namespace}, systemCredSec)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get system redis credential secret")
 	}
 
 	// create system redis external connection secret needed for the 3scale apimanager
-	redisSecret := &v1.Secret{
+	redisSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      externalRedisSecretName,
 			Namespace: r.Config.GetNamespace(),
@@ -584,14 +583,14 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// get the secret containing redis credentials
-	postgresCredSec := &v1.Secret{}
+	postgresCredSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresCredSec)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
 	}
 
 	// create postgres external connection secret
-	postgresSecret := &v1.Secret{
+	postgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      externalPostgresSecretName,
 			Namespace: r.Config.GetNamespace(),

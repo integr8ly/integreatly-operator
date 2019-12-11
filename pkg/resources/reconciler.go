@@ -16,7 +16,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,8 +56,8 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.In
 	return v1alpha1.PhaseCompleted, nil
 }
 
-func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*v1.Namespace, error) {
-	ns := &v1.Namespace{
+func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*corev1.Namespace, error) {
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
@@ -65,7 +65,7 @@ func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*v1.
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: ns.Name}, ns)
 	if err == nil {
 		// workaround for https://github.com/kubernetes/client-go/issues/541
-		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: v1.SchemeGroupVersion.Version}
+		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: corev1.SchemeGroupVersion.Version}
 	}
 	return ns, err
 }
@@ -83,10 +83,10 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		return v1alpha1.PhaseCompleted, nil
 	}
 	// ns exists so check it is our namespace
-	if !IsOwnedBy(ns, inst) && ns.Status.Phase != v1.NamespaceTerminating {
+	if !IsOwnedBy(ns, inst) && ns.Status.Phase != corev1.NamespaceTerminating {
 		return v1alpha1.PhaseFailed, errors.New("existing namespace found with name " + ns.Name + " but it is not owned by the integreatly installation and it isn't being deleted")
 	}
-	if ns.Status.Phase == v1.NamespaceTerminating {
+	if ns.Status.Phase == corev1.NamespaceTerminating {
 		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
 		return v1alpha1.PhaseInProgress, nil
 	}
@@ -94,7 +94,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	if err := client.Update(ctx, ns); err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update the ns definition ")
 	}
-	if ns.Status.Phase != v1.NamespaceActive {
+	if ns.Status.Phase != corev1.NamespaceActive {
 		return v1alpha1.PhaseInProgress, nil
 	}
 	return v1alpha1.PhaseCompleted, nil

@@ -9,7 +9,7 @@ import (
 
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,7 +50,7 @@ func RemoveNamespace(ctx context.Context, inst *v1alpha1.Installation, client pk
 		return v1alpha1.PhaseFailed, err
 	}
 
-	if ns.Status.Phase == v1.NamespaceTerminating {
+	if ns.Status.Phase == corev1.NamespaceTerminating {
 		return v1alpha1.PhaseInProgress, nil
 	}
 

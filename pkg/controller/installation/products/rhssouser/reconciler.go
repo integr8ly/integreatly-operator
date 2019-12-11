@@ -17,7 +17,7 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -233,7 +233,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
-	kcAdminCredSecret := &v1.Secret{
+	kcAdminCredSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kcAdminCredSecretName,
 			Namespace: r.Config.GetNamespace(),
@@ -254,7 +254,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 }
 
 func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
-	oauthClientSecrets := &v1.Secret{
+	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
 		},

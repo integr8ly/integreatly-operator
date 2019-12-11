@@ -21,7 +21,7 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -321,7 +321,7 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 
 // reconcileCustomResource ensures that the fuse custom resource exists
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	st := &v12.Secret{}
+	st := &corev1.Secret{}
 	// if this errors, it can be ignored
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: "syndesis-global-config", Namespace: r.Config.GetNamespace()}, st)
 	if err == nil && string(r.Config.GetProductVersion()) != string(st.Data["syndesis"]) {
