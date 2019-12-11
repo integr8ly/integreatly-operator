@@ -8,12 +8,12 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 var webappCR = &webappv1alpha1.WebApp{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Namespace: "solution-explorer",
 		Name:      "solution-explorer",
 	},
@@ -23,18 +23,18 @@ var webappCR = &webappv1alpha1.WebApp{
 }
 
 var webappRoute = &routev1.Route{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name:      defaultRouteName,
 		Namespace: defaultName,
 	},
 }
 
 var installation = &v1alpha1.Installation{
-	TypeMeta: v1.TypeMeta{
+	TypeMeta: metav1.TypeMeta{
 		Kind:       "Installation",
 		APIVersion: v1alpha1.SchemeGroupVersion.String(),
 	},
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name:      "example-installation",
 		Namespace: "integreatly-operator",
 		UID:       types.UID("xyz"),
@@ -82,7 +82,7 @@ var installation = &v1alpha1.Installation{
 }
 
 var webappNs = &corev1.Namespace{
-	ObjectMeta: v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: defaultName,
 		Labels: map[string]string{
 			resources.OwnerLabelKey: string(installation.GetUID()),

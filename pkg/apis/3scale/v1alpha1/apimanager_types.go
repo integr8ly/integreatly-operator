@@ -5,7 +5,7 @@ import (
 
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,7 +61,7 @@ const (
 
 type APIManagerCondition struct {
 	Type   APIManagerConditionType `json:"type" description:"type of APIManager condition"`
-	Status v1.ConditionStatus      `json:"status" description:"status of the condition, one of True, False, Unknown"` //TODO should be a custom ConditionStatus or the core v1 one?
+	Status corev1.ConditionStatus  `json:"status" description:"status of the condition, one of True, False, Unknown"` //TODO should be a custom ConditionStatus or the core v1 one?
 
 	// The Reason, Message, LastHeartbeatTime and LastTransitionTime fields are
 	// optional. Unless we really use them they should directly not be used even
@@ -161,9 +161,9 @@ type SystemPVCSpec struct {
 }
 
 type SystemS3Spec struct {
-	AWSBucket      string                  `json:"awsBucket"`
-	AWSRegion      string                  `json:"awsRegion"`
-	AWSCredentials v1.LocalObjectReference `json:"awsCredentialsSecret"`
+	AWSBucket      string                      `json:"awsBucket"`
+	AWSRegion      string                      `json:"awsRegion"`
+	AWSCredentials corev1.LocalObjectReference `json:"awsCredentialsSecret"`
 }
 
 type SystemDatabaseSpec struct {

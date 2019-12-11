@@ -24,7 +24,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -168,7 +168,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// get the secret created by the cloud resources operator
-	croSec := &v1.Secret{}
+	croSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
 	if err != nil {
 		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
@@ -176,7 +176,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// create backup secret
 	logrus.Info("Reconciling codeready backup secret")
-	cheBackUpSecret := &v1.Secret{
+	cheBackUpSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetPostgresBackupSecretName(),
 			Namespace: r.Config.GetNamespace(),
@@ -539,7 +539,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	}
 
 	// get the postgres cloud resources operator cr
-	croSec := &v1.Secret{}
+	croSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: pcr.Status.SecretRef.Name, Namespace: pcr.Status.SecretRef.Namespace}, croSec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get postgres credential secret")

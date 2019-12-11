@@ -2,13 +2,13 @@ package amqonline
 
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 	return []*v1beta2.AddressPlan{
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "brokered-topic",
 				Namespace: ns,
 			},
@@ -24,7 +24,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "brokered-queue",
 				Namespace: ns,
 			},
@@ -40,7 +40,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-anycast",
 				Namespace: ns,
 			},
@@ -56,7 +56,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-multicast",
 				Namespace: ns,
 			},
@@ -72,7 +72,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-queue",
 				Namespace: ns,
 			},
@@ -89,7 +89,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-subscription",
 				Namespace: ns,
 			},
@@ -106,7 +106,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-topic",
 				Namespace: ns,
 			},
@@ -123,7 +123,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium-anycast",
 				Namespace: ns,
 			},
@@ -139,7 +139,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium-multicast",
 				Namespace: ns,
 			},
@@ -155,7 +155,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium-queue",
 				Namespace: ns,
 			},
@@ -172,7 +172,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium-subscription",
 				Namespace: ns,
 			},
@@ -189,7 +189,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium-topic",
 				Namespace: ns,
 			},
@@ -206,7 +206,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-anycast",
 				Namespace: ns,
 			},
@@ -222,7 +222,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-multicast",
 				Namespace: ns,
 			},
@@ -238,7 +238,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-queue",
 				Namespace: ns,
 			},
@@ -255,7 +255,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-subscription",
 				Namespace: ns,
 			},
@@ -272,7 +272,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-topic",
 				Namespace: ns,
 			},
@@ -289,7 +289,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-xlarge-queue",
 				Namespace: ns,
 			},
@@ -306,7 +306,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-xlarge-topic",
 				Namespace: ns,
 			},

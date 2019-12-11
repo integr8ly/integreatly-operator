@@ -23,7 +23,6 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -322,7 +321,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
-	kcAdminCredSecret := &v1.Secret{
+	kcAdminCredSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kcAdminCredSecretName,
 			Namespace: r.Config.GetNamespace(),
@@ -425,7 +424,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 }
 
 func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
-	githubCreds := &v1.Secret{}
+	githubCreds := &corev1.Secret{}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
 	if err != nil {
 		logrus.Errorf("Unable to find Github oauth credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())

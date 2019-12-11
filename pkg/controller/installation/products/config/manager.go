@@ -11,7 +11,7 @@ import (
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,7 +20,7 @@ import (
 type ProductConfig map[string]string
 
 func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, inst *v1alpha1.Installation) (*Manager, error) {
-	cfgmap := &v1.ConfigMap{
+	cfgmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      configMapName,
@@ -66,7 +66,7 @@ type ConfigReadable interface {
 type Manager struct {
 	Client       pkgclient.Client
 	Namespace    string
-	cfgmap       *v1.ConfigMap
+	cfgmap       *corev1.ConfigMap
 	context      context.Context
 	installation *v1alpha1.Installation
 }

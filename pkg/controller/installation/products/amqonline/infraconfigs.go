@@ -3,13 +3,13 @@ package amqonline
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func GetDefaultBrokeredInfraConfigs(ns string) []*v1beta1.BrokeredInfraConfig {
 	return []*v1beta1.BrokeredInfraConfig{
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "default",
 				Namespace: ns,
 			},
@@ -34,7 +34,7 @@ func GetDefaultBrokeredInfraConfigs(ns string) []*v1beta1.BrokeredInfraConfig {
 func GetDefaultStandardInfraConfigs(ns string) []*v1beta1.StandardInfraConfig {
 	return []*v1beta1.StandardInfraConfig{
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "default-minimal",
 			},
 			Spec: v1beta1.StandardInfraConfigSpec{
@@ -60,7 +60,7 @@ func GetDefaultStandardInfraConfigs(ns string) []*v1beta1.StandardInfraConfig {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "default-with-mqtt",
 				Annotations: map[string]string{
 					"enmasse.io/with-mqtt": "true",
@@ -89,7 +89,7 @@ func GetDefaultStandardInfraConfigs(ns string) []*v1beta1.StandardInfraConfig {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "default",
 			},
 			Spec: v1beta1.StandardInfraConfigSpec{

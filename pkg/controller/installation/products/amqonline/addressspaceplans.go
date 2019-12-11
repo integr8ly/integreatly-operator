@@ -3,13 +3,13 @@ package amqonline
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 	return []*v1beta2.AddressSpacePlan{
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "brokered-single-broker",
 				Namespace: ns,
 			},
@@ -30,7 +30,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-medium",
 				Namespace: ns,
 			},
@@ -68,7 +68,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small",
 				Namespace: ns,
 			},
@@ -104,7 +104,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-unlimited-with-mqtt",
 				Namespace: ns,
 			},
@@ -142,7 +142,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 			},
 		},
 		{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-unlimited",
 				Namespace: ns,
 			},

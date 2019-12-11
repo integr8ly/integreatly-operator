@@ -16,7 +16,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -139,7 +139,7 @@ func TestSolutionExplorer(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
-									ObjectMeta: v1.ObjectMeta{
+									ObjectMeta: metav1.ObjectMeta{
 										Name: "solutionexplorer-install-plan",
 									},
 									Status: operatorsv1alpha1.InstallPlanStatus{
