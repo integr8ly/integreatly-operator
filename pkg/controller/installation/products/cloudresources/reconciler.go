@@ -3,16 +3,17 @@ package cloudresources
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
-
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
+	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

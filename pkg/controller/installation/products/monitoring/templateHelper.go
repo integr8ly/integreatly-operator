@@ -8,9 +8,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/ghodss/yaml"
+
 	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 
-	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )

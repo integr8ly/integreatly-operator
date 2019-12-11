@@ -4,8 +4,9 @@
 package solutionexplorer
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"sync"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
 var (

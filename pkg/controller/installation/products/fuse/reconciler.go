@@ -5,28 +5,30 @@ import (
 	"fmt"
 	"strings"
 
-	v13 "github.com/openshift/api/image/v1"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
-	appsv1 "github.com/openshift/api/apps/v1"
-	v1 "github.com/openshift/api/route/v1"
-	v12 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
+	appsv1 "github.com/openshift/api/apps/v1"
+	v13 "github.com/openshift/api/image/v1"
+	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+
+	v12 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (

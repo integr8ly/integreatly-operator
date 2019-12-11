@@ -5,10 +5,12 @@ package marketplace
 
 import (
 	"context"
+	"sync"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
 )
 
 var (

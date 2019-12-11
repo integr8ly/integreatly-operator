@@ -4,15 +4,17 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
-	routev1 "github.com/openshift/api/route/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 
-	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-	"github.com/pkg/errors"
+	routev1 "github.com/openshift/api/route/v1"
+
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

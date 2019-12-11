@@ -4,32 +4,31 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
-	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqstreams"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/fuseonopenshift"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/solutionexplorer"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/threescale"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/ups"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"k8s.io/client-go/rest"
 
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/threescale"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
+
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

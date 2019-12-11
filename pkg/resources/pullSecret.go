@@ -2,11 +2,12 @@ package resources
 
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	"golang.org/x/net/context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

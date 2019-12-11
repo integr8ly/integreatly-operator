@@ -6,19 +6,20 @@ import (
 	"math/rand"
 	"time"
 
-	routev1 "github.com/openshift/api/route/v1"
+	"github.com/pkg/errors"
+	pkgerr "github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	routev1 "github.com/openshift/api/route/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"

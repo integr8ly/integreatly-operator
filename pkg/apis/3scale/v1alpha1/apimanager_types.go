@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 
 	v1 "k8s.io/api/core/v1"

@@ -2,20 +2,24 @@ package threescale
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 
-	"errors"
-	"fmt"
 	"github.com/RHsyseng/operator-utils/pkg/olm"
+
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/client"
+
 	appsv1 "github.com/openshift/api/apps/v1"
 	fakeappsv1Client "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	fakeappsv1TypedClient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1/fake"
+
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

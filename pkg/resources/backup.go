@@ -3,11 +3,15 @@ package resources
 import (
 	"context"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	v1 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
