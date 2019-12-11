@@ -17,7 +17,7 @@ import (
 
 	v12 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -218,7 +218,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 	}
 
 	scrapeConfigSecret := &v12.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetAdditionalScrapeConfigSecretName(),
 			Namespace: r.Config.GetNamespace(),
 		},
@@ -260,7 +260,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
 	m := &monitoring_v1alpha1.ApplicationMonitoring{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultMonitoringName,
 			Namespace: r.Config.GetNamespace(),
 		},

@@ -32,7 +32,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -278,7 +278,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 		{
 			Name: "Test doesn't set host when the port is not 443",
 			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      defaultConsoleSvcName,
 					Namespace: defaultNamespace,
 				},
@@ -298,7 +298,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 		{
 			Name: "Test doesn't set host when the host is undefined or empty",
 			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      defaultConsoleSvcName,
 					Namespace: defaultNamespace,
 				},
@@ -318,7 +318,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 		{
 			Name: "Test successfully setting host when port and host are defined properly",
 			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      defaultConsoleSvcName,
 					Namespace: defaultNamespace,
 				},
@@ -355,7 +355,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 		{
 			Name: "Test fails with error when failing to write config",
 			Client: fake.NewFakeClientWithScheme(buildScheme(), &enmassev1.ConsoleService{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      defaultConsoleSvcName,
 					Namespace: defaultNamespace,
 				},
@@ -409,26 +409,26 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 
 func TestReconciler_fullReconcile(t *testing.T) {
 	consoleSvc := &enmassev1.ConsoleService{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultConsoleSvcName,
 			Namespace: defaultInstallationNamespace,
 		},
 	}
 
 	installation := &v1alpha1.Installation{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
 			UID:       types.UID("xyz"),
 		},
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 
 	ns := &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
 			Labels: map[string]string{
 				resources.OwnerLabelKey: string(installation.GetUID()),
@@ -464,7 +464,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
-									ObjectMeta: v1.ObjectMeta{
+									ObjectMeta: metav1.ObjectMeta{
 										Name: "amqonline-install-plan",
 									},
 									Status: operatorsv1alpha1.InstallPlanStatus{

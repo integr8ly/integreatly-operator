@@ -16,7 +16,7 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -56,11 +56,11 @@ func errorConfigMock() *config.ConfigReadWriterMock {
 
 func basicRouteMock() *routev1.Route {
 	return &routev1.Route{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",
 			APIVersion: "v1",
 		},
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ups",
 			Name:      defaultRoutename,
 		},
@@ -69,7 +69,7 @@ func basicRouteMock() *routev1.Route {
 
 func mockUpsCRWithStatus(phase upsv1alpha1.StatusPhase) *upsv1alpha1.UnifiedPushServer {
 	return &upsv1alpha1.UnifiedPushServer{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ups",
 			Name:      "ups",
 		},

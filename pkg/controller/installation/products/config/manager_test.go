@@ -10,7 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -45,7 +45,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			productName: mockProductName,
 			existingResources: []runtime.Object{&v1.ConfigMap{
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      mockConfigMapName,
 					Namespace: mockNamespaceName,
 				},
@@ -57,7 +57,7 @@ func TestWriteConfig(t *testing.T) {
 		{
 			productName: mockProductName,
 			existingResources: []runtime.Object{&v1.ConfigMap{
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      mockConfigMapName,
 					Namespace: mockNamespaceName,
 				},
@@ -88,7 +88,7 @@ func TestWriteConfig(t *testing.T) {
 			t.Fatalf("could not write config %v", err)
 		}
 		readCfgMap := &v1.ConfigMap{
-			ObjectMeta: v12.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      mockConfigMapName,
 				Namespace: mockNamespaceName,
 			},
@@ -118,7 +118,7 @@ func TestReadConfigForProduct(t *testing.T) {
 		{
 			productName: mockProductName,
 			existingResources: []runtime.Object{&v1.ConfigMap{
-				ObjectMeta: v12.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      mockConfigMapName,
 					Namespace: mockNamespaceName,
 				},
