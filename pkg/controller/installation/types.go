@@ -2,11 +2,11 @@ package installation
 
 import (
 	"errors"
-
 	"strings"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Stage struct {

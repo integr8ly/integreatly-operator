@@ -4,23 +4,25 @@ import (
 	"context"
 	"fmt"
 
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	v1beta12 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+
+	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )

@@ -7,14 +7,17 @@ import (
 	"strings"
 	"time"
 
+	pkgerr "github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	pkgerr "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"

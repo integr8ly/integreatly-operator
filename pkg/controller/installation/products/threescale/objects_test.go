@@ -4,19 +4,20 @@ import (
 	"bytes"
 	"fmt"
 
-	v1 "github.com/openshift/api/route/v1"
-
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	appsv1 "github.com/openshift/api/apps/v1"
+	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

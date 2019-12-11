@@ -2,10 +2,12 @@ package resources
 
 import (
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/pkg/errors"
 	"regexp"
 	"strconv"
+
+	"github.com/pkg/errors"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Version struct {

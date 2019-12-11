@@ -2,24 +2,26 @@ package ups
 
 import (
 	"context"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 
-	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
-	routev1 "github.com/openshift/api/route/v1"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/pkg/errors"
-
 	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
+	routev1 "github.com/openshift/api/route/v1"
+
+	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

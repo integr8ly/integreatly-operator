@@ -1,11 +1,12 @@
 package solutionexplorer
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-
 	webappv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
 	routev1 "github.com/openshift/api/route/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"

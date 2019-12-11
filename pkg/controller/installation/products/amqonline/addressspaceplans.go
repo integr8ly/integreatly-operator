@@ -2,7 +2,8 @@ package amqonline
 
 import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {

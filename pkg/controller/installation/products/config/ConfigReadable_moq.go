@@ -4,8 +4,9 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"sync"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (

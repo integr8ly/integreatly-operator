@@ -5,11 +5,12 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const oauthServerDetails = "%s/.well-known/oauth-authorization-server"

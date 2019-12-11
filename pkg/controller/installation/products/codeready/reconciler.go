@@ -3,30 +3,33 @@ package codeready
 import (
 	"context"
 	"fmt"
-	v1alpha13 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+
+	v1alpha13 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (

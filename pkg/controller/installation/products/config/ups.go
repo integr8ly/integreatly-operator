@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 

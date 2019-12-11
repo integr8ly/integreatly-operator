@@ -2,12 +2,15 @@ package config
 
 import (
 	"context"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"strings"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	errors2 "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

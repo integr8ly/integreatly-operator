@@ -6,28 +6,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/remotecommand"
 	"strings"
-
-	routev1 "github.com/openshift/api/route/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	"github.com/pkg/errors"
 
+	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	operator "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	"github.com/pkg/errors"
+
+	routev1 "github.com/openshift/api/route/v1"
+
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/remotecommand"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
