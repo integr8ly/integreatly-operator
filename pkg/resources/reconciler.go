@@ -56,6 +56,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.In
 	return v1alpha1.PhaseCompleted, nil
 }
 
+// GetNS gets the specified corev1.Namespace from the k8s API server
 func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
