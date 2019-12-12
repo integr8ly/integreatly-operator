@@ -23,7 +23,7 @@ spec:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
           message: Job {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.job {{ "}}" }} has been running for longer than 600 seconds
         expr: |
-          time() - (max(kube_job_status_active * ON(job) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"}) BY (job) * ON(job) GROUP_RIGHT() max(kube_job_status_start_time * ON(job) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"}) BY (job, namespace, label_cronjob_name) > 0) > 600
+          time() - (max(kube_job_status_active * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"}) BY (job_name) * ON(job_name) GROUP_RIGHT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"}) BY (job_name, namespace, label_cronjob_name) > 0) > 600
         labels:
           severity: critical
       - alert: CronJobSuspended
