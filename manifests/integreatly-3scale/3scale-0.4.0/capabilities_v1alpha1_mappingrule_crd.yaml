@@ -42,15 +42,15 @@ spec:
             path:
               type: string
           required:
-            - path
-            - method
-            - increment
-            - metricRef
+          - path
+          - method
+          - increment
+          - metricRef
           type: object
         status:
           type: object
   version: v1alpha1
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true

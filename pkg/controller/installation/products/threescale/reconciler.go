@@ -372,30 +372,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		}
 	}
 
-	// workaround to avoid a bug in 3scale 2.6 which causes postgres pods to be deployed even when HA mode is enabled
-	// this causes the postgres pods to crash because they attempt to connect with credentials for the cro postgres instances
-	if len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Starting) == 1 && apim.Status.Deployments.Starting[0] == "system-postgresql" {
-		// get the postgresql deployment
-		dep := &appsv1.DeploymentConfig{}
-		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-postgresql", Namespace: r.Config.GetNamespace()}, dep)
-		if err != nil {
-			// complete anyway
-			return integreatlyv1alpha1.PhaseCompleted, fmt.Errorf("failed to get 3scale postgresql deployment: %w", err)
-		}
-
-		// scale down the pods
-		dep.Spec.Replicas = int32(0)
-		err = serverClient.Update(ctx, dep)
-		if err != nil {
-			// complete anyway
-			return integreatlyv1alpha1.PhaseCompleted, fmt.Errorf("failed to update 3scale postgresql deployment: %w", err)
-		}
-
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	if (len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0) ||
-		(len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 1 && apim.Status.Deployments.Stopped[0] == "system-postgresql") {
+	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 

@@ -36,8 +36,8 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - authParameterName
-                                - credentialsLocation
+                              - authParameterName
+                              - credentialsLocation
                               type: object
                             appID:
                               properties:
@@ -48,9 +48,9 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - appIDParameterName
-                                - appKeyParameterName
-                                - credentialsLocation
+                              - appIDParameterName
+                              - appKeyParameterName
+                              - credentialsLocation
                               type: object
                             openIDConnector:
                               properties:
@@ -59,8 +59,8 @@ spec:
                                 issuer:
                                   type: string
                               required:
-                                - issuer
-                                - credentialsLocation
+                              - issuer
+                              - credentialsLocation
                               type: object
                           type: object
                         errors:
@@ -75,9 +75,9 @@ spec:
                                   format: int64
                                   type: integer
                               required:
-                                - responseCode
-                                - contentType
-                                - responseBody
+                              - responseCode
+                              - contentType
+                              - responseBody
                               type: object
                             authenticationMissing:
                               properties:
@@ -89,23 +89,23 @@ spec:
                                   format: int64
                                   type: integer
                               required:
-                                - responseCode
-                                - contentType
-                                - responseBody
+                              - responseCode
+                              - contentType
+                              - responseBody
                               type: object
                           required:
-                            - authenticationFailed
-                            - authenticationMissing
+                          - authenticationFailed
+                          - authenticationMissing
                           type: object
                         hostHeader:
                           type: string
                         secretToken:
                           type: string
                       required:
-                        - hostHeader
-                        - secretToken
-                        - credentials
-                        - errors
+                      - hostHeader
+                      - secretToken
+                      - credentials
+                      - errors
                       type: object
                     mappingRulesSelector:
                       type: object
@@ -140,9 +140,9 @@ spec:
                     privateBaseURL:
                       type: string
                   required:
-                    - privateBaseURL
-                    - apiTestGetRequest
-                    - authenticationSettings
+                  - privateBaseURL
+                  - apiTestGetRequest
+                  - authenticationSettings
                   type: object
                 apicastOnPrem:
                   properties:
@@ -159,8 +159,8 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - authParameterName
-                                - credentialsLocation
+                              - authParameterName
+                              - credentialsLocation
                               type: object
                             appID:
                               properties:
@@ -171,9 +171,9 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - appIDParameterName
-                                - appKeyParameterName
-                                - credentialsLocation
+                              - appIDParameterName
+                              - appKeyParameterName
+                              - credentialsLocation
                               type: object
                             openIDConnector:
                               properties:
@@ -182,8 +182,8 @@ spec:
                                 issuer:
                                   type: string
                               required:
-                                - issuer
-                                - credentialsLocation
+                              - issuer
+                              - credentialsLocation
                               type: object
                           type: object
                         errors:
@@ -198,9 +198,9 @@ spec:
                                   format: int64
                                   type: integer
                               required:
-                                - responseCode
-                                - contentType
-                                - responseBody
+                              - responseCode
+                              - contentType
+                              - responseBody
                               type: object
                             authenticationMissing:
                               properties:
@@ -212,23 +212,23 @@ spec:
                                   format: int64
                                   type: integer
                               required:
-                                - responseCode
-                                - contentType
-                                - responseBody
+                              - responseCode
+                              - contentType
+                              - responseBody
                               type: object
                           required:
-                            - authenticationFailed
-                            - authenticationMissing
+                          - authenticationFailed
+                          - authenticationMissing
                           type: object
                         hostHeader:
                           type: string
                         secretToken:
                           type: string
                       required:
-                        - hostHeader
-                        - secretToken
-                        - credentials
-                        - errors
+                      - hostHeader
+                      - secretToken
+                      - credentials
+                      - errors
                       type: object
                     mappingRulesSelector:
                       type: object
@@ -267,11 +267,11 @@ spec:
                     stagingPublicBaseURL:
                       type: string
                   required:
-                    - privateBaseURL
-                    - apiTestGetRequest
-                    - authenticationSettings
-                    - stagingPublicBaseURL
-                    - productionPublicBaseURL
+                  - privateBaseURL
+                  - apiTestGetRequest
+                  - authenticationSettings
+                  - stagingPublicBaseURL
+                  - productionPublicBaseURL
                   type: object
                 codePlugin:
                   properties:
@@ -286,8 +286,8 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - authParameterName
-                                - credentialsLocation
+                              - authParameterName
+                              - credentialsLocation
                               type: object
                             appID:
                               properties:
@@ -298,9 +298,9 @@ spec:
                                 credentialsLocation:
                                   type: string
                               required:
-                                - appIDParameterName
-                                - appKeyParameterName
-                                - credentialsLocation
+                              - appIDParameterName
+                              - appKeyParameterName
+                              - credentialsLocation
                               type: object
                             openIDConnector:
                               properties:
@@ -309,15 +309,15 @@ spec:
                                 issuer:
                                   type: string
                               required:
-                                - issuer
-                                - credentialsLocation
+                              - issuer
+                              - credentialsLocation
                               type: object
                           type: object
                       required:
-                        - credentials
+                      - credentials
                       type: object
                   required:
-                    - authenticationSettings
+                  - authenticationSettings
                   type: object
               type: object
             metricSelector:
@@ -351,13 +351,13 @@ spec:
                       values:
                         type: array
           required:
-            - description
-            - integrationMethod
+          - description
+          - integrationMethod
           type: object
         status:
           type: object
   version: v1alpha1
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
