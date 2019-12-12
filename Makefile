@@ -93,9 +93,6 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
 .PHONY: test/e2e/olm
-test/e2e/olm: export AWS_ACCESS_KEY_ID := 1234
-test/e2e/olm: export AWS_SECRET_ACCESS_KEY := 1234
-test/e2e/olm: export AWS_BUCKET := dummy
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
 test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml

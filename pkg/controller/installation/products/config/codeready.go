@@ -55,8 +55,8 @@ func (c *CodeReady) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces
 }
 
-func (c *CodeReady) GetBackendSecretName() string {
-	return "s3-credentials"
+func (c *CodeReady) GetBackupsSecretName() string {
+	return "backups-s3-credentials"
 }
 
 func (c *CodeReady) GetPostgresBackupSecretName() string {

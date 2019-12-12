@@ -16,8 +16,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackup(ctx, installation, serverClient, namespace)
+	phase, err = r.reconcileBackup(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -276,13 +274,13 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient k8sclient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBackup(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client, owner ownerutil.Owner) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBackup(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	backupConfig := resources.BackupConfig{
 		Namespace: r.Config.GetNamespace(),
 		Name:      string(r.Config.GetProductName()),
 		BackendSecret: resources.BackupSecretLocation{
-			Name:      r.Config.GetBackendSecretName(),
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
+			Name:      r.Config.GetBackupsSecretName(),
+			Namespace: r.Config.GetNamespace(),
 		},
 		Components: []resources.BackupComponent{
 			{
@@ -293,7 +291,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, installation *integrea
 		},
 	}
 
-	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
+	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for amq-online: %w", err)
 	}

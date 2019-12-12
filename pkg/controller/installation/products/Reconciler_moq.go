@@ -5,12 +5,10 @@ package products
 
 import (
 	"context"
-	"sync"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 var (
@@ -31,7 +29,7 @@ var _ Interface = &InterfaceMock{}
 //             GetPreflightObjectFunc: func(ns string) runtime.Object {
 // 	               panic("mock out the GetPreflightObject method")
 //             },
-//             ReconcileFunc: func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+//             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
 //         }
@@ -45,7 +43,7 @@ type InterfaceMock struct {
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -58,12 +56,12 @@ type InterfaceMock struct {
 		Reconcile []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Inst is the inst argument value.
-			Inst *integreatlyv1alpha1.Installation
+			// Installation is the installation argument value.
+			Installation *v1alpha1.Installation
 			// Product is the product argument value.
-			Product *integreatlyv1alpha1.InstallationProductStatus
+			Product *v1alpha1.InstallationProductStatus
 			// ServerClient is the serverClient argument value.
-			ServerClient k8sclient.Client
+			ServerClient client.Client
 		}
 	}
 }
@@ -100,18 +98,18 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		Inst         *integreatlyv1alpha1.Installation
-		Product      *integreatlyv1alpha1.InstallationProductStatus
-		ServerClient k8sclient.Client
+		Installation *v1alpha1.Installation
+		Product      *v1alpha1.InstallationProductStatus
+		ServerClient client.Client
 	}{
 		Ctx:          ctx,
-		Inst:         installation,
+		Installation: installation,
 		Product:      product,
 		ServerClient: serverClient,
 	}
@@ -126,15 +124,15 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integrea
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
-	Inst         *integreatlyv1alpha1.Installation
-	Product      *integreatlyv1alpha1.InstallationProductStatus
-	ServerClient k8sclient.Client
+	Installation *v1alpha1.Installation
+	Product      *v1alpha1.InstallationProductStatus
+	ServerClient client.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
-		Inst         *integreatlyv1alpha1.Installation
-		Product      *integreatlyv1alpha1.InstallationProductStatus
-		ServerClient k8sclient.Client
+		Installation *v1alpha1.Installation
+		Product      *v1alpha1.InstallationProductStatus
+		ServerClient client.Client
 	}
 	lockInterfaceMockReconcile.RLock()
 	calls = mock.calls.Reconcile
