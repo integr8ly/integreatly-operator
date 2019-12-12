@@ -70,7 +70,7 @@ var (
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "1.2.2"
 	OperatorVersionFuse                OperatorVersion = "1.4.0"
 	OperatorVersion3Scale              OperatorVersion = "1.9.8"
-	OperatorVersionUPS                 OperatorVersion = "0.3.0"
+	OperatorVersionUPS                 OperatorVersion = "0.4.1"
 	OperatorVersionCloudResources      OperatorVersion = "0.4.0"
 )
 
