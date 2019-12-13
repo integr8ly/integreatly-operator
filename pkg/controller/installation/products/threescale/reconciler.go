@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -61,7 +60,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *v1alpha1.Installati
 	ns := i.Spec.NamespacePrefix + defaultInstallationNamespace
 	tsConfig, err := configManager.ReadThreeScale()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve threescale config")
+		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
 	}
 	if tsConfig.GetNamespace() == "" {
 		tsConfig.SetNamespace(ns)
@@ -228,7 +227,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -247,13 +246,13 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -269,12 +268,12 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return "", errors.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return "", errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return "", fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	return string(clientSecretBytes), nil
 }
@@ -290,7 +289,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile smtp credential request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile smtp credential request: %w", err)
 	}
 
 	// wait for the smtp credential set cr to reconcile
@@ -302,7 +301,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	credSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get smtp credential secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
 	}
 	smtpCfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -326,7 +325,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create or update 3scale smtp configmap")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale smtp configmap: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -382,7 +381,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-postgresql", Namespace: r.Config.GetNamespace()}, dep)
 		if err != nil {
 			// complete anyway
-			return v1alpha1.PhaseCompleted, errors.Wrap(err, "failed to get 3scale postgresql deployment")
+			return v1alpha1.PhaseCompleted, fmt.Errorf("failed to get 3scale postgresql deployment: %w", err)
 		}
 
 		// scale down the pods
@@ -390,7 +389,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		err = serverClient.Update(ctx, dep)
 		if err != nil {
 			// complete anyway
-			return v1alpha1.PhaseCompleted, errors.Wrap(err, "failed to update 3scale postgresql deployment")
+			return v1alpha1.PhaseCompleted, fmt.Errorf("failed to update 3scale postgresql deployment: %w", err)
 		}
 
 		return v1alpha1.PhaseCompleted, nil
@@ -415,7 +414,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile blob storage request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile blob storage request: %w", err)
 	}
 
 	// wait for the blob storage cr to reconcile
@@ -431,14 +430,14 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	blobStorage := &crov1.BlobStorage{}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get blob storage custom resource")
+		return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
 	}
 
 	// get blob storage connection secret
 	blobStorageSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get blob storage connection secret")
+		return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
 	}
 
 	// create s3 credentials secret
@@ -456,7 +455,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create or update blob storage aws credentials secret")
+		return nil, fmt.Errorf("failed to create or update blob storage aws credentials secret: %w", err)
 	}
 	// return the file storage spec
 	return &threescalev1.SystemFileStorageSpec{
@@ -485,7 +484,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile backend redis request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile backend redis request: %w", err)
 	}
 
 	// setup system redis custom resource
@@ -497,7 +496,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile system redis request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile system redis request: %w", err)
 	}
 
 	// setup postgres cr for the cloud resource operator
@@ -509,7 +508,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
 	// wait for the backend redis cr to reconcile
@@ -522,7 +521,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	credSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: backendRedis.Status.SecretRef.Name, Namespace: backendRedis.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get backend redis credential secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get backend redis credential secret: %w", err)
 	}
 
 	// create backend redis external connection secret needed for the 3scale apimanager
@@ -541,7 +540,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalBackendRedisSecretName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
 	// wait for the system redis cr to reconcile
@@ -554,7 +553,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	systemCredSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: systemRedis.Status.SecretRef.Name, Namespace: systemRedis.Status.SecretRef.Namespace}, systemCredSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get system redis credential secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get system redis credential secret: %w", err)
 	}
 
 	// create system redis external connection secret needed for the 3scale apimanager
@@ -574,7 +573,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalRedisSecretName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalRedisSecretName, err)
 	}
 
 	// wait for the postgres cr to reconcile
@@ -586,7 +585,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	postgresCredSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresCredSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
 
 	// create postgres external connection secret
@@ -608,7 +607,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create or update 3scale %s connection secret", externalPostgresSecretName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalPostgresSecretName, err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -997,7 +996,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", v1alpha12.BlackboxtargetData{
@@ -1005,33 +1004,33 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		Service: "3scale-admin-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
 
 	// Create a blackbox target for the developer console ui
 	route, err := r.getThreescaleRoute(ctx, client, "system-developer")
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error getting threescale system-developer route")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", v1alpha12.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target (system-developer)")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
 
 	// Create a blackbox target for the master console ui
 	route, err = r.getThreescaleRoute(ctx, client, "system-master")
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error getting threescale system-master route")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", v1alpha12.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating threescale blackbox target (system-master)")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil

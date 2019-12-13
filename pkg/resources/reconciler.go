@@ -2,9 +2,9 @@ package resources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -43,15 +43,15 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *v1alpha1.In
 		if k8serr.IsNotFound(err) {
 			PrepareObject(client, inst)
 			if err := apiClient.Create(ctx, client); err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create oauth client: %s", client.Name)
+				return v1alpha1.PhaseFailed, fmt.Errorf("failed to create oauth client: %s. %w", client.Name, err)
 			}
 			return v1alpha1.PhaseCompleted, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get oauth client: %s", client.Name)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth client: %s. %w", client.Name, err)
 	}
 	PrepareObject(client, inst)
 	if err := apiClient.Update(ctx, client); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to update oauth client: %s", client.Name)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth client: %s. %w", client.Name, err)
 	}
 	return v1alpha1.PhaseCompleted, nil
 }
@@ -75,17 +75,17 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve namespace: %s", ns.Name)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", ns.Name, err)
 		}
 		PrepareObject(ns, inst)
 		if err = client.Create(ctx, ns); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create namespace: %s", ns.Name)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create namespace: %s. %w", ns.Name, err)
 		}
 		return v1alpha1.PhaseCompleted, nil
 	}
 	// ns exists so check it is our namespace
 	if !IsOwnedBy(ns, inst) && ns.Status.Phase != corev1.NamespaceTerminating {
-		return v1alpha1.PhaseFailed, errors.New("existing namespace found with name " + ns.Name + " but it is not owned by the integreatly installation and it isn't being deleted")
+		return v1alpha1.PhaseFailed, fmt.Errorf("existing namespace found with name %v but it is not owned by the integreatly installation and it isn't being deleted", ns.Name)
 	}
 	if ns.Status.Phase == corev1.NamespaceTerminating {
 		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
@@ -93,7 +93,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	}
 	PrepareObject(ns, inst)
 	if err := client.Update(ctx, ns); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update the ns definition ")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
 	}
 	if ns.Status.Phase != corev1.NamespaceActive {
 		return v1alpha1.PhaseInProgress, nil
@@ -142,7 +142,7 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 
 	err := CopyDefaultPullSecretToNameSpace(namespace, pullSecretName, inst, client, ctx)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "error creating/updating secret '%s' in namespace: '%s'", pullSecretName, namespace)
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", pullSecretName, namespace, err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -153,15 +153,15 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	err := r.mpm.InstallOperator(ctx, client, owner, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create subscription in namespace: %s", t.Namespace))
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", t.Namespace, err)
 	}
 	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, t.Pkg, t.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
-		if k8serr.IsNotFound(errors.Cause(err)) {
+		if k8serr.IsNotFound(err) || k8serr.IsNotFound(errors.Unwrap(err)) {
 			return v1alpha1.PhaseAwaitingOperator, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not retrieve installplan and subscription in namespace: %s", t.Namespace))
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not retrieve installplan and subscription in namespace: %s: %w", t.Namespace, err)
 	}
 
 	if len(ips.Items) == 0 {
@@ -171,7 +171,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	for _, ip := range ips.Items {
 		err = upgradeApproval(ctx, client, &ip)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "error approving installplan for "+t.Pkg)
+			return v1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", t.Pkg, err)
 		}
 
 		//if it's approved but not complete, then it's in progress

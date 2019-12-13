@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -109,7 +107,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 	oauthClientSecrets.ObjectMeta.ResourceVersion = ""
 	err = resources.CreateOrUpdate(ctx, serverClient, oauthClientSecrets)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "Error reconciling OAuth clients secrets")
+		return v1alpha1.PhaseFailed, fmt.Errorf("Error reconciling OAuth clients secrets: %w", err)
 	}
 	logrus.Info("Bootstrap OAuth client secrets successfully reconciled")
 
@@ -121,9 +119,9 @@ func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverC
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not find CR route"))
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not find CR route: %w", err)
 		}
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, fmt.Sprintf("could not retrieve CR route"))
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not retrieve CR route: %w", err)
 	}
 
 	r.installation.Spec.MasterURL = consoleRouteCR.Status.Ingress[0].Host

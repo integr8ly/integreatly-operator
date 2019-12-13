@@ -2,8 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -137,7 +137,7 @@ func reconcileCronjobs(ctx context.Context, serverClient pkgclient.Client, confi
 	for _, component := range config.Components {
 		err := reconcileCronjob(ctx, serverClient, config, component)
 		if err != nil {
-			return pkgerr.Wrapf(err, "error reconciling backup job %s, for component %s", config.Name, component)
+			return fmt.Errorf("error reconciling backup job %s, for component %s: %w", config.Name, component, err)
 		}
 	}
 	return nil

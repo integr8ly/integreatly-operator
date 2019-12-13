@@ -2,10 +2,9 @@ package marketplace
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 

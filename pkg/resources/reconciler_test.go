@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -220,7 +218,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 					return err
 				}
 				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
-					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+					return fmt.Errorf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"])
 				}
 				return nil
 			},
@@ -248,7 +246,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 					return err
 				}
 				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
-					return errors.New(fmt.Sprintf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"]))
+					return fmt.Errorf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"])
 				}
 				return nil
 			},

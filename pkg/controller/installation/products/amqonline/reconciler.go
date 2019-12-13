@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
@@ -47,7 +46,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	amqOnlineConfig, err := configManager.ReadAMQOnline()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve amq online config")
+		return nil, fmt.Errorf("could not retrieve amq online config: %w", err)
 	}
 
 	if amqOnlineConfig.GetNamespace() == "" {
@@ -167,13 +166,13 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -186,7 +185,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -200,7 +199,7 @@ func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkg
 		as.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, as)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create auth service %v", as)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create auth service %v: %w", as, err)
 		}
 	}
 	return v1alpha1.PhaseCompleted, nil
@@ -213,14 +212,14 @@ func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pk
 		bic.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, bic)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create brokered infra config %v", bic)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create brokered infra config %v: %w", bic, err)
 		}
 	}
 	for _, sic := range stdCfgs {
 		sic.Namespace = r.Config.GetNamespace()
 		err := serverClient.Create(ctx, sic)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create standard infra config %v", sic)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create standard infra config %v: %w", sic, err)
 		}
 	}
 	return v1alpha1.PhaseCompleted, nil
@@ -232,7 +231,7 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkg
 	for _, ap := range addrPlans {
 		err := serverClient.Create(ctx, ap)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not create address plan %v", ap)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create address plan %v: %w", ap, err)
 		}
 	}
 	return v1alpha1.PhaseCompleted, nil
@@ -244,7 +243,7 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 	for _, asp := range addrSpacePlans {
 		err := serverClient.Create(ctx, asp)
 		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("could not create address space plan %v", asp))
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create address space plan %v: %w", asp, err)
 		}
 	}
 	return v1alpha1.PhaseCompleted, nil
@@ -262,15 +261,15 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultConsoleSvcName, Namespace: r.Config.GetNamespace()}, consoleSvc)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not find consoleservice %s", defaultConsoleSvcName)
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not find consoleservice %s: %w", defaultConsoleSvcName, err)
 		}
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "could not retrieve consoleservice %s", defaultConsoleSvcName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not retrieve consoleservice %s: %w", defaultConsoleSvcName, err)
 	}
 
 	if consoleSvc.Status.Host != "" && consoleSvc.Status.Port == 443 {
 		r.Config.SetHost(fmt.Sprintf("https://%s", consoleSvc.Status.Host))
 		if err := r.ConfigManager.WriteConfig(r.Config); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "could not persist config")
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not persist config: %w", err)
 		}
 	}
 
@@ -296,7 +295,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, inst *v1alpha1.Install
 
 	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create backups for amq-online")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for amq-online: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -305,7 +304,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, inst *v1alpha1.Install
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", v1alpha12.BlackboxtargetData{
@@ -313,7 +312,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		Service: "amq-service-broker",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating enmasse blackbox target")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse blackbox target: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil

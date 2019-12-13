@@ -2,9 +2,9 @@ package marketplace
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -92,17 +92,17 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 
 	configMapData, err := GenerateRegistryConfigMapFromManifest(t.ManifestPackage)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to generated config map data from manifest")
+		return "", fmt.Errorf("Failed to generated config map data from manifest: %w", err)
 	}
 
 	configMapName, err := m.reconcileRegistryConfigMap(ctx, client, t.Namespace, configMapData)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to reconcile config map for registry")
+		return "", fmt.Errorf("Failed to reconcile config map for registry: %w", err)
 	}
 
 	csSourceName, err := m.reconcileCatalogSource(ctx, client, t.Namespace, configMapName)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to reconcile catalog source for registry")
+		return "", fmt.Errorf("Failed to reconcile catalog source for registry: %w", err)
 	}
 
 	return csSourceName, nil
@@ -127,7 +127,7 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient p
 func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "GetSubscriptionInstallPlan")
+		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
 	}
 	if sub.Status.Install == nil {
 		return nil, sub, k8serr.NewNotFound(coreosv1alpha1.Resource("installplan"), "")
@@ -160,11 +160,11 @@ func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, cli
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, configMap)
 
 	if err != nil && !k8serr.IsNotFound(err) {
-		return "", errors.Wrapf(err, "Failed to get config map %s from %s namespace", configMap.Name, configMap.Namespace)
+		return "", fmt.Errorf("Failed to get config map %s from %s namespace: %w", configMap.Name, configMap.Namespace, err)
 	} else if k8serr.IsNotFound(err) {
 		configMap.Data = configMapData
 		if err := client.Create(ctx, configMap); err != nil {
-			return "", errors.Wrapf(err, "Failed to create configmap %s in %s namespace", configMap.Name, configMap.Namespace)
+			return "", fmt.Errorf("Failed to create configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
 		}
 
 		logrus.Infof("Created registry config map for namepsace %s", namespace)
@@ -172,7 +172,7 @@ func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, cli
 		if !reflect.DeepEqual(configMap.Data, configMapData) {
 			configMap.Data = configMapData
 			if err := client.Update(ctx, configMap); err != nil {
-				return "", errors.Wrapf(err, "Failed to update configmap %s in %s namespace", configMap.Name, configMap.Namespace)
+				return "", fmt.Errorf("Failed to update configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
 			}
 
 			logrus.Infof("Updated config map %s in namspace %s", configMapName, namespace)
@@ -207,11 +207,11 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: catalogSource.Name, Namespace: catalogSource.Namespace}, catalogSource)
 
 	if err != nil && !k8serr.IsNotFound(err) {
-		return "", errors.Wrapf(err, "Failed to get catalog source %s from %s namespace", catalogSource.Name, catalogSource.Namespace)
+		return "", fmt.Errorf("Failed to get catalog source %s from %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
 	} else if k8serr.IsNotFound(err) {
 		catalogSource.Spec = catalogSourceSpec
 		if err := client.Create(ctx, catalogSource); err != nil {
-			return "", errors.Wrapf(err, "Failed to create catalog source %s in %s namespace", catalogSource.Name, catalogSource.Namespace)
+			return "", fmt.Errorf("Failed to create catalog source %s in %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
 		}
 
 		logrus.Infof("Created registry catalog source for namespace %s", namespace)
@@ -219,7 +219,7 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 		if catalogSource.Spec.ConfigMap != catalogSourceSpec.ConfigMap {
 			catalogSource.Spec.ConfigMap = catalogSourceSpec.ConfigMap
 			if err := client.Update(ctx, catalogSource); err != nil {
-				return "", errors.Wrapf(err, "Failed to update catalog source %s in %s namespace", catalogSource.Name, catalogSource.Namespace)
+				return "", fmt.Errorf("Failed to update catalog source %s in %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
 			}
 			logrus.Infof("Updated registry catalog source for namespace %s", namespace)
 		}

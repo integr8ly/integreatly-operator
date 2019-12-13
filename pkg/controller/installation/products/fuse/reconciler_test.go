@@ -2,9 +2,8 @@ package fuse
 
 import (
 	"context"
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 

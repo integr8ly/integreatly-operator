@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -176,13 +174,13 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -195,7 +193,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -219,7 +217,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 
@@ -256,7 +254,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak realm")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
@@ -281,23 +279,23 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get keycloak realm custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
 		}
 
 		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
 
 		err = r.setupGithubIDP(ctx, kcr, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Github IDP")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to setup Github IDP: %w", err)
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
@@ -317,7 +315,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config")
+		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config: %w", err)
 	}
 	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
@@ -329,14 +327,14 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak admin credential secret for keycloak config")
+		return fmt.Errorf("could not retrieve keycloak admin credential secret for keycloak config: %w", err)
 	}
 	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
 	r.Config.SetHost(string(kcURLBytes))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not update keycloak config")
+		return fmt.Errorf("could not update keycloak config: %w", err)
 	}
 	return nil
 }
@@ -350,12 +348,12 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return pkgerr.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s key in %s Secret", r.Config.GetProductName(), oauthClientSecrets.Name)
 	}
 	clientSecret := string(clientSecretBytes)
 
@@ -409,7 +407,7 @@ func (r *Reconciler) getOAuthClientName() string {
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", v1alpha12.BlackboxtargetData{
@@ -417,7 +415,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		Service: "rhsso-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating rhsso blackbox target")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil

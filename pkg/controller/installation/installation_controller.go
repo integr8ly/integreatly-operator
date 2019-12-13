@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -107,7 +106,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
-		return pkgerr.Wrap(err, "Could not get a list of installation CR")
+		return fmt.Errorf("Could not get a list of installation CR: %w", err)
 	}
 
 	// Creates installation CR in case there is none
@@ -129,7 +128,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 
 		err = serverClient.Create(ctx, instance)
 		if err != nil {
-			return pkgerr.Wrap(err, fmt.Sprintf("Could not create installation CR in %s namespace", namespace))
+			return fmt.Errorf("Could not create installation CR in %s namespace: %w", namespace, err)
 		}
 	}
 
@@ -209,15 +208,15 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			product := instance.GetProductStatusObject(v1alpha1.ProductName(productName))
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 			if err != nil {
-				merr.Add(pkgerr.Wrapf(err, "Failed to build reconciler for product %s", product.Name))
+				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
 			}
 			serverClient, err := client.New(r.restConfig, client.Options{})
 			if err != nil {
-				merr.Add(pkgerr.Wrapf(err, "Failed to create server client for %s", product.Name))
+				merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
 			}
 			phase, err := reconciler.Reconcile(context.TODO(), instance, product, serverClient)
 			if err != nil {
-				merr.Add(pkgerr.Wrapf(err, "Failed to reconcile product %s", product.Name))
+				merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
 			}
 			logrus.Infof("current phase for %s is: %s", product.Name, phase)
 		}
@@ -225,7 +224,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		if len(merr.errors) == 0 && len(instance.Finalizers) == 1 && instance.Finalizers[0] == deletionFinalizer {
 			err := resources.RemoveFinalizer(r.context, instance, r.client, deletionFinalizer)
 			if err != nil {
-				merr.Add(pkgerr.Wrap(err, "Failed to remove finalizer"))
+				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
 			}
 			return reconcile.Result{}, nil
 		}
@@ -390,15 +389,15 @@ func (r *ReconcileInstallation) bootstrapStage(instance *v1alpha1.Installation, 
 
 	reconciler, err := NewBootstrapReconciler(configManager, instance, mpm)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to build a reconciler for Bootstrap")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
 	}
 	serverClient, err := client.New(r.restConfig, client.Options{})
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
 	phase, err := reconciler.Reconcile(r.context, instance, serverClient)
 	if err != nil || phase == v1alpha1.PhaseFailed {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "Bootstrap stage reconcile failed")
+		return v1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
 
 	return phase, nil
@@ -410,18 +409,18 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, st
 	for _, product := range stage.Products {
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 		if err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to build a reconciler for %s", product.Name)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
 		serverClient, err := client.New(r.restConfig, client.Options{})
 		if err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not create server client")
+			return v1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
 		product.Status, err = reconciler.Reconcile(r.context, instance, product, serverClient)
 		if err != nil {
 			if mErr == nil {
 				mErr = &multiErr{}
 			}
-			mErr.(*multiErr).Add(pkgerr.Wrapf(err, "failed installation of %s", product.Name))
+			mErr.(*multiErr).Add(fmt.Errorf("failed installation of %s: %w", product.Name, err))
 		}
 		//found an incomplete product
 		if !(product.Status == v1alpha1.PhaseCompleted) {

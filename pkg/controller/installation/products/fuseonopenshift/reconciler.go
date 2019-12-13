@@ -3,6 +3,7 @@ package fuseonopenshift
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -83,7 +83,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not retrieve %s config", v1alpha1.ProductFuseOnOpenshift)
+		return nil, fmt.Errorf("could not retrieve %s config: %w", v1alpha1.ProductFuseOnOpenshift, err)
 	}
 
 	if config.GetNamespace() == "" {
@@ -91,7 +91,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}
 
 	if err = config.Validate(); err != nil {
-		return nil, errors.Wrapf(err, "%s config is not valid", v1alpha1.ProductFuseOnOpenshift)
+		return nil, fmt.Errorf("%s config is not valid: %w", v1alpha1.ProductFuseOnOpenshift, err)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil && !k8errors.IsNotFound(err) {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get config map %s from %s namespace", cfgMap.Name, cfgMap.Namespace)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 	}
 
 	// Create configmap if not found
@@ -159,13 +159,13 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 			fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
 			content, err := r.getFileContentFromURL(fileURL)
 			if err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get file contents of %s", fn)
+				return v1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
 			}
 			defer content.Close()
 
 			data, err := ioutil.ReadAll(content)
 			if err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to read contents of %s", fn)
+				return v1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
 			}
 
 			// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
@@ -177,7 +177,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 
 		cfgMap.Data = configMapData
 		if err := serverClient.Create(ctx, cfgMap); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create configmap %s in %s namespace", cfgMap.Name, cfgMap.Namespace)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 		}
 	}
 
@@ -188,14 +188,14 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 	logrus.Infoln("Reconciling Fuse on OpenShift imagestreams")
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get configmap %s from %s namespace", cfgMap.Name, cfgMap.Data)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
 	}
 
 	content := []byte(cfgMap.Data[imageStreamFileName])
 
 	var fileContent map[string]interface{}
 	if err := json.Unmarshal(content, &fileContent); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to unmarshal contents of %s", imageStreamFileName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
 	}
 
 	// The content of the imagestream file is a an object of kind List
@@ -205,18 +205,18 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 	for _, is := range isList {
 		jsonData, err := json.Marshal(is)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to marshal data %s", imageStreamFileName)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
 		}
 
 		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), inst)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to load kubernetes imagestream resource")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
 		}
 
 		// Get unstructured of image stream so we can retrieve the image stream name
 		imageStreamUnstructured, err := resources.UnstructuredFromRuntimeObject(imageStreamRuntimeObj)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to parse runtime object to unstructured for imagestream")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to parse runtime object to unstructured for imagestream: %w", err)
 		}
 
 		imageStreamName := imageStreamUnstructured.GetName()
@@ -227,12 +227,12 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 
 	// Update the sample cluster sample operator CR to skip the Fuse on OpenShift image streams
 	if err := r.updateClusterSampleCR(ctx, serverClient, "SkippedImagestreams", imageStreamNames); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update SkippedImagestreams in cluster sample custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedImagestreams in cluster sample custom resource: %w", err)
 	}
 
 	for isName, isObj := range imageStreams {
 		if err := r.createResourceIfNotExist(ctx, serverClient, isObj); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create image stream %s", isName)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", isName, err)
 		}
 	}
 
@@ -250,7 +250,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 	for _, fileName := range templateFiles {
 		cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to get configmap %s from %s namespace", cfgMap.Name, cfgMap.Data)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
 		}
 
 		content := []byte(cfgMap.Data[fileName])
@@ -258,18 +258,18 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 		if filepath.Ext(fileName) == ".yml" || filepath.Ext(fileName) == ".yaml" {
 			content, err = yaml.ToJSON(content)
 			if err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to convert yaml to json %s", fileName)
+				return v1alpha1.PhaseFailed, fmt.Errorf("failed to convert yaml to json %s: %w", fileName, err)
 			}
 		}
 
 		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), inst)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to load resource %s", fileName)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
 		}
 
 		templateUnstructured, err := resources.UnstructuredFromRuntimeObject(templateRuntimeObj)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to parse object")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to parse object: %w", err)
 		}
 
 		templateName := templateUnstructured.GetName()
@@ -280,12 +280,12 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 
 	// Update sample cluster operator CR to skip Fuse on OpenShift quickstart templates
 	if err := r.updateClusterSampleCR(ctx, serverClient, "SkippedTemplates", templateNames); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update SkippedTemplates in cluster sample custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedTemplates in cluster sample custom resource: %w", err)
 	}
 
 	for name, obj := range templates {
 		if err := r.createResourceIfNotExist(ctx, serverClient, obj); err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to create image stream %s", name)
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", name, err)
 		}
 	}
 
@@ -307,25 +307,25 @@ func (r *Reconciler) getTemplatesConfigMap(ctx context.Context, serverClient pkg
 func (r *Reconciler) createResourceIfNotExist(ctx context.Context, serverClient pkgclient.Client, resource runtime.Object) error {
 	u, err := resources.UnstructuredFromRuntimeObject(resource)
 	if err != nil {
-		return errors.Errorf("failed to get unstructured object of type %T from resource %s", resource, resource)
+		return fmt.Errorf("failed to get unstructured object of type %T from resource %s", resource, resource)
 	}
 
 	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: u.GetName(), Namespace: u.GetNamespace()}, u); err != nil {
 		if !k8errors.IsNotFound(err) {
-			return errors.Wrap(err, "failed to get resource")
+			return fmt.Errorf("failed to get resource: %w", err)
 		}
 		if err := serverClient.Create(ctx, resource); err != nil {
-			return errors.Wrap(err, "failed to create resource")
+			return fmt.Errorf("failed to create resource: %w", err)
 		}
 		return nil
 	}
 
 	if !r.resourceHasLabel(u.GetLabels(), "integreatly", "true") {
 		if err := serverClient.Delete(ctx, resource); err != nil {
-			return errors.Wrap(err, "failed to delete resource")
+			return fmt.Errorf("failed to delete resource: %w", err)
 		}
 		if err := serverClient.Create(ctx, resource); err != nil {
-			return errors.Wrap(err, "failed to create resource")
+			return fmt.Errorf("failed to create resource: %w", err)
 		}
 	}
 
@@ -341,7 +341,7 @@ func (r *Reconciler) getFileContentFromURL(url string) (io.ReadCloser, error) {
 	if resp.StatusCode == http.StatusOK {
 		return resp.Body, nil
 	}
-	return nil, errors.Errorf("failed to get file content from %s. Status: %d", url, resp.StatusCode)
+	return nil, fmt.Errorf("failed to get file content from %s. Status: %d", url, resp.StatusCode)
 }
 
 func (r *Reconciler) getResourcesFromList(listObj map[string]interface{}) []interface{} {

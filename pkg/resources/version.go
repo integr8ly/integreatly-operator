@@ -1,11 +1,10 @@
 package resources
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
-
-	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )

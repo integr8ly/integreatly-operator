@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
@@ -70,14 +69,14 @@ type productInfo struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
 	seConfig, err := configManager.ReadSolutionExplorer()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve solution explorer config")
+		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
 	}
 
 	if seConfig.GetNamespace() == "" {
 		seConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultName)
 	}
 	if err = seConfig.Validate(); err != nil {
-		return nil, errors.Wrap(err, "solution explorer config is not valid")
+		return nil, fmt.Errorf("solution explorer config is not valid: %w", err)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -194,13 +193,13 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -213,7 +212,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -223,7 +222,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	target := v1alpha12.BlackboxtargetData{
@@ -233,7 +232,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *v1alpha1
 
 	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating solution explorer blackbox target")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -247,7 +246,7 @@ func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) 
 		},
 	}
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
-		return "", errors.Wrap(err, "failed to get route for solution explorer")
+		return "", fmt.Errorf("failed to get route for solution explorer: %w", err)
 	}
 	protocol := "https"
 	if route.Spec.TLS == nil {
@@ -261,7 +260,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 	//todo shouldn't need to do this with each reconcile
 	oauthConfig, err := r.OauthResolver.GetOauthEndPoint()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get oauth details ")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth details: %w", err)
 	}
 	ssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
@@ -278,7 +277,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 
 	installedServices, err := r.getInstalledProducts(inst)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrapf(err, "failed to retrieve installed products information from %s CR", inst.Name)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to retrieve installed products information from %s CR: %w", inst.Name, err)
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func() error {
 		seCR.Spec.AppLabel = "tutorial-web-app"
@@ -294,12 +293,12 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile webapp resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile webapp resource: %w", err)
 	}
 	// do a get to ensure we have an upto date copy
 	if err := client.Get(ctx, pkgclient.ObjectKey{Namespace: seCR.Namespace, Name: seCR.Name}, seCR); err != nil {
 		// any error here is bad as it should exist now
-		return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to get the webapp resource namespace %s name %s", seCR.Namespace, seCR.Name))
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get the webapp resource namespace %s name %s: %w", seCR.Namespace, seCR.Name, err)
 	}
 	if seCR.Status.Message == "OK" {
 		if r.Config.GetProductVersion() != v1alpha1.ProductVersion(seCR.Status.Version) {
@@ -330,7 +329,7 @@ func (r *Reconciler) getInstalledProducts(inst *v1alpha1.Installation) (string, 
 
 	productsData, err := json.MarshalIndent(products, "", "  ")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to unmarshal json data %s", products)
+		return "", fmt.Errorf("failed to unmarshal json data %s: %w", products, err)
 	}
 
 	return string(productsData), nil

@@ -3,9 +3,8 @@ package rhsso
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
