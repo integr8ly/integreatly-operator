@@ -443,6 +443,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Namespace: defaultOperatorNamespace,
 		},
 		Data: map[string][]byte{
+			"rhsso":  bytes.NewBufferString("test").Bytes(),
 			"3scale": bytes.NewBufferString("test").Bytes(),
 		},
 	}

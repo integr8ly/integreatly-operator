@@ -355,7 +355,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return pkgerr.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	clientSecret := string(clientSecretBytes)
 
