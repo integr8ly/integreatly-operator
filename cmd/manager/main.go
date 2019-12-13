@@ -15,9 +15,9 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
 	"github.com/integr8ly/integreatly-operator/version"
-    "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -177,7 +177,7 @@ func serveCRMetrics(cfg *rest.Config) error {
 		return err
 	}
 
-	installationGVK := [] schema.GroupVersionKind{v1alpha1.SchemaGroupVersionKind}
+	installationGVK := []schema.GroupVersionKind{v1alpha1.SchemaGroupVersionKind}
 
 	// To generate metrics in other namespaces, add the values below.
 	ns := []string{operatorNs}
