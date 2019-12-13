@@ -4,10 +4,9 @@ go 1.13
 
 require (
 	github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e
-	github.com/aerogear/unifiedpush-operator v0.0.0-20191203164915-f8b3254fed3a
+	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5
-	github.com/fabric8-launcher/launcher-operator v0.1.2 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
@@ -19,11 +18,9 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190605231540-b8a4faf68e36
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
-	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
-	golang.org/x/net v0.0.0-20191003171128-d98b1b443823
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
