@@ -54,7 +54,7 @@ var (
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionMonitoring          ProductVersion = "1.0.0"
-	Version3Scale              ProductVersion = "2.6"
+	Version3Scale              ProductVersion = "2.7"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.4.0"
 
@@ -63,14 +63,14 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline           OperatorVersion = "1.2.2"
+	OperatorVersionAMQOnline           OperatorVersion = "1.3.1"
 	OperatorVersionMonitoring          OperatorVersion = "1.0.0"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.34"
 	OperatorVersionRHSSO               OperatorVersion = "1.9.5"
 	OperatorVersionRHSSOUser           OperatorVersion = "1.9.5"
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "1.2.2"
 	OperatorVersionFuse                OperatorVersion = "1.4.0"
-	OperatorVersion3Scale              OperatorVersion = "1.9.8"
+	OperatorVersion3Scale              OperatorVersion = "0.4.0"
 	OperatorVersionUPS                 OperatorVersion = "0.4.1"
 	OperatorVersionCloudResources      OperatorVersion = "0.4.0"
 )
