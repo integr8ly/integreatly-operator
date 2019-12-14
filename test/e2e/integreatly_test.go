@@ -387,7 +387,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	// check products stage operands versions
 	stage = operator.StageName("products")
 	productOperands := map[string]string{
-		"3scale":               "1.9.8",
+		"3scale":               string(operator.Version3Scale),
 		"amqonline":            string(operator.VersionAMQOnline),
 		"codeready-workspaces": string(operator.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(operator.VersionFuseOnOpenshift),

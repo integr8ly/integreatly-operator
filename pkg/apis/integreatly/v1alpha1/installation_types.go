@@ -54,6 +54,7 @@ var (
 	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionMonitoring          ProductVersion = "1.0.0"
+	Version3Scale              ProductVersion = "2.6"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.4.0"
 
