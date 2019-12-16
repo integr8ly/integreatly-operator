@@ -8,8 +8,9 @@ import (
 	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 

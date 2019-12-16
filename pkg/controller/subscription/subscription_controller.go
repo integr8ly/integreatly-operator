@@ -3,6 +3,8 @@ package subscription
 import (
 	"context"
 
+	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -10,17 +12,14 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_subscription")
-
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string) error {
+func Add(mgr manager.Manager, _ []string, _ *detector.Detector) error {
 	return add(mgr, newReconciler(mgr))
 }
 
@@ -52,9 +51,6 @@ type ReconcileSubscription struct {
 // Reconcile will ensure that that Subscription object(s) have Manual approval for the upgrades
 // In a namespaced installation of integreatly operator it will only reconcile Subscription of the integreatly operator itself
 func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling Subscription")
-
 	instance := &v1alpha1.Subscription{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {

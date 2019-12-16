@@ -146,6 +146,12 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 							Format: "",
 						},
 					},
+					"lastError": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"stages"},
 			},

@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"

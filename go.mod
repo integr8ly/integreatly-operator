@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
-	github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e
+	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
@@ -11,7 +11,6 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/matryer/moq v0.0.0-20191106032847-0e0395200ade // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -22,11 +21,12 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
+	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	sigs.k8s.io/controller-runtime v0.3.0
 )
 

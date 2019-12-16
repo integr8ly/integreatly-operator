@@ -103,6 +103,7 @@ type InstallationStatus struct {
 	Stages           map[StageName]*InstallationStageStatus `json:"stages"`
 	PreflightStatus  PreflightStatus                        `json:"preflightStatus,omitempty"`
 	PreflightMessage string                                 `json:"preflightMessage,omitempty"`
+	LastError        string                                 `json:"lastError"`
 }
 
 type InstallationStageStatus struct {
