@@ -13,7 +13,7 @@ import (
 	types2 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -93,7 +93,7 @@ func buildScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	chev1.SchemeBuilder.AddToScheme(scheme)
 	aerogearv1.SchemeBuilder.AddToScheme(scheme)
-	v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	operatorsv1alpha1.AddToScheme(scheme)
 	marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	kafkav1.SchemeBuilder.AddToScheme(scheme)
@@ -113,33 +113,33 @@ func TestReconciler_config(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
-		Product        *v1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.Installation
+		Product        *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test error on failed config",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not retrieve che config: could not read che config",
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadCodeReadyFunc: func() (ready *config.CodeReady, e error) {
 					return nil, errors.New("could not read che config")
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 
@@ -148,7 +148,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -206,18 +206,18 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 
 	scenarios := []struct {
 		Name           string
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectError    bool
 		ExpectedError  string
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "test phase in progress when che cluster is missing",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -262,30 +262,30 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 func TestCodeready_reconcileClient(t *testing.T) {
 	scenarios := []struct {
 		Name                string
-		ExpectedStatus      v1alpha1.StatusPhase
+		ExpectedStatus      integreatlyv1alpha1.StatusPhase
 		ExpectedError       string
 		ExpectedCreateError string
-		Installation        *v1alpha1.Installation
+		Installation        *integreatlyv1alpha1.Installation
 		FakeConfig          *config.ConfigReadWriterMock
 		FakeClient          client.Client
 		FakeMPM             *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "test creating components phase missing cluster expect p",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
-				Status: v1alpha1.InstallationStatus{
-					Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
+				Status: integreatlyv1alpha1.InstallationStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
-							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-								v1alpha1.ProductCodeReadyWorkspaces: {
-									Name:   v1alpha1.ProductCodeReadyWorkspaces,
-									Status: v1alpha1.PhaseCreatingSubscription,
+							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+									Status: integreatlyv1alpha1.PhaseCreatingSubscription,
 								},
 							},
 						},
@@ -307,20 +307,20 @@ func TestCodeready_reconcileClient(t *testing.T) {
 		},
 		{
 			Name:           "test creating components returns in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
-				Status: v1alpha1.InstallationStatus{
-					Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
+				Status: integreatlyv1alpha1.InstallationStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
-							Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-								v1alpha1.ProductCodeReadyWorkspaces: {
-									Name:   v1alpha1.ProductCodeReadyWorkspaces,
-									Status: v1alpha1.PhaseCreatingSubscription,
+							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+									Status: integreatlyv1alpha1.PhaseCreatingSubscription,
 								},
 							},
 						},
@@ -380,18 +380,18 @@ func TestCodeready_reconcileClient(t *testing.T) {
 func TestCodeready_reconcileProgress(t *testing.T) {
 	scenarios := []struct {
 		Name           string
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		ExpectError    bool
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "test che cluster creating returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -402,8 +402,8 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 		},
 		{
 			Name:           "test che cluster create error returns phase failed",
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -420,8 +420,8 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 		},
 		{
 			Name:           "test che cluster available returns phase complete",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Installation: &v1alpha1.Installation{
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -468,7 +468,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 }
 
 func TestCodeready_fullReconcile(t *testing.T) {
-	installation := &v1alpha1.Installation{
+	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -476,7 +476,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 	ns := &corev1.Namespace{
@@ -557,19 +557,19 @@ func TestCodeready_fullReconcile(t *testing.T) {
 
 	scenarios := []struct {
 		Name                string
-		ExpectedStatus      v1alpha1.StatusPhase
+		ExpectedStatus      integreatlyv1alpha1.StatusPhase
 		ExpectedError       string
 		ExpectedCreateError string
-		Installation        *v1alpha1.Installation
+		Installation        *integreatlyv1alpha1.Installation
 		FakeConfig          *config.ConfigReadWriterMock
 		FakeClient          client.Client
 		FakeMPM             *marketplace.MarketplaceInterfaceMock
 		ValidateCallCounts  func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
-		Product             *v1alpha1.InstallationProductStatus
+		Product             *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful installation without errors",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   installation,
 			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation, pg, sec),
 			FakeConfig:     basicConfigMock(),
@@ -616,7 +616,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -58,13 +58,13 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
-	installation  *v1alpha1.Installation
+	installation  *integreatlyv1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -97,59 +97,59 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
 		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
-			return v1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, ns, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -158,11 +158,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -187,20 +187,20 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
@@ -217,7 +217,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 
@@ -254,14 +254,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
@@ -279,31 +279,31 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
 		}
 
 		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
 
 		err = r.setupGithubIDP(ctx, kcr, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to setup Github IDP: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Github IDP: %w", err)
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
 	r.logger.Infof("KeycloakRealm status phase is: %s", kcr.Status.Phase)
-	return v1alpha1.PhaseInProgress, nil
+	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
 func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Client) error {
@@ -339,7 +339,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -404,10 +404,10 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", v1alpha12.BlackboxtargetData{
@@ -415,10 +415,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		Service: "rhsso-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {

@@ -9,7 +9,6 @@ import (
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -65,16 +64,16 @@ type ThreeScaleTestScenario struct {
 	ExpectedStatus       integreatlyv1alpha1.StatusPhase
 	Assert               AssertFunc
 	MPM                  marketplace.MarketplaceInterface
-	Product              *v1alpha1.InstallationProductStatus
+	Product              *integreatlyv1alpha1.InstallationProductStatus
 }
 
-func getTestInstallation() *v1alpha1.Installation {
-	return &v1alpha1.Installation{
+func getTestInstallation() *integreatlyv1alpha1.Installation {
+	return &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "test",
 		},
-		Spec: v1alpha1.InstallationSpec{
+		Spec: integreatlyv1alpha1.InstallationSpec{
 			Type: "managed",
 		},
 	}
@@ -116,23 +115,23 @@ func TestThreeScale(t *testing.T) {
 			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeThreeScaleClient: getThreeScaleClient(),
 			Assert:               assertInstallationSuccessfull,
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "test-installation",
 					Namespace:  "integreatly-operator-namespace",
 					Finalizers: []string{"finalizer.3scale.integreatly.org"},
 				},
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
-				Spec: v1alpha1.InstallationSpec{
+				Spec: integreatlyv1alpha1.InstallationSpec{
 					MasterURL:        "https://console.apps.example.com",
 					RoutingSubdomain: "apps.example.com",
 				},
 			},
 			MPM:            marketplace.NewManager(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Product:        &v1alpha1.InstallationProductStatus{},
+			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 	for _, scenario := range scenarios {
@@ -175,7 +174,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
 		mpm           marketplace.MarketplaceInterface
-		installation  *v1alpha1.Installation
+		installation  *integreatlyv1alpha1.Installation
 		tsClient      ThreeScaleInterface
 		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
@@ -248,7 +247,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
 		mpm           marketplace.MarketplaceInterface
-		installation  *v1alpha1.Installation
+		installation  *integreatlyv1alpha1.Installation
 		tsClient      ThreeScaleInterface
 		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface

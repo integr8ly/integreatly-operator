@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,7 +17,7 @@ var (
 	codecs = serializer.NewCodecFactory(Scheme)
 )
 
-func LoadKubernetesResource(jsonData []byte, namespace string, install *v1alpha1.Installation) (runtime.Object, error) {
+func LoadKubernetesResource(jsonData []byte, namespace string, install *integreatlyv1alpha1.Installation) (runtime.Object, error) {
 	u := unstructured.Unstructured{}
 
 	err := u.UnmarshalJSON(jsonData)

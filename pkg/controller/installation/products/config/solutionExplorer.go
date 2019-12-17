@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type SolutionExplorer struct {
@@ -45,16 +45,16 @@ func (s *SolutionExplorer) SetHost(newHost string) {
 	s.config["HOST"] = newHost
 }
 
-func (s *SolutionExplorer) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductSolutionExplorer
+func (s *SolutionExplorer) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductSolutionExplorer
 }
 
-func (s *SolutionExplorer) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(s.config["VERSION"])
+func (s *SolutionExplorer) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.ProductVersion(s.config["VERSION"])
 }
 
-func (s *SolutionExplorer) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionSolutionExplorer
+func (s *SolutionExplorer) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionSolutionExplorer
 }
 
 func (s *SolutionExplorer) SetProductVersion(newVersion string) {

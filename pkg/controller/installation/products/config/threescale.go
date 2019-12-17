@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type ThreeScale struct {
@@ -53,16 +53,16 @@ func (t *ThreeScale) Read() ProductConfig {
 	return t.config
 }
 
-func (t *ThreeScale) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.Product3Scale
+func (t *ThreeScale) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.Product3Scale
 }
 
-func (t *ThreeScale) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(t.config["VERSION"])
+func (t *ThreeScale) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.ProductVersion(t.config["VERSION"])
 }
 
-func (t *ThreeScale) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersion(t.config["OPERATOR"])
+func (t *ThreeScale) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersion(t.config["OPERATOR"])
 }
 
 func (t *ThreeScale) SetOperatorVersion(operator string) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 
@@ -28,12 +28,12 @@ type FuseOnOpenShiftScenario struct {
 	Name           string
 	ExpectError    bool
 	ExpectedError  string
-	ExpectedStatus v1alpha1.StatusPhase
+	ExpectedStatus integreatlyv1alpha1.StatusPhase
 	FakeConfig     *config.ConfigReadWriterMock
 	FakeClient     pkgclient.Client
 	FakeMPM        *marketplace.MarketplaceInterfaceMock
-	Installation   *v1alpha1.Installation
-	Product        *v1alpha1.InstallationProductStatus
+	Installation   *integreatlyv1alpha1.Installation
+	Product        *integreatlyv1alpha1.InstallationProductStatus
 }
 
 func getFakeConfig() *config.ConfigReadWriterMock {
@@ -98,22 +98,22 @@ func TestFuseOnOpenShift(t *testing.T) {
 		{
 			Name:           "test error on failed config read",
 			ExpectError:    true,
-			ExpectedError:  fmt.Sprintf("could not retrieve %[1]s config: could not read %[1]s config", v1alpha1.ProductFuseOnOpenshift),
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedError:  fmt.Sprintf("could not retrieve %[1]s config: could not read %[1]s config", integreatlyv1alpha1.ProductFuseOnOpenshift),
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadFuseOnOpenshiftFunc: func() (ready *config.FuseOnOpenshift, e error) {
-					return nil, fmt.Errorf("could not read %s config", v1alpha1.ProductFuseOnOpenshift)
+					return nil, fmt.Errorf("could not read %s config", integreatlyv1alpha1.ProductFuseOnOpenshift)
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on invalid image stream file content",
 			ExpectError:    true,
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -122,13 +122,13 @@ func TestFuseOnOpenShift(t *testing.T) {
 				Data: map[string]string{},
 			}),
 			FakeConfig: getFakeConfig(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on invalid image stream",
 			ExpectError:    true,
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -141,13 +141,13 @@ func TestFuseOnOpenShift(t *testing.T) {
 				},
 			}),
 			FakeConfig: getFakeConfig(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on invalid template file content",
 			ExpectError:    true,
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -159,13 +159,13 @@ func TestFuseOnOpenShift(t *testing.T) {
 				},
 			}),
 			FakeConfig: getFakeConfig(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test error on invalid template object",
 			ExpectError:    true,
-			ExpectedStatus: v1alpha1.PhaseFailed,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -179,33 +179,33 @@ func TestFuseOnOpenShift(t *testing.T) {
 				},
 			}),
 			FakeConfig: getFakeConfig(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(integreatlyImgStream),
 			FakeConfig:     getFakeConfig(),
-			Product:        &v1alpha1.InstallationProductStatus{},
+			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test successful reconcile without sample cluster operator installed",
 			ExpectError:    false,
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig:     getFakeConfig(),
-			Product:        &v1alpha1.InstallationProductStatus{},
+			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test successful reconcile with sample cluster operator installed",
 			ExpectError:    false,
-			ExpectedStatus: v1alpha1.PhaseCompleted,
-			Installation:   &v1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(sampleClusterConfig, sampleClusterImgStream),
 			FakeConfig:     getFakeConfig(),
-			Product:        &v1alpha1.InstallationProductStatus{},
+			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

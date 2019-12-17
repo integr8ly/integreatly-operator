@@ -6,103 +6,103 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Stage struct {
-	Products map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus
-	Name     v1alpha1.StageName
+	Products map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus
+	Name     integreatlyv1alpha1.StageName
 }
 
 var (
 	allManagedStages = []Stage{
 		{
-			Name: v1alpha1.BootstrapStage,
+			Name: integreatlyv1alpha1.BootstrapStage,
 		},
 		{
-			Name: v1alpha1.CloudResourcesStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductCloudResources: {
-					Name: v1alpha1.ProductCloudResources,
+			Name: integreatlyv1alpha1.CloudResourcesStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductCloudResources: {
+					Name: integreatlyv1alpha1.ProductCloudResources,
 				},
 			},
 		},
 		{
-			Name: v1alpha1.MonitoringStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductMonitoring: {Name: v1alpha1.ProductMonitoring},
+			Name: integreatlyv1alpha1.MonitoringStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
 			},
 		},
 		{
-			Name: v1alpha1.AuthenticationStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductRHSSO: {
-					Name: v1alpha1.ProductRHSSO,
+			Name: integreatlyv1alpha1.AuthenticationStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductRHSSO: {
+					Name: integreatlyv1alpha1.ProductRHSSO,
 				},
 			},
 		},
 		{
-			Name: v1alpha1.ProductsStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
-				v1alpha1.ProductFuseOnOpenshift:     {Name: v1alpha1.ProductFuseOnOpenshift},
-				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
-				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
-				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
-				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
-				v1alpha1.ProductUps:                 {Name: v1alpha1.ProductUps},
+			Name: integreatlyv1alpha1.ProductsStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
+				integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
+				integreatlyv1alpha1.ProductCodeReadyWorkspaces: {Name: integreatlyv1alpha1.ProductCodeReadyWorkspaces},
+				integreatlyv1alpha1.ProductAMQOnline:           {Name: integreatlyv1alpha1.ProductAMQOnline},
+				integreatlyv1alpha1.Product3Scale:              {Name: integreatlyv1alpha1.Product3Scale},
+				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
+				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
 			},
 		},
 		{
-			Name: v1alpha1.SolutionExplorerStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
+			Name: integreatlyv1alpha1.SolutionExplorerStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
 			},
 		},
 	}
 	allWorkshopStages = []Stage{
 		{
-			Name: v1alpha1.BootstrapStage,
+			Name: integreatlyv1alpha1.BootstrapStage,
 		},
 		{
-			Name: v1alpha1.CloudResourcesStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductCloudResources: {
-					Name: v1alpha1.ProductCloudResources,
+			Name: integreatlyv1alpha1.CloudResourcesStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductCloudResources: {
+					Name: integreatlyv1alpha1.ProductCloudResources,
 				},
 			},
 		},
 		{
-			Name: v1alpha1.MonitoringStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductMonitoring: {Name: v1alpha1.ProductMonitoring},
+			Name: integreatlyv1alpha1.MonitoringStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
 			},
 		},
 		{
-			Name: v1alpha1.AuthenticationStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductRHSSO: {
-					Name: v1alpha1.ProductRHSSO,
+			Name: integreatlyv1alpha1.AuthenticationStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductRHSSO: {
+					Name: integreatlyv1alpha1.ProductRHSSO,
 				},
 			},
 		},
 		{
-			Name: v1alpha1.ProductsStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductFuse:                {Name: v1alpha1.ProductFuse},
-				v1alpha1.ProductFuseOnOpenshift:     {Name: v1alpha1.ProductFuseOnOpenshift},
-				v1alpha1.ProductCodeReadyWorkspaces: {Name: v1alpha1.ProductCodeReadyWorkspaces},
-				v1alpha1.ProductAMQOnline:           {Name: v1alpha1.ProductAMQOnline},
-				v1alpha1.Product3Scale:              {Name: v1alpha1.Product3Scale},
-				v1alpha1.ProductAMQStreams:          {Name: v1alpha1.ProductAMQStreams},
-				v1alpha1.ProductRHSSOUser:           {Name: v1alpha1.ProductRHSSOUser},
-				v1alpha1.ProductUps:                 {Name: v1alpha1.ProductUps},
+			Name: integreatlyv1alpha1.ProductsStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
+				integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
+				integreatlyv1alpha1.ProductCodeReadyWorkspaces: {Name: integreatlyv1alpha1.ProductCodeReadyWorkspaces},
+				integreatlyv1alpha1.ProductAMQOnline:           {Name: integreatlyv1alpha1.ProductAMQOnline},
+				integreatlyv1alpha1.Product3Scale:              {Name: integreatlyv1alpha1.Product3Scale},
+				integreatlyv1alpha1.ProductAMQStreams:          {Name: integreatlyv1alpha1.ProductAMQStreams},
+				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
+				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
 			},
 		},
 		{
-			Name: v1alpha1.SolutionExplorerStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-				v1alpha1.ProductSolutionExplorer: {Name: v1alpha1.ProductSolutionExplorer},
+			Name: integreatlyv1alpha1.SolutionExplorerStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+				integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
 			},
 		},
 	}
@@ -125,9 +125,9 @@ func (t *Type) GetStages() []Stage {
 func InstallationTypeFactory(installationType string, products []string) (error, *Type) {
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
-	case string(v1alpha1.InstallationTypeWorkshop):
+	case string(integreatlyv1alpha1.InstallationTypeWorkshop):
 		return nil, newWorkshopType(products)
-	case string(v1alpha1.InstallationTypeManaged):
+	case string(integreatlyv1alpha1.InstallationTypeManaged):
 		return nil, newManagedType(products)
 	default:
 		return errors.New("unknown installation type: " + installationType), nil
@@ -140,7 +140,7 @@ func newWorkshopType(products []string) *Type {
 		Stages: []Stage{},
 	}
 
-	buildProducts(t, products, v1alpha1.InstallationTypeWorkshop)
+	buildProducts(t, products, integreatlyv1alpha1.InstallationTypeWorkshop)
 	return t
 }
 
@@ -149,46 +149,46 @@ func newManagedType(products []string) *Type {
 	t := &Type{
 		Stages: []Stage{},
 	}
-	buildProducts(t, products, v1alpha1.InstallationTypeManaged)
+	buildProducts(t, products, integreatlyv1alpha1.InstallationTypeManaged)
 	return t
 }
 
-func buildProducts(t *Type, products []string, installType v1alpha1.InstallationType) {
+func buildProducts(t *Type, products []string, installType integreatlyv1alpha1.InstallationType) {
 	t.Stages = []Stage{
 		Stage{
-			Name:     v1alpha1.BootstrapStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+			Name:     integreatlyv1alpha1.BootstrapStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		Stage{
-			Name:     v1alpha1.AuthenticationStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+			Name:     integreatlyv1alpha1.AuthenticationStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		Stage{
-			Name:     v1alpha1.ProductsStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+			Name:     integreatlyv1alpha1.ProductsStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		Stage{
-			Name:     v1alpha1.SolutionExplorerStage,
-			Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{},
+			Name:     integreatlyv1alpha1.SolutionExplorerStage,
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 	for _, p := range products {
 		product := strings.ToLower(strings.TrimSpace(p))
 		if product == "all" {
-			if installType == v1alpha1.InstallationTypeManaged {
+			if installType == integreatlyv1alpha1.InstallationTypeManaged {
 				t.Stages = allManagedStages
-			} else if installType == v1alpha1.InstallationTypeWorkshop {
+			} else if installType == integreatlyv1alpha1.InstallationTypeWorkshop {
 				t.Stages = allWorkshopStages
 			}
 			break
 		}
-		if v1alpha1.ProductName(product) == v1alpha1.ProductRHSSO {
-			t.Stages[1].Products[v1alpha1.ProductRHSSO] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductRHSSO}
+		if integreatlyv1alpha1.ProductName(product) == integreatlyv1alpha1.ProductRHSSO {
+			t.Stages[1].Products[integreatlyv1alpha1.ProductRHSSO] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductRHSSO}
 		}
-		if v1alpha1.ProductName(product) == v1alpha1.ProductSolutionExplorer {
-			t.Stages[3].Products[v1alpha1.ProductSolutionExplorer] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductSolutionExplorer}
+		if integreatlyv1alpha1.ProductName(product) == integreatlyv1alpha1.ProductSolutionExplorer {
+			t.Stages[3].Products[integreatlyv1alpha1.ProductSolutionExplorer] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductSolutionExplorer}
 		}
 
-		t.Stages[2].Products[v1alpha1.ProductName(product)] = &v1alpha1.InstallationProductStatus{Name: v1alpha1.ProductName(product)}
+		t.Stages[2].Products[integreatlyv1alpha1.ProductName(product)] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductName(product)}
 	}
 }

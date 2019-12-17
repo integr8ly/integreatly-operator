@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type CloudResources struct {
@@ -32,14 +32,14 @@ func (c *CloudResources) Read() ProductConfig {
 	return c.Config
 }
 
-func (c *CloudResources) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductCloudResources
+func (c *CloudResources) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductCloudResources
 }
 
-func (c *CloudResources) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionCloudResources
+func (c *CloudResources) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionCloudResources
 }
 
-func (c *CloudResources) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionCloudResources
+func (c *CloudResources) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionCloudResources
 }

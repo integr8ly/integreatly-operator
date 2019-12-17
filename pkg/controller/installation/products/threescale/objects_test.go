@@ -8,7 +8,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -180,16 +180,16 @@ var oauthClientSecrets = &corev1.Secret{
 	},
 }
 
-var installation = &v1alpha1.Installation{
+var installation = &integreatlyv1alpha1.Installation{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:       "test-installation",
 		Namespace:  "integreatly-operator-namespace",
 		Finalizers: []string{"finalizer.3scale.integreatly.org"},
 	},
 	TypeMeta: metav1.TypeMeta{
-		APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 	},
-	Spec: v1alpha1.InstallationSpec{
+	Spec: integreatlyv1alpha1.InstallationSpec{
 		MasterURL:        "https://console.apps.example.com",
 		RoutingSubdomain: "apps.example.com",
 	},

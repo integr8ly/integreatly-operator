@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/amqstreams"
@@ -34,50 +34,50 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (newPhase v1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 	GetPreflightObject(ns string) runtime.Object
 }
 
-func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *v1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
 	oauthResolver.Host = rc.Host
 
 	switch product {
-	case v1alpha1.ProductAMQStreams:
+	case integreatlyv1alpha1.ProductAMQStreams:
 		reconciler, err = amqstreams.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductRHSSO:
+	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
 		reconciler, err = rhsso.NewReconciler(configManager, instance, oauthv1Client, mpm)
-	case v1alpha1.ProductRHSSOUser:
+	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
 		reconciler, err = rhssouser.NewReconciler(configManager, instance, oauthv1Client, mpm)
-	case v1alpha1.ProductCodeReadyWorkspaces:
+	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductFuse:
+	case integreatlyv1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductFuseOnOpenshift:
+	case integreatlyv1alpha1.ProductFuseOnOpenshift:
 		reconciler, err = fuseonopenshift.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductAMQOnline:
+	case integreatlyv1alpha1.ProductAMQOnline:
 		reconciler, err = amqonline.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductSolutionExplorer:
+	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
 		reconciler, err = solutionexplorer.NewReconciler(configManager, instance, oauthv1Client, mpm, oauthResolver)
-	case v1alpha1.ProductMonitoring:
+	case integreatlyv1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.Product3Scale:
+	case integreatlyv1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {
 			return nil, err
@@ -97,9 +97,9 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 		tsClient := threescale.NewThreeScaleClient(httpc, instance.Spec.RoutingSubdomain)
 
 		reconciler, err = threescale.NewReconciler(configManager, instance, appsv1, oauthv1Client, tsClient, mpm)
-	case v1alpha1.ProductUps:
+	case integreatlyv1alpha1.ProductUps:
 		reconciler, err = ups.NewReconciler(configManager, instance, mpm)
-	case v1alpha1.ProductCloudResources:
+	case integreatlyv1alpha1.ProductCloudResources:
 		reconciler, err = cloudresources.NewReconciler(configManager, instance, mpm)
 	default:
 		err = errors.New("unknown products: " + string(product))
@@ -111,8 +111,8 @@ func NewReconciler(product v1alpha1.ProductName, rc *rest.Config, configManager 
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
-	return v1alpha1.PhaseNone, nil
+func (n *NoOp) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	return integreatlyv1alpha1.PhaseNone, nil
 }
 
 func (n *NoOp) GetPreflightObject(ns string) runtime.Object {

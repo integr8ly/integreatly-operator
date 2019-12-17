@@ -9,7 +9,7 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -125,16 +125,16 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     client.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "UPS Test: test custom resource is reconciled and phase complete returned",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "ups",
@@ -145,9 +145,9 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:           "UPS Test: Phase failed when error in creating custom resource",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient: &moqclient.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
@@ -161,9 +161,9 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:           "UPS Test: Phase failed when general error in finding custom resource",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient: &moqclient.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
@@ -174,9 +174,9 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:           "UPS Test: Phase in progress when custom resource is not in phase complete",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "ups",
@@ -217,34 +217,34 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 		Name           string
 		FakeClient     client.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "UPS Test: Config is updated with route url correctly - phase complete",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
 		},
 		{
 			Name:           "UPS Test: Cannot retrieve route - phase failed",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
 			ExpectErr:      true,
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme),
 		},
 		{
 			Name:           "UPS Test: Cannot update config with route url - phase failed",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
 			ExpectErr:      true,
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
 		},

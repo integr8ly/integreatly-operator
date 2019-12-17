@@ -6,7 +6,7 @@ import (
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -20,7 +20,7 @@ import (
 
 func basicClient(objects ...runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
-	v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
 	batchv1.SchemeBuilder.AddToScheme(scheme)
@@ -43,7 +43,7 @@ func TestBackups(t *testing.T) {
 		Name         string
 		BackupConfig BackupConfig
 		Context      context.Context
-		Instance     *v1alpha1.Installation
+		Instance     *integreatlyv1alpha1.Installation
 		Client       client.Client
 		Validation   func(e error, t *testing.T)
 	}{

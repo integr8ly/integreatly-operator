@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
@@ -19,7 +19,7 @@ import (
 
 type ProductConfig map[string]string
 
-func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, inst *v1alpha1.Installation) (*Manager, error) {
+func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, inst *integreatlyv1alpha1.Installation) (*Manager, error) {
 	cfgmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -35,7 +35,7 @@ func NewManager(ctx context.Context, client pkgclient.Client, namespace string, 
 
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter
 type ConfigReadWriter interface {
-	readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error)
+	readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
 	GetOauthClientsSecretName() string
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
@@ -49,7 +49,7 @@ type ConfigReadWriter interface {
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
 	ReadMonitoring() (*Monitoring, error)
-	ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error)
+	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
 	ReadCloudResources() (*CloudResources, error)
 }
@@ -57,9 +57,9 @@ type ConfigReadWriter interface {
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
 type ConfigReadable interface {
 	Read() ProductConfig
-	GetProductName() v1alpha1.ProductName
-	GetProductVersion() v1alpha1.ProductVersion
-	GetOperatorVersion() v1alpha1.OperatorVersion
+	GetProductName() integreatlyv1alpha1.ProductName
+	GetProductVersion() integreatlyv1alpha1.ProductVersion
+	GetOperatorVersion() integreatlyv1alpha1.OperatorVersion
 	GetHost() string
 }
 
@@ -68,32 +68,32 @@ type Manager struct {
 	Namespace    string
 	cfgmap       *corev1.ConfigMap
 	context      context.Context
-	installation *v1alpha1.Installation
+	installation *integreatlyv1alpha1.Installation
 }
 
-func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
+func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
 	switch product {
-	case v1alpha1.Product3Scale:
+	case integreatlyv1alpha1.Product3Scale:
 		return m.ReadThreeScale()
-	case v1alpha1.ProductAMQOnline:
+	case integreatlyv1alpha1.ProductAMQOnline:
 		return m.ReadAMQOnline()
-	case v1alpha1.ProductRHSSO:
+	case integreatlyv1alpha1.ProductRHSSO:
 		return m.ReadRHSSO()
-	case v1alpha1.ProductRHSSOUser:
+	case integreatlyv1alpha1.ProductRHSSOUser:
 		return m.ReadRHSSOUser()
-	case v1alpha1.ProductAMQStreams:
+	case integreatlyv1alpha1.ProductAMQStreams:
 		return m.ReadAMQStreams()
-	case v1alpha1.ProductCodeReadyWorkspaces:
+	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
 		return m.ReadCodeReady()
-	case v1alpha1.ProductFuse:
+	case integreatlyv1alpha1.ProductFuse:
 		return m.ReadFuse()
-	case v1alpha1.ProductFuseOnOpenshift:
+	case integreatlyv1alpha1.ProductFuseOnOpenshift:
 		return m.ReadFuseOnOpenshift()
-	case v1alpha1.ProductSolutionExplorer:
+	case integreatlyv1alpha1.ProductSolutionExplorer:
 		return m.ReadSolutionExplorer()
-	case v1alpha1.ProductUps:
+	case integreatlyv1alpha1.ProductUps:
 		return m.ReadUps()
-	case v1alpha1.ProductCloudResources:
+	case integreatlyv1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
 	}
 
@@ -101,7 +101,7 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 }
 
 func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductSolutionExplorer)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductSolutionExplorer)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (m *Manager) GetOauthClientsSecretName() string {
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductAMQStreams)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductAMQStreams)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {
 }
 
 func (m *Manager) ReadThreeScale() (*ThreeScale, error) {
-	config, err := m.readConfigForProduct(v1alpha1.Product3Scale)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.Product3Scale)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (m *Manager) ReadThreeScale() (*ThreeScale, error) {
 }
 
 func (m *Manager) ReadCodeReady() (*CodeReady, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductCodeReadyWorkspaces)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductCodeReadyWorkspaces)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (m *Manager) ReadCodeReady() (*CodeReady, error) {
 }
 
 func (m *Manager) ReadFuse() (*Fuse, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductFuse)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductFuse)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (m *Manager) ReadFuse() (*Fuse, error) {
 }
 
 func (m *Manager) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductFuseOnOpenshift)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductFuseOnOpenshift)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (m *Manager) ReadFuseOnOpenshift() (*FuseOnOpenshift, error) {
 }
 
 func (m *Manager) ReadRHSSO() (*RHSSO, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductRHSSO)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductRHSSO)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func (m *Manager) ReadRHSSO() (*RHSSO, error) {
 }
 
 func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductRHSSOUser)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductRHSSOUser)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (m *Manager) ReadRHSSOUser() (*RHSSOUser, error) {
 }
 
 func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductAMQOnline)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductAMQOnline)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func (m *Manager) ReadAMQOnline() (*AMQOnline, error) {
 }
 
 func (m *Manager) ReadMonitoring() (*Monitoring, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductMonitoring)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoring)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 }
 
 func (m *Manager) ReadUps() (*Ups, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductUps)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductUps)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (m *Manager) ReadUps() (*Ups, error) {
 }
 
 func (m *Manager) ReadCloudResources() (*CloudResources, error) {
-	config, err := m.readConfigForProduct(v1alpha1.ProductCloudResources)
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductCloudResources)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (m *Manager) WriteConfig(config ConfigReadable) error {
 	}
 }
 
-func (m *Manager) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
+func (m *Manager) readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
 	config := m.cfgmap.Data[string(product)]
 	decoder := yaml.NewDecoder(strings.NewReader(config))
 	retConfig := ProductConfig{}

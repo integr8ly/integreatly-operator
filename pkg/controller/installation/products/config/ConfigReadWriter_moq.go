@@ -6,7 +6,7 @@ package config
 import (
 	"sync"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
@@ -125,7 +125,7 @@ type ConfigReadWriterMock struct {
 	ReadMonitoringFunc func() (*Monitoring, error)
 
 	// ReadProductFunc mocks the ReadProduct method.
-	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
+	ReadProductFunc func(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 
 	// ReadRHSSOFunc mocks the ReadRHSSO method.
 	ReadRHSSOFunc func() (*RHSSO, error)
@@ -146,7 +146,7 @@ type ConfigReadWriterMock struct {
 	WriteConfigFunc func(config ConfigReadable) error
 
 	// readConfigForProductFunc mocks the readConfigForProduct method.
-	readConfigForProductFunc func(product v1alpha1.ProductName) (ProductConfig, error)
+	readConfigForProductFunc func(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -180,7 +180,7 @@ type ConfigReadWriterMock struct {
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
 			// Product is the product argument value.
-			Product v1alpha1.ProductName
+			Product integreatlyv1alpha1.ProductName
 		}
 		// ReadRHSSO holds details about calls to the ReadRHSSO method.
 		ReadRHSSO []struct {
@@ -205,7 +205,7 @@ type ConfigReadWriterMock struct {
 		// readConfigForProduct holds details about calls to the readConfigForProduct method.
 		readConfigForProduct []struct {
 			// Product is the product argument value.
-			Product v1alpha1.ProductName
+			Product integreatlyv1alpha1.ProductName
 		}
 	}
 }
@@ -445,12 +445,12 @@ func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
 }
 
 // ReadProduct calls ReadProductFunc.
-func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, error) {
+func (mock *ConfigReadWriterMock) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {
 	if mock.ReadProductFunc == nil {
 		panic("ConfigReadWriterMock.ReadProductFunc: method is nil but ConfigReadWriter.ReadProduct was just called")
 	}
 	callInfo := struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}{
 		Product: product,
 	}
@@ -464,10 +464,10 @@ func (mock *ConfigReadWriterMock) ReadProduct(product v1alpha1.ProductName) (Con
 // Check the length with:
 //     len(mockedConfigReadWriter.ReadProductCalls())
 func (mock *ConfigReadWriterMock) ReadProductCalls() []struct {
-	Product v1alpha1.ProductName
+	Product integreatlyv1alpha1.ProductName
 } {
 	var calls []struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}
 	lockConfigReadWriterMockReadProduct.RLock()
 	calls = mock.calls.ReadProduct
@@ -637,12 +637,12 @@ func (mock *ConfigReadWriterMock) WriteConfigCalls() []struct {
 }
 
 // readConfigForProduct calls readConfigForProductFunc.
-func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductName) (ProductConfig, error) {
+func (mock *ConfigReadWriterMock) readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {
 	if mock.readConfigForProductFunc == nil {
 		panic("ConfigReadWriterMock.readConfigForProductFunc: method is nil but ConfigReadWriter.readConfigForProduct was just called")
 	}
 	callInfo := struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}{
 		Product: product,
 	}
@@ -656,10 +656,10 @@ func (mock *ConfigReadWriterMock) readConfigForProduct(product v1alpha1.ProductN
 // Check the length with:
 //     len(mockedConfigReadWriter.readConfigForProductCalls())
 func (mock *ConfigReadWriterMock) readConfigForProductCalls() []struct {
-	Product v1alpha1.ProductName
+	Product integreatlyv1alpha1.ProductName
 } {
 	var calls []struct {
-		Product v1alpha1.ProductName
+		Product integreatlyv1alpha1.ProductName
 	}
 	lockConfigReadWriterMockreadConfigForProduct.RLock()
 	calls = mock.calls.readConfigForProduct

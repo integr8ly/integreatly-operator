@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -41,7 +41,7 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	Logger        *logrus.Entry
 	mpm           marketplace.MarketplaceInterface
-	installation  *v1alpha1.Installation
+	installation  *integreatlyv1alpha1.Installation
 	monitoring    *monitoring_v1alpha1.ApplicationMonitoring
 	*resources.Reconciler
 }
@@ -50,7 +50,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	monitoringConfig, err := configManager.ReadMonitoring()
 
@@ -72,8 +72,8 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
 		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
@@ -83,7 +83,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 		err := serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
 		if err != nil {
 			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
-			return v1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		if len(blackboxtargets.Items) > 0 {
 			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
@@ -93,42 +93,42 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 				b := &monitoring_v1alpha1.BlackboxTarget{}
 				err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetNamespace()}, b)
 				if err != nil {
-					return v1alpha1.PhaseFailed, err
+					return integreatlyv1alpha1.PhaseFailed, err
 				}
 
 				err = serverClient.Delete(ctx, b)
 				if err != nil {
-					return v1alpha1.PhaseFailed, err
+					return integreatlyv1alpha1.PhaseFailed, err
 				}
 			}
-			return v1alpha1.PhaseInProgress, nil
+			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
 		m := &monitoring_v1alpha1.ApplicationMonitoring{}
 		err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
 		if err != nil && !kerrors.IsNotFound(err) {
 			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
-			return v1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		if !kerrors.IsNotFound(err) {
 			if m.DeletionTimestamp == nil {
 				logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
 				err = serverClient.Delete(ctx, m)
 				if err != nil {
-					return v1alpha1.PhaseFailed, err
+					return integreatlyv1alpha1.PhaseFailed, err
 				}
 			}
-			return v1alpha1.PhaseInProgress, nil
+			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -136,44 +136,44 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, ns, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns, ManifestPackage: manifestPackagae}, ns, serverClient)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileComponents(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.populateParams(ctx, serverClient)
 	logrus.Infof("Phase: %s populateParams", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileScrapeConfigs(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileScrapeConfigs", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
@@ -184,20 +184,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
 	}
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // Create the integreatly additional scrape config secret which is reconciled
 // by the application monitoring operator and passed to prometheus
-func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	templateHelper := NewTemplateHelper(r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error reading config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading config: %w", err)
 	}
 
 	jobs := strings.Builder{}
@@ -210,7 +210,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 
 		bytes, err := templateHelper.loadTemplate(job)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("error loading template: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error loading template: %w", err)
 		}
 
 		jobs.Write(bytes)
@@ -236,28 +236,28 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 	})
 
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error creating additional scrape config secret: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating additional scrape config secret: %w", err)
 	}
 
 	r.Logger.Info(fmt.Sprintf("operation result of creating additional scrape config secret was %v", or))
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
 		_, err := r.createResource(ctx, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		r.Logger.Infof("Reconciling the monitoring template %s was successful", template)
 	}
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
 	m := &monitoring_v1alpha1.ApplicationMonitoring{
 		ObjectMeta: metav1.ObjectMeta{
@@ -279,11 +279,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update applicationmonitoring custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update applicationmonitoring custom resource: %w", err)
 	}
 
 	r.Logger.Infof("The operation result for monitoring %s was %s", m.Name, or)
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
@@ -338,21 +338,21 @@ func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, ser
 }
 
 // Populate the extra params for templating
-func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Obtain the prometheus credentials from openshift-monitoring
 	datasources, err := r.readFederatedPrometheusCredentials(ctx, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	if len(datasources.DataSources) < 1 {
-		return v1alpha1.PhaseFailed, errors.New("cannot obtain prometheus credentials")
+		return integreatlyv1alpha1.PhaseFailed, errors.New("cannot obtain prometheus credentials")
 	}
 
 	// Obtain the 3scale config and namespace
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
@@ -360,10 +360,10 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *v1alpha1.Installation, serverClient pkgclient.Client) error {
+func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
 		return nil

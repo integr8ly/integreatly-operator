@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 
@@ -59,9 +59,9 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error creating scheme: %s", err.Error())
 	}
-	ownerInstall := &v1alpha1.Installation{
+	ownerInstall := &integreatlyv1alpha1.Installation{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Installation",
 		},
 	}
@@ -78,8 +78,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		client           client.Client
 		SubscriptionName string
 		ExpectErr        bool
-		ExpectedStatus   v1alpha1.StatusPhase
-		Installation     *v1alpha1.Installation
+		ExpectedStatus   integreatlyv1alpha1.StatusPhase
+		Installation     *integreatlyv1alpha1.Installation
 		Target           marketplace.Target
 		Validate         func(t *testing.T, mock *marketplace.MarketplaceInterfaceMock)
 	}{
@@ -95,8 +95,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				},
 			},
 			SubscriptionName: "something",
-			ExpectedStatus:   v1alpha1.PhaseCompleted,
-			Installation:     &v1alpha1.Installation{},
+			ExpectedStatus:   integreatlyv1alpha1.PhaseCompleted,
+			Installation:     &integreatlyv1alpha1.Installation{},
 			Validate: func(t *testing.T, mock *marketplace.MarketplaceInterfaceMock) {
 				if len(mock.InstallOperatorCalls()) != 1 {
 					t.Fatalf("expected create subscription to be called once but was called %v", len(mock.InstallOperatorCalls()))
@@ -122,7 +122,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				},
 			},
 			SubscriptionName: "something",
-			ExpectedStatus:   v1alpha1.PhaseAwaitingOperator,
+			ExpectedStatus:   integreatlyv1alpha1.PhaseAwaitingOperator,
 		},
 		{
 			Name: "test reconcile subscription returns waiting for operator when catalog source config not ready",
@@ -137,7 +137,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				},
 			}),
 			SubscriptionName: "something",
-			ExpectedStatus:   v1alpha1.PhaseFailed,
+			ExpectedStatus:   integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:          marketplace.NewManager(),
 			Installation:     ownerInstall,
 			ExpectErr:        true,
@@ -197,14 +197,14 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 	cases := []struct {
 		Name         string
 		Client       client.Client
-		Installation *v1alpha1.Installation
+		Installation *integreatlyv1alpha1.Installation
 		Config       *config.ConfigReadWriterMock
 		Validate     func(c client.Client) error
 	}{
 		{
 			Name:   "test default pull secret details are used if not provided",
 			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testinstall",
 					Namespace: "testinstall",
@@ -226,13 +226,13 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 		{
 			Name:   "test pull secret is reconciled successfully",
 			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, customPullSecret),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "testinstall",
 					Namespace: "testinstall",
 				},
-				Spec: v1alpha1.InstallationSpec{
-					PullSecret: v1alpha1.PullSecretSpec{
+				Spec: integreatlyv1alpha1.InstallationSpec{
+					PullSecret: integreatlyv1alpha1.PullSecretSpec{
 						Name:      "test",
 						Namespace: "test",
 					},
@@ -281,9 +281,9 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 		Name           string
 		OauthClient    *oauthv1.OAuthClient
 		ExpectErr      bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		client         client.Client
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 	}{
 		{
 			Name: "test oauth client is reconciled correctly when it does not exist",
@@ -292,9 +292,9 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 				Secret:       "test",
 				RedirectURIs: []string{"http://test.com"},
 			},
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 					Kind:       "Installation",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -302,14 +302,14 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 				},
 			},
 			client:         fakeclient.NewFakeClientWithScheme(scheme),
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			Name:        "test oauth client is reconciled correctly when it does exist",
 			OauthClient: existingClient,
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 					Kind:       "Installation",
 				},
 				ObjectMeta: metav1.ObjectMeta{
@@ -317,7 +317,7 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 				},
 			},
 			client:         fakeclient.NewFakeClientWithScheme(scheme, existingClient),
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 	}
 
@@ -340,21 +340,21 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 
 func TestReconciler_ReconcileNamespace(t *testing.T) {
 	nsName := "test-ns"
-	installation := &v1alpha1.Installation{
+	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "install",
 			UID:  types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 	cases := []struct {
 		Name           string
 		client         client.Client
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
@@ -371,7 +371,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 				},
 			}),
 			Installation:   installation,
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns not ready",
@@ -385,7 +385,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 				Status: corev1.NamespaceStatus{},
 			}),
 			Installation:   installation,
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 		},
 		{
 			Name: "Test namespace reconcile returns waiting when ns is terminating",
@@ -400,8 +400,8 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 					Phase: corev1.NamespaceTerminating,
 				},
 			}),
-			Installation:   &v1alpha1.Installation{},
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			Installation:   &integreatlyv1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 		},
 	}
 

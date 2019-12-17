@@ -8,7 +8,6 @@ import (
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
@@ -88,21 +87,21 @@ func TestReconciler_config(t *testing.T) {
 	cases := []struct {
 		Name            string
 		ExpectError     bool
-		ExpectedStatus  v1alpha1.StatusPhase
+		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
 		FakeClient      pkgclient.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *v1alpha1.Installation
-		Product         *v1alpha1.InstallationProductStatus
+		Installation    *integreatlyv1alpha1.Installation
+		Product         *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:            "test error on failed config",
-			ExpectedStatus:  v1alpha1.PhaseFailed,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
 			ExpectedError:   "could not read rhsso config",
-			Installation:    &v1alpha1.Installation{},
+			Installation:    &integreatlyv1alpha1.Installation{},
 			FakeClient:      fakeclient.NewFakeClient(),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: &config.ConfigReadWriterMock{
@@ -110,7 +109,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read rhsso config")
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -162,10 +161,10 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		FakeClient      client.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeConfig      *config.ConfigReadWriterMock
-		Installation    *v1alpha1.Installation
+		Installation    *integreatlyv1alpha1.Installation
 		ExpectError     bool
 		ExpectedError   string
-		ExpectedStatus  v1alpha1.StatusPhase
+		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 	}{
 		{
@@ -173,13 +172,13 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -192,7 +191,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			FakeConfig: basicConfigMock(),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -200,7 +199,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 		},
 	}
 	for _, tc := range cases {
@@ -275,51 +274,51 @@ func TestReconciler_handleProgress(t *testing.T) {
 	cases := []struct {
 		Name            string
 		ExpectError     bool
-		ExpectedStatus  v1alpha1.StatusPhase
+		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
 		FakeClient      client.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *v1alpha1.Installation
+		Installation    *integreatlyv1alpha1.Installation
 	}{
 		{
 			Name:            "test ready kcr returns phase complete",
-			ExpectedStatus:  v1alpha1.PhaseCompleted,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
-			Installation:    &v1alpha1.Installation{},
+			Installation:    &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:            "test unready kcr cr returns phase in progress",
-			ExpectedStatus:  v1alpha1.PhaseInProgress,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed}), githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
-			Installation:    &v1alpha1.Installation{},
+			Installation:    &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:            "test missing kc cr returns phase failed",
-			ExpectedStatus:  v1alpha1.PhaseFailed,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
-			Installation:    &v1alpha1.Installation{},
+			Installation:    &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:            "test missing kcr cr returns phase failed",
-			ExpectedStatus:  v1alpha1.PhaseFailed,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
-			Installation:    &v1alpha1.Installation{},
+			Installation:    &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:            "test failed config write",
-			ExpectedStatus:  v1alpha1.PhaseFailed,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
@@ -338,7 +337,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 					return "oauth-client-secrets"
 				},
 			},
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 		},
 	}
 
@@ -377,7 +376,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	installation := &v1alpha1.Installation{
+	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "installation",
 			Namespace:  defaultRhssoNamespace,
@@ -386,16 +385,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
-		Status: v1alpha1.InstallationStatus{
-			Stages: map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{
+		Status: integreatlyv1alpha1.InstallationStatus{
+			Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
 				"codeready-stage": {
 					Name: "codeready-stage",
-					Products: map[v1alpha1.ProductName]*v1alpha1.InstallationProductStatus{
-						v1alpha1.ProductCodeReadyWorkspaces: {
-							Name:   v1alpha1.ProductCodeReadyWorkspaces,
-							Status: v1alpha1.PhaseCreatingComponents,
+					Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+							Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
+							Status: integreatlyv1alpha1.PhaseCreatingComponents,
 						},
 					},
 				},
@@ -450,18 +449,18 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	cases := []struct {
 		Name            string
 		ExpectError     bool
-		ExpectedStatus  v1alpha1.StatusPhase
+		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
 		FakeClient      client.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *v1alpha1.Installation
-		Product         *v1alpha1.InstallationProductStatus
+		Installation    *integreatlyv1alpha1.Installation
+		Product         *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:            "test successful reconcile",
-			ExpectedStatus:  v1alpha1.PhaseCompleted,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
@@ -492,7 +491,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: installation,
-			Product:      &v1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

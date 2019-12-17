@@ -10,7 +10,7 @@ import (
 
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -50,7 +50,7 @@ type Reconciler struct {
 	logger        *logrus.Entry
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
@@ -85,61 +85,61 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for fuse and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultFusePullSecret, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileViewFusePerms(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileImageVersion(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileOauthProxy(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
@@ -149,11 +149,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -177,20 +177,20 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("FUSE POSTGRES: reconciling postgres version")
 	dc := &appsv1.DeploymentConfig{}
 	err := client.Get(ctx, pkgclient.ObjectKey{
@@ -199,10 +199,10 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 	}, dc)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseCompleted, nil
+			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
 		r.logger.Info("FUSE POSTGRES: error getting DC: " + err.Error())
-		return v1alpha1.PhaseFailed, fmt.Errorf("error retrieving syndesis-db deployment config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error retrieving syndesis-db deployment config: %w", err)
 	}
 
 	for i, trigger := range dc.Spec.Triggers {
@@ -214,7 +214,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 					return nil
 				})
 				if err != nil {
-					return v1alpha1.PhaseFailed, fmt.Errorf("error updating postgres image to 9.6: %w", err)
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error updating postgres image to 9.6: %w", err)
 				}
 			}
 		}
@@ -230,30 +230,30 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 				return nil
 			})
 			if err != nil {
-				return v1alpha1.PhaseFailed, fmt.Errorf("error updating komodo server image to 1.4: %w", err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error updating komodo server image to 1.4: %w", err)
 			}
-			return v1alpha1.PhaseCompleted, nil
+			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	return v1alpha1.PhaseFailed, errors.New("Could not find trigger for postgres:9.5 in deploymentconfig")
+	return integreatlyv1alpha1.PhaseFailed, errors.New("Could not find trigger for postgres:9.5 in deploymentconfig")
 }
 
 // Ensures all users in rhmi-developers group have view Fuse permissions
-func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
 
 	openshiftUsers := &usersv1.UserList{}
 	err := client.List(ctx, openshiftUsers)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	rhmiDevelopersGroup := &usersv1.Group{}
 	err = client.Get(ctx, pkgclient.ObjectKey{Name: developersGroupName}, rhmiDevelopersGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	viewFuseRoleBinding := &rbacv1.RoleBinding{
@@ -284,15 +284,15 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	r.logger.Infof("The %s subjects were: %s", viewFuseRoleBinding.Name, or)
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 //TODO this should be removed once https://issues.jboss.org/browse/INTLY-2836 is implemented
 // We want to avoid this kind of thing as really this is owned by the syndesis operator
-func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	var dcName = "syndesis-oauthproxy"
 	dc := &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -301,7 +301,7 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 		},
 	}
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get dc for the oauth proxy %v: %w", dcName, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get dc for the oauth proxy %v: %w", dcName, err)
 	}
 
 	for i, a := range dc.Spec.Template.Spec.Containers[0].Args {
@@ -313,14 +313,14 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 		}
 	}
 	if err := client.Update(ctx, dc); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth proxy for fuse: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth proxy for fuse: %w", err)
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // reconcileCustomResource ensures that the fuse custom resource exists
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	st := &corev1.Secret{}
 	// if this errors, it can be ignored
 	err := client.Get(ctx, pkgclient.ObjectKey{Name: "syndesis-global-config", Namespace: r.Config.GetNamespace()}, st)
@@ -328,8 +328,8 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 		r.Config.SetProductVersion(string(st.Data["syndesis"]))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
-	if err == nil && string(r.Config.GetOperatorVersion()) != string(v1alpha1.OperatorVersionFuse) {
-		r.Config.SetOperatorVersion(string(v1alpha1.OperatorVersionFuse))
+	if err == nil && string(r.Config.GetOperatorVersion()) != string(integreatlyv1alpha1.OperatorVersionFuse) {
+		r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionFuse))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
@@ -363,19 +363,19 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if k8serr.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, fmt.Errorf("failed to create a syndesis cr when reconciling custom resource: %w", err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create a syndesis cr when reconciling custom resource: %w", err)
 			}
-			return v1alpha1.PhaseInProgress, nil
+			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get a syndesis cr when reconciling custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get a syndesis cr when reconciling custom resource: %w", err)
 	}
 
 	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
 	}
 
 	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
-		return v1alpha1.PhaseInProgress, nil
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	route := &v1.Route{
@@ -386,7 +386,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	}
 
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("could not read syndesis route for fuse: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read syndesis route for fuse: %w", err)
 	}
 
 	var url string
@@ -401,7 +401,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	}
 
 	// if there are no errors, the phase is complete
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func groupContainsUser(user usersv1.User, group *usersv1.Group) bool {

@@ -3,7 +3,7 @@ package resources
 import (
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 func TestVersion(t *testing.T) {
@@ -89,7 +89,7 @@ func TestVersion(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			version, err := NewVersion(v1alpha1.OperatorVersion(scenario.TestVersion))
+			version, err := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.TestVersion))
 			scenario.Verifier(version, err, t)
 		})
 	}
@@ -295,8 +295,8 @@ func TestComparisons(t *testing.T) {
 	}
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			v1, _ := NewVersion(v1alpha1.OperatorVersion(scenario.V1))
-			v2, _ := NewVersion(v1alpha1.OperatorVersion(scenario.V2))
+			v1, _ := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V1))
+			v2, _ := NewVersion(integreatlyv1alpha1.OperatorVersion(scenario.V2))
 			scenario.Verifier(v1, v2, t)
 		})
 	}
