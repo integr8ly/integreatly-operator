@@ -10,7 +10,7 @@ import (
 
 	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -225,7 +225,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *integrea
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	target := v1alpha12.BlackboxtargetData{
+	target := monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "webapp-ui",
 	}

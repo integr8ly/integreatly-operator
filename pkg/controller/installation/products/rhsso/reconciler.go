@@ -9,7 +9,7 @@ import (
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -410,7 +410,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "rhsso-ui",
 	}, ctx, cfg, inst, client)

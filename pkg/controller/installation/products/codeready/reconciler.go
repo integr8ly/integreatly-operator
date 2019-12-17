@@ -8,13 +8,13 @@ import (
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
-	v1alpha13 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	keycloakv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -514,7 +514,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client pkgcli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-codeready", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-codeready", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "codeready-ui",
 	}, ctx, cfg, r.installation, client)
@@ -529,7 +529,7 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	selfSignedCerts := r.installation.Spec.SelfSignedCerts
 
 	// get postgres cloud resource cr
-	pcr := &v1alpha13.Postgres{}
+	pcr := &crov1alpha1.Postgres{}
 	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgresName, Namespace: r.installation.Namespace}, pcr)
 	if err != nil {

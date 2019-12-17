@@ -6,11 +6,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
-	v1beta12 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
+	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
+	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -192,7 +192,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkgclient.Client, authSvcs []*v1beta1.AuthenticationService) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkgclient.Client, authSvcs []*enmasseadminv1beta1.AuthenticationService) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")
 
 	for _, as := range authSvcs {
@@ -205,7 +205,7 @@ func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pkgclient.Client, brokeredCfgs []*v1beta12.BrokeredInfraConfig, stdCfgs []*v1beta12.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pkgclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default infra configs")
 
 	for _, bic := range brokeredCfgs {
@@ -225,7 +225,7 @@ func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pk
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkgclient.Client, addrPlans []*v1beta2.AddressPlan) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkgclient.Client, addrPlans []*enmassev1beta2.AddressPlan) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default address plans")
 
 	for _, ap := range addrPlans {
@@ -237,7 +237,7 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient pkgclient.Client, addrSpacePlans []*v1beta2.AddressSpacePlan) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient pkgclient.Client, addrSpacePlans []*enmassev1beta2.AddressSpacePlan) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default address space plans")
 
 	for _, asp := range addrSpacePlans {
@@ -252,7 +252,7 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("reconciling config")
 
-	consoleSvc := &v1beta1.ConsoleService{
+	consoleSvc := &enmasseadminv1beta1.ConsoleService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultConsoleSvcName,
 			Namespace: r.Config.GetNamespace(),
@@ -307,7 +307,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "amq-service-broker",
 	}, ctx, cfg, inst, client)

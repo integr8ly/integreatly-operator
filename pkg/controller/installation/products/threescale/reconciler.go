@@ -14,7 +14,7 @@ import (
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -22,9 +22,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	ocv1 "github.com/openshift/api/apps/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-	v12 "github.com/openshift/api/route/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -377,7 +376,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	// this causes the postgres pods to crash because they attempt to connect with credentials for the cro postgres instances
 	if len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Starting) == 1 && apim.Status.Deployments.Starting[0] == "system-postgresql" {
 		// get the postgresql deployment
-		dep := &ocv1.DeploymentConfig{}
+		dep := &appsv1.DeploymentConfig{}
 		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-postgresql", Namespace: r.Config.GetNamespace()}, dep)
 		if err != nil {
 			// complete anyway
@@ -999,7 +998,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
 	}, ctx, cfg, inst, client)
@@ -1012,7 +1011,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
 	}, ctx, cfg, inst, client)
@@ -1025,7 +1024,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
 	}, ctx, cfg, inst, client)
@@ -1036,7 +1035,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgclient.Client, label string) (*v12.Route, error) {
+func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgclient.Client, label string) (*routev1.Route, error) {
 	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
 	if err != nil {
 		return nil, err
@@ -1047,7 +1046,7 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgcli
 		Namespace:     r.Config.GetNamespace(),
 	}
 
-	routes := v12.RouteList{}
+	routes := routev1.RouteList{}
 	err = serverClient.List(ctx, &routes, &opts)
 	if err != nil {
 		return nil, err
