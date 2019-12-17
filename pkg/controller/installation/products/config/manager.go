@@ -2,9 +2,9 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
-	errors2 "github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -97,7 +97,7 @@ func (m *Manager) ReadProduct(product v1alpha1.ProductName) (ConfigReadable, err
 		return m.ReadCloudResources()
 	}
 
-	return nil, errors2.New("no config found for product " + string(product))
+	return nil, fmt.Errorf("no config found for product %v", product)
 }
 
 func (m *Manager) ReadSolutionExplorer() (*SolutionExplorer, error) {
@@ -230,7 +230,7 @@ func (m *Manager) readConfigForProduct(product v1alpha1.ProductName) (ProductCon
 		return retConfig, nil
 	}
 	if err := decoder.Decode(retConfig); err != nil {
-		return nil, errors2.Wrap(err, "failed to decode product config for "+string(product))
+		return nil, fmt.Errorf("failed to decode product config for %v: %w", product, err)
 	}
 	return retConfig, nil
 }

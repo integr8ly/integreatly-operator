@@ -2,8 +2,8 @@ package cloudresources
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -34,7 +34,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCloudResources()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read cloud resources config")
+		return nil, fmt.Errorf("could not read cloud resources config: %w", err)
 	}
 	if config.GetNamespace() == "" {
 		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)

@@ -2,9 +2,8 @@ package monitoring
 
 import (
 	"context"
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 

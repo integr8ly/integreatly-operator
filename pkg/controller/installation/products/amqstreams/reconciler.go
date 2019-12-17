@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -39,7 +38,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read amq streams config")
+		return nil, fmt.Errorf("could not read amq streams config: %w", err)
 	}
 
 	if config.GetNamespace() == "" {
@@ -166,7 +165,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 
 	// attempt to create the custom resource
 	if err := client.Create(ctx, kafka); err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get or create a kafka custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get or create a kafka custom resource: %w", err)
 	}
 
 	// if there are no errors, the phase is complete
@@ -182,7 +181,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to check amq streams installation")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
 	}
 
 	//expecting 8 pods in total

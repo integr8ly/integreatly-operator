@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"github.com/sirupsen/logrus"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
+
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
@@ -24,10 +20,14 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -51,7 +51,7 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	upsConfig, err := configManager.ReadUps()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve ups config")
+		return nil, fmt.Errorf("could not retrieve ups config: %w", err)
 	}
 
 	if upsConfig.GetNamespace() == "" {
@@ -147,7 +147,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to reconcile postgres request")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
 	// wait for the postgres instance to reconcile
@@ -160,7 +160,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	connSec := &corev1.Secret{}
 	err = client.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get postgres credential secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
 
 	// Reconcile ups custom resource
@@ -191,7 +191,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 
 		// Otherwise create the cr
 		if err := client.Create(ctx, cr); err != nil {
-			return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "failed to create unified push server custom resource during reconcile")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create unifiedpush server custom resource during reconcile: %w", err)
 		}
 	}
 
@@ -212,13 +212,13 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.C
 	upsRoute := &routev1.Route{}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, upsRoute)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrapf(err, "failed to get route for unified push server")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get route for unified push server: %w", err)
 	}
 
 	r.Config.SetHost("https://" + upsRoute.Spec.Host)
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return v1alpha1.PhaseFailed, pkgerr.Wrap(err, "could not update unified push server config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not update unified push server config: %w", err)
 	}
 
 	logrus.Info("Successfully set unified push server host")
@@ -229,7 +229,7 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.C
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-ups", v1alpha12.BlackboxtargetData{
@@ -237,7 +237,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha
 		Service: "ups-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating ups blackbox target")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating ups blackbox target: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,7 +41,7 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 		or.client.Transport = tr
 	} else {
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read k8s root CA file")
+			return nil, fmt.Errorf("failed to read k8s root CA file: %w", err)
 		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
@@ -57,13 +56,13 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 
 	resp, err := or.client.Get(url)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get oauth server config from well known endpoint "+url)
+		return nil, fmt.Errorf("failed to get oauth server config from well known endpoint %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 	dec := json.NewDecoder(resp.Body)
 	ret := &OauthServerConfig{}
 	if err := dec.Decode(ret); err != nil {
-		return nil, errors.Wrap(err, "failed to decode response from well known end point "+url)
+		return nil, fmt.Errorf("failed to decode response from well known endpoint %s: %w", url, err)
 	}
 
 	return ret, nil

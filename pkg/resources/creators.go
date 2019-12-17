@@ -1,9 +1,8 @@
 package resources
 
 import (
-	pkgerr "github.com/pkg/errors"
-
 	"context"
+	"fmt"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -15,10 +14,10 @@ func CreateOrUpdate(ctx context.Context, serverClient pkgclient.Client, obj runt
 	if err != nil && k8serr.IsAlreadyExists(err) {
 		err = serverClient.Update(ctx, obj)
 		if err != nil {
-			return pkgerr.Wrapf(err, "error updating object")
+			return fmt.Errorf("error updating object: %w", err)
 		}
 	} else if err != nil {
-		return pkgerr.Wrapf(err, "error creating object")
+		return fmt.Errorf("error creating object: %w", err)
 	}
 
 	return nil

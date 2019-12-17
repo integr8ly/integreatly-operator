@@ -2,10 +2,10 @@ package fuse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
@@ -53,14 +53,14 @@ type Reconciler struct {
 func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve fuse config")
+		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
 	}
 
 	if fuseConfig.GetNamespace() == "" {
 		fuseConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	if err = fuseConfig.Validate(); err != nil {
-		return nil, errors.Wrap(err, "fuse config is not valid")
+		return nil, fmt.Errorf("fuse config is not valid: %w", err)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -164,13 +164,13 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -183,7 +183,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Inst
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -202,7 +202,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 			return v1alpha1.PhaseCompleted, nil
 		}
 		r.logger.Info("FUSE POSTGRES: error getting DC: " + err.Error())
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error retrieving syndesis-db deployment config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error retrieving syndesis-db deployment config: %w", err)
 	}
 
 	for i, trigger := range dc.Spec.Triggers {
@@ -214,7 +214,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 					return nil
 				})
 				if err != nil {
-					return v1alpha1.PhaseFailed, errors.Wrap(err, "error updating postgres image to 9.6")
+					return v1alpha1.PhaseFailed, fmt.Errorf("error updating postgres image to 9.6: %w", err)
 				}
 			}
 		}
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *v1alpha
 				return nil
 			})
 			if err != nil {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "error updating komodo server image to 1.4")
+				return v1alpha1.PhaseFailed, fmt.Errorf("error updating komodo server image to 1.4: %w", err)
 			}
 			return v1alpha1.PhaseCompleted, nil
 		}
@@ -301,7 +301,7 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 		},
 	}
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get dc for the oauth proxy "+dcName)
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get dc for the oauth proxy %v: %w", dcName, err)
 	}
 
 	for i, a := range dc.Spec.Template.Spec.Containers[0].Args {
@@ -313,7 +313,7 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 		}
 	}
 	if err := client.Update(ctx, dc); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to update oauth proxy for fuse")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth proxy for fuse: %w", err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -363,15 +363,15 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if k8serr.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
-				return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create a syndesis cr when reconciling custom resource")
+				return v1alpha1.PhaseFailed, fmt.Errorf("failed to create a syndesis cr when reconciling custom resource: %w", err)
 			}
 			return v1alpha1.PhaseInProgress, nil
 		}
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get a syndesis cr when reconciling custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get a syndesis cr when reconciling custom resource: %w", err)
 	}
 
 	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
-		return v1alpha1.PhaseFailed, errors.New(fmt.Sprintf("failed to install fuse custom resource: %s", cr.Status.Reason))
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
 	}
 
 	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
@@ -386,7 +386,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *v1alp
 	}
 
 	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not read syndesis route for fuse")
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not read syndesis route for fuse: %w", err)
 	}
 
 	var url string

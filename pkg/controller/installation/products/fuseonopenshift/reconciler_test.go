@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
@@ -106,7 +104,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadFuseOnOpenshiftFunc: func() (ready *config.FuseOnOpenshift, e error) {
-					return nil, errors.Errorf("could not read %s config", v1alpha1.ProductFuseOnOpenshift)
+					return nil, fmt.Errorf("could not read %s config", v1alpha1.ProductFuseOnOpenshift)
 				},
 			},
 			Product: &v1alpha1.InstallationProductStatus{},

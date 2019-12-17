@@ -2,9 +2,8 @@ package rhssouser
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
-	pkgerr "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -145,7 +144,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 
@@ -173,7 +172,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak realm")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
@@ -198,18 +197,18 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *v1alpha1.Ins
 
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to get keycloak realm custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
 
 	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to write user-sso config")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to write user-sso config: %w", err)
 		}
 
 		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to setup Openshift IDP for user-sso")
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm for user-sso")
@@ -229,7 +228,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak custom resource for keycloak config for user-sso")
+		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config for user-sso: %w", err)
 	}
 	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
@@ -241,14 +240,14 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	}
 	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not retrieve keycloak admin credential secret for keycloak config for user-sso")
+		return fmt.Errorf("could not retrieve keycloak admin credential secret for keycloak config for user-sso: %w", err)
 	}
 	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
 	r.Config.SetHost(string(kcURLBytes))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return pkgerr.Wrap(err, "could not update keycloak config for user-sso")
+		return fmt.Errorf("could not update keycloak config for user-sso: %w", err)
 	}
 	return nil
 }
@@ -262,12 +261,12 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return pkgerr.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return pkgerr.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	clientSecret := string(clientSecretBytes)
 
@@ -283,7 +282,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *v1alpha1.Insta
 	}
 	_, err = r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
 	if err != nil {
-		return pkgerr.Wrap(err, "Could not create OauthClient object for OpenShift IDP")
+		return fmt.Errorf("Could not create OauthClient object for OpenShift IDP: %w", err)
 	}
 
 	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {

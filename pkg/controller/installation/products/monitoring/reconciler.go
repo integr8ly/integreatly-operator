@@ -3,10 +3,10 @@ package monitoring
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -184,7 +184,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "could not update monitoring config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
 	}
 
 	logrus.Infof("%s installation is reconciled successfully", packageName)
@@ -197,7 +197,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 	templateHelper := NewTemplateHelper(r.extraParams)
 	threeScaleConfig, err := r.ConfigManager.ReadThreeScale()
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error reading config")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error reading config: %w", err)
 	}
 
 	jobs := strings.Builder{}
@@ -210,7 +210,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 
 		bytes, err := templateHelper.loadTemplate(job)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, "error loading template")
+			return v1alpha1.PhaseFailed, fmt.Errorf("error loading template: %w", err)
 		}
 
 		jobs.Write(bytes)
@@ -236,7 +236,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient pk
 	})
 
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "error creating additional scrape config secret")
+		return v1alpha1.PhaseFailed, fmt.Errorf("error creating additional scrape config secret: %w", err)
 	}
 
 	r.Logger.Info(fmt.Sprintf("operation result of creating additional scrape config secret was %v", or))
@@ -250,7 +250,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 		// create it
 		_, err := r.createResource(ctx, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, errors.Wrap(err, fmt.Sprintf("failed to create/update monitoring template %s", template))
+			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		r.Logger.Infof("Reconciling the monitoring template %s was successful", template)
 	}
@@ -279,7 +279,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update applicationmonitoring custom resource")
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update applicationmonitoring custom resource: %w", err)
 	}
 
 	r.Logger.Infof("The operation result for monitoring %s was %s", m.Name, or)
@@ -298,13 +298,13 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	resource, err := templateHelper.CreateResource(resourceName)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "createResource failed")
+		return nil, fmt.Errorf("createResource failed: %w", err)
 	}
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
 		if !kerrors.IsAlreadyExists(err) {
-			return nil, errors.Wrap(err, "error creating resource")
+			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
 
@@ -393,7 +393,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 	templateHelper := NewTemplateHelper(extraParams)
 	obj, err := templateHelper.CreateResource("blackbox/target.yaml")
 	if err != nil {
-		return errors.Wrap(err, "error creating resource from template")
+		return fmt.Errorf("error creating resource from template: %w", err)
 	}
 
 	// try to create the blackbox target. If if fails with already exist do nothing
@@ -403,7 +403,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 			// The target already exists. Nothing else to do
 			return nil
 		}
-		return errors.Wrap(err, "error creating blackbox target")
+		return fmt.Errorf("error creating blackbox target: %w", err)
 	}
 
 	return nil
