@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Version struct {
@@ -15,7 +15,7 @@ type Version struct {
 	Patch int
 }
 
-func NewVersion(version v1alpha1.OperatorVersion) (*Version, error) {
+func NewVersion(version integreatlyv1alpha1.OperatorVersion) (*Version, error) {
 	r, _ := regexp.Compile(`^[Vv]?([0-9]+)\.([0-9]+)(\.|\-)([0-9]+)$`)
 	matches := r.FindStringSubmatch(string(version))
 	if len(matches) < 5 {

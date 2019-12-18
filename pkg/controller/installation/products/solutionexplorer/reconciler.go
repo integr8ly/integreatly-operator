@@ -9,8 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -53,7 +53,7 @@ type Reconciler struct {
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 	OauthResolver OauthResolver
-	installation  *v1alpha1.Installation
+	installation  *integreatlyv1alpha1.Installation
 }
 
 //go:generate moq -out OauthResolver_moq.go . OauthResolver
@@ -63,10 +63,10 @@ type OauthResolver interface {
 
 type productInfo struct {
 	Host    string
-	Version v1alpha1.ProductVersion
+	Version integreatlyv1alpha1.ProductVersion
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
 	seConfig, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
@@ -102,48 +102,48 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
 		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
-			return v1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.ReconcileCustomResource(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	route, err := r.ensureAppUrl(ctx, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	if r.Config.GetHost() != route {
@@ -158,18 +158,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 			Name: r.getOAuthClientName(),
 		},
 	}, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileBlackboxTarget(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
@@ -178,11 +178,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -206,36 +206,36 @@ func (r *Reconciler) createResource(ctx context.Context, inst *v1alpha1.Installa
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *v1alpha1.Installation, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
 		_, err := r.createResource(ctx, inst, template, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	target := v1alpha12.BlackboxtargetData{
+	target := monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "webapp-ui",
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) (string, error) {
@@ -256,15 +256,15 @@ func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) 
 	return fmt.Sprintf("%s://%s", protocol, route.Spec.Host), nil
 }
 
-func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	//todo shouldn't need to do this with each reconcile
 	oauthConfig, err := r.OauthResolver.GetOauthEndPoint()
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth details: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth details: %w", err)
 	}
 	ssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	seCR := &webapp.WebApp{
 		ObjectMeta: metav1.ObjectMeta{
@@ -277,7 +277,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 
 	installedServices, err := r.getInstalledProducts(inst)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to retrieve installed products information from %s CR: %w", inst.Name, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieve installed products information from %s CR: %w", inst.Name, err)
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func() error {
 		seCR.Spec.AppLabel = "tutorial-web-app"
@@ -293,32 +293,32 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *v1alpha1
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile webapp resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile webapp resource: %w", err)
 	}
 	// do a get to ensure we have an upto date copy
 	if err := client.Get(ctx, pkgclient.ObjectKey{Namespace: seCR.Namespace, Name: seCR.Name}, seCR); err != nil {
 		// any error here is bad as it should exist now
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get the webapp resource namespace %s name %s: %w", seCR.Namespace, seCR.Name, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get the webapp resource namespace %s name %s: %w", seCR.Namespace, seCR.Name, err)
 	}
 	if seCR.Status.Message == "OK" {
-		if r.Config.GetProductVersion() != v1alpha1.ProductVersion(seCR.Status.Version) {
+		if r.Config.GetProductVersion() != integreatlyv1alpha1.ProductVersion(seCR.Status.Version) {
 			r.Config.SetProductVersion(seCR.Status.Version)
 			r.ConfigManager.WriteConfig(r.Config)
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
-	return v1alpha1.PhaseInProgress, nil
+	return integreatlyv1alpha1.PhaseInProgress, nil
 
 }
 
-func (r *Reconciler) getInstalledProducts(inst *v1alpha1.Installation) (string, error) {
+func (r *Reconciler) getInstalledProducts(inst *integreatlyv1alpha1.Installation) (string, error) {
 	installedProducts := inst.Status.Stages["products"].Products
 
 	// Ensure that amq online console is not added to the installed products, a per user amq online is used instead which is provisioned by the webapp
 	// Ensure that ups is not added to the installed products
-	products := make(map[v1alpha1.ProductName]productInfo)
+	products := make(map[integreatlyv1alpha1.ProductName]productInfo)
 	for name, info := range installedProducts {
-		if name != v1alpha1.ProductAMQOnline && name != v1alpha1.ProductUps && info.Host != "" {
+		if name != integreatlyv1alpha1.ProductAMQOnline && name != integreatlyv1alpha1.ProductUps && info.Host != "" {
 			id := r.getProductId(name)
 			products[id] = productInfo{
 				Host:    info.Host,
@@ -337,18 +337,18 @@ func (r *Reconciler) getInstalledProducts(inst *v1alpha1.Installation) (string, 
 
 // Gets the product's id used by the webapp
 // https://github.com/integr8ly/tutorial-web-app/blob/master/src/product-info.js
-func (r *Reconciler) getProductId(name v1alpha1.ProductName) v1alpha1.ProductName {
+func (r *Reconciler) getProductId(name integreatlyv1alpha1.ProductName) integreatlyv1alpha1.ProductName {
 	id := name
 
-	if name == v1alpha1.ProductFuse {
+	if name == integreatlyv1alpha1.ProductFuse {
 		id = "fuse-managed"
 	}
 
-	if name == v1alpha1.ProductCodeReadyWorkspaces {
+	if name == integreatlyv1alpha1.ProductCodeReadyWorkspaces {
 		id = "codeready"
 	}
 
-	if name == v1alpha1.ProductRHSSOUser {
+	if name == integreatlyv1alpha1.ProductRHSSOUser {
 		id = "user-rhsso"
 	}
 

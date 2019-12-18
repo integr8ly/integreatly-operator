@@ -7,7 +7,6 @@ import (
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -30,8 +29,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func basicInstallation() *v1alpha1.Installation {
-	return &v1alpha1.Installation{
+func basicInstallation() *integreatlyv1alpha1.Installation {
+	return &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -39,7 +38,7 @@ func basicInstallation() *v1alpha1.Installation {
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 }
@@ -71,19 +70,19 @@ func TestReconciler_config(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 	}{
 		{
 			Name:           "test error on failed config",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not read monitoring config",
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
@@ -93,7 +92,7 @@ func TestReconciler_config(t *testing.T) {
 		},
 		{
 			Name:         "test namespace is set without fail",
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 			FakeClient:   fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
@@ -105,9 +104,9 @@ func TestReconciler_config(t *testing.T) {
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy")
@@ -142,18 +141,18 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     pkgclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		ExpectError    bool
 		ExpectedError  string
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:           "Test reconcile custom resource returns success on successful create",
 			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
 			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			Installation:   &integreatlyv1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -169,8 +168,8 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			Installation:   &integreatlyv1alpha1.Installation{},
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update applicationmonitoring custom resource",
 		},
@@ -226,17 +225,17 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
-		Product        *v1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.Installation
+		Product        *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, grafanadatasourcesecret, basicInstallation()),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
@@ -284,7 +283,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: basicInstallation(),
-			Product:      &v1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -317,16 +316,16 @@ func TestReconciler_testPhases(t *testing.T) {
 
 	cases := []struct {
 		Name           string
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
-		Product        *v1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.Installation
+		Product        *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test namespace terminating returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
@@ -345,11 +344,11 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription creating returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
@@ -361,11 +360,11 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test components creating returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
@@ -389,7 +388,7 @@ func TestReconciler_testPhases(t *testing.T) {
 						}, nil
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

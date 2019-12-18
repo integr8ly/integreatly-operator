@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Ups struct {
@@ -42,16 +42,16 @@ func (u *Ups) Read() ProductConfig {
 	return u.config
 }
 
-func (u *Ups) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductUps
+func (u *Ups) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductUps
 }
 
-func (u *Ups) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionUps
+func (u *Ups) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionUps
 }
 
-func (u *Ups) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionUPS
+func (u *Ups) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionUPS
 }
 
 func (u *Ups) Validate() error {

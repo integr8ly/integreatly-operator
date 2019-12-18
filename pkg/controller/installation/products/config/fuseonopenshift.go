@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type FuseOnOpenshift struct {
@@ -30,16 +30,16 @@ func (f *FuseOnOpenshift) GetHost() string {
 	return f.config["HOST"]
 }
 
-func (f *FuseOnOpenshift) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductFuseOnOpenshift
+func (f *FuseOnOpenshift) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductFuseOnOpenshift
 }
 
-func (f *FuseOnOpenshift) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionFuseOnOpenshift
+func (f *FuseOnOpenshift) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionFuseOnOpenshift
 }
 
-func (f *FuseOnOpenshift) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionFuse
+func (f *FuseOnOpenshift) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionFuse
 }
 
 func (f *FuseOnOpenshift) Validate() error {

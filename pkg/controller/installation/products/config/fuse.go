@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 func NewFuse(config ProductConfig) *Fuse {
@@ -45,16 +45,16 @@ func (r *Fuse) GetTemplateList() []string {
 	return template_list
 }
 
-func (f *Fuse) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductFuse
+func (f *Fuse) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductFuse
 }
 
-func (f *Fuse) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(f.config["VERSION"])
+func (f *Fuse) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.ProductVersion(f.config["VERSION"])
 }
 
-func (f *Fuse) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersion(f.config["VERSION"])
+func (f *Fuse) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersion(f.config["VERSION"])
 }
 
 func (f *Fuse) SetProductVersion(newVersion string) {

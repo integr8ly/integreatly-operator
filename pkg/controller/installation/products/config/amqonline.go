@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type AMQOnline struct {
@@ -53,16 +53,16 @@ func (a *AMQOnline) Read() ProductConfig {
 	return a.config
 }
 
-func (a *AMQOnline) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductAMQOnline
+func (a *AMQOnline) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductAMQOnline
 }
 
-func (a *AMQOnline) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionAMQOnline
+func (a *AMQOnline) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionAMQOnline
 }
 
-func (a *AMQOnline) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionAMQOnline
+func (a *AMQOnline) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionAMQOnline
 }
 
 func (c *AMQOnline) GetBackendSecretName() string {

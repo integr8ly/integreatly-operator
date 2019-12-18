@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,7 +45,7 @@ type InterfaceMock struct {
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -59,9 +59,9 @@ type InterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Inst is the inst argument value.
-			Inst *v1alpha1.Installation
+			Inst *integreatlyv1alpha1.Installation
 			// Product is the product argument value.
-			Product *v1alpha1.InstallationProductStatus
+			Product *integreatlyv1alpha1.InstallationProductStatus
 			// ServerClient is the serverClient argument value.
 			ServerClient client.Client
 		}
@@ -100,14 +100,14 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		Inst         *v1alpha1.Installation
-		Product      *v1alpha1.InstallationProductStatus
+		Inst         *integreatlyv1alpha1.Installation
+		Product      *integreatlyv1alpha1.InstallationProductStatus
 		ServerClient client.Client
 	}{
 		Ctx:          ctx,
@@ -126,14 +126,14 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *v1alpha1.Install
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
-	Inst         *v1alpha1.Installation
-	Product      *v1alpha1.InstallationProductStatus
+	Inst         *integreatlyv1alpha1.Installation
+	Product      *integreatlyv1alpha1.InstallationProductStatus
 	ServerClient client.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
-		Inst         *v1alpha1.Installation
-		Product      *v1alpha1.InstallationProductStatus
+		Inst         *integreatlyv1alpha1.Installation
+		Product      *integreatlyv1alpha1.InstallationProductStatus
 		ServerClient client.Client
 	}
 	lockInterfaceMockReconcile.RLock()

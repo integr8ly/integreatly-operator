@@ -1,9 +1,9 @@
 package resources
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-
 	"context"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ const (
 )
 
 // Gets the default pull secret for pulling container images from registry
-func GetDefaultPullSecret(inst *v1alpha1.Installation, client pkgclient.Client, context context.Context) (corev1.Secret, error) {
+func GetDefaultPullSecret(inst *integreatlyv1alpha1.Installation, client pkgclient.Client, context context.Context) (corev1.Secret, error) {
 	if inst.Spec.PullSecret.Name == "" {
 		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
 	}
@@ -33,7 +33,7 @@ func GetDefaultPullSecret(inst *v1alpha1.Installation, client pkgclient.Client, 
 }
 
 // Copys the default pull secret to a target namespace
-func CopyDefaultPullSecretToNameSpace(nameSpaceToCopy string, nameOfSecret string, inst *v1alpha1.Installation, client pkgclient.Client, context context.Context) error {
+func CopyDefaultPullSecretToNameSpace(nameSpaceToCopy string, nameOfSecret string, inst *integreatlyv1alpha1.Installation, client pkgclient.Client, context context.Context) error {
 	openshiftSecret, err := GetDefaultPullSecret(inst, client, context)
 
 	if err != nil {

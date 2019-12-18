@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type RHSSO struct {
@@ -53,16 +53,16 @@ func (r *RHSSO) GetTemplateList() []string {
 	return template_list
 }
 
-func (r *RHSSO) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductRHSSO
+func (r *RHSSO) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductRHSSO
 }
 
-func (r *RHSSO) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(r.Config["VERSION"])
+func (r *RHSSO) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.ProductVersion(r.Config["VERSION"])
 }
 
-func (r *RHSSO) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionRHSSO
+func (r *RHSSO) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionRHSSO
 }
 
 func (r *RHSSO) SetProductVersion(version string) {

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -27,15 +27,15 @@ type SolutionExplorerScenario struct {
 	Name            string
 	ExpectErr       bool
 	ExpectedError   string
-	ExpectedStatus  v1alpha1.StatusPhase
+	ExpectedStatus  integreatlyv1alpha1.StatusPhase
 	client          client.Client
 	FakeConfig      *config.ConfigReadWriterMock
 	FakeMPM         *marketplace.MarketplaceInterfaceMock
 	FakeOauthClient oauthClient.OauthV1Interface
-	Installation    *v1alpha1.Installation
+	Installation    *integreatlyv1alpha1.Installation
 	OauthResolver   func() OauthResolver
 	Validate        func(t *testing.T, mock interface{})
-	Product         *v1alpha1.InstallationProductStatus
+	Product         *integreatlyv1alpha1.InstallationProductStatus
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -80,7 +80,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:            " test custom resource is reconciled and phase complete returned",
 			OauthResolver:   oauthResolver,
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			ExpectedStatus:  v1alpha1.PhaseCompleted,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM:         &marketplace.MarketplaceInterfaceMock{},
 			Installation:    installation,
 			FakeConfig:      basicConfigMock(),
@@ -130,7 +130,7 @@ func TestSolutionExplorer(t *testing.T) {
 			Name:            "test full reconcile",
 			OauthResolver:   oauthResolver,
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			ExpectedStatus:  v1alpha1.PhaseCompleted,
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
@@ -159,7 +159,7 @@ func TestSolutionExplorer(t *testing.T) {
 			Installation: installation,
 			FakeConfig:   basicConfigMock(),
 			client:       fake.NewFakeClient(webappNs, webappCR, installation, webappRoute),
-			Product:      &v1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

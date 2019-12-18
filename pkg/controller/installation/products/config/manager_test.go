@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +25,7 @@ const (
 func TestWriteConfig(t *testing.T) {
 	defaultProductConfig := ProductConfig{"testKey": "testVal"}
 	defaultConfigReadable := &ConfigReadableMock{
-		GetProductNameFunc: func() v1alpha1.ProductName {
+		GetProductNameFunc: func() integreatlyv1alpha1.ProductName {
 			return mockProductName
 		},
 		ReadFunc: func() ProductConfig {
@@ -33,7 +33,7 @@ func TestWriteConfig(t *testing.T) {
 		},
 	}
 
-	fakeInst := &v1alpha1.Installation{}
+	fakeInst := &integreatlyv1alpha1.Installation{}
 
 	tests := []struct {
 		productName       string
@@ -108,7 +108,7 @@ func TestWriteConfig(t *testing.T) {
 }
 
 func TestReadConfigForProduct(t *testing.T) {
-	fakeInst := &v1alpha1.Installation{}
+	fakeInst := &integreatlyv1alpha1.Installation{}
 
 	tests := []struct {
 		productName       string

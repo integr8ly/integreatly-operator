@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -35,7 +35,7 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, fmt.Errorf("could not read amq streams config: %w", err)
@@ -67,41 +67,41 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for amq streams and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	ns := r.Config.GetNamespace()
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, ns, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: ns, Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, ns, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.handleCreatingComponents(ctx, serverClient, inst)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.handleProgressPhase(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -110,10 +110,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling amq streams custom resource")
 
 	kafka := &kafkav1.Kafka{
@@ -165,14 +165,14 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 
 	// attempt to create the custom resource
 	if err := client.Create(ctx, kafka); err != nil && !k8serr.IsAlreadyExists(err) {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get or create a kafka custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get or create a kafka custom resource: %w", err)
 	}
 
 	// if there are no errors, the phase is complete
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Debug("checking amq streams pods are running")
 
 	pods := &corev1.PodList{}
@@ -181,12 +181,12 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.C
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
 	}
 
 	//expecting 8 pods in total
 	if len(pods.Items) < 8 {
-		return v1alpha1.PhaseInProgress, nil
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	//and they should all be ready
@@ -195,7 +195,7 @@ checkPodStatus:
 		for _, cnd := range pod.Status.Conditions {
 			if cnd.Type == corev1.ContainersReady {
 				if cnd.Status != corev1.ConditionStatus("True") {
-					return v1alpha1.PhaseInProgress, nil
+					return integreatlyv1alpha1.PhaseInProgress, nil
 				}
 				break checkPodStatus
 			}
@@ -203,5 +203,5 @@ checkPodStatus:
 	}
 
 	r.logger.Infof("all pods ready, returning complete")
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

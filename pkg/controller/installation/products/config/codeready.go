@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type CodeReady struct {
@@ -43,16 +43,16 @@ func (c *CodeReady) Read() ProductConfig {
 	return c.Config
 }
 
-func (c *CodeReady) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductCodeReadyWorkspaces
+func (c *CodeReady) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductCodeReadyWorkspaces
 }
 
-func (c *CodeReady) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionCodeReadyWorkspaces
+func (c *CodeReady) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionCodeReadyWorkspaces
 }
 
-func (c *CodeReady) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionCodeReadyWorkspaces
+func (c *CodeReady) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces
 }
 
 func (c *CodeReady) GetBackendSecretName() string {

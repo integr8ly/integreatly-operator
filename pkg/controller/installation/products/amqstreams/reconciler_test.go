@@ -8,7 +8,6 @@ import (
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -59,47 +58,47 @@ func TestReconciler_config(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	installation := &v1alpha1.Installation{
+	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     pkgclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
-		Product        *v1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.Installation
+		Product        *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test error on failed config",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not read amq streams config: could not read amq streams config",
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
 					return nil, errors.New("could not read amq streams config")
 				},
 			},
-			Product: &v1alpha1.InstallationProductStatus{},
+			Product: &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy")
@@ -107,7 +106,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, installation),
 			FakeConfig: basicConfigMock(),
-			Product:    &v1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 
@@ -155,23 +154,23 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     client.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 		ExpectError    bool
 		ExpectedError  string
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 	}{
 		{
 			Name:       "Test reconcile custom resource returns completed when successful created",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeConfig: basicConfigMock(),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
 				},
 			},
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -181,7 +180,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			FakeConfig: basicConfigMock(),
-			Installation: &v1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "installation",
 					APIVersion: "integreatly.org/v1alpha1",
@@ -189,7 +188,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			},
 			ExpectError:    true,
 			ExpectedError:  "failed to get or create a kafka custom resource",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 		},
 	}
 	for _, tc := range cases {
@@ -268,16 +267,16 @@ func TestReconciler_handleProgress(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
+		Installation   *integreatlyv1alpha1.Installation
 	}{
 		{
 			Name:           "test failure to list pods",
-			ExpectedStatus: v1alpha1.PhaseFailed,
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectedError:  "failed to check amq streams installation",
 			ExpectError:    true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
@@ -286,28 +285,28 @@ func TestReconciler_handleProgress(t *testing.T) {
 				},
 			},
 			FakeConfig:   basicConfigMock(),
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:           "test incomplete amount of pods returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme),
 			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:           "test unready pods returns phase in progress",
-			ExpectedStatus: v1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
 			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 		},
 		{
 			Name:           "test ready pods returns phase complete",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, append(readyPods, kafka)...),
 			FakeConfig:     basicConfigMock(),
-			Installation:   &v1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.Installation{},
 		},
 	}
 
@@ -347,7 +346,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	objs := []runtime.Object{}
 
-	installation := &v1alpha1.Installation{
+	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -355,7 +354,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "installation",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}
 	ns := &corev1.Namespace{
@@ -391,17 +390,17 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ExpectError    bool
-		ExpectedStatus v1alpha1.StatusPhase
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     client.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *v1alpha1.Installation
-		Product        *v1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.Installation
+		Product        *integreatlyv1alpha1.InstallationProductStatus
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: v1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, objs...),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -430,7 +429,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: installation,
-			Product:      &v1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
 		},
 	}
 

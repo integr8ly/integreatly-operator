@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type Monitoring struct {
@@ -54,16 +54,16 @@ func (r *Monitoring) Read() ProductConfig {
 	return r.Config
 }
 
-func (r *Monitoring) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductMonitoring
+func (r *Monitoring) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductMonitoring
 }
 
-func (r *Monitoring) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionMonitoring
+func (r *Monitoring) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionMonitoring
 }
 
-func (r *Monitoring) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionMonitoring
+func (r *Monitoring) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionMonitoring
 }
 
 func (r *Monitoring) SetProductVersion(version string) {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -80,10 +80,10 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
-		return nil, fmt.Errorf("could not retrieve %s config: %w", v1alpha1.ProductFuseOnOpenshift, err)
+		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
 	}
 
 	if config.GetNamespace() == "" {
@@ -91,7 +91,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}
 
 	if err = config.Validate(); err != nil {
-		return nil, fmt.Errorf("%s config is not valid: %w", v1alpha1.ProductFuseOnOpenshift, err)
+		return nil, fmt.Errorf("%s config is not valid: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -106,30 +106,30 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Ins
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileImageStreams(ctx, serverClient, inst)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, serverClient, inst)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
-	logrus.Infof("%s successfully reconciled", v1alpha1.ProductFuseOnOpenshift)
-	return v1alpha1.PhaseCompleted, nil
+	logrus.Infof("%s successfully reconciled", integreatlyv1alpha1.ProductFuseOnOpenshift)
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates config map")
 	cfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil && !k8errors.IsNotFound(err) {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 	}
 
 	// Create configmap if not found
@@ -159,13 +159,13 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 			fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
 			content, err := r.getFileContentFromURL(fileURL)
 			if err != nil {
-				return v1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
 			}
 			defer content.Close()
 
 			data, err := ioutil.ReadAll(content)
 			if err != nil {
-				return v1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
 			}
 
 			// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
@@ -177,25 +177,25 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 
 		cfgMap.Data = configMapData
 		if err := serverClient.Create(ctx, cfgMap); err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 		}
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift imagestreams")
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
 	}
 
 	content := []byte(cfgMap.Data[imageStreamFileName])
 
 	var fileContent map[string]interface{}
 	if err := json.Unmarshal(content, &fileContent); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
 	}
 
 	// The content of the imagestream file is a an object of kind List
@@ -205,18 +205,18 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 	for _, is := range isList {
 		jsonData, err := json.Marshal(is)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
 		}
 
 		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), inst)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
 		}
 
 		// Get unstructured of image stream so we can retrieve the image stream name
 		imageStreamUnstructured, err := resources.UnstructuredFromRuntimeObject(imageStreamRuntimeObj)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to parse runtime object to unstructured for imagestream: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to parse runtime object to unstructured for imagestream: %w", err)
 		}
 
 		imageStreamName := imageStreamUnstructured.GetName()
@@ -227,19 +227,19 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 
 	// Update the sample cluster sample operator CR to skip the Fuse on OpenShift image streams
 	if err := r.updateClusterSampleCR(ctx, serverClient, "SkippedImagestreams", imageStreamNames); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedImagestreams in cluster sample custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedImagestreams in cluster sample custom resource: %w", err)
 	}
 
 	for isName, isObj := range imageStreams {
 		if err := r.createResourceIfNotExist(ctx, serverClient, isObj); err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", isName, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", isName, err)
 		}
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client, inst *v1alpha1.Installation) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates")
 	var templateFiles []string
 	templates := make(map[string]runtime.Object)
@@ -250,7 +250,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 	for _, fileName := range templateFiles {
 		cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
 		}
 
 		content := []byte(cfgMap.Data[fileName])
@@ -258,18 +258,18 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 		if filepath.Ext(fileName) == ".yml" || filepath.Ext(fileName) == ".yaml" {
 			content, err = yaml.ToJSON(content)
 			if err != nil {
-				return v1alpha1.PhaseFailed, fmt.Errorf("failed to convert yaml to json %s: %w", fileName, err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to convert yaml to json %s: %w", fileName, err)
 			}
 		}
 
 		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), inst)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
 		}
 
 		templateUnstructured, err := resources.UnstructuredFromRuntimeObject(templateRuntimeObj)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to parse object: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to parse object: %w", err)
 		}
 
 		templateName := templateUnstructured.GetName()
@@ -280,16 +280,16 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 
 	// Update sample cluster operator CR to skip Fuse on OpenShift quickstart templates
 	if err := r.updateClusterSampleCR(ctx, serverClient, "SkippedTemplates", templateNames); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedTemplates in cluster sample custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update SkippedTemplates in cluster sample custom resource: %w", err)
 	}
 
 	for name, obj := range templates {
 		if err := r.createResourceIfNotExist(ctx, serverClient, obj); err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", name, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create image stream %s: %w", name, err)
 		}
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) getTemplatesConfigMap(ctx context.Context, serverClient pkgclient.Client) (*corev1.ConfigMap, error) {

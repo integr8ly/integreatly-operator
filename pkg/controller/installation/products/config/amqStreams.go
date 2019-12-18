@@ -1,6 +1,6 @@
 package config
 
-import "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+import integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 type AMQStreams struct {
 	config ProductConfig
@@ -30,14 +30,14 @@ func (a *AMQStreams) Read() ProductConfig {
 	return a.config
 }
 
-func (a *AMQStreams) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductAMQStreams
+func (a *AMQStreams) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductAMQStreams
 }
 
-func (a *AMQStreams) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.VersionAMQStreams
+func (a *AMQStreams) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.VersionAMQStreams
 }
 
-func (a *AMQStreams) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionAMQStreams
+func (a *AMQStreams) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionAMQStreams
 }

@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 type RHSSOUser struct {
@@ -42,16 +42,16 @@ func (r *RHSSOUser) Read() ProductConfig {
 	return r.Config
 }
 
-func (r *RHSSOUser) GetProductName() v1alpha1.ProductName {
-	return v1alpha1.ProductRHSSOUser
+func (r *RHSSOUser) GetProductName() integreatlyv1alpha1.ProductName {
+	return integreatlyv1alpha1.ProductRHSSOUser
 }
 
-func (r *RHSSOUser) GetProductVersion() v1alpha1.ProductVersion {
-	return v1alpha1.ProductVersion(r.Config["VERSION"])
+func (r *RHSSOUser) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+	return integreatlyv1alpha1.ProductVersion(r.Config["VERSION"])
 }
 
-func (r *RHSSOUser) GetOperatorVersion() v1alpha1.OperatorVersion {
-	return v1alpha1.OperatorVersionRHSSOUser
+func (r *RHSSOUser) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+	return integreatlyv1alpha1.OperatorVersionRHSSOUser
 }
 
 func (r *RHSSOUser) SetProductVersion(version string) {

@@ -11,8 +11,8 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	v1alpha12 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/monitoring"
@@ -48,7 +48,7 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *v1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	upsConfig, err := configManager.ReadUps()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve ups config: %w", err)
@@ -80,49 +80,49 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", defaultUpsName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (v1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != v1alpha1.PhaseCompleted {
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		return v1alpha1.PhaseCompleted, nil
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	ns := r.Config.GetNamespace()
 
 	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, ns, serverClient)
 	if err != nil {
-		return v1alpha1.PhaseFailed, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: ns, Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, ns, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileComponents(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileHost(ctx, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
-	if err != nil || phase != v1alpha1.PhaseCompleted {
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -132,10 +132,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *v1alpha1.Installation,
 
 	logrus.Infof("%s is successfully reconciled", defaultUpsName)
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling external postgres")
 	ns := inst.Namespace
 
@@ -147,12 +147,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 		return nil
 	})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
 	// wait for the postgres instance to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
-		return v1alpha1.PhaseAwaitingComponents, nil
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
 	// get the secret created by the cloud resources operator
@@ -160,7 +160,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	connSec := &corev1.Secret{}
 	err = client.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
 
 	// Reconcile ups custom resource
@@ -186,59 +186,59 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *v1alpha1.Ins
 	if err != nil {
 		// If the error is not an isNotFound error
 		if !k8serr.IsNotFound(err) {
-			return v1alpha1.PhaseFailed, err
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
 		// Otherwise create the cr
 		if err := client.Create(ctx, cr); err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to create unifiedpush server custom resource during reconcile: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create unifiedpush server custom resource during reconcile: %w", err)
 		}
 	}
 
 	// Wait till the ups cr status is complete
 	if cr.Status.Phase != upsv1alpha1.PhaseReconciling {
 		logrus.Info("Waiting for unified push server cr phase to complete")
-		return v1alpha1.PhaseInProgress, nil
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	logrus.Info("Successfully reconciled unified push server custom resource")
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Setting host on config to exposed route
 	logrus.Info("Setting unified push server config host")
 	upsRoute := &routev1.Route{}
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, upsRoute)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to get route for unified push server: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get route for unified push server: %w", err)
 	}
 
 	r.Config.SetHost("https://" + upsRoute.Spec.Host)
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("could not update unified push server config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update unified push server config: %w", err)
 	}
 
 	logrus.Info("Successfully set unified push server host")
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *v1alpha1.Installation, client pkgclient.Client) (v1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-ups", v1alpha12.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget("integreatly-ups", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "ups-ui",
 	}, ctx, cfg, inst, client)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("error creating ups blackbox target: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating ups blackbox target: %w", err)
 	}
 
-	return v1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

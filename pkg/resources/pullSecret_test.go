@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,13 +39,13 @@ func TestGetDefaultPullSecret(t *testing.T) {
 	scenarios := []struct {
 		Name         string
 		FakeClient   client.Client
-		Installation *v1alpha1.Installation
+		Installation *integreatlyv1alpha1.Installation
 		Verify       func(secret corev1.Secret, err error, t *testing.T)
 	}{
 		{
 			Name:         "Test Default Pull Secret is successfully retrieved",
 			FakeClient:   fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 			Verify: func(secret corev1.Secret, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -59,7 +59,7 @@ func TestGetDefaultPullSecret(t *testing.T) {
 		{
 			Name:         "Test Get Default Pull Secret error",
 			FakeClient:   fakeclient.NewFakeClientWithScheme(scheme),
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 			Verify: func(secret corev1.Secret, err error, t *testing.T) {
 				if err == nil {
 					t.Fatal("Expected error but got none")
@@ -96,7 +96,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	scenarios := []struct {
 		Name         string
 		FakeClient   client.Client
-		Installation *v1alpha1.Installation
+		Installation *integreatlyv1alpha1.Installation
 		Verify       func(client client.Client, err error, t *testing.T)
 	}{
 		{
@@ -108,7 +108,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 					Labels:    map[string]string{"webapp": "true"},
 				},
 			}),
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 			Verify: func(c client.Client, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -131,7 +131,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 					Labels:    map[string]string{"webapp": "true"},
 				},
 			}),
-			Installation: &v1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.Installation{},
 			Verify: func(c client.Client, err error, t *testing.T) {
 				if err == nil {
 					t.Fatal("Expected error but got none")

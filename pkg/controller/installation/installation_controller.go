@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
@@ -75,7 +75,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource Installation
-	err = c.Watch(&source.Kind{Type: &v1alpha1.Installation{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &integreatlyv1alpha1.Installation{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to secondary resource Pods and requeue the owner Installation
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &v1alpha1.Installation{},
+		OwnerType:    &integreatlyv1alpha1.Installation{},
 	})
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 
 	logrus.Infof("Looking for installation CR in %s namespace", namespace)
 
-	installationList := &v1alpha1.InstallationList{}
+	installationList := &integreatlyv1alpha1.InstallationList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(namespace),
 	}
@@ -112,15 +112,15 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
 
-		logrus.Infof("Creating a %s installation CR as none CR installation was found in %s namespace", string(v1alpha1.InstallationTypeManaged), namespace)
+		logrus.Infof("Creating a %s installation CR as none CR installation was found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
 
-		instance := &v1alpha1.Installation{
+		instance := &integreatlyv1alpha1.Installation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      defaultInstallationName,
 				Namespace: namespace,
 			},
-			Spec: v1alpha1.InstallationSpec{
-				Type:            string(v1alpha1.InstallationTypeManaged),
+			Spec: integreatlyv1alpha1.InstallationSpec{
+				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
 				NamespacePrefix: "rhmi-",
 				SelfSignedCerts: true,
 			},
@@ -152,7 +152,7 @@ type ReconcileInstallation struct {
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	instance := &v1alpha1.Installation{}
+	instance := &integreatlyv1alpha1.Installation{}
 	err := r.client.Get(r.context, request.NamespacedName, instance)
 
 	if err != nil {
@@ -182,13 +182,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// either not checked, or rechecking preflight checks
-	if instance.Status.PreflightStatus == v1alpha1.PreflightInProgress ||
-		instance.Status.PreflightStatus == v1alpha1.PreflightFail {
+	if instance.Status.PreflightStatus == integreatlyv1alpha1.PreflightInProgress ||
+		instance.Status.PreflightStatus == integreatlyv1alpha1.PreflightFail {
 		return r.preflightChecks(instance, installType, configManager)
 	}
 
 	if instance.Status.Stages == nil {
-		instance.Status.Stages = map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus{}
+		instance.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{}
 	}
 
 	// If the CR is being deleted, cancel the current context
@@ -205,7 +205,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				continue
 			}
 			productName := strings.Split(productFinalizer, ".")[1]
-			product := instance.GetProductStatusObject(v1alpha1.ProductName(productName))
+			product := instance.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
@@ -237,17 +237,17 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	for _, stage := range installType.GetStages() {
 		var err error
-		var stagePhase v1alpha1.StatusPhase
-		if stage.Name == v1alpha1.BootstrapStage {
+		var stagePhase integreatlyv1alpha1.StatusPhase
+		if stage.Name == integreatlyv1alpha1.BootstrapStage {
 			stagePhase, err = r.bootstrapStage(instance, configManager)
 		} else {
 			stagePhase, err = r.processStage(instance, &stage, configManager)
 		}
 
 		if instance.Status.Stages == nil {
-			instance.Status.Stages = make(map[v1alpha1.StageName]*v1alpha1.InstallationStageStatus)
+			instance.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus)
 		}
-		instance.Status.Stages[stage.Name] = &v1alpha1.InstallationStageStatus{
+		instance.Status.Stages[stage.Name] = &integreatlyv1alpha1.InstallationStageStatus{
 			Name:     stage.Name,
 			Phase:    stagePhase,
 			Products: stage.Products,
@@ -256,7 +256,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			return reconcile.Result{}, err
 		}
 		//don't move to next stage until current stage is complete
-		if stagePhase != v1alpha1.PhaseCompleted {
+		if stagePhase != integreatlyv1alpha1.PhaseCompleted {
 			break
 		}
 	}
@@ -301,7 +301,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}, nil
 }
 
-func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
+func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
 
 	result := reconcile.Result{
@@ -320,7 +320,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 			return result, err
 		} else if !exists {
 			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
-			installation.Status.PreflightStatus = v1alpha1.PreflightFail
+			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = preflightMessage
 			logrus.Info(preflightMessage)
 			_ = r.client.Status().Update(r.context, installation)
@@ -345,7 +345,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		}
 		if len(products) != 0 {
 			//found one or more conflicting products
-			installation.Status.PreflightStatus = v1alpha1.PreflightFail
+			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
 			logrus.Infof("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
 			_ = r.client.Status().Update(r.context, installation)
@@ -353,13 +353,13 @@ func (r *ReconcileInstallation) preflightChecks(installation *v1alpha1.Installat
 		}
 	}
 
-	installation.Status.PreflightStatus = v1alpha1.PreflightSuccess
+	installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"
 	_ = r.client.Status().Update(r.context, installation)
 	return result, nil
 }
 
-func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *v1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
+func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
 	foundProducts := []string{}
 	// new client to avoid caching issues
 	serverClient, _ := client.New(r.restConfig, client.Options{})
@@ -384,36 +384,36 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	return foundProducts, nil
 }
 
-func (r *ReconcileInstallation) bootstrapStage(instance *v1alpha1.Installation, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) bootstrapStage(instance *integreatlyv1alpha1.Installation, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	mpm := marketplace.NewManager()
 
 	reconciler, err := NewBootstrapReconciler(configManager, instance, mpm)
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
 	}
 	serverClient, err := client.New(r.restConfig, client.Options{})
 	if err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
 	phase, err := reconciler.Reconcile(r.context, instance, serverClient)
-	if err != nil || phase == v1alpha1.PhaseFailed {
-		return v1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
+	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
 
 	return phase, nil
 }
 
-func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (v1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) processStage(instance *integreatlyv1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	var mErr error
 	for _, product := range stage.Products {
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
 		serverClient, err := client.New(r.restConfig, client.Options{})
 		if err != nil {
-			return v1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
 		product.Status, err = reconciler.Reconcile(r.context, instance, product, serverClient)
 		if err != nil {
@@ -423,16 +423,16 @@ func (r *ReconcileInstallation) processStage(instance *v1alpha1.Installation, st
 			mErr.(*multiErr).Add(fmt.Errorf("failed installation of %s: %w", product.Name, err))
 		}
 		//found an incomplete product
-		if !(product.Status == v1alpha1.PhaseCompleted) {
+		if !(product.Status == integreatlyv1alpha1.PhaseCompleted) {
 			incompleteStage = true
 		}
 	}
 
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {
-		return v1alpha1.PhaseInProgress, mErr
+		return integreatlyv1alpha1.PhaseInProgress, mErr
 	}
-	return v1alpha1.PhaseCompleted, mErr
+	return integreatlyv1alpha1.PhaseCompleted, mErr
 }
 
 type multiErr struct {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"runtime"
 
@@ -15,7 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -27,6 +26,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -177,7 +177,7 @@ func serveCRMetrics(cfg *rest.Config) error {
 		return err
 	}
 
-	installationGVK := []schema.GroupVersionKind{v1alpha1.SchemaGroupVersionKind}
+	installationGVK := []schema.GroupVersionKind{integreatlyv1alpha1.SchemaGroupVersionKind}
 
 	// To generate metrics in other namespaces, add the values below.
 	ns := []string{operatorNs}
