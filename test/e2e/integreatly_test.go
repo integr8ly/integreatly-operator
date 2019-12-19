@@ -417,7 +417,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	expectedRoutes := map[string]int{
 		"3scale":                6,
 		"amq-online":            2,
-		"codeready-workspaces":  1,
+		"codeready-workspaces":  3,
 		"fuse":                  2,
 		"middleware-monitoring": 3,
 		"rhsso":                 1,
