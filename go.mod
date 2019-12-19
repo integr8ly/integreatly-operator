@@ -6,7 +6,7 @@ require (
 	github.com/RHsyseng/operator-utils v0.0.0-20191024171829-7e918ca09e5e
 	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 	github.com/coreos/prometheus-operator v0.29.0
-	github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5
+	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882

@@ -125,6 +125,8 @@ github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c/go.mod h1:Qh8CwZ
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5 h1:PFnDRj0toR+w+H5UXEU/Zpg5QQnAbcpcOwgwjG2VY0I=
 github.com/eclipse/che-operator v0.0.0-20190620145712-2f639261d8b5/go.mod h1:8qIGHA/dlDNhqqgQVPvMKlRb8kIy4lbHrsSoru6hRzY=
+github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde h1:39y/bo/3BJxmvQo1AAkfseePuQ04dfV8yBqCRnPKRo0=
+github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde/go.mod h1:8qIGHA/dlDNhqqgQVPvMKlRb8kIy4lbHrsSoru6hRzY=
 github.com/elazarl/go-bindata-assetfs v1.0.0/go.mod h1:v+YaWX3bdea5J/mo8dSETolEo7R71Vk1u8bnjau5yw4=
 github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f h1:8GDPb0tCY8LQ+OJ3dbHb5sA6YZWXFORQYZx5sdsTlMs=
