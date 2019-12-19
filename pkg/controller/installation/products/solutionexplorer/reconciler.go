@@ -66,14 +66,14 @@ type productInfo struct {
 	Version integreatlyv1alpha1.ProductVersion
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver) (*Reconciler, error) {
 	seConfig, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
 	}
 
 	if seConfig.GetNamespace() == "" {
-		seConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultName)
+		seConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultName)
 	}
 	if err = seConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("solution explorer config is not valid: %w", err)
@@ -89,7 +89,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 		Reconciler:    resources.NewReconciler(mpm),
 		OauthResolver: resolver,
 		oauthv1Client: oauthv1Client,
-		installation:  instance,
+		installation:  installation,
 	}, nil
 }
 
@@ -102,16 +102,16 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(ctx, installation, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -121,7 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -136,7 +136,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.ReconcileCustomResource(ctx, inst, serverClient)
+	phase, err = r.ReconcileCustomResource(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -151,7 +151,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
-	phase, err = r.ReconcileOauthClient(ctx, inst, &oauthv1.OAuthClient{
+	phase, err = r.ReconcileOauthClient(ctx, installation, &oauthv1.OAuthClient{
 		RedirectURIs: []string{route},
 		GrantMethod:  oauthv1.GrantHandlerAuto,
 		ObjectMeta: metav1.ObjectMeta{
@@ -162,12 +162,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTarget(ctx, inst, serverClient)
+	phase, err = r.reconcileBlackboxTarget(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -182,7 +182,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -206,11 +206,11 @@ func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alph
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -219,7 +219,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, inst *integrea
 		Service: "webapp-ui",
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, inst, client)
+	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
@@ -256,7 +256,7 @@ func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) 
 	return fmt.Sprintf("%s://%s", protocol, route.Spec.Host), nil
 }
 
-func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	//todo shouldn't need to do this with each reconcile
 	oauthConfig, err := r.OauthResolver.GetOauthEndPoint()
 	if err != nil {
@@ -275,9 +275,9 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *integrea
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
 	logrus.Info("ReconcileCustomResource setting url for openshift host ", oauthURL)
 
-	installedServices, err := r.getInstalledProducts(inst)
+	installedServices, err := r.getInstalledProducts(installation)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieve installed products information from %s CR: %w", inst.Name, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to retrieve installed products information from %s CR: %w", installation.Name, err)
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, seCR, func() error {
 		seCR.Spec.AppLabel = "tutorial-web-app"
@@ -285,7 +285,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *integrea
 		seCR.Spec.Template.Parameters = map[string]string{
 			paramOauthClient:        r.getOAuthClientName(),
 			paramSSORoute:           ssoConfig.GetHost(),
-			paramOpenShiftHost:      inst.Spec.MasterURL,
+			paramOpenShiftHost:      installation.Spec.MasterURL,
 			paramOpenShiftOauthHost: oauthURL,
 			paramOpenShiftVersion:   "4",
 			paramInstalledServices:  installedServices,
@@ -311,8 +311,8 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, inst *integrea
 
 }
 
-func (r *Reconciler) getInstalledProducts(inst *integreatlyv1alpha1.Installation) (string, error) {
-	installedProducts := inst.Status.Stages["products"].Products
+func (r *Reconciler) getInstalledProducts(installation *integreatlyv1alpha1.Installation) (string, error) {
+	installedProducts := installation.Status.Stages["products"].Products
 
 	// Ensure that amq online console is not added to the installed products, a per user amq online is used instead which is provisioned by the webapp
 	// Ensure that ups is not added to the installed products

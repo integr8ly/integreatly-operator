@@ -80,7 +80,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
@@ -106,18 +106,18 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileImageStreams(ctx, serverClient, inst)
+	phase, err = r.reconcileImageStreams(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient, inst)
+	phase, err = r.reconcileTemplates(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -184,7 +184,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkgclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift imagestreams")
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil {
@@ -208,7 +208,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
 		}
 
-		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), inst)
+		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
 		}
@@ -239,7 +239,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates")
 	var templateFiles []string
 	templates := make(map[string]runtime.Object)
@@ -262,7 +262,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 			}
 		}
 
-		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), inst)
+		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
 		}

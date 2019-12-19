@@ -55,8 +55,8 @@ const (
 	externalPostgresSecretName     = "system-database"
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, i *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
-	ns := i.Spec.NamespacePrefix + defaultInstallationNamespace
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	tsConfig, err := configManager.ReadThreeScale()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
@@ -70,7 +70,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *integreatlyv1alpha1
 		ConfigManager: configManager,
 		Config:        tsConfig,
 		mpm:           mpm,
-		installation:  i,
+		installation:  installation,
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
@@ -99,16 +99,16 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, in, serverClient, r.Config.GetNamespace())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		err = resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(ctx, installation, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -118,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -128,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", in, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -167,7 +167,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, in, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -186,7 +186,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileOauthClient(ctx, in, &oauthv1.OAuthClient{
+	phase, err = r.ReconcileOauthClient(ctx, installation, &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.getOAuthClientName(),
 		},
@@ -205,7 +205,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, in, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -220,11 +220,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -234,7 +234,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -969,7 +969,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -978,7 +978,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
@@ -991,7 +991,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
@@ -1004,7 +1004,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}

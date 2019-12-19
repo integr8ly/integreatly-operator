@@ -24,11 +24,11 @@ import (
 	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewBootstrapReconciler(configManager config.ConfigReadWriter, i *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
 		mpm:           mpm,
-		installation:  i,
+		installation:  installation,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
@@ -45,7 +45,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)

@@ -19,7 +19,7 @@ import (
 
 type ProductConfig map[string]string
 
-func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, inst *integreatlyv1alpha1.Installation) (*Manager, error) {
+func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, installation *integreatlyv1alpha1.Installation) (*Manager, error) {
 	cfgmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -30,7 +30,7 @@ func NewManager(ctx context.Context, client pkgclient.Client, namespace string, 
 	if !errors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
-	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap, context: ctx, installation: inst}, nil
+	return &Manager{Client: client, Namespace: namespace, cfgmap: cfgmap, context: ctx, installation: installation}, nil
 }
 
 //go:generate moq -out ConfigReadWriter_moq.go . ConfigReadWriter

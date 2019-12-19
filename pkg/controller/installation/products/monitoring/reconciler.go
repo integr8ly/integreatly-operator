@@ -50,7 +50,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	monitoringConfig, err := configManager.ReadMonitoring()
 
@@ -58,22 +58,22 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 		return nil, err
 	}
 
-	monitoringConfig.SetNamespacePrefix(instance.Spec.NamespacePrefix)
-	monitoringConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+	monitoringConfig.SetNamespacePrefix(installation.Spec.NamespacePrefix)
+	monitoringConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 
 	return &Reconciler{
 		Config:        monitoringConfig,
 		extraParams:   make(map[string]string),
 		ConfigManager: configManager,
 		Logger:        logger,
-		installation:  instance,
+		installation:  installation,
 		mpm:           mpm,
 		Reconciler:    resources.NewReconciler(mpm),
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
 		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
@@ -122,7 +122,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		}
 
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -134,7 +134,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 
 	ns := r.Config.GetNamespace()
 
-	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
@@ -363,7 +363,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient pkgclient.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) error {
+func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
 		return nil

@@ -45,7 +45,7 @@ type InterfaceMock struct {
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -100,7 +100,7 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
@@ -111,14 +111,14 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, inst *integreatlyv1alp
 		ServerClient client.Client
 	}{
 		Ctx:          ctx,
-		Inst:         inst,
+		Inst:         installation,
 		Product:      product,
 		ServerClient: serverClient,
 	}
 	lockInterfaceMockReconcile.Lock()
 	mock.calls.Reconcile = append(mock.calls.Reconcile, callInfo)
 	lockInterfaceMockReconcile.Unlock()
-	return mock.ReconcileFunc(ctx, inst, product, serverClient)
+	return mock.ReconcileFunc(ctx, installation, product, serverClient)
 }
 
 // ReconcileCalls gets all the calls that were made to Reconcile.

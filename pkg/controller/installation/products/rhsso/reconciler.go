@@ -64,13 +64,13 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
 	}
 	if rhssoConfig.GetNamespace() == "" {
-		rhssoConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultRhssoNamespace)
+		rhssoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultRhssoNamespace)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -79,7 +79,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 		Config:        rhssoConfig,
 		ConfigManager: configManager,
 		mpm:           mpm,
-		installation:  instance,
+		installation:  installation,
 		logger:        logger,
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -97,16 +97,16 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		err = resources.RemoveOauthClient(ctx, inst, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(ctx, installation, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -116,7 +116,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -131,24 +131,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, inst, serverClient)
+	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, inst, serverClient)
+	phase, err = r.handleProgressPhase(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -162,7 +162,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -187,11 +187,11 @@ func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alph
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -200,7 +200,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
@@ -261,7 +261,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
@@ -288,7 +288,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, inst *integreatlyv
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
 		}
 
-		err = r.setupOpenshiftIDP(ctx, inst, kcr, serverClient)
+		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
@@ -339,7 +339,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -368,7 +368,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1a
 		GrantMethod: oauthv1.GrantHandlerPrompt,
 	}
 
-	_, err = r.ReconcileOauthClient(ctx, inst, oauthc, serverClient)
+	_, err = r.ReconcileOauthClient(ctx, installation, oauthc, serverClient)
 	if err != nil {
 		return err
 	}
@@ -404,7 +404,7 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -413,7 +413,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "rhsso-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
 	}

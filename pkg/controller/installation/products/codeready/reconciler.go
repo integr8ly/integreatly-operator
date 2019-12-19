@@ -50,13 +50,13 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve che config: %w", err)
 	}
 	if config.GetNamespace() == "" {
-		config.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
@@ -64,7 +64,7 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
-		installation:  instance,
+		installation:  installation,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -80,7 +80,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, instance *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, r.installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, r.installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -275,7 +275,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
