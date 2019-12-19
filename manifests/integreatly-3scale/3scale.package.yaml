@@ -1,4 +1,4 @@
 packageName: integreatly-3scale
 channels:
   - name: integreatly
-    currentCSV: 3scale-operator.v1.9-7
+    currentCSV: 3scale-operator.v0.4.0

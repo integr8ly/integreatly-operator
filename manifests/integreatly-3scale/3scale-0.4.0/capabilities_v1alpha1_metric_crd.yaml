@@ -24,14 +24,14 @@ spec:
             unit:
               type: string
           required:
-            - unit
-            - description
-            - incrementHits
+          - unit
+          - description
+          - incrementHits
           type: object
         status:
           type: object
   version: v1alpha1
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
