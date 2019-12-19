@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -38,8 +38,8 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 	}
 }
 
-func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installation, client *oauthv1.OAuthClient, apiClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if err := apiClient.Get(ctx, pkgclient.ObjectKey{Name: client.Name}, client); err != nil {
+func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installation, client *oauthv1.OAuthClient, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
 			PrepareObject(client, inst)
 			if err := apiClient.Create(ctx, client); err != nil {
@@ -57,13 +57,13 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 }
 
 // GetNS gets the specified corev1.Namespace from the k8s API server
-func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*corev1.Namespace, error) {
+func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*corev1.Namespace, error) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: ns.Name}, ns)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 	if err == nil {
 		// workaround for https://github.com/kubernetes/client-go/issues/541
 		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: corev1.SchemeGroupVersion.Version}
@@ -71,7 +71,7 @@ func GetNS(ctx context.Context, namespace string, client pkgclient.Client) (*cor
 	return ns, err
 }
 
-func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		if !k8serr.IsNotFound(err) {
@@ -103,7 +103,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Client, inst *integreatlyv1alpha1.Installation, productName string, finalFunc finalizerFunc) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.Installation, productName string, finalFunc finalizerFunc) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := "finalizer." + productName + ".integreatly.org"
 	// Add finalizer if not there
 	err := AddFinalizer(ctx, inst, client, finalizer)
@@ -134,7 +134,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client pkgclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	pullSecretName := DefaultOriginPullSecretName
 	if secretName != "" {
 		pullSecretName = secretName
@@ -148,7 +148,7 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, owner, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
 

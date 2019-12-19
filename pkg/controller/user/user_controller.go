@@ -6,7 +6,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -58,7 +58,7 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 
 	// new client to avoid caching issues
 	restConfig := controllerruntime.GetConfigOrDie()
-	c, _ := client.New(restConfig, client.Options{})
+	c, _ := k8sclient.New(restConfig, k8sclient.Options{})
 	ctx := context.TODO()
 
 	rhmiGroup := &usersv1.Group{

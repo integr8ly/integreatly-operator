@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -68,7 +68,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Creates a new managed install CR if it is not available
-	cl, err := client.New(controllerruntime.GetConfigOrDie(), client.Options{})
+	cl, err := k8sclient.New(controllerruntime.GetConfigOrDie(), k8sclient.Options{})
 	err = createsInstallationCR(context.TODO(), cl)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-func createsInstallationCR(ctx context.Context, serverClient client.Client) error {
+func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
 		return err
@@ -101,8 +101,8 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 	logrus.Infof("Looking for installation CR in %s namespace", namespace)
 
 	installationList := &integreatlyv1alpha1.InstallationList{}
-	listOpts := []client.ListOption{
-		client.InNamespace(namespace),
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(namespace),
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
@@ -141,7 +141,7 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client            client.Client
+	client            k8sclient.Client
 	scheme            *runtime.Scheme
 	restConfig        *rest.Config
 	productsToInstall []string
@@ -210,7 +210,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
 			}
-			serverClient, err := client.New(r.restConfig, client.Options{})
+			serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
 			}
@@ -362,7 +362,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
 	foundProducts := []string{}
 	// new client to avoid caching issues
-	serverClient, _ := client.New(r.restConfig, client.Options{})
+	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
 	for _, stage := range installationType.Stages {
 		for _, product := range stage.Products {
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation)
@@ -391,7 +391,7 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
 	}
-	serverClient, err := client.New(r.restConfig, client.Options{})
+	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
@@ -411,7 +411,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.I
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
-		serverClient, err := client.New(r.restConfig, client.Options{})
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}

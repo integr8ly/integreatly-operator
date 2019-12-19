@@ -17,7 +17,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -67,7 +67,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for amq streams and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -113,7 +113,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling amq streams custom resource")
 
 	kafka := &kafkav1.Kafka{
@@ -172,12 +172,12 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client pkgcli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Debug("checking amq streams pods are running")
 
 	pods := &corev1.PodList{}
-	listOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(r.Config.GetNamespace()),
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(r.Config.GetNamespace()),
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {

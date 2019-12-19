@@ -14,7 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -55,7 +55,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
@@ -99,13 +99,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) cleanupResources(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) cleanupResources(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("ensuring cloud resources are cleaned up")
 
 	// ensure postgres instances are cleaned up
 	postgresInstances := &crov1.PostgresList{}
-	postgresInstanceOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(installation.Namespace),
+	postgresInstanceOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
 	}
 	err := client.List(ctx, postgresInstances, postgresInstanceOpts...)
 	if err != nil {
@@ -118,8 +118,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 
 	// ensure redis instances are cleaned up
 	redisInstances := &crov1.RedisList{}
-	redisInstanceOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(installation.Namespace),
+	redisInstanceOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
 	}
 	err = client.List(ctx, redisInstances, redisInstanceOpts...)
 	if err != nil {
@@ -132,8 +132,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 
 	// ensure blob storage instances are cleaned up
 	blobStorages := &crov1.BlobStorageList{}
-	blobStorageOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(installation.Namespace),
+	blobStorageOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
 	}
 	err = client.List(ctx, blobStorages, blobStorageOpts...)
 	if err != nil {
@@ -146,8 +146,8 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 
 	// ensure blob storage instances are cleaned up
 	smtpCredentialSets := &crov1.SMTPCredentialSetList{}
-	smtpOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(installation.Namespace),
+	smtpOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
 	}
 	err = client.List(ctx, smtpCredentialSets, smtpOpts...)
 	if err != nil {

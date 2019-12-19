@@ -14,11 +14,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func basicClient(objects ...runtime.Object) client.Client {
+func basicClient(objects ...runtime.Object) k8sclient.Client {
 	scheme := runtime.NewScheme()
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
@@ -44,7 +44,7 @@ func TestBackups(t *testing.T) {
 		BackupConfig BackupConfig
 		Context      context.Context
 		Instance     *integreatlyv1alpha1.Installation
-		Client       client.Client
+		Client       k8sclient.Client
 		Validation   func(e error, t *testing.T)
 	}{
 		{

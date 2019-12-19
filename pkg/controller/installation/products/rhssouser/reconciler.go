@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -75,7 +75,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
@@ -127,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
@@ -179,10 +179,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	kc := &aerogearv1.Keycloak{}
 	// if this errors, it can be ignored
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
 		r.Config.SetProductVersion(kc.Status.Version)
 		r.ConfigManager.WriteConfig(r.Config)
@@ -195,7 +195,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *inte
 	r.logger.Info("checking ready status for user-sso")
 	kcr := &aerogearv1.KeycloakRealm{}
 
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
@@ -219,14 +219,14 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *inte
 	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Client) error {
+func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Client) error {
 	kc := &aerogearv1.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err != nil {
 		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config for user-sso: %w", err)
 	}
@@ -238,7 +238,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
 	if err != nil {
 		return fmt.Errorf("could not retrieve keycloak admin credential secret for keycloak config for user-sso: %w", err)
 	}
@@ -252,14 +252,14 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient pkgclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient pkgclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient k8sclient.Client) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
 		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
 		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}

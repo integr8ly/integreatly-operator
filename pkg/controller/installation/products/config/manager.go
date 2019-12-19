@@ -14,19 +14,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ProductConfig map[string]string
 
-func NewManager(ctx context.Context, client pkgclient.Client, namespace string, configMapName string, installation *integreatlyv1alpha1.Installation) (*Manager, error) {
+func NewManager(ctx context.Context, client k8sclient.Client, namespace string, configMapName string, installation *integreatlyv1alpha1.Installation) (*Manager, error) {
 	cfgmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      configMapName,
 		},
 	}
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: configMapName, Namespace: namespace}, cfgmap)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: configMapName, Namespace: namespace}, cfgmap)
 	if !errors.IsNotFound(err) && err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ type ConfigReadable interface {
 }
 
 type Manager struct {
-	Client       pkgclient.Client
+	Client       k8sclient.Client
 	Namespace    string
 	cfgmap       *corev1.ConfigMap
 	context      context.Context
@@ -207,7 +207,7 @@ func (m *Manager) ReadCloudResources() (*CloudResources, error) {
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {
 	stringConfig, err := yaml.Marshal(config.Read())
-	err = m.Client.Get(m.context, pkgclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
+	err = m.Client.Get(m.context, k8sclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
 	if errors.IsNotFound(err) {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}
 		ownerutil.EnsureOwner(m.cfgmap, m.installation)

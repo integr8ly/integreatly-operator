@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -34,19 +34,19 @@ func TestReconcileCatalogSource(t *testing.T) {
 
 	scenarios := []struct {
 		Name       string
-		FakeClient client.Client
-		Verify     func(csName string, err error, c client.Client)
+		FakeClient k8sclient.Client
+		Verify     func(csName string, err error, c k8sclient.Client)
 	}{
 		{
 			Name:       "Test catalog source created successfully",
 			FakeClient: fake.NewFakeClientWithScheme(buildScheme()),
-			Verify: func(csName string, err error, c client.Client) {
+			Verify: func(csName string, err error, c k8sclient.Client) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
 				catalogSource := &coreosv1alpha1.CatalogSource{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
 
 				if err != nil && catalogSource.Spec.ConfigMap != csName {
 					t.Fatalf("Expected catalog source to be created but wasn't: %v", err)
@@ -65,13 +65,13 @@ func TestReconcileCatalogSource(t *testing.T) {
 					ConfigMap: "randomConfigMap",
 				},
 			}),
-			Verify: func(csName string, err error, c client.Client) {
+			Verify: func(csName string, err error, c k8sclient.Client) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
 				catalogSource := &coreosv1alpha1.CatalogSource{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
 
 				if err != nil && catalogSource.Spec.ConfigMap != csName && catalogSource.Spec.ConfigMap != "randomConfigMap" {
 					t.Fatalf("Expected catalog source to be updated but wasn't: %v", err)
@@ -85,7 +85,7 @@ func TestReconcileCatalogSource(t *testing.T) {
 					return errors.New("General error")
 				},
 			},
-			Verify: func(csName string, err error, c client.Client) {
+			Verify: func(csName string, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -97,11 +97,11 @@ func TestReconcileCatalogSource(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
-			Verify: func(csName string, err error, c client.Client) {
+			Verify: func(csName string, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -113,11 +113,11 @@ func TestReconcileCatalogSource(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},
-			Verify: func(csName string, err error, c client.Client) {
+			Verify: func(csName string, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -139,21 +139,21 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 
 	scenarios := []struct {
 		Name        string
-		FakeClient  client.Client
+		FakeClient  k8sclient.Client
 		FakeMapData map[string]string
-		Verify      func(cmName string, err error, c client.Client, configMapData map[string]string)
+		Verify      func(cmName string, err error, c k8sclient.Client, configMapData map[string]string)
 	}{
 		{
 			Name:        "Test registry config map created successfully",
 			FakeClient:  fake.NewFakeClientWithScheme(buildScheme()),
 			FakeMapData: map[string]string{"test": "someData"},
-			Verify: func(cmName string, err error, c client.Client, configMapData map[string]string) {
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
 				configMap := &corev1.ConfigMap{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
 
 				if err != nil && !reflect.DeepEqual(configMap.Data, configMapData) {
 					t.Fatalf("Expected registry config map to be created with data but wasn't: %v", err)
@@ -170,9 +170,9 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 				Data: map[string]string{"test": "outDatedData"},
 			}),
 			FakeMapData: map[string]string{"test": "someNewData"},
-			Verify: func(cmName string, err error, c client.Client, configMapData map[string]string) {
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				configMap := &corev1.ConfigMap{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: cmName, Namespace: testNameSpace}, configMap)
 
 				if err != nil && !reflect.DeepEqual(configMap.Data, configMapData) {
 					t.Fatalf("Expected registry config map to be updated with data but wasn't: %v", err)
@@ -186,7 +186,7 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 					return errors.New("General error")
 				},
 			},
-			Verify: func(cmName string, err error, c client.Client, configMapData map[string]string) {
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -198,11 +198,11 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "catalogsource")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
-			Verify: func(cmName string, err error, c client.Client, configMapData map[string]string) {
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -214,12 +214,12 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return nil
 				},
-				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
 					return errors.New("dummy update error")
 				},
 			},
 			FakeMapData: map[string]string{"test": "someData"},
-			Verify: func(cmName string, err error, c client.Client, configMapData map[string]string) {
+			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}

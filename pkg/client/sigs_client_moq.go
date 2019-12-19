@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -69,31 +69,31 @@ var _ SigsClientInterface = &SigsClientInterfaceMock{}
 //     }
 type SigsClientInterfaceMock struct {
 	// CreateFunc mocks the Create method.
-	CreateFunc func(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error
+	CreateFunc func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error
 
 	// DeleteFunc mocks the Delete method.
-	DeleteFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error
+	DeleteFunc func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error
 
 	// DeleteAllOfFunc mocks the DeleteAllOf method.
-	DeleteAllOfFunc func(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error
+	DeleteAllOfFunc func(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteAllOfOption) error
 
 	// GetFunc mocks the Get method.
 	GetFunc func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error
 
 	// GetSigsClientFunc mocks the GetSigsClient method.
-	GetSigsClientFunc func() client.Client
+	GetSigsClientFunc func() k8sclient.Client
 
 	// ListFunc mocks the List method.
-	ListFunc func(ctx context.Context, list runtime.Object, opts ...client.ListOption) error
+	ListFunc func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error
 
 	// PatchFunc mocks the Patch method.
-	PatchFunc func(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error
+	PatchFunc func(ctx context.Context, obj runtime.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error
 
 	// StatusFunc mocks the Status method.
-	StatusFunc func() client.StatusWriter
+	StatusFunc func() k8sclient.StatusWriter
 
 	// UpdateFunc mocks the Update method.
-	UpdateFunc func(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error
+	UpdateFunc func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -104,7 +104,7 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.CreateOption
+			Opts []k8sclient.CreateOption
 		}
 		// Delete holds details about calls to the Delete method.
 		Delete []struct {
@@ -113,7 +113,7 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.DeleteOption
+			Opts []k8sclient.DeleteOption
 		}
 		// DeleteAllOf holds details about calls to the DeleteAllOf method.
 		DeleteAllOf []struct {
@@ -122,7 +122,7 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.DeleteAllOfOption
+			Opts []k8sclient.DeleteAllOfOption
 		}
 		// Get holds details about calls to the Get method.
 		Get []struct {
@@ -143,7 +143,7 @@ type SigsClientInterfaceMock struct {
 			// List is the list argument value.
 			List runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.ListOption
+			Opts []k8sclient.ListOption
 		}
 		// Patch holds details about calls to the Patch method.
 		Patch []struct {
@@ -152,9 +152,9 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Patch is the patch argument value.
-			Patch client.Patch
+			Patch k8sclient.Patch
 			// Opts is the opts argument value.
-			Opts []client.PatchOption
+			Opts []k8sclient.PatchOption
 		}
 		// Status holds details about calls to the Status method.
 		Status []struct {
@@ -166,20 +166,20 @@ type SigsClientInterfaceMock struct {
 			// Obj is the obj argument value.
 			Obj runtime.Object
 			// Opts is the opts argument value.
-			Opts []client.UpdateOption
+			Opts []k8sclient.UpdateOption
 		}
 	}
 }
 
 // Create calls CreateFunc.
-func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Object, opts ...client.CreateOption) error {
+func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 	if mock.CreateFunc == nil {
 		panic("SigsClientInterfaceMock.CreateFunc: method is nil but SigsClientInterface.Create was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.CreateOption
+		Opts []k8sclient.CreateOption
 	}{
 		Ctx:  ctx,
 		Obj:  obj,
@@ -197,12 +197,12 @@ func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Obj
 func (mock *SigsClientInterfaceMock) CreateCalls() []struct {
 	Ctx  context.Context
 	Obj  runtime.Object
-	Opts []client.CreateOption
+	Opts []k8sclient.CreateOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.CreateOption
+		Opts []k8sclient.CreateOption
 	}
 	lockSigsClientInterfaceMockCreate.RLock()
 	calls = mock.calls.Create
@@ -211,14 +211,14 @@ func (mock *SigsClientInterfaceMock) CreateCalls() []struct {
 }
 
 // Delete calls DeleteFunc.
-func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteOption) error {
 	if mock.DeleteFunc == nil {
 		panic("SigsClientInterfaceMock.DeleteFunc: method is nil but SigsClientInterface.Delete was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteOption
+		Opts []k8sclient.DeleteOption
 	}{
 		Ctx:  ctx,
 		Obj:  obj,
@@ -236,12 +236,12 @@ func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Obj
 func (mock *SigsClientInterfaceMock) DeleteCalls() []struct {
 	Ctx  context.Context
 	Obj  runtime.Object
-	Opts []client.DeleteOption
+	Opts []k8sclient.DeleteOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteOption
+		Opts []k8sclient.DeleteOption
 	}
 	lockSigsClientInterfaceMockDelete.RLock()
 	calls = mock.calls.Delete
@@ -250,14 +250,14 @@ func (mock *SigsClientInterfaceMock) DeleteCalls() []struct {
 }
 
 // DeleteAllOf calls DeleteAllOfFunc.
-func (mock *SigsClientInterfaceMock) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...client.DeleteAllOfOption) error {
+func (mock *SigsClientInterfaceMock) DeleteAllOf(ctx context.Context, obj runtime.Object, opts ...k8sclient.DeleteAllOfOption) error {
 	if mock.DeleteAllOfFunc == nil {
 		panic("SigsClientInterfaceMock.DeleteAllOfFunc: method is nil but SigsClientInterface.DeleteAllOf was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteAllOfOption
+		Opts []k8sclient.DeleteAllOfOption
 	}{
 		Ctx:  ctx,
 		Obj:  obj,
@@ -275,12 +275,12 @@ func (mock *SigsClientInterfaceMock) DeleteAllOf(ctx context.Context, obj runtim
 func (mock *SigsClientInterfaceMock) DeleteAllOfCalls() []struct {
 	Ctx  context.Context
 	Obj  runtime.Object
-	Opts []client.DeleteAllOfOption
+	Opts []k8sclient.DeleteAllOfOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.DeleteAllOfOption
+		Opts []k8sclient.DeleteAllOfOption
 	}
 	lockSigsClientInterfaceMockDeleteAllOf.RLock()
 	calls = mock.calls.DeleteAllOf
@@ -328,7 +328,7 @@ func (mock *SigsClientInterfaceMock) GetCalls() []struct {
 }
 
 // GetSigsClient calls GetSigsClientFunc.
-func (mock *SigsClientInterfaceMock) GetSigsClient() client.Client {
+func (mock *SigsClientInterfaceMock) GetSigsClient() k8sclient.Client {
 	if mock.GetSigsClientFunc == nil {
 		panic("SigsClientInterfaceMock.GetSigsClientFunc: method is nil but SigsClientInterface.GetSigsClient was just called")
 	}
@@ -354,14 +354,14 @@ func (mock *SigsClientInterfaceMock) GetSigsClientCalls() []struct {
 }
 
 // List calls ListFunc.
-func (mock *SigsClientInterfaceMock) List(ctx context.Context, list runtime.Object, opts ...client.ListOption) error {
+func (mock *SigsClientInterfaceMock) List(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
 	if mock.ListFunc == nil {
 		panic("SigsClientInterfaceMock.ListFunc: method is nil but SigsClientInterface.List was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		List runtime.Object
-		Opts []client.ListOption
+		Opts []k8sclient.ListOption
 	}{
 		Ctx:  ctx,
 		List: list,
@@ -379,12 +379,12 @@ func (mock *SigsClientInterfaceMock) List(ctx context.Context, list runtime.Obje
 func (mock *SigsClientInterfaceMock) ListCalls() []struct {
 	Ctx  context.Context
 	List runtime.Object
-	Opts []client.ListOption
+	Opts []k8sclient.ListOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		List runtime.Object
-		Opts []client.ListOption
+		Opts []k8sclient.ListOption
 	}
 	lockSigsClientInterfaceMockList.RLock()
 	calls = mock.calls.List
@@ -393,15 +393,15 @@ func (mock *SigsClientInterfaceMock) ListCalls() []struct {
 }
 
 // Patch calls PatchFunc.
-func (mock *SigsClientInterfaceMock) Patch(ctx context.Context, obj runtime.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (mock *SigsClientInterfaceMock) Patch(ctx context.Context, obj runtime.Object, patch k8sclient.Patch, opts ...k8sclient.PatchOption) error {
 	if mock.PatchFunc == nil {
 		panic("SigsClientInterfaceMock.PatchFunc: method is nil but SigsClientInterface.Patch was just called")
 	}
 	callInfo := struct {
 		Ctx   context.Context
 		Obj   runtime.Object
-		Patch client.Patch
-		Opts  []client.PatchOption
+		Patch k8sclient.Patch
+		Opts  []k8sclient.PatchOption
 	}{
 		Ctx:   ctx,
 		Obj:   obj,
@@ -420,14 +420,14 @@ func (mock *SigsClientInterfaceMock) Patch(ctx context.Context, obj runtime.Obje
 func (mock *SigsClientInterfaceMock) PatchCalls() []struct {
 	Ctx   context.Context
 	Obj   runtime.Object
-	Patch client.Patch
-	Opts  []client.PatchOption
+	Patch k8sclient.Patch
+	Opts  []k8sclient.PatchOption
 } {
 	var calls []struct {
 		Ctx   context.Context
 		Obj   runtime.Object
-		Patch client.Patch
-		Opts  []client.PatchOption
+		Patch k8sclient.Patch
+		Opts  []k8sclient.PatchOption
 	}
 	lockSigsClientInterfaceMockPatch.RLock()
 	calls = mock.calls.Patch
@@ -436,7 +436,7 @@ func (mock *SigsClientInterfaceMock) PatchCalls() []struct {
 }
 
 // Status calls StatusFunc.
-func (mock *SigsClientInterfaceMock) Status() client.StatusWriter {
+func (mock *SigsClientInterfaceMock) Status() k8sclient.StatusWriter {
 	if mock.StatusFunc == nil {
 		panic("SigsClientInterfaceMock.StatusFunc: method is nil but SigsClientInterface.Status was just called")
 	}
@@ -462,14 +462,14 @@ func (mock *SigsClientInterfaceMock) StatusCalls() []struct {
 }
 
 // Update calls UpdateFunc.
-func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
+func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
 	if mock.UpdateFunc == nil {
 		panic("SigsClientInterfaceMock.UpdateFunc: method is nil but SigsClientInterface.Update was just called")
 	}
 	callInfo := struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.UpdateOption
+		Opts []k8sclient.UpdateOption
 	}{
 		Ctx:  ctx,
 		Obj:  obj,
@@ -487,12 +487,12 @@ func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Obj
 func (mock *SigsClientInterfaceMock) UpdateCalls() []struct {
 	Ctx  context.Context
 	Obj  runtime.Object
-	Opts []client.UpdateOption
+	Opts []k8sclient.UpdateOption
 } {
 	var calls []struct {
 		Ctx  context.Context
 		Obj  runtime.Object
-		Opts []client.UpdateOption
+		Opts []k8sclient.UpdateOption
 	}
 	lockSigsClientInterfaceMockUpdate.RLock()
 	calls = mock.calls.Update

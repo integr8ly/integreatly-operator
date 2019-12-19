@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -93,7 +93,7 @@ func TestWriteConfig(t *testing.T) {
 				Namespace: mockNamespaceName,
 			},
 		}
-		fakeClient.Get(context.TODO(), client.ObjectKey{Name: mockConfigMapName, Namespace: mockNamespaceName}, readCfgMap)
+		fakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: mockConfigMapName, Namespace: mockNamespaceName}, readCfgMap)
 
 		decoder := yaml.NewDecoder(strings.NewReader(readCfgMap.Data[test.productName]))
 		testCfg := map[string]string{}

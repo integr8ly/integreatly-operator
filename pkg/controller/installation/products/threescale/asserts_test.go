@@ -17,7 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type AssertFunc func(ThreeScaleTestScenario, *config.Manager) error
@@ -41,33 +41,33 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	oauthId := installation.Spec.NamespacePrefix + string(tsConfig.GetProductName())
 	oauthClientSecrets := &corev1.Secret{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
 	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthId, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
 
 	// A namespace should have been created.
 	ns := &corev1.Namespace{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: tsConfig.GetNamespace()}, ns)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: tsConfig.GetNamespace()}, ns)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("%s namespace should have been created", tsConfig.GetNamespace()))
 	}
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: packageName, Namespace: tsConfig.GetNamespace()}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: packageName, Namespace: tsConfig.GetNamespace()}, sub)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("%s operator subscription was not created", packageName))
 	}
 
 	// The main s3credentials should have been copied into the 3scale namespace.
 	s3Credentials := &corev1.Secret{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: s3CredentialsSecretName, Namespace: tsConfig.GetNamespace()}, s3Credentials)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: s3CredentialsSecretName, Namespace: tsConfig.GetNamespace()}, s3Credentials)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("s3Credentials were not copied into %s namespace", tsConfig.GetNamespace()))
 	}
 
 	// The product custom resource should have been created.
 	apim := &threescalev1.APIManager{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: apiManagerName, Namespace: tsConfig.GetNamespace()}, apim)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: apiManagerName, Namespace: tsConfig.GetNamespace()}, apim)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("APIManager '%s' was not created", apiManagerName))
 	}
@@ -81,7 +81,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return errors.New("Error getting RHSSO config")
 	}
 	kcr := &aerogearv1.KeycloakRealm{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
 	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
 		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
 	}
@@ -102,14 +102,14 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return errors.New(fmt.Sprintf("Request to 3scale API to update admin details was incorrect"))
 	}
 	adminSecret := &corev1.Secret{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: threeScaleAdminDetailsSecret.Name, Namespace: tsConfig.GetNamespace()}, adminSecret)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleAdminDetailsSecret.Name, Namespace: tsConfig.GetNamespace()}, adminSecret)
 	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
 		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
 	}
 
 	// Service discovery should be configured
 	threeScaleOauth := &oauthv1.OAuthClient{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: oauthId}, threeScaleOauth)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: oauthId}, threeScaleOauth)
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("3scale should have an Oauth Client '%s' created", oauthId))
 	}
@@ -118,7 +118,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	}
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
-	err = fakeSigsClient.Get(ctx, pkgclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
 	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
 		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
 	}

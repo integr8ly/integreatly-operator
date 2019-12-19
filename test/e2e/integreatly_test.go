@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -211,7 +211,7 @@ func getConfigMap(name string, namespace string, f *framework.Framework) (map[st
 			Namespace: namespace,
 		},
 	}
-	key := client.ObjectKey{
+	key := k8sclient.ObjectKey{
 		Name:      configmap.GetName(),
 		Namespace: configmap.GetNamespace(),
 	}
@@ -453,7 +453,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
 	for _, namespaceName := range namespaces {
 		namespace := &corev1.Namespace{}
-		err := f.Client.Get(goctx.TODO(), client.ObjectKey{Name: intlyNamespacePrefix + namespaceName}, namespace)
+		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: intlyNamespacePrefix + namespaceName}, namespace)
 		if err != nil {
 			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
 		}
@@ -503,7 +503,7 @@ func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string
 
 func checkRoutes(t *testing.T, f *framework.Framework, product string, numberRoutes int) error {
 	routes := &routev1.RouteList{}
-	err := f.Client.List(goctx.TODO(), routes, &client.ListOptions{Namespace: intlyNamespacePrefix + product})
+	err := f.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{Namespace: intlyNamespacePrefix + product})
 	if err != nil {
 		return fmt.Errorf("Error getting routes for %s namespace: %w", product, err)
 	}
@@ -516,7 +516,7 @@ func checkRoutes(t *testing.T, f *framework.Framework, product string, numberRou
 func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
 	for _, pvcNamespace := range pvcNamespaces {
 		pvcs := &corev1.PersistentVolumeClaimList{}
-		err := f.Client.List(goctx.TODO(), pvcs, &client.ListOptions{Namespace: intlyNamespacePrefix + pvcNamespace})
+		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: intlyNamespacePrefix + pvcNamespace})
 		if err != nil {
 			return fmt.Errorf("Error getting PVCs for namespace: %v. %w", pvcNamespace, err)
 		}

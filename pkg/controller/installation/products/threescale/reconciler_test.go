@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -57,7 +57,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 type ThreeScaleTestScenario struct {
 	Name                 string
 	Installation         *integreatlyv1alpha1.Installation
-	FakeSigsClient       client.Client
+	FakeSigsClient       k8sclient.Client
 	FakeAppsV1Client     appsv1Client.AppsV1Interface
 	FakeOauthClient      oauthClient.OauthV1Interface
 	FakeThreeScaleClient *ThreeScaleInterfaceMock
@@ -182,7 +182,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 	}
 	type args struct {
 		ctx          context.Context
-		serverClient client.Client
+		serverClient k8sclient.Client
 	}
 	tests := []struct {
 		name    string
@@ -255,7 +255,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}
 	type args struct {
 		ctx          context.Context
-		serverClient client.Client
+		serverClient k8sclient.Client
 	}
 	tests := []struct {
 		name    string

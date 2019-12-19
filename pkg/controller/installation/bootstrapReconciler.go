@@ -20,8 +20,7 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
@@ -45,7 +44,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
@@ -62,7 +61,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// List of products that require secret for OAuthClient
 	productsList := []integreatlyv1alpha1.ProductName{
 		integreatlyv1alpha1.ProductRHSSO,
@@ -77,7 +76,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: oauthClientSecrets.Namespace}, oauthClientSecrets)
 	if !k8serr.IsNotFound(err) && err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	} else if k8serr.IsNotFound(err) {
@@ -91,7 +90,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 					Name: r.installation.Spec.NamespacePrefix + string(product),
 				},
 			}
-			err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
+			err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name}, oauthClient)
 			if !k8serr.IsNotFound(err) && err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			} else if k8serr.IsNotFound(err) {
@@ -114,7 +113,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
@@ -131,7 +130,7 @@ func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverC
 
 }
 
-func getConsoleRouteCR(ctx context.Context, serverClient pkgclient.Client) (*routev1.Route, error) {
+func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*routev1.Route, error) {
 	// discover and set master url and routing subdomain
 	consoleRouteCR := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -139,7 +138,7 @@ func getConsoleRouteCR(ctx context.Context, serverClient pkgclient.Client) (*rou
 			Namespace: "openshift-console",
 		},
 	}
-	key := client.ObjectKey{
+	key := k8sclient.ObjectKey{
 		Name:      consoleRouteCR.GetName(),
 		Namespace: consoleRouteCR.GetNamespace(),
 	}

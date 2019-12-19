@@ -26,15 +26,15 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 	GetPreflightObject(ns string) runtime.Object
 }
 
@@ -111,10 +111,10 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient client.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	return integreatlyv1alpha1.PhaseNone, nil
 }
 
 func (n *NoOp) GetPreflightObject(ns string) runtime.Object {
-	return &v1.Deployment{}
+	return &appsv1.Deployment{}
 }

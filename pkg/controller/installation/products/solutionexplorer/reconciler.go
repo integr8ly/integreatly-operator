@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -102,7 +102,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
@@ -182,7 +182,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -206,7 +206,7 @@ func (r *Reconciler) createResource(ctx context.Context, installation *integreat
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
@@ -219,7 +219,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -238,14 +238,14 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) (string, error) {
+func (r *Reconciler) ensureAppUrl(ctx context.Context, client k8sclient.Client) (string, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      defaultRouteName,
 		},
 	}
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
 		return "", fmt.Errorf("failed to get route for solution explorer: %w", err)
 	}
 	protocol := "https"
@@ -256,7 +256,7 @@ func (r *Reconciler) ensureAppUrl(ctx context.Context, client pkgclient.Client) 
 	return fmt.Sprintf("%s://%s", protocol, route.Spec.Host), nil
 }
 
-func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	//todo shouldn't need to do this with each reconcile
 	oauthConfig, err := r.OauthResolver.GetOauthEndPoint()
 	if err != nil {
@@ -296,7 +296,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile webapp resource: %w", err)
 	}
 	// do a get to ensure we have an upto date copy
-	if err := client.Get(ctx, pkgclient.ObjectKey{Namespace: seCR.Namespace, Name: seCR.Name}, seCR); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Namespace: seCR.Namespace, Name: seCR.Name}, seCR); err != nil {
 		// any error here is bad as it should exist now
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get the webapp resource namespace %s name %s: %w", seCR.Namespace, seCR.Name, err)
 	}
