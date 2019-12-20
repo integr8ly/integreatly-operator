@@ -89,7 +89,7 @@ test/unit:
 .PHONY: test/e2e
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
-test/e2e: cluster/cleanup cluster/prepare cluster/prepare/configmaps
+test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
 	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
 
 .PHONY: test/e2e/olm
@@ -98,12 +98,11 @@ test/e2e/olm: export AWS_SECRET_ACCESS_KEY := 1234
 test/e2e/olm: export AWS_BUCKET := dummy
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
-test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps deploy/integreatly-installation-cr.yml cluster/deploy/integreatly-installation-cr.yml
+test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
 
 .PHONY: cluster/deploy/integreatly-installation-cr.yml
-cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
+cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly-operator
 cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
-	oc create -f deploy/integreatly-installation-cr.yml
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
@@ -133,9 +132,12 @@ cluster/prepare/configmaps:
 cluster/prepare/osrc:
 	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc apply -f - -n openshift-marketplace
 
+.PHONY: cluster/prepare/crd
+cluster/prepare/crd:
+	- oc create -f deploy/crds/*_crd.yaml
+
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/secrets
-	-oc create -f deploy/crds/*_crd.yaml
+cluster/prepare/local: cluster/prepare/project cluster/prepare/secrets cluster/prepare/crd
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -170,15 +172,18 @@ cluster/cleanup/crds:
 	@-oc delete crd installations.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 
+.PHONY: deploy/integreatly-installation-cr.yml
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
-deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := example-installation
+deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly-operator
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
+deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := rhmi
 deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
-	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" | \
+	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
+	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" > deploy/integreatly-installation-cr.yml
-
+	@-oc create -f deploy/integreatly-installation-cr.yml
 
 .PHONY: gen/csv
 gen/csv:
@@ -191,6 +196,7 @@ gen/csv:
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
 	@mv deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG)
 	@mv deploy/olm-catalog/integreatly-operator/$(TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
+	@sed -i 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
 
 .PHONY: push/csv
 push/csv:

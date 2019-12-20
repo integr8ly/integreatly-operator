@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
+const (
 	retryInterval                    = time.Second * 5
 	timeout                          = time.Second * 75
 	deploymentRetryInterval          = time.Second * 30
@@ -40,11 +40,17 @@ var (
 	namespaceLabel                   = "integreatly"
 	installationName                 = "integreatly-operator"
 	bootstrapStage                   = "bootstrap"
+	bootStrapStageTimeout            = time.Minute * 5
 	cloudResourcesStage              = "cloud-resources"
+	cloudResourcesStageTimeout       = time.Minute * 10
 	monitoringStage                  = "monitoring"
+	monitoringStageTimeout           = time.Minute * 10
 	authenticationStage              = "authentication"
+	authenticationStageTimeout       = time.Minute * 10
 	productsStage                    = "products"
+	productsStageTimout              = time.Minute * 30
 	solutionExplorerStage            = "solution-explorer"
+	solutionExplorerStageTimeout     = time.Minute * 10
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -229,20 +235,20 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
 	}
 
-	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, cloudResourcesStage)
+	// wait for cloud resource phase to complete (10 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, cloudResourcesStageTimeout, cloudResourcesStage)
 	if err != nil {
 		return err
 	}
 
-	// wait for middleware-monitoring to deploy
+	// wait for cloud resource to deploy
 	err = waitForProductDeployment(t, f, ctx, "cloud-resources", "cloud-resource-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, bootstrapStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, bootStrapStageTimeout, bootstrapStage)
 	if err != nil {
 		return err
 	}
@@ -253,8 +259,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// wait for authentication phase to complete (15 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, monitoringStage)
+	// wait for middleware-monitoring phase to complete (10 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, monitoringStageTimeout, monitoringStage)
 	if err != nil {
 		return err
 	}
@@ -265,8 +271,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// wait for authentication phase to complete (15 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, authenticationStage)
+	// wait for authentication phase to complete (10 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, authenticationStageTimeout, authenticationStage)
 	if err != nil {
 		return err
 	}
@@ -287,8 +293,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		}
 	}
 
-	// wait for products phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout*2, productsStage)
+	// wait for products phase to complete (30 minutes timeout)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, productsStageTimout, productsStage)
 	if err != nil {
 		return err
 	}
@@ -300,7 +306,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for solution-explorer phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, deploymentTimeout, solutionExplorerStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, solutionExplorerStageTimeout, solutionExplorerStage)
 	if err != nil {
 		return err
 	}
