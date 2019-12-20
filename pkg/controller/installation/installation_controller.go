@@ -122,7 +122,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 			Spec: integreatlyv1alpha1.InstallationSpec{
 				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
 				NamespacePrefix: "rhmi-",
-				SelfSignedCerts: true,
+				SelfSignedCerts: false,
 			},
 		}
 
