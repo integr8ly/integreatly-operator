@@ -240,21 +240,21 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient k8scl
 	}
 
 	// check cr values
-	if cheCluster.Spec.Auth.ExternalKeycloak &&
-		!cheCluster.Spec.Auth.OpenShiftOauth &&
-		cheCluster.Spec.Auth.KeycloakURL == kcConfig.GetHost() &&
-		cheCluster.Spec.Auth.KeycloakRealm == kcConfig.GetRealm() &&
-		cheCluster.Spec.Auth.KeycloakClientId == defaultClientName {
+	if cheCluster.Spec.Auth.ExternalIdentityProvider &&
+		!cheCluster.Spec.Auth.OpenShiftoAuth &&
+		cheCluster.Spec.Auth.IdentityProviderURL == kcConfig.GetHost() &&
+		cheCluster.Spec.Auth.IdentityProviderRealm == kcConfig.GetRealm() &&
+		cheCluster.Spec.Auth.IdentityProviderClientId == defaultClientName {
 		logrus.Debug("skipping checluster custom resource update as all values are correct")
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
 	// update cr values
-	cheCluster.Spec.Auth.ExternalKeycloak = true
-	cheCluster.Spec.Auth.OpenShiftOauth = false
-	cheCluster.Spec.Auth.KeycloakURL = kcConfig.GetHost()
-	cheCluster.Spec.Auth.KeycloakRealm = kcRealm.Name
-	cheCluster.Spec.Auth.KeycloakClientId = defaultClientName
+	cheCluster.Spec.Auth.ExternalIdentityProvider = true
+	cheCluster.Spec.Auth.OpenShiftoAuth = false
+	cheCluster.Spec.Auth.IdentityProviderURL = kcConfig.GetHost()
+	cheCluster.Spec.Auth.IdentityProviderRealm = kcRealm.Name
+	cheCluster.Spec.Auth.IdentityProviderClientId = defaultClientName
 	if err = serverClient.Update(ctx, cheCluster); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update checluster custom resource in namespace: %s: %w", r.Config.GetNamespace(), err)
 	}
@@ -563,19 +563,19 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 				SelfSignedCert: selfSignedCerts,
 			},
 			Database: chev1.CheClusterSpecDB{
-				ExternalDB:            true,
-				ChePostgresDb:         string(croSec.Data["database"]),
-				ChePostgresPassword:   string(croSec.Data["password"]),
-				ChePostgresPort:       string(croSec.Data["port"]),
-				ChePostgresUser:       string(croSec.Data["username"]),
-				ChePostgresDBHostname: string(croSec.Data["host"]),
+				ExternalDb:          true,
+				ChePostgresDb:       string(croSec.Data["database"]),
+				ChePostgresPassword: string(croSec.Data["password"]),
+				ChePostgresPort:     string(croSec.Data["port"]),
+				ChePostgresUser:     string(croSec.Data["username"]),
+				ChePostgresHostName: string(croSec.Data["host"]),
 			},
 			Auth: chev1.CheClusterSpecAuth{
-				OpenShiftOauth:   false,
-				ExternalKeycloak: true,
-				KeycloakURL:      kcCfg.GetHost(),
-				KeycloakRealm:    kr.Name,
-				KeycloakClientId: defaultClientName,
+				OpenShiftoAuth:           false,
+				ExternalIdentityProvider: true,
+				IdentityProviderURL:      kcCfg.GetHost(),
+				IdentityProviderRealm:    kr.Name,
+				IdentityProviderClientId: defaultClientName,
 			},
 			Storage: chev1.CheClusterSpecStorage{
 				PvcStrategy:       "per-workspace",

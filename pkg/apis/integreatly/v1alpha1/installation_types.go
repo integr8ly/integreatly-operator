@@ -51,7 +51,7 @@ var (
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	VersionAMQOnline           ProductVersion = "1.2.2"
 	VersionAMQStreams          ProductVersion = "1.1.0"
-	VersionCodeReadyWorkspaces ProductVersion = "1.2.0.GA"
+	VersionCodeReadyWorkspaces ProductVersion = "2.0.0.GA"
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionMonitoring          ProductVersion = "1.0.0"
 	Version3Scale              ProductVersion = "2.7"
@@ -68,7 +68,7 @@ var (
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.34"
 	OperatorVersionRHSSO               OperatorVersion = "1.9.5"
 	OperatorVersionRHSSOUser           OperatorVersion = "1.9.5"
-	OperatorVersionCodeReadyWorkspaces OperatorVersion = "1.2.2"
+	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0.0"
 	OperatorVersionFuse                OperatorVersion = "1.4.0"
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
 	OperatorVersionUPS                 OperatorVersion = "0.4.1"
