@@ -22,8 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -123,7 +122,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 
 	cases := []struct {
 		Name           string
-		FakeClient     client.Client
+		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool
@@ -153,7 +152,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
 					return k8serr.NewNotFound(schema.GroupResource{}, "unifiedpushserver")
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -215,7 +214,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 
 	cases := []struct {
 		Name           string
-		FakeClient     client.Client
+		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool

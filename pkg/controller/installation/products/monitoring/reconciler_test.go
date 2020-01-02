@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -73,7 +73,7 @@ func TestReconciler_config(t *testing.T) {
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
-		FakeClient     pkgclient.Client
+		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 	}{
@@ -108,7 +108,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:    true,
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy")
 				},
 			},
@@ -139,7 +139,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 
 	cases := []struct {
 		Name           string
-		FakeClient     pkgclient.Client
+		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectError    bool
@@ -163,7 +163,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 						Resource: "ApplicationMonitoring",
 					}, key.Name)
 				},
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
 			},
@@ -228,7 +228,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
-		FakeClient     pkgclient.Client
+		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
@@ -253,10 +253,10 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient pkgclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ApplicationMonitoring",
@@ -318,7 +318,7 @@ func TestReconciler_testPhases(t *testing.T) {
 		Name           string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeConfig     *config.ConfigReadWriterMock
-		FakeClient     pkgclient.Client
+		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
@@ -337,10 +337,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			}, basicInstallation()),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient pkgclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
@@ -353,10 +353,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient pkgclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
@@ -369,10 +369,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient pkgclient.Client, sub string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, sub string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
 					return &operatorsv1alpha1.InstallPlanList{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ApplicationMonitoring",

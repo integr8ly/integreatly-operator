@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -68,7 +68,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Creates a new managed install CR if it is not available
-	cl, err := client.New(controllerruntime.GetConfigOrDie(), client.Options{})
+	cl, err := k8sclient.New(controllerruntime.GetConfigOrDie(), k8sclient.Options{})
 	err = createsInstallationCR(context.TODO(), cl)
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-func createsInstallationCR(ctx context.Context, serverClient client.Client) error {
+func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
 		return err
@@ -101,8 +101,8 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 	logrus.Infof("Looking for installation CR in %s namespace", namespace)
 
 	installationList := &integreatlyv1alpha1.InstallationList{}
-	listOpts := []client.ListOption{
-		client.InNamespace(namespace),
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(namespace),
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
@@ -114,7 +114,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 
 		logrus.Infof("Creating a %s installation CR as none CR installation was found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
 
-		instance := &integreatlyv1alpha1.Installation{
+		installation := &integreatlyv1alpha1.Installation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      defaultInstallationName,
 				Namespace: namespace,
@@ -126,7 +126,7 @@ func createsInstallationCR(ctx context.Context, serverClient client.Client) erro
 			},
 		}
 
-		err = serverClient.Create(ctx, instance)
+		err = serverClient.Create(ctx, installation)
 		if err != nil {
 			return fmt.Errorf("Could not create installation CR in %s namespace: %w", namespace, err)
 		}
@@ -141,7 +141,7 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client            client.Client
+	client            k8sclient.Client
 	scheme            *runtime.Scheme
 	restConfig        *rest.Config
 	productsToInstall []string
@@ -152,8 +152,8 @@ type ReconcileInstallation struct {
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	instance := &integreatlyv1alpha1.Installation{}
-	err := r.client.Get(r.context, request.NamespacedName, instance)
+	installation := &integreatlyv1alpha1.Installation{}
+	err := r.client.Get(r.context, request.NamespacedName, installation)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -162,67 +162,67 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	err, installType := InstallationTypeFactory(instance.Spec.Type, r.productsToInstall)
+	err, installType := InstallationTypeFactory(installation.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
 	if installationCfgMap == "" {
-		installationCfgMap = instance.Spec.NamespacePrefix + defaultInstallationConfigMapName
+		installationCfgMap = installation.Spec.NamespacePrefix + defaultInstallationConfigMapName
 	}
 
-	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, instance)
+	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = resources.AddFinalizer(r.context, instance, r.client, deletionFinalizer)
+	err = resources.AddFinalizer(r.context, installation, r.client, deletionFinalizer)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	// either not checked, or rechecking preflight checks
-	if instance.Status.PreflightStatus == integreatlyv1alpha1.PreflightInProgress ||
-		instance.Status.PreflightStatus == integreatlyv1alpha1.PreflightFail {
-		return r.preflightChecks(instance, installType, configManager)
+	if installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightInProgress ||
+		installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightFail {
+		return r.preflightChecks(installation, installType, configManager)
 	}
 
-	if instance.Status.Stages == nil {
-		instance.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{}
+	if installation.Status.Stages == nil {
+		installation.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{}
 	}
 
 	// If the CR is being deleted, cancel the current context
 	// and attempt to clean up the products with finalizers
-	if instance.DeletionTimestamp != nil {
+	if installation.DeletionTimestamp != nil {
 		// Cancel this context to kill all ongoing requests to the API
 		// and use a new context to handle deletion logic
 		r.cancel()
 
 		// Clean up the products which have finalizers associated to them
 		merr := &multiErr{}
-		for _, productFinalizer := range instance.Finalizers {
+		for _, productFinalizer := range installation.Finalizers {
 			if !strings.Contains(productFinalizer, "integreatly") {
 				continue
 			}
 			productName := strings.Split(productFinalizer, ".")[1]
-			product := instance.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
-			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
+			product := installation.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
 			}
-			serverClient, err := client.New(r.restConfig, client.Options{})
+			serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
 			}
-			phase, err := reconciler.Reconcile(context.TODO(), instance, product, serverClient)
+			phase, err := reconciler.Reconcile(context.TODO(), installation, product, serverClient)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
 			}
 			logrus.Infof("current phase for %s is: %s", product.Name, phase)
 		}
 
-		if len(merr.errors) == 0 && len(instance.Finalizers) == 1 && instance.Finalizers[0] == deletionFinalizer {
-			err := resources.RemoveFinalizer(r.context, instance, r.client, deletionFinalizer)
+		if len(merr.errors) == 0 && len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
+			err := resources.RemoveFinalizer(r.context, installation, r.client, deletionFinalizer)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
 			}
@@ -239,15 +239,15 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		var err error
 		var stagePhase integreatlyv1alpha1.StatusPhase
 		if stage.Name == integreatlyv1alpha1.BootstrapStage {
-			stagePhase, err = r.bootstrapStage(instance, configManager)
+			stagePhase, err = r.bootstrapStage(installation, configManager)
 		} else {
-			stagePhase, err = r.processStage(instance, &stage, configManager)
+			stagePhase, err = r.processStage(installation, &stage, configManager)
 		}
 
-		if instance.Status.Stages == nil {
-			instance.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus)
+		if installation.Status.Stages == nil {
+			installation.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus)
 		}
-		instance.Status.Stages[stage.Name] = &integreatlyv1alpha1.InstallationStageStatus{
+		installation.Status.Stages[stage.Name] = &integreatlyv1alpha1.InstallationStageStatus{
 			Name:     stage.Name,
 			Phase:    stagePhase,
 			Products: stage.Products,
@@ -262,7 +262,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// UPDATE STATUS
-	err = r.client.Status().Update(r.context, instance)
+	err = r.client.Status().Update(r.context, installation)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
@@ -279,7 +279,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// UPDATE OBJECT
-	err = r.client.Update(r.context, instance)
+	err = r.client.Update(r.context, installation)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
 		if k8serr.IsConflict(err) {
@@ -362,7 +362,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
 	foundProducts := []string{}
 	// new client to avoid caching issues
-	serverClient, _ := client.New(r.restConfig, client.Options{})
+	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
 	for _, stage := range installationType.Stages {
 		for _, product := range stage.Products {
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation)
@@ -384,18 +384,18 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	return foundProducts, nil
 }
 
-func (r *ReconcileInstallation) bootstrapStage(instance *integreatlyv1alpha1.Installation, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.Installation, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	mpm := marketplace.NewManager()
 
-	reconciler, err := NewBootstrapReconciler(configManager, instance, mpm)
+	reconciler, err := NewBootstrapReconciler(configManager, installation, mpm)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
 	}
-	serverClient, err := client.New(r.restConfig, client.Options{})
+	serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
-	phase, err := reconciler.Reconcile(r.context, instance, serverClient)
+	phase, err := reconciler.Reconcile(r.context, installation, serverClient)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
@@ -403,19 +403,19 @@ func (r *ReconcileInstallation) bootstrapStage(instance *integreatlyv1alpha1.Ins
 	return phase, nil
 }
 
-func (r *ReconcileInstallation) processStage(instance *integreatlyv1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	var mErr error
 	for _, product := range stage.Products {
-		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, instance)
+		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
-		serverClient, err := client.New(r.restConfig, client.Options{})
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(r.context, instance, product, serverClient)
+		product.Status, err = reconciler.Reconcile(r.context, installation, product, serverClient)
 		if err != nil {
 			if mErr == nil {
 				mErr = &multiErr{}

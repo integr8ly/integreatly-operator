@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -93,7 +93,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func TestReconcile_reconcileAuthServices(t *testing.T) {
 	scenarios := []struct {
 		Name           string
-		Client         client.Client
+		Client         k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -136,7 +136,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 	scenarios := []struct {
 		Name                 string
-		Client               client.Client
+		Client               k8sclient.Client
 		FakeConfig           *config.ConfigReadWriterMock
 		Installation         *integreatlyv1alpha1.Installation
 		ExpectedStatus       integreatlyv1alpha1.StatusPhase
@@ -182,7 +182,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 func TestReconcile_reconcileAddressPlans(t *testing.T) {
 	scenarios := []struct {
 		Name           string
-		Client         client.Client
+		Client         k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -225,7 +225,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 	scenarios := []struct {
 		Name              string
-		Client            client.Client
+		Client            k8sclient.Client
 		FakeConfig        *config.ConfigReadWriterMock
 		Installation      *integreatlyv1alpha1.Installation
 		ExpectedStatus    integreatlyv1alpha1.StatusPhase
@@ -269,7 +269,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 	defaultHost := "https://example.host.com"
 	scenarios := []struct {
 		Name               string
-		Client             client.Client
+		Client             k8sclient.Client
 		ExpectedStatus     integreatlyv1alpha1.StatusPhase
 		FakeConfig         *config.ConfigReadWriterMock
 		ExpectError        bool
@@ -445,7 +445,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		ExpectedError  string
 		FakeConfig     *config.ConfigReadWriterMock
-		FakeClient     client.Client
+		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
@@ -456,11 +456,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc, installation),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{
 							Items: []operatorsv1alpha1.InstallPlan{
 								{

@@ -31,8 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -84,7 +83,7 @@ func TestReconciler_config(t *testing.T) {
 		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      pkgclient.Client
+		FakeClient      k8sclient.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
@@ -152,7 +151,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 
 	cases := []struct {
 		Name            string
-		FakeClient      client.Client
+		FakeClient      k8sclient.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeConfig      *config.ConfigReadWriterMock
 		Installation    *integreatlyv1alpha1.Installation
@@ -177,7 +176,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("failed to create keycloak custom resource")
 				},
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
@@ -271,7 +270,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      client.Client
+		FakeClient      k8sclient.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
@@ -442,7 +441,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		ExpectedError   string
 		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      client.Client
+		FakeClient      k8sclient.Client
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
@@ -455,11 +454,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{
 							Items: []operatorsv1alpha1.InstallPlan{
 								{

@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -50,14 +50,14 @@ type Reconciler struct {
 	logger        *logrus.Entry
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
 	}
 
 	if fuseConfig.GetNamespace() == "" {
-		fuseConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+		fuseConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 	if err = fuseConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("fuse config is not valid: %w", err)
@@ -85,9 +85,9 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for fuse and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -97,12 +97,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultFusePullSecret, inst, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultFusePullSecret, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -122,12 +122,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileImageVersion(ctx, inst, serverClient)
+	phase, err = r.reconcileImageVersion(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileCustomResource(ctx, inst, serverClient)
+	phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -137,7 +137,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -153,7 +153,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -177,11 +177,11 @@ func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alph
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -190,10 +190,10 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileImageVersion(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("FUSE POSTGRES: reconciling postgres version")
 	dc := &appsv1.DeploymentConfig{}
-	err := client.Get(ctx, pkgclient.ObjectKey{
+	err := client.Get(ctx, k8sclient.ObjectKey{
 		Namespace: r.Config.GetNamespace(),
 		Name:      "syndesis-db",
 	}, dc)
@@ -221,7 +221,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *integre
 	}
 
 	is := &v13.ImageStream{}
-	err = client.Get(ctx, pkgclient.ObjectKey{Name: "fuse-komodo-server", Namespace: r.Config.GetNamespace()}, is)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: "fuse-komodo-server", Namespace: r.Config.GetNamespace()}, is)
 
 	for i, tag := range is.Spec.Tags {
 		if tag.Name == "latest" && tag.From.Name != "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4" {
@@ -241,7 +241,7 @@ func (r *Reconciler) reconcileImageVersion(ctx context.Context, install *integre
 }
 
 // Ensures all users in rhmi-developers group have view Fuse permissions
-func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
 
 	openshiftUsers := &usersv1.UserList{}
@@ -251,7 +251,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 	}
 
 	rhmiDevelopersGroup := &usersv1.Group{}
-	err = client.Get(ctx, pkgclient.ObjectKey{Name: developersGroupName}, rhmiDevelopersGroup)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: developersGroupName}, rhmiDevelopersGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -292,7 +292,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client pkgclien
 
 //TODO this should be removed once https://issues.jboss.org/browse/INTLY-2836 is implemented
 // We want to avoid this kind of thing as really this is owned by the syndesis operator
-func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	var dcName = "syndesis-oauthproxy"
 	dc := &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -300,7 +300,7 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 			Name:      dcName,
 		},
 	}
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get dc for the oauth proxy %v: %w", dcName, err)
 	}
 
@@ -320,10 +320,10 @@ func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client pkgclient.C
 }
 
 // reconcileCustomResource ensures that the fuse custom resource exists
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	st := &corev1.Secret{}
 	// if this errors, it can be ignored
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: "syndesis-global-config", Namespace: r.Config.GetNamespace()}, st)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "syndesis-global-config", Namespace: r.Config.GetNamespace()}, st)
 	if err == nil && string(r.Config.GetProductVersion()) != string(st.Data["syndesis"]) {
 		r.Config.SetProductVersion(string(st.Data["syndesis"]))
 		r.ConfigManager.WriteConfig(r.Config)
@@ -360,7 +360,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *integ
 	}
 
 	// attempt to create the custom resource
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
 		if k8serr.IsNotFound(err) {
 			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
 				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create a syndesis cr when reconciling custom resource: %w", err)
@@ -385,7 +385,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, install *integ
 		},
 	}
 
-	if err := client.Get(ctx, pkgclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: route.Name, Namespace: route.Namespace}, route); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not read syndesis route for fuse: %w", err)
 	}
 

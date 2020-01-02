@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -75,7 +75,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 	cases := []struct {
 		Name             string
 		FakeMPM          marketplace.MarketplaceInterface
-		client           client.Client
+		client           k8sclient.Client
 		SubscriptionName string
 		ExpectErr        bool
 		ExpectedStatus   integreatlyv1alpha1.StatusPhase
@@ -86,11 +86,11 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
 					return &alpha1.InstallPlanList{Items: []alpha1.InstallPlan{alpha1.InstallPlan{Status: alpha1.InstallPlanStatus{Phase: alpha1.InstallPlanPhaseComplete}}}}, &alpha1.Subscription{}, nil
 				},
 			},
@@ -110,11 +110,11 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
 			client: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
 
 					return nil
 				},
-				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *alpha1.InstallPlanList, subscription *alpha1.Subscription, e error) {
 					return nil, &alpha1.Subscription{ObjectMeta: metav1.ObjectMeta{
 						// simulate the time has passed
 						CreationTimestamp: metav1.Time{Time: time.Now().AddDate(0, 0, -1)},
@@ -196,10 +196,10 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 
 	cases := []struct {
 		Name         string
-		Client       client.Client
+		Client       k8sclient.Client
 		Installation *integreatlyv1alpha1.Installation
 		Config       *config.ConfigReadWriterMock
-		Validate     func(c client.Client) error
+		Validate     func(c k8sclient.Client) error
 	}{
 		{
 			Name:   "test default pull secret details are used if not provided",
@@ -211,9 +211,9 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 				},
 			},
 			Config: basicConfigMock(),
-			Validate: func(c client.Client) error {
+			Validate: func(c k8sclient.Client) error {
 				s := &corev1.Secret{}
-				err := c.Get(context.TODO(), client.ObjectKey{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}, s)
+				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}, s)
 				if err != nil {
 					return err
 				}
@@ -239,9 +239,9 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 				},
 			},
 			Config: basicConfigMock(),
-			Validate: func(c client.Client) error {
+			Validate: func(c k8sclient.Client) error {
 				s := &corev1.Secret{}
-				err := c.Get(context.TODO(), client.ObjectKey{Name: "test", Namespace: "test"}, s)
+				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: "test", Namespace: "test"}, s)
 				if err != nil {
 					return err
 				}
@@ -282,7 +282,7 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 		OauthClient    *oauthv1.OAuthClient
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
-		client         client.Client
+		client         k8sclient.Client
 		Installation   *integreatlyv1alpha1.Installation
 	}{
 		{
@@ -351,7 +351,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 	}
 	cases := []struct {
 		Name           string
-		client         client.Client
+		client         k8sclient.Client
 		Installation   *integreatlyv1alpha1.Installation
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase

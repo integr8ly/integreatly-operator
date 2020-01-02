@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -25,7 +25,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 		Name            string
 		Request         reconcile.Request
 		APISubscription *v1alpha1.Subscription
-		Verify          func(client client.Client, res reconcile.Result, err error, t *testing.T)
+		Verify          func(client k8sclient.Client, res reconcile.Result, err error, t *testing.T)
 	}{
 		{
 			Name: "subscription controller changes automatic to manual",
@@ -44,12 +44,12 @@ func TestSubscriptionReconciler(t *testing.T) {
 					InstallPlanApproval: v1alpha1.ApprovalAutomatic,
 				},
 			},
-			Verify: func(c client.Client, res reconcile.Result, err error, t *testing.T) {
+			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), client.ObjectKey{Name: "test-subscription", Namespace: "test-namespace"}, sub)
+				c.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-subscription", Namespace: "test-namespace"}, sub)
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalManual {
 					t.Fatalf("expected Manual but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -64,7 +64,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 				},
 			},
 			APISubscription: &v1alpha1.Subscription{},
-			Verify: func(c client.Client, res reconcile.Result, err error, t *testing.T) {
+			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}

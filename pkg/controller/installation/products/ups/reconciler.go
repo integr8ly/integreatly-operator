@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -48,14 +48,14 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	upsConfig, err := configManager.ReadUps()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve ups config: %w", err)
 	}
 
 	if upsConfig.GetNamespace() == "" {
-		upsConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+		upsConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
 	upsConfig.SetBlackboxTargetPath("/rest/auth/config/")
@@ -80,11 +80,11 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", defaultUpsName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -96,7 +96,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 
 	ns := r.Config.GetNamespace()
 
-	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -111,7 +111,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, inst, serverClient)
+	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -121,7 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -135,15 +135,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling external postgres")
-	ns := inst.Namespace
+	ns := installation.Namespace
 
 	// setup postgres custom resource
 	// this will be used by the cloud resources operator to provision a postgres instance
-	postgresName := fmt.Sprintf("ups-postgres-%s", inst.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, client, inst.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, inst)
+	postgresName := fmt.Sprintf("ups-postgres-%s", installation.Name)
+	postgres, err := croUtil.ReconcilePostgres(ctx, client, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+		ownerutil.EnsureOwner(cr, installation)
 		return nil
 	})
 	if err != nil {
@@ -158,7 +158,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv
 	// get the secret created by the cloud resources operator
 	// containing postgres connection details
 	connSec := &corev1.Secret{}
-	err = client.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
@@ -182,7 +182,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv
 		},
 	}
 
-	err = client.Get(ctx, pkgclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr)
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr)
 	if err != nil {
 		// If the error is not an isNotFound error
 		if !k8serr.IsNotFound(err) {
@@ -206,11 +206,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, inst *integreatlyv
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Setting host on config to exposed route
 	logrus.Info("Setting unified push server config host")
 	upsRoute := &routev1.Route{}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, upsRoute)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, upsRoute)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get route for unified push server: %w", err)
 	}
@@ -226,7 +226,7 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient pkgclient.C
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -235,7 +235,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-ups", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "ups-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating ups blackbox target: %w", err)
 	}

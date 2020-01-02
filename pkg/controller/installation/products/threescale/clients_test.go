@@ -24,12 +24,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/testing"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func getSigClient(preReqObjects []runtime.Object, scheme *runtime.Scheme) *client.SigsClientInterfaceMock {
 	sigsFakeClient := client.NewSigsClientMoqWithScheme(scheme, preReqObjects...)
-	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...pkgclient.CreateOption) error {
+	sigsFakeClient.CreateFunc = func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 		switch obj := obj.(type) {
 		case *corev1.Namespace:
 			obj.Status.Phase = corev1.NamespaceActive

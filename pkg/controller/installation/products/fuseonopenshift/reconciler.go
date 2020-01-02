@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -80,7 +80,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
@@ -106,18 +106,18 @@ func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv
 	}, nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileImageStreams(ctx, serverClient, inst)
+	phase, err = r.reconcileImageStreams(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient, inst)
+	phase, err = r.reconcileTemplates(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -129,7 +129,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates config map")
 	cfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -184,7 +184,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient pkgcli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift imagestreams")
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil {
@@ -208,7 +208,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
 		}
 
-		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), inst)
+		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace(), installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
 		}
@@ -239,7 +239,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgclient.Client, inst *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates")
 	var templateFiles []string
 	templates := make(map[string]runtime.Object)
@@ -262,7 +262,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 			}
 		}
 
-		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), inst)
+		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace(), installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
 		}
@@ -292,7 +292,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient pkgcli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getTemplatesConfigMap(ctx context.Context, serverClient pkgclient.Client) (*corev1.ConfigMap, error) {
+func (r *Reconciler) getTemplatesConfigMap(ctx context.Context, serverClient k8sclient.Client) (*corev1.ConfigMap, error) {
 	cfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      templatesConfigMapName,
@@ -300,17 +300,17 @@ func (r *Reconciler) getTemplatesConfigMap(ctx context.Context, serverClient pkg
 		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: cfgMap.Name, Namespace: cfgMap.Namespace}, cfgMap)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: cfgMap.Name, Namespace: cfgMap.Namespace}, cfgMap)
 	return cfgMap, err
 }
 
-func (r *Reconciler) createResourceIfNotExist(ctx context.Context, serverClient pkgclient.Client, resource runtime.Object) error {
+func (r *Reconciler) createResourceIfNotExist(ctx context.Context, serverClient k8sclient.Client, resource runtime.Object) error {
 	u, err := resources.UnstructuredFromRuntimeObject(resource)
 	if err != nil {
 		return fmt.Errorf("failed to get unstructured object of type %T from resource %s", resource, resource)
 	}
 
-	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: u.GetName(), Namespace: u.GetNamespace()}, u); err != nil {
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: u.GetName(), Namespace: u.GetNamespace()}, u); err != nil {
 		if !k8errors.IsNotFound(err) {
 			return fmt.Errorf("failed to get resource: %w", err)
 		}
@@ -356,14 +356,14 @@ func (r *Reconciler) getResourcesFromList(listObj map[string]interface{}) []inte
 	return resources
 }
 
-func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient pkgclient.Client, key string, value []string) error {
+func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient k8sclient.Client, key string, value []string) error {
 	clusterSampleCR := &samplesv1.Config{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
 		},
 	}
 
-	if err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: clusterSampleCR.Name}, clusterSampleCR); err != nil {
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterSampleCR.Name}, clusterSampleCR); err != nil {
 		// If cluster sample cr is not found, the cluster sample operator is not installed so no need to update it
 		if k8errors.IsNotFound(err) {
 			return nil

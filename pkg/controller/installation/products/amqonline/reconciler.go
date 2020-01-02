@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -43,14 +43,14 @@ type Reconciler struct {
 	*resources.Reconciler
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, instance *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
 	amqOnlineConfig, err := configManager.ReadAMQOnline()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve amq online config: %w", err)
 	}
 
 	if amqOnlineConfig.GetNamespace() == "" {
-		amqOnlineConfig.SetNamespace(instance.Spec.NamespacePrefix + defaultInstallationNamespace)
+		amqOnlineConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
 	amqOnlineConfig.SetBlackboxTargetPath("/oauth/healthz")
@@ -77,9 +77,9 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read
 // and what is required
-func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, inst, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, inst, serverClient, r.Config.GetNamespace())
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -90,7 +90,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 	}
 
 	ns := r.Config.GetNamespace()
-	phase, err = r.ReconcileNamespace(ctx, ns, inst, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -130,19 +130,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackup(ctx, inst, serverClient, namespace)
+	phase, err = r.reconcileBackup(ctx, installation, serverClient, namespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, inst, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, inst, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -155,7 +155,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, inst *integreatlyv1alpha1.In
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -179,11 +179,11 @@ func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alph
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -192,7 +192,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkgclient.Client, authSvcs []*enmasseadminv1beta1.AuthenticationService) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient k8sclient.Client, authSvcs []*enmasseadminv1beta1.AuthenticationService) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")
 
 	for _, as := range authSvcs {
@@ -205,7 +205,7 @@ func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pkgclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient k8sclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default infra configs")
 
 	for _, bic := range brokeredCfgs {
@@ -225,7 +225,7 @@ func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient pk
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkgclient.Client, addrPlans []*enmassev1beta2.AddressPlan) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient k8sclient.Client, addrPlans []*enmassev1beta2.AddressPlan) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default address plans")
 
 	for _, ap := range addrPlans {
@@ -237,7 +237,7 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient pkg
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient pkgclient.Client, addrSpacePlans []*enmassev1beta2.AddressSpacePlan) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient k8sclient.Client, addrSpacePlans []*enmassev1beta2.AddressSpacePlan) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default address space plans")
 
 	for _, asp := range addrSpacePlans {
@@ -249,7 +249,7 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("reconciling config")
 
 	consoleSvc := &enmasseadminv1beta1.ConsoleService{
@@ -258,7 +258,7 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: defaultConsoleSvcName, Namespace: r.Config.GetNamespace()}, consoleSvc)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultConsoleSvcName, Namespace: r.Config.GetNamespace()}, consoleSvc)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not find consoleservice %s: %w", defaultConsoleSvcName, err)
@@ -276,7 +276,7 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient pkgclient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBackup(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client, owner ownerutil.Owner) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBackup(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client, owner ownerutil.Owner) (integreatlyv1alpha1.StatusPhase, error) {
 	backupConfig := resources.BackupConfig{
 		Namespace: r.Config.GetNamespace(),
 		Name:      string(r.Config.GetProductName()),
@@ -301,7 +301,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, inst *integreatlyv1alp
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -310,7 +310,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "amq-service-broker",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse blackbox target: %w", err)
 	}

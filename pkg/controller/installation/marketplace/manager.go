@@ -14,7 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -23,8 +23,8 @@ const (
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	InstallOperator(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
-	GetSubscriptionInstallPlans(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
+	InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
 }
 
 type MarketplaceManager struct{}
@@ -40,7 +40,7 @@ type Target struct {
 	ManifestPackage string
 }
 
-func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient pkgclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
@@ -88,7 +88,7 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient p
 
 }
 
-func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, client pkgclient.Client) (string, error) {
+func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, client k8sclient.Client) (string, error) {
 
 	configMapData, err := GenerateRegistryConfigMapFromManifest(t.ManifestPackage)
 	if err != nil {
@@ -108,7 +108,7 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 	return csSourceName, nil
 }
 
-func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
+func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -116,7 +116,7 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient p
 		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: sub.Name, Namespace: sub.Namespace}, sub)
 	if err != nil {
 		logrus.Infof("Error getting subscription %s in ns: %s", subName, ns)
 		return nil, err
@@ -124,7 +124,7 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient p
 	return sub, nil
 }
 
-func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, serverClient pkgclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
+func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
@@ -135,8 +135,8 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, se
 
 	ip := &coreosv1alpha1.InstallPlanList{}
 
-	ipListOpts := []pkgclient.ListOption{
-		pkgclient.InNamespace(ns),
+	ipListOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
 	}
 	err = serverClient.List(ctx, ip, ipListOpts...)
 	if err != nil {
@@ -146,7 +146,7 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, se
 	return ip, sub, err
 }
 
-func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, client pkgclient.Client, namespace string, configMapData map[string]string) (string, error) {
+func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, client k8sclient.Client, namespace string, configMapData map[string]string) (string, error) {
 	logrus.Infof("Reconciling registry config map for namespace %s", namespace)
 
 	configMapName := "registry-cm-" + namespace
@@ -157,7 +157,7 @@ func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, cli
 		},
 	}
 
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, configMap)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, configMap)
 
 	if err != nil && !k8serr.IsNotFound(err) {
 		return "", fmt.Errorf("Failed to get config map %s from %s namespace: %w", configMap.Name, configMap.Namespace, err)
@@ -184,7 +184,7 @@ func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, cli
 	return configMapName, nil
 }
 
-func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client pkgclient.Client, namespace string, configMapName string) (string, error) {
+func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client k8sclient.Client, namespace string, configMapName string) (string, error) {
 
 	logrus.Infof("Reconciling registry catalog source for namespace %s", namespace)
 
@@ -204,7 +204,7 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 		Publisher:   "Integreatly",
 	}
 
-	err := client.Get(ctx, pkgclient.ObjectKey{Name: catalogSource.Name, Namespace: catalogSource.Namespace}, catalogSource)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: catalogSource.Name, Namespace: catalogSource.Namespace}, catalogSource)
 
 	if err != nil && !k8serr.IsNotFound(err) {
 		return "", fmt.Errorf("Failed to get catalog source %s from %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)

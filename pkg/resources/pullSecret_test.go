@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -38,7 +38,7 @@ func TestGetDefaultPullSecret(t *testing.T) {
 
 	scenarios := []struct {
 		Name         string
-		FakeClient   client.Client
+		FakeClient   k8sclient.Client
 		Installation *integreatlyv1alpha1.Installation
 		Verify       func(secret corev1.Secret, err error, t *testing.T)
 	}{
@@ -95,9 +95,9 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 
 	scenarios := []struct {
 		Name         string
-		FakeClient   client.Client
+		FakeClient   k8sclient.Client
 		Installation *integreatlyv1alpha1.Installation
-		Verify       func(client client.Client, err error, t *testing.T)
+		Verify       func(client k8sclient.Client, err error, t *testing.T)
 	}{
 		{
 			Name: "Test Default Pull Secret is successfully copied over to target namespace",
@@ -109,13 +109,13 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 				},
 			}),
 			Installation: &integreatlyv1alpha1.Installation{},
-			Verify: func(c client.Client, err error, t *testing.T) {
+			Verify: func(c k8sclient.Client, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 
 				s := &corev1.Secret{}
-				err = c.Get(context.TODO(), client.ObjectKey{Name: "new-name-of-secret", Namespace: "test-namespace"}, s)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: "new-name-of-secret", Namespace: "test-namespace"}, s)
 
 				if bytes.Compare(s.Data["test"], defPullSecret.Data["test"]) != 0 {
 					t.Fatalf("expected data %v, but got %v", defPullSecret.Data["test"], s.Data["test"])
@@ -132,7 +132,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 				},
 			}),
 			Installation: &integreatlyv1alpha1.Installation{},
-			Verify: func(c client.Client, err error, t *testing.T) {
+			Verify: func(c k8sclient.Client, err error, t *testing.T) {
 				if err == nil {
 					t.Fatal("Expected error but got none")
 				}

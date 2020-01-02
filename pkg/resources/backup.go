@@ -18,7 +18,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -47,7 +47,7 @@ var (
 	BackupClusterRoleSuffix  = "-backupjob"
 )
 
-func ReconcileBackup(ctx context.Context, serverClient pkgclient.Client, config BackupConfig, owner ownerutil.Owner) error {
+func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, owner ownerutil.Owner) error {
 	logrus.Infof("reconciling backups: %s", config.Name)
 	err := reconcileClusterRole(ctx, serverClient, config, owner)
 	if err != nil {
@@ -76,7 +76,7 @@ func ReconcileBackup(ctx context.Context, serverClient pkgclient.Client, config 
 	return nil
 }
 
-func reconcileClusterRole(ctx context.Context, serverClient pkgclient.Client, config BackupConfig, owner ownerutil.Owner) error {
+func reconcileClusterRole(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, owner ownerutil.Owner) error {
 	backupJobsClusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: config.Name + BackupClusterRoleSuffix,
@@ -99,7 +99,7 @@ func reconcileClusterRole(ctx context.Context, serverClient pkgclient.Client, co
 	return CreateOrUpdate(ctx, serverClient, backupJobsClusterRole)
 }
 
-func reconcileServiceAccount(ctx context.Context, serverClient pkgclient.Client, config BackupConfig) error {
+func reconcileServiceAccount(ctx context.Context, serverClient k8sclient.Client, config BackupConfig) error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: config.Namespace,
@@ -110,7 +110,7 @@ func reconcileServiceAccount(ctx context.Context, serverClient pkgclient.Client,
 	return CreateOrUpdate(ctx, serverClient, serviceAccount)
 }
 
-func reconcileClusterRoleBinding(ctx context.Context, serverClient pkgclient.Client, config BackupConfig, owner ownerutil.Owner) error {
+func reconcileClusterRoleBinding(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, owner ownerutil.Owner) error {
 	backupJobsRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: config.Name + BackupClusterRoleSuffix,
@@ -133,7 +133,7 @@ func reconcileClusterRoleBinding(ctx context.Context, serverClient pkgclient.Cli
 	return CreateOrUpdate(ctx, serverClient, backupJobsRoleBinding)
 }
 
-func reconcileCronjobs(ctx context.Context, serverClient pkgclient.Client, config BackupConfig) error {
+func reconcileCronjobs(ctx context.Context, serverClient k8sclient.Client, config BackupConfig) error {
 	for _, component := range config.Components {
 		err := reconcileCronjob(ctx, serverClient, config, component)
 		if err != nil {
@@ -143,7 +143,7 @@ func reconcileCronjobs(ctx context.Context, serverClient pkgclient.Client, confi
 	return nil
 }
 
-func reconcileCronjob(ctx context.Context, serverClient pkgclient.Client, config BackupConfig, component BackupComponent) error {
+func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, component BackupComponent) error {
 	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
 
 	cronjob := &v1beta1.CronJob{
@@ -227,7 +227,7 @@ func reconcileCronjob(ctx context.Context, serverClient pkgclient.Client, config
 	return CreateOrUpdate(ctx, serverClient, cronjob)
 }
 
-func reconcileCronjobAlerts(ctx context.Context, serverClient pkgclient.Client, config BackupConfig) error {
+func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, config BackupConfig) error {
 	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
 
 	rules := []monitoringv1.Rule{}

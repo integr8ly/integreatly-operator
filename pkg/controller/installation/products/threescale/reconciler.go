@@ -35,7 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	pkgclient "sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -55,8 +55,8 @@ const (
 	externalPostgresSecretName     = "system-database"
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, i *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
-	ns := i.Spec.NamespacePrefix + defaultInstallationNamespace
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	tsConfig, err := configManager.ReadThreeScale()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
@@ -70,7 +70,7 @@ func NewReconciler(configManager config.ConfigReadWriter, i *integreatlyv1alpha1
 		ConfigManager: configManager,
 		Config:        tsConfig,
 		mpm:           mpm,
-		installation:  i,
+		installation:  installation,
 		tsClient:      tsClient,
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
@@ -99,16 +99,16 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", packageName)
 
-	phase, err := r.ReconcileFinalizer(ctx, serverClient, in, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, in, serverClient, r.Config.GetNamespace())
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		err = resources.RemoveOauthClient(ctx, in, serverClient, r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(ctx, installation, serverClient, r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -118,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), in, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -128,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", in, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -167,7 +167,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, in, serverClient)
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -186,7 +186,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	phase, err = r.ReconcileOauthClient(ctx, in, &oauthv1.OAuthClient{
+	phase, err = r.ReconcileOauthClient(ctx, installation, &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.getOAuthClientName(),
 		},
@@ -205,7 +205,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, in, serverClient)
+	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Infof("Error: %s", err)
@@ -220,11 +220,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, in *integreatlyv1alpha1.Inst
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
-		_, err := r.createResource(ctx, inst, template, serverClient)
+		_, err := r.createResource(ctx, installation, template, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
@@ -234,7 +234,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, inst *integreatlyv1
 }
 
 // CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alpha1.Installation, resourceName string, serverClient pkgclient.Client) (runtime.Object, error) {
+func (r *Reconciler) createResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
 	if r.extraParams == nil {
 		r.extraParams = map[string]string{}
 	}
@@ -258,14 +258,14 @@ func (r *Reconciler) createResource(ctx context.Context, inst *integreatlyv1alph
 	return resource, nil
 }
 
-func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgclient.Client) (string, error) {
+func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
 		},
 	}
 
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
 		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
@@ -277,7 +277,7 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient pkgc
 	return string(clientSecretBytes), nil
 }
 
-func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling smtp")
 	ns := r.installation.Namespace
 
@@ -298,7 +298,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
 	}
@@ -330,7 +330,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -359,7 +359,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 			},
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: apim.Name, Namespace: r.Config.GetNamespace()}, apim)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: apim.Name, Namespace: r.Config.GetNamespace()}, apim)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -379,7 +379,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient pkgcl
 	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
-func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling blob storage")
 	ns := r.installation.Namespace
 
@@ -401,17 +401,17 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient pkgc
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient pkgclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
+func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverClient k8sclient.Client) (*threescalev1.SystemFileStorageSpec, error) {
 	// create blob storage cr
 	blobStorage := &crov1.BlobStorage{}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name), Namespace: r.installation.Namespace}, blobStorage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blob storage custom resource: %w", err)
 	}
 
 	// get blob storage connection secret
 	blobStorageSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: blobStorage.Status.SecretRef.Name, Namespace: blobStorage.Status.SecretRef.Namespace}, blobStorageSec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get blob storage connection secret: %w", err)
 	}
@@ -447,7 +447,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance
 // which are used when 3scale HighAvailability mode is enabled
-func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling external datastores")
 	ns := r.installation.Namespace
 
@@ -495,7 +495,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// get the secret created by the cloud resources operator
 	// containing backend redis connection details
 	credSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: backendRedis.Status.SecretRef.Name, Namespace: backendRedis.Status.SecretRef.Namespace}, credSec)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: backendRedis.Status.SecretRef.Name, Namespace: backendRedis.Status.SecretRef.Namespace}, credSec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get backend redis credential secret: %w", err)
 	}
@@ -527,7 +527,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// get the secret created by the cloud resources operator
 	// containing system redis connection details
 	systemCredSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: systemRedis.Status.SecretRef.Name, Namespace: systemRedis.Status.SecretRef.Namespace}, systemCredSec)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: systemRedis.Status.SecretRef.Name, Namespace: systemRedis.Status.SecretRef.Namespace}, systemCredSec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get system redis credential secret: %w", err)
 	}
@@ -559,7 +559,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// get the secret containing redis credentials
 	postgresCredSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresCredSec)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresCredSec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
@@ -589,7 +589,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -602,7 +602,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -784,7 +784,7 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -797,7 +797,7 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 	}
 
 	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -807,7 +807,7 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 	})
 	if len(kcUsers) == 1 {
 		s := &corev1.Secret{}
-		err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -847,7 +847,7 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
@@ -856,7 +856,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 	}
 
 	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -890,7 +890,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 	}
 
 	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -919,10 +919,10 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient p
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cm := &corev1.ConfigMap{}
 	// if this errors it can be ignored
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: "system-environment", Namespace: r.Config.GetNamespace()}, cm)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "system-environment", Namespace: r.Config.GetNamespace()}, cm)
 	if err == nil && string(r.Config.GetProductVersion()) != cm.Data["AMP_RELEASE"] {
 		r.Config.SetProductVersion(cm.Data["AMP_RELEASE"])
 		r.ConfigManager.WriteConfig(r.Config)
@@ -938,7 +938,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(ctx, pkgclient.ObjectKey{Name: system.Name, Namespace: system.Namespace}, system)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: system.Name, Namespace: system.Namespace}, system)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -969,7 +969,7 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integreatlyv1alpha1.Installation, client pkgclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
@@ -978,7 +978,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
@@ -991,7 +991,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
@@ -1004,7 +1004,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
-	}, ctx, cfg, inst, client)
+	}, ctx, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}
@@ -1012,13 +1012,13 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, inst *integre
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgclient.Client, label string) (*routev1.Route, error) {
+func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string) (*routev1.Route, error) {
 	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
 	if err != nil {
 		return nil, err
 	}
 
-	opts := pkgclient.ListOptions{
+	opts := k8sclient.ListOptions{
 		LabelSelector: selector,
 		Namespace:     r.Config.GetNamespace(),
 	}
@@ -1032,14 +1032,14 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient pkgcli
 	return &routes.Items[0], nil
 }
 
-func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient pkgclient.Client) (*string, *string, error) {
+func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient k8sclient.Client) (*string, *string, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1049,14 +1049,14 @@ func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverCl
 	return &username, &email, nil
 }
 
-func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient pkgclient.Client, username string, email string) error {
+func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient k8sclient.Client, username string, email string) error {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return err
 	}
@@ -1077,13 +1077,13 @@ func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient p
 	return nil
 }
 
-func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient pkgclient.Client) (*string, error) {
+func (r *Reconciler) GetAdminToken(ctx context.Context, serverClient k8sclient.Client) (*string, error) {
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, pkgclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
 	if err != nil {
 		return nil, err
 	}
