@@ -89,7 +89,7 @@ test/unit:
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
-test/e2e/prow: INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
+test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
