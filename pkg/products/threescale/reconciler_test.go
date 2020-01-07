@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -54,6 +55,15 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
+func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
+	eventSource := corev1.EventSource{
+		Component: defaultInstallationNamespace,
+		Host:      "",
+	}
+	broadcaster := record.NewBroadcaster()
+	return broadcaster.NewRecorder(scheme, eventSource)
+}
+
 type ThreeScaleTestScenario struct {
 	Name                 string
 	Installation         *integreatlyv1alpha1.Installation
@@ -65,6 +75,7 @@ type ThreeScaleTestScenario struct {
 	Assert               AssertFunc
 	MPM                  marketplace.MarketplaceInterface
 	Product              *integreatlyv1alpha1.InstallationProductStatus
+	Recorder             record.EventRecorder
 }
 
 func getTestInstallation() *integreatlyv1alpha1.Installation {
@@ -137,6 +148,7 @@ func TestThreeScale(t *testing.T) {
 			MPM:            marketplace.NewManager(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:       setupRecorder(scheme),
 		},
 	}
 	for _, scenario := range scenarios {
@@ -147,7 +159,7 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("Error creating config manager")
 			}
 
-			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM)
+			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder)
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", packageName, err)
 			}

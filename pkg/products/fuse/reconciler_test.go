@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -72,6 +73,15 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
+func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
+	eventSource := corev1.EventSource{
+		Component: defaultInstallationNamespace,
+		Host:      "",
+	}
+	broadcaster := record.NewBroadcaster()
+	return broadcaster.NewRecorder(scheme, eventSource)
+}
+
 func TestReconciler_config(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -88,6 +98,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test error on failed config",
@@ -101,7 +112,8 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read fuse config")
 				},
 			},
-			Product: &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder: setupRecorder(scheme),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -126,6 +138,7 @@ func TestReconciler_config(t *testing.T) {
 			}),
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(scheme),
 		},
 	}
 
@@ -135,6 +148,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -193,6 +207,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		ExpectError    bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:       "Test reconcile custom resource returns in progress when successful created",
@@ -205,6 +220,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			Recorder:       setupRecorder(scheme),
 		},
 		{
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
@@ -218,6 +234,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
+			Recorder:       setupRecorder(scheme),
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
@@ -230,6 +247,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Recorder:       setupRecorder(scheme),
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
@@ -242,6 +260,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			Recorder:       setupRecorder(scheme),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -262,6 +281,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
+			Recorder:       setupRecorder(scheme),
 		},
 	}
 	for _, tc := range cases {
@@ -270,6 +290,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -366,6 +387,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -400,6 +422,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(scheme),
 		},
 	}
 
@@ -409,6 +432,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

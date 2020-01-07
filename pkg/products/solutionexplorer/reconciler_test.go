@@ -16,9 +16,11 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -36,6 +38,7 @@ type SolutionExplorerScenario struct {
 	OauthResolver   func() OauthResolver
 	Validate        func(t *testing.T, mock interface{})
 	Product         *integreatlyv1alpha1.InstallationProductStatus
+	Recorder        record.EventRecorder
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -58,6 +61,15 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 			return nil
 		},
 	}
+}
+
+func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
+	eventSource := corev1.EventSource{
+		Component: defaultName,
+		Host:      "",
+	}
+	broadcaster := record.NewBroadcaster()
+	return broadcaster.NewRecorder(scheme, eventSource)
 }
 
 var oauthResolver = func() OauthResolver {
@@ -91,13 +103,14 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 					t.Fatal("expected 1 call to GetOauthEndPointCalls but got  ", len(m.GetOauthEndPointCalls()))
 				}
 			},
+			Recorder: setupRecorder(scheme),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			mockResolver := tc.OauthResolver()
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -160,12 +173,13 @@ func TestSolutionExplorer(t *testing.T) {
 			FakeConfig:   basicConfigMock(),
 			client:       fake.NewFakeClient(webappNs, webappCR, installation, webappRoute),
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(scheme),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}

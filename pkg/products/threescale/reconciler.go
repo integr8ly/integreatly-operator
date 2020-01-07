@@ -37,6 +37,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -56,7 +57,7 @@ const (
 	externalPostgresSecretName     = "system-database"
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	tsConfig, err := configManager.ReadThreeScale()
 	if err != nil {
@@ -76,6 +77,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		appsv1Client:  appsv1Client,
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
+		recorder:      recorder,
 	}, nil
 }
 
@@ -89,6 +91,7 @@ type Reconciler struct {
 	oauthv1Client oauthClient.OauthV1Interface
 	*resources.Reconciler
 	extraParams map[string]string
+	recorder    record.EventRecorder
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -116,48 +119,57 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetNamespace()), err)
 		return phase, err
 	}
 
 	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 	if err != nil {
+		resources.EmitEventProcessingError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetNamespace()), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), "", installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile pull secret", err)
 		return phase, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetNamespace(), ManifestPackage: manifestPackage}, r.Config.GetNamespace(), serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", packageName), err)
 		return phase, err
 	}
 
 	if r.installation.GetDeletionTimestamp() == nil {
 		phase, err = r.reconcileSMTPCredentials(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile smtp credentials", err)
 			return phase, err
 		}
 
 		phase, err = r.reconcileExternalDatasources(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile external data sources", err)
 			return phase, err
 		}
 
 		phase, err = r.reconcileBlobStorage(ctx, serverClient)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile blob storage", err)
 			return phase, err
 		}
 	}
 
 	phase, err = r.reconcileComponents(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
 	}
 
@@ -165,26 +177,31 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileUpdatingDefaultAdminDetails(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to update default admin details", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileOpenshiftUsers(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile openshift users", err)
 		return phase, err
 	}
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
+		resources.EmitEventProcessingError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Failed to get oauth client secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -203,18 +220,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		GrantMethod: oauthv1.GrantHandlerPrompt,
 	}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile oauth client", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileServiceDiscovery(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile service discovery", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		logrus.Infof("Error: %s", err)
+		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		logrus.Infof("Error: %s", err.Error())
 		return phase, err
 	}
 
@@ -222,6 +242,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
+	resources.EmitEventProductCompleted(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
