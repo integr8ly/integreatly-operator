@@ -128,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackups(ctx, serverClient, namespace)
+	phase, err = r.reconcileBackups(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -186,10 +186,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create or update backup secret
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, cheBackUpSecret, func() error {
 		cheBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
-		cheBackUpSecret.Data["POSTGRESQL_USER"] = croSec.Data["username"]
-		cheBackUpSecret.Data["POSTGRESQL_PASSWORD"] = croSec.Data["password"]
-		cheBackUpSecret.Data["POSTGRESQL_DATABASE"] = croSec.Data["database"]
-		cheBackUpSecret.Data["POSTGRESQL_PORT"] = croSec.Data["port"]
+		cheBackUpSecret.Data["POSTGRES_USERNAME"] = croSec.Data["username"]
+		cheBackUpSecret.Data["POSTGRES_PASSWORD"] = croSec.Data["password"]
+		cheBackUpSecret.Data["POSTGRES_DATABASE"] = croSec.Data["database"]
+		cheBackUpSecret.Data["POSTGRES_PORT"] = croSec.Data["port"]
+		cheBackUpSecret.Data["POSTGRES_VERSION"] = []byte("10")
 		return nil
 	})
 	if err != nil {
@@ -299,11 +300,11 @@ func (r *Reconciler) createResource(ctx context.Context, installation *integreat
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	backupConfig := resources.BackupConfig{
 		Namespace:     r.Config.GetNamespace(),
 		Name:          "codeready",
-		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackendSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()},
+		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackupsSecretName(), Namespace: r.Config.GetNamespace()},
 		Components: []resources.BackupComponent{
 			{
 				Name:     "codeready-postgres-backup",
@@ -318,7 +319,7 @@ func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient k8sclien
 			},
 		},
 	}
-	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, owner); err != nil {
+	if err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for codeready: %w", err)
 	}
 
@@ -585,7 +586,6 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		},
 	}
 
-	ownerutil.EnsureOwner(cheCluster, r.installation)
 	if err := serverClient.Create(ctx, cheCluster); err != nil {
 		return nil, fmt.Errorf("failed to create che cluster resource: %w", err)
 	}

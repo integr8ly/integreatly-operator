@@ -90,17 +90,19 @@ rules:
       - update
   - apiGroups:
       - "rbac.authorization.k8s.io"
-    # these are required so the operator can create a clusterrole to assign to the backup jobs serviceaccount
+    # these are required so the operator can create a role to assign to the backup jobs serviceaccount
     # and enable the backup to see the items it needs to backup
     resources:
-      - "clusterroles" # may be able to do this with roles instead
-      - "clusterrolebindings" # may be able to do this with rolebindings instead
+      - "roles"
+      - "rolebindings"
     verbs:
+      - get
       - create
       - update
       - delete
   # integreatly-operator doesn't require these permissions, but must have them to be able to grant them to the back
   # service accounts it creates and assigns.
+  # Keeping this before we can leverage admin permissions in product namespaces
   - apiGroups:
       - "*"
     resources:

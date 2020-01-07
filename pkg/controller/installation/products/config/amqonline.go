@@ -65,8 +65,8 @@ func (a *AMQOnline) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionAMQOnline
 }
 
-func (c *AMQOnline) GetBackendSecretName() string {
-	return "s3-credentials"
+func (c *AMQOnline) GetBackupsSecretName() string {
+	return "backups-s3-credentials"
 }
 
 func (c *AMQOnline) GetBackupSchedule() string {

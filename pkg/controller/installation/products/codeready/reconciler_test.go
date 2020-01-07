@@ -85,6 +85,20 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
+		GetBackupsSecretNameFunc: func() string {
+			return "backups-s3-credentials"
+		},
+	}
+}
+
+func backupsSecretMock() *corev1.Secret {
+	config := basicConfigMock()
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      config.GetBackupsSecretNameFunc(),
+			Namespace: config.GetOperatorNamespace(),
+		},
+		Data: map[string][]byte{},
 	}
 }
 
@@ -570,7 +584,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:           "test successful installation without errors",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   installation,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation, pg, sec),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation, pg, sec, backupsSecretMock()),
 			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {

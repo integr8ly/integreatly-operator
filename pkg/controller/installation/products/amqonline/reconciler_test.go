@@ -87,6 +87,20 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"NAMESPACE": "middleware-monitoring",
 			}), nil
 		},
+		GetBackupsSecretNameFunc: func() string {
+			return "backups-s3-credentials"
+		},
+	}
+}
+
+func backupsSecretMock() *corev1.Secret {
+	config := basicConfigMock()
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      config.GetBackupsSecretNameFunc(),
+			Namespace: config.GetOperatorNamespace(),
+		},
+		Data: map[string][]byte{},
 	}
 }
 
@@ -453,7 +467,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc, installation),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc, installation, backupsSecretMock()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

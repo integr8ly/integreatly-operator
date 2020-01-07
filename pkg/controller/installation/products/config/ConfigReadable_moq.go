@@ -4,9 +4,8 @@
 package config
 
 import (
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"sync"
-
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
@@ -53,13 +52,13 @@ type ConfigReadableMock struct {
 	GetHostFunc func() string
 
 	// GetOperatorVersionFunc mocks the GetOperatorVersion method.
-	GetOperatorVersionFunc func() integreatlyv1alpha1.OperatorVersion
+	GetOperatorVersionFunc func() v1alpha1.OperatorVersion
 
 	// GetProductNameFunc mocks the GetProductName method.
-	GetProductNameFunc func() integreatlyv1alpha1.ProductName
+	GetProductNameFunc func() v1alpha1.ProductName
 
 	// GetProductVersionFunc mocks the GetProductVersion method.
-	GetProductVersionFunc func() integreatlyv1alpha1.ProductVersion
+	GetProductVersionFunc func() v1alpha1.ProductVersion
 
 	// ReadFunc mocks the Read method.
 	ReadFunc func() ProductConfig
@@ -111,7 +110,7 @@ func (mock *ConfigReadableMock) GetHostCalls() []struct {
 }
 
 // GetOperatorVersion calls GetOperatorVersionFunc.
-func (mock *ConfigReadableMock) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
+func (mock *ConfigReadableMock) GetOperatorVersion() v1alpha1.OperatorVersion {
 	if mock.GetOperatorVersionFunc == nil {
 		panic("ConfigReadableMock.GetOperatorVersionFunc: method is nil but ConfigReadable.GetOperatorVersion was just called")
 	}
@@ -137,7 +136,7 @@ func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
 }
 
 // GetProductName calls GetProductNameFunc.
-func (mock *ConfigReadableMock) GetProductName() integreatlyv1alpha1.ProductName {
+func (mock *ConfigReadableMock) GetProductName() v1alpha1.ProductName {
 	if mock.GetProductNameFunc == nil {
 		panic("ConfigReadableMock.GetProductNameFunc: method is nil but ConfigReadable.GetProductName was just called")
 	}
@@ -163,7 +162,7 @@ func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 }
 
 // GetProductVersion calls GetProductVersionFunc.
-func (mock *ConfigReadableMock) GetProductVersion() integreatlyv1alpha1.ProductVersion {
+func (mock *ConfigReadableMock) GetProductVersion() v1alpha1.ProductVersion {
 	if mock.GetProductVersionFunc == nil {
 		panic("ConfigReadableMock.GetProductVersionFunc: method is nil but ConfigReadable.GetProductVersion was just called")
 	}

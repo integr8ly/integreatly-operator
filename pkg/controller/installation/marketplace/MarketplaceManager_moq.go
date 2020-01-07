@@ -5,12 +5,10 @@ package marketplace
 
 import (
 	"context"
-	"sync"
-
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 var (
@@ -42,10 +40,10 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //     }
 type MarketplaceInterfaceMock struct {
 	// GetSubscriptionInstallPlansFunc mocks the GetSubscriptionInstallPlans method.
-	GetSubscriptionInstallPlansFunc func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error)
+	GetSubscriptionInstallPlansFunc func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error)
 
 	// InstallOperatorFunc mocks the InstallOperator method.
-	InstallOperatorFunc func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
+	InstallOperatorFunc func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -54,7 +52,7 @@ type MarketplaceInterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ServerClient is the serverClient argument value.
-			ServerClient k8sclient.Client
+			ServerClient client.Client
 			// SubName is the subName argument value.
 			SubName string
 			// Ns is the ns argument value.
@@ -65,7 +63,7 @@ type MarketplaceInterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ServerClient is the serverClient argument value.
-			ServerClient k8sclient.Client
+			ServerClient client.Client
 			// Owner is the owner argument value.
 			Owner ownerutil.Owner
 			// T is the t argument value.
@@ -79,13 +77,13 @@ type MarketplaceInterfaceMock struct {
 }
 
 // GetSubscriptionInstallPlans calls GetSubscriptionInstallPlansFunc.
-func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error) {
+func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error) {
 	if mock.GetSubscriptionInstallPlansFunc == nil {
 		panic("MarketplaceInterfaceMock.GetSubscriptionInstallPlansFunc: method is nil but MarketplaceInterface.GetSubscriptionInstallPlans was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		ServerClient k8sclient.Client
+		ServerClient client.Client
 		SubName      string
 		Ns           string
 	}{
@@ -105,13 +103,13 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Co
 //     len(mockedMarketplaceInterface.GetSubscriptionInstallPlansCalls())
 func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struct {
 	Ctx          context.Context
-	ServerClient k8sclient.Client
+	ServerClient client.Client
 	SubName      string
 	Ns           string
 } {
 	var calls []struct {
 		Ctx          context.Context
-		ServerClient k8sclient.Client
+		ServerClient client.Client
 		SubName      string
 		Ns           string
 	}
@@ -122,13 +120,13 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struc
 }
 
 // InstallOperator calls InstallOperatorFunc.
-func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 	if mock.InstallOperatorFunc == nil {
 		panic("MarketplaceInterfaceMock.InstallOperatorFunc: method is nil but MarketplaceInterface.InstallOperator was just called")
 	}
 	callInfo := struct {
 		Ctx                     context.Context
-		ServerClient            k8sclient.Client
+		ServerClient            client.Client
 		Owner                   ownerutil.Owner
 		T                       Target
 		OperatorGroupNamespaces []string
@@ -152,7 +150,7 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 //     len(mockedMarketplaceInterface.InstallOperatorCalls())
 func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 	Ctx                     context.Context
-	ServerClient            k8sclient.Client
+	ServerClient            client.Client
 	Owner                   ownerutil.Owner
 	T                       Target
 	OperatorGroupNamespaces []string
@@ -160,7 +158,7 @@ func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 } {
 	var calls []struct {
 		Ctx                     context.Context
-		ServerClient            k8sclient.Client
+		ServerClient            client.Client
 		Owner                   ownerutil.Owner
 		T                       Target
 		OperatorGroupNamespaces []string

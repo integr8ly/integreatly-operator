@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 
-	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -91,6 +95,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileBackupsStorage(ctx, installation, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -103,7 +112,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	r.logger.Info("ensuring cloud resources are cleaned up")
 
 	// ensure postgres instances are cleaned up
-	postgresInstances := &crov1.PostgresList{}
+	postgresInstances := &crov1alpha1.PostgresList{}
 	postgresInstanceOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
@@ -117,7 +126,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// ensure redis instances are cleaned up
-	redisInstances := &crov1.RedisList{}
+	redisInstances := &crov1alpha1.RedisList{}
 	redisInstanceOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
@@ -131,7 +140,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// ensure blob storage instances are cleaned up
-	blobStorages := &crov1.BlobStorageList{}
+	blobStorages := &crov1alpha1.BlobStorageList{}
 	blobStorageOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
@@ -145,7 +154,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// ensure blob storage instances are cleaned up
-	smtpCredentialSets := &crov1.SMTPCredentialSetList{}
+	smtpCredentialSets := &crov1alpha1.SMTPCredentialSetList{}
 	smtpOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(installation.Namespace),
 	}
@@ -159,5 +168,23 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	}
 
 	// everything has been cleaned up, delete the ns
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	blobStorageName := fmt.Sprintf("backups-blobstorage-%s", installation.Name)
+	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, installation.Spec.Type, "production", blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
+		ownerutil.EnsureOwner(cr, installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile blob storage request: %w", err)
+	}
+
+	// wait for the blob storage cr to reconcile
+	if blobStorage.Status.Phase != crov1alpha1Types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
