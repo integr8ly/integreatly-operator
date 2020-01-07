@@ -12,6 +12,7 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
+INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -69,22 +70,26 @@ code/fix:
 
 .PHONY: image/build
 image/build: code/compile
-	@operator-sdk build $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	@operator-sdk build $(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: image/push
 image/push:
-	docker push $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	docker push $(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: image/build/push
 image/build/push: image/build image/push
 
 .PHONY: image/build/test
 image/build/test:
-	operator-sdk build --enable-tests $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	operator-sdk build --enable-tests $(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/unit
 test/unit:
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
+
+.PHONY: test/e2e/prow
+test/e2e/prow: INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
+test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: export GH_CLIENT_ID := 1234
