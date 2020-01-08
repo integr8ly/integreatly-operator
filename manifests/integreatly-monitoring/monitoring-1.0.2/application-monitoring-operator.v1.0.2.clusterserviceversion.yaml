@@ -81,7 +81,7 @@ spec:
                 imagePullPolicy: Always
                 name: application-monitoring-operator
                 ports:
-                - containerPort: 60000
+                - containerPort: 8383
                   name: metrics
                 readinessProbe:
                   exec:
@@ -100,7 +100,9 @@ spec:
           - ""
           resources:
           - pods
+          - pods/finalizers
           - services
+          - services/finalizers
           - endpoints
           - persistentvolumeclaims
           - events
@@ -113,6 +115,7 @@ spec:
           - apps
           resources:
           - deployments
+          - deployments/finalizers
           - daemonsets
           - replicasets
           - statefulsets
@@ -122,14 +125,15 @@ spec:
           - monitoring.coreos.com
           resources:
           - alertmanagers
+          - alertmanagers/finalizers
           - prometheuses
+          - prometheuses/finalizers
           - prometheusrules
+          - prometheusrules/finalizers
           - servicemonitors
+          - servicemonitors/finalizers
           verbs:
-          - get
-          - create
-          - list
-          - watch
+          - '*'
         - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
