@@ -25,6 +25,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
+	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -32,6 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -41,7 +43,24 @@ var (
 	operatorMetricsPort int32 = 8686
 	products            []string
 )
+
+// Custom metrics
+var (
+	operatorVersion = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name:        "integreatly_version_info",
+			Help:        "Integreatly operator information",
+			ConstLabels: prometheus.Labels{"operator_version": version.Version},
+		},
+	)
+)
+
 var log = logf.Log.WithName("cmd")
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	customMetrics.Registry.MustRegister(operatorVersion)
+}
 
 func printVersion() {
 	log.Info(fmt.Sprintf("Operator Version: %s", version.Version))
@@ -62,7 +81,6 @@ func main() {
 	pflag.StringSliceVarP(&products, "products", "p", []string{"all"}, "--products=rhsso,fuse")
 
 	pflag.Parse()
-
 	// Use a zap logr.Logger implementation. If none of the zap
 	// flags are configured (or if the zap flag set is not being
 	// used), this defaults to a production zap logger.
