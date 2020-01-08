@@ -95,7 +95,7 @@ test/e2e/prow: test/e2e
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
-	INTEGREATLY_OPERATOR_DISABLE_ELECTION=true operator-sdk --verbose test local ./test/e2e --namespace $(NAMESPACE) --up-local --go-test-flags "-timeout=60m" --debug
+	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e/olm
 test/e2e/olm: export GH_CLIENT_ID := 1234
