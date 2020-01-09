@@ -31,7 +31,7 @@ var webappRoute = &routev1.Route{
 
 var installation = &integreatlyv1alpha1.Installation{
 	TypeMeta: metav1.TypeMeta{
-		Kind:       "Installation",
+		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 	},
 	ObjectMeta: metav1.ObjectMeta{

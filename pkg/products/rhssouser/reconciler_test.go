@@ -167,8 +167,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -186,8 +186,8 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			ExpectError:    true,
@@ -374,7 +374,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			UID:        types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "installation",
+			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 		Status: integreatlyv1alpha1.InstallationStatus{

@@ -62,8 +62,8 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 	}
 	ownerInstall := &integreatlyv1alpha1.Installation{
 		TypeMeta: metav1.TypeMeta{
+			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
-			Kind:       "Installation",
 		},
 	}
 	catalogSourceConfig := &marketplacev2.CatalogSourceConfig{
@@ -295,8 +295,8 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 			},
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
-					Kind:       "Installation",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
@@ -310,8 +310,8 @@ func TestReconciler_ReconcileOauthClient(t *testing.T) {
 			OauthClient: existingClient,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
-					Kind:       "Installation",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-install",
@@ -347,6 +347,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			UID:  types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
+			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}

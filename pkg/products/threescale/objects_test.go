@@ -187,6 +187,7 @@ var installation = &integreatlyv1alpha1.Installation{
 		Finalizers: []string{"finalizer.3scale.integreatly.org"},
 	},
 	TypeMeta: metav1.TypeMeta{
+		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 	},
 	Spec: integreatlyv1alpha1.InstallationSpec{
