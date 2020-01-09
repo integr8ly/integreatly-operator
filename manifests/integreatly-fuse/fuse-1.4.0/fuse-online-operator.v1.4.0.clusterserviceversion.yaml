@@ -17,12 +17,12 @@ metadata:
           "apiVersion": "syndesis.io/v1alpha1",
           "kind": "Syndesis",
           "metadata": {
-          	"name": "app"
+              "name": "app"
           },
           "spec": {
-          	"integration": {
-          		"limit": 0
-          	}
+              "integration": {
+                  "limit": 0
+              }
           }
       }]
 spec:

@@ -3,8 +3,8 @@ NAMESPACE=integreatly
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-PREVIOUS_TAG=1.13.2
-TAG=1.14.0
+PREVIOUS_TAG=1.14.0
+TAG=1.15.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -42,12 +42,12 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run:
-	@operator-sdk up local --namespace=$(NAMESPACE)
+	@export CR_NAMESPACE=${NAMESPACE}; operator-sdk up local --namespace=""
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
 	@oc login --token=$(shell oc serviceaccounts get-token integreatly-operator -n ${NAMESPACE})
-	@operator-sdk up local --namespace=$(NAMESPACE)
+	$(MAKE) code/run
 
 .PHONY: code/compile
 code/compile:
@@ -55,6 +55,7 @@ code/compile:
 
 .PHONY: code/gen
 code/gen:
+	find ./ -name *_moq.go -type f -delete
 	operator-sdk generate k8s
 	operator-sdk generate openapi
 	@go generate ./...
@@ -88,7 +89,7 @@ test/unit:
 	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
-test/e2e/prow: INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
+test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e

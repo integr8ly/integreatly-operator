@@ -3,12 +3,14 @@ package user
 import (
 	"context"
 
+	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	usersv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -20,7 +22,7 @@ var log = logf.Log.WithName("controller_user")
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string) error {
+func Add(mgr manager.Manager, products []string, _ *detector.Detector) error {
 	return add(mgr, newReconciler(mgr))
 }
 

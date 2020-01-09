@@ -7,8 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/controller/installation/products/config"
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"

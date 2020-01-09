@@ -1,0 +1,3 @@
+**/zz_generated.*.go linguist-generated=true
+**/*_moq.go linguist-generated=true
+deploy/olm-catalog/integreatly-operator/* linguist-generated=true
