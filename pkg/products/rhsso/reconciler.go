@@ -33,15 +33,13 @@ import (
 )
 
 var (
-	defaultRhssoNamespace               = "rhsso"
-	customerAdminPassword               = "Password1"
-	keycloakName                        = "rhsso"
-	keycloakRealmName                   = "openshift"
-	defaultSubscriptionName             = "integreatly-rhsso"
-	idpAlias                            = "openshift-v4"
-	githubIdpAlias                      = "github"
-	githubOauthAppCredentialsSecretName = "github-oauth-secret"
-	manifestPackage                     = "integreatly-rhsso"
+	defaultRhssoNamespace   = "rhsso"
+	customerAdminPassword   = "Password1"
+	keycloakName            = "rhsso"
+	keycloakRealmName       = "openshift"
+	defaultSubscriptionName = "integreatly-rhsso"
+	idpAlias                = "openshift-v4"
+	manifestPackage         = "integreatly-rhsso"
 )
 
 var CustomerAdminUser = &aerogearv1.KeycloakUser{
@@ -298,11 +296,6 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *inte
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
 
-		err = r.setupGithubIDP(ctx, kcr, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Github IDP: %w", err)
-		}
-
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
@@ -424,42 +417,6 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient k8sclient.Client) error {
-	githubCreds := &corev1.Secret{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
-	if err != nil {
-		logrus.Errorf("Unable to find Github oauth credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
-		return err
-	}
-
-	if !containsIdentityProvider(kcr.Spec.IdentityProviders, githubIdpAlias) {
-		logrus.Infof("Adding github identity provider to the keycloak realm")
-		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
-			Alias:                     githubIdpAlias,
-			ProviderID:                githubIdpAlias,
-			Enabled:                   true,
-			TrustEmail:                false,
-			StoreToken:                true,
-			AddReadTokenRoleOnCreate:  true,
-			FirstBrokerLoginFlowAlias: "first broker login",
-			LinkOnly:                  true,
-			AuthenticateByDefault:     false,
-			Config: map[string]string{
-				"hideOnLoginPage": "true",
-				"clientId":        fmt.Sprintf("%s", githubCreds.Data["clientId"]),
-				"disableUserInfo": "",
-				"clientSecret":    fmt.Sprintf("%s", githubCreds.Data["secret"]),
-				"defaultScope":    "repo,user,write:public_key,admin:repo_hook,read:org,public_repo,user:email",
-				"useJwksUrl":      "true",
-			},
-		})
-		return serverClient.Update(ctx, kcr)
-	}
-	// We need to revisit how the github idp gets created/updated
-	// client ID and secret can get outdated we need to ensure they are synced with the value secret in the github-oauth-secret
-	return nil
 }
 
 func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, alias string) bool {

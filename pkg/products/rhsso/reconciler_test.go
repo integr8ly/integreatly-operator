@@ -253,13 +253,6 @@ func TestReconciler_handleProgress(t *testing.T) {
 		},
 	}
 
-	githubOauthSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "github-oauth-secret",
-			Namespace: defaultOperatorNamespace,
-		},
-	}
-
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
@@ -284,7 +277,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:            "test ready kcr returns phase complete",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
@@ -292,7 +285,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:            "test unready kcr cr returns phase in progress",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed}), githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed}), oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
@@ -301,7 +294,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:            "test missing kc cr returns phase failed",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
@@ -310,7 +303,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:            "test missing kcr cr returns phase failed",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
@@ -319,7 +312,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:            "test failed config write",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadRHSSOFunc: func() (*config.RHSSO, error) {
@@ -427,13 +420,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	githubOauthSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "github-oauth-secret",
-			Namespace: defaultOperatorNamespace,
-		},
-	}
-
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
@@ -460,7 +446,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, oauthClientSecrets, installation),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

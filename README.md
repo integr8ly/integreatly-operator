@@ -41,21 +41,9 @@ mkdir -p $GOPATH/src/github.com/integr8ly
 cd $GOPATH/src/github.com/integr8ly
 git clone https://github.com/integr8ly/integreatly-operator
 cd integreatly-operator
-```
 
-Some products require certain credentials to be present in the namespace before installation can proceed: 
-* RHSSO requires Github OAuth credentials to create a Github Identity Provider for Launcher (see [here](https://github.com/integr8ly/installation/#51-create-github-oauth-to-enable-github-authorization-for-launcher) for creating a Github OAuth app) and Codeready
-
-**Note:** If this secret isn't created, the integreatly preflight checks will fail
-
-```sh
 # The project name for the integreatly operator to watch 
 export NAMESPACE="integreatly-test"
-
-# RHSSO requires Github OAuth credentials to setup a Github identity provider
-# for Fabric8 Launcher and Codeready
-export GH_CLIENT_ID=<client id>
-export GH_CLIENT_SECRET=<client secret>
 
 # Bootstrap the project
 make cluster/prepare/local

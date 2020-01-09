@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators"
 
 	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
@@ -18,8 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -132,10 +132,6 @@ func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) e
 		if namespace == "" {
 			namespace = "integreatly"
 		}
-	}
-
-	if err != nil {
-		return err
 	}
 
 	logrus.Infof("Looking for installation CR in %s namespace", namespace)
@@ -360,27 +356,6 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	logrus.Info("Running preflight checks..")
 
 	result := reconcile.Result{}
-	requiredSecrets := []string{"github-oauth-secret"}
-	for _, secretName := range requiredSecrets {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: installation.Namespace,
-			},
-		}
-		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
-			return result, err
-		} else if !exists {
-			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
-			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
-			installation.Status.PreflightMessage = preflightMessage
-			logrus.Info(preflightMessage)
-			_ = r.client.Status().Update(r.context, installation)
-			return result, err
-		}
-		logrus.Infof("found required secret: %s", secretName)
-	}
-
 	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
 	err := r.client.List(r.context, namespaces)
