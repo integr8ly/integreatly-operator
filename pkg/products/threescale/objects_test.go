@@ -63,7 +63,7 @@ var installPlanFor3ScaleSubscription = &coreosv1alpha1.InstallPlan{
 
 var s3BucketSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: s3BucketSecretName,
+		Name: "dummy-bucket",
 	},
 }
 
@@ -285,6 +285,19 @@ var threescaleRoute2 = &v1.Route{
 	},
 }
 
+var threescaleRoute3 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-provider-route",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-provider",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "system-provider",
+	},
+}
+
 var postgres = &crov1.Postgres{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-postgres-test-installation",
@@ -399,6 +412,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		blobStorageSec,
 		threescaleRoute1,
 		threescaleRoute2,
+		threescaleRoute3,
 		postgres,
 		postgresSec,
 		redis,

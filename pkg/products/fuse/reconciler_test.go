@@ -5,9 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	appsv1 "github.com/openshift/api/apps/v1"
-
-	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -46,6 +44,12 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"HOST":      "fuse.openshift-cluster.com",
 			}), nil
 		},
+		ReadThreeScaleFunc: func() (*config.ThreeScale, error) {
+			return config.NewThreeScale(config.ProductConfig{
+				"NAMESPACE": "threescale",
+				"HOST":      "threescale.openshift-cluster.com",
+			}), nil
+		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -61,9 +65,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = syn.SchemeBuilder.AddToScheme(scheme)
+	err = syndesisv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
-	err = appsv1.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
@@ -205,7 +208,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseStartupFailed)),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseStartupFailed)),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -218,7 +221,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), route, secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), route, secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -230,7 +233,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalling), secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalling), secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
@@ -367,7 +370,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syn.SyndesisPhaseInstalled), getFuseDC(ns.Name), ns, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), ns, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -429,51 +432,31 @@ func TestReconciler_fullReconcile(t *testing.T) {
 }
 
 // Return a fuse custom resource in a specific phase
-func getFuseCr(phase syn.SyndesisPhase) *syn.Syndesis {
+func getFuseCr(phase syndesisv1alpha1.SyndesisPhase) *syndesisv1alpha1.Syndesis {
 	intLimit := -1
-	return &syn.Syndesis{
+	return &syndesisv1alpha1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,
 			Name:      "integreatly",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Syndesis",
-			APIVersion: syn.SchemeGroupVersion.String(),
+			APIVersion: syndesisv1alpha1.SchemeGroupVersion.String(),
 		},
-		Spec: syn.SyndesisSpec{
-			Integration: syn.IntegrationSpec{
+		Spec: syndesisv1alpha1.SyndesisSpec{
+			Integration: syndesisv1alpha1.IntegrationSpec{
 				Limit: &intLimit,
 			},
-			Components: syn.ComponentsSpec{
-				Server: syn.ServerConfiguration{
-					Features: syn.ServerFeatures{
-						ExposeVia3Scale: true,
+			Components: syndesisv1alpha1.ComponentsSpec{
+				Server: syndesisv1alpha1.ServerConfiguration{
+					Features: syndesisv1alpha1.ServerFeatures{
+						ManagementUrlFor3scale: "https://3scale-admin.dummmy",
 					},
 				},
 			},
 		},
-		Status: syn.SyndesisStatus{
+		Status: syndesisv1alpha1.SyndesisStatus{
 			Phase: phase,
-		},
-	}
-}
-
-func getFuseDC(ns string) *appsv1.DeploymentConfig {
-	return &appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      "syndesis-oauthproxy",
-		},
-		Spec: appsv1.DeploymentConfigSpec{
-			Template: &corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						corev1.Container{
-							Args: []string{"--openshift-sar={}"},
-						},
-					},
-				},
-			},
 		},
 	}
 }

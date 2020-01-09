@@ -1,14 +1,14 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: fuse-online-operator.v1.4.0
+  name: fuse-online-operator.v7.5.0
   namespace: placeholder
   annotations:
     capabilities: Seamless Upgrades
     categories: "Integration & Delivery"
     certified: "false"
-    createdAt: 2019-05-08T16:12:00Z
-    containerImage: syndesis/syndesis-operator
+    createdAt: 2019-10-08T16:12:00Z
+    containerImage: registry.redhat.io/fuse7/fuse-online-operator
     support: Syndesis
     description: Manages the installation of Fuse Online, a flexible and customizable open source platform that provides core integration capabilities as a service.
     repository: https://github.com/syndesisio/syndesis/
@@ -20,9 +20,14 @@ metadata:
               "name": "app"
           },
           "spec": {
-              "integration": {
-                  "limit": 0
-              }
+          	"integration": {
+          		"limit": 0
+          	}
+          },
+          "addons": {
+            "todo": {
+              "enabled": "false"
+            }
           }
       }]
 spec:
@@ -72,9 +77,18 @@ spec:
     - Create a new CR of Kind Syndesis (click the Create New button). The CR spec contains all defaults (see below).
 
     ### CR Defaults
-    The CR definition is pretty simple and an empy CR will trigger a base installation
+    The CR definition is pretty simple and an empy CR will trigger a base installation.
+
+    This version introduces the addons seccion which allows users to enable specific addons. The available addons at themoment are:
+    - camelk: enables kamelk
+    - jaeger: enable jaeger
+    - ops: enables monitoring, requires extra CRDs
+    - todo: a simple todo application
+
+    To enable addons, set "addon_name": {"enabled": "true"} in the CR.
+
   keywords: ['camel', 'integration', 'syndesis', 'fuse', 'online']
-  version: 1.4.0
+  version: 7.5.0
   maturity: alpha
   maintainers:
   - name: Jon Anstey
@@ -112,15 +126,23 @@ spec:
       - serviceAccountName: syndesis-operator
         rules:
         - apiGroups:
-          - syndesis.io
+          - ""
           resources:
-          - "*"
-          - "*/finalizers"
-          verbs: [ get, list, create, update, delete, deletecollection, watch ]
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          - project.openshift.io
+          resources:
+          - projects
+          verbs:
+          - get
         - apiGroups:
           - ""
           resources:
           - pods
+          - pods/exec
           - services
           - endpoints
           - persistentvolumeclaims
@@ -150,7 +172,6 @@ spec:
           resources:
           - daemonsets
           - deployments
-          - deployments/rollback
           - deployments/scale
           - ingresses
           - networkpolicies
@@ -244,6 +265,106 @@ spec:
           - imagestreams/status
           verbs: [ get, list, watch ]
         - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
+        - apiGroups:
+          - ""
+          - template.openshift.io
+          resources:
+          - processedtemplates
+          - templateconfigs
+          - templateinstances
+          - templates
+          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
+        - apiGroups:
+          - ""
+          - build.openshift.io
+          resources:
+          - buildlogs
+          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
+        - apiGroups:
+          - syndesis.io
+          resources:
+          - "*"
+          - "*/finalizers"
+          verbs: [ get, list, create, update, delete, deletecollection, watch ]
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - configmaps
+          - secrets
+          - serviceaccounts
+          verbs: [ get, list, create, update, delete, deletecollection, watch ]
+        - apiGroups:
+          - ""
+          resources:
+          - pods/log
+          verbs: [ get ]
+        - apiGroups:
+          - ""
+          resources:
+          - replicationcontrollers
+          - replicationcontrollers/scale
+          - replicationcontrollers/status
+          verbs: [ get, list, create, update, delete, deletecollection, watch ]
+        - apiGroups:
+          - ""
+          - build.openshift.io
+          resources:
+          - builds
+          - buildconfigs
+          - builds/details
+          - buildconfigs/webhooks
+          - buildconfigs/instantiatebinary
+          - builds/log
+          verbs: [ get, list, create, update, delete, deletecollection, watch ]
+        - apiGroups:
+          - ""
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          - deploymentconfigs/scale
+          - deploymentconfigs/finalizers
+          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
+        - apiGroups:
+          - ""
+          - apps.openshift.io
+          resources:
+          - deploymentconfigrollbacks
+          - deploymentconfigs/instantiate
+          - deploymentconfigs/rollback
+          verbs: [ create ]
+        - apiGroups:
+          - ""
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs/log
+          - deploymentconfigs/status
+          verbs: [ get, list, watch ]
+        - apiGroups:
+          - ""
+          - image.openshift.io
+          resources:
+          - imagestreams
+          - imagestreamimages
+          - imagestreammappings
+          - imagestreams/secrets
+          - imagestreamtags
+          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
+        - apiGroups:
+          - ""
+          - image.openshift.io
+          resources:
+          - imagestreams/status
+          - imagestreamimports
+          verbs: [ get, list, watch ]
+        - apiGroups:
           - ""
           resources:
           - events
@@ -262,12 +383,6 @@ spec:
           - templateconfigs
           - templateinstances
           - templates
-          verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
-        - apiGroups:
-          - ""
-          - build.openshift.io
-          resources:
-          - buildlogs
           verbs: [ get, list, create, update, delete, deletecollection, watch, patch ]
         - apiGroups:
           - authorization.openshift.io
@@ -329,13 +444,8 @@ spec:
               serviceAccountName: syndesis-operator
               containers:
                 - name: syndesis-operator
-                  image: registry.redhat.io/fuse7/fuse-online-operator:1.4
+                  image: registry.redhat.io/fuse7/fuse-online-operator:1.5
                   imagePullPolicy: Always
-                  args:
-                    - '-v'
-                    - '1.7'
-                    - '-a'
-                    - '/conf/addons'
                   ports:
                     - containerPort: 60000
                       name: metrics

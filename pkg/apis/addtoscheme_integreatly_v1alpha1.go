@@ -11,7 +11,7 @@ import (
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 
-	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
@@ -52,7 +52,7 @@ func init() {
 		kafkav1.SchemeBuilder.AddToScheme,
 		aerogearv1.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
-		syn.SchemeBuilder.AddToScheme,
+		syndesisv1alpha1.SchemeBuilder.AddToScheme,
 		enmasse.SchemeBuilder.AddToScheme,
 		enmassev1beta2.SchemeBuilder.AddToScheme,
 		enmassev1beta1.SchemeBuilder.AddToScheme,

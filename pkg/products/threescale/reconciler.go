@@ -52,7 +52,6 @@ const (
 	rhssoIntegrationName         = "rhsso"
 
 	tier                           = "production"
-	s3BucketSecretName             = "s3-bucket"
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
@@ -190,13 +189,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
+	threescaleMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-master")
+	if err != nil || threescaleMasterRoute == nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	phase, err = r.ReconcileOauthClient(ctx, installation, &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.getOAuthClientName(),
 		},
 		Secret: clientSecret,
 		RedirectURIs: []string{
-			r.installation.Spec.MasterURL,
+			"https://" + threescaleMasterRoute.Spec.Host,
 		},
 		GrantMethod: oauthv1.GrantHandlerPrompt,
 	}, serverClient)
@@ -380,7 +384,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
-		return integreatlyv1alpha1.PhaseCompleted, nil
+
+		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider")
+		if threescaleRoute != nil {
+			r.Config.SetHost("https://" + threescaleRoute.Spec.Host)
+			err = r.ConfigManager.WriteConfig(r.Config)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		} else if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 
 	return integreatlyv1alpha1.PhaseInProgress, nil
@@ -634,10 +649,10 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 				Secret:                  clientSecret,
 				ClientAuthenticatorType: "client-secret",
 				RedirectUris: []string{
-					fmt.Sprintf("https://3scale-admin.%s/*", r.installation.Spec.RoutingSubdomain),
+					fmt.Sprintf("%s/*", r.Config.GetHost()),
 				},
 				StandardFlowEnabled: true,
-				RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
+				RootURL:             r.Config.GetHost(),
 				FullScopeAllowed:    true,
 				Access: map[string]bool{
 					"view":      true,
@@ -751,12 +766,6 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-	}
-
-	r.Config.SetHost(fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
-	err = r.ConfigManager.WriteConfig(r.Config)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
@@ -1038,6 +1047,10 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 	err = serverClient.List(ctx, &routes, &opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(routes.Items) == 0 {
+		return nil, nil
 	}
 
 	return &routes.Items[0], nil
