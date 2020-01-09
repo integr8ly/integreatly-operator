@@ -42,7 +42,7 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run:
-	@export CR_NAMESPACE=${NAMESPACE}; operator-sdk up local --namespace=""
+	operator-sdk up local --namespace=""
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account

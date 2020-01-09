@@ -24,9 +24,7 @@ spec:
             - name: WATCH_NAMESPACE
               value: ""
             - name: CR_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: "integreatly"
             - name: POD_NAME
               valueFrom:
                 fieldRef:

@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators"
 
 	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
@@ -123,15 +121,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler, d *detector.Detector) erro
 }
 
 func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
-	namespace, err := k8sutil.GetOperatorNamespace()
-	//cannot get this when running locally
-	if err == k8sutil.ErrRunLocal {
-		err = nil
-		namespace = os.Getenv("CR_NAMESPACE")
-		//running locally and no env var set, default to integreatly
-		if namespace == "" {
-			namespace = "integreatly"
-		}
+
+	namespace := os.Getenv("CR_NAMESPACE")
+	if namespace == "" {
+		logrus.Infof("No value for CR_NAMESPACE, skipping autogeneration of CR")
+		return nil
 	}
 
 	logrus.Infof("Looking for installation CR in %s namespace", namespace)
@@ -140,7 +134,7 @@ func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) e
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(namespace),
 	}
-	err = serverClient.List(ctx, installationList, listOpts...)
+	err := serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
 		return fmt.Errorf("Could not get a list of installation CR: %w", err)
 	}
