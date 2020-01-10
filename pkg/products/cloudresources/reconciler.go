@@ -120,6 +120,11 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	for _, pgInst := range postgresInstances.Items {
+		if err := client.Delete(ctx, &pgInst); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
 	if len(postgresInstances.Items) > 0 {
 		r.logger.Info("deletion of postgres instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
@@ -133,6 +138,11 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	err = client.List(ctx, redisInstances, redisInstanceOpts...)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for _, redisInst := range redisInstances.Items {
+		if err := client.Delete(ctx, &redisInst); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 	if len(redisInstances.Items) > 0 {
 		r.logger.Info("deletion of redis instances in progress")
@@ -148,6 +158,11 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	for _, bsInst := range blobStorages.Items {
+		if err := client.Delete(ctx, &bsInst); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
 	if len(blobStorages.Items) > 0 {
 		r.logger.Info("deletion of blob storage instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
@@ -161,6 +176,11 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 	err = client.List(ctx, smtpCredentialSets, smtpOpts...)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for _, smtpInst := range smtpCredentialSets.Items {
+		if err := client.Delete(ctx, &smtpInst); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 	if len(smtpCredentialSets.Items) > 0 {
 		r.logger.Info("deletion of smtp credential sets in progress")

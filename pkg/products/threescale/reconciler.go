@@ -32,8 +32,6 @@ import (
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -288,7 +286,6 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	// setup smtp credential set cr for the cloud resource operator
 	smtpCredName := fmt.Sprintf("threescale-smtp-%s", r.installation.Name)
 	smtpCred, err := croUtil.ReconcileSMTPCredentialSet(ctx, serverClient, r.installation.Spec.Type, tier, smtpCredName, ns, smtpCredName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -393,7 +390,6 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sc
 	// setup blob storage cr for the cloud resource operator
 	blobStorageName := fmt.Sprintf("threescale-blobstorage-%s", r.installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, r.installation.Spec.Type, tier, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -464,7 +460,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	logrus.Info("Creating backend redis instance")
 	backendRedisName := fmt.Sprintf("threescale-backend-redis-%s", r.installation.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -477,7 +472,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	logrus.Info("Creating system redis instance")
 	systemRedisName := fmt.Sprintf("threescale-redis-%s", r.installation.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -490,7 +484,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	logrus.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("threescale-postgres-%s", r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, r.installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})

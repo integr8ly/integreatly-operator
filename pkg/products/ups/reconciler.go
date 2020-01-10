@@ -9,8 +9,6 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/sirupsen/logrus"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
@@ -146,7 +144,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// this will be used by the cloud resources operator to provision a postgres instance
 	postgresName := fmt.Sprintf("ups-postgres-%s", installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, client, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, installation)
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil
 	})
