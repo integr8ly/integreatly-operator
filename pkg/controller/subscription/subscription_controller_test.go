@@ -60,7 +60,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 			},
 		},
 		{
-			Name: "subscription controller doesn't change other subscription in the same namespace",
+			Name: "subscription controller doesn't change subscription in different namespace",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: "other-ns",
@@ -88,7 +88,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 			},
 		},
 		{
-			Name: "subscription controller doesn't change subscription in different namespace",
+			Name: "subscription controller doesn't change other subscription in the same namespace",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: operatorNamespace,
