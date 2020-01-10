@@ -208,3 +208,12 @@ push/csv:
 
 .PHONY: gen/push/csv
 gen/push/csv: gen/csv push/csv
+
+.PHONY: vendor/check
+vendor/check: vendor/fix
+	git diff --exit-code vendor/
+
+.PHONY: vendor/fix
+vendor/fix:
+	go mod tidy
+	go mod vendor
