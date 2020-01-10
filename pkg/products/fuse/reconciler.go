@@ -2,15 +2,13 @@ package fuse
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	"github.com/sirupsen/logrus"
 
-	syn "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -19,7 +17,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	v13 "github.com/openshift/api/image/v1"
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 
@@ -124,17 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileImageVersion(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
 	phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, err
-	}
-
-	phase, err = r.reconcileOauthProxy(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
@@ -192,56 +179,6 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileImageVersion(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("FUSE POSTGRES: reconciling postgres version")
-	dc := &appsv1.DeploymentConfig{}
-	err := client.Get(ctx, k8sclient.ObjectKey{
-		Namespace: r.Config.GetNamespace(),
-		Name:      "syndesis-db",
-	}, dc)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		r.logger.Info("FUSE POSTGRES: error getting DC: " + err.Error())
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error retrieving syndesis-db deployment config: %w", err)
-	}
-
-	for i, trigger := range dc.Spec.Triggers {
-		if trigger.ImageChangeParams != nil {
-			if trigger.ImageChangeParams.From.Name == "postgresql:9.5" {
-				//found old image, update DC
-				_, err = controllerutil.CreateOrUpdate(ctx, client, dc, func() error {
-					dc.Spec.Triggers[i].ImageChangeParams.From.Name = "postgresql:9.6"
-					return nil
-				})
-				if err != nil {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error updating postgres image to 9.6: %w", err)
-				}
-			}
-		}
-	}
-
-	is := &v13.ImageStream{}
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: "fuse-komodo-server", Namespace: r.Config.GetNamespace()}, is)
-
-	for i, tag := range is.Spec.Tags {
-		if tag.Name == "latest" && tag.From.Name != "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4" {
-			_, err = controllerutil.CreateOrUpdate(ctx, client, is, func() error {
-				is.Spec.Tags[i].From.Name = "registry.redhat.io/fuse7-tech-preview/data-virtualization-server-rhel7:1.4"
-				return nil
-			})
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error updating komodo server image to 1.4: %w", err)
-			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	return integreatlyv1alpha1.PhaseFailed, errors.New("Could not find trigger for postgres:9.5 in deploymentconfig")
-}
-
 // Ensures all users in rhmi-developers group have view Fuse permissions
 func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
@@ -292,35 +229,6 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-//TODO this should be removed once https://issues.jboss.org/browse/INTLY-2836 is implemented
-// We want to avoid this kind of thing as really this is owned by the syndesis operator
-func (r *Reconciler) reconcileOauthProxy(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	var dcName = "syndesis-oauthproxy"
-	dc := &appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: r.Config.GetNamespace(),
-			Name:      dcName,
-		},
-	}
-	if err := client.Get(ctx, k8sclient.ObjectKey{Name: dcName, Namespace: r.Config.GetNamespace()}, dc); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get dc for the oauth proxy %v: %w", dcName, err)
-	}
-
-	for i, a := range dc.Spec.Template.Spec.Containers[0].Args {
-		if strings.Contains(a, "--openshift-sar") {
-			args := dc.Spec.Template.Spec.Containers[0].Args
-			args[i] = args[0]
-			dc.Spec.Template.Spec.Containers[0].Args = args[1:]
-			break
-		}
-	}
-	if err := client.Update(ctx, dc); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth proxy for fuse: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 // reconcileCustomResource ensures that the fuse custom resource exists
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	st := &corev1.Secret{}
@@ -337,28 +245,41 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 
 	r.logger.Info("Reconciling fuse custom resource")
 
-	intLimit := 0
-	cr := &syn.Syndesis{
+	cr := &syndesisv1alpha1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Syndesis",
-			APIVersion: syn.SchemeGroupVersion.String(),
-		},
-		Spec: syn.SyndesisSpec{
-			Integration: syn.IntegrationSpec{
+	}
+
+	intLimit := 0
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+		threescaleHost := ""
+		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+		// ignore errors in case 3Scale is not installed yet
+		if err == nil {
+			threescaleHost = threescaleConfig.GetHost()
+		}
+		cr.Spec = syndesisv1alpha1.SyndesisSpec{
+			Integration: syndesisv1alpha1.IntegrationSpec{
 				Limit: &intLimit,
 			},
-			Components: syn.ComponentsSpec{
-				Server: syn.ServerConfiguration{
-					Features: syn.ServerFeatures{
-						ExposeVia3Scale: true,
+			Components: syndesisv1alpha1.ComponentsSpec{
+				Server: syndesisv1alpha1.ServerConfiguration{
+					Features: syndesisv1alpha1.ServerFeatures{
+						ManagementUrlFor3scale: threescaleHost,
 					},
 				},
 			},
-		},
+			Addons: syndesisv1alpha1.AddonsSpec{
+				"todo": syndesisv1alpha1.Parameters{
+					"enabled": "false",
+				},
+			},
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update a Syndesis(Fuse) custom resource: %w", err)
 	}
 	owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 	// attempt to create the custom resource
@@ -372,11 +293,11 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get a syndesis cr when reconciling custom resource: %w", err)
 	}
 
-	if cr.Status.Phase == syn.SyndesisPhaseStartupFailed {
+	if cr.Status.Phase == syndesisv1alpha1.SyndesisPhaseStartupFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
 	}
 
-	if cr.Status.Phase != syn.SyndesisPhaseInstalled {
+	if cr.Status.Phase != syndesisv1alpha1.SyndesisPhaseInstalled {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

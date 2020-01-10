@@ -63,7 +63,7 @@ var installPlanFor3ScaleSubscription = &coreosv1alpha1.InstallPlan{
 
 var s3BucketSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: s3BucketSecretName,
+		Name: "dummy-bucket",
 	},
 }
 
@@ -187,6 +187,7 @@ var installation = &integreatlyv1alpha1.Installation{
 		Finalizers: []string{"finalizer.3scale.integreatly.org"},
 	},
 	TypeMeta: metav1.TypeMeta{
+		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 	},
 	Spec: integreatlyv1alpha1.InstallationSpec{
@@ -282,6 +283,19 @@ var threescaleRoute2 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-developer",
+	},
+}
+
+var threescaleRoute3 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-provider-route",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-provider",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "system-provider",
 	},
 }
 
@@ -399,6 +413,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		blobStorageSec,
 		threescaleRoute1,
 		threescaleRoute2,
+		threescaleRoute3,
 		postgres,
 		postgresSec,
 		redis,

@@ -9,6 +9,7 @@ require (
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
+	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
@@ -20,14 +21,14 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
-	github.com/syndesisio/syndesis v0.0.0-20190717215458-2c30af7a7ab4
-	golang.org/x/tools v0.0.0-20200103221440-774c71fcf114 // indirect
+	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
-	sigs.k8s.io/controller-runtime v0.3.0
+	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/controller-tools v0.2.4 // indirect
 )
 
 // Pinned to kubernetes-1.15.4

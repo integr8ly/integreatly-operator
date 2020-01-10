@@ -113,8 +113,8 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if k8serr.IsNotFound(err) {
 		return errors.New(fmt.Sprintf("3scale should have an Oauth client '%s' created", oauthId))
 	}
-	if threeScaleOauth.RedirectURIs[0] != installation.Spec.MasterURL {
-		return errors.New(fmt.Sprintf("3scale Oauth client redirect uri should be %s and is %s", installation.Spec.MasterURL, threeScaleOauth.RedirectURIs[0]))
+	if len(threeScaleOauth.RedirectURIs) == 0 || threeScaleOauth.RedirectURIs[0] == "" {
+		return errors.New(fmt.Sprintf("3scale Oauth Client redirect uri should be set, but is empty"))
 	}
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}

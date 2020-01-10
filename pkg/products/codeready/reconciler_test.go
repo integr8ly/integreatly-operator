@@ -233,8 +233,8 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, pg, &corev1.Secret{
@@ -289,7 +289,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: integreatlyv1alpha1.InstallationStatus{
@@ -324,7 +324,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: integreatlyv1alpha1.InstallationStatus{
@@ -407,8 +407,8 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
@@ -419,8 +419,8 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			FakeClient: &moqclient.SigsClientInterfaceMock{
@@ -437,8 +437,8 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.Installation{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       "installation",
-					APIVersion: "integreatly.org/v1alpha1",
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(buildScheme(), &chev1.CheCluster{
@@ -489,7 +489,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			UID:       types.UID("xyz"),
 		},
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "installation",
+			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 	}

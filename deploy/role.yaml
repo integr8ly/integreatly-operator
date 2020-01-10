@@ -230,6 +230,7 @@ rules:
     verbs:
       - list
       - create
+      - update
       - watch
       - get
   - apiGroups:
@@ -280,22 +281,6 @@ rules:
       - create
       - update
   - apiGroups:
-      - gpte.opentlc.com
-    resources:
-      - nexus
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-  - apiGroups:
-      - launcher.fabric8.io
-    resources:
-      - launchers
-    verbs:
-      - get
-      - create
-  - apiGroups:
       - "rbac.authorization.k8s.io"
     resources:
       - "rolebindings"
@@ -309,6 +294,8 @@ rules:
       - users
     verbs:
       - watch
+      - get
+      - list
   - apiGroups:
       - user.openshift.io
     resources:
@@ -358,7 +345,7 @@ rules:
     resources:
       - jenkins
     verbs:
-      - "*"
+      - "view"
   # end permissions for granting fuse only view
   - apiGroups:
       - monitoring.coreos.com

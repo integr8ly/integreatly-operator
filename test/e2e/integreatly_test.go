@@ -424,7 +424,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"3scale":                6,
 		"amq-online":            2,
 		"codeready-workspaces":  3,
-		"fuse":                  2,
+		"fuse":                  1,
 		"middleware-monitoring": 3,
 		"rhsso":                 1,
 		"solution-explorer":     1,
@@ -514,7 +514,7 @@ func checkRoutes(t *testing.T, f *framework.Framework, product string, numberRou
 		return fmt.Errorf("Error getting routes for %s namespace: %w", product, err)
 	}
 	if len(routes.Items) != numberRoutes {
-		return fmt.Errorf("Expected %v in %v%v namespace. Found %v", numberRoutes, intlyNamespacePrefix, product, len(routes.Items))
+		return fmt.Errorf("Expected %v routes in %v%v namespace. Found %v", numberRoutes, intlyNamespacePrefix, product, len(routes.Items))
 	}
 	return nil
 }
@@ -528,10 +528,7 @@ func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []s
 		}
 		for _, pvc := range pvcs.Items {
 			if pvc.Status.Phase != "Bound" {
-				//FIXME: this condition only needed until we upgrade the syndesis operator
-				if pvc.Name != "syndesis-upgrade" {
-					return fmt.Errorf("Error with pvc: %v. Status: %v", pvc.Name, pvc.Status.Phase)
-				}
+				return fmt.Errorf("Error with pvc: %v. Status: %v", pvc.Name, pvc.Status.Phase)
 			}
 		}
 	}
