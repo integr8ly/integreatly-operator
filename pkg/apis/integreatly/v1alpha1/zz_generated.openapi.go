@@ -153,7 +153,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 						},
 					},
 				},
-				Required: []string{"stages"},
+				Required: []string{"stages", "lastError"},
 			},
 		},
 		Dependencies: []string{

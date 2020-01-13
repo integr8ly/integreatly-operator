@@ -161,6 +161,6 @@ func schema_pkg_apis_3scale_v1alpha1_APIManagerStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerCondition", "github.com/RHsyseng/operator-utils/pkg/olm.DeploymentStatus"},
+			"github.com/RHsyseng/operator-utils/pkg/olm.DeploymentStatus", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerCondition"},
 	}
 }
