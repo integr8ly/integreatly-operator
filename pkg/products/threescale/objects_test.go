@@ -11,8 +11,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
-	appsv1 "github.com/openshift/api/apps/v1"
+ 	appsv1 "github.com/openshift/api/apps/v1"
 	v1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 
@@ -81,7 +80,6 @@ var keycloakrealm = &aerogearv1.KeycloakRealm{
 	Spec: aerogearv1.KeycloakRealmSpec{
 		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
 			Users: []*aerogearv1.KeycloakUser{
-				rhsso.CustomerAdminUser,
 				rhssoTest1,
 				rhssoTest2,
 			},
@@ -94,10 +92,7 @@ var threeScaleAdminDetailsSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system-seed",
 	},
-	Data: map[string][]byte{
-		"ADMIN_USER":  bytes.NewBufferString(threeScaleDefaultAdminUser.UserDetails.Username).Bytes(),
-		"ADMIN_EMAIL": bytes.NewBufferString(threeScaleDefaultAdminUser.UserDetails.Email).Bytes(),
-	},
+	Data: map[string][]byte{},
 }
 
 var threeScaleServiceDiscoveryConfigMap = &corev1.ConfigMap{
@@ -106,15 +101,6 @@ var threeScaleServiceDiscoveryConfigMap = &corev1.ConfigMap{
 	},
 	Data: map[string]string{
 		"service_discovery.yml": "",
-	},
-}
-
-var threeScaleDefaultAdminUser = &User{
-	UserDetails: UserDetails{
-		Id:       1,
-		Email:    "not" + rhsso.CustomerAdminUser.Email,
-		Username: "not" + rhsso.CustomerAdminUser.UserName,
-		Role:     adminRole,
 	},
 }
 

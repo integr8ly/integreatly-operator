@@ -21,7 +21,6 @@ import (
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
@@ -815,48 +814,6 @@ func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, s
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	kcUsers := filterUsers(kcr.Spec.Users, func(u *aerogearv1.KeycloakUser) bool {
-		return u.UserName == rhsso.CustomerAdminUser.UserName
-	})
-	if len(kcUsers) == 1 {
-		s := &corev1.Secret{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		currentAdminUser := string(s.Data["ADMIN_USER"])
-		accessToken, err := r.GetAdminToken(ctx, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-		tsAdmin, err := r.tsClient.GetUser(currentAdminUser, *accessToken)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		kcCaUser := kcUsers[0]
-		if tsAdmin.UserDetails.Username != kcCaUser.UserName && tsAdmin.UserDetails.Email != kcCaUser.Email {
-			res, err := r.tsClient.UpdateUser(tsAdmin.UserDetails.Id, kcCaUser.UserName, kcCaUser.Email, *accessToken)
-			if err != nil || res.StatusCode != http.StatusOK && res.StatusCode != http.StatusUnprocessableEntity {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		}
-
-		currentUsername, currentEmail, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
-		if *currentUsername != kcCaUser.UserName || *currentEmail != kcCaUser.Email {
-			err = r.SetAdminDetailsOnSecret(ctx, serverClient, kcCaUser.UserName, kcCaUser.Email)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-
-			err = r.RolloutDeployment("system-app")
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		}
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -886,15 +843,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 
 	added, deleted := r.getUserDiff(kcr.Spec.Users, tsUsers.Users)
 	for _, kcUser := range added {
-		if kcUser.UserName == rhsso.CustomerAdminUser.UserName {
-			continue
-		}
-
 		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
+
 	for _, tsUser := range deleted {
 		res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
 		if err != nil || res.StatusCode != http.StatusOK {
@@ -907,15 +861,13 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
+
 	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	for _, tsUser := range newTsUsers.Users {
-		if tsUser.UserDetails.Username == rhsso.CustomerAdminUser.UserName {
-			continue
-		}
 
+	for _, tsUser := range newTsUsers.Users {
 		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
 			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {

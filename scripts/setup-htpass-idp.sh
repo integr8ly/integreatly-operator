@@ -10,9 +10,6 @@ if [[ ! -f "htpasswd" ]]; then
   touch htpasswd
 fi
 
-htpasswd -b htpasswd customer-admin ${PASSWORD}
-echo user added customer-admin ${PASSWORD}
-
 htpasswd -b htpasswd test-user ${PASSWORD}
 echo user added test-user ${PASSWORD}
 
@@ -20,4 +17,4 @@ oc delete secret htpasswd-secret -n openshift-config
 oc create secret generic htpasswd-secret --from-file=htpasswd=htpasswd -n openshift-config
 oc patch oauth cluster --type=merge -p '{ "spec": { "identityProviders": [{ "name": "htpasswd_provider", "challenge": true, "login": true, "mappingMethod": "claim", "type": "HTPasswd", "htpasswd": { "fileData": { "name": "htpasswd-secret" } } }] } }'
 
-oc adm groups add-users dedicated-admins customer-admin
+oc adm groups add-users dedicated-admins test-user

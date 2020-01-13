@@ -106,9 +106,7 @@ func getAppsV1Client(appsv1PreReqs map[string]*appsv1.DeploymentConfig) appsv1Cl
 
 func getThreeScaleClient() *ThreeScaleInterfaceMock {
 	testUsers := &Users{
-		Users: []*User{
-			threeScaleDefaultAdminUser,
-		},
+		Users: []*User{},
 	}
 	testAuthProviders := &AuthProviders{
 		AuthProviders: []*AuthProvider{},
@@ -153,19 +151,6 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			}
 
 			return nil, errors.New(fmt.Sprintf("user %s not found", userName))
-		},
-		UpdateUserFunc: func(userId int, username string, email string, accessToken string) (response *http.Response, e error) {
-			if userId == threeScaleDefaultAdminUser.UserDetails.Id {
-				threeScaleDefaultAdminUser.UserDetails.Username = username
-				threeScaleDefaultAdminUser.UserDetails.Email = email
-				return &http.Response{
-					StatusCode: http.StatusOK,
-				}, nil
-			}
-
-			return &http.Response{
-				StatusCode: http.StatusBadRequest,
-			}, errors.New(fmt.Sprintf("Error updating 3scale admin user"))
 		},
 		AddUserFunc: func(username string, email string, password string, accessToken string) (response *http.Response, e error) {
 			testUsers.Users = append(testUsers.Users, &User{

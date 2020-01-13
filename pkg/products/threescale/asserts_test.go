@@ -9,7 +9,6 @@ import (
 	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -93,19 +92,8 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
 	}
 
-	// RHSSO CustomerAdmin admin user should be set as the default 3scale admin
-	defaultAdminUser, err := fakeThreeScaleClient.GetUser(rhsso.CustomerAdminUser.UserName, accessToken)
-	if err != nil {
-		return err
-	}
-	if defaultAdminUser.UserDetails.Email != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("Request to 3scale API to update admin details was incorrect"))
-	}
 	adminSecret := &corev1.Secret{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleAdminDetailsSecret.Name, Namespace: tsConfig.GetNamespace()}, adminSecret)
-	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
-	}
 
 	// Service discovery should be configured
 	threeScaleOauth := &oauthv1.OAuthClient{}
@@ -119,9 +107,6 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
-	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
-	}
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
 		return errors.New(fmt.Sprintf("Service discovery config is misconfigured"))
 	}

@@ -34,7 +34,6 @@ import (
 
 var (
 	defaultRhssoNamespace               = "rhsso"
-	customerAdminPassword               = "Password1"
 	keycloakName                        = "rhsso"
 	keycloakRealmName                   = "openshift"
 	defaultSubscriptionName             = "integreatly-rhsso"
@@ -43,19 +42,6 @@ var (
 	githubOauthAppCredentialsSecretName = "github-oauth-secret"
 	manifestPackage                     = "integreatly-rhsso"
 )
-
-var CustomerAdminUser = &aerogearv1.KeycloakUser{
-	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-		Enabled:       true,
-		Attributes:    aerogearv1.KeycloakAttributes{},
-		UserName:      "customer-admin",
-		EmailVerified: true,
-		Email:         "customer-admin@example.com",
-		ClientRoles:   getKeycloakRoles(true),
-	},
-	Password:     &customerAdminPassword,
-	OutputSecret: "customer-admin-user-credentials",
-}
 
 type Reconciler struct {
 	Config        *config.RHSSO
@@ -247,9 +233,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			"metrics-listener",
 		}
 
-		if kcr.Spec.Users == nil {
-			kcr.Spec.Users = []*aerogearv1.KeycloakUser{CustomerAdminUser}
-		}
 		users, err := syncronizeWithOpenshiftUsers(kcr.Spec.Users, ctx, serverClient)
 		if err != nil {
 			return err
@@ -481,7 +464,7 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 
 	var deleted []int
 	for i, kcUser := range keycloakUsers {
-		if kcUser.UserName != CustomerAdminUser.UserName && !OsUserInKc(openshiftUsers, kcUser) {
+		if !OsUserInKc(openshiftUsers, kcUser) {
 			deleted = append(deleted, i)
 		}
 	}
@@ -521,6 +504,7 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 					UserName:         osUser.Name,
 				},
 			},
+			OutputSecret: fmt.Sprintf("%s-user-credentials", osUser.Name),
 		})
 	}
 
@@ -530,10 +514,6 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 		return nil, err
 	}
 	for _, kcUser := range keycloakUsers {
-		if kcUser.UserName == CustomerAdminUser.UserName {
-			continue
-		}
-
 		kcUser.ClientRoles = getKeycloakRoles(isOpenshiftAdmin(kcUser, openshiftAdminGroup))
 	}
 
@@ -585,13 +565,5 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 			"read-token",
 		},
 	}
-	if isAdmin {
-		roles["realm-management"] = []string{
-			"manage-users",
-			"manage-identity-providers",
-			"view-realm",
-		}
-	}
-
 	return roles
 }
