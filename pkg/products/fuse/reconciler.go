@@ -17,7 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	v1 "github.com/openshift/api/route/v1"
+	routev1 "github.com/openshift/api/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -280,7 +280,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	route := &v1.Route{
+	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "syndesis",
 			Namespace: r.Config.GetNamespace(),
