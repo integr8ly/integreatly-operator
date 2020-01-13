@@ -11,6 +11,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -52,17 +53,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
 		return phase, err
 	}
 
 	phase, err = r.retrieveConsoleUrlAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
 		return phase, err
 	}
 
-	resources.EmitEventStageCompleted(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
+	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	logrus.Infof("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil

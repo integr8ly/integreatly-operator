@@ -16,6 +16,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
@@ -112,26 +113,26 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.reconcileConfigMap(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile configmap", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile configmap", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileImageStreams(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile image streams", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile image streams", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileTemplates(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		resources.EmitEventProcessingError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
 	}
 
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
-	resources.EmitEventProductCompleted(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s successfully reconciled", integreatlyv1alpha1.ProductFuseOnOpenshift)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
