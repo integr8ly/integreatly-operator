@@ -3,7 +3,7 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     capabilities: Basic Install
-  name: solution-explorer-operator.v0.0.34
+  name: solution-explorer-operator.v0.0.44
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -41,7 +41,7 @@ spec:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
                       - name: OPERATOR_NAME
                         value: tutorial-web-app-operator
-                    image: quay.io/integreatly/tutorial-web-app-operator:v0.0.34
+                    image: quay.io/integreatly/tutorial-web-app-operator:v0.0.44
                     imagePullPolicy: Always
                     name: tutorial-web-app-operator
                     ports:
@@ -141,4 +141,4 @@ spec:
       type: AllNamespaces
   maturity: alpha
   provider: {}
-  version: 0.0.34
+  version: 0.0.44
