@@ -15,7 +15,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,13 +49,8 @@ func getFakeConfig() *config.ConfigReadWriterMock {
 	}
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: "fuse-on-openshift",
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestFuseOnOpenShift(t *testing.T) {
@@ -120,7 +114,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid image stream file content",
@@ -136,7 +130,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid image stream",
@@ -156,7 +150,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid template file content",
@@ -175,7 +169,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid template object",
@@ -196,7 +190,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
@@ -205,7 +199,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(integreatlyImgStream),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile without sample cluster operator installed",
@@ -215,7 +209,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile with sample cluster operator installed",
@@ -225,7 +219,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(sampleClusterConfig, sampleClusterImgStream),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 

@@ -123,13 +123,8 @@ func buildScheme() *runtime.Scheme {
 	return scheme
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_config(t *testing.T) {
@@ -159,7 +154,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -175,7 +170,7 @@ func TestReconciler_config(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(buildScheme()),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -258,7 +253,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 				},
 			}),
 			FakeConfig: basicConfigMock(),
-			Recorder:   setupRecorder(buildScheme()),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -336,7 +331,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test creating components returns in progress",
@@ -371,7 +366,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 	}
 
@@ -435,7 +430,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
 			FakeConfig: basicConfigMock(),
-			Recorder:   setupRecorder(buildScheme()),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test che cluster create error returns phase failed",
@@ -454,7 +449,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			ExpectError:   true,
 			ExpectedError: "could not retrieve checluster for keycloak client update: get request failed",
 			FakeConfig:    basicConfigMock(),
-			Recorder:      setupRecorder(buildScheme()),
+			Recorder:      setupRecorder(),
 		},
 		{
 			Name:           "test che cluster available returns phase complete",
@@ -475,7 +470,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 				},
 			}),
 			FakeConfig: basicConfigMock(),
-			Recorder:   setupRecorder(buildScheme()),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -658,7 +653,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 	}
 

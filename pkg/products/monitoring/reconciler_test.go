@@ -68,21 +68,11 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_config(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -106,7 +96,7 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read monitoring config")
 				},
 			},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:         "test namespace is set without fail",
@@ -119,7 +109,7 @@ func TestReconciler_config(t *testing.T) {
 					}), nil
 				},
 			},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -133,7 +123,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			FakeClient: fakeclient.NewFakeClient(),
 			FakeConfig: basicConfigMock(),
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -174,7 +164,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -194,7 +184,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update applicationmonitoring custom resource",
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -308,7 +298,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: basicInstallation(),
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -371,7 +361,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription creating returns phase in progress",
@@ -388,7 +378,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test components creating returns phase in progress",
@@ -417,7 +407,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 	}
 

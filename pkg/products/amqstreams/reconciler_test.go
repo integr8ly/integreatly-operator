@@ -53,13 +53,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_config(t *testing.T) {
@@ -103,7 +98,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -118,7 +113,7 @@ func TestReconciler_config(t *testing.T) {
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, installation),
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -185,7 +180,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -204,7 +199,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "failed to get or create a kafka custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -304,7 +299,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			},
 			FakeConfig:   basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 		{
 			Name:           "test incomplete amount of pods returns phase in progress",
@@ -312,7 +307,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test unready pods returns phase in progress",
@@ -320,7 +315,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test ready pods returns phase complete",
@@ -328,7 +323,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, append(readyPods, kafka)...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 
@@ -454,7 +449,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 	}
 

@@ -83,21 +83,11 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultRhssoNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_config(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	cases := []struct {
 		Name            string
 		ExpectError     bool
@@ -125,7 +115,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 	}
 
@@ -197,7 +187,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -219,7 +209,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -311,7 +301,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(scheme),
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test unready kcr cr returns phase in progress",
@@ -320,7 +310,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(scheme),
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test missing kc cr returns phase failed",
@@ -330,7 +320,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(scheme),
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test missing kcr cr returns phase failed",
@@ -340,7 +330,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(scheme),
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test failed config write",
@@ -364,7 +354,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				},
 			},
 			Installation: &integreatlyv1alpha1.Installation{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -521,7 +511,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 	}
 

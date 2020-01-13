@@ -115,13 +115,8 @@ func getTestPostgresSec() *corev1.Secret {
 	}
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_ReconcileCustomResource(t *testing.T) {
@@ -152,7 +147,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			},
 			FakeConfig: basicConfigMock(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseReconciling)),
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase failed when error in creating custom resource",
@@ -169,7 +164,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectErr: true,
-			Recorder:  setupRecorder(scheme),
+			Recorder:  setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase failed when general error in finding custom resource",
@@ -183,7 +178,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectErr: true,
-			Recorder:  setupRecorder(scheme),
+			Recorder:  setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase in progress when custom resource is not in phase complete",
@@ -197,7 +192,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			},
 			FakeConfig: basicConfigMock(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseInitializing)),
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -244,7 +239,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Cannot retrieve route - phase failed",
@@ -254,7 +249,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme),
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Cannot update config with route url - phase failed",
@@ -264,7 +259,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 

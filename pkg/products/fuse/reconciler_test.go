@@ -73,13 +73,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconciler_config(t *testing.T) {
@@ -113,7 +108,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder: setupRecorder(scheme),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -138,7 +133,7 @@ func TestReconciler_config(t *testing.T) {
 			}),
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:   setupRecorder(scheme),
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -220,7 +215,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
@@ -234,7 +229,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
@@ -247,7 +242,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
@@ -260,7 +255,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -281,7 +276,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -422,7 +417,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(scheme),
+			Recorder:     setupRecorder(),
 		},
 	}
 

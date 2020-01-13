@@ -55,13 +55,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultInstallationNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 type ThreeScaleTestScenario struct {
@@ -148,7 +143,7 @@ func TestThreeScale(t *testing.T) {
 			MPM:            marketplace.NewManager(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:       setupRecorder(scheme),
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, scenario := range scenarios {

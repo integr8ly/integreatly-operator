@@ -114,13 +114,8 @@ func backupsSecretMock() *corev1.Secret {
 	}
 }
 
-func setupRecorder(scheme *runtime.Scheme) record.EventRecorder {
-	eventSource := corev1.EventSource{
-		Component: defaultNamespace,
-		Host:      "",
-	}
-	broadcaster := record.NewBroadcaster()
-	return broadcaster.NewRecorder(scheme, eventSource)
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestReconcile_reconcileAuthServices(t *testing.T) {
@@ -146,7 +141,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
@@ -160,7 +155,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 	}
 
@@ -201,7 +196,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			ExpectedStatus:       integreatlyv1alpha1.PhaseCompleted,
 			Installation:         basicInstallation(),
-			Recorder:             setupRecorder(buildScheme()),
+			Recorder:             setupRecorder(),
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
@@ -211,7 +206,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			FakeConfig:           basicConfigMock(),
 			ExpectedStatus:       integreatlyv1alpha1.PhaseCompleted,
 			Installation:         basicInstallation(),
-			Recorder:             setupRecorder(buildScheme()),
+			Recorder:             setupRecorder(),
 		},
 	}
 
@@ -250,7 +245,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   basicInstallation(),
-			Recorder:       setupRecorder(buildScheme()),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
@@ -259,7 +254,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   basicInstallation(),
-			Recorder:       setupRecorder(buildScheme()),
+			Recorder:       setupRecorder(),
 		},
 	}
 
@@ -298,7 +293,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
 			Installation:      basicInstallation(),
-			Recorder:          setupRecorder(buildScheme()),
+			Recorder:          setupRecorder(),
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
@@ -307,7 +302,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			FakeConfig:        basicConfigMock(),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
 			Installation:      basicInstallation(),
-			Recorder:          setupRecorder(buildScheme()),
+			Recorder:          setupRecorder(),
 		},
 	}
 
@@ -358,7 +353,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config written once or more")
 				}
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test doesn't set host when the host is undefined or empty",
@@ -379,7 +374,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config written once or more")
 				}
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test successfully setting host when port and host are defined properly",
@@ -405,7 +400,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatalf("incorrect host, expected %s but got %s", expectedHost, cfg.GetHost())
 				}
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "Test continues when console it not found",
@@ -418,7 +413,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config called once or more")
 				}
 			},
-			Recorder: setupRecorder(buildScheme()),
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test fails with error when failing to write config",
@@ -451,7 +446,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			ExpectedStatus:     integreatlyv1alpha1.PhaseFailed,
 			ExpectError:        true,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {},
-			Recorder:           setupRecorder(buildScheme()),
+			Recorder:           setupRecorder(),
 		},
 	}
 	for _, s := range scenarios {
@@ -553,7 +548,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(buildScheme()),
+			Recorder:     setupRecorder(),
 		},
 	}
 
