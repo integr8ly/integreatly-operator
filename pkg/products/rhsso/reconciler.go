@@ -3,11 +3,12 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/pkg/errors"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -15,12 +16,12 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -46,17 +47,26 @@ var (
 	manifestPackage                     = "integreatly-rhsso"
 )
 
-var CustomerAdminUser = &aerogearv1.KeycloakUser{
-	KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-		Enabled:       true,
-		Attributes:    aerogearv1.KeycloakAttributes{},
-		UserName:      "customer-admin",
-		EmailVerified: true,
-		Email:         "customer-admin@example.com",
-		ClientRoles:   getKeycloakRoles(true),
+const (
+	SSOLabelKey   = "sso"
+	SSOLabelValue = "integreatly"
+	RHSSOProfile  = "RHSSO"
+)
+
+var CustomerAdminUser = keycloak.KeycloakAPIUser{
+	ID:            "",
+	UserName:      "customer-admin",
+	EmailVerified: true,
+	Enabled:       true,
+	ClientRoles:   getKeycloakRoles(true),
+	Email:         "customer-admin@example.com",
+	Credentials: []keycloak.KeycloakCredential{
+		{
+			Type:      "password",
+			Value:     customerAdminPassword,
+			Temporary: false,
+		},
 	},
-	Password:     &customerAdminPassword,
-	OutputSecret: "customer-admin-user-credentials",
 }
 
 type Reconciler struct {
@@ -67,6 +77,8 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
+	KeycloakHost  string
+	ApiUrl        string
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
@@ -149,7 +161,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, installation, serverClient)
+	phase, err = r.handleProgressPhase(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
@@ -217,58 +229,74 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
-
-		kc.Spec.Plugins = []string{
-			"keycloak-metrics-spi",
-			"openshift4-idp",
+		ownerutil.EnsureOwner(kc, installation)
+		kc.Spec.Extensions = []string{
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
 		}
-		kc.Spec.Provision = true
+		kc.Labels = GetInstanceLabels()
+		kc.Spec.Instances = 1
+		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{
+			Enabled: true,
+		}
+		kc.Spec.Profile = RHSSOProfile
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
 	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
-
-	kcr := &aerogearv1.KeycloakRealm{
+	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(kcr, installation)
-		kcr.Spec.CreateOnly = false
-		kcr.Spec.BrowserRedirectorIdentityProvider = idpAlias
-
-		if kcr.Spec.KeycloakApiRealm == nil {
-			kcr.Spec.KeycloakApiRealm = &aerogearv1.KeycloakApiRealm{}
-		}
-		kcr.Spec.ID = keycloakRealmName
-		kcr.Spec.Realm = keycloakRealmName
-		kcr.Spec.DisplayName = keycloakRealmName
-		kcr.Spec.Enabled = true
-		kcr.Spec.EventsListeners = []string{
-			"metrics-listener",
+		ownerutil.EnsureOwner(kcr, installation)
+		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
+			{
+				IdentityProvider: idpAlias,
+				ForFlow:          "browser",
+			},
 		}
 
-		if kcr.Spec.Users == nil {
-			kcr.Spec.Users = []*aerogearv1.KeycloakUser{CustomerAdminUser}
+		kcr.Spec.InstanceSelector = &metav1.LabelSelector{
+			MatchLabels: GetInstanceLabels(),
 		}
-		users, err := syncronizeWithOpenshiftUsers(kcr.Spec.Users, ctx, serverClient)
+
+		// The labels are needed so that created users can identify their realm
+		// with a selector
+		kcr.Labels = GetInstanceLabels()
+
+		kcr.Spec.Realm = &keycloak.KeycloakAPIRealm{
+			ID:          keycloakRealmName,
+			Realm:       keycloakRealmName,
+			Enabled:     true,
+			DisplayName: keycloakRealmName,
+			EventsListeners: []string{
+				"metrics-listener",
+			},
+		}
+
+		// The identity providers need to be set up before the realm CR gets
+		// created because the Keycloak operator does not allow updates to
+		// the realms
+		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to setup Openshift IDP")
 		}
-		kcr.Spec.Users = users
 
+		err = r.setupGithubIDP(ctx, kcr, serverClient)
+		if err != nil {
+			return errors.Wrap(err, "failed to setup Github IDP")
+		}
 		return nil
 	})
 	if err != nil {
@@ -279,41 +307,30 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) handleProgressPhase(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	kc := &aerogearv1.Keycloak{}
+func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	kc := &keycloak.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
 		r.Config.SetProductVersion(kc.Status.Version)
 		r.ConfigManager.WriteConfig(r.Config)
 	}
-	if err == nil && string(r.Config.GetOperatorVersion()) != kc.Status.OperatorVersion {
-		r.Config.SetOperatorVersion(kc.Status.OperatorVersion)
-		r.ConfigManager.WriteConfig(r.Config)
-	}
+	// The Keycloak Operator doesn't currently set the operator version
+	r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionRHSSO))
+	r.ConfigManager.WriteConfig(r.Config)
 
 	r.logger.Info("checking ready status for rhsso")
-	kcr := &aerogearv1.KeycloakRealm{}
+	kcr := &keycloak.KeycloakRealm{}
 
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
 	}
 
-	if kcr.Status.Phase == aerogearv1.PhaseReconcile {
+	if kcr.Status.Phase == keycloak.PhaseReconciling {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
-		}
-
-		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Openshift IDP: %w", err)
-		}
-
-		err = r.setupGithubIDP(ctx, kcr, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to setup Github IDP: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
@@ -357,7 +374,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *aerogearv1.KeycloakRealm, serverClient k8sclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -366,35 +383,39 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+		return errors.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return fmt.Errorf("Could not find %s key in %s Secret", r.Config.GetProductName(), oauthClientSecrets.Name)
+		return errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
 	}
 	clientSecret := string(clientSecretBytes)
 
-	oauthc := &oauthv1.OAuthClient{
+	redirectUris := []string{
+		r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+	}
+
+	oauthClient := &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.getOAuthClientName(),
 		},
-		Secret: clientSecret,
-		RedirectURIs: []string{
-			r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
+		Secret:       clientSecret,
+		RedirectURIs: redirectUris,
+		GrantMethod:  oauthv1.GrantHandlerPrompt,
 	}
 
-	_, err = r.ReconcileOauthClient(ctx, installation, oauthc, serverClient)
+	_, err = r.ReconcileOauthClient(ctx, inst, oauthClient, serverClient)
 	if err != nil {
 		return err
 	}
 
-	if !containsIdentityProvider(kcr.Spec.IdentityProviders, idpAlias) {
+	if !containsIdentityProvider(kcr.Spec.Realm.IdentityProviders, idpAlias) {
 		logrus.Infof("Adding keycloak realm client")
-
-		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
+		if kcr.Spec.Realm.IdentityProviders == nil {
+			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
+		}
+		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
 			Alias:                     idpAlias,
 			ProviderID:                "openshift-v4",
 			Enabled:                   true,
@@ -404,7 +425,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         "https://openshift.default.svc.cluster.local",
+				"baseUrl":         r.ApiUrl,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
@@ -412,8 +433,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 				"useJwksUrl":      "true",
 			},
 		})
-
-		return serverClient.Update(ctx, kcr)
 	}
 	return nil
 }
@@ -439,7 +458,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.KeycloakRealm, serverClient k8sclient.Client) error {
+func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
 	githubCreds := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
 	if err != nil {
@@ -447,9 +466,12 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.Keycloa
 		return err
 	}
 
-	if !containsIdentityProvider(kcr.Spec.IdentityProviders, githubIdpAlias) {
+	if !containsIdentityProvider(kcr.Spec.Realm.IdentityProviders, githubIdpAlias) {
 		logrus.Infof("Adding github identity provider to the keycloak realm")
-		kcr.Spec.IdentityProviders = append(kcr.Spec.IdentityProviders, &aerogearv1.KeycloakIdentityProvider{
+		if kcr.Spec.Realm.IdentityProviders == nil {
+			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
+		}
+		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
 			Alias:                     githubIdpAlias,
 			ProviderID:                githubIdpAlias,
 			Enabled:                   true,
@@ -458,7 +480,6 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.Keycloa
 			AddReadTokenRoleOnCreate:  true,
 			FirstBrokerLoginFlowAlias: "first broker login",
 			LinkOnly:                  true,
-			AuthenticateByDefault:     false,
 			Config: map[string]string{
 				"hideOnLoginPage": "true",
 				"clientId":        fmt.Sprintf("%s", githubCreds.Data["clientId"]),
@@ -468,14 +489,13 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *aerogearv1.Keycloa
 				"useJwksUrl":      "true",
 			},
 		})
-		return serverClient.Update(ctx, kcr)
 	}
 	// We need to revisit how the github idp gets created/updated
 	// client ID and secret can get outdated we need to ensure they are synced with the value secret in the github-oauth-secret
 	return nil
 }
 
-func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, alias string) bool {
+func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
 	for _, p := range providers {
 		if p.Alias == alias {
 			return true
@@ -483,7 +503,6 @@ func containsIdentityProvider(providers []*aerogearv1.KeycloakIdentityProvider, 
 	}
 	return false
 }
-
 func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
 	var added []usersv1.User
 	for _, osUser := range openshiftUsers {
@@ -607,4 +626,10 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 	}
 
 	return roles
+}
+
+func GetInstanceLabels() map[string]string {
+	return map[string]string{
+		SSOLabelKey: SSOLabelValue,
+	}
 }
