@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
-	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -13,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -24,7 +26,6 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
@@ -724,6 +725,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
+
 	for _, tsUser := range deleted {
 		if tsUser.UserDetails.Username != *systemAdminUsername {
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
@@ -738,10 +740,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 	if err != nil && !k8serr.IsNotFound(err) {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
+
 	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
+
 	for _, tsUser := range newTsUsers.Users {
 
 		// skip if ts user is the system user admin
