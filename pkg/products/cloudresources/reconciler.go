@@ -69,7 +69,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		// ensure resources are cleaned up before deleting the namespace
-		phase, err := r.doCloudResourcesExist(ctx, installation, client)
+		phase, err := r.cleanupResources(ctx, installation, client)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -118,9 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-// This only ensure that cloud resources no longer exists before proceeding to remove the cloud resource namespace.
-// The deletion of the resources below are handled by the cro operator
-func (r *Reconciler) doCloudResourcesExist(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) cleanupResources(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("ensuring cloud resources are cleaned up")
 
 	// ensure postgres instances are cleaned up

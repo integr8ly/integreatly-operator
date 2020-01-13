@@ -177,7 +177,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s populateParams", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to populate parameters", err)
-		logrus.Infof("Error: %s", err.Error())
 		return phase, err
 	}
 
@@ -185,7 +184,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		logrus.Infof("Error: %s", err.Error())
 		return phase, err
 	}
 
@@ -193,7 +191,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s reconcileScrapeConfigs", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile scrape configs", err)
-		logrus.Infof("Error: %s", err.Error())
 		return phase, err
 	}
 
