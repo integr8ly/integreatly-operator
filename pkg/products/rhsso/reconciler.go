@@ -501,8 +501,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

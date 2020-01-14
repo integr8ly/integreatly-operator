@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -21,16 +21,34 @@ func NewRHSSO(config ProductConfig) *RHSSO {
 //GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
 func (r *RHSSO) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&aerogearv1.Keycloak{
+		&keycloak.Keycloak{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       aerogearv1.KeycloakKind,
-				APIVersion: aerogearv1.SchemeGroupVersion.String(),
+				Kind:       "Keycloak",
+				APIVersion: keycloak.SchemeGroupVersion.String(),
 			},
 		},
-		&aerogearv1.KeycloakRealm{
+		&keycloak.KeycloakRealm{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       aerogearv1.KeycloakRealmKind,
-				APIVersion: aerogearv1.SchemeGroupVersion.String(),
+				Kind:       "KeycloakRealm",
+				APIVersion: keycloak.SchemeGroupVersion.String(),
+			},
+		},
+		&keycloak.KeycloakUser{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "KeycloakUser",
+				APIVersion: keycloak.SchemeGroupVersion.String(),
+			},
+		},
+		&keycloak.KeycloakClient{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "KeycloakClient",
+				APIVersion: keycloak.SchemeGroupVersion.String(),
+			},
+		},
+		&keycloak.KeycloakBackup{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "KeycloakBackup",
+				APIVersion: keycloak.SchemeGroupVersion.String(),
 			},
 		},
 	}

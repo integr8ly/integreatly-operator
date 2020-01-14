@@ -373,16 +373,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check auth stage operand versions
-	stage = integreatlyv1alpha1.StageName("authentication")
-	authOperands := map[string]string{
-		"rhsso": "v7.3.2.GA",
-	}
-	err = checkOperandVersions(t, f, namespace, stage, authOperands)
-	if err != nil {
-		return err
-	}
-
 	// check cloud resources stage operand versions
 	stage = integreatlyv1alpha1.StageName("cloud-resources")
 	resouceOperands := map[string]string{

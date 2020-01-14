@@ -9,8 +9,8 @@ import (
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
@@ -43,7 +43,7 @@ import (
 func buildScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	chev1.SchemeBuilder.AddToScheme(scheme)
-	aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	keycloak.SchemeBuilder.AddToScheme(scheme)
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	operatorsv1alpha1.AddToScheme(scheme)
 	marketplacev1.SchemeBuilder.AddToScheme(scheme)

@@ -11,10 +11,10 @@ import (
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	enmasseAdmin "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmasse "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
@@ -50,7 +50,7 @@ func init() {
 		marketplacev1.SchemeBuilder.AddToScheme,
 		marketplacev2.SchemeBuilder.AddToScheme,
 		kafkav1.SchemeBuilder.AddToScheme,
-		aerogearv1.SchemeBuilder.AddToScheme,
+		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1alpha1.SchemeBuilder.AddToScheme,
 		enmasse.SchemeBuilder.AddToScheme,
