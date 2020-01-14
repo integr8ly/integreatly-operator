@@ -38,6 +38,8 @@ spec:
               required:
               - name
               type: object
+            skipCreate:
+              type: boolean
             tier:
               type: string
             type:
