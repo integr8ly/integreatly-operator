@@ -3,9 +3,9 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -24,6 +24,7 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
@@ -37,7 +38,6 @@ import (
 
 var (
 	defaultRhssoNamespace               = "rhsso"
-	customerAdminPassword               = "Password1"
 	keycloakName                        = "rhsso"
 	keycloakRealmName                   = "openshift"
 	defaultSubscriptionName             = "integreatly-rhsso"
@@ -53,22 +53,6 @@ const (
 	RHSSOProfile  = "RHSSO"
 )
 
-var CustomerAdminUser = keycloak.KeycloakAPIUser{
-	ID:            "",
-	UserName:      "customer-admin",
-	EmailVerified: true,
-	Enabled:       true,
-	ClientRoles:   getKeycloakRoles(true),
-	Email:         "customer-admin@example.com",
-	Credentials: []keycloak.KeycloakCredential{
-		{
-			Type:      "password",
-			Value:     customerAdminPassword,
-			Temporary: false,
-		},
-	},
-}
-
 type Reconciler struct {
 	Config        *config.RHSSO
 	ConfigManager config.ConfigReadWriter
@@ -83,7 +67,7 @@ type Reconciler struct {
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -103,6 +87,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
+		ApiUrl:        apiUrl,
 	}, nil
 }
 
@@ -121,7 +106,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+		phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -161,7 +156,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, serverClient)
+	phase, err = r.createKeycloakRoute(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
@@ -171,6 +166,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		return phase, err
+	}
+
+	phase, err = r.handleProgressPhase(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
@@ -185,6 +185,95 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.AuthenticationStage, r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if inst.DeletionTimestamp == nil {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	opts := &k8sclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	// Delete all users
+	users := &keycloak.KeycloakUserList{}
+	err := serverClient.List(ctx, users, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for _, user := range users.Items {
+		err = serverClient.Delete(ctx, &user)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Delete all clients
+	clients := &keycloak.KeycloakClientList{}
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	for _, client := range clients.Items {
+		err = serverClient.Delete(ctx, &client)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	// Delete all realms
+	realms := &keycloak.KeycloakRealmList{}
+	err = serverClient.List(ctx, realms, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, nil
+	}
+	for _, realm := range realms.Items {
+		err = serverClient.Delete(ctx, &realm)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) isKeycloakResourcesDeleted(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	opts := &k8sclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	// Check if users are all gone
+	users := &keycloak.KeycloakUserList{}
+	err := serverClient.List(ctx, users, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if len(users.Items) > 0 {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Check if clients are all gone
+	clients := &keycloak.KeycloakClientList{}
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if len(clients.Items) > 0 {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Check if realms are all gone
+	realms := &keycloak.KeycloakRealmList{}
+	err = serverClient.List(ctx, realms, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, nil
+	}
+	if len(realms.Items) > 0 {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -224,6 +313,92 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 		}
 		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// workaround: the keycloak operator creates a route with TLS passthrough config
+// this should use the same valid certs as the cluster itself but for some reason the
+// signing operator gives out self signed certs
+// to circumvent this we create another keycloak route with edge termination
+func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	// We need to create a workaround service to allow accessing keycloak on
+	// the http port
+	httpService := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-http",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	// We need a route with edge termination to serve the correct cluster certificate
+	edgeRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-edge",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, httpService, func() error {
+		clusterIp := httpService.Spec.ClusterIP
+		httpService.Annotations = map[string]string{
+			"service.alpha.openshift.io/serving-cert-secret-name": "sso-x509-https-secret",
+		}
+		httpService.Spec = corev1.ServiceSpec{
+			ClusterIP: clusterIp,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "keycloak",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       8443,
+					TargetPort: intstr.FromInt(8443),
+				},
+			},
+			Selector: map[string]string{
+				"app":       "keycloak",
+				"component": "keycloak",
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
+	}
+	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", httpService.Name, or))
+
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
+		host := edgeRoute.Spec.Host
+		edgeRoute.Spec = routev1.RouteSpec{
+			Host: host,
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "keycloak-http",
+			},
+			Port: &routev1.RoutePort{
+				TargetPort: intstr.FromString("keycloak"),
+			},
+			TLS: &routev1.TLSConfig{
+				Termination: routev1.TLSTerminationReencrypt,
+			},
+			WildcardPolicy: routev1.WildcardPolicyNone,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
+	}
+	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
+
+	if edgeRoute.Spec.Host == "" {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Override the keycloak host to the host of the edge route (instead of the
+	// operator generated route)
+	r.KeycloakHost = fmt.Sprintf("https://%v", edgeRoute.Spec.Host)
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -304,6 +479,29 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
+	// Get all currently existing keycloak users
+	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to list the keycloak users")
+	}
+
+	// Sync keycloak with openshift users
+	users, err := syncronizeWithOpenshiftUsers(keycloakUsers, ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to synchronize the users")
+	}
+
+	// Create / update the synchronized users
+	for _, user := range users {
+		or, err = r.createOrUpdateKeycloakUser(user, installation, ctx, serverClient)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
+		} else {
+			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -342,7 +540,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Client) error {
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: r.Config.GetNamespace(),
@@ -352,24 +550,17 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	if err != nil {
 		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config: %w", err)
 	}
-	kcAdminCredSecretName := kc.Spec.AdminCredentials
 
-	kcAdminCredSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kcAdminCredSecretName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: kcAdminCredSecretName, Namespace: r.Config.GetNamespace()}, kcAdminCredSecret)
-	if err != nil {
-		return fmt.Errorf("could not retrieve keycloak admin credential secret for keycloak config: %w", err)
-	}
-	kcURLBytes := kcAdminCredSecret.Data["SSO_ADMIN_URL"]
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetHost(string(kcURLBytes))
+
+	// TODO: once the keycloak operator generates a route with a valid certificate, that
+	// should be reverted back to using the InternalURL
+	// r.Config.SetHost(kc.Status.InternalURL)
+	r.Config.SetHost(r.KeycloakHost)
+
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return fmt.Errorf("could not update keycloak config: %w", err)
+		return errors.Wrap(err, "could not update keycloak config")
 	}
 	return nil
 }
@@ -503,7 +694,7 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 	}
 	return false
 }
-func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
 	var added []usersv1.User
 	for _, osUser := range openshiftUsers {
 		if !kcContainsOsUser(keycloakUsers, osUser) {
@@ -513,7 +704,7 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 
 	var deleted []int
 	for i, kcUser := range keycloakUsers {
-		if kcUser.UserName != CustomerAdminUser.UserName && !OsUserInKc(openshiftUsers, kcUser) {
+		if !OsUserInKc(openshiftUsers, kcUser) {
 			deleted = append(deleted, i)
 		}
 	}
@@ -521,7 +712,7 @@ func getUserDiff(keycloakUsers []*aerogearv1.KeycloakUser, openshiftUsers []user
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx context.Context, serverClient k8sclient.Client) ([]*aerogearv1.KeycloakUser, error) {
+func syncronizeWithOpenshiftUsers(keycloakUsers []keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
@@ -538,18 +729,15 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 		if !strings.Contains(email, "@") {
 			email = email + "@example.com"
 		}
-		keycloakUsers = append(keycloakUsers, &aerogearv1.KeycloakUser{
-			KeycloakApiUser: &aerogearv1.KeycloakApiUser{
-				Enabled:       true,
-				Attributes:    aerogearv1.KeycloakAttributes{},
-				UserName:      osUser.Name,
-				EmailVerified: true,
-				Email:         email,
-			},
-			FederatedIdentities: []aerogearv1.FederatedIdentity{
+		keycloakUsers = append(keycloakUsers, keycloak.KeycloakAPIUser{
+			Enabled:       true,
+			UserName:      osUser.Name,
+			EmailVerified: true,
+			Email:         email,
+			FederatedIdentities: []keycloak.FederatedIdentity{
 				{
 					IdentityProvider: idpAlias,
-					UserId:           string(osUser.UID),
+					UserID:           string(osUser.UID),
 					UserName:         osUser.Name,
 				},
 			},
@@ -562,22 +750,18 @@ func syncronizeWithOpenshiftUsers(keycloakUsers []*aerogearv1.KeycloakUser, ctx 
 		return nil, err
 	}
 	for _, kcUser := range keycloakUsers {
-		if kcUser.UserName == CustomerAdminUser.UserName {
-			continue
-		}
-
-		kcUser.ClientRoles = getKeycloakRoles(isOpenshiftAdmin(kcUser, openshiftAdminGroup))
+		kcUser.ClientRoles = getKeycloakRoles()
 	}
 
 	return keycloakUsers, nil
 }
 
-func remove(index int, kcUsers []*aerogearv1.KeycloakUser) []*aerogearv1.KeycloakUser {
+func remove(index int, kcUsers []keycloak.KeycloakAPIUser) []keycloak.KeycloakAPIUser {
 	kcUsers[index] = kcUsers[len(kcUsers)-1]
 	return kcUsers[:len(kcUsers)-1]
 }
 
-func kcContainsOsUser(kcUsers []*aerogearv1.KeycloakUser, osUser usersv1.User) bool {
+func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == osUser.Name {
 			return true
@@ -587,7 +771,7 @@ func kcContainsOsUser(kcUsers []*aerogearv1.KeycloakUser, osUser usersv1.User) b
 	return false
 }
 
-func OsUserInKc(osUsers []usersv1.User, kcUser *aerogearv1.KeycloakUser) bool {
+func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, osu := range osUsers {
 		if osu.Name == kcUser.UserName {
 			return true
@@ -597,17 +781,46 @@ func OsUserInKc(osUsers []usersv1.User, kcUser *aerogearv1.KeycloakUser) bool {
 	return false
 }
 
-func isOpenshiftAdmin(kcUser *aerogearv1.KeycloakUser, adminGroup *usersv1.Group) bool {
-	for _, name := range adminGroup.Users {
-		if kcUser.UserName == name {
-			return true
-		}
+func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, inst *integreatlyv1alpha1.Installation, ctx context.Context, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
+	selector := &keycloak.KeycloakUser{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("generated-%v", user.UserName),
+			Namespace: r.Config.GetNamespace(),
+		},
 	}
 
-	return false
+	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func() error {
+		ownerutil.EnsureOwner(selector, inst)
+		selector.Spec.RealmSelector = &metav1.LabelSelector{
+			MatchLabels: GetInstanceLabels(),
+		}
+		selector.Labels = GetInstanceLabels()
+		selector.Spec.User = user
+		return nil
+	})
 }
 
-func getKeycloakRoles(isAdmin bool) map[string][]string {
+func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
+	var users keycloak.KeycloakUserList
+
+	listOptions := []k8sclient.ListOption{
+		k8sclient.MatchingLabels(GetInstanceLabels()),
+		k8sclient.InNamespace(ns),
+	}
+	err := serverClient.List(ctx, &users, listOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	mappedUsers := make([]keycloak.KeycloakAPIUser, len(users.Items))
+	for i, user := range users.Items {
+		mappedUsers[i] = user.Spec.User
+	}
+
+	return mappedUsers, nil
+}
+
+func getKeycloakRoles() map[string][]string {
 	roles := map[string][]string{
 		"account": {
 			"manage-account",
@@ -617,14 +830,6 @@ func getKeycloakRoles(isAdmin bool) map[string][]string {
 			"read-token",
 		},
 	}
-	if isAdmin {
-		roles["realm-management"] = []string{
-			"manage-users",
-			"manage-identity-providers",
-			"view-realm",
-		}
-	}
-
 	return roles
 }
 
