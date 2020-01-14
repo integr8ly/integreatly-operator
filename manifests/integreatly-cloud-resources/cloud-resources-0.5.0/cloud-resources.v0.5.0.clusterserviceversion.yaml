@@ -76,7 +76,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:0.4.0
+    containerImage: quay.io/integreatly/cloud-resource-operator:0.5.0
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
