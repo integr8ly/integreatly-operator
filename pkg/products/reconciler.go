@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 //go:generate moq -out Reconciler_moq.go . Interface
@@ -40,45 +41,46 @@ type Interface interface {
 	GetPreflightObject(ns string) runtime.Object
 }
 
-func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mgr manager.Manager) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
 	oauthResolver.Host = rc.Host
+	recorder := mgr.GetEventRecorderFor(string(product))
 
 	switch product {
 	case integreatlyv1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm)
+		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
-		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm)
+		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder)
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
-		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm)
+		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder)
 	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(configManager, installation, mpm)
+		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuse:
-		reconciler, err = fuse.NewReconciler(configManager, installation, mpm)
+		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm)
+		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductAMQOnline:
-		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm)
+		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
 
-		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver)
+		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver, recorder)
 	case integreatlyv1alpha1.ProductMonitoring:
-		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm)
+		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
 		appsv1, err := appsv1Client.NewForConfig(rc)
 		if err != nil {
@@ -98,11 +100,11 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 
 		tsClient := threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
 
-		reconciler, err = threescale.NewReconciler(configManager, installation, appsv1, oauthv1Client, tsClient, mpm)
+		reconciler, err = threescale.NewReconciler(configManager, installation, appsv1, oauthv1Client, tsClient, mpm, recorder)
 	case integreatlyv1alpha1.ProductUps:
-		reconciler, err = ups.NewReconciler(configManager, installation, mpm)
+		reconciler, err = ups.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductCloudResources:
-		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm)
+		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

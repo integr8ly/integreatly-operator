@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -76,6 +77,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
+}
+
 func TestReconciler_config(t *testing.T) {
 	cases := []struct {
 		Name            string
@@ -88,6 +93,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
+		Recorder        record.EventRecorder
 	}{
 		{
 			Name:            "test error on failed config",
@@ -102,7 +108,8 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read rhsso config")
 				},
 			},
-			Product: &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder: setupRecorder(),
 		},
 	}
 
@@ -113,6 +120,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -159,6 +167,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		ExpectedError   string
 		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
+		Recorder        record.EventRecorder
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
@@ -172,6 +181,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -193,6 +203,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -202,6 +213,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -274,6 +286,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		FakeOauthClient oauthClient.OauthV1Interface
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
+		Recorder        record.EventRecorder
 	}{
 		{
 			Name:            "test ready kcr returns phase complete",
@@ -282,6 +295,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test unready kcr cr returns phase in progress",
@@ -290,6 +304,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test missing kc cr returns phase failed",
@@ -299,6 +314,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test missing kcr cr returns phase failed",
@@ -308,6 +324,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
+			Recorder:        setupRecorder(),
 		},
 		{
 			Name:            "test failed config write",
@@ -328,6 +345,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				},
 			},
 			Installation: &integreatlyv1alpha1.Installation{},
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -338,6 +356,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -446,6 +465,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
+		Recorder        record.EventRecorder
 	}{
 		{
 			Name:            "test successful reconcile",
@@ -481,6 +501,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -491,6 +512,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Installation,
 				tc.FakeOauthClient,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

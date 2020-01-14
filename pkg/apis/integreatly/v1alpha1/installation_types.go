@@ -73,6 +73,10 @@ var (
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
 	OperatorVersionUPS                 OperatorVersion = "0.4.1"
 	OperatorVersionCloudResources      OperatorVersion = "0.4.0"
+
+	// Event reasons to be used when emitting events
+	EventProcessingError       string = "ProcessingError"
+	EventInstallationCompleted string = "InstallationCompleted"
 )
 
 // InstallationSpec defines the desired state of Installation

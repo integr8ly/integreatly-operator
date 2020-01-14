@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -52,6 +53,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
+}
+
 func TestReconciler_config(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -78,6 +83,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test error on failed config",
@@ -91,7 +97,8 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read amq streams config")
 				},
 			},
-			Product: &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -106,6 +113,7 @@ func TestReconciler_config(t *testing.T) {
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, installation),
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(),
 		},
 	}
 
@@ -115,6 +123,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -158,6 +167,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		ExpectedError  string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:       "Test reconcile custom resource returns completed when successful created",
@@ -170,6 +180,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -188,6 +199,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			ExpectError:    true,
 			ExpectedError:  "failed to get or create a kafka custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Recorder:       setupRecorder(),
 		},
 	}
 	for _, tc := range cases {
@@ -196,6 +208,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -272,6 +285,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test failure to list pods",
@@ -285,6 +299,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			},
 			FakeConfig:   basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{},
+			Recorder:     setupRecorder(),
 		},
 		{
 			Name:           "test incomplete amount of pods returns phase in progress",
@@ -292,6 +307,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test unready pods returns phase in progress",
@@ -299,6 +315,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test ready pods returns phase complete",
@@ -306,6 +323,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, append(readyPods, kafka)...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.Installation{},
+			Recorder:       setupRecorder(),
 		},
 	}
 
@@ -315,6 +333,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -396,6 +415,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -429,6 +449,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -438,6 +459,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

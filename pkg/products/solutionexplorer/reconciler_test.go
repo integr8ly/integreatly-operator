@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -36,6 +37,7 @@ type SolutionExplorerScenario struct {
 	OauthResolver   func() OauthResolver
 	Validate        func(t *testing.T, mock interface{})
 	Product         *integreatlyv1alpha1.InstallationProductStatus
+	Recorder        record.EventRecorder
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -58,6 +60,10 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 			return nil
 		},
 	}
+}
+
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 var oauthResolver = func() OauthResolver {
@@ -91,13 +97,14 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 					t.Fatal("expected 1 call to GetOauthEndPointCalls but got  ", len(m.GetOauthEndPointCalls()))
 				}
 			},
+			Recorder: setupRecorder(),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			mockResolver := tc.OauthResolver()
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -160,12 +167,13 @@ func TestSolutionExplorer(t *testing.T) {
 			FakeConfig:   basicConfigMock(),
 			client:       fake.NewFakeClient(webappNs, webappCR, installation, webappRoute),
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver())
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -114,6 +115,10 @@ func getTestPostgresSec() *corev1.Secret {
 	}
 }
 
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
+}
+
 func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -128,6 +133,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "UPS Test: test custom resource is reconciled and phase complete returned",
@@ -141,6 +147,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			},
 			FakeConfig: basicConfigMock(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseReconciling)),
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase failed when error in creating custom resource",
@@ -157,6 +164,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectErr: true,
+			Recorder:  setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase failed when general error in finding custom resource",
@@ -170,6 +178,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 				},
 			},
 			ExpectErr: true,
+			Recorder:  setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Phase in progress when custom resource is not in phase complete",
@@ -183,12 +192,13 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			},
 			FakeConfig: basicConfigMock(),
 			FakeClient: fake.NewFakeClientWithScheme(scheme, getTestPostgres(), getTestPostgresSec(), mockUpsCRWithStatus(upsv1alpha1.PhaseInitializing)),
+			Recorder:   setupRecorder(),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}
@@ -220,6 +230,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "UPS Test: Config is updated with route url correctly - phase complete",
@@ -228,6 +239,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Cannot retrieve route - phase failed",
@@ -237,6 +249,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "UPS Test: Cannot update config with route url - phase failed",
@@ -246,12 +259,13 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Installation:   &integreatlyv1alpha1.Installation{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
+			Recorder:       setupRecorder(),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
 			if err != nil {
 				t.Fatal("unexpected err settin up reconciler ", err)
 			}

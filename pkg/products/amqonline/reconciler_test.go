@@ -35,6 +35,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -113,6 +114,10 @@ func backupsSecretMock() *corev1.Secret {
 	}
 }
 
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
+}
+
 func TestReconcile_reconcileAuthServices(t *testing.T) {
 	scenarios := []struct {
 		Name           string
@@ -122,6 +127,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		AuthServices   []*enmassev1.AuthenticationService
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "Test returns none phase if successfully creating new auth services",
@@ -135,6 +141,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
@@ -148,12 +155,13 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 					Namespace: "test-namespace",
 				},
 			},
+			Recorder: setupRecorder(),
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -178,6 +186,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 		BrokeredInfraConfigs []*v1beta1.BrokeredInfraConfig
 		StandardInfraConfigs []*v1beta1.StandardInfraConfig
 		FakeMPM              *marketplace.MarketplaceInterfaceMock
+		Recorder             record.EventRecorder
 	}{
 		{
 			Name:                 "Test returns none phase if successfully creating new address space plans",
@@ -187,6 +196,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			ExpectedStatus:       integreatlyv1alpha1.PhaseCompleted,
 			Installation:         basicInstallation(),
+			Recorder:             setupRecorder(),
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
@@ -196,12 +206,13 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			FakeConfig:           basicConfigMock(),
 			ExpectedStatus:       integreatlyv1alpha1.PhaseCompleted,
 			Installation:         basicInstallation(),
+			Recorder:             setupRecorder(),
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -225,6 +236,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		AddressPlans   []*v1beta2.AddressPlan
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "Test returns none phase if successfully creating new address space plans",
@@ -233,6 +245,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
@@ -241,12 +254,13 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -270,6 +284,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 		ExpectedStatus    integreatlyv1alpha1.StatusPhase
 		AddressSpacePlans []*v1beta2.AddressSpacePlan
 		FakeMPM           *marketplace.MarketplaceInterfaceMock
+		Recorder          record.EventRecorder
 	}{
 		{
 			Name:              "Test returns none phase if successfully creating new address space plans",
@@ -278,6 +293,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
 			Installation:      basicInstallation(),
+			Recorder:          setupRecorder(),
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
@@ -286,12 +302,13 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			FakeConfig:        basicConfigMock(),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
 			Installation:      basicInstallation(),
+			Recorder:          setupRecorder(),
 		},
 	}
 
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM)
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
@@ -315,6 +332,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 		FakeConfig         *config.ConfigReadWriterMock
 		ExpectError        bool
 		ValidateCallCounts func(t *testing.T, cfgMock *config.ConfigReadWriterMock)
+		Recorder           record.EventRecorder
 	}{
 		{
 			Name: "Test doesn't set host when the port is not 443",
@@ -335,6 +353,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config written once or more")
 				}
 			},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test doesn't set host when the host is undefined or empty",
@@ -355,6 +374,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config written once or more")
 				}
 			},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test successfully setting host when port and host are defined properly",
@@ -380,6 +400,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatalf("incorrect host, expected %s but got %s", expectedHost, cfg.GetHost())
 				}
 			},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "Test continues when console it not found",
@@ -392,6 +413,7 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 					t.Fatal("config called once or more")
 				}
 			},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name: "Test fails with error when failing to write config",
@@ -424,11 +446,12 @@ func TestReconcile_reconcileConfig(t *testing.T) {
 			ExpectedStatus:     integreatlyv1alpha1.PhaseFailed,
 			ExpectError:        true,
 			ValidateCallCounts: func(t *testing.T, cfgMock *config.ConfigReadWriterMock) {},
+			Recorder:           setupRecorder(),
 		},
 	}
 	for _, s := range scenarios {
 		t.Run(s.Name, func(t *testing.T) {
-			r, err := NewReconciler(s.FakeConfig, nil, nil)
+			r, err := NewReconciler(s.FakeConfig, nil, nil, s.Recorder)
 			if err != nil {
 				t.Fatal("could not create reconciler", err)
 			}
@@ -490,6 +513,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Installation   *integreatlyv1alpha1.Installation
 		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Recorder       record.EventRecorder
 	}{
 		{
 			Name:           "test successful reconcile",
@@ -524,6 +548,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:     setupRecorder(),
 		},
 	}
 
@@ -533,6 +558,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

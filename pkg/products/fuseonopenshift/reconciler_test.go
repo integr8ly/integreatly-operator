@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -34,6 +35,7 @@ type FuseOnOpenShiftScenario struct {
 	FakeMPM        *marketplace.MarketplaceInterfaceMock
 	Installation   *integreatlyv1alpha1.Installation
 	Product        *integreatlyv1alpha1.InstallationProductStatus
+	Recorder       record.EventRecorder
 }
 
 func getFakeConfig() *config.ConfigReadWriterMock {
@@ -45,6 +47,10 @@ func getFakeConfig() *config.ConfigReadWriterMock {
 			return config.NewFuseOnOpenshift(config.ProductConfig{}), nil
 		},
 	}
+}
+
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 func TestFuseOnOpenShift(t *testing.T) {
@@ -107,7 +113,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 					return nil, fmt.Errorf("could not read %s config", integreatlyv1alpha1.ProductFuseOnOpenshift)
 				},
 			},
-			Product: &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid image stream file content",
@@ -123,6 +130,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid image stream",
@@ -142,6 +150,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid template file content",
@@ -160,6 +169,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test error on invalid template object",
@@ -180,6 +190,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:   setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
@@ -188,6 +199,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(integreatlyImgStream),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile without sample cluster operator installed",
@@ -197,6 +209,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:       setupRecorder(),
 		},
 		{
 			Name:           "test successful reconcile with sample cluster operator installed",
@@ -206,6 +219,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient:     fakeclient.NewFakeClient(sampleClusterConfig, sampleClusterImgStream),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:       setupRecorder(),
 		},
 	}
 
@@ -215,6 +229,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 				tc.FakeConfig,
 				tc.Installation,
 				tc.FakeMPM,
+				tc.Recorder,
 			)
 
 			if err != nil && err.Error() != tc.ExpectedError {
