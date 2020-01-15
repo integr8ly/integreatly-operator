@@ -129,6 +129,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	var firingalerts []string
 	var pendingalerts []string
 	var deadmanswitchfiring = false
+	var intlyalertpresent = false
 	for a := 0; a < len(promApiCallOutput.Data.Alerts); a++ {
 		if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "DeadMansSwitch" && promApiCallOutput.Data.Alerts[a].State == "firing" {
 			deadmanswitchfiring = true
@@ -137,6 +138,8 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 			// ESPodCount will always fail since that alert is for OSD
 			// so it shouldn't cause our test to fail
 			if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "KubePodCrashLooping" {
+				// Record that at least one integreatly alert is present
+				intlyalertpresent = true
 				continue
 			}
 			if promApiCallOutput.Data.Alerts[a].State == "firing" {
@@ -161,12 +164,58 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 		dms := fmt.Sprint("DeadMansSwitch is not firing")
 		status = append(status, dms)
 	}
+	if intlyalertpresent == false {
+		ialert := fmt.Sprint("KubePodCrashLooping is not present")
+		status = append(status, ialert)
+	}
 
 	if len(status) > 0 {
 		return fmt.Errorf("alert tests failed: %s", status)
 	}
 
 	t.Logf("No unexpected alerts found")
+	return nil
+}
+
+func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+	pods := &corev1.PodList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(intlyNamespacePrefix + "middleware-monitoring"),
+		k8sclient.MatchingLabels{"app": "grafana"},
+	}
+	err := f.Client.List(goctx.TODO(), pods, opts...)
+	if err != nil {
+		return fmt.Errorf("failed to list pods: %s", err)
+	}
+	if len(pods.Items) != 1 {
+		return fmt.Errorf("grafana pod not found")
+	}
+
+	type Dashboard struct {
+		Title string `json:"title"`
+	}
+
+	type Output []Dashboard
+
+	output, err := execToPod("curl localhost:3000/api/search?query=resource%20usage%20by%20namespace",
+		pods.Items[0].ObjectMeta.Name,
+		intlyNamespacePrefix+"middleware-monitoring",
+		"grafana", f)
+	if err != nil {
+		return fmt.Errorf("failed to exec to pod: %s", err)
+	}
+
+	var apiCallOutput Output
+	err = json.Unmarshal([]byte(output), &apiCallOutput)
+	if err != nil {
+		t.Logf("Failed to unmarshall json: %s", err)
+	}
+
+	if len(apiCallOutput) != 1 {
+		return fmt.Errorf("grafana dashboard not found")
+	}
+
+	t.Logf("Grafana dashboard found")
 	return nil
 }
 
@@ -590,6 +639,10 @@ func IntegreatlyCluster(t *testing.T) {
 	time.Sleep(5 * time.Minute)
 
 	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = integreatlyGrafanaTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
 }
