@@ -15,5 +15,9 @@ docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypo
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make code/compile"
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make test/unit"
 
+#Requires you to be oc logged in to any cluster on your host machine
+INTEGREATLY_OPERATOR_IMAGE="registry.svc.ci.openshift.org/integr8ly/integreatly-operator"
+E2E_CMD="operator-sdk --verbose test local ./openshift-ci/test/e2e --namespace=test --go-test-flags \"-timeout=60m\" --debug --image=${INTEGREATLY_OPERATOR_IMAGE}"
+docker run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && ${E2E_CMD}"
 
 echo "SUCCESS!"
