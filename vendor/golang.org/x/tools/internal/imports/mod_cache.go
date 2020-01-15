@@ -1,8 +1,6 @@
 package imports
 
 import (
-	"context"
-	"fmt"
 	"sync"
 
 	"golang.org/x/tools/internal/gopathwalk"
@@ -32,7 +30,6 @@ const (
 	_ directoryPackageStatus = iota
 	directoryScanned
 	nameLoaded
-	exportsLoaded
 )
 
 type directoryPackageInfo struct {
@@ -49,6 +46,10 @@ type directoryPackageInfo struct {
 	// nonCanonicalImportPath is the package's expected import path. It may
 	// not actually be importable at that path.
 	nonCanonicalImportPath string
+	// needsReplace is true if the nonCanonicalImportPath does not match the
+	// module's declared path, making it impossible to import without a
+	// replace directive.
+	needsReplace bool
 
 	// Module-related information.
 	moduleDir  string // The directory that is the module root of this dir.
@@ -57,10 +58,6 @@ type directoryPackageInfo struct {
 	// Set when status >= nameLoaded.
 
 	packageName string // the package name, as declared in the source.
-
-	// Set when status >= exportsLoaded.
-
-	exports []string
 }
 
 // reachedStatus returns true when info has a status at least target and any error associated with
@@ -123,39 +120,4 @@ func (d *dirInfoCache) Keys() (keys []string) {
 		keys = append(keys, key)
 	}
 	return keys
-}
-
-func (d *dirInfoCache) CachePackageName(info directoryPackageInfo) (string, error) {
-	if loaded, err := info.reachedStatus(nameLoaded); loaded {
-		return info.packageName, err
-	}
-	if scanned, err := info.reachedStatus(directoryScanned); !scanned || err != nil {
-		return "", fmt.Errorf("cannot read package name, scan error: %v", err)
-	}
-	info.packageName, info.err = packageDirToName(info.dir)
-	info.status = nameLoaded
-	d.Store(info.dir, info)
-	return info.packageName, info.err
-}
-
-func (d *dirInfoCache) CacheExports(ctx context.Context, env *ProcessEnv, info directoryPackageInfo) (string, []string, error) {
-	if reached, _ := info.reachedStatus(exportsLoaded); reached {
-		return info.packageName, info.exports, info.err
-	}
-	if reached, err := info.reachedStatus(nameLoaded); reached && err != nil {
-		return "", nil, err
-	}
-	info.packageName, info.exports, info.err = loadExportsFromFiles(ctx, env, info.dir)
-	if info.err == context.Canceled || info.err == context.DeadlineExceeded {
-		return info.packageName, info.exports, info.err
-	}
-	// The cache structure wants things to proceed linearly. We can skip a
-	// step here, but only if we succeed.
-	if info.status == nameLoaded || info.err == nil {
-		info.status = exportsLoaded
-	} else {
-		info.status = nameLoaded
-	}
-	d.Store(info.dir, info)
-	return info.packageName, info.exports, info.err
 }
