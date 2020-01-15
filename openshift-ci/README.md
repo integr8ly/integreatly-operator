@@ -7,9 +7,11 @@ Base image used on CI for all builds and test jobs.
 #### Build and Test
 
 ```
-$ docker build -t registry.svc.ci.openshift.org/openshift/release:intly-golang-1.12 - < Dockerfile.tools
-$ IMAGE_NAME=registry.svc.ci.openshift.org/openshift/release:intly-golang-1.12 test/run 
-operator-sdk version: v0.8.1, commit: 33b3bfe10176f8647f5354516fff29dea42b6342
-go version go1.12.9 linux/amd64
+$ docker build -t registry.svc.ci.openshift.org/integr8ly/intly-operator-base-image:latest - < Dockerfile.tools
+$ IMAGE_NAME=registry.svc.ci.openshift.org/integr8ly/intly-operator-base-image:latest test/run
+operator-sdk version: "v0.12.0", commit: "2445fcda834ca4b7cf0d6c38fba6317fb219b469", go version: "go1.13.5 linux/amd64"
+go version go1.13.5 linux/amd64
+go mod tidy
+...
 SUCCESS!
 ```
