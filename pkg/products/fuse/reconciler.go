@@ -18,8 +18,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	v1 "github.com/openshift/api/route/v1"
-	usersv1 "github.com/openshift/api/user/v1"
+	routev1 "github.com/openshift/api/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -194,19 +193,6 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 // Ensures all users in rhmi-developers group have view Fuse permissions
 func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
-
-	openshiftUsers := &usersv1.UserList{}
-	err := client.List(ctx, openshiftUsers)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	rhmiDevelopersGroup := &usersv1.Group{}
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: developersGroupName}, rhmiDevelopersGroup)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	viewFuseRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      developersGroupName + "-fuse-view",
@@ -220,18 +206,11 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclien
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, viewFuseRoleBinding, func() error {
-		subjects := []rbacv1.Subject{}
-		for _, osUser := range openshiftUsers.Items {
-			if groupContainsUser(osUser, rhmiDevelopersGroup) {
-				subjects = append(subjects, rbacv1.Subject{
-					APIGroup: "rbac.authorization.k8s.io",
-					Name:     osUser.Name,
-					Kind:     "User",
-				})
-			}
-		}
-
-		viewFuseRoleBinding.Subjects = subjects
+		viewFuseRoleBinding.Subjects = []rbacv1.Subject{rbacv1.Subject{
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     developersGroupName,
+			Kind:     "Group",
+		}}
 		return nil
 	})
 	if err != nil {
@@ -313,7 +292,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	route := &v1.Route{
+	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "syndesis",
 			Namespace: r.Config.GetNamespace(),
@@ -337,14 +316,4 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 
 	// if there are no errors, the phase is complete
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func groupContainsUser(user usersv1.User, group *usersv1.Group) bool {
-	for _, userName := range group.Users {
-		if user.Name == userName {
-			return true
-		}
-	}
-
-	return false
 }
