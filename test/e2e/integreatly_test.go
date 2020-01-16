@@ -401,7 +401,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces": string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(integreatlyv1alpha1.VersionFuseOnOpenshift),
 		"ups":                  string(integreatlyv1alpha1.VersionUps),
-		"rhssouser":            "v7.3.2.GA",
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {
@@ -416,10 +415,10 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces":  3,
 		"fuse":                  1,
 		"middleware-monitoring": 3,
-		"rhsso":                 1,
+		"rhsso":                 2,
 		"solution-explorer":     1,
 		"ups":                   1,
-		"user-sso":              1,
+		"user-sso":              2,
 	}
 
 	for product, numberRoutes := range expectedRoutes {
