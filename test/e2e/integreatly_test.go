@@ -28,29 +28,27 @@ import (
 )
 
 const (
-	retryInterval                    = time.Second * 5
-	timeout                          = time.Second * 75
-	deploymentRetryInterval          = time.Second * 30
-	deploymentTimeout                = time.Minute * 20
-	cleanupRetryInterval             = time.Second * 1
-	cleanupTimeout                   = time.Second * 5
-	installationCleanupRetryInterval = time.Second * 20
-	installationCleanupTimeout       = time.Minute * 8 //Longer timeout required to allow for finalizers to execute
-	intlyNamespacePrefix             = "rhmi-"
-	namespaceLabel                   = "integreatly"
-	installationName                 = "integreatly-operator"
-	bootstrapStage                   = "bootstrap"
-	bootStrapStageTimeout            = time.Minute * 5
-	cloudResourcesStage              = "cloud-resources"
-	cloudResourcesStageTimeout       = time.Minute * 10
-	monitoringStage                  = "monitoring"
-	monitoringStageTimeout           = time.Minute * 10
-	authenticationStage              = "authentication"
-	authenticationStageTimeout       = time.Minute * 10
-	productsStage                    = "products"
-	productsStageTimout              = time.Minute * 30
-	solutionExplorerStage            = "solution-explorer"
-	solutionExplorerStageTimeout     = time.Minute * 10
+	retryInterval                = time.Second * 5
+	timeout                      = time.Second * 75
+	deploymentRetryInterval      = time.Second * 30
+	deploymentTimeout            = time.Minute * 20
+	cleanupRetryInterval         = time.Second * 1
+	cleanupTimeout               = time.Second * 5
+	intlyNamespacePrefix         = "rhmi-"
+	namespaceLabel               = "integreatly"
+	installationName             = "integreatly-operator"
+	bootstrapStage               = "bootstrap"
+	bootStrapStageTimeout        = time.Minute * 5
+	cloudResourcesStage          = "cloud-resources"
+	cloudResourcesStageTimeout   = time.Minute * 10
+	monitoringStage              = "monitoring"
+	monitoringStageTimeout       = time.Minute * 10
+	authenticationStage          = "authentication"
+	authenticationStageTimeout   = time.Minute * 30
+	productsStage                = "products"
+	productsStageTimout          = time.Minute * 30
+	solutionExplorerStage        = "solution-explorer"
+	solutionExplorerStageTimeout = time.Minute * 10
 )
 
 func TestIntegreatly(t *testing.T) {

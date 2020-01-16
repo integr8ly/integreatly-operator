@@ -563,7 +563,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -594,7 +594,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, inst *integreatlyv1a
 		GrantMethod:  oauthv1.GrantHandlerPrompt,
 	}
 
-	_, err = r.ReconcileOauthClient(ctx, inst, oauthClient, serverClient)
+	_, err = r.ReconcileOauthClient(ctx, installation, oauthClient, serverClient)
 	if err != nil {
 		return err
 	}
