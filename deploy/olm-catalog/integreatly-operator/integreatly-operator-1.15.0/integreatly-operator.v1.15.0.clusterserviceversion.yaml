@@ -67,6 +67,20 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - keycloak.org
+          resources:
+          - keycloaks
+          - keycloakrealms
+          - keycloakclients
+          - keycloakbackups
+          - keycloakusers
+          verbs:
+          - get
+          - list
+          - update
+          - watch
+          - delete
+        - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
           - applicationmonitorings
@@ -166,17 +180,6 @@ spec:
           - get
           - delete
           - update
-        - apiGroups:
-          - aerogear.org
-          resources:
-          - keycloaks
-          - keycloakrealms
-          verbs:
-          - list
-          - create
-          - update
-          - watch
-          - get
         - apiGroups:
           - kafka.strimzi.io
           resources:
