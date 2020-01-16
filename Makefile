@@ -90,6 +90,7 @@ test/unit:
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
+test/e2e/prow: export CLEANUP_RESOURCES := false
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
@@ -217,3 +218,12 @@ vendor/check: vendor/fix
 vendor/fix:
 	go mod tidy
 	go mod vendor
+
+.PHONY: cluster/cleanup/prow
+cluster/cleanup/e2e:
+	-oc delete clusterrolebindings.rbac.authorization.k8s.io integreatly-operator
+	-oc delete roles.rbac.authorization.k8s.io integreatly-operator
+	-oc delete serviceaccounts integreatly-operator
+	-oc delete clusterroles.rbac.authorization.k8s.io integreatly-operator
+	-oc delete rolebindings.rbac.authorization.k8s.io integreatly-operator
+	-oc delete deployments.apps integreatly-operator

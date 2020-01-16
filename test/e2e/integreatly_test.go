@@ -5,6 +5,8 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -549,10 +551,24 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func IntegreatlyCluster(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
-	err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+
+	cleanupResources, _ := strconv.ParseBool(getEnv("CLEANUP_RESOURCES", "true"))
+	cleanupOptions := &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval}
+	if !cleanupResources {
+		cleanupOptions = nil
+	}
+	err := ctx.InitializeClusterResources(cleanupOptions)
+
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
