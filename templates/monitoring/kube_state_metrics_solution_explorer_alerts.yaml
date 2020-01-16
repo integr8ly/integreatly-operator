@@ -1,8 +1,6 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  labels:
-    monitoring-key: {{ index .Params "MonitoringKey" }}
   name: ksm-solution-explorer-alerts
   namespace: {{ index .Params "Namespace" }}
 spec:

@@ -3,8 +3,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   namespace: {{ index .Params "Namespace" }}
-  labels:
-    monitoring-key: {{ index .Params "MonitoringKey" }}
   name: backup-monitoring-alerts
 spec:
   groups:
