@@ -584,15 +584,18 @@ func IntegreatlyCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// check that all of the operators deploy and all of the installation phases complete
-	if err = integreatlyManagedTest(t, f, ctx); err != nil {
-		t.Fatal(err)
-	}
 
-	t.Log("Waiting for alerts to normalise")
-	time.Sleep(5 * time.Minute)
+	t.Fatal("FAIL")
 
-	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
-		t.Fatal(err)
-	}
+	//	// check that all of the operators deploy and all of the installation phases complete
+	//	if err = integreatlyManagedTest(t, f, ctx); err != nil {
+	//		t.Fatal(err)
+	//	}
+	//
+	//	t.Log("Waiting for alerts to normalise")
+	//	time.Sleep(5 * time.Minute)
+	//
+	//	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
+	//		t.Fatal(err)
+	//	}
 }
