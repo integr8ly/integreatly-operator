@@ -6,36 +6,11 @@ metadata:
       [
         {
           "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "Redis",
-          "metadata": {
-            "name": "example-redis"
-          },
-          "spec": {
-            "secretRef": {
-              "name": "example-redis-sec"
-            },
-            "tier": "development",
-            "type": "workshop"
-          }
-        },
-        {
-          "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "SMTPCredentialSet",
-          "metadata": {
-            "name": "example-smtpcredentialset"
-          },
-          "spec": {
-            "secretRef": {
-              "name": "example-smtpcredentialset-sec"
-            },
-            "tier": "development",
-            "type": "managed"
-          }
-        },
-        {
-          "apiVersion": "integreatly.org/v1alpha1",
           "kind": "BlobStorage",
           "metadata": {
+            "labels": {
+              "productName": "ProductName"
+            },
             "name": "example-blobstorage"
           },
           "spec": {
@@ -43,13 +18,16 @@ metadata:
               "name": "example-blobstorage-sec"
             },
             "tier": "development",
-            "type": "managed"
+            "type": "REPLACE_ME"
           }
         },
         {
           "apiVersion": "integreatly.org/v1alpha1",
           "kind": "Postgres",
           "metadata": {
+            "labels": {
+              "productName": "productName"
+            },
             "name": "example-postgres"
           },
           "spec": {
@@ -57,18 +35,72 @@ metadata:
               "name": "example-postgres-sec"
             },
             "tier": "development",
-            "type": "workshop"
+            "type": "REPLACE_ME"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "PostgresSnapshot",
+          "metadata": {
+            "name": "example-postgressnapshot"
+          },
+          "spec": {
+            "resourceName": "REPLACE_ME"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "Redis",
+          "metadata": {
+            "labels": {
+              "productName": "productName"
+            },
+            "name": "example-redis"
+          },
+          "spec": {
+            "secretRef": {
+              "name": "example-redis-sec"
+            },
+            "tier": "development",
+            "type": "REPLACE_ME"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RedisSnapshot",
+          "metadata": {
+            "name": "example-redissnapshot"
+          },
+          "spec": {
+            "resourceName": "REPLACE_ME"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "SMTPCredentialSet",
+          "metadata": {
+            "labels": {
+              "productName": "productName"
+            },
+            "name": "example-smtpcredentialset"
+          },
+          "spec": {
+            "secretRef": {
+              "name": "example-smtpcredentialset-sec"
+            },
+            "tier": "development",
+            "type": "REPLACE_ME"
           }
         }
       ]
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:0.4.0
+    containerImage: quay.io/integreatly/cloud-resource-operator:v0.6.0
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
-  name: cloud-resources.v0.4.0
+  name: cloud-resources.v0.6.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -110,6 +142,15 @@ spec:
         displayName: Secret Reference
         path: secretRef
       version: v1alpha1
+    - description: Represents an instance of a Postgres Snapshot
+      displayName: Postgres Snapshot
+      kind: PostgresSnapshot
+      name: postgressnapshots.integreatly.org
+      version: v1alpha1
+      specDescriptors:
+        - description: The type of the resource to snapshot
+          displayName: ResourceName
+          path: resourceName
     - description: Represents an instance of a Redis cluster in a provider
       displayName: Redis
       kind: Redis
@@ -128,6 +169,15 @@ spec:
         displayName: Secret Reference
         path: secretRef
       version: v1alpha1
+    - description: Represents an instance of Postgres Snapshot
+      displayName: Redis Snapshot
+      kind: RedisSnapshot
+      name: redissnapshots.integreatly.org
+      version: v1alpha1
+      specDescriptors:
+        - description: The type of the resource to snapshot
+          displayName: ResourceName
+          path: resourceName
     - description: Represents an instance of SMTP credentials in a provider
       displayName: SMTP Credentials
       kind: SMTPCredentialSet
@@ -199,7 +249,9 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: cloud-resource-operator
-                image: quay.io/integreatly/cloud-resource-operator:0.4.0
+                - name: TAG_KEY_PREFIX
+                  value: integreatly.org/
+                image: quay.io/integreatly/cloud-resource-operator:v0.6.0
                 imagePullPolicy: Always
                 name: cloud-resource-operator
                 resources: {}
@@ -269,6 +321,8 @@ spec:
           - smtpcredentialset
           - redis
           - postgres
+          - redissnapshots
+          - postgressnapshots
           verbs:
           - '*'
         - apiGroups:
@@ -310,4 +364,4 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  version: 0.4.0
+  version: 0.6.0

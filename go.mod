@@ -3,8 +3,12 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
+	cloud.google.com/go v0.37.2 // indirect
+	github.com/Azure/go-autorest v11.7.0+incompatible // indirect
+	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
+	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
@@ -12,16 +16,25 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
 	github.com/integr8ly/grafana-operator v1.3.1
+	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190605231540-b8a4faf68e36
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
+	github.com/pelletier/go-toml v1.3.0 // indirect
 	github.com/prometheus/client_golang v1.1.0
+	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
+	go.etcd.io/bbolt v1.3.3 // indirect
+	go.opencensus.io v0.20.0 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
+	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
@@ -29,6 +42,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 	sigs.k8s.io/controller-runtime v0.4.0
 	sigs.k8s.io/controller-tools v0.2.4 // indirect
+	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
 
 // Pinned to kubernetes-1.15.4
