@@ -1,15 +1,19 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var (
 	PhaseInProgress                StatusPhase   = "in progress"
 	PhaseDeleteInProgress          StatusPhase   = "deletion in progress"
 	PhaseComplete                  StatusPhase   = "complete"
+	PhasePaused                    StatusPhase   = "paused"
 	PhaseFailed                    StatusPhase   = "failed"
 	StatusEmpty                    StatusMessage = ""
 	StatusUnsupportedType          StatusMessage = "unsupported deployment type"
 	StatusDeploymentConfigNotFound StatusMessage = "deployment configuration not found"
+	StatusSkipCreate               StatusMessage = "skipping create or update for maintenance"
 )
 
 // SecretRef Represents a namespace-scoped Secret
@@ -21,9 +25,10 @@ type SecretRef struct {
 // ResourceTypeSpec Represents the basic information required to provision a resource type
 // +k8s:openapi-gen=true
 type ResourceTypeSpec struct {
-	Type      string     `json:"type"`
-	Tier      string     `json:"tier"`
-	SecretRef *SecretRef `json:"secretRef"`
+	Type       string     `json:"type"`
+	Tier       string     `json:"tier"`
+	SkipCreate bool       `json:"skipCreate,omitempty"`
+	SecretRef  *SecretRef `json:"secretRef"`
 }
 
 type StatusPhase string
@@ -45,4 +50,12 @@ type ResourceTypeStatus struct {
 	SecretRef *SecretRef    `json:"secretRef,omitempty"`
 	Phase     StatusPhase   `json:"phase,omitempty"`
 	Message   StatusMessage `json:"message,omitempty"`
+}
+
+// ResourceTypeSnapshotStatus Represents the basic status information provided by snapshot controller
+// +k8s:openapi-gen=true
+type ResourceTypeSnapshotStatus struct {
+	SnapshotID string        `json:"snapshotId,omitempty"`
+	Phase      StatusPhase   `json:"phase,omitempty"`
+	Message    StatusMessage `json:"message,omitempty"`
 }
