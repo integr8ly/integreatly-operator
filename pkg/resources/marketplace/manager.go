@@ -23,6 +23,8 @@ import (
 
 const (
 	IntegreatlyChannel = "integreatly"
+	CatalogSourceName  = "rhmi-registry-cs"
+	OperatorGroupName  = "rhmi-registry-og"
 )
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
@@ -74,7 +76,7 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient k
 	og := &v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
-			Name:      t.Namespace + "-integreatly",
+			Name:      OperatorGroupName,
 			Labels:    map[string]string{"integreatly": t.Pkg},
 		},
 		Spec: v1.OperatorGroupSpec{
@@ -198,11 +200,9 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 
 	logrus.Infof("Reconciling registry catalog source for namespace %s", namespace)
 
-	catalogSourceName := "registry-cs-" + namespace
-
 	catalogSource := &coreosv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      catalogSourceName,
+			Name:      CatalogSourceName,
 			Namespace: namespace,
 		},
 	}
@@ -210,7 +210,7 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 	catalogSourceSpec := coreosv1alpha1.CatalogSourceSpec{
 		SourceType:  coreosv1alpha1.SourceTypeConfigmap,
 		ConfigMap:   configMapName,
-		DisplayName: catalogSourceName,
+		DisplayName: CatalogSourceName,
 		Publisher:   "Integreatly",
 	}
 
@@ -237,5 +237,5 @@ func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client 
 
 	logrus.Infof("Successfully reconciled registry catalog source for namespace %s", namespace)
 
-	return catalogSourceName, nil
+	return CatalogSourceName, nil
 }

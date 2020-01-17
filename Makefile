@@ -1,7 +1,6 @@
 include ./make/*.mk
 
 ORG=integreatly
-NAMESPACE=integreatly
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
@@ -15,6 +14,8 @@ OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+NAMESPACE_PREFIX=redhat-rhmi-
+NAMESPACE=$(NAMESPACE_PREFIX)operator
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -33,10 +34,10 @@ setup/travis:
 
 .PHONY: setup/service_account
 setup/service_account:
-	@oc replace --force -f deploy/role.yaml -n $(NAMESPACE)
+	@oc project $(NAMESPACE)
+	@oc replace --force -f deploy/role.yaml
 	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
-	@oc replace --force -f deploy/role_binding.yaml -n $(NAMESPACE)
-	@cat deploy/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
+	@cat deploy/role_binding.yaml | sed "s/namespace: redhat-rhmi-operator/namespace: $(NAMESPACE)/g" | oc replace --force -f -
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
@@ -188,7 +189,7 @@ deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
-	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
+	sed "s/INSTALLATION_PREFIX/$(NAMESPACE_PREFIX)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" > deploy/integreatly-installation-cr.yml
 	@-oc create -f deploy/integreatly-installation-cr.yml
 

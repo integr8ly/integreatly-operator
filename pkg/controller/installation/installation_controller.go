@@ -37,10 +37,10 @@ import (
 )
 
 const (
-	defaultInstallationName               = "integreatly-operator"
-	deletionFinalizer                     = "foregroundDeletion"
-	DefaultInstallationConfigMapName      = "integreatly-installation-config"
-	DefaultInstallationConfigMapNamespace = "integreatly"
+	deletionFinalizer                = "foregroundDeletion"
+	DefaultInstallationName          = "integreatly-operator"
+	DefaultInstallationConfigMapName = "integreatly-installation-config"
+	DefaultInstallationPrefix        = "redhat-rhmi-"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -99,7 +99,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler, d *detector.Detector) erro
 		return fmt.Errorf("could not load managed installation type: %w", err)
 	}
 
-	configManager, err := config.NewManager(context.Background(), cl, DefaultInstallationConfigMapNamespace, DefaultInstallationConfigMapName, &integreatlyv1alpha1.Installation{})
+	namespace, err := getCRNamespace()
+	if err != nil {
+		return err
+	}
+	configManager, err := config.NewManager(context.Background(), cl, namespace, DefaultInstallationConfigMapName, &integreatlyv1alpha1.Installation{})
 	if err != nil {
 		return fmt.Errorf("could not load config manager: %w", err)
 	}
@@ -123,18 +127,22 @@ func add(mgr manager.Manager, r reconcile.Reconciler, d *detector.Detector) erro
 	return nil
 }
 
-func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
+func getCRNamespace() (string, error) {
 	namespace, err := k8sutil.GetOperatorNamespace()
 	//cannot get this when running locally
 	if err == k8sutil.ErrRunLocal {
-		err = nil
 		namespace = os.Getenv("CR_NAMESPACE")
 		//running locally and no env var set, default to integreatly
 		if namespace == "" {
-			namespace = "integreatly"
+			namespace = "rhmi-config"
 		}
+		return namespace, nil
 	}
+	return "", err
+}
 
+func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
+	namespace, err := getCRNamespace()
 	if err != nil {
 		return err
 	}
@@ -157,12 +165,12 @@ func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) e
 
 		installation := &integreatlyv1alpha1.Installation{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      defaultInstallationName,
+				Name:      DefaultInstallationName,
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.InstallationSpec{
 				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
-				NamespacePrefix: "rhmi-",
+				NamespacePrefix: DefaultInstallationPrefix,
 				SelfSignedCerts: false,
 			},
 		}
