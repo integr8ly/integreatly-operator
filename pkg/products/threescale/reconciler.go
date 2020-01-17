@@ -765,7 +765,6 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 			}
 		}
 	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
