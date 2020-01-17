@@ -207,6 +207,7 @@ rules:
       - update
       - watch
       - delete
+      - create
   - apiGroups:
       - kafka.strimzi.io
     resources:

@@ -422,8 +422,6 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 				"useJwksUrl":      "true",
 			},
 		})
-
-		return serverClient.Update(ctx, kcr)
 	}
 	return nil
 }

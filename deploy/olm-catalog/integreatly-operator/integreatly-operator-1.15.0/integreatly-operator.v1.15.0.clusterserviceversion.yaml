@@ -80,6 +80,7 @@ spec:
           - update
           - watch
           - delete
+          - create
         - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
@@ -123,12 +124,22 @@ spec:
           - create
           - update
         - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - update
+          - list
+          - get
+        - apiGroups:
           - ""
           resources:
           - namespaces
           - namespaces/finalizers
           - serviceaccounts
           - configmaps
+          - services
           verbs:
           - list
           - create
