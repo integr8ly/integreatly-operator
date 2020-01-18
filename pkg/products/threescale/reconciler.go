@@ -702,6 +702,11 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	systemAdminUsername, _, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
 	kcu, err := rhsso.GetKeycloakUsers(ctx, serverClient, rhssoConfig.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -720,9 +725,11 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		}
 	}
 	for _, tsUser := range deleted {
-		res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
-		if err != nil || res.StatusCode != http.StatusOK {
-			return integreatlyv1alpha1.PhaseInProgress, err
+		if tsUser.UserDetails.Username != *systemAdminUsername {
+			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
+			if err != nil || res.StatusCode != http.StatusOK {
+				return integreatlyv1alpha1.PhaseInProgress, err
+			}
 		}
 	}
 
@@ -736,6 +743,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	for _, tsUser := range newTsUsers.Users {
+
+		// skip if ts user is the system user admin
+		if tsUser.UserDetails.Username == *systemAdminUsername {
+			continue
+		}
+
 		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
 			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
