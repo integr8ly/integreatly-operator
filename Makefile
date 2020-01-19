@@ -13,6 +13,7 @@ OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+STORAGE_TYPE=openshift
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -98,6 +99,10 @@ test/e2e: export GH_CLIENT_SECRET := 1234
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
+.PHONY: test/e2e/aws
+test/e2e/aws: export STORAGE_TYPE := aws
+test/e2e/aws: test/e2e
+
 .PHONY: test/e2e/olm
 test/e2e/olm: export GH_CLIENT_ID := 1234
 test/e2e/olm: export GH_CLIENT_SECRET := 1234
@@ -129,7 +134,7 @@ cluster/prepare/secrets:
 
 .PHONY: cluster/prepare/configmaps
 cluster/prepare/configmaps:
-	@oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) | oc apply -f -
+	@oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) -p INSTALLATION_STORAGE_TYPE=$(STORAGE_TYPE) | oc apply -f -
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:

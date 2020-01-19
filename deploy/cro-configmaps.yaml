@@ -10,9 +10,12 @@ objects:
       namespace: ${INSTALLATION_NAMESPACE}
     data:
       managed: >
-        {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
+        {"blobstorage":"${INSTALLATION_STORAGE_TYPE}", "smtpcredentials":"${INSTALLATION_STORAGE_TYPE}", "redis":"${INSTALLATION_STORAGE_TYPE}", "postgres":"${INSTALLATION_STORAGE_TYPE}"}
       workshop: >
-        {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
+        {"blobstorage":"${INSTALLATION_STORAGE_TYPE}", "smtpcredentials":"${INSTALLATION_STORAGE_TYPE}", "redis":"${INSTALLATION_STORAGE_TYPE}", "postgres":"${INSTALLATION_STORAGE_TYPE}"}
 parameters:
   - name: INSTALLATION_NAMESPACE
+    required: true
+  - name: INSTALLATION_STORAGE_TYPE
+    displayName: The storage type to be used by the Integreatly products (aws, openshift)
     required: true
