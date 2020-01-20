@@ -3,6 +3,8 @@ package threescale
 import (
 	"context"
 	"fmt"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/pkg/errors"
 	"net/http"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -17,9 +19,9 @@ import (
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
@@ -185,12 +187,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileUpdatingDefaultAdminDetails(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to update default admin details", err)
 		return phase, err
 	}
 
@@ -641,153 +637,28 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
+	kcClient := &keycloak.KeycloakClient{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clientId,
+			Namespace: rhssoNamespace,
+		},
+	}
+
+	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
-		logrus.Infof("Adding keycloak realm client")
-
-		clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		kcr.Spec.Clients = append(kcr.Spec.Clients, &aerogearv1.KeycloakClient{
-			KeycloakApiClient: &aerogearv1.KeycloakApiClient{
-				ID:                      clientId,
-				ClientID:                clientId,
-				Enabled:                 true,
-				Secret:                  clientSecret,
-				ClientAuthenticatorType: "client-secret",
-				RedirectUris: []string{
-					fmt.Sprintf("%s/*", r.Config.GetHost()),
-				},
-				StandardFlowEnabled: true,
-				RootURL:             r.Config.GetHost(),
-				FullScopeAllowed:    true,
-				Access: map[string]bool{
-					"view":      true,
-					"configure": true,
-					"manage":    true,
-				},
-				ProtocolMappers: []aerogearv1.KeycloakProtocolMapper{
-					{
-						Name:            "given name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${givenName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "firstName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "given_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "email verified",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${emailVerified}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "emailVerified",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "email_verified",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "full name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-full-name-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${fullName}",
-						Config: map[string]string{
-							"id.token.claim":     "true",
-							"access.token.claim": "true",
-						},
-					},
-					{
-						Name:            "family name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "lastName",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "family_name",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "role list",
-						Protocol:        "saml",
-						ProtocolMapper:  "saml-role-list-mapper",
-						ConsentRequired: false,
-						ConsentText:     "${familyName}",
-						Config: map[string]string{
-							"single":               "false",
-							"attribute.nameformat": "Basic",
-							"attribute.name":       "Role",
-						},
-					},
-					{
-						Name:            "email",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: true,
-						ConsentText:     "${email}",
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "email",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "email",
-							"jsonType.label":       "String",
-						},
-					},
-					{
-						Name:            "org_name",
-						Protocol:        "openid-connect",
-						ProtocolMapper:  "oidc-usermodel-property-mapper",
-						ConsentRequired: false,
-						Config: map[string]string{
-							"userinfo.token.claim": "true",
-							"user.attribute":       "org_name",
-							"id.token.claim":       "true",
-							"access.token.claim":   "true",
-							"claim.name":           "org_name",
-							"jsonType.label":       "String",
-						},
-					},
-				},
-			},
-			OutputSecret: clientId + "-secret",
-		})
-
-		err = serverClient.Update(ctx, kcr)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+		ownerutil.EnsureOwner(kcClient, r.installation)
+		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not create/update 3scale keycloak client")
 	}
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-
-	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
@@ -818,79 +689,10 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileUpdatingDefaultAdminDetails(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	rhssoNamespace := rhssoConfig.GetNamespace()
-	rhssoRealm := rhssoConfig.GetRealm()
-	if rhssoNamespace == "" || rhssoRealm == "" {
-		logrus.Info("Cannot update admin details without SSO namespace and SSO realm")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoRealm, Namespace: rhssoNamespace}, kcr)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	kcUsers := filterUsers(kcr.Spec.Users, func(u *aerogearv1.KeycloakUser) bool {
-		return u.UserName == rhsso.CustomerAdminUser.UserName
-	})
-	if len(kcUsers) == 1 {
-		s := &corev1.Secret{}
-		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "system-seed", Namespace: r.Config.GetNamespace()}, s)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		currentAdminUser := string(s.Data["ADMIN_USER"])
-		accessToken, err := r.GetAdminToken(ctx, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-		tsAdmin, err := r.tsClient.GetUser(currentAdminUser, *accessToken)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		kcCaUser := kcUsers[0]
-		if tsAdmin.UserDetails.Username != kcCaUser.UserName && tsAdmin.UserDetails.Email != kcCaUser.Email {
-			res, err := r.tsClient.UpdateUser(tsAdmin.UserDetails.Id, kcCaUser.UserName, kcCaUser.Email, *accessToken)
-			if err != nil || res.StatusCode != http.StatusOK && res.StatusCode != http.StatusUnprocessableEntity {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		}
-
-		currentUsername, currentEmail, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
-		if *currentUsername != kcCaUser.UserName || *currentEmail != kcCaUser.Email {
-			err = r.SetAdminDetailsOnSecret(ctx, serverClient, kcCaUser.UserName, kcCaUser.Email)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-
-			err = r.RolloutDeployment("system-app")
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -900,26 +702,34 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	systemAdminUsername, _, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	kcu, err := rhsso.GetKeycloakUsers(ctx, serverClient, rhssoConfig.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	tsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
-	added, deleted := r.getUserDiff(kcr.Spec.Users, tsUsers.Users)
+	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
-		if kcUser.UserName == rhsso.CustomerAdminUser.UserName {
-			continue
-		}
-
 		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
 	for _, tsUser := range deleted {
-		res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
-		if err != nil || res.StatusCode != http.StatusOK {
-			return integreatlyv1alpha1.PhaseInProgress, err
+		if tsUser.UserDetails.Username != *systemAdminUsername {
+			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
+			if err != nil || res.StatusCode != http.StatusOK {
+				return integreatlyv1alpha1.PhaseInProgress, err
+			}
 		}
 	}
 
@@ -933,7 +743,9 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	for _, tsUser := range newTsUsers.Users {
-		if tsUser.UserDetails.Username == rhsso.CustomerAdminUser.UserName {
+
+		// skip if ts user is the system user admin
+		if tsUser.UserDetails.Username == *systemAdminUsername {
 			continue
 		}
 
@@ -1140,21 +952,8 @@ func (r *Reconciler) RolloutDeployment(name string) error {
 	return err
 }
 
-type predicateFunc func(*aerogearv1.KeycloakUser) bool
-
-func filterUsers(u []*aerogearv1.KeycloakUser, predicate predicateFunc) []*aerogearv1.KeycloakUser {
-	var result []*aerogearv1.KeycloakUser
-	for _, s := range u {
-		if predicate(s) {
-			result = append(result, s)
-		}
-	}
-
-	return result
-}
-
-func (r *Reconciler) getUserDiff(kcUsers []*aerogearv1.KeycloakUser, tsUsers []*User) ([]*aerogearv1.KeycloakUser, []*User) {
-	var added []*aerogearv1.KeycloakUser
+func (r *Reconciler) getUserDiff(kcUsers []keycloak.KeycloakAPIUser, tsUsers []*User) ([]keycloak.KeycloakAPIUser, []*User) {
+	var added []keycloak.KeycloakAPIUser
 	for _, kcUser := range kcUsers {
 		if !tsContainsKc(tsUsers, kcUser) {
 			added = append(added, kcUser)
@@ -1171,7 +970,7 @@ func (r *Reconciler) getUserDiff(kcUsers []*aerogearv1.KeycloakUser, tsUsers []*
 	return added, deleted
 }
 
-func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
+func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == tsUser.UserDetails.Username {
 			return true
@@ -1181,7 +980,7 @@ func kcContainsTs(kcUsers []*aerogearv1.KeycloakUser, tsUser *User) bool {
 	return false
 }
 
-func tsContainsKc(tsusers []*User, kcUser *aerogearv1.KeycloakUser) bool {
+func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
 		if tsu.UserDetails.Username == kcUser.UserName {
 			return true
@@ -1199,4 +998,130 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	}
 
 	return false
+}
+
+func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.KeycloakClientSpec {
+	return keycloak.KeycloakClientSpec{
+		RealmSelector: &metav1.LabelSelector{
+			MatchLabels: rhsso.GetInstanceLabels(),
+		},
+		Client: &keycloak.KeycloakAPIClient{
+			ID:                      clientId,
+			ClientID:                clientId,
+			Enabled:                 true,
+			Secret:                  clientSecret,
+			ClientAuthenticatorType: "client-secret",
+			RedirectUris: []string{
+				fmt.Sprintf("https://3scale-admin.%s/*", r.installation.Spec.RoutingSubdomain),
+			},
+			StandardFlowEnabled: true,
+			RootURL:             fmt.Sprintf("https://3scale-admin.%s", r.installation.Spec.RoutingSubdomain),
+			FullScopeAllowed:    true,
+			Access: map[string]bool{
+				"view":      true,
+				"configure": true,
+				"manage":    true,
+			},
+			ProtocolMappers: []keycloak.KeycloakProtocolMapper{
+				{
+					Name:            "given name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${givenName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "firstName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "given_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "email verified",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${emailVerified}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "emailVerified",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "email_verified",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "full name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-full-name-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${fullName}",
+					Config: map[string]string{
+						"id.token.claim":     "true",
+						"access.token.claim": "true",
+					},
+				},
+				{
+					Name:            "family name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "lastName",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "family_name",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "role list",
+					Protocol:        "saml",
+					ProtocolMapper:  "saml-role-list-mapper",
+					ConsentRequired: false,
+					ConsentText:     "${familyName}",
+					Config: map[string]string{
+						"single":               "false",
+						"attribute.nameformat": "Basic",
+						"attribute.name":       "Role",
+					},
+				},
+				{
+					Name:            "email",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: true,
+					ConsentText:     "${email}",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "email",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "email",
+						"jsonType.label":       "String",
+					},
+				},
+				{
+					Name:            "org_name",
+					Protocol:        "openid-connect",
+					ProtocolMapper:  "oidc-usermodel-property-mapper",
+					ConsentRequired: false,
+					ConsentText:     "n.a.",
+					Config: map[string]string{
+						"userinfo.token.claim": "true",
+						"user.attribute":       "org_name",
+						"id.token.claim":       "true",
+						"access.token.claim":   "true",
+						"claim.name":           "org_name",
+						"jsonType.label":       "String",
+					},
+				},
+			},
+		},
+	}
 }

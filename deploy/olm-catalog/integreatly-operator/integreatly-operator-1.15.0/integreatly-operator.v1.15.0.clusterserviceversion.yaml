@@ -67,6 +67,21 @@ spec:
           verbs:
           - '*'
         - apiGroups:
+          - keycloak.org
+          resources:
+          - keycloaks
+          - keycloakrealms
+          - keycloakclients
+          - keycloakbackups
+          - keycloakusers
+          verbs:
+          - get
+          - list
+          - update
+          - watch
+          - delete
+          - create
+        - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
           - applicationmonitorings
@@ -109,12 +124,22 @@ spec:
           - create
           - update
         - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - update
+          - list
+          - get
+        - apiGroups:
           - ""
           resources:
           - namespaces
           - namespaces/finalizers
           - serviceaccounts
           - configmaps
+          - services
           verbs:
           - list
           - create
@@ -166,17 +191,6 @@ spec:
           - get
           - delete
           - update
-        - apiGroups:
-          - aerogear.org
-          resources:
-          - keycloaks
-          - keycloakrealms
-          verbs:
-          - list
-          - create
-          - update
-          - watch
-          - get
         - apiGroups:
           - kafka.strimzi.io
           resources:

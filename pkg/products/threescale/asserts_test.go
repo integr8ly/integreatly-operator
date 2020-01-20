@@ -6,10 +6,7 @@ import (
 	"fmt"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -80,31 +77,12 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if err != nil {
 		return errors.New("Error getting RHSSO config")
 	}
-	kcr := &aerogearv1.KeycloakRealm{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: rhssoConfig.GetRealm(), Namespace: rhssoConfig.GetNamespace()}, kcr)
-	if !aerogearv1.ContainsClient(kcr.Spec.Clients, clientId) {
-		return errors.New(fmt.Sprintf("Keycloak client '%s' was not created", clientId))
-	}
 	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)
 	if tsIsNotFoundError(err) {
 		return errors.New(fmt.Sprintf("SSO integration was not created"))
 	}
 	if authProvider.ProviderDetails.ClientId != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
 		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
-	}
-
-	// RHSSO CustomerAdmin admin user should be set as the default 3scale admin
-	defaultAdminUser, err := fakeThreeScaleClient.GetUser(rhsso.CustomerAdminUser.UserName, accessToken)
-	if err != nil {
-		return err
-	}
-	if defaultAdminUser.UserDetails.Email != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("Request to 3scale API to update admin details was incorrect"))
-	}
-	adminSecret := &corev1.Secret{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleAdminDetailsSecret.Name, Namespace: tsConfig.GetNamespace()}, adminSecret)
-	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
 	}
 
 	// Service discovery should be configured
@@ -119,23 +97,16 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
-	if string(adminSecret.Data["ADMIN_USER"]) != rhsso.CustomerAdminUser.UserName || string(adminSecret.Data["ADMIN_EMAIL"]) != rhsso.CustomerAdminUser.Email {
-		return errors.New(fmt.Sprintf("3scale admin secret details were not updated"))
-	}
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
 		return errors.New(fmt.Sprintf("Service discovery config is misconfigured"))
 	}
 
 	// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
-	tsUsers, _ := fakeThreeScaleClient.GetUsers("accessToken")
-	if len(tsUsers.Users) != len(kcr.Spec.Users) {
-		return errors.New(fmt.Sprintf("Rhsso users should be mapped into 3scale users"))
-	}
-	test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.UserName, "accessToken")
+	test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
 	if test1User.UserDetails.Role != adminRole {
 		return errors.New(fmt.Sprintf("%s should be an admin user in 3scale", test1User.UserDetails.Username))
 	}
-	test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.UserName, "accessToken")
+	test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
 	if test2User.UserDetails.Role != memberRole {
 		return errors.New(fmt.Sprintf("%s should be a member user in 3scale", test2User.UserDetails.Username))
 	}

@@ -28,29 +28,27 @@ import (
 )
 
 const (
-	retryInterval                    = time.Second * 5
-	timeout                          = time.Second * 75
-	deploymentRetryInterval          = time.Second * 30
-	deploymentTimeout                = time.Minute * 20
-	cleanupRetryInterval             = time.Second * 1
-	cleanupTimeout                   = time.Second * 5
-	installationCleanupRetryInterval = time.Second * 20
-	installationCleanupTimeout       = time.Minute * 8 //Longer timeout required to allow for finalizers to execute
-	intlyNamespacePrefix             = "rhmi-"
-	namespaceLabel                   = "integreatly"
-	installationName                 = "integreatly-operator"
-	bootstrapStage                   = "bootstrap"
-	bootStrapStageTimeout            = time.Minute * 5
-	cloudResourcesStage              = "cloud-resources"
-	cloudResourcesStageTimeout       = time.Minute * 10
-	monitoringStage                  = "monitoring"
-	monitoringStageTimeout           = time.Minute * 10
-	authenticationStage              = "authentication"
-	authenticationStageTimeout       = time.Minute * 10
-	productsStage                    = "products"
-	productsStageTimout              = time.Minute * 30
-	solutionExplorerStage            = "solution-explorer"
-	solutionExplorerStageTimeout     = time.Minute * 10
+	retryInterval                = time.Second * 5
+	timeout                      = time.Second * 75
+	deploymentRetryInterval      = time.Second * 30
+	deploymentTimeout            = time.Minute * 20
+	cleanupRetryInterval         = time.Second * 1
+	cleanupTimeout               = time.Second * 5
+	intlyNamespacePrefix         = "rhmi-"
+	namespaceLabel               = "integreatly"
+	installationName             = "integreatly-operator"
+	bootstrapStage               = "bootstrap"
+	bootStrapStageTimeout        = time.Minute * 5
+	cloudResourcesStage          = "cloud-resources"
+	cloudResourcesStageTimeout   = time.Minute * 10
+	monitoringStage              = "monitoring"
+	monitoringStageTimeout       = time.Minute * 10
+	authenticationStage          = "authentication"
+	authenticationStageTimeout   = time.Minute * 30
+	productsStage                = "products"
+	productsStageTimout          = time.Minute * 30
+	solutionExplorerStage        = "solution-explorer"
+	solutionExplorerStageTimeout = time.Minute * 10
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -373,16 +371,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check auth stage operand versions
-	stage = integreatlyv1alpha1.StageName("authentication")
-	authOperands := map[string]string{
-		"rhsso": "v7.3.2.GA",
-	}
-	err = checkOperandVersions(t, f, namespace, stage, authOperands)
-	if err != nil {
-		return err
-	}
-
 	// check cloud resources stage operand versions
 	stage = integreatlyv1alpha1.StageName("cloud-resources")
 	resouceOperands := map[string]string{
@@ -411,7 +399,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces": string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(integreatlyv1alpha1.VersionFuseOnOpenshift),
 		"ups":                  string(integreatlyv1alpha1.VersionUps),
-		"rhssouser":            "v7.3.2.GA",
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {
@@ -426,7 +413,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces":  3,
 		"fuse":                  1,
 		"middleware-monitoring": 3,
-		"rhsso":                 1,
+		"rhsso":                 2,
 		"solution-explorer":     1,
 		"ups":                   1,
 		"user-sso":              1,

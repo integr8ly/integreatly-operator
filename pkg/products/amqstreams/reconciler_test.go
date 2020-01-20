@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -43,7 +43,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	err = keycloak.SchemeBuilder.AddToScheme(scheme)
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)

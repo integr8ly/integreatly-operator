@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	routev1 "github.com/openshift/api/route/v1"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
@@ -70,7 +72,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	err = keycloak.SchemeBuilder.AddToScheme(scheme)
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
@@ -80,6 +82,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	err = monitoring.SchemeBuilder.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -100,6 +103,7 @@ func TestReconciler_config(t *testing.T) {
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
 		Recorder        record.EventRecorder
+		ApiUrl          string
 	}{
 		{
 			Name:            "test error on failed config",
@@ -116,6 +120,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
 			Recorder: setupRecorder(),
+			ApiUrl:   "https://serverurl",
 		},
 	}
 
@@ -127,6 +132,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeOauthClient,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -163,6 +169,23 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "oauth-client-secrets",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{
+			"rhsso": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
+	githubOauthSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "github-oauth-secret",
+			Namespace: defaultOperatorNamespace,
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		FakeClient      k8sclient.Client
@@ -174,10 +197,11 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		ExpectedStatus  integreatlyv1alpha1.StatusPhase
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Recorder        record.EventRecorder
+		ApiUrl          string
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
@@ -188,6 +212,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Recorder:       setupRecorder(),
+			ApiUrl:         "https://serverurl",
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -210,6 +235,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Recorder:       setupRecorder(),
+			ApiUrl:         "https://serverurl",
 		},
 	}
 	for _, tc := range cases {
@@ -220,6 +246,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.FakeOauthClient,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.ApiUrl,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -247,15 +274,15 @@ func TestReconciler_handleProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
 	}
 
-	kcr := getKcr(aerogearv1.KeycloakRealmStatus{
-		Phase: aerogearv1.PhaseReconcile,
+	kcr := getKcr(keycloak.KeycloakRealmStatus{
+		Phase: keycloak.PhaseReconciling,
 	})
 
 	secret := &corev1.Secret{
@@ -293,6 +320,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		FakeMPM         *marketplace.MarketplaceInterfaceMock
 		Installation    *integreatlyv1alpha1.Installation
 		Recorder        record.EventRecorder
+		ApiUrl          string
 	}{
 		{
 			Name:            "test ready kcr returns phase complete",
@@ -302,15 +330,17 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
 			Recorder:        setupRecorder(),
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test unready kcr cr returns phase in progress",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseFailed}), githubOauthSecret, oauthClientSecrets),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
 			Recorder:        setupRecorder(),
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test missing kc cr returns phase failed",
@@ -321,6 +351,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
 			Recorder:        setupRecorder(),
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test missing kcr cr returns phase failed",
@@ -331,6 +362,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
 			Recorder:        setupRecorder(),
+			ApiUrl:          "https://serverurl",
 		},
 		{
 			Name:            "test failed config write",
@@ -355,6 +387,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			},
 			Installation: &integreatlyv1alpha1.Installation{},
 			Recorder:     setupRecorder(),
+			ApiUrl:       "https://serverurl",
 		},
 	}
 
@@ -366,12 +399,13 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeOauthClient,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
 
-			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.Installation, tc.FakeClient)
+			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
 				t.Fatalf("expected error but got one: %v", err)
@@ -432,7 +466,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	kc := &aerogearv1.Keycloak{
+	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
@@ -464,6 +498,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	edgeRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-edge",
+			Namespace: defaultRhssoNamespace,
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		ExpectError     bool
@@ -476,11 +520,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
 		Recorder        record.EventRecorder
+		ApiUrl          string
 	}{
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(aerogearv1.KeycloakRealmStatus{Phase: aerogearv1.PhaseReconcile}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -512,6 +557,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Installation: installation,
 			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
 			Recorder:     setupRecorder(),
+			ApiUrl:       "https://serverurl",
 		},
 	}
 
@@ -523,6 +569,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeOauthClient,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.ApiUrl,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -545,24 +592,20 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 }
 
-func getKcr(status aerogearv1.KeycloakRealmStatus) *aerogearv1.KeycloakRealm {
-	return &aerogearv1.KeycloakRealm{
+func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
+	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
 			Namespace: defaultRhssoNamespace,
 		},
-		Spec: aerogearv1.KeycloakRealmSpec{
-			CreateOnly: true,
-			KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
+		Spec: keycloak.KeycloakRealmSpec{
+			Realm: &keycloak.KeycloakAPIRealm{
 				ID:          keycloakRealmName,
 				Realm:       keycloakRealmName,
 				DisplayName: keycloakRealmName,
 				Enabled:     true,
 				EventsListeners: []string{
 					"metrics-listener",
-				},
-				Users: []*aerogearv1.KeycloakUser{
-					CustomerAdminUser,
 				},
 			},
 		},

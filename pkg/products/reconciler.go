@@ -55,15 +55,13 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-
-		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder)
+		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host)
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
-
-		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder)
+		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host)
 	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuse:

@@ -12,13 +12,13 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	types2 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
-	aerogearv1 "github.com/integr8ly/integreatly-operator/pkg/apis/aerogear/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -38,21 +38,22 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 )
 
-var testKeycloakRealm = aerogearv1.KeycloakRealm{
+var testKeycloakClient = &keycloak.KeycloakClient{
+	Spec: keycloak.KeycloakClientSpec{
+		Client: &keycloak.KeycloakAPIClient{
+			Name: defaultClientName,
+		},
+	},
+}
+
+var testKeycloakRealm = &keycloak.KeycloakRealm{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "openshift",
 		Namespace: "rhsso",
 	},
-	Spec: aerogearv1.KeycloakRealmSpec{
-		CreateOnly: false,
-		KeycloakApiRealm: &aerogearv1.KeycloakApiRealm{
-			Clients: []*aerogearv1.KeycloakClient{
-				&aerogearv1.KeycloakClient{
-					KeycloakApiClient: &aerogearv1.KeycloakApiClient{
-						Name: defaultClientName,
-					},
-				},
-			},
+	Spec: keycloak.KeycloakRealmSpec{
+		Realm: &keycloak.KeycloakAPIRealm{
+			Realm: defaultClientName,
 		},
 	},
 }
@@ -107,13 +108,12 @@ func backupsSecretMock() *corev1.Secret {
 func buildScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	chev1.SchemeBuilder.AddToScheme(scheme)
-	aerogearv1.SchemeBuilder.AddToScheme(scheme)
+	keycloak.SchemeBuilder.AddToScheme(scheme)
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	operatorsv1alpha1.AddToScheme(scheme)
 	marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	kafkav1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
-	aerogearv1.SchemeBuilder.AddToScheme(scheme)
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)
 	appsv1.SchemeBuilder.AddToScheme(scheme)
@@ -247,7 +247,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, pg, &corev1.Secret{
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, pg, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "codeready-postgres-",
 				},
@@ -320,7 +320,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				},
 			},
 			ExpectedError: "could not retrieve checluster for keycloak client update: checlusters.org.eclipse.che \"integreatly-cluster\" not found",
-			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm),
+			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm),
 			FakeConfig:    basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -355,7 +355,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					},
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, &testCheCluster),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -428,7 +428,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
-			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, &testCheCluster),
+			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, &testCheCluster),
 			FakeConfig: basicConfigMock(),
 			Recorder:   setupRecorder(),
 		},
@@ -607,7 +607,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:           "test successful installation without errors",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   installation,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), &testKeycloakRealm, dep, ns, cluster, installation, pg, sec, backupsSecretMock()),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, dep, ns, cluster, installation, pg, sec, backupsSecretMock()),
 			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {
