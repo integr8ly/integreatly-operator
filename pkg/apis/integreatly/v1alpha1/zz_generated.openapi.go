@@ -104,6 +104,13 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
 						},
 					},
+					"smtpSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SMTPSecret is the name of a secret in the installation namespace containing SMTP connection details. The secret must contain the following fields:\n\nhost port tls username password",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"type", "namespacePrefix", "selfSignedCerts"},
 			},
@@ -122,7 +129,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"stages": {
 						SchemaProps: spec.SchemaProps{
-							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Description: "INSERT ADDITIONAL STATUS FIELDS - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
@@ -149,6 +156,12 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 					"lastError": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"smtpEnabled": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
 							Format: "",
 						},
 					},
