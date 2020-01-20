@@ -96,7 +96,7 @@ test/e2e/prow: test/e2e
 .PHONY: test/e2e
 test/e2e: export GH_CLIENT_ID := 1234
 test/e2e: export GH_CLIENT_SECRET := 1234
-test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
+test/e2e: cluster/cleanup cluster/cleanup/crds cluster/cleanup/roles cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e/aws
@@ -179,6 +179,11 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd installations.integreatly.org
 	@-oc delete crd webapps.integreatly.org
+
+.PHONY: cluster/cleanup/roles
+cluster/cleanup/roles:
+	@-oc delete -f deploy/role_binding.yaml -n $(NAMESPACE)
+	@-oc delete -f deploy/role.yaml -n $(NAMESPACE)
 
 .PHONY: deploy/integreatly-installation-cr.yml
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true

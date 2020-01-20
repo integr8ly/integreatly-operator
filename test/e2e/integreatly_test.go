@@ -23,35 +23,45 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	retryInterval                = time.Second * 5
-	timeout                      = time.Second * 75
-	deploymentRetryInterval      = time.Second * 30
-	deploymentTimeout            = time.Minute * 20
-	cleanupRetryInterval         = time.Second * 1
-	cleanupTimeout               = time.Second * 5
-	intlyNamespacePrefix         = "rhmi-"
-	namespaceLabel               = "integreatly"
-	installationName             = "integreatly-operator"
-	bootstrapStage               = "bootstrap"
-	bootStrapStageTimeout        = time.Minute * 5
-	cloudResourcesStage          = "cloud-resources"
-	cloudResourcesStageTimeout   = time.Minute * 10
-	monitoringStage              = "monitoring"
-	monitoringStageTimeout       = time.Minute * 10
-	authenticationStage          = "authentication"
-	authenticationStageTimeout   = time.Minute * 30
-	productsStage                = "products"
-	productsStageTimout          = time.Minute * 30
-	solutionExplorerStage        = "solution-explorer"
-	solutionExplorerStageTimeout = time.Minute * 10
+	retryInterval                    = time.Second * 5
+	timeout                          = time.Second * 75
+	deploymentRetryInterval          = time.Second * 30
+	deploymentTimeout                = time.Minute * 20
+	cleanupRetryInterval             = time.Second * 1
+	cleanupTimeout                   = time.Second * 5
+	installationCleanupRetryInterval = time.Second * 30
+	installationCleanupTimeout       = time.Minute * 30
+	namespaceLabel                   = "integreatly"
+	installationName                 = "integreatly-operator"
+	bootstrapStage                   = "bootstrap"
+	bootStrapStageTimeout            = time.Minute * 5
+	cloudResourcesStage              = "cloud-resources"
+	cloudResourcesStageTimeout       = time.Minute * 10
+	monitoringStage                  = "monitoring"
+	monitoringStageTimeout           = time.Minute * 10
+	authenticationStage              = "authentication"
+	authenticationStageTimeout       = time.Minute * 30
+	productsStage                    = "products"
+	productsStageTimout              = time.Minute * 30
+	solutionExplorerStage            = "solution-explorer"
+	solutionExplorerStageTimeout     = time.Minute * 10
+)
+
+var (
+	intlyNamespacePrefix = "rhmi-"
 )
 
 func TestIntegreatly(t *testing.T) {
+	scheme := scheme.Scheme
+	if err := apis.AddToScheme(scheme); err != nil {
+		t.Fatalf("failed to initialize scheme: %s", err)
+	}
 	installationList := &integreatlyv1alpha1.InstallationList{}
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, installationList)
 	if err != nil {
@@ -549,6 +559,31 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
+func integreatlyUninstallTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, namespace string, installation *integreatlyv1alpha1.Installation) error {
+	// delete installation cr
+	t.Logf("deleting installation/%s cr\n", installation.Name)
+	if err := f.Client.Delete(goctx.TODO(), installation); err != nil {
+		return err
+	}
+
+	client, err := k8sclient.New(f.KubeConfig, k8sclient.Options{})
+	if err != nil {
+		return err
+	}
+
+	start := time.Now()
+	err = e2eutil.WaitForDeletion(t, client, installation, installationCleanupRetryInterval, installationCleanupTimeout)
+	if err != nil {
+		return err
+	}
+
+	end := time.Now()
+	elapsed := end.Sub(start)
+
+	t.Logf("uninstallation complete, waited %d", elapsed)
+	return nil
+}
+
 func IntegreatlyCluster(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
@@ -568,6 +603,19 @@ func IntegreatlyCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// get namespace prefix from installation cr
+	installation := &integreatlyv1alpha1.Installation{}
+	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if installation.Spec.NamespacePrefix != "" {
+		intlyNamespacePrefix = installation.Spec.NamespacePrefix
+		t.Logf("setting namespace prefix to %s \n", intlyNamespacePrefix)
+	}
+
 	// check that all of the operators deploy and all of the installation phases complete
 	if err = integreatlyManagedTest(t, f, ctx); err != nil {
 		t.Fatal(err)
@@ -579,4 +627,10 @@ func IntegreatlyCluster(t *testing.T) {
 	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
+
+	// Add check for uninstall
+	if err = integreatlyUninstallTest(t, f, ctx, namespace, installation); err != nil {
+		t.Fatal(err)
+	}
+
 }
