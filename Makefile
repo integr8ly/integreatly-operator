@@ -219,7 +219,7 @@ vendor/fix:
 	go mod tidy
 	go mod vendor
 
-.PHONY: cluster/cleanup/prow
+.PHONY: cluster/cleanup/e2e
 cluster/cleanup/e2e:
 	-oc delete clusterrolebindings.rbac.authorization.k8s.io integreatly-operator
 	-oc delete roles.rbac.authorization.k8s.io integreatly-operator
