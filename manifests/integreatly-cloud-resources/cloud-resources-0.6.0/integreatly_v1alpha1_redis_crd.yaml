@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: smtpcredentialsets.integreatly.org
+  name: redis.integreatly.org
 spec:
   group: integreatly.org
   names:
-    kind: SMTPCredentialSet
-    listKind: SMTPCredentialSetList
-    plural: smtpcredentialsets
-    singular: smtpcredentialset
+    kind: Redis
+    listKind: RedisList
+    plural: redis
+    singular: redis
   scope: Namespaced
   subresources:
     status: {}
@@ -38,6 +38,8 @@ spec:
               required:
               - name
               type: object
+            skipCreate:
+              type: boolean
             tier:
               type: string
             type:

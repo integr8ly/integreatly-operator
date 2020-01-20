@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croType "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -34,7 +34,7 @@ func NewResourceProvider(c client.Client, s *runtime.Scheme, l *logrus.Entry) *R
 func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o runtime.Object, d map[string][]byte) error {
 	obj := o.(metav1.Object)
 	secNs := obj.GetNamespace()
-	rts := &types.ResourceTypeSpec{}
+	rts := &croType.ResourceTypeSpec{}
 	if err := runtime.Field(reflect.ValueOf(o).Elem(), "Spec", rts); err != nil {
 		return errors.Wrap(err, "failed to retrieve secret reference from instance")
 	}
@@ -49,7 +49,7 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 	}
 	_, err := controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func() error {
 		if ownerRefErr := controllerutil.SetControllerReference(obj, sec, r.Scheme); ownerRefErr != nil {
-			if updateErr := UpdatePhase(ctx, r.Client, o, types.PhaseFailed, "setting secret data"); updateErr != nil {
+			if updateErr := UpdatePhase(ctx, r.Client, o, croType.PhaseFailed, "setting secret data"); updateErr != nil {
 				return updateErr
 			}
 			return errors.Wrapf(ownerRefErr, "failed to set owner on secret %s", sec.Name)
@@ -59,7 +59,7 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 		return nil
 	})
 	if err != nil {
-		if updateErr := UpdatePhase(ctx, r.Client, o, types.PhaseFailed, "failed to reconcile instance secret"); updateErr != nil {
+		if updateErr := UpdatePhase(ctx, r.Client, o, croType.PhaseFailed, "failed to reconcile instance secret"); updateErr != nil {
 			return updateErr
 		}
 		return errors.Wrapf(err, "failed to reconcile smtp credential set instance secret %s", sec.Name)

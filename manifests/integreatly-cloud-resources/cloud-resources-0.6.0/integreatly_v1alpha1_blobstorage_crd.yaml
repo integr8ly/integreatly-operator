@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: redis.integreatly.org
+  name: blobstorages.integreatly.org
 spec:
   group: integreatly.org
   names:
-    kind: Redis
-    listKind: RedisList
-    plural: redis
-    singular: redis
+    kind: BlobStorage
+    listKind: BlobStorageList
+    plural: blobstorages
+    singular: blobstorage
   scope: Namespaced
   subresources:
     status: {}
@@ -38,6 +38,8 @@ spec:
               required:
               - name
               type: object
+            skipCreate:
+              type: boolean
             tier:
               type: string
             type:

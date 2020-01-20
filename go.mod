@@ -10,7 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882
+	github.com/integr8ly/cloud-resource-operator v0.6.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible

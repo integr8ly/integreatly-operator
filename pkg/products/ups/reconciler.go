@@ -155,7 +155,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// setup postgres custom resource
 	// this will be used by the cloud resources operator to provision a postgres instance
 	postgresName := fmt.Sprintf("ups-postgres-%s", installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, client, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, client, defaultInstallationNamespace, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil
 	})

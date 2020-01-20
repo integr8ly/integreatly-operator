@@ -13,6 +13,9 @@ import (
 
 const (
 	EnvForceReconcileTimeout = "ENV_FORCE_RECONCILE_TIMEOUT"
+	DefaultTagKeyPrefix      = "integreatly.org/"
+	ErrorReconcileTime       = time.Second * 30
+	SuccessReconcileTime     = time.Second * 60
 )
 
 // returns envar for reconcile time else returns default time
@@ -34,4 +37,13 @@ func GeneratePassword() (string, error) {
 		return "", errorUtil.Wrap(err, "error generating password")
 	}
 	return strings.Replace(generatedPassword.String(), "-", "", 10), nil
+}
+
+func GetOrganizationTag() string {
+	// get the environment from the CR
+	organizationTag, exists := os.LookupEnv("TAG_KEY_PREFIX")
+	if !exists {
+		organizationTag = DefaultTagKeyPrefix
+	}
+	return organizationTag
 }
