@@ -49,18 +49,18 @@ var (
 	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
-	VersionAMQOnline           ProductVersion = "1.2.2"
-	VersionAMQStreams          ProductVersion = "1.1.0"
-	VersionCodeReadyWorkspaces ProductVersion = "2.0.0.GA"
-	VersionFuseOnOpenshift     ProductVersion = "master"
-	VersionMonitoring          ProductVersion = "1.0.2"
-	Version3Scale              ProductVersion = "2.7"
-	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.6.0"
-
-	PreflightInProgress PreflightStatus = ""
-	PreflightSuccess    PreflightStatus = "successful"
-	PreflightFail       PreflightStatus = "failed"
+	VersionAMQOnline           ProductVersion  = "1.3.1"
+	VersionAMQStreams          ProductVersion  = "1.1.0"
+	VersionCodeReadyWorkspaces ProductVersion  = "2.0.0.GA"
+	VersionFuseOnOpenshift     ProductVersion  = "master"
+	VersionMonitoring          ProductVersion  = "1.0.2"
+	Version3Scale              ProductVersion  = "2.7"
+	VersionUps                 ProductVersion  = "2.3.2"
+	VersionCloudResources      ProductVersion  = "0.6.1"
+	VersionFuseOnline          ProductVersion  = "7.5"
+	PreflightInProgress        PreflightStatus = ""
+	PreflightSuccess           PreflightStatus = "successful"
+	PreflightFail              PreflightStatus = "failed"
 
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline           OperatorVersion = "1.3.1"

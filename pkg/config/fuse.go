@@ -37,6 +37,10 @@ func (f *Fuse) SetNamespace(newNamespace string) {
 	f.config["NAMESPACE"] = newNamespace
 }
 
+func (f *Fuse) GetOperatorNamespace() string {
+	return f.config["NAMESPACE"] + "-operator"
+}
+
 func (f *Fuse) GetHost() string {
 	return f.config["HOST"]
 }
@@ -65,19 +69,11 @@ func (f *Fuse) GetProductName() integreatlyv1alpha1.ProductName {
 }
 
 func (f *Fuse) GetProductVersion() integreatlyv1alpha1.ProductVersion {
-	return integreatlyv1alpha1.ProductVersion(f.config["VERSION"])
+	return integreatlyv1alpha1.VersionFuseOnline
 }
 
 func (f *Fuse) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
-	return integreatlyv1alpha1.OperatorVersion(f.config["VERSION"])
-}
-
-func (f *Fuse) SetProductVersion(newVersion string) {
-	f.config["VERSION"] = newVersion
-}
-
-func (f *Fuse) SetOperatorVersion(operator string) {
-	f.config["OPERATOR"] = operator
+	return integreatlyv1alpha1.OperatorVersionFuse
 }
 
 func (f *Fuse) Validate() error {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
 
@@ -111,18 +112,17 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
-	// ns exists so check it is our namespace
-	if !IsOwnedBy(ns, inst) && ns.Status.Phase != corev1.NamespaceTerminating {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("existing namespace found with name %v but it is not owned by the integreatly installation and it isn't being deleted", ns.Name)
-	}
-	if ns.Status.Phase == corev1.NamespaceTerminating {
-		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
+
 	PrepareObject(ns, inst)
 	if err := client.Update(ctx, ns); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
 	}
+
+	if ns.Status.Phase == corev1.NamespaceTerminating {
+		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	if ns.Status.Phase != corev1.NamespaceActive {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
@@ -176,20 +176,20 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, t marketplace.Target, targetNS string, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", t.Pkg, "integreatly", t.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, owner, t, []string{targetNS}, operatorsv1alpha1.ApprovalManual)
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS string, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, "integreatly", target.Namespace)
+	err := r.mpm.InstallOperator(ctx, client, owner, target, []string{operandNS}, operatorsv1alpha1.ApprovalManual)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", t.Namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", target.Namespace, err)
 	}
-	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, t.Pkg, t.Namespace)
+	ips, _, err := r.mpm.GetSubscriptionInstallPlans(ctx, client, target.Pkg, target.Namespace)
 	if err != nil {
 		// this could be the install plan or subscription so need to check if sub nil or not TODO refactor
 		if k8serr.IsNotFound(err) || k8serr.IsNotFound(errors.Unwrap(err)) {
 			return integreatlyv1alpha1.PhaseAwaitingOperator, nil
 		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve installplan and subscription in namespace: %s: %w", t.Namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve installplan and subscription in namespace: %s: %w", target.Namespace, err)
 	}
 
 	if len(ips.Items) == 0 {
@@ -199,16 +199,16 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	for _, ip := range ips.Items {
 		err = upgradeApproval(ctx, client, &ip)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", t.Pkg, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.Pkg, err)
 		}
 
 		//if it's approved but not complete, then it's in progress
 		if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete && ip.Spec.Approved {
-			logrus.Infof("%s install plan is not complete yet ", t.Pkg)
+			logrus.Infof("%s install plan is not complete yet ", target.Pkg)
 			return integreatlyv1alpha1.PhaseInProgress, nil
 			//if it's not approved by now, then it will not be approved by this version of the integreatly-operator
 		} else if !ip.Spec.Approved {
-			logrus.Infof("%s has an upgrade installplan above the maximum allowed version", t.Pkg)
+			logrus.Infof("%s has an upgrade installplan above the maximum allowed version", target.Pkg)
 		}
 	}
 

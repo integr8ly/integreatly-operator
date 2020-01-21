@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -72,7 +74,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = routev1.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
+	err = projectv1.AddToScheme(scheme)
+	err = appsv1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -337,6 +340,18 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-operator",
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "syndesis",
@@ -374,6 +389,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			test1User.Name,
 		},
 	}
+	operatorDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-operator",
+			Namespace: "fuse-operator",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{},
+						},
+					},
+				},
+			},
+		},
+	}
 
 	cases := []struct {
 		Name           string
@@ -390,7 +422,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), ns, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

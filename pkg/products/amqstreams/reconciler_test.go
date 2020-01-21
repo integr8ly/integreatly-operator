@@ -389,7 +389,18 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
-	objs = append(objs, ns, installation)
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-operator",
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+	objs = append(objs, ns, operatorNS, installation)
 
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{

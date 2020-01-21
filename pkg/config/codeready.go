@@ -37,6 +37,9 @@ func (c *CodeReady) GetNamespace() string {
 	return c.Config["NAMESPACE"]
 }
 
+func (c *CodeReady) GetOperatorNamespace() string {
+	return c.Config["NAMESPACE"] + "-operator"
+}
 func (c *CodeReady) GetLabelSelector() string {
 	return "middleware"
 }

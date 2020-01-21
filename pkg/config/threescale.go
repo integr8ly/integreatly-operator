@@ -48,6 +48,10 @@ func (t *ThreeScale) GetNamespace() string {
 	return t.config["NAMESPACE"]
 }
 
+func (t *ThreeScale) GetOperatorNamespace() string {
+	return t.config["NAMESPACE"] + "-operator"
+}
+
 func (t *ThreeScale) GetLabelSelector() string {
 	return "middleware"
 }

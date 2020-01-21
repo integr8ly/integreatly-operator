@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
+
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
@@ -36,7 +38,7 @@ import (
 )
 
 var (
-	integreatlyOperatorNamespace = "integreatly-operator-namespace"
+	integreatlyOperatorNamespace = "integreatly-operator-ns"
 )
 
 func getBuildScheme() (*runtime.Scheme, error) {
@@ -53,7 +55,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
+	err = projectv1.AddToScheme(scheme)
+	err = appsv1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -130,7 +133,7 @@ func TestThreeScale(t *testing.T) {
 			Installation: &integreatlyv1alpha1.Installation{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "test-installation",
-					Namespace:  "integreatly-operator-namespace",
+					Namespace:  "integreatly-operator-ns",
 					Finalizers: []string{"finalizer.3scale.integreatly.org"},
 				},
 				TypeMeta: metav1.TypeMeta{

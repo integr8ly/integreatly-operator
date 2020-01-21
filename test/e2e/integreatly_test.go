@@ -36,9 +36,9 @@ const (
 	deploymentTimeout            = time.Minute * 20
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
-	intlyNamespacePrefix         = "rhmi-"
+	intlyNamespacePrefix         = "redhat-rhmi-"
 	namespaceLabel               = "integreatly"
-	installationName             = "integreatly-operator"
+	installationName             = "integreatly"
 	bootstrapStage               = "bootstrap"
 	bootStrapStageTimeout        = time.Minute * 5
 	cloudResourcesStage          = "cloud-resources"
@@ -67,7 +67,7 @@ func TestIntegreatly(t *testing.T) {
 }
 
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
-	namespace := intlyNamespacePrefix + product
+	namespace := intlyNamespacePrefix + product + "-operator"
 	t.Logf("Checking %s:%s", namespace, deploymentName)
 
 	start := time.Now()
@@ -96,7 +96,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	// Get active alerts
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring",
+		intlyNamespacePrefix+"middleware-monitoring-operator",
 		"prometheus", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -137,7 +137,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	// Get all rules
 	output, err = execToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring",
+		intlyNamespacePrefix+"middleware-monitoring-operator",
 		"prometheus", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -199,7 +199,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(intlyNamespacePrefix + "middleware-monitoring"),
+		k8sclient.InNamespace(intlyNamespacePrefix + "middleware-monitoring-operator"),
 		k8sclient.MatchingLabels{"app": "grafana"},
 	}
 	err := f.Client.List(goctx.TODO(), pods, opts...)
@@ -218,7 +218,7 @@ func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	output, err := execToPod("curl localhost:3000/api/search?query=resource%20usage%20by%20namespace",
 		pods.Items[0].ObjectMeta.Name,
-		intlyNamespacePrefix+"middleware-monitoring",
+		intlyNamespacePrefix+"middleware-monitoring-operator",
 		"grafana", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -382,14 +382,22 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	// check namespaces labelled correctly
 	expectedNamespaces := []string{
 		"3scale",
+		"3scale-operator",
 		"amq-online",
+		"amq-online-operator",
 		"codeready-workspaces",
+		"codeready-workspaces-operator",
 		"fuse",
-		"middleware-monitoring",
+		"fuse-operator",
+		"middleware-monitoring-operator",
 		"rhsso",
+		"rhsso-operator",
 		"solution-explorer",
+		"solution-explorer-operator",
 		"ups",
+		"ups-operator",
 		"user-sso",
+		"user-sso-operator",
 	}
 	err = checkIntegreatlyNamespaceLabels(t, f, expectedNamespaces, namespaceLabel)
 	if err != nil {
@@ -478,15 +486,15 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	// check routes were created by checking hardcoded number of routes
 	// would be nice if expected routes can be dynamically discovered
 	expectedRoutes := map[string]int{
-		"3scale":                6,
-		"amq-online":            2,
-		"codeready-workspaces":  3,
-		"fuse":                  1,
-		"middleware-monitoring": 3,
-		"rhsso":                 2,
-		"solution-explorer":     1,
-		"ups":                   1,
-		"user-sso":              1,
+		"3scale":                         6,
+		"amq-online":                     2,
+		"codeready-workspaces":           3,
+		"fuse":                           1,
+		"middleware-monitoring-operator": 3,
+		"rhsso":                          2,
+		"solution-explorer":              1,
+		"ups":                            1,
+		"user-sso":                       1,
 	}
 
 	for product, numberRoutes := range expectedRoutes {
@@ -506,10 +514,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"user-sso",
 	}
 	err = checkPvcs(t, f, namespace, pvcNamespaces)
-	if err != nil {
-		return err
-	}
-
 	return err
 }
 
@@ -598,7 +602,7 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				t.Logf("Waiting for availability of %s installation\n", installationName)
+				t.Logf("Waiting for availability of %s installation in namespace: %s, phase: %s\n", installationName, namespace, phase)
 				return false, nil
 			}
 			return false, err

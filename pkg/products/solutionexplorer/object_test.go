@@ -81,9 +81,21 @@ var installation = &integreatlyv1alpha1.Installation{
 	},
 }
 
-var webappNs = &corev1.Namespace{
+var webappNS = &corev1.Namespace{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: defaultName,
+		Labels: map[string]string{
+			resources.OwnerLabelKey: string(installation.GetUID()),
+		},
+	},
+	Status: corev1.NamespaceStatus{
+		Phase: corev1.NamespaceActive,
+	},
+}
+
+var operatorNS = &corev1.Namespace{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: defaultName + "-operator",
 		Labels: map[string]string{
 			resources.OwnerLabelKey: string(installation.GetUID()),
 		},

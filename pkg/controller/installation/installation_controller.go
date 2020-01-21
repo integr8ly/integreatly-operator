@@ -36,9 +36,9 @@ import (
 
 const (
 	deletionFinalizer                = "foregroundDeletion"
-	DefaultInstallationName          = "integreatly-operator"
+	DefaultInstallationName          = "integreatly"
 	DefaultInstallationConfigMapName = "integreatly-installation-config"
-	DefaultInstallationPrefix        = "integreatly"
+	DefaultInstallationPrefix        = "redhat-rhmi-"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -323,7 +323,10 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
 
-	result := reconcile.Result{}
+	result := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
 	requiredSecrets := []string{"github-oauth-secret"}
 	for _, secretName := range requiredSecrets {
 		secret := &corev1.Secret{

@@ -21,7 +21,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	corev1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -85,86 +85,87 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
 
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
-		if !kerrors.IsNotFound(err) {
-			logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
-			blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
-			blackboxtargetsListOpts := []k8sclient.ListOption{
-				k8sclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
-			}
-			err := serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
-			if err != nil {
-				logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list blackbox targets: %w", err)
-			}
-			if len(blackboxtargets.Items) > 0 {
-				logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
-				// do something to delete these dashboards
-				for _, bbt := range blackboxtargets.Items {
-					logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
-					b := &monitoring_v1alpha1.BlackboxTarget{}
-					err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetNamespace()}, b)
-					if kerrors.IsNotFound(err) {
-						continue
-					}
-					if err != nil {
-						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get %s blackbox target: %w", bbt.Name, err)
-					}
-
-					err = serverClient.Delete(ctx, b)
-					if err != nil && !kerrors.IsNotFound(err) {
-						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s blackbox target: %w", b.Name, err)
-					}
-				}
-				return integreatlyv1alpha1.PhaseInProgress, nil
-			}
-
-			m := &monitoring_v1alpha1.ApplicationMonitoring{}
-			err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
-			if err != nil && !kerrors.IsNotFound(err) {
-				logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s application monitoring custom resource: %w", defaultMonitoringName, err)
-			}
-			if !kerrors.IsNotFound(err) {
-				if m.DeletionTimestamp == nil {
-					logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
-					err = serverClient.Delete(ctx, m)
-					if err != nil && !kerrors.IsNotFound(err) {
-						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s application monitoring custom resource: %w", defaultMonitoringName, err)
-					}
-				}
-				return integreatlyv1alpha1.PhaseInProgress, nil
-			}
-
-			logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				return phase, err
-			}
+		_, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
+		if k8serr.IsNotFound(err) {
+			//namespace is gone, return complete
+			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		return integreatlyv1alpha1.PhaseCompleted, nil
+
+		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
+		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
+		blackboxtargetsListOpts := []k8sclient.ListOption{
+			k8sclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
+		}
+		err = serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
+		if err != nil {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list blackbox targets: %w", err)
+		}
+		if len(blackboxtargets.Items) > 0 {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
+			// do something to delete these dashboards
+			for _, bbt := range blackboxtargets.Items {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
+				b := &monitoring_v1alpha1.BlackboxTarget{}
+				err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetOperatorNamespace()}, b)
+				if k8serr.IsNotFound(err) {
+					continue
+				}
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get %s blackbox target: %w", bbt.Name, err)
+				}
+
+				err = serverClient.Delete(ctx, b)
+				if err != nil && !k8serr.IsNotFound(err) {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s blackbox target: %w", b.Name, err)
+				}
+			}
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		m := &monitoring_v1alpha1.ApplicationMonitoring{}
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetOperatorNamespace()}, m)
+		if err != nil && !k8serr.IsNotFound(err) {
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s application monitoring custom resource: %w", defaultMonitoringName, err)
+		}
+		if !k8serr.IsNotFound(err) {
+			if m.DeletionTimestamp == nil {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
+				err = serverClient.Delete(ctx, m)
+				if err != nil && !k8serr.IsNotFound(err) {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s application monitoring custom resource: %w", defaultMonitoringName, err)
+				}
+			}
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	})
+
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	ns := r.Config.GetNamespace()
-
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, serverClient)
+	namespace, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
 	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetOperatorNamespace()), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: ns, ManifestPackage: manifestPackagae}, ns, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackagae}, r.Config.GetOperatorNamespace(), serverClient)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
@@ -243,7 +244,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 	scrapeConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetAdditionalScrapeConfigSecretName(),
-			Namespace: r.Config.GetNamespace(),
+			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
 
@@ -285,7 +286,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	m := &monitoring_v1alpha1.ApplicationMonitoring{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultMonitoringName,
-			Namespace: r.Config.GetNamespace(),
+			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
 	owner.AddIntegreatlyOwnerAnnotations(m, r.installation)
@@ -296,8 +297,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			AdditionalScrapeConfigSecretKey:  r.Config.GetAdditionalScrapeConfigSecretKey(),
 			PrometheusRetention:              r.Config.GetPrometheusRetention(),
 			PrometheusStorageRequest:         r.Config.GetPrometheusStorageRequest(),
-			AlertmanagerInstanceNamespaces:   r.Config.GetNamespace(),
-			PrometheusInstanceNamespaces:     r.Config.GetNamespace(),
+			AlertmanagerInstanceNamespaces:   r.Config.GetOperatorNamespace(),
+			PrometheusInstanceNamespaces:     r.Config.GetOperatorNamespace(),
 		}
 		r.monitoring = m
 		return nil
@@ -316,7 +317,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 		r.extraParams = map[string]string{}
 	}
 	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
-	r.extraParams["Namespace"] = r.Config.GetNamespace()
+	r.extraParams["Namespace"] = r.Config.GetOperatorNamespace()
 
 	templateHelper := NewTemplateHelper(r.extraParams)
 	resource, err := templateHelper.CreateResource(resourceName)
@@ -332,7 +333,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 
 	err = serverClient.Create(ctx, resource)
 	if err != nil {
-		if !kerrors.IsAlreadyExists(err) {
+		if !k8serr.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("error creating resource: %w", err)
 		}
 	}
@@ -393,7 +394,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 }
 
 func CreateBlackboxTarget(ctx context.Context, name string, target monitoring_v1alpha1.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) error {
-	if cfg.GetNamespace() == "" {
+	if cfg.GetOperatorNamespace() == "" {
 		// Retry later
 		return nil
 	}
@@ -411,7 +412,7 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring_v1
 
 	// prepare the template
 	extraParams := map[string]string{
-		"Namespace":     cfg.GetNamespace(),
+		"Namespace":     cfg.GetOperatorNamespace(),
 		"MonitoringKey": cfg.GetLabelSelector(),
 		"name":          name,
 		"url":           target.Url,
@@ -432,7 +433,7 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring_v1
 	// try to create the blackbox target. If if fails with already exist do nothing
 	err = serverClient.Create(ctx, obj)
 	if err != nil {
-		if kerrors.IsAlreadyExists(err) {
+		if k8serr.IsAlreadyExists(err) {
 			// The target already exists. Nothing else to do
 			return nil
 		}

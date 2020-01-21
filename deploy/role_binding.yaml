@@ -6,7 +6,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: integreatly-operator
-  namespace: integreatly
+  namespace: redhat-rhmi-operator
 roleRef:
   kind: Role
   name: integreatly-operator
@@ -19,7 +19,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: integreatly-operator
-    namespace: integreatly
+    namespace: redhat-rhmi-operator
 roleRef:
   kind: ClusterRole
   name: integreatly-operator

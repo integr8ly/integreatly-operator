@@ -172,7 +172,7 @@ var oauthClientSecrets = &corev1.Secret{
 var installation = &integreatlyv1alpha1.Installation{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:       "test-installation",
-		Namespace:  "integreatly-operator-namespace",
+		Namespace:  "integreatly-operator-ns",
 		Finalizers: []string{"finalizer.3scale.integreatly.org"},
 	},
 	TypeMeta: metav1.TypeMeta{
@@ -188,7 +188,7 @@ var installation = &integreatlyv1alpha1.Installation{
 var smtpCred = &crov1.SMTPCredentialSet{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-smtp-test-installation",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.SMTPCredentialSetStatus{
 		Message:  "reconcile complete",
@@ -196,7 +196,7 @@ var smtpCred = &crov1.SMTPCredentialSet{
 		Provider: "openshift-smtp",
 		SecretRef: &types.SecretRef{
 			Name:      "test-smtp",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 		Strategy: "openshift",
 	},
@@ -205,7 +205,7 @@ var smtpCred = &crov1.SMTPCredentialSet{
 var smtpSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-smtp",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Data: map[string][]byte{
 		"host":     []byte("test"),
@@ -219,19 +219,19 @@ var smtpSec = &corev1.Secret{
 var blobStorage = &crov1.BlobStorage{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-blobstorage-test-installation",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.BlobStorageStatus{
 		Phase: types.PhaseComplete,
 		SecretRef: &types.SecretRef{
 			Name:      "threescale-blobstorage-test",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 	},
 	Spec: crov1.BlobStorageSpec{
 		SecretRef: &types.SecretRef{
 			Name:      "threescale-blobstorage-test",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 	},
 }
@@ -239,7 +239,7 @@ var blobStorage = &crov1.BlobStorage{
 var blobStorageSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-blobstorage-test",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Data: map[string][]byte{
 		"bucketName":          []byte("test"),
@@ -291,7 +291,7 @@ var threescaleRoute3 = &v1.Route{
 var postgres = &crov1.Postgres{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-postgres-test-installation",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.PostgresStatus{
 		Message:  "reconcile complete",
@@ -299,7 +299,7 @@ var postgres = &crov1.Postgres{
 		Provider: "openshift-postgres",
 		SecretRef: &types.SecretRef{
 			Name:      "test-postgres",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 		Strategy: "openshift",
 	},
@@ -308,7 +308,7 @@ var postgres = &crov1.Postgres{
 var postgresSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-postgres",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Data: map[string][]byte{
 		"host":     []byte("test"),
@@ -322,7 +322,7 @@ var postgresSec = &corev1.Secret{
 var redis = &crov1.Redis{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-redis-test-installation",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.RedisStatus{
 		Message:  "reconcile complete",
@@ -330,7 +330,7 @@ var redis = &crov1.Redis{
 		Provider: "openshift-redis",
 		SecretRef: &types.SecretRef{
 			Name:      "test-redis",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 		Strategy: "openshift",
 	},
@@ -339,7 +339,7 @@ var redis = &crov1.Redis{
 var redisSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-redis",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Data: map[string][]byte{
 		"uri":  []byte("test"),
@@ -350,14 +350,14 @@ var redisSec = &corev1.Secret{
 var backendRedis = &crov1.Redis{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-backend-redis-test-installation",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.RedisStatus{
 		Message: "reconcile complete",
 		Phase:   types.PhaseComplete,
 		SecretRef: &types.SecretRef{
 			Name:      "test-backend-redis",
-			Namespace: "integreatly-operator-namespace",
+			Namespace: "integreatly-operator-ns",
 		},
 		Strategy: "openshift",
 	},
@@ -366,7 +366,7 @@ var backendRedis = &crov1.Redis{
 var backendRedisSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-backend-redis",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 	},
 	Data: map[string][]byte{
 		"uri":  []byte("test"),
@@ -374,9 +374,21 @@ var backendRedisSec = &corev1.Secret{
 	},
 }
 
-var namespace = &corev1.Namespace{
+var ns = &corev1.Namespace{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: defaultInstallationNamespace,
+		Labels: map[string]string{
+			resources.OwnerLabelKey: string(installation.GetUID()),
+		},
+	},
+	Status: corev1.NamespaceStatus{
+		Phase: corev1.NamespaceActive,
+	},
+}
+
+var operatorNS = &corev1.Namespace{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: defaultInstallationNamespace + "-operator",
 		Labels: map[string]string{
 			resources.OwnerLabelKey: string(installation.GetUID()),
 		},
@@ -422,6 +434,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		backendRedisSec,
 		rhssoTest2,
 		rhssoTest1,
-		namespace,
+		ns,
+		operatorNS,
 	}
 }
