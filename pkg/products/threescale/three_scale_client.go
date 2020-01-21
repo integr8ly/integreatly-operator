@@ -153,7 +153,7 @@ func (tsc *threeScaleClient) DeleteUser(userID int, accessToken string) (*http.R
 
 	req, err := http.NewRequest(
 		http.MethodDelete,
-		fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userId),
+		fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID),
 		bytes.NewBuffer(reqData))
 	req.Header.Add("Content-type", "application/json")
 	res, err := tsc.httpc.Do(req)
@@ -168,7 +168,7 @@ func (tsc *threeScaleClient) SetUserAsAdmin(userID int, accessToken string) (*ht
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/admin.json", tsc.wildCardDomain, userId)
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/admin.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",
 		url,
@@ -188,7 +188,7 @@ func (tsc *threeScaleClient) SetUserAsMember(userID int, accessToken string) (*h
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/member.json", tsc.wildCardDomain, userId)
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d/member.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",
 		url,
@@ -210,7 +210,7 @@ func (tsc *threeScaleClient) UpdateUser(userID int, username string, email strin
 		"username":     username,
 		"email":        email,
 	})
-	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userId)
+	url := fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID)
 	req, err := http.NewRequest(
 		"PUT",
 		url,
