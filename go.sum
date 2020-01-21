@@ -84,6 +84,7 @@ github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/auth0/go-jwt-middleware v0.0.0-20170425171159-5493cabe49f7/go.mod h1:LWMyo4iOLWXHGdBki7NIht1kHru/0wM179h+d3g8ATM=
 github.com/aws/aws-sdk-go v1.16.26/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.23.17 h1:IGNAvtR7ckMEHhy+ObG9xw6DFqEE4Ual0LYXsVTZSLQ=
 github.com/aws/aws-sdk-go v1.23.17/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/bazelbuild/bazel-gazelle v0.0.0-20181012220611-c728ce9f663e/go.mod h1:uHBSeeATKpVazAACZBDPL/Nk/UhQDDsJWDlqYJo8/Us=
 github.com/bazelbuild/buildtools v0.0.0-20180226164855-80c7f0d45d7e/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
@@ -413,6 +414,7 @@ github.com/integr8ly/grafana-operator v1.3.1 h1:3fknUP3pI9/H0/HTxOOR5hzJVo1wPs5H
 github.com/integr8ly/grafana-operator v1.3.1/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
 github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4/go.mod h1:0WBJ5MjgAgIu9briw0EaDkpXsWIXMoRJKnE/J024+bM=
 github.com/jellevandenhooff/dkim v0.0.0-20150330215556-f50fe3d243e1/go.mod h1:E0B/fFc00Y+Rasa88328GlI/XbtyysCtTHZS8h7IrBU=
+github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
 github.com/joefitzgerald/rainbow-reporter v0.1.0/go.mod h1:481CNgqmVHQZzdIbN52CupLJyoVwB10FQ/IQlF1pdL8=
