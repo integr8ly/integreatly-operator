@@ -16,10 +16,10 @@ type ThreeScaleInterface interface {
 	GetUser(username, accessToken string) (*User, error)
 	GetUsers(accessToken string) (*Users, error)
 	AddUser(username string, email string, password string, accessToken string) (*http.Response, error)
-	DeleteUser(userId int, accessToken string) (*http.Response, error)
-	SetUserAsAdmin(userId int, accessToken string) (*http.Response, error)
-	SetUserAsMember(userId int, accessToken string) (*http.Response, error)
-	UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error)
+	DeleteUser(userID int, accessToken string) (*http.Response, error)
+	SetUserAsAdmin(userID int, accessToken string) (*http.Response, error)
+	SetUserAsMember(userID int, accessToken string) (*http.Response, error)
+	UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error)
 }
 
 const (
@@ -146,7 +146,7 @@ func (tsc *threeScaleClient) AddUser(username string, email string, password str
 	return res, nil
 }
 
-func (tsc *threeScaleClient) DeleteUser(userId int, accessToken string) (*http.Response, error) {
+func (tsc *threeScaleClient) DeleteUser(userID int, accessToken string) (*http.Response, error) {
 	data := make(map[string]string)
 	data["access_token"] = accessToken
 	reqData, err := json.Marshal(data)
@@ -164,7 +164,7 @@ func (tsc *threeScaleClient) DeleteUser(userId int, accessToken string) (*http.R
 	return res, nil
 }
 
-func (tsc *threeScaleClient) SetUserAsAdmin(userId int, accessToken string) (*http.Response, error) {
+func (tsc *threeScaleClient) SetUserAsAdmin(userID int, accessToken string) (*http.Response, error) {
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
@@ -184,7 +184,7 @@ func (tsc *threeScaleClient) SetUserAsAdmin(userId int, accessToken string) (*ht
 	return res, err
 }
 
-func (tsc *threeScaleClient) SetUserAsMember(userId int, accessToken string) (*http.Response, error) {
+func (tsc *threeScaleClient) SetUserAsMember(userID int, accessToken string) (*http.Response, error) {
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 	})
@@ -204,7 +204,7 @@ func (tsc *threeScaleClient) SetUserAsMember(userId int, accessToken string) (*h
 	return res, err
 }
 
-func (tsc *threeScaleClient) UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error) {
+func (tsc *threeScaleClient) UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error) {
 	data, err := json.Marshal(map[string]string{
 		"access_token": accessToken,
 		"username":     username,
