@@ -25,8 +25,8 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
 	gopkg.in/yaml.v2 v2.2.2
-	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/api v0.17.1
+	k8s.io/apimachinery v0.17.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 	sigs.k8s.io/controller-runtime v0.4.0
@@ -35,6 +35,7 @@ require (
 
 // Pinned to kubernetes-1.15.4
 replace (
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20200117162508-e7ccdda6ba67
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
@@ -58,5 +59,3 @@ replace (
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.3.0
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.2
 )
-
-replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
