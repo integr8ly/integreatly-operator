@@ -13,7 +13,9 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.9.0
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
+	github.com/integr8ly/keycloak-client v0.0.0-20200129150536-05f149c2d427
+	github.com/keycloak/keycloak-operator v0.0.0-20200129141231-e99da8a15034
+	github.com/matryer/moq v0.0.0-20200125112110-7615cbe60268 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71

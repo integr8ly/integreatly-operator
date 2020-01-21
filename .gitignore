@@ -84,3 +84,4 @@ tags
 deploy/integreatly-installation-cr.yml
 #ocm generated templates
 ocm/
+htpasswd

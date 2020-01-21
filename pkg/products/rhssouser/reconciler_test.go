@@ -6,6 +6,10 @@ import (
 	"errors"
 	"testing"
 
+	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
@@ -28,10 +32,8 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -66,17 +68,53 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = keycloak.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = operatorsv1alpha1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = usersv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = oauthv1.AddToScheme(scheme)
-	err = projectv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = routev1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = projectv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 
 	return scheme, err
 }
@@ -87,18 +125,19 @@ func setupRecorder() record.EventRecorder {
 
 func TestReconciler_config(t *testing.T) {
 	cases := []struct {
-		Name            string
-		ExpectError     bool
-		ExpectedStatus  integreatlyv1alpha1.StatusPhase
-		ExpectedError   string
-		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      k8sclient.Client
-		FakeOauthClient oauthClient.OauthV1Interface
-		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *integreatlyv1alpha1.Installation
-		Product         *integreatlyv1alpha1.InstallationProductStatus
-		Recorder        record.EventRecorder
-		ApiUrl          string
+		Name                  string
+		ExpectError           bool
+		ExpectedStatus        integreatlyv1alpha1.StatusPhase
+		ExpectedError         string
+		FakeConfig            *config.ConfigReadWriterMock
+		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
+		FakeMPM               *marketplace.MarketplaceInterfaceMock
+		Installation          *integreatlyv1alpha1.Installation
+		Product               *integreatlyv1alpha1.InstallationProductStatus
+		Recorder              record.EventRecorder
+		ApiUrl                string
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 	}{
 		{
 			Name:            "test error on failed config",
@@ -113,9 +152,10 @@ func TestReconciler_config(t *testing.T) {
 					return nil, errors.New("could not read rhsso config")
 				},
 			},
-			Recorder: setupRecorder(),
-			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
-			ApiUrl:   "https://serverurl",
+			Recorder:              setupRecorder(),
+			Product:               &integreatlyv1alpha1.InstallationProductStatus{},
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 	}
 
@@ -128,6 +168,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
+				tc.KeycloakClientFactory,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -164,6 +205,23 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kc := &keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: defaultRhssoNamespace,
+		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
+		},
+	}
+
+	group := &usersv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dedicated-admins",
+		},
+		Users: nil,
+	}
+
 	kcr := getKcr(keycloak.KeycloakRealmStatus{
 		Phase: keycloak.PhaseReconciling,
 	})
@@ -186,21 +244,22 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}
 
 	cases := []struct {
-		Name            string
-		FakeClient      k8sclient.Client
-		FakeOauthClient oauthClient.OauthV1Interface
-		FakeConfig      *config.ConfigReadWriterMock
-		Installation    *integreatlyv1alpha1.Installation
-		ExpectError     bool
-		ExpectedError   string
-		ExpectedStatus  integreatlyv1alpha1.StatusPhase
-		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Recorder        record.EventRecorder
-		ApiUrl          string
+		Name                  string
+		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
+		FakeConfig            *config.ConfigReadWriterMock
+		Installation          *integreatlyv1alpha1.Installation
+		ExpectError           bool
+		ExpectedError         string
+		ExpectedStatus        integreatlyv1alpha1.StatusPhase
+		FakeMPM               *marketplace.MarketplaceInterfaceMock
+		Recorder              record.EventRecorder
+		ApiUrl                string
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kcr, kc, group),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
@@ -209,9 +268,10 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(),
-			ApiUrl:         "https://serverurl",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 		{
 			Name: "Test reconcile custom resource returns failed on unsuccessful create",
@@ -230,11 +290,12 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 			},
-			ExpectError:    true,
-			ExpectedError:  "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Recorder:       setupRecorder(),
-			ApiUrl:         "https://serverurl",
+			ExpectError:           true,
+			ExpectedError:         "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 	}
 	for _, tc := range cases {
@@ -246,6 +307,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
+				tc.KeycloakClientFactory,
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -278,6 +340,9 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
+		},
 	}
 
 	kcr := getKcr(keycloak.KeycloakRealmStatus{
@@ -309,59 +374,64 @@ func TestReconciler_handleProgress(t *testing.T) {
 	}
 
 	cases := []struct {
-		Name            string
-		ExpectError     bool
-		ExpectedStatus  integreatlyv1alpha1.StatusPhase
-		ExpectedError   string
-		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      k8sclient.Client
-		FakeOauthClient oauthClient.OauthV1Interface
-		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *integreatlyv1alpha1.Installation
-		Recorder        record.EventRecorder
-		ApiUrl          string
+		Name                  string
+		ExpectError           bool
+		ExpectedStatus        integreatlyv1alpha1.StatusPhase
+		ExpectedError         string
+		FakeConfig            *config.ConfigReadWriterMock
+		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
+		FakeMPM               *marketplace.MarketplaceInterfaceMock
+		Installation          *integreatlyv1alpha1.Installation
+		Recorder              record.EventRecorder
+		ApiUrl                string
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 	}{
 		{
-			Name:            "test ready kcr returns phase complete",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(),
-			ApiUrl:          "https://serverurl",
+			Name:                  "test ready kcr returns phase complete",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &integreatlyv1alpha1.Installation{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 		{
-			Name:            "test unready kcr cr returns phase in progress",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(),
-			ApiUrl:          "https://serverurl",
+			Name:                  "test unready kcr cr returns phase in progress",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseInProgress,
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &integreatlyv1alpha1.Installation{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 		{
-			Name:            "test missing kc cr returns phase failed",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
-			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(),
-			ApiUrl:          "https://serverurl",
+			Name:                  "test missing kc cr returns phase failed",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
+			ExpectError:           true,
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &integreatlyv1alpha1.Installation{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 		{
-			Name:            "test missing kcr cr returns phase failed",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
-			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:      basicConfigMock(),
-			Installation:    &integreatlyv1alpha1.Installation{},
-			Recorder:        setupRecorder(),
-			ApiUrl:          "https://serverurl",
+			Name:                  "test missing kcr cr returns phase failed",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
+			ExpectError:           true,
+			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
+			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:            basicConfigMock(),
+			Installation:          &integreatlyv1alpha1.Installation{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 		{
 			Name:            "test failed config write",
@@ -381,9 +451,10 @@ func TestReconciler_handleProgress(t *testing.T) {
 					return errors.New("error writing config")
 				},
 			},
-			Installation: &integreatlyv1alpha1.Installation{},
-			Recorder:     setupRecorder(),
-			ApiUrl:       "https://serverurl",
+			Installation:          &integreatlyv1alpha1.Installation{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 	}
 
@@ -396,6 +467,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
+				tc.KeycloakClientFactory,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -479,6 +551,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
+		},
 	}
 
 	secret := &corev1.Secret{
@@ -514,25 +589,32 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Host: "sampleHost",
 		},
 	}
+	group := &usersv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dedicated-admins",
+		},
+		Users: nil,
+	}
 
 	cases := []struct {
-		Name            string
-		ExpectError     bool
-		ExpectedStatus  integreatlyv1alpha1.StatusPhase
-		ExpectedError   string
-		FakeConfig      *config.ConfigReadWriterMock
-		FakeClient      k8sclient.Client
-		FakeOauthClient oauthClient.OauthV1Interface
-		FakeMPM         *marketplace.MarketplaceInterfaceMock
-		Installation    *integreatlyv1alpha1.Installation
-		Product         *integreatlyv1alpha1.InstallationProductStatus
-		Recorder        record.EventRecorder
-		ApiUrl          string
+		Name                  string
+		ExpectError           bool
+		ExpectedStatus        integreatlyv1alpha1.StatusPhase
+		ExpectedError         string
+		FakeConfig            *config.ConfigReadWriterMock
+		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
+		FakeMPM               *marketplace.MarketplaceInterfaceMock
+		Installation          *integreatlyv1alpha1.Installation
+		Product               *integreatlyv1alpha1.InstallationProductStatus
+		Recorder              record.EventRecorder
+		ApiUrl                string
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
 	}{
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -561,10 +643,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, nil
 				},
 			},
-			Installation: installation,
-			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
-			Recorder:     setupRecorder(),
-			ApiUrl:       "https://serverurl",
+			Installation:          installation,
+			Product:               &integreatlyv1alpha1.InstallationProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
 		},
 	}
 
@@ -577,6 +660,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.FakeMPM,
 				tc.Recorder,
 				tc.ApiUrl,
+				tc.KeycloakClientFactory,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -618,4 +702,14 @@ func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 		},
 		Status: status,
 	}
+}
+
+func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
+	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
+		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
+			return nil
+		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
+			return nil, nil
+		}}, nil
+	}}
 }

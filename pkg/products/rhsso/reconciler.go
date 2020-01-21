@@ -408,6 +408,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
 	}
+	host := kc.Status.InternalURL
+	if host == "" {
+		r.logger.Infof("Internal URL for Keycloak not yet available")
+		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Internal URL for Keycloak not yet available")
+	}
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
@@ -444,7 +449,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		// The identity providers need to be set up before the realm CR gets
 		// created because the Keycloak operator does not allow updates to
 		// the realms
-		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient)
+		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient, host)
 		if err != nil {
 			return errors.Wrap(err, "failed to setup Openshift IDP")
 		}
@@ -491,11 +496,17 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8scl
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
 	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
 		r.Config.SetProductVersion(kc.Status.Version)
-		r.ConfigManager.WriteConfig(r.Config)
+		err = r.ConfigManager.WriteConfig(r.Config)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 	}
 	// The Keycloak Operator doesn't currently set the operator version
 	r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionRHSSO))
-	r.ConfigManager.WriteConfig(r.Config)
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	r.logger.Info("checking ready status for rhsso")
 	kcr := &keycloak.KeycloakRealm{}
@@ -545,7 +556,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	return nil
 }
 
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
+func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.Installation, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client, host string) error {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: r.ConfigManager.GetOauthClientsSecretName(),
@@ -564,7 +575,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 	clientSecret := string(clientSecretBytes)
 
 	redirectUris := []string{
-		r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint",
+		host + "/auth/realms/openshift/broker/openshift-v4/endpoint",
 	}
 
 	oauthClient := &oauthv1.OAuthClient{
@@ -731,7 +742,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	}
 	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers.Items)
 
-	for _, index := range deletedIndexes {
+	for index := range deletedIndexes {
 		keycloakUsers = remove(index, keycloakUsers)
 	}
 
@@ -755,13 +766,11 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 		})
 	}
 
-	openshiftAdminGroup := &usersv1.Group{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, err
 	}
-	for _, kcUser := range keycloakUsers {
-		kcUser.ClientRoles = getKeycloakRoles()
+	for index := range keycloakUsers {
+		keycloakUsers[index].ClientRoles = getKeycloakRoles()
 	}
 
 	return keycloakUsers, nil

@@ -76,18 +76,57 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = keycloak.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = operatorsv1alpha1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = usersv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = oauthv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = monitoring.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	err = routev1.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = projectv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	return scheme, err
 }
 
@@ -174,6 +213,16 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	kc := &keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: defaultOperandNamespace,
+		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
+		},
+	}
+
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "oauth-client-secrets",
@@ -210,7 +259,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.Installation{
@@ -287,6 +336,9 @@ func TestReconciler_handleProgress(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
+		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
 		},
 	}
 
@@ -506,6 +558,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
+		},
+		Status: keycloak.KeycloakStatus{
+			InternalURL: "http://keycloak",
 		},
 	}
 

@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"errors"
 
+	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
+
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	"net/http"
@@ -56,12 +58,18 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 			return nil, err
 		}
 		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host)
+		if err != nil {
+			return nil, err
+		}
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
-		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host)
+		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{})
+		if err != nil {
+			return nil, err
+		}
 	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
 		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuse:
@@ -75,8 +83,10 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-
 		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver, recorder)
+		if err != nil {
+			return nil, err
+		}
 	case integreatlyv1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
@@ -99,6 +109,9 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		tsClient := threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
 
 		reconciler, err = threescale.NewReconciler(configManager, installation, appsv1, oauthv1Client, tsClient, mpm, recorder)
+		if err != nil {
+			return nil, err
+		}
 	case integreatlyv1alpha1.ProductUps:
 		reconciler, err = ups.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductCloudResources:
