@@ -55,7 +55,7 @@ func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 func joinQuote(values []monitoring_v1alpha1.BlackboxtargetData) string {
 	var result []string
 	for _, s := range values {
-		result = append(result, fmt.Sprintf("\"%v@%v@%v\"", s.Module, s.Service, s.Url))
+		result = append(result, fmt.Sprintf("\"%v@%v@%v\"", s.Module, s.Service, s.URL))
 	}
 	return strings.Join(result, ", ")
 }

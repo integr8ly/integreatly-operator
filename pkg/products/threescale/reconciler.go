@@ -726,7 +726,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 	}
 	for _, tsUser := range deleted {
 		if tsUser.UserDetails.Username != *systemAdminUsername {
-			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
+			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.ID, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
@@ -750,12 +750,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 		}
 
 		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
-			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
+			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.ID, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
 		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole {
-			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.Id, *accessToken)
+			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.ID, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
@@ -822,7 +822,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
+		URL:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
 	}, ctx, cfg, installation, client)
 	if err != nil {
@@ -835,7 +835,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + route.Spec.Host,
+		URL:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
 	}, ctx, cfg, installation, client)
 	if err != nil {
@@ -848,7 +848,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + route.Spec.Host,
+		URL:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
 	}, ctx, cfg, installation, client)
 	if err != nil {

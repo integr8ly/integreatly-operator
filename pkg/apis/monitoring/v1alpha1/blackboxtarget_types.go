@@ -10,7 +10,7 @@ import (
 // BlackboxtargetStructure contains:
 // A target (url, module and service name) to be probed by the
 type BlackboxtargetData struct {
-	Url     string `json:"url"`
+	URL     string `json:"url"`
 	Service string `json:"service"`
 	Module  string `json:"module"`
 }

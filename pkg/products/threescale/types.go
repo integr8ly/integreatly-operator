@@ -11,7 +11,7 @@ type User struct {
 }
 
 type UserDetails struct {
-	Id       int    `json:"id"`
+	ID       int    `json:"id"`
 	State    string `json:"state"`
 	Role     string `json:"role"`
 	Username string `json:"username"`
@@ -27,25 +27,25 @@ type AuthProvider struct {
 }
 
 type AuthProviderDetails struct {
-	Id                             int    `json:"id"`
+	ID                             int    `json:"id"`
 	Kind                           string `json:"kind"`
 	AccountType                    string `json:"account_type"`
 	Name                           string `json:"name"`
 	SystemName                     string `json:"system_name"`
-	ClientId                       string `json:"client_id"`
+	ClientID                       string `json:"client_id"`
 	ClientSecret                   string `json:"client_secret"`
 	Site                           string `json:"site"`
 	AuthorizeURL                   string `json:"authorize_url"`
 	SkipSSLCertificateVerification bool   `json:"skip_ssl_certificate_verification"`
 	AutomaticallyApproveAccounts   bool   `json:"automatically_approve_accounts"`
-	AccountId                      int    `json:"account_id"`
+	AccountID                      int    `json:"account_id"`
 	UsernameKey                    string `json:"username_key"`
 	IdentifierKey                  string `json:"identifier_key"`
 	TrustEmail                     bool   `json:"trust_email"`
 	Published                      bool   `json:"published"`
 	CreatedAt                      string `json:"created_at"`
 	UpdatedAt                      string `json:"updated_at"`
-	CallbackUrl                    string `json:"callback_url"`
+	CallbackURL                    string `json:"callback_url"`
 }
 
 type tsError struct {

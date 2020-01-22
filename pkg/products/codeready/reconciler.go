@@ -427,7 +427,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-codeready", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		URL:     r.Config.GetHost(),
 		Service: "codeready-ui",
 	}, ctx, cfg, r.installation, client)
 	if err != nil {

@@ -51,12 +51,12 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
-	ApiUrl        string
+	APIURL        string
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string) (*Reconciler, error) {
 	rhssoUserConfig, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
-		ApiUrl:        apiUrl,
+		APIURL:        APIURL,
 	}, nil
 }
 
@@ -414,7 +414,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         r.ApiUrl,
+				"baseUrl":         r.APIURL,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,

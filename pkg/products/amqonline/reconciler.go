@@ -331,7 +331,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		URL:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
 		Service: "amq-service-broker",
 	}, ctx, cfg, installation, client)
 	if err != nil {

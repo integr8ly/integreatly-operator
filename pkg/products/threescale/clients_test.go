@@ -117,7 +117,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				ProviderDetails: AuthProviderDetails{
 					Kind:                           data["kind"],
 					Name:                           data["name"],
-					ClientId:                       data["client_id"],
+					ClientID:                       data["client_id"],
 					ClientSecret:                   data["client_secret"],
 					Site:                           data["site"],
 					SkipSSLCertificateVerification: data["skip_ssl_certificate_verification"] == "true",
@@ -156,7 +156,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 			testUsers.Users = append(testUsers.Users, &User{
 				UserDetails: UserDetails{
 					Role:     memberRole,
-					Id:       rand.Int(),
+					ID:       rand.Int(),
 					Username: username,
 					Email:    email,
 				},
@@ -167,7 +167,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 		},
 		SetUserAsAdminFunc: func(userId int, accessToken string) (response *http.Response, e error) {
 			for _, user := range testUsers.Users {
-				if user.UserDetails.Id == userId {
+				if user.UserDetails.ID == userId {
 					user.UserDetails.Role = adminRole
 				}
 			}
@@ -177,7 +177,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 		},
 		SetUserAsMemberFunc: func(userId int, accessToken string) (response *http.Response, e error) {
 			for _, user := range testUsers.Users {
-				if user.UserDetails.Id == userId {
+				if user.UserDetails.ID == userId {
 					user.UserDetails.Role = memberRole
 				}
 			}

@@ -78,9 +78,9 @@ type CertificateSpec struct {
 }
 
 type ExposeSpec struct {
-	Type                string `json:"route"`
-	RouteServicePort    string `json:"routeServicePort"`
-	RouteTlsTermination string `json:"routeTlsTermination"`
+	Type               string `json:"route"`
+	RouteServicePort   string `json:"routeServicePort"`
+	RouteTLSermination string `json:"routeTlsTermination"`
 }
 
 type AddressSpaceStatus struct {

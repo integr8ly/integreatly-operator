@@ -247,7 +247,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-ups", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
+		URL:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "ups-ui",
 	}, ctx, cfg, installation, client)
 	if err != nil {

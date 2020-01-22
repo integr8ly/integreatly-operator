@@ -62,7 +62,7 @@ type Reconciler struct {
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
 	KeycloakHost  string
-	ApiUrl        string
+	APIURL        string
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
@@ -87,7 +87,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
-		ApiUrl:        apiUrl,
+		APIURL:        apiUrl,
 	}, nil
 }
 
@@ -614,7 +614,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         r.ApiUrl,
+				"baseUrl":         r.APIURL,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
@@ -637,7 +637,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		URL:     r.Config.GetHost(),
 		Service: "rhsso-ui",
 	}, ctx, cfg, installation, client)
 	if err != nil {

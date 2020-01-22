@@ -393,7 +393,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		return nil
 	}
 
-	if target.Url == "" {
+	if target.URL == "" {
 		// Retry later if the URL is not yet known
 		return nil
 	}
@@ -409,7 +409,7 @@ func CreateBlackboxTarget(name string, target monitoring_v1alpha1.Blackboxtarget
 		"Namespace":     cfg.GetNamespace(),
 		"MonitoringKey": cfg.GetLabelSelector(),
 		"name":          name,
-		"url":           target.Url,
+		"url":           target.URL,
 		"service":       target.Service,
 		"module":        module,
 	}

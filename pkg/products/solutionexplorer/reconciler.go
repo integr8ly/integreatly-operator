@@ -242,7 +242,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 	}
 
 	target := monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
+		URL:     r.Config.GetHost(),
 		Service: "webapp-ui",
 	}
 

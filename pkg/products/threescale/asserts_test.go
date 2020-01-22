@@ -81,7 +81,7 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if tsIsNotFoundError(err) {
 		return errors.New(fmt.Sprintf("SSO integration was not created"))
 	}
-	if authProvider.ProviderDetails.ClientId != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
+	if authProvider.ProviderDetails.ClientID != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
 		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
 	}
 
