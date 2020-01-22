@@ -62,12 +62,12 @@ type Reconciler struct {
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
 	KeycloakHost  string
-	ApiUrl        string
+	apiURL        string
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiURL string) (*Reconciler, error) {
 	rhssoConfig, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
-		ApiUrl:        apiUrl,
+		apiURL:        apiURL,
 	}, nil
 }
 
@@ -343,12 +343,12 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, httpService, func() error {
-		clusterIp := httpService.Spec.ClusterIP
+		clusterIP := httpService.Spec.ClusterIP
 		httpService.Annotations = map[string]string{
 			"service.alpha.openshift.io/serving-cert-secret-name": "sso-x509-https-secret",
 		}
 		httpService.Spec = corev1.ServiceSpec{
-			ClusterIP: clusterIp,
+			ClusterIP: clusterIP,
 			Ports: []corev1.ServicePort{
 				{
 					Name:       "keycloak",
@@ -618,7 +618,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         r.ApiUrl,
+				"baseUrl":         r.apiURL,
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,

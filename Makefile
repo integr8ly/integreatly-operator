@@ -57,7 +57,7 @@ code/compile:
 
 .PHONY: code/gen
 code/gen:
-	find ./ -name *_moq.go -type f -delete
+	find ./ -name *_moq.go -type f -not -path "./vendor/*"  -delete
 	operator-sdk generate k8s
 	operator-sdk generate openapi
 	@go generate ./...
