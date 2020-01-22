@@ -94,7 +94,7 @@ func TestReconciler_config(t *testing.T) {
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
 		Recorder        record.EventRecorder
-		APIURL string
+		APIURL          string
 	}{
 		{
 			Name:            "test error on failed config",
