@@ -35,12 +35,6 @@ func (c *CloudResources) GetWatchableCRDs() []runtime.Object {
 				APIVersion: crov1alpha1.SchemeGroupVersion.String(),
 			},
 		},
-		&crov1alpha1.SMTPCredentialSet{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "SMTPCredentialSet",
-				APIVersion: crov1alpha1.SchemeGroupVersion.String(),
-			},
-		},
 	}
 }
 

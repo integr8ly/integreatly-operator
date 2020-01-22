@@ -8,6 +8,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
@@ -185,27 +186,11 @@ var installation = &integreatlyv1alpha1.Installation{
 	},
 }
 
-var smtpCred = &crov1.SMTPCredentialSet{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "threescale-smtp-test-installation",
-		Namespace: "integreatly-operator-ns",
-	},
-	Status: crov1.SMTPCredentialSetStatus{
-		Message:  "reconcile complete",
-		Phase:    types.PhaseComplete,
-		Provider: "openshift-smtp",
-		SecretRef: &types.SecretRef{
-			Name:      "test-smtp",
-			Namespace: "integreatly-operator-ns",
-		},
-		Strategy: "openshift",
-	},
-}
-
 var smtpSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-smtp",
-		Namespace: "integreatly-operator-ns",
+		Namespace: "integreatly-operator-namespace",
+		Labels:    map[string]string{config.SMTPSecretLabelKey: config.SMTPSecretLabelValue},
 	},
 	Data: map[string][]byte{
 		"host":     []byte("test"),
@@ -419,8 +404,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
 		installation,
-		smtpSec,
-		smtpCred,
 		blobStorage,
 		blobStorageSec,
 		threescaleRoute1,
