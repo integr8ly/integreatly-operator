@@ -53,10 +53,10 @@ func (r *ThreeScale) GetLabelSelector() string {
 }
 
 func (r *ThreeScale) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_3scale_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (t *ThreeScale) SetNamespace(newNamespace string) {

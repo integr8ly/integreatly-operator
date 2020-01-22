@@ -42,10 +42,10 @@ func (r *CodeReady) GetLabelSelector() string {
 }
 
 func (r *CodeReady) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_codeready_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (c *CodeReady) SetNamespace(newNamespace string) {

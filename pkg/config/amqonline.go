@@ -74,10 +74,10 @@ func (r *AMQOnline) GetLabelSelector() string {
 }
 
 func (r *AMQOnline) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_amqonline_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (a *AMQOnline) SetNamespace(newNamespace string) {

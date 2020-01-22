@@ -54,10 +54,10 @@ func (r *Fuse) GetLabelSelector() string {
 }
 
 func (r *Fuse) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_fuse_online_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (f *Fuse) GetProductName() integreatlyv1alpha1.ProductName {

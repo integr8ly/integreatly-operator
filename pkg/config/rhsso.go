@@ -87,10 +87,10 @@ func (r *RHSSO) GetLabelSelector() string {
 }
 
 func (r *RHSSO) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_rhsso_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (r *RHSSO) GetProductName() integreatlyv1alpha1.ProductName {
