@@ -45,31 +45,31 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	ns := &corev1.Namespace{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: tsConfig.GetNamespace()}, ns)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("%s namespace should have been created", tsConfig.GetNamespace()))
+		return fmt.Errorf("%s namespace should have been created", tsConfig.GetNamespace())
 	}
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: packageName, Namespace: tsConfig.GetNamespace()}, sub)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("%s operator subscription was not created", packageName))
+		return fmt.Errorf("%s operator subscription was not created", packageName)
 	}
 
 	// The main s3credentials should have been copied into the 3scale namespace.
 	s3Credentials := &corev1.Secret{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: s3CredentialsSecretName, Namespace: tsConfig.GetNamespace()}, s3Credentials)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("s3Credentials were not copied into %s namespace", tsConfig.GetNamespace()))
+		return fmt.Errorf("s3Credentials were not copied into %s namespace", tsConfig.GetNamespace())
 	}
 
 	// The product custom resource should have been created.
 	apim := &threescalev1.APIManager{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: apiManagerName, Namespace: tsConfig.GetNamespace()}, apim)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("APIManager '%s' was not created", apiManagerName))
+		return fmt.Errorf("APIManager '%s' was not created", apiManagerName)
 	}
 	if apim.Spec.WildcardDomain != installation.Spec.RoutingSubdomain {
-		return errors.New(fmt.Sprintf("APIManager wildCardDomain is misconfigured. '%s' should be '%s'", apim.Spec.WildcardDomain, installation.Spec.RoutingSubdomain))
+		return fmt.Errorf("APIManager wildCardDomain is misconfigured. '%s' should be '%s'", apim.Spec.WildcardDomain, installation.Spec.RoutingSubdomain)
 	}
 
 	// RHSSO integration should be configured.
@@ -79,52 +79,52 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	}
 	authProvider, err := fakeThreeScaleClient.GetAuthenticationProviderByName(rhssoIntegrationName, accessToken)
 	if tsIsNotFoundError(err) {
-		return errors.New(fmt.Sprintf("SSO integration was not created"))
+		return fmt.Errorf("SSO integration was not created")
 	}
 	if authProvider.ProviderDetails.ClientId != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
-		return errors.New(fmt.Sprintf("SSO integration request to 3scale API was incorrect"))
+		return fmt.Errorf("SSO integration request to 3scale API was incorrect")
 	}
 
 	// Service discovery should be configured
 	threeScaleOauth := &oauthv1.OAuthClient{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: oauthId}, threeScaleOauth)
 	if k8serr.IsNotFound(err) {
-		return errors.New(fmt.Sprintf("3scale should have an Oauth client '%s' created", oauthId))
+		return fmt.Errorf("3scale should have an Oauth client '%s' created", oauthId)
 	}
 	if len(threeScaleOauth.RedirectURIs) == 0 || threeScaleOauth.RedirectURIs[0] == "" {
-		return errors.New(fmt.Sprintf("3scale Oauth Client redirect uri should be set, but is empty"))
+		return fmt.Errorf("3scale Oauth Client redirect uri should be set, but is empty")
 	}
 
 	serviceDiscoveryConfigMap := &corev1.ConfigMap{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: threeScaleServiceDiscoveryConfigMap.Name, Namespace: tsConfig.GetNamespace()}, serviceDiscoveryConfigMap)
 	if string(serviceDiscoveryConfigMap.Data["service_discovery.yml"]) != sdConfig {
-		return errors.New(fmt.Sprintf("Service discovery config is misconfigured"))
+		return fmt.Errorf("Service discovery config is misconfigured")
 	}
 
 	// rhsso users should be users in 3scale. If an rhsso user is also in dedicated-admins group that user should be an admin in 3scale.
 	test1User, _ := fakeThreeScaleClient.GetUser(rhssoTest1.Spec.User.UserName, "accessToken")
 	if test1User.UserDetails.Role != adminRole {
-		return errors.New(fmt.Sprintf("%s should be an admin user in 3scale", test1User.UserDetails.Username))
+		return fmt.Errorf("%s should be an admin user in 3scale", test1User.UserDetails.Username)
 	}
 	test2User, _ := fakeThreeScaleClient.GetUser(rhssoTest2.Spec.User.UserName, "accessToken")
 	if test2User.UserDetails.Role != memberRole {
-		return errors.New(fmt.Sprintf("%s should be a member user in 3scale", test2User.UserDetails.Username))
+		return fmt.Errorf("%s should be a member user in 3scale", test2User.UserDetails.Username)
 	}
 
 	// system-app and system-sidekiq deploymentconfigs should have been rolled out on first reconcile.
 	sa, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get("system-app", metav1.GetOptions{})
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error getting deplymentconfig: %v", err))
+		return fmt.Errorf("Error getting deplymentconfig: %v", err)
 	}
 	if sa.Status.LatestVersion == 1 {
-		return errors.New(fmt.Sprintf("system-app was not rolled out"))
+		return fmt.Errorf("system-app was not rolled out")
 	}
 	ssk, err := fakeAppsV1Client.DeploymentConfigs(tsConfig.GetNamespace()).Get("system-sidekiq", metav1.GetOptions{})
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error getting deplymentconfig: %v", err))
+		return fmt.Errorf("Error getting deplymentconfig: %v", err)
 	}
 	if ssk.Status.LatestVersion == 1 {
-		return errors.New(fmt.Sprintf("system-sidekiq was not rolled out"))
+		return fmt.Errorf("system-sidekiq was not rolled out")
 	}
 
 	return nil

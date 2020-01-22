@@ -2,7 +2,6 @@ package threescale
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -150,7 +149,7 @@ func getThreeScaleClient() *ThreeScaleInterfaceMock {
 				}
 			}
 
-			return nil, errors.New(fmt.Sprintf("user %s not found", userName))
+			return nil, fmt.Errorf("user %s not found", userName)
 		},
 		AddUserFunc: func(username string, email string, password string, accessToken string) (response *http.Response, e error) {
 			testUsers.Users = append(testUsers.Users, &User{
