@@ -184,25 +184,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	// ensure blob storage instances are cleaned up
-	smtpCredentialSets := &crov1alpha1.SMTPCredentialSetList{}
-	smtpOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(installation.Namespace),
-	}
-	err = client.List(ctx, smtpCredentialSets, smtpOpts...)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list smtpCredentialSets instances: %w", err)
-	}
-	for _, smtpInst := range smtpCredentialSets.Items {
-		if err := client.Delete(ctx, &smtpInst); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-	if len(smtpCredentialSets.Items) > 0 {
-		r.logger.Info("deletion of smtp credential sets in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
 	// everything has been cleaned up, delete the ns
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

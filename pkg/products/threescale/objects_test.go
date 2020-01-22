@@ -185,23 +185,6 @@ var installation = &integreatlyv1alpha1.Installation{
 	},
 }
 
-var smtpCred = &crov1.SMTPCredentialSet{
-	ObjectMeta: metav1.ObjectMeta{
-		Name:      "threescale-smtp-test-installation",
-		Namespace: "integreatly-operator-ns",
-	},
-	Status: crov1.SMTPCredentialSetStatus{
-		Message:  "reconcile complete",
-		Phase:    types.PhaseComplete,
-		Provider: "openshift-smtp",
-		SecretRef: &types.SecretRef{
-			Name:      "test-smtp",
-			Namespace: "integreatly-operator-ns",
-		},
-		Strategy: "openshift",
-	},
-}
-
 var smtpSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-smtp",
@@ -419,8 +402,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		OpenshiftDockerSecret,
 		oauthClientSecrets,
 		installation,
-		smtpSec,
-		smtpCred,
 		blobStorage,
 		blobStorageSec,
 		threescaleRoute1,
