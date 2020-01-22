@@ -85,7 +85,7 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 	// so we need to retrieve the project as namespace and add them
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
-		return nil, fmt.Errorf("could not retreive %s namespace: %v", ns.Name, err)
+		return nil, fmt.Errorf("could not retrieve %s namespace: %v", ns.Name, err)
 	}
 
 	PrepareObject(ns, inst)
