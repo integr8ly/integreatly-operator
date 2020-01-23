@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	threescalev1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 

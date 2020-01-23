@@ -1,7 +1,11 @@
 # cloud.google.com/go v0.46.3
 cloud.google.com/go/compute/metadata
-# contrib.go.opencensus.io/exporter/ocagent v0.4.12
+# contrib.go.opencensus.io/exporter/ocagent v0.6.0
 contrib.go.opencensus.io/exporter/ocagent
+# github.com/3scale/3scale-operator v0.4.0
+github.com/3scale/3scale-operator/pkg/3scale/amp/product
+github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
+github.com/3scale/3scale-operator/version
 # github.com/Azure/go-autorest v11.7.0+incompatible
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/adal
@@ -24,7 +28,7 @@ github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/census-instrumentation/opencensus-proto v0.2.0
+# github.com/census-instrumentation/opencensus-proto v0.2.1
 github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1
@@ -157,7 +161,7 @@ github.com/openshift/api/pkg/serialization
 github.com/openshift/api/route/v1
 github.com/openshift/api/template/v1
 github.com/openshift/api/user/v1
-# github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
+# github.com/openshift/client-go v3.9.0+incompatible => github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 github.com/openshift/client-go/apps/clientset/versioned
 github.com/openshift/client-go/apps/clientset/versioned/fake
 github.com/openshift/client-go/apps/clientset/versioned/scheme

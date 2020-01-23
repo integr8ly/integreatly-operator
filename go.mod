@@ -3,6 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
+	github.com/3scale/3scale-operator v0.4.0
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 	github.com/coreos/prometheus-operator v0.34.0
@@ -14,7 +15,7 @@ require (
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
-	github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
+	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190605231540-b8a4faf68e36
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
@@ -35,6 +36,7 @@ require (
 
 // Pinned to kubernetes-1.15.4
 replace (
+	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	k8s.io/api => k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d

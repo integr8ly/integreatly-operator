@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
