@@ -105,7 +105,7 @@ func TestReconciler_config(t *testing.T) {
 		Installation    *integreatlyv1alpha1.Installation
 		Product         *integreatlyv1alpha1.InstallationProductStatus
 		Recorder        record.EventRecorder
-		ApiUrl          string
+		APIURL          string
 	}{
 		{
 			Name:            "test error on failed config",
@@ -122,7 +122,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
 			Recorder: setupRecorder(),
-			ApiUrl:   "https://serverurl",
+			APIURL:   "https://serverurl",
 		},
 	}
 
@@ -134,7 +134,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.FakeOauthClient,
 				tc.FakeMPM,
 				tc.Recorder,
-				tc.ApiUrl,
+				tc.APIURL,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)

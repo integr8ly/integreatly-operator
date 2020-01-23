@@ -69,11 +69,11 @@ func (a *AMQOnline) GetNamespace() string {
 	return a.config["NAMESPACE"]
 }
 
-func (r *AMQOnline) GetLabelSelector() string {
+func (a *AMQOnline) GetLabelSelector() string {
 	return "middleware"
 }
 
-func (r *AMQOnline) GetTemplateList() []string {
+func (a *AMQOnline) GetTemplateList() []string {
 	templateList := []string{
 		"kube_state_metrics_amqonline_alerts.yaml",
 	}
@@ -100,11 +100,11 @@ func (a *AMQOnline) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionAMQOnline
 }
 
-func (c *AMQOnline) GetBackupsSecretName() string {
+func (a *AMQOnline) GetBackupsSecretName() string {
 	return "backups-s3-credentials"
 }
 
-func (c *AMQOnline) GetBackupSchedule() string {
+func (a *AMQOnline) GetBackupSchedule() string {
 	return "30 2 * * *"
 }
 

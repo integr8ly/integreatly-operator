@@ -57,7 +57,7 @@ type Reconciler struct {
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiURL string) (*Reconciler, error) {
 	rhssoUserConfig, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
-		ApiUrl:        apiUrl,
+		ApiUrl:        apiURL,
 	}, nil
 }
 

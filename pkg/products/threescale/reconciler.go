@@ -838,10 +838,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-admin-ui", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPathForAdminUI(),
 		Service: "3scale-admin-ui",
-	}, ctx, cfg, installation, client)
+	}, "integreatly-3scale-admin-ui", cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
@@ -851,10 +851,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-developer-console-ui",
-	}, ctx, cfg, installation, client)
+	}, "integreatly-3scale-system-developer", cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
@@ -864,10 +864,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
-	err = monitoring.CreateBlackboxTarget("integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, monitoringv1alpha1.BlackboxtargetData{
 		Url:     "https://" + route.Spec.Host,
 		Service: "3scale-system-admin-ui",
-	}, ctx, cfg, installation, client)
+	}, "integreatly-3scale-system-master", cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}

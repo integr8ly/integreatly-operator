@@ -17,7 +17,7 @@ const (
 )
 
 // Gets the default pull secret for pulling container images from registry
-func GetDefaultPullSecret(inst *integreatlyv1alpha1.Installation, client k8sclient.Client, context context.Context) (corev1.Secret, error) {
+func GetDefaultPullSecret(context context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.Installation) (corev1.Secret, error) {
 	if inst.Spec.PullSecret.Name == "" {
 		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
 	}
@@ -33,8 +33,8 @@ func GetDefaultPullSecret(inst *integreatlyv1alpha1.Installation, client k8sclie
 }
 
 // Copys the default pull secret to a target namespace
-func CopyDefaultPullSecretToNameSpace(nameSpaceToCopy string, nameOfSecret string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, context context.Context) error {
-	openshiftSecret, err := GetDefaultPullSecret(inst, client, context)
+func CopyDefaultPullSecretToNameSpace(context context.Context, nameOfSecret string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, nameSpaceToCopy string) error {
+	openshiftSecret, err := GetDefaultPullSecret(context, client, inst)
 
 	if err != nil {
 		return err

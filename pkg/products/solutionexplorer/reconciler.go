@@ -246,7 +246,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 		Service: "webapp-ui",
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-webapp", target, ctx, cfg, installation, client)
+	err = monitoring.CreateBlackboxTarget(ctx, target, "integreatly-webapp", cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
@@ -336,7 +336,7 @@ func (r *Reconciler) getInstalledProducts(installation *integreatlyv1alpha1.Inst
 	products := make(map[integreatlyv1alpha1.ProductName]productInfo)
 	for name, info := range installedProducts {
 		if name != integreatlyv1alpha1.ProductAMQOnline && name != integreatlyv1alpha1.ProductUps && info.Host != "" {
-			id := r.getProductId(name)
+			id := r.getProductID(name)
 			products[id] = productInfo{
 				Host:    info.Host,
 				Version: info.Version,
@@ -354,7 +354,7 @@ func (r *Reconciler) getInstalledProducts(installation *integreatlyv1alpha1.Inst
 
 // Gets the product's id used by the webapp
 // https://github.com/integr8ly/tutorial-web-app/blob/master/src/product-info.js
-func (r *Reconciler) getProductId(name integreatlyv1alpha1.ProductName) integreatlyv1alpha1.ProductName {
+func (r *Reconciler) getProductID(name integreatlyv1alpha1.ProductName) integreatlyv1alpha1.ProductName {
 	id := name
 
 	if name == integreatlyv1alpha1.ProductFuse {

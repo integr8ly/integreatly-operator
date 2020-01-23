@@ -122,15 +122,15 @@ func (t *Type) GetStages() []Stage {
 	return t.Stages
 }
 
-func InstallationTypeFactory(installationType string, products []string) (error, *Type) {
+func InstallationTypeFactory(installationType string, products []string) (*Type, error) {
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
 	case string(integreatlyv1alpha1.InstallationTypeWorkshop):
-		return nil, newWorkshopType(products)
+		return newWorkshopType(products), nil
 	case string(integreatlyv1alpha1.InstallationTypeManaged):
-		return nil, newManagedType(products)
+		return newManagedType(products), nil
 	default:
-		return errors.New("unknown installation type: " + installationType), nil
+		return nil, errors.New("unknown installation type: " + installationType)
 	}
 }
 

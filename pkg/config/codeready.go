@@ -37,7 +37,7 @@ func (c *CodeReady) GetNamespace() string {
 	return c.Config["NAMESPACE"]
 }
 
-func (r *CodeReady) GetLabelSelector() string {
+func (c *CodeReady) GetLabelSelector() string {
 	return "middleware"
 }
 

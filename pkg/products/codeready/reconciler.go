@@ -426,10 +426,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, client k8scli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-codeready", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "codeready-ui",
-	}, ctx, cfg, r.installation, client)
+	}, "integreatly-codeready", cfg, r.installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating codeready blackbox target: %w", err)
 	}

@@ -57,7 +57,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.retrieveConsoleUrlAndSubdomain(ctx, serverClient)
+	phase, err = r.retrieveConsoleURLAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
 		return phase, err
@@ -121,7 +121,7 @@ func (r *Reconciler) reconcileOauthSecrets(ctx context.Context, serverClient k8s
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) retrieveConsoleUrlAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) retrieveConsoleURLAndSubdomain(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	consoleRouteCR, err := getConsoleRouteCR(ctx, serverClient)
 	if err != nil {
