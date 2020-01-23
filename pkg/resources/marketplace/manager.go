@@ -33,10 +33,10 @@ type MarketplaceInterface interface {
 	GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
 }
 
-type MarketplaceManager struct{}
+type Manager struct{}
 
-func NewManager() *MarketplaceManager {
-	return &MarketplaceManager{}
+func NewManager() *Manager {
+	return &Manager{}
 }
 
 type Target struct {
@@ -46,7 +46,7 @@ type Target struct {
 	ManifestPackage string
 }
 
-func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
@@ -100,7 +100,7 @@ func (m *MarketplaceManager) InstallOperator(ctx context.Context, serverClient k
 
 }
 
-func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, client k8sclient.Client) (string, error) {
+func (m *Manager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, client k8sclient.Client) (string, error) {
 
 	configMapData, err := GenerateRegistryConfigMapFromManifest(t.ManifestPackage)
 	if err != nil {
@@ -120,7 +120,7 @@ func (m *MarketplaceManager) createAndWaitCatalogSource(ctx context.Context, own
 	return csSourceName, nil
 }
 
-func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
+func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
@@ -136,7 +136,7 @@ func (m *MarketplaceManager) getSubscription(ctx context.Context, serverClient k
 	return sub, nil
 }
 
-func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
+func (m *Manager) GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error) {
 	sub, err := m.getSubscription(ctx, serverClient, subName, ns)
 	if err != nil {
 		return nil, nil, fmt.Errorf("GetSubscriptionInstallPlan: %w", err)
@@ -158,7 +158,7 @@ func (m *MarketplaceManager) GetSubscriptionInstallPlans(ctx context.Context, se
 	return ip, sub, err
 }
 
-func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, client k8sclient.Client, namespace string, configMapData map[string]string) (string, error) {
+func (m *Manager) reconcileRegistryConfigMap(ctx context.Context, client k8sclient.Client, namespace string, configMapData map[string]string) (string, error) {
 	logrus.Infof("Reconciling registry config map for namespace %s", namespace)
 
 	configMapName := "registry-cm-" + namespace
@@ -196,7 +196,7 @@ func (m *MarketplaceManager) reconcileRegistryConfigMap(ctx context.Context, cli
 	return configMapName, nil
 }
 
-func (m *MarketplaceManager) reconcileCatalogSource(ctx context.Context, client k8sclient.Client, namespace string, configMapName string) (string, error) {
+func (m *Manager) reconcileCatalogSource(ctx context.Context, client k8sclient.Client, namespace string, configMapName string) (string, error) {
 
 	logrus.Infof("Reconciling registry catalog source for namespace %s", namespace)
 

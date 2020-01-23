@@ -178,7 +178,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		r.context, r.cancel = context.WithCancel(context.Background())
 	}
 
-	installType, err := InstallationTypeFactory(installation.Spec.Type, r.productsToInstall)
+	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

@@ -122,7 +122,7 @@ func (t *Type) GetStages() []Stage {
 	return t.Stages
 }
 
-func InstallationTypeFactory(installationType string, products []string) (*Type, error) {
+func TypeFactory(installationType string, products []string) (*Type, error) {
 	//TODO: export this logic to a configmap for each installation type
 	switch installationType {
 	case string(integreatlyv1alpha1.InstallationTypeWorkshop):
