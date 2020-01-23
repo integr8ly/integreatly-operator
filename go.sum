@@ -392,8 +392,6 @@ github.com/imdario/mergo v0.3.8/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJ
 github.com/improbable-eng/thanos v0.3.2/go.mod h1:GZewVGILKuJVPNRn7L4Zw+7X96qzFOwj63b22xYGXBE=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
-github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882 h1:56qTTlrtmW2V83ZY29p8O4U7WgQJ0ray4tYMcZqPHa8=
-github.com/integr8ly/cloud-resource-operator v0.0.0-20191125111132-250f22a81882/go.mod h1:/kzF/oFvvEJI8vUTNIyB8f0D+uR7YfsJZFRNnjtqdRo=
 github.com/integr8ly/cloud-resource-operator v0.6.0 h1:9p32tcT1TWy1jfxnwa38PqEmAi/GfdxEqywXDMn2jL8=
 github.com/integr8ly/cloud-resource-operator v0.6.0/go.mod h1:TnsQco5CRs5PF97XnEb3LpBhA6tkBfgc6JgBZG447xM=
 github.com/integr8ly/grafana-operator v1.3.1 h1:3fknUP3pI9/H0/HTxOOR5hzJVo1wPs5HMfBUlMYpzWk=
@@ -881,8 +879,6 @@ golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190922100055-0a153f010e69/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190924154521-2837fb4f24fe/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e h1:N7DeIrjYszNmSW409R3frPPwglRwMkXSBzwVbkOjLLA=
-golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200113162924-86b910548bc1 h1:gZpLHxUX5BdYLA08Lj4YCJNN/jk7KtquiArPoeX0WvA=
 golang.org/x/sys v0.0.0-20200113162924-86b910548bc1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.0.0-20160726164857-2910a502d2bf/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=

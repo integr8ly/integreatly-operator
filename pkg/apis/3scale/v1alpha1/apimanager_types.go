@@ -2,16 +2,34 @@ package v1alpha1
 
 import (
 	"fmt"
-
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 // Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+
+const (
+	ThreescaleVersionAnnotation = "apps.3scale.net/apimanager-threescale-version"
+	OperatorVersionAnnotation   = "apps.3scale.net/threescale-operator-version"
+)
+
+const (
+	defaultAppLabel                    = "3scale-api-management"
+	defaultTenantName                  = "3scale"
+	defaultImageStreamImportInsecure   = false
+	defaultResourceRequirementsEnabled = true
+)
+
+const (
+	defaultApicastManagementAPI = "status"
+	defaultApicastOpenSSLVerify = false
+	defaultApicastResponseCodes = true
+	defaultApicastRegistryURL   = "http://apicast-staging:8090/policies"
+)
 
 // APIManagerSpec defines the desired state of APIManager
 // +k8s:openapi-gen=true
@@ -26,7 +44,8 @@ type APIManagerSpec struct {
 	// +optional
 	Zync *ZyncSpec `json:"zync,omitempty"`
 	// +optional
-	HighAvailability *HighAvailabilitySpec `json:"highAvailability,omitempty"`
+	HighAvailability    *HighAvailabilitySpec    `json:"highAvailability,omitempty"`
+	PodDisruptionBudget *PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty"`
 }
 
 // APIManagerStatus defines the observed state of APIManager
@@ -61,7 +80,7 @@ const (
 
 type APIManagerCondition struct {
 	Type   APIManagerConditionType `json:"type" description:"type of APIManager condition"`
-	Status corev1.ConditionStatus  `json:"status" description:"status of the condition, one of True, False, Unknown"` //TODO should be a custom ConditionStatus or the core v1 one?
+	Status v1.ConditionStatus      `json:"status" description:"status of the condition, one of True, False, Unknown"` //TODO should be a custom ConditionStatus or the core v1 one?
 
 	// The Reason, Message, LastHeartbeatTime and LastTransitionTime fields are
 	// optional. Unless we really use them they should directly not be used even
@@ -111,14 +130,48 @@ type ApicastSpec struct {
 	RegistryURL *string `json:"registryURL,omitempty"`
 	// +optional
 	Image *string `json:"image,omitempty"`
+	// +optional
+	ProductionSpec *ApicastProductionSpec `json:"productionSpec,omitempty"`
+	// +optional
+	StagingSpec *ApicastStagingSpec `json:"stagingSpec,omitempty"`
+}
+
+type ApicastProductionSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
+}
+
+type ApicastStagingSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
 }
 
 type BackendSpec struct {
 	// +optional
 	Image *string `json:"image,omitempty"`
-
 	// +optional
 	RedisImage *string `json:"redisImage,omitempty"`
+	// +optional
+	ListenerSpec *BackendListenerSpec `json:"listenerSpec,omitempty"`
+	// +optional
+	WorkerSpec *BackendWorkerSpec `json:"workerSpec,omitempty"`
+	// +optional
+	CronSpec *BackendCronSpec `json:"cronSpec,omitempty"`
+}
+
+type BackendListenerSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
+}
+
+type BackendWorkerSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
+}
+
+type BackendCronSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
 }
 
 type SystemSpec struct {
@@ -145,6 +198,19 @@ type SystemSpec struct {
 
 	// +optional
 	DatabaseSpec *SystemDatabaseSpec `json:"database,omitempty"`
+
+	AppSpec     *SystemAppSpec     `json:"appSpec,omitempty"`
+	SidekiqSpec *SystemSidekiqSpec `json:"sidekiqSpec,omitempty"`
+}
+
+type SystemAppSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
+}
+
+type SystemSidekiqSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
 }
 
 type SystemFileStorageSpec struct {
@@ -161,9 +227,11 @@ type SystemPVCSpec struct {
 }
 
 type SystemS3Spec struct {
-	AWSBucket      string                      `json:"awsBucket"`
-	AWSRegion      string                      `json:"awsRegion"`
-	AWSCredentials corev1.LocalObjectReference `json:"awsCredentialsSecret"`
+	// Deprecated
+	AWSBucket string `json:"awsBucket"`
+	// Deprecated
+	AWSRegion      string                  `json:"awsRegion"`
+	AWSCredentials v1.LocalObjectReference `json:"awsCredentialsSecret"`
 }
 
 type SystemDatabaseSpec struct {
@@ -189,9 +257,29 @@ type ZyncSpec struct {
 	Image *string `json:"image,omitempty"`
 	// +optional
 	PostgreSQLImage *string `json:"postgreSQLImage,omitempty"`
+
+	// +optional
+	AppSpec *ZyncAppSpec `json:"appSpec,omitempty"`
+
+	// +optional
+	QueSpec *ZyncQueSpec `json:"queSpec,omitempty"`
+}
+
+type ZyncAppSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
+}
+
+type ZyncQueSpec struct {
+	// +optional
+	Replicas *int64 `json:"replicas,omitempty"`
 }
 
 type HighAvailabilitySpec struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type PodDisruptionBudgetSpec struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -203,13 +291,24 @@ func init() {
 func (apimanager *APIManager) SetDefaults() (bool, error) {
 	var err error
 	changed := false
-	commonChanged := apimanager.setAPIManagerCommonSpecDefaults()
-	apicastChanged := apimanager.setApicastSpecDefaults()
-	systemChanged, err := apimanager.setSystemSpecDefaults()
 
-	if commonChanged || apicastChanged || systemChanged {
-		changed = true
+	tmpChanged := apimanager.setAPIManagerCommonSpecDefaults()
+	changed = changed || tmpChanged
+
+	tmpChanged = apimanager.setBackendSpecDefaults()
+	changed = changed || tmpChanged
+
+	tmpChanged = apimanager.setApicastSpecDefaults()
+	changed = changed || tmpChanged
+
+	tmpChanged, err = apimanager.setSystemSpecDefaults()
+	changed = changed || tmpChanged
+	if err != nil {
+		return changed, err
 	}
+
+	tmpChanged = apimanager.setZyncDefaults()
+	changed = changed || tmpChanged
 
 	return changed, err
 }
@@ -218,32 +317,97 @@ func (apimanager *APIManager) setApicastSpecDefaults() bool {
 	changed := false
 	spec := &apimanager.Spec
 
-	defaultApicastManagementAPI := "status"
-	defaultApicastOpenSSLVerify := false
-	defaultApicastResponseCodes := true
-	defaultApicastRegistryURL := "http://apicast-staging:8090/policies"
+	tmpDefaultApicastManagementAPI := defaultApicastManagementAPI
+	tmpDefaultApicastOpenSSLVerify := defaultApicastOpenSSLVerify
+	tmpDefaultApicastResponseCodes := defaultApicastResponseCodes
+	tmpDefaultApicastRegistryURL := defaultApicastRegistryURL
 	if spec.Apicast == nil {
-
+		spec.Apicast = &ApicastSpec{}
 		changed = true
-		spec.Apicast = &ApicastSpec{
-			ApicastManagementAPI: &defaultApicastManagementAPI,
-			OpenSSLVerify:        &defaultApicastOpenSSLVerify,
-			IncludeResponseCodes: &defaultApicastResponseCodes,
-			RegistryURL:          &defaultApicastRegistryURL,
-		}
-	} else {
-		if spec.Apicast.ApicastManagementAPI == nil {
-			spec.Apicast.ApicastManagementAPI = &defaultApicastManagementAPI
-		}
-		if spec.Apicast.OpenSSLVerify == nil {
-			spec.Apicast.OpenSSLVerify = &defaultApicastOpenSSLVerify
-		}
-		if spec.Apicast.IncludeResponseCodes == nil {
-			spec.Apicast.IncludeResponseCodes = &defaultApicastResponseCodes
-		}
-		if spec.Apicast.RegistryURL == nil {
-			spec.Apicast.RegistryURL = &defaultApicastRegistryURL
-		}
+	}
+
+	if spec.Apicast.ApicastManagementAPI == nil {
+		spec.Apicast.ApicastManagementAPI = &tmpDefaultApicastManagementAPI
+		changed = true
+	}
+	if spec.Apicast.OpenSSLVerify == nil {
+		spec.Apicast.OpenSSLVerify = &tmpDefaultApicastOpenSSLVerify
+		changed = true
+	}
+	if spec.Apicast.IncludeResponseCodes == nil {
+		spec.Apicast.IncludeResponseCodes = &tmpDefaultApicastResponseCodes
+		changed = true
+	}
+	if spec.Apicast.RegistryURL == nil {
+		spec.Apicast.RegistryURL = &tmpDefaultApicastRegistryURL
+		changed = true
+	}
+
+	if spec.Apicast.StagingSpec == nil {
+		spec.Apicast.StagingSpec = &ApicastStagingSpec{}
+		changed = true
+	}
+
+	if spec.Apicast.ProductionSpec == nil {
+		spec.Apicast.ProductionSpec = &ApicastProductionSpec{}
+		changed = true
+	}
+
+	if spec.Apicast.StagingSpec.Replicas == nil {
+		spec.Apicast.StagingSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	if spec.Apicast.ProductionSpec.Replicas == nil {
+		spec.Apicast.ProductionSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	return changed
+}
+
+func (apimanager *APIManager) defaultReplicas() *int64 {
+	var defaultReplicas int64 = 1
+	return &defaultReplicas
+}
+
+func (apimanager *APIManager) setBackendSpecDefaults() bool {
+	changed := false
+	spec := &apimanager.Spec
+
+	if spec.Backend == nil {
+		spec.Backend = &BackendSpec{}
+		changed = true
+	}
+
+	if spec.Backend.ListenerSpec == nil {
+		spec.Backend.ListenerSpec = &BackendListenerSpec{}
+		changed = true
+	}
+
+	if spec.Backend.CronSpec == nil {
+		spec.Backend.CronSpec = &BackendCronSpec{}
+		changed = true
+	}
+
+	if spec.Backend.WorkerSpec == nil {
+		spec.Backend.WorkerSpec = &BackendWorkerSpec{}
+		changed = true
+	}
+
+	if spec.Backend.ListenerSpec.Replicas == nil {
+		spec.Backend.ListenerSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	if spec.Backend.CronSpec.Replicas == nil {
+		spec.Backend.CronSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	if spec.Backend.WorkerSpec.Replicas == nil {
+		spec.Backend.WorkerSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
 	}
 
 	return changed
@@ -253,27 +417,33 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 	changed := false
 	spec := &apimanager.Spec
 
+	tmpDefaultAppLabel := defaultAppLabel
+	tmpDefaultTenantName := defaultTenantName
+	tmpDefaultImageStreamTagImportInsecure := defaultImageStreamImportInsecure
+	tmpDefaultResourceRequirementsEnabled := defaultResourceRequirementsEnabled
+
 	if spec.AppLabel == nil {
-		defaultAppLabel := "3scale-api-management"
-		spec.AppLabel = &defaultAppLabel
+		spec.AppLabel = &tmpDefaultAppLabel
 		changed = true
 	}
 
 	if spec.TenantName == nil {
-		defaultTenantName := "3scale"
-		spec.TenantName = &defaultTenantName
+		spec.TenantName = &tmpDefaultTenantName
 		changed = true
 	}
 
 	if spec.ImageStreamTagImportInsecure == nil {
-		defaultImageStreamTagImportInsecure := false
-		spec.ImageStreamTagImportInsecure = &defaultImageStreamTagImportInsecure
+		spec.ImageStreamTagImportInsecure = &tmpDefaultImageStreamTagImportInsecure
 		changed = true
 	}
 
 	if spec.ResourceRequirementsEnabled == nil {
-		defaultResourceRequirementsEnabled := true
-		spec.ResourceRequirementsEnabled = &defaultResourceRequirementsEnabled
+		spec.ResourceRequirementsEnabled = &tmpDefaultResourceRequirementsEnabled
+		changed = true
+	}
+
+	if spec.PodDisruptionBudget == nil {
+		spec.PodDisruptionBudget = &PodDisruptionBudgetSpec{Enabled: false}
 		changed = true
 	}
 
@@ -284,72 +454,114 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 }
 
 func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
-	// TODO fix how should be shown
 	changed := false
 	spec := &apimanager.Spec
 
 	if spec.System == nil {
 		spec.System = &SystemSpec{}
+		changed = true
 	}
 
-	changed, err := apimanager.setSystemFileStorageSpecDefaults()
+	tmpChanged, err := apimanager.setSystemFileStorageSpecDefaults()
+	changed = changed || tmpChanged
 	if err != nil {
 		return changed, err
 	}
 
-	changed, err = apimanager.setSystemDatabaseSpecDefaults()
+	tmpChanged, err = apimanager.setSystemDatabaseSpecDefaults()
+	changed = changed || tmpChanged
 	if err != nil {
 		return changed, err
+	}
+
+	if spec.System.AppSpec == nil {
+		spec.System.AppSpec = &SystemAppSpec{}
+		changed = true
+	}
+
+	if spec.System.SidekiqSpec == nil {
+		spec.System.SidekiqSpec = &SystemSidekiqSpec{}
+		changed = true
+	}
+
+	if spec.System.AppSpec.Replicas == nil {
+		spec.System.AppSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	if spec.System.SidekiqSpec.Replicas == nil {
+		spec.System.SidekiqSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
 	}
 
 	return changed, nil
 }
 
 func (apimanager *APIManager) setSystemFileStorageSpecDefaults() (bool, error) {
-	changed := false
 	systemSpec := apimanager.Spec.System
 
-	defaultFileStorageSpec := &SystemFileStorageSpec{
-		PVC: &SystemPVCSpec{
-			StorageClassName: nil,
-		},
-	}
-	if systemSpec.FileStorageSpec == nil {
-		systemSpec.FileStorageSpec = defaultFileStorageSpec
-		changed = true
-	} else {
-		if systemSpec.FileStorageSpec.PVC != nil && systemSpec.FileStorageSpec.S3 != nil {
-			return changed, fmt.Errorf("Only one FileStorage can be chosen at the same time")
-		}
-		if systemSpec.FileStorageSpec.PVC == nil && systemSpec.FileStorageSpec.S3 == nil {
-			systemSpec.FileStorageSpec.PVC = defaultFileStorageSpec.PVC
-			changed = true
-		}
+	if systemSpec.FileStorageSpec != nil &&
+		systemSpec.FileStorageSpec.PVC != nil &&
+		systemSpec.FileStorageSpec.S3 != nil {
+		return true, fmt.Errorf("Only one FileStorage can be chosen at the same time")
 	}
 
-	return changed, nil
+	return false, nil
 }
 
 func (apimanager *APIManager) setSystemDatabaseSpecDefaults() (bool, error) {
 	changed := false
 	systemSpec := apimanager.Spec.System
-	defaultDatabaseSpec := &SystemDatabaseSpec{
-		MySQL: &SystemMySQLSpec{
-			Image: nil,
-		},
+
+	if apimanager.IsExternalDatabaseEnabled() {
+		if systemSpec.DatabaseSpec != nil {
+			systemSpec.DatabaseSpec = nil
+			changed = true
+		}
+		return changed, nil
 	}
 
-	if systemSpec.DatabaseSpec == nil {
-		systemSpec.DatabaseSpec = defaultDatabaseSpec
-		changed = true
-	} else {
-		if systemSpec.DatabaseSpec.MySQL != nil && systemSpec.DatabaseSpec.PostgreSQL != nil {
-			return changed, fmt.Errorf("Only one System Database can be chosen at the same time")
-		}
-		if systemSpec.DatabaseSpec.MySQL == nil && systemSpec.DatabaseSpec.PostgreSQL == nil {
-			systemSpec.DatabaseSpec.MySQL = defaultDatabaseSpec.MySQL
-		}
+	// databases managed internally
+	if systemSpec.DatabaseSpec != nil &&
+		systemSpec.DatabaseSpec.MySQL != nil &&
+		systemSpec.DatabaseSpec.PostgreSQL != nil {
+		return changed, fmt.Errorf("Only one System Database can be chosen at the same time")
 	}
 
 	return changed, nil
+}
+
+func (apimanager *APIManager) setZyncDefaults() bool {
+	changed := false
+	spec := &apimanager.Spec
+
+	if spec.Zync == nil {
+		spec.Zync = &ZyncSpec{}
+		changed = true
+	}
+
+	if spec.Zync.AppSpec == nil {
+		spec.Zync.AppSpec = &ZyncAppSpec{}
+		changed = true
+	}
+
+	if spec.Zync.QueSpec == nil {
+		spec.Zync.QueSpec = &ZyncQueSpec{}
+	}
+
+	if spec.Zync.AppSpec.Replicas == nil {
+		spec.Zync.AppSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	if spec.Zync.QueSpec.Replicas == nil {
+		spec.Zync.QueSpec.Replicas = apimanager.defaultReplicas()
+		changed = true
+	}
+
+	return changed
+}
+
+func (apimanager *APIManager) IsExternalDatabaseEnabled() bool {
+	return apimanager.Spec.HighAvailability != nil && apimanager.Spec.HighAvailability.Enabled
 }

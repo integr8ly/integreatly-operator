@@ -11,13 +11,13 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManager":       schema_pkg_apis_3scale_v1alpha1_APIManager(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerSpec":   schema_pkg_apis_3scale_v1alpha1_APIManagerSpec(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerStatus": schema_pkg_apis_3scale_v1alpha1_APIManagerStatus(ref),
+		"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManager":       schema_pkg_apis_apps_v1alpha1_APIManager(ref),
+		"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerSpec":   schema_pkg_apis_apps_v1alpha1_APIManagerSpec(ref),
+		"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerStatus": schema_pkg_apis_apps_v1alpha1_APIManagerStatus(ref),
 	}
 }
 
-func schema_pkg_apis_3scale_v1alpha1_APIManager(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apps_v1alpha1_APIManager(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -45,23 +45,23 @@ func schema_pkg_apis_3scale_v1alpha1_APIManager(ref common.ReferenceCallback) co
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerSpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerStatus"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerSpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_3scale_v1alpha1_APIManagerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apps_v1alpha1_APIManagerSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -100,27 +100,32 @@ func schema_pkg_apis_3scale_v1alpha1_APIManagerSpec(ref common.ReferenceCallback
 					},
 					"apicast": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.ApicastSpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.ApicastSpec"),
 						},
 					},
 					"backend": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.BackendSpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.BackendSpec"),
 						},
 					},
 					"system": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.SystemSpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.SystemSpec"),
 						},
 					},
 					"zync": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.ZyncSpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.ZyncSpec"),
 						},
 					},
 					"highAvailability": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.HighAvailabilitySpec"),
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.HighAvailabilitySpec"),
+						},
+					},
+					"podDisruptionBudget": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.PodDisruptionBudgetSpec"),
 						},
 					},
 				},
@@ -128,11 +133,11 @@ func schema_pkg_apis_3scale_v1alpha1_APIManagerSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.ApicastSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.BackendSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.HighAvailabilitySpec", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.SystemSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.ZyncSpec"},
+			"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.ApicastSpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.BackendSpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.HighAvailabilitySpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.PodDisruptionBudgetSpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.SystemSpec", "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.ZyncSpec"},
 	}
 }
 
-func schema_pkg_apis_3scale_v1alpha1_APIManagerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apps_v1alpha1_APIManagerStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
@@ -145,7 +150,7 @@ func schema_pkg_apis_3scale_v1alpha1_APIManagerStatus(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerCondition"),
+										Ref: ref("github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerCondition"),
 									},
 								},
 							},
@@ -161,6 +166,6 @@ func schema_pkg_apis_3scale_v1alpha1_APIManagerStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1.APIManagerCondition", "github.com/RHsyseng/operator-utils/pkg/olm.DeploymentStatus"},
+			"github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1.APIManagerCondition", "github.com/RHsyseng/operator-utils/pkg/olm.DeploymentStatus"},
 	}
 }
