@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	OwnerLabelKey = integreatlyv1alpha1.SchemeGroupVersion.Group + "/installation-uid" //
+	OwnerLabelKey = integreatlyv1alpha1.SchemeGroupVersion.Group + "/installation-uid"
 )
 
 // This is the base reconciler that all the other reconcilers extend. It handles things like namespace creation, subscription creation etc
