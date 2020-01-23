@@ -3,8 +3,6 @@ package config
 import (
 	"errors"
 
-	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -19,12 +17,13 @@ func NewMonitoring(config ProductConfig) *Monitoring {
 }
 func (m *Monitoring) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&monitoring_v1alpha1.ApplicationMonitoring{
-			TypeMeta: v1.TypeMeta{
-				Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
-				APIVersion: monitoring_v1alpha1.SchemeGroupVersion.String(),
-			},
-		},
+		// FIXME INTLY-5018 - uncomment ApplicationMonitoring
+		// &monitoring_v1alpha1.ApplicationMonitoring{
+		// 	TypeMeta: v1.TypeMeta{
+		// 		Kind:       monitoring_v1alpha1.ApplicationMonitoringKind,
+		// 		APIVersion: monitoring_v1alpha1.SchemeGroupVersion.String(),
+		// 	},
+		// },
 	}
 }
 

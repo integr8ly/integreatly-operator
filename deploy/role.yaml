@@ -37,14 +37,12 @@ rules:
     verbs:
       - get
       - create
-  # - apiGroups:
-  #     - apps
-  #   resources:
-  #     - deployments/finalizers
-  #   resourceNames:
-  #     - integreatly-operator
-  #   verbs:
-  #     - update
+  - apiGroups:
+      - apps
+    resources:
+      - deployments/finalizers
+    verbs:
+      - update
   # END For monitoring functions by operator-sdk
       
   # Our own Subscription needs to be switched into Manual mode after initial installation
@@ -52,11 +50,23 @@ rules:
       - operators.coreos.com
     resources:
       - subscriptions
-    resourceNames: 
-      - integreatly
     verbs:
       - get
+      - list
+      - watch
       - update
+
+  # Monitoring resources ar not covered by namespace "admin" permissions
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - prometheusrules
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -132,7 +142,6 @@ kind: ClusterRole
 metadata:
   name: integreatly-operator
 rules:
-  #FIXME: INTLY-4909 - if we are able to install in multinamespace mode, then we should be able to move this rule into a namespaced "integreatly-operator" Role
   - apiGroups:
       - integreatly.org
       - applicationmonitoring.integreatly.org
@@ -149,15 +158,6 @@ rules:
       - projectrequests
     verbs:
       - create
-
-  # Namespace update permissions are needed for setting labels
-  #FIXME: INTLY-4909 - if we are able to install in multinamespace mode, then we should be able to move this rule into a namespaced "integreatly-operator" Role
-  - apiGroups:
-      - ""
-    resources:
-      - namespaces
-    verbs:
-      - update
   
   # Preflights check for existing installations of products
   - apiGroups:
@@ -166,55 +166,25 @@ rules:
       - namespaces
     verbs:
       - list
+      - get
+      - watch
   - apiGroups:
       - apps
     resources:
       - deployments
     verbs:
+      - list
       - get
+      - watch
   - apiGroups:
       - apps.openshift.io
     resources:
       - deploymentconfigs
     verbs:
+      - list
       - get
+      - watch
   # END Preflights check for existing installations of products
-    
-  # Installation of product operators
-  #FIXME: INTLY-4909 - if we are able to install in multinamespace mode, then we should be able to move this block of rules into a namespaced "integreatly-operator" Role
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - catalogsources
-      - operatorgroups
-    verbs:
-      - create
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - catalogsources
-    resourceNames:
-      - rhmi-registry-cs
-    verbs:
-      - update
-  # OperatorGroup update is not implemented yet, but might be added at a later date
-  # - apiGroups:
-  #     - operators.coreos.com
-  #   resources:
-  #     - operatorgroups
-  #   resourceNames:
-  #     - rhmi-registry-og
-  #   verbs:
-  #     - update
-
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - installplans
-    verbs:
-      - update
-
-  # END Installation of product operators
 
   # OAuthClients are used for login into products with OpenShift User identity 
   - apiGroups:
@@ -275,9 +245,54 @@ rules:
     verbs:
       - get
       - update
-  
-  # Monitoring resources ar not covered by namespace "admin" permissions
-  #FIXME: INTLY-4909 - if we are able to install in multinamespace mode, then we should be able to move this rule into a namespaced "integreatly-operator" Role
+
+  # Permissions needed for our namespaces, but not given by "admin" role
+
+  # Namespace update permissions are needed for setting labels
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - update
+
+  # Installation of product operators
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+      - operatorgroups
+    verbs:
+      - create
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+    resourceNames:
+      - rhmi-registry-cs
+    verbs:
+      - update
+
+  # OperatorGroup update is not implemented yet, but might be added at a later date
+  # - apiGroups:
+  #     - operators.coreos.com
+  #   resources:
+  #     - operatorgroups
+  #   resourceNames:
+  #     - rhmi-registry-og
+  #   verbs:
+  #     - update
+
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - installplans
+    verbs:
+      - update
+
+  # END Installation of product operators
+
+  # Monitoring resources not covered by namespace "admin" permissions
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -288,78 +303,5 @@ rules:
       - create
       - update
       - delete
-
-  # controller-runtime cache needs cluster wide list and watch permissions
-  #FIXME: INTLY-4909 - if we are able to install in multinamespace mode, then we should be able to move this block of rules into a namespaced "integreatly-operator" Role
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-      - secrets
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - subscriptions
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - aerogear.org
-    resources:
-      - keycloaks
-      - keycloakrealms
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - push.aerogear.org
-    resources:
-      - unifiedpushservers
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - syndesis.io
-    resources:
-      - syndesises
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - admin.enmasse.io
-    resources:
-      - authenticationservices
-      - addressplans
-      - addressspaceplans
-      - brokeredinfraconfigs
-      # - standardinfraconfigs
-      # - consoleservices
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - kafka.strimzi.io
-    resources:
-      - kafkas
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - org.eclipse.che
-    resources:
-      - checlusters
-    verbs:
-      - list
-      - watch
-  - apiGroups:
-      - apps.3scale.net
-    resources:
-      - apimanagers
-    verbs:
-      - list
-      - watch
-  # END controller-runtime cache forced permissions
-  
+      
+  # END Permissions needed for our namespaces, but not given by "admin" role

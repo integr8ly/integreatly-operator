@@ -6,16 +6,14 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/spf13/pflag"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	"k8s.io/client-go/discovery"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
@@ -132,18 +130,6 @@ func main() {
 
 	log.Info("Registering Components.")
 
-	dc, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig())
-	if err != nil {
-		panic("Could not create discovery client")
-	}
-
-	d, err := detector.NewAutoDetect(dc)
-	if err != nil {
-		panic("error creating autodetector: " + err.Error())
-	}
-
-	d.Start(5 * time.Second)
-
 	// Setup Scheme for all resources
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
@@ -151,7 +137,7 @@ func main() {
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr, products, d); err != nil {
+	if err := controller.AddToManager(mgr, products); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}

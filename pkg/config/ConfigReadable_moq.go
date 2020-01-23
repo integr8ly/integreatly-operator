@@ -11,6 +11,7 @@ import (
 
 var (
 	lockConfigReadableMockGetHost            sync.RWMutex
+	lockConfigReadableMockGetNamespace       sync.RWMutex
 	lockConfigReadableMockGetOperatorVersion sync.RWMutex
 	lockConfigReadableMockGetProductName     sync.RWMutex
 	lockConfigReadableMockGetProductVersion  sync.RWMutex
@@ -30,6 +31,9 @@ var _ ConfigReadable = &ConfigReadableMock{}
 //         mockedConfigReadable := &ConfigReadableMock{
 //             GetHostFunc: func() string {
 // 	               panic("mock out the GetHost method")
+//             },
+//             GetNamespaceFunc: func() string {
+// 	               panic("mock out the GetNamespace method")
 //             },
 //             GetOperatorVersionFunc: func() v1alpha1.OperatorVersion {
 // 	               panic("mock out the GetOperatorVersion method")
@@ -56,6 +60,9 @@ type ConfigReadableMock struct {
 	// GetHostFunc mocks the GetHost method.
 	GetHostFunc func() string
 
+	// GetNamespaceFunc mocks the GetNamespace method.
+	GetNamespaceFunc func() string
+
 	// GetOperatorVersionFunc mocks the GetOperatorVersion method.
 	GetOperatorVersionFunc func() v1alpha1.OperatorVersion
 
@@ -75,6 +82,9 @@ type ConfigReadableMock struct {
 	calls struct {
 		// GetHost holds details about calls to the GetHost method.
 		GetHost []struct {
+		}
+		// GetNamespace holds details about calls to the GetNamespace method.
+		GetNamespace []struct {
 		}
 		// GetOperatorVersion holds details about calls to the GetOperatorVersion method.
 		GetOperatorVersion []struct {
@@ -117,6 +127,32 @@ func (mock *ConfigReadableMock) GetHostCalls() []struct {
 	lockConfigReadableMockGetHost.RLock()
 	calls = mock.calls.GetHost
 	lockConfigReadableMockGetHost.RUnlock()
+	return calls
+}
+
+// GetNamespace calls GetNamespaceFunc.
+func (mock *ConfigReadableMock) GetNamespace() string {
+	if mock.GetNamespaceFunc == nil {
+		panic("ConfigReadableMock.GetNamespaceFunc: method is nil but ConfigReadable.GetNamespace was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadableMockGetNamespace.Lock()
+	mock.calls.GetNamespace = append(mock.calls.GetNamespace, callInfo)
+	lockConfigReadableMockGetNamespace.Unlock()
+	return mock.GetNamespaceFunc()
+}
+
+// GetNamespaceCalls gets all the calls that were made to GetNamespace.
+// Check the length with:
+//     len(mockedConfigReadable.GetNamespaceCalls())
+func (mock *ConfigReadableMock) GetNamespaceCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadableMockGetNamespace.RLock()
+	calls = mock.calls.GetNamespace
+	lockConfigReadableMockGetNamespace.RUnlock()
 	return calls
 }
 

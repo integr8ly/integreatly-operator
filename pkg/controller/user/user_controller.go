@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 
-	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	usersv1 "github.com/openshift/api/user/v1"
@@ -22,7 +21,7 @@ var log = logf.Log.WithName("controller_user")
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string, _ *detector.Detector) error {
+func Add(mgr manager.Manager, products []string) error {
 	return add(mgr, newReconciler(mgr))
 }
 
