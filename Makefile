@@ -1,3 +1,5 @@
+include ./make/*.mk
+
 ORG=integreatly
 NAMESPACE=integreatly
 PROJECT=integreatly-operator
@@ -16,7 +18,7 @@ INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
-	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)...; sleep $(4); done"
+	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
 	@echo $(2) ready!
 endef
 
