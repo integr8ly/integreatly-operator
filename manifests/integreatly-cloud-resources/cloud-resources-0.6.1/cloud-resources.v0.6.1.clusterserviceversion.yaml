@@ -96,11 +96,11 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:v0.6.0
+    containerImage: quay.io/integreatly/cloud-resource-operator:v0.6.1
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
-  name: cloud-resources.v0.6.0
+  name: cloud-resources.v0.6.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -146,11 +146,11 @@ spec:
       displayName: Postgres Snapshot
       kind: PostgresSnapshot
       name: postgressnapshots.integreatly.org
-      version: v1alpha1
       specDescriptors:
-        - description: The type of the resource to snapshot
-          displayName: ResourceName
-          path: resourceName
+      - description: The type of the resource to snapshot
+        displayName: ResourceName
+        path: resourceName
+      version: v1alpha1
     - description: Represents an instance of a Redis cluster in a provider
       displayName: Redis
       kind: Redis
@@ -173,11 +173,11 @@ spec:
       displayName: Redis Snapshot
       kind: RedisSnapshot
       name: redissnapshots.integreatly.org
-      version: v1alpha1
       specDescriptors:
-        - description: The type of the resource to snapshot
-          displayName: ResourceName
-          path: resourceName
+      - description: The type of the resource to snapshot
+        displayName: ResourceName
+        path: resourceName
+      version: v1alpha1
     - description: Represents an instance of SMTP credentials in a provider
       displayName: SMTP Credentials
       kind: SMTPCredentialSet
@@ -251,7 +251,7 @@ spec:
                   value: cloud-resource-operator
                 - name: TAG_KEY_PREFIX
                   value: integreatly.org/
-                image: quay.io/integreatly/cloud-resource-operator:v0.6.0
+                image: quay.io/integreatly/cloud-resource-operator:v0.6.1
                 imagePullPolicy: Always
                 name: cloud-resource-operator
                 resources: {}
@@ -364,4 +364,4 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  version: 0.6.0
+  version: 0.6.1
