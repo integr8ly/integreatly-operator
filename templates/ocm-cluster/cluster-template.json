@@ -1,0 +1,10 @@
+{
+  "name": "OCM_CLUSTER_NAME",
+  "region": {
+    "id": "OCM_CLUSTER_REGION"
+  },
+  "nodes" : {
+    "compute" : 4,
+    "compute_machine_type" : {"id" : "m5.xlarge" }
+  }
+}

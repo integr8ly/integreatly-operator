@@ -13,3 +13,8 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
     && make install \
     && chmod -R 0777 $GOPATH \
     && rm -rf $GOPATH/.cache
+
+# install jq
+RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
+    && chmod +x ./jq \
+    && cp jq /usr/bin
