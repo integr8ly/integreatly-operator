@@ -77,6 +77,7 @@ var (
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
 	EventInstallationCompleted string = "InstallationCompleted"
+	EventPreflightCheckPassed  string = "PreflightCheckPassed"
 )
 
 // InstallationSpec defines the desired state of Installation

@@ -348,6 +348,12 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 		RequeueAfter: 10 * time.Second,
 	}
 	requiredSecrets := []string{"github-oauth-secret"}
+	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
+
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+		requiredSecrets = append(requiredSecrets, installation.Spec.SMTPSecret)
+	}
+
 	for _, secretName := range requiredSecrets {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -358,14 +364,19 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
 			return result, err
 		} else if !exists {
-			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
+			preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
+			logrus.Info(preflightMessage)
+			eventRecorder.Event(installation, "Warning", integreatlyv1alpha1.EventProcessingError, preflightMessage)
+
 			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = preflightMessage
-			logrus.Info(preflightMessage)
 			_ = r.client.Status().Update(r.context, installation)
+
 			return result, err
 		}
 		logrus.Infof("found required secret: %s", secretName)
+		eventRecorder.Eventf(installation, "Normal", integreatlyv1alpha1.EventPreflightCheckPassed,
+			"found required secret: %s", secretName)
 	}
 
 	logrus.Infof("getting namespaces")
