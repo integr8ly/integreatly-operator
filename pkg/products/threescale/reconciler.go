@@ -18,7 +18,7 @@ import (
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
-	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -58,6 +58,8 @@ const (
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
+
+	numberOfReplicas int64 = 2
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -380,6 +382,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
 				},
 				FileStorageSpec: fss,
+				AppSpec:         &threescalev1.SystemAppSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				SidekiqSpec:     &threescalev1.SystemSidekiqSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+			},
+			Apicast: &threescalev1.ApicastSpec{
+				ProductionSpec: &threescalev1.ApicastProductionSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				StagingSpec:    &threescalev1.ApicastStagingSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+			},
+			Backend: &threescalev1.BackendSpec{
+				ListenerSpec: &threescalev1.BackendListenerSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				WorkerSpec:   &threescalev1.BackendWorkerSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				CronSpec:     &threescalev1.BackendCronSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+			},
+			Zync: &threescalev1.ZyncSpec{
+				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{numberOfReplicas}[0]},
 			},
 		},
 	}

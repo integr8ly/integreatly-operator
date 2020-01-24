@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	threescalev1 "github.com/integr8ly/integreatly-operator/pkg/apis/3scale/v1alpha1"
+	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
