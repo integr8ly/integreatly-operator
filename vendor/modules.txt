@@ -126,12 +126,16 @@ github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types
 github.com/integr8ly/cloud-resource-operator/pkg/resources
 # github.com/integr8ly/grafana-operator v1.3.1
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
+# github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
+github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.8
 github.com/json-iterator/go
 # github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
+github.com/keycloak/keycloak-operator/pkg/common
+github.com/keycloak/keycloak-operator/pkg/model
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e

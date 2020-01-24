@@ -106,10 +106,11 @@ type InstallationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages           map[StageName]*InstallationStageStatus `json:"stages"`
-	PreflightStatus  PreflightStatus                        `json:"preflightStatus,omitempty"`
-	PreflightMessage string                                 `json:"preflightMessage,omitempty"`
-	LastError        string                                 `json:"lastError"`
+	Stages             map[StageName]*InstallationStageStatus `json:"stages"`
+	PreflightStatus    PreflightStatus                        `json:"preflightStatus,omitempty"`
+	PreflightMessage   string                                 `json:"preflightMessage,omitempty"`
+	LastError          string                                 `json:"lastError"`
+	SetupGHCredentials bool                                   `json:"setupGHCredentials,omitempty"`
 }
 
 type InstallationStageStatus struct {

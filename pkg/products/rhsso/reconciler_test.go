@@ -67,6 +67,9 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetOauthClientsSecretNameFunc: func() string {
 			return "oauth-client-secrets"
 		},
+		GetGHOauthClientsSecretNameFunc: func() string {
+			return "github-oauth-secret"
+		},
 	}
 }
 
@@ -186,6 +189,10 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Name:      "github-oauth-secret",
 			Namespace: defaultOperatorNamespace,
 		},
+		Data: map[string][]byte{
+			"clientId": bytes.NewBufferString("dummy").Bytes(),
+			"secret":   bytes.NewBufferString("dummy").Bytes(),
+		},
 	}
 
 	cases := []struct {
@@ -299,6 +306,10 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:      "github-oauth-secret",
 			Namespace: defaultOperatorNamespace,
 		},
+		Data: map[string][]byte{
+			"clientId": bytes.NewBufferString("dummy").Bytes(),
+			"secret":   bytes.NewBufferString("dummy").Bytes(),
+		},
 	}
 
 	oauthClientSecrets := &corev1.Secret{
@@ -349,6 +360,17 @@ func TestReconciler_handleProgress(t *testing.T) {
 			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
 			ExpectError:     true,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:      basicConfigMock(),
+			Installation:    &integreatlyv1alpha1.Installation{},
+			Recorder:        setupRecorder(),
+			ApiUrl:          "https://serverurl",
+		},
+		{
+			Name:            "test missing github secret cr returns phase failed",
+			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
+			ExpectError:     true,
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, oauthClientSecrets),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation:    &integreatlyv1alpha1.Installation{},
@@ -498,6 +520,10 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "github-oauth-secret",
 			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{
+			"clientId": bytes.NewBufferString("dummy").Bytes(),
+			"secret":   bytes.NewBufferString("dummy").Bytes(),
 		},
 	}
 

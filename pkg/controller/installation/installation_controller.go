@@ -323,30 +323,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
 
-	result := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: 10 * time.Second,
-	}
-	requiredSecrets := []string{"github-oauth-secret"}
-	for _, secretName := range requiredSecrets {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: installation.Namespace,
-			},
-		}
-		if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
-			return result, err
-		} else if !exists {
-			preflightMessage := fmt.Sprintf("Could not find %s secret in integreatly-operator namespace: %s", secret.Name, installation.Namespace)
-			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
-			installation.Status.PreflightMessage = preflightMessage
-			logrus.Info(preflightMessage)
-			_ = r.client.Status().Update(r.context, installation)
-			return result, err
-		}
-		logrus.Infof("found required secret: %s", secretName)
-	}
+	result := reconcile.Result{}
 
 	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}

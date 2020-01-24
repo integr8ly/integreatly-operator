@@ -9,24 +9,25 @@ import (
 )
 
 var (
-	lockConfigReadWriterMockGetBackupsSecretName      sync.RWMutex
-	lockConfigReadWriterMockGetOauthClientsSecretName sync.RWMutex
-	lockConfigReadWriterMockGetOperatorNamespace      sync.RWMutex
-	lockConfigReadWriterMockReadAMQOnline             sync.RWMutex
-	lockConfigReadWriterMockReadAMQStreams            sync.RWMutex
-	lockConfigReadWriterMockReadCloudResources        sync.RWMutex
-	lockConfigReadWriterMockReadCodeReady             sync.RWMutex
-	lockConfigReadWriterMockReadFuse                  sync.RWMutex
-	lockConfigReadWriterMockReadFuseOnOpenshift       sync.RWMutex
-	lockConfigReadWriterMockReadMonitoring            sync.RWMutex
-	lockConfigReadWriterMockReadProduct               sync.RWMutex
-	lockConfigReadWriterMockReadRHSSO                 sync.RWMutex
-	lockConfigReadWriterMockReadRHSSOUser             sync.RWMutex
-	lockConfigReadWriterMockReadSolutionExplorer      sync.RWMutex
-	lockConfigReadWriterMockReadThreeScale            sync.RWMutex
-	lockConfigReadWriterMockReadUps                   sync.RWMutex
-	lockConfigReadWriterMockWriteConfig               sync.RWMutex
-	lockConfigReadWriterMockreadConfigForProduct      sync.RWMutex
+	lockConfigReadWriterMockGetBackupsSecretName        sync.RWMutex
+	lockConfigReadWriterMockGetGHOauthClientsSecretName sync.RWMutex
+	lockConfigReadWriterMockGetOauthClientsSecretName   sync.RWMutex
+	lockConfigReadWriterMockGetOperatorNamespace        sync.RWMutex
+	lockConfigReadWriterMockReadAMQOnline               sync.RWMutex
+	lockConfigReadWriterMockReadAMQStreams              sync.RWMutex
+	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
+	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
+	lockConfigReadWriterMockReadFuse                    sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
+	lockConfigReadWriterMockReadProduct                 sync.RWMutex
+	lockConfigReadWriterMockReadRHSSO                   sync.RWMutex
+	lockConfigReadWriterMockReadRHSSOUser               sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer        sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale              sync.RWMutex
+	lockConfigReadWriterMockReadUps                     sync.RWMutex
+	lockConfigReadWriterMockWriteConfig                 sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct        sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -41,6 +42,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //         mockedConfigReadWriter := &ConfigReadWriterMock{
 //             GetBackupsSecretNameFunc: func() string {
 // 	               panic("mock out the GetBackupsSecretName method")
+//             },
+//             GetGHOauthClientsSecretNameFunc: func() string {
+// 	               panic("mock out the GetGHOauthClientsSecretName method")
 //             },
 //             GetOauthClientsSecretNameFunc: func() string {
 // 	               panic("mock out the GetOauthClientsSecretName method")
@@ -103,6 +107,9 @@ type ConfigReadWriterMock struct {
 	// GetBackupsSecretNameFunc mocks the GetBackupsSecretName method.
 	GetBackupsSecretNameFunc func() string
 
+	// GetGHOauthClientsSecretNameFunc mocks the GetGHOauthClientsSecretName method.
+	GetGHOauthClientsSecretNameFunc func() string
+
 	// GetOauthClientsSecretNameFunc mocks the GetOauthClientsSecretName method.
 	GetOauthClientsSecretNameFunc func() string
 
@@ -158,6 +165,9 @@ type ConfigReadWriterMock struct {
 	calls struct {
 		// GetBackupsSecretName holds details about calls to the GetBackupsSecretName method.
 		GetBackupsSecretName []struct {
+		}
+		// GetGHOauthClientsSecretName holds details about calls to the GetGHOauthClientsSecretName method.
+		GetGHOauthClientsSecretName []struct {
 		}
 		// GetOauthClientsSecretName holds details about calls to the GetOauthClientsSecretName method.
 		GetOauthClientsSecretName []struct {
@@ -242,6 +252,32 @@ func (mock *ConfigReadWriterMock) GetBackupsSecretNameCalls() []struct {
 	lockConfigReadWriterMockGetBackupsSecretName.RLock()
 	calls = mock.calls.GetBackupsSecretName
 	lockConfigReadWriterMockGetBackupsSecretName.RUnlock()
+	return calls
+}
+
+// GetGHOauthClientsSecretName calls GetGHOauthClientsSecretNameFunc.
+func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretName() string {
+	if mock.GetGHOauthClientsSecretNameFunc == nil {
+		panic("ConfigReadWriterMock.GetGHOauthClientsSecretNameFunc: method is nil but ConfigReadWriter.GetGHOauthClientsSecretName was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.Lock()
+	mock.calls.GetGHOauthClientsSecretName = append(mock.calls.GetGHOauthClientsSecretName, callInfo)
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.Unlock()
+	return mock.GetGHOauthClientsSecretNameFunc()
+}
+
+// GetGHOauthClientsSecretNameCalls gets all the calls that were made to GetGHOauthClientsSecretName.
+// Check the length with:
+//     len(mockedConfigReadWriter.GetGHOauthClientsSecretNameCalls())
+func (mock *ConfigReadWriterMock) GetGHOauthClientsSecretNameCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.RLock()
+	calls = mock.calls.GetGHOauthClientsSecretName
+	lockConfigReadWriterMockGetGHOauthClientsSecretName.RUnlock()
 	return calls
 }
 
