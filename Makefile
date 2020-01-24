@@ -158,6 +158,8 @@ cluster/cleanup:
 	@-oc delete namespace $(NAMESPACE) --timeout=240s --wait
 	@-oc delete catalogsourceconfig.operators.coreos.com/installed-integreatly-operator -n openshift-marketplace
 	@-oc delete operatorsource.operators.coreos.com/integreatly-operators -n openshift-marketplace
+	@-oc delete clusterrole integreatly-operator
+	@-oc delete clusterrolebinding integreatly-operator
 
 .PHONY: cluster/cleanup/olm
 cluster/cleanup/olm:

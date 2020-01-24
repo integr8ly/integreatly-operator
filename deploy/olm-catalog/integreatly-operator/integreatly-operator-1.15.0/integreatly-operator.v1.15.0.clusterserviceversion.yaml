@@ -23,7 +23,7 @@ metadata:
             "name": "INSTALLATION_NAME"
           },
           "spec": {
-            "namespacePrefix": "integreatly-",
+            "namespacePrefix": "INSTALLATION_PREFIX-",
             "selfSignedCerts": "SELF_SIGNED_CERTS",
             "type": "INSTALLATION_TYPE"
           }
@@ -32,7 +32,7 @@ metadata:
     capabilities: Basic Install
     categories: Integreating greatly
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v1.14.0
+    containerImage: quay.io/integreatly/integreatly-operator:v1.15.0
     createdAt: "2019-10-15 10:39:00"
     description: Greatly integrating integreatly greatness
     support: Integreatly
@@ -67,21 +67,6 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - keycloak.org
-          resources:
-          - keycloaks
-          - keycloakrealms
-          - keycloakclients
-          - keycloakbackups
-          - keycloakusers
-          verbs:
-          - get
-          - list
-          - update
-          - watch
-          - delete
-          - create
-        - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
           - applicationmonitorings
@@ -102,9 +87,10 @@ spec:
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:
-          - clusterroles
-          - clusterrolebindings
+          - roles
+          - rolebindings
           verbs:
+          - get
           - create
           - update
           - delete
@@ -192,6 +178,21 @@ spec:
           - delete
           - update
         - apiGroups:
+          - keycloak.org
+          resources:
+          - keycloaks
+          - keycloakrealms
+          - keycloakclients
+          - keycloakbackups
+          - keycloakusers
+          verbs:
+          - get
+          - list
+          - update
+          - watch
+          - delete
+          - create
+        - apiGroups:
           - kafka.strimzi.io
           resources:
           - kafkas
@@ -227,6 +228,7 @@ spec:
           verbs:
           - list
           - create
+          - update
           - watch
           - get
         - apiGroups:
@@ -277,22 +279,6 @@ spec:
           - create
           - update
         - apiGroups:
-          - gpte.opentlc.com
-          resources:
-          - nexus
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - launcher.fabric8.io
-          resources:
-          - launchers
-          verbs:
-          - get
-          - create
-        - apiGroups:
           - rbac.authorization.k8s.io
           resources:
           - rolebindings
@@ -305,6 +291,8 @@ spec:
           - users
           verbs:
           - watch
+          - get
+          - list
         - apiGroups:
           - user.openshift.io
           resources:
@@ -349,7 +337,7 @@ spec:
           resources:
           - jenkins
           verbs:
-          - '*'
+          - "*"
         - apiGroups:
           - monitoring.coreos.com
           resources:
@@ -379,6 +367,10 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: CR_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 - name: POD_NAME
                   valueFrom:
                     fieldRef:
