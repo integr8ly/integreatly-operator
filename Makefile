@@ -16,6 +16,11 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
+export SELF_SIGNED_CERTS   ?= true
+export INSTALLATION_PREFIX ?= rhmi
+export INSTALLATION_TYPE   ?= managed
+export INSTALLATION_NAME   ?= integreatly-operator
+
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
@@ -107,7 +112,6 @@ test/e2e/olm: export GH_CLIENT_SECRET := 1234
 test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
 
 .PHONY: cluster/deploy/integreatly-installation-cr.yml
-cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly-operator
 cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
@@ -178,10 +182,6 @@ cluster/cleanup/crds:
 	@-oc delete crd webapps.integreatly.org
 
 .PHONY: deploy/integreatly-installation-cr.yml
-deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
-deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly
-deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
-deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := redhat-rhmi
 deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \

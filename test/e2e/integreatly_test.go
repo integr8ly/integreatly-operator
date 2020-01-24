@@ -2,9 +2,11 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
@@ -635,8 +638,35 @@ func IntegreatlyCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	// get global framework variables
 	f := framework.Global
+
+	// Create SMTP Secret
+	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")
+	if !found {
+		t.Fatal("INSTALLATION_PREFIX env var is not set")
+	}
+
+	var smtpSec = &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprint(installationPrefix, "-smtp"),
+			Namespace: namespace,
+			Labels:    map[string]string{config.SMTPSecretLabelKey: config.SMTPSecretLabelValue},
+		},
+		Data: map[string][]byte{
+			"host":     []byte("test"),
+			"password": []byte("test"),
+			"port":     []byte("test"),
+			"tls":      []byte("test"),
+			"username": []byte("test"),
+		},
+	}
+	err = f.Client.Create(context.TODO(), smtpSec, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// wait for integreatly-operator to be ready
 	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "integreatly-operator", 1, retryInterval, timeout)
 	if err != nil {

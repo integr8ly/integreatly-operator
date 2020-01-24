@@ -6,3 +6,4 @@ spec:
   type: workshop
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
+  smtpSecret: integreatly-smtp
