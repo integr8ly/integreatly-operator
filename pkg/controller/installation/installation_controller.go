@@ -355,6 +355,38 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 		RequeueAfter: 10 * time.Second,
 	}
 
+	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
+
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+		requiredSecrets := []string{installation.Spec.SMTPSecret}
+
+		for _, secretName := range requiredSecrets {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretName,
+					Namespace: installation.Namespace,
+				},
+			}
+			if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
+				return reconcile.Result{}, err
+			} else if !exists {
+				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
+				logrus.Info(preflightMessage)
+				eventRecorder.Event(installation, "Warning", integreatlyv1alpha1.EventProcessingError, preflightMessage)
+
+				installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
+				installation.Status.PreflightMessage = preflightMessage
+				_ = r.client.Status().Update(r.context, installation)
+
+				return reconcile.Result{}, err
+			}
+			logrus.Infof("found required secret: %s", secretName)
+			eventRecorder.Eventf(installation, "Normal", integreatlyv1alpha1.EventPreflightCheckPassed,
+				"found required secret: %s", secretName)
+		}
+	}
+
+	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
 	err := r.client.List(r.context, namespaces)
 	if err != nil {
