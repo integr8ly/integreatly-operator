@@ -6,52 +6,10 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: integreatly-operator
-  namespace: redhat-rhmi-operator
+  namespace: integreatly
 roleRef:
   kind: Role
   name: integreatly-operator
-  apiGroup: rbac.authorization.k8s.io
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: integreatly-operator-openshift
-  namespace: openshift
-subjects:
-- kind: ServiceAccount
-  name: integreatly-operator
-  namespace: redhat-rhmi-operator
-roleRef:
-  kind: Role
-  name: integreatly-operator-openshift
-  apiGroup: rbac.authorization.k8s.io
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: integreatly-operator-openshift-console
-  namespace: openshift-console
-subjects:
-- kind: ServiceAccount
-  name: integreatly-operator
-  namespace: redhat-rhmi-operator
-roleRef:
-  kind: Role
-  name: integreatly-operator-openshift-console
-  apiGroup: rbac.authorization.k8s.io
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: integreatly-operator-openshift-monitoring
-  namespace: openshift-monitoring
-subjects:
-- kind: ServiceAccount
-  name: integreatly-operator
-  namespace: redhat-rhmi-operator
-roleRef:
-  kind: Role
-  name: integreatly-operator-openshift-monitoring
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: ClusterRoleBinding
@@ -61,7 +19,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: integreatly-operator
-    namespace: redhat-rhmi-operator
+    namespace: integreatly
 roleRef:
   kind: ClusterRole
   name: integreatly-operator

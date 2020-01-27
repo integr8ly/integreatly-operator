@@ -38,7 +38,7 @@ const (
 	deletionFinalizer                = "foregroundDeletion"
 	DefaultInstallationName          = "integreatly-operator"
 	DefaultInstallationConfigMapName = "integreatly-installation-config"
-	DefaultInstallationPrefix        = "redhat-rhmi-"
+	DefaultInstallationPrefix        = "integreatly"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller

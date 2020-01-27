@@ -7,6 +7,7 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - pods
       - events
       - configmaps
       - secrets
@@ -70,74 +71,6 @@ rules:
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: integreatly-operator-openshift
-  namespace: openshift
-rules:
-  # Reconciling Fuse templates and image streams
-  - apiGroups:
-      - template.openshift.io
-    resources:
-      - templates
-    verbs:
-      - get
-      - create
-      - update
-      - delete
-  - apiGroups:
-      - image.openshift.io
-    resources:
-      - imagestreams
-    verbs:
-      - get
-      - create
-      - delete
-      - update
-  # END Reconciling Fuse templates and image streams
-  
-  # Registry pull secret needs to be read to be then copied into some RHMI namespaces
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    resourceNames: 
-      - samples-registry-credentials
-    verbs:
-      - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: integreatly-operator-openshift-console
-  namespace: openshift-console
-rules:
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    resourceNames: 
-      - console
-    verbs:
-      - get
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: integreatly-operator-openshift-monitoring
-  namespace: openshift-monitoring
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    resourceNames: 
-      - grafana-datasources
-    verbs:
-      - get
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: integreatly-operator
@@ -185,6 +118,57 @@ rules:
       - get
       - watch
   # END Preflights check for existing installations of products
+
+  # We need to get console route for a solution explorer
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    resourceNames: 
+      - console
+    verbs:
+      - get
+
+  # Reconciling Fuse templates and image streams
+  - apiGroups:
+      - template.openshift.io
+    resources:
+      - templates
+    verbs:
+      - get
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - image.openshift.io
+    resources:
+      - imagestreams
+    verbs:
+      - get
+      - create
+      - delete
+      - update
+  # END Reconciling Fuse templates and image streams
+  
+  # Registry pull secret needs to be read to be then copied into some RHMI namespaces
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames: 
+      - samples-registry-credentials
+    verbs:
+      - get
+
+  # We need to read this Secret from openshift-monitoring namespace in order to setup our monitoring stack
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames: 
+      - grafana-datasources
+    verbs:
+      - get
 
   # OAuthClients are used for login into products with OpenShift User identity 
   - apiGroups:

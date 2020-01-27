@@ -4,5 +4,5 @@ metadata:
   name: INSTALLATION_NAME
 spec:
   type: INSTALLATION_TYPE
-  namespacePrefix: INSTALLATION_PREFIX
+  namespacePrefix: INSTALLATION_PREFIX-
   selfSignedCerts: SELF_SIGNED_CERTS
