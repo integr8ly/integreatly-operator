@@ -98,6 +98,8 @@ type PullSecretSpec struct {
 	Namespace string `json:"namespace"`
 }
 
+//
+//
 // InstallationStatus defines the observed state of Installation
 // +k8s:openapi-gen=true
 type InstallationStatus struct {
