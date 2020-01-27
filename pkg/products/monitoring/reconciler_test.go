@@ -15,6 +15,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	projectv1 "github.com/openshift/api/project/v1"
+
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -65,6 +67,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -329,6 +332,18 @@ func TestReconciler_testPhases(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(basicInstallation().GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -367,7 +382,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test subscription creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -384,7 +399,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test components creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, namespace, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

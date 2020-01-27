@@ -14,6 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err := upsv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
 	err = crov1.SchemeBuilder.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 

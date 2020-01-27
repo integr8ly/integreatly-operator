@@ -24,6 +24,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	projectv1 "github.com/openshift/api/project/v1"
+
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -57,6 +59,7 @@ func buildScheme() *runtime.Scheme {
 	appsv1.SchemeBuilder.AddToScheme(scheme)
 	monitoring.SchemeBuilder.AddToScheme(scheme)
 	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme
 }
 

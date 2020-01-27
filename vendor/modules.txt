@@ -21,7 +21,6 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 github.com/RHsyseng/operator-utils/pkg/olm
-github.com/RHsyseng/operator-utils/pkg/resource/detector
 # github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/beorn7/perks v1.0.1

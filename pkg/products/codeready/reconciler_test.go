@@ -20,6 +20,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
+	projectv1 "github.com/openshift/api/project/v1"
+
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -120,6 +122,7 @@ func buildScheme() *runtime.Scheme {
 	monitoring.SchemeBuilder.AddToScheme(scheme)
 	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	crov1.SchemeBuilder.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme
 }
 

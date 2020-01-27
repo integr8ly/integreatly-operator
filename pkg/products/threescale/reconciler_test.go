@@ -15,6 +15,7 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -52,6 +53,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 

@@ -65,7 +65,7 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 	if err == nil {
 		// workaround for https://github.com/kubernetes/client-go/issues/541
-		ns.TypeMeta = metav1.TypeMeta{Kind: "Project", APIVersion: projectv1.SchemeGroupVersion.Version}
+		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: metav1.SchemeGroupVersion.Version}
 	}
 	return ns, err
 }
@@ -77,19 +77,19 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 		},
 	}
 	if err := client.Create(ctx, projectRequest); err != nil {
-		return nil, fmt.Errorf("could not create ProjectRequest: %s", projectRequest.Name, err)
+		return nil, fmt.Errorf("could not create %s ProjectRequest: %v", projectRequest.Name, err)
 	}
 
 	// when a namespace is created using the ProjectRequest object it drops labels and annotations
 	// so we need to retrieve the project as namespace and add them
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
-		return nil, fmt.Errorf("could not retreive namespace: %s", ns.Name, err)
+		return nil, fmt.Errorf("could not retreive %s namespace: %v", ns.Name, err)
 	}
 
 	PrepareObject(ns, inst)
 	if err := client.Update(ctx, ns); err != nil {
-		return nil, fmt.Errorf("failed to update the ns definition ", err)
+		return nil, fmt.Errorf("failed to update the %s namespace definition: %v", ns.Name, err)
 	}
 
 	return ns, err
@@ -106,7 +106,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create namespace %s", namespace, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
