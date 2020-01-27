@@ -56,16 +56,19 @@ code/run/service_account: setup/service_account
 code/compile:
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
+deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha1/installation_types.go
+	operator-sdk generate openapi
+
 .PHONY: code/gen
 code/gen: deploy/crds/integreatly.org_installations_crd.yaml
 	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	operator-sdk generate k8s
-	operator-sdk generate openapi
 	@go generate ./...
 
 .PHONY: code/check
 code/check:
 	@diff -u <(echo -n) <(gofmt -d `find . -type f -name '*.go' -not -path "./vendor/*"`)
+	golint
 	go vet ./...
 
 .PHONY: code/fix
