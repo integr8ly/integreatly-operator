@@ -52,7 +52,10 @@ var (
 		prometheus.GaugeOpts{
 			Name:        "integreatly_version_info",
 			Help:        "Integreatly operator information",
-			ConstLabels: prometheus.Labels{"operator_version": version.Version},
+			ConstLabels: prometheus.Labels{
+				"operator_version": version.Version,
+				"integreatly_version" : version.IntegreatlyVersion,
+			},
 		},
 	)
 )
