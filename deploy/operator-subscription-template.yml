@@ -8,9 +8,6 @@ objects:
     metadata:
       name: ${OPERATOR_GROUP_NAME}
       namespace: ${NAMESPACE}
-    spec:
-      targetNamespaces:
-        - ${NAMESPACE}
   - apiVersion: operators.coreos.com/v1alpha1
     kind: Subscription
     metadata:
