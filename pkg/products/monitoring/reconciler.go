@@ -83,59 +83,64 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
-		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
-		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
-		blackboxtargetsListOpts := []k8sclient.ListOption{
-			k8sclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
-		}
-		err := serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
-		if err != nil {
-			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list blackbox targets: %w", err)
-		}
-		if len(blackboxtargets.Items) > 0 {
-			logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
-			// do something to delete these dashboards
-			for _, bbt := range blackboxtargets.Items {
-				logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
-				b := &monitoring_v1alpha1.BlackboxTarget{}
-				err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetNamespace()}, b)
-				if kerrors.IsNotFound(err) {
-					continue
-				}
-				if err != nil {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get %s blackbox target: %w", bbt.Name, err)
-				}
 
-				err = serverClient.Delete(ctx, b)
-				if err != nil && !kerrors.IsNotFound(err) {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s blackbox target: %w", b.Name, err)
-				}
-			}
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
-
-		m := &monitoring_v1alpha1.ApplicationMonitoring{}
-		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
-		if err != nil && !kerrors.IsNotFound(err) {
-			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s application monitoring custom resource: %w", defaultMonitoringName, err)
-		}
+		// Check if namespace is still present before trying to delete it resources
+		_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 		if !kerrors.IsNotFound(err) {
-			if m.DeletionTimestamp == nil {
-				logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
-				err = serverClient.Delete(ctx, m)
-				if err != nil && !kerrors.IsNotFound(err) {
-					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s application monitoring custom resource: %w", defaultMonitoringName, err)
-				}
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
+			blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
+			blackboxtargetsListOpts := []k8sclient.ListOption{
+				k8sclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
 			}
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
+			err := serverClient.List(ctx, blackboxtargets, blackboxtargetsListOpts...)
+			if err != nil {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets error")
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list blackbox targets: %w", err)
+			}
+			if len(blackboxtargets.Items) > 0 {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer blackboxtargets list > 0")
+				// do something to delete these dashboards
+				for _, bbt := range blackboxtargets.Items {
+					logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
+					b := &monitoring_v1alpha1.BlackboxTarget{}
+					err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetNamespace()}, b)
+					if kerrors.IsNotFound(err) {
+						continue
+					}
+					if err != nil {
+						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get %s blackbox target: %w", bbt.Name, err)
+					}
 
-		logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+					err = serverClient.Delete(ctx, b)
+					if err != nil && !kerrors.IsNotFound(err) {
+						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s blackbox target: %w", b.Name, err)
+					}
+				}
+				return integreatlyv1alpha1.PhaseInProgress, nil
+			}
+
+			m := &monitoring_v1alpha1.ApplicationMonitoring{}
+			err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetNamespace()}, m)
+			if err != nil && !kerrors.IsNotFound(err) {
+				logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s application monitoring custom resource: %w", defaultMonitoringName, err)
+			}
+			if !kerrors.IsNotFound(err) {
+				if m.DeletionTimestamp == nil {
+					logrus.Infof("Phase: Monitoring ReconcileFinalizer delete ApplicationMonitoring CR")
+					err = serverClient.Delete(ctx, m)
+					if err != nil && !kerrors.IsNotFound(err) {
+						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s application monitoring custom resource: %w", defaultMonitoringName, err)
+					}
+				}
+				return integreatlyv1alpha1.PhaseInProgress, nil
+			}
+
+			logrus.Infof("Phase: Monitoring ReconcileFinalizer delete monitoring namespace")
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})

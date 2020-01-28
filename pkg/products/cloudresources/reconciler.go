@@ -15,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -68,16 +69,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		// ensure resources are cleaned up before deleting the namespace
-		phase, err := r.cleanupResources(ctx, installation, client)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+		// Check if namespace is still present before trying to delete it resources
+		_, err := resources.GetNS(ctx, ns, client)
+		if !k8serr.IsNotFound(err) {
+			// ensure resources are cleaned up before deleting the namespace
+			phase, err := r.cleanupResources(ctx, installation, client)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 
-		// remove the namespace
-		phase, err = resources.RemoveNamespace(ctx, installation, client, ns)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+			// remove the namespace
+			phase, err = resources.RemoveNamespace(ctx, installation, client, ns)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
