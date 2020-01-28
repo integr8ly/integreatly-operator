@@ -168,7 +168,7 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 		pullSecretName = secretName
 	}
 
-	err := CopyDefaultPullSecretToNameSpace(ctx, pullSecretName, inst, client, namespace)
+	err := CopyDefaultPullSecretToNameSpace(ctx, namespace, inst, client, pullSecretName)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", pullSecretName, namespace, err)
 	}

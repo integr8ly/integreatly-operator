@@ -66,7 +66,8 @@ func GetFilesFromManifestAsStringList(dir string, regex string, packageYaml stri
 			}
 
 			return err
-		} // Otherwise find all matching files and process to a string list
+		}
+		// Otherwise find all matching files and process to a string list
 		if err == nil && libRegEx.MatchString(info.Name()) {
 			return ProcessYamlFile(path, &stringList)
 		}

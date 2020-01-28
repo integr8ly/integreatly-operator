@@ -498,7 +498,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// Create / update the synchronized users
 	for _, user := range users {
-		or, err = r.createOrUpdateKeycloakUser(ctx, installation, user, serverClient)
+		or, err = r.createOrUpdateKeycloakUser(ctx, user, installation, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
 		}
@@ -641,10 +641,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget(ctx, monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "rhsso-ui",
-	}, "integreatly-rhsso", cfg, installation, client)
+	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
 	}
@@ -784,7 +784,7 @@ func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 	return false
 }
 
-func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, inst *integreatlyv1alpha1.Installation, user keycloak.KeycloakAPIUser, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
+func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, inst *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
 	selector := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("generated-%v", user.UserName),

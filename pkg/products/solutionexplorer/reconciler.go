@@ -246,7 +246,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 		Service: "webapp-ui",
 	}
 
-	err = monitoring.CreateBlackboxTarget(ctx, target, "integreatly-webapp", cfg, installation, client)
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-webapp", target, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
