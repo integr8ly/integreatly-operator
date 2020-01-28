@@ -5,11 +5,10 @@ package marketplace
 
 import (
 	"context"
-	"sync"
-
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sync"
 )
 
 var (
@@ -30,7 +29,7 @@ var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
 //             GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient client.Client, subName string, ns string) (*v1alpha1.InstallPlanList, *v1alpha1.Subscription, error) {
 // 	               panic("mock out the GetSubscriptionInstallPlans method")
 //             },
-//             InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
+//             InstallOperatorFunc: func(ctx context.Context, serverClient client.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy v1alpha1.Approval) error {
 // 	               panic("mock out the InstallOperator method")
 //             },
 //         }
@@ -65,7 +64,7 @@ type MarketplaceInterfaceMock struct {
 			Ctx context.Context
 			// ServerClient is the serverClient argument value.
 			ServerClient client.Client
-			// owner is the owner argument value.
+			// Owner is the owner argument value.
 			Owner ownerutil.Owner
 			// T is the t argument value.
 			T Target

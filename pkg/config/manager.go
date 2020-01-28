@@ -65,6 +65,7 @@ type ConfigReadable interface {
 	GetOperatorVersion() integreatlyv1alpha1.OperatorVersion
 	GetHost() string
 	GetWatchableCRDs() []runtime.Object
+	GetNamespace() string
 }
 
 type Manager struct {
@@ -99,6 +100,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadUps()
 	case integreatlyv1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
+	case integreatlyv1alpha1.ProductMonitoring:
+		return m.ReadMonitoring()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)

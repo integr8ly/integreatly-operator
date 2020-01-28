@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators"
-
-	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
-
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -28,7 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	controllerruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -37,23 +35,23 @@ import (
 )
 
 const (
-	defaultInstallationName               = "integreatly-operator"
-	deletionFinalizer                     = "foregroundDeletion"
-	DefaultInstallationConfigMapName      = "integreatly-installation-config"
-	DefaultInstallationConfigMapNamespace = "integreatly"
+	deletionFinalizer                = "foregroundDeletion"
+	DefaultInstallationName          = "integreatly-operator"
+	DefaultInstallationConfigMapName = "integreatly-installation-config"
+	DefaultInstallationPrefix        = "integreatly"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string, d *detector.Detector) error {
-	return add(mgr, newReconciler(mgr, products), d)
+func Add(mgr manager.Manager, products []string) error {
+	return add(mgr, newReconciler(mgr, products))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, products []string) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, products []string) ReconcileInstallation {
 	ctx, cancel := context.WithCancel(context.Background())
 	restConfig := controllerruntime.GetConfigOrDie()
-	return &ReconcileInstallation{
+	return ReconcileInstallation{
 		client:            mgr.GetClient(),
 		scheme:            mgr.GetScheme(),
 		restConfig:        restConfig,
@@ -61,20 +59,23 @@ func newReconciler(mgr manager.Manager, products []string) reconcile.Reconciler 
 		context:           ctx,
 		cancel:            cancel,
 		mgr:               mgr,
+		customInformers:   make(map[string]map[string]*cache.Informer),
 	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler, d *detector.Detector) error {
+func add(mgr manager.Manager, r ReconcileInstallation) error {
 	// Create a new controller
-	c, err := controller.New("installation-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("installation-controller", mgr, controller.Options{Reconciler: reconcile.Reconciler(&r)})
 	if err != nil {
 		return err
 	}
+	r.controller = c
 
 	// Creates a new managed install CR if it is not available
-	cl, err := k8sclient.New(controllerruntime.GetConfigOrDie(), k8sclient.Options{})
-	err = createsInstallationCR(context.Background(), cl)
+	kubeConfig := controllerruntime.GetConfigOrDie()
+	client, err := k8sclient.New(kubeConfig, k8sclient.Options{})
+	err = createInstallationCR(context.Background(), client)
 	if err != nil {
 		return err
 	}
@@ -85,56 +86,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler, d *detector.Detector) erro
 		return err
 	}
 
-	watchCRDs := []runtime.Object{
-		&operators.Subscription{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Subscription",
-				APIVersion: operators.SchemeGroupVersion.String(),
-			},
-		},
-	}
-
-	err, installType := InstallationTypeFactory("managed", []string{"all"})
-	if err != nil {
-		return fmt.Errorf("could not load managed installation type: %w", err)
-	}
-
-	configManager, err := config.NewManager(context.Background(), cl, DefaultInstallationConfigMapNamespace, DefaultInstallationConfigMapName, &integreatlyv1alpha1.Installation{})
-	if err != nil {
-		return fmt.Errorf("could not load config manager: %w", err)
-	}
-
-	for _, stage := range installType.GetStages() {
-		for product, _ := range stage.Products {
-			config, err := configManager.ReadProduct(product)
-			if err != nil {
-				continue
-			}
-			watchCRDs = append(watchCRDs, config.GetWatchableCRDs()...)
-
-		}
-	}
-
-	d.AddCRDsTrigger(watchCRDs, func(crd runtime.Object) {
-		logrus.Infof("Detected new CRD to watch: %s", crd.GetObjectKind().GroupVersionKind().String())
-		c.Watch(&source.Kind{Type: crd}, &EnqueueIntegreatlyOwner{})
-	})
-
 	return nil
 }
 
-func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
-	namespace, err := k8sutil.GetOperatorNamespace()
-	//cannot get this when running locally
-	if err == k8sutil.ErrRunLocal {
-		err = nil
-		namespace = os.Getenv("CR_NAMESPACE")
-		//running locally and no env var set, default to integreatly
-		if namespace == "" {
-			namespace = "integreatly"
-		}
-	}
-
+func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {
+	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
 		return err
 	}
@@ -150,19 +106,20 @@ func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) e
 		return fmt.Errorf("Could not get a list of installation CR: %w", err)
 	}
 
+	installation := &integreatlyv1alpha1.Installation{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
 
 		logrus.Infof("Creating a %s installation CR as no CR installations were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
 
-		installation := &integreatlyv1alpha1.Installation{
+		installation = &integreatlyv1alpha1.Installation{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      defaultInstallationName,
+				Name:      DefaultInstallationName,
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.InstallationSpec{
 				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
-				NamespacePrefix: "rhmi-",
+				NamespacePrefix: DefaultInstallationPrefix,
 				SelfSignedCerts: false,
 			},
 		}
@@ -171,6 +128,10 @@ func createsInstallationCR(ctx context.Context, serverClient k8sclient.Client) e
 		if err != nil {
 			return fmt.Errorf("Could not create installation CR in %s namespace: %w", namespace, err)
 		}
+	} else if len(installationList.Items) == 1 {
+		installation = &installationList.Items[0]
+	} else {
+		return fmt.Errorf("Too many Installation resources found. Expecting 1, found %s Installation resources in %s namespace", string(len(installationList.Items)), namespace)
 	}
 
 	return nil
@@ -189,6 +150,8 @@ type ReconcileInstallation struct {
 	context           context.Context
 	cancel            context.CancelFunc
 	mgr               manager.Manager
+	controller        controller.Controller
+	customInformers   map[string]map[string]*cache.Informer
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -492,6 +455,30 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.I
 			}
 			mErr.(*multiErr).Add(fmt.Errorf("failed installation of %s: %w", product.Name, err))
 		}
+
+		// Verify that watches for this product CRDs have been created
+		config, err := configManager.ReadProduct(product.Name)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to read product config for %s: %v", string(product.Name), err)
+		}
+		if product.Status == integreatlyv1alpha1.PhaseCompleted {
+			for _, crd := range config.GetWatchableCRDs() {
+				namespace := config.GetNamespace()
+				gvk := crd.GetObjectKind().GroupVersionKind().String()
+				if r.customInformers[gvk] == nil {
+					r.customInformers[gvk] = make(map[string]*cache.Informer)
+				}
+				if r.customInformers[gvk][config.GetNamespace()] == nil {
+					err = r.addCustomInformer(crd, namespace)
+					if err != nil {
+						return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create a %s CRD watch for %s: %v", gvk, string(product.Name), err)
+					}
+				} else if !(*r.customInformers[gvk][config.GetNamespace()]).HasSynced() {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("A %s CRD Informer for %s has not synced", gvk, string(product.Name))
+				}
+			}
+		}
+
 		//found an incomplete product
 		if product.Status != integreatlyv1alpha1.PhaseCompleted {
 			incompleteStage = true
@@ -502,6 +489,45 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.I
 		return integreatlyv1alpha1.PhaseInProgress, mErr
 	}
 	return integreatlyv1alpha1.PhaseCompleted, mErr
+}
+
+func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace string) error {
+	gvk := crd.GetObjectKind().GroupVersionKind().String()
+	mapper, err := apiutil.NewDiscoveryRESTMapper(r.restConfig)
+	if err != nil {
+		return fmt.Errorf("Failed to get API Group-Resources: %v", err)
+	}
+	cache, err := cache.New(r.restConfig, cache.Options{Namespace: namespace, Scheme: r.mgr.GetScheme(), Mapper: mapper})
+	if err != nil {
+		return fmt.Errorf("Failed to create infromer cachein %s namespace: %v", namespace, err)
+	}
+	informer, err := cache.GetInformerForKind(crd.GetObjectKind().GroupVersionKind())
+	if err != nil {
+		return fmt.Errorf("Failed to create informer for %v: %v", crd, err)
+	}
+	err = r.controller.Watch(&source.Informer{Informer: informer}, &EnqueueIntegreatlyOwner{})
+	if err != nil {
+		return fmt.Errorf("Failed to create a %s watch in %s namespace: %v", gvk, namespace, err)
+	}
+	// Adding to Manager, which will start it for us with a correct stop channel
+	err = r.mgr.Add(cache)
+	if err != nil {
+		return fmt.Errorf("Failed to add a %s cache in %s namespace into Manager: %v", gvk, namespace, err)
+	}
+	r.customInformers[gvk][namespace] = &informer
+
+	// Create a timeout channel for CacheSync as not to block the reconcile
+	timeoutChannel := make(chan struct{})
+	go func() {
+		time.Sleep(10 * time.Second)
+		close(timeoutChannel)
+	}()
+	if !cache.WaitForCacheSync(timeoutChannel) {
+		return fmt.Errorf("Failed to sync cache for %s watch in %s namespace", gvk, namespace)
+	}
+
+	logrus.Infof("Cache synced. A %s watch in %s namespace successfully initialized.", gvk, namespace)
+	return nil
 }
 
 type multiErr struct {

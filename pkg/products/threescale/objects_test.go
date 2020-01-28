@@ -374,6 +374,18 @@ var backendRedisSec = &corev1.Secret{
 	},
 }
 
+var namespace = &corev1.Namespace{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: defaultInstallationNamespace,
+		Labels: map[string]string{
+			resources.OwnerLabelKey: string(installation.GetUID()),
+		},
+	},
+	Status: corev1.NamespaceStatus{
+		Phase: corev1.NamespaceActive,
+	},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -410,5 +422,6 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		backendRedisSec,
 		rhssoTest2,
 		rhssoTest1,
+		namespace,
 	}
 }

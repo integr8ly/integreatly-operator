@@ -22,7 +22,7 @@ func (u *Ups) GetWatchableCRDs() []runtime.Object {
 		&pushv1alpha1.UnifiedPushServer{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "UnifiedPushServer",
-				APIVersion: metav1.SchemeGroupVersion.String(),
+				APIVersion: pushv1alpha1.SchemeGroupVersion.String(),
 			},
 		},
 	}

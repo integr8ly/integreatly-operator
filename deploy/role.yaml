@@ -2,37 +2,35 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  creationTimestamp: null
   name: integreatly-operator
 rules:
   - apiGroups:
       - ""
     resources:
       - pods
-      - services
-      - services/finalizers
-      - endpoints
-      - persistentvolumeclaims
       - events
       - configmaps
       - secrets
     verbs:
-      - "*"
+      - list
+      - get
+      - watch
+      - create
+      - update
+      - patch
+
+  # For monitoring functions by operator-sdk
   - apiGroups:
       - ""
     resources:
-      - namespaces
+      - services
+      - services/finalizers
     verbs:
+      - list
       - get
-  - apiGroups:
-      - apps
-    resources:
-      - deployments
-      - daemonsets
-      - replicasets
-      - statefulsets
-    verbs:
-      - "*"
+      - watch
+      - create
+      - update
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -42,292 +40,105 @@ rules:
       - create
   - apiGroups:
       - apps
-    resourceNames:
-      - integreatly-operator
     resources:
       - deployments/finalizers
     verbs:
       - update
+  # END For monitoring functions by operator-sdk
+      
+  # Our own Subscription needs to be switched into Manual mode after initial installation
   - apiGroups:
-      - integreatly.org
+      - operators.coreos.com
     resources:
-      - "*"
+      - subscriptions
     verbs:
-      - "*"
+      - get
+      - list
+      - watch
+      - update
+
+  # Monitoring resources ar not covered by namespace "admin" permissions
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - prometheusrules
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: integreatly-operator
 rules:
   - apiGroups:
-      - "integreatly.org"
+      - integreatly.org
+      - applicationmonitoring.integreatly.org
     resources:
       - "*"
     verbs:
       - "*"
-  ## Start monitoring
+
+  # We are using ProjectRequests API to create namespaces where we automatically become admins
   - apiGroups:
-      - "applicationmonitoring.integreatly.org"
+      - ''
+      - project.openshift.io
     resources:
-      - "applicationmonitorings"
-      - "blackboxtargets"
-    verbs:
-      - get
-      - create
-      - update
-      - list
-      - delete
-  ## End monitoring
-  ## Start backup permissions
-  - apiGroups:
-      - batch
-    resources:
-      - cronjobs
+      - projectrequests
     verbs:
       - create
-      - update
-  - apiGroups:
-      - "rbac.authorization.k8s.io"
-    # these are required so the operator can create a role to assign to the backup jobs serviceaccount
-    # and enable the backup to see the items it needs to backup
-    resources:
-      - "roles"
-      - "rolebindings"
-    verbs:
-      - get
-      - create
-      - update
-      - delete
-  # integreatly-operator doesn't require these permissions, but must have them to be able to grant them to the back
-  # service accounts it creates and assigns.
-  # Keeping this before we can leverage admin permissions in product namespaces
-  - apiGroups:
-      - "*"
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - "pods/exec"
-    verbs:
-      - create
-      - update
-  - apiGroups:
-      - route.openshift.io
-    resources:
-      - routes
-    verbs:
-      - create
-      - update
-      - list
-      - get
-    ## end backup permissions
-  # Start NS reconciliation - This is used to allow the operator to setup the ns needed for each product
+  
+  # Preflights check for existing installations of products
   - apiGroups:
       - ""
     resources:
       - namespaces
-      - namespaces/finalizers
-      - serviceaccounts
-      - configmaps
-      - services
     verbs:
       - list
-      - create
+      - get
       - watch
-      - get
-      - update
-      - delete
-  # End NS reconciliation
-  # Start subscription creation - This is used to allow the operator to setup catalog source config and remove it if needed.
-  # This is used to allow the operator to setup catalog source and remove it if needed.
   - apiGroups:
-      - operators.coreos.com
+      - apps
     resources:
-      - catalogsources
-    verbs:
-      - create
-      - get
-      - update
-  # This is used to allow the operator to setup catalog source config and remove it if needed.
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - catalogsourceconfigs # required to create catalogsourceconfigs in openshift-marketplace namespace
+      - deployments
     verbs:
       - list
-      - create
+      - get
       - watch
-      - delete # for uninstallation, these are not cleaned up automatically
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-      - secrets
-    verbs:
-      - list # needed to get secret for pulling images from default namespace
-      - get # needed to get secret for pulling images from default namespace
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - catalogsourceconfigs/finalizers
-    verbs:
-      - '*'
-  - apiGroups:
-      - operators.coreos.com
-    resources:
-      - operatorgroups
-      - subscriptions
-      - installplans
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-      - delete
-      - update
-  # End subscription creation
-  - apiGroups:
-      - keycloak.org
-    resources:
-      - keycloaks
-      - keycloakrealms
-      - keycloakclients
-      - keycloakbackups
-      - keycloakusers
-    verbs:
-      - get
-      - list
-      - update
-      - watch
-      - delete
-      - create
-  - apiGroups:
-      - kafka.strimzi.io
-    resources:
-      - kafkas
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-  - apiGroups:
-      - apps.3scale.net
-    resources:
-      - apimanagers
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-  - apiGroups:
-      - org.eclipse.che
-    resources:
-      - checlusters
-      - checlusters/finalizers
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-  - apiGroups:
-      - syndesis.io
-    resources:
-      - syndesises
-      - syndesises/finalizers
-    verbs:
-      - list
-      - create
-      - update
-      - watch
-      - get
-  - apiGroups:
-      - admin.enmasse.io
-    resources:
-      - authenticationservices
-      - addressplans
-      - addressspaceplans
-      - brokeredinfraconfigs
-      - standardinfraconfigs
-      - consoleservices
-    verbs:
-      - list
-      - create
-      - watch
-      - get
-  - apiGroups:
-      - oauth.openshift.io
-    resources:
-      - oauthclients
-    verbs:
-      - create
-      - get
-      - update
-      - delete
-  - apiGroups:
-      - ''
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - update
-      - create
   - apiGroups:
       - apps.openshift.io
     resources:
-      - deploymentconfigs/instantiate
-      - deploymentconfigs #needed for editing fuse oauth proxy
+      - deploymentconfigs
     verbs:
-      - create
-      - update #needed for editing fuse oauth proxy
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-      - create
-      - update
-  - apiGroups:
-      - "rbac.authorization.k8s.io"
-    resources:
-      - "rolebindings"
-    verbs:
-      - create # needed for creating rolebinding for dedicated-admins to view fuse
-      - update # needed for updating subject list to match changes to dedicated-admins users
-  # This is used to allow the operator to create and update the rhmi-developers group with users
-  - apiGroups:
-      - user.openshift.io
-    resources:
-      - users
-    verbs:
-      - watch
-      - get
       - list
+      - get
+      - watch
+  # END Preflights check for existing installations of products
+
+  # We need to get console route for a solution explorer
   - apiGroups:
-      - user.openshift.io
+      - route.openshift.io
     resources:
-      - groups
+      - routes
+    resourceNames: 
+      - console
+    verbs:
+      - get
+
+  # Reconciling Fuse templates and image streams
+  - apiGroups:
+      - template.openshift.io
+    resources:
+      - templates
     verbs:
       - get
       - create
       - update
-  # rhmi-developers group ends
-  - apiGroups:
-      - samples.operator.openshift.io
-    resources:
-      - configs
-    verbs:
-      - get # needed for updating the samples operator config cr to ignore fuse imagestreams and templates
-      - update # needed for updating the samples operator config cr to ignore fuse imagestreams and templates
-  # in Opensihft 4.2 some imagestreams are missing required images.
-  # Until this is fixed in the product operator, we fix it in the integreatly-operator
+      - delete
   - apiGroups:
       - image.openshift.io
     resources:
@@ -337,34 +148,144 @@ rules:
       - create
       - delete
       - update
-  # end of imagestreams fix permissions
+  # END Reconciling Fuse templates and image streams
+  
+  # Registry pull secret needs to be read to be then copied into some RHMI namespaces
   - apiGroups:
-      - template.openshift.io
+      - ""
     resources:
-      - templates
+      - secrets
+    resourceNames: 
+      - samples-registry-credentials
     verbs:
       - get
+
+  # We need to read this Secret from openshift-monitoring namespace in order to setup our monitoring stack
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames: 
+      - grafana-datasources
+    verbs:
+      - get
+
+  # OAuthClients are used for login into products with OpenShift User identity 
+  - apiGroups:
+      - oauth.openshift.io
+    resources:
+      - oauthclients
+    verbs:
       - create
+      - get
+      - update
+      - delete
+  
+  # We need to known members of the dedicated-admins group to give them additional permissions in RHMI products
+  - apiGroups:
+      - user.openshift.io
+    resources:
+      - groups
+    resourceNames: 
+      - dedicated-admins
+    verbs:
+      - get
+      # - watch will probably be needed in the near future
+
+  # We create the "rhmi-developers" group and populate it with users dynamically
+  - apiGroups:
+      - user.openshift.io
+    resources:
+      - groups
+    verbs:
+      - create
+  - apiGroups:
+      - user.openshift.io
+    resources:
+      - groups
+    resourceNames: 
+      - rhmi-developers
+    verbs:
+      - get
+      - update
       - delete
   - apiGroups:
-      - push.aerogear.org
+      - user.openshift.io
     resources:
-      - unifiedpushservers
+      - users
+    verbs:
+      - watch
+      - get
+      - list
+  # END We create the "rhmi-developers" group and populate it with users dynamically
+
+  # Updating the samples operator config cr to ignore fuse imagestreams and templates
+  - apiGroups:
+      - samples.operator.openshift.io
+    resources:
+      - configs
+    resourceNames: 
+      - cluster
     verbs:
       - get
-      - create
-  # Needed for granting fuse only view
+      - update
+
+  # Permissions needed for our namespaces, but not given by "admin" role
+
+  # Namespace update permissions are needed for setting labels
   - apiGroups:
-      - build.openshift.io
+      - ""
     resources:
-      - jenkins
+      - namespaces
     verbs:
-      - "*"
-  # end permissions for granting fuse only view
+      - update
+
+  # Installation of product operators
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+      - operatorgroups
+    verbs:
+      - create
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+    resourceNames:
+      - rhmi-registry-cs
+    verbs:
+      - update
+
+  # OperatorGroup update is not implemented yet, but might be added at a later date
+  # - apiGroups:
+  #     - operators.coreos.com
+  #   resources:
+  #     - operatorgroups
+  #   resourceNames:
+  #     - rhmi-registry-og
+  #   verbs:
+  #     - update
+
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - installplans
+    verbs:
+      - update
+
+  # END Installation of product operators
+
+  # Monitoring resources not covered by namespace "admin" permissions
   - apiGroups:
       - monitoring.coreos.com
     resources:
       - prometheusrules
-      - servicemonitors
     verbs:
-      - '*'
+      - get
+      - list
+      - create
+      - update
+      - delete
+      
+  # END Permissions needed for our namespaces, but not given by "admin" role

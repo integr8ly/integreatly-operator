@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
@@ -82,33 +84,16 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 }
 
 func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
-	// Define the json output of the prometheus api call
-	type Labels struct {
-		Alertname string `json:"alertname,omitempty"`
-		Severity  string `json:"severity,omitempty"`
+
+	type apiResponse struct {
+		Status    string                 `json:"status"`
+		Data      json.RawMessage        `json:"data"`
+		ErrorType prometheusv1.ErrorType `json:"errorType"`
+		Error     string                 `json:"error"`
+		Warnings  []string               `json:"warnings,omitempty"`
 	}
 
-	type Annotations struct {
-		Message string `json:"message,omitempty"`
-	}
-
-	type Alerts struct {
-		Labels      Labels      `json:"labels,omitempty"`
-		State       string      `json:"state,omitempty"`
-		Annotations Annotations `json:"annotations,omitempty"`
-		ActiveAt    string      `json:"activeAt,omitempty"`
-		Value       string      `json:"value,omitempty"`
-	}
-
-	type Data struct {
-		Alerts []Alerts `json:"alerts,omitempty"`
-	}
-
-	type Output struct {
-		Status string `json:"status"`
-		Data   Data   `json:"data"`
-	}
-
+	// Get active alerts
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		intlyNamespacePrefix+"middleware-monitoring",
@@ -117,8 +102,13 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 		return fmt.Errorf("failed to exec to pod: %s", err)
 	}
 
-	var promApiCallOutput Output
+	var promApiCallOutput apiResponse
 	err = json.Unmarshal([]byte(output), &promApiCallOutput)
+	if err != nil {
+		t.Logf("Failed to unmarshall json: %s", err)
+	}
+	var alertsResult prometheusv1.AlertsResult
+	err = json.Unmarshal(promApiCallOutput.Data, &alertsResult)
 	if err != nil {
 		t.Logf("Failed to unmarshall json: %s", err)
 	}
@@ -127,24 +117,55 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	var firingalerts []string
 	var pendingalerts []string
 	var deadmanswitchfiring = false
-	var intlyalertpresent = false
-	for a := 0; a < len(promApiCallOutput.Data.Alerts); a++ {
-		if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "DeadMansSwitch" && promApiCallOutput.Data.Alerts[a].State == "firing" {
+	for _, alert := range alertsResult.Alerts {
+		if alert.Labels["alertname"] == "DeadMansSwitch" && alert.State == "firing" {
 			deadmanswitchfiring = true
 		}
-		if promApiCallOutput.Data.Alerts[a].Labels.Alertname != "DeadMansSwitch" {
-			// ESPodCount will always fail since that alert is for OSD
-			// so it shouldn't cause our test to fail
-			if promApiCallOutput.Data.Alerts[a].Labels.Alertname == "KubePodCrashLooping" {
-				// Record that at least one integreatly alert is present
-				intlyalertpresent = true
+		if alert.Labels["alertname"] != "DeadMansSwitch" {
+			if alert.Labels["alertname"] == "KubePodCrashLooping" {
 				continue
 			}
-			if promApiCallOutput.Data.Alerts[a].State == "firing" {
-				firingalerts = append(firingalerts, promApiCallOutput.Data.Alerts[a].Labels.Alertname)
+			if alert.State == "firing" {
+				firingalerts = append(firingalerts, string(alert.Labels["alertname"]))
 			}
-			if promApiCallOutput.Data.Alerts[a].State == "pending" {
-				pendingalerts = append(pendingalerts, promApiCallOutput.Data.Alerts[a].Labels.Alertname)
+			if alert.State == "pending" {
+				pendingalerts = append(pendingalerts, string(alert.Labels["alertname"]))
+			}
+		}
+	}
+
+	// Get all rules
+	output, err = execToPod("curl localhost:9090/api/v1/rules",
+		"prometheus-application-monitoring-0",
+		intlyNamespacePrefix+"middleware-monitoring",
+		"prometheus", f)
+	if err != nil {
+		return fmt.Errorf("failed to exec to pod: %s", err)
+	}
+
+	err = json.Unmarshal([]byte(output), &promApiCallOutput)
+	if err != nil {
+		t.Logf("Failed to unmarshall json: %s", err)
+	}
+	var rulesResult prometheusv1.RulesResult
+	err = json.Unmarshal([]byte(promApiCallOutput.Data), &rulesResult)
+	if err != nil {
+		t.Logf("Failed to unmarshall json: %s", err)
+	}
+
+	// Check that at least one integreatly alert is present
+	var intlyalertpresent = false
+	for _, group := range rulesResult.Groups {
+		for _, rule := range group.Rules {
+			switch v := rule.(type) {
+			case prometheusv1.RecordingRule:
+				fmt.Print("got a recording rule")
+			case prometheusv1.AlertingRule:
+				if rule.(prometheusv1.AlertingRule).Name == "KubePodCrashLooping" {
+					intlyalertpresent = true
+				}
+			default:
+				fmt.Printf("unknown rule type %s", v)
 			}
 		}
 	}

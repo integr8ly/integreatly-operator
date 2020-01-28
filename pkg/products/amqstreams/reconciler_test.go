@@ -15,6 +15,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
+	projectv1 "github.com/openshift/api/project/v1"
+
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -50,6 +52,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 

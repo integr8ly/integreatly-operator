@@ -27,6 +27,7 @@ import (
 	appsv1 "github.com/openshift/api/apps/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	templatev1 "github.com/openshift/api/template/v1"
 	usersv1 "github.com/openshift/api/user/v1"
@@ -73,5 +74,6 @@ func init() {
 		samplesv1.SchemeBuilder.AddToScheme,
 		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
+		projectv1.AddToScheme,
 	)
 }

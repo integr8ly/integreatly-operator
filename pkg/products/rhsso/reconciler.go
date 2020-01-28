@@ -106,19 +106,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	ns := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+		// Check if namespace is still present before trying to delete it resources
+		_, err := resources.GetNS(ctx, ns, serverClient)
+		if !k8serr.IsNotFound(err) {
+			phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 
-		phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
-		}
+			phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
 
 		err = resources.RemoveOauthClient(ctx, installation, serverClient, r.oauthv1Client, r.getOAuthClientName())

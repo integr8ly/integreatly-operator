@@ -546,11 +546,8 @@ github.com/opencontainers/runtime-spec v1.0.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/
 github.com/opencontainers/selinux v0.0.0-20170621221121-4a2974bf1ee9/go.mod h1:+BLncwf63G4dgOzykXAxcmnFlUaOlkDdmw/CqsW6pjs=
 github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible h1:lxytiSuwp1r6uQZIayFF+xBtIJUufZQ/CA+Btcnpd+w=
 github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
-github.com/openshift/client-go v0.0.0-20190401163519-84c2b942258a/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
 github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298 h1:wg5VfVIEtKI0yaBNeHNM1N01EjwTGg7JW0Gp+jqnYGQ=
 github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
-github.com/openshift/client-go v3.9.0+incompatible h1:13k3Ok0B7TA2hA3bQW2aFqn6y04JaJWdk7ITTyg+Ek0=
-github.com/openshift/client-go v3.9.0+incompatible/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
 github.com/openshift/cloud-credential-operator v0.0.0-20190812222907-ec6f38d73a79 h1:FWWtyJgQhOJYnbO8viNFwRlPjbNFW1Sil0Vtq/BTXko=
 github.com/openshift/cloud-credential-operator v0.0.0-20190812222907-ec6f38d73a79/go.mod h1:iPn+uhIe7nkP5BMHe2QnbLtg5m/AIQ1xvz9s3cig5ss=
 github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71 h1:6JSQlcBE/MFsMPrhgch7cQItop7/vtqGtLWLfoWmkrs=

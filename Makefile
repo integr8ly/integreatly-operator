@@ -33,9 +33,9 @@ setup/travis:
 
 .PHONY: setup/service_account
 setup/service_account:
-	@oc replace --force -f deploy/role.yaml -n $(NAMESPACE)
+	@oc project $(NAMESPACE)
+	@oc replace --force -f deploy/role.yaml
 	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
-	@oc replace --force -f deploy/role_binding.yaml -n $(NAMESPACE)
 	@cat deploy/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
 
 .PHONY: setup/git/hooks
@@ -44,7 +44,7 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run:
-	@export CR_NAMESPACE=${NAMESPACE}; operator-sdk up local --namespace=""
+	@operator-sdk up local --namespace="${NAMESPACE}"
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
@@ -155,16 +155,13 @@ cluster/prepare/olm: cluster/prepare/project cluster/prepare/secrets cluster/pre
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
-	@-oc delete namespace $(NAMESPACE) --timeout=240s --wait
-	@-oc delete catalogsourceconfig.operators.coreos.com/installed-integreatly-operator -n openshift-marketplace
-	@-oc delete operatorsource.operators.coreos.com/integreatly-operators -n openshift-marketplace
-	@-oc delete clusterrole integreatly-operator
-	@-oc delete clusterrolebinding integreatly-operator
+	@-oc delete -f deploy/integreatly-installation-cr.yml --timeout=240s --wait
+	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
+	@-oc delete -f deploy/role.yaml
+	@-oc delete -f deploy/role_binding.yaml
 
 .PHONY: cluster/cleanup/olm
-cluster/cleanup/olm:
-	@-oc delete -f deploy/integreatly-installation-cr.yml --timeout=60s --wait
-	@-oc delete namespace $(NAMESPACE) --timeout=240s --wait
+cluster/cleanup/olm: cluster/cleanup
 	$(call wait_command, oc get projects -l integreatly=true -o jsonpath='{.items}' | grep -q '\[\]', integreatly namespace cleanup, 4m, 10)
 	@-oc delete catalogsourceconfig.operators.coreos.com/installed-integreatly-operator -n openshift-marketplace
 	@-oc delete operatorsource.operators.coreos.com/integreatly-operators -n openshift-marketplace
@@ -196,14 +193,14 @@ deploy/integreatly-installation-cr.yml:
 gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
+	@sed -i "" 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
 	operator-sdk olm-catalog gen-csv --csv-version $(TAG) --default-channel --csv-channel=integreatly --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
-	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
-	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
+	@sed -i "" 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
+	@sed -i "" 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
 	@mv deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG)
 	@mv deploy/olm-catalog/integreatly-operator/$(TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
+	@sed -i "" 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
 
 .PHONY: push/csv
 push/csv:

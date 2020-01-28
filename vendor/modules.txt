@@ -21,7 +21,6 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 github.com/RHsyseng/operator-utils/pkg/olm
-github.com/RHsyseng/operator-utils/pkg/resource/detector
 # github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/beorn7/perks v1.0.1
@@ -158,6 +157,7 @@ github.com/openshift/api/image/v1
 github.com/openshift/api/oauth/v1
 github.com/openshift/api/operator/v1
 github.com/openshift/api/pkg/serialization
+github.com/openshift/api/project/v1
 github.com/openshift/api/route/v1
 github.com/openshift/api/template/v1
 github.com/openshift/api/user/v1
@@ -204,6 +204,8 @@ github.com/operator-framework/operator-sdk/version
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.1.0
+github.com/prometheus/client_golang/api
+github.com/prometheus/client_golang/api/prometheus/v1
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp

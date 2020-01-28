@@ -19,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	projectv1 "github.com/openshift/api/project/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -83,6 +84,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = oauthv1.AddToScheme(scheme)
 	err = monitoring.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
+	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 

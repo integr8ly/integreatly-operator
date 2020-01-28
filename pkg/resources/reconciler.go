@@ -10,11 +10,12 @@ import (
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
-
+	projectv1 "github.com/openshift/api/project/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,21 +65,50 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: ns.Name}, ns)
 	if err == nil {
 		// workaround for https://github.com/kubernetes/client-go/issues/541
-		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: corev1.SchemeGroupVersion.Version}
+		ns.TypeMeta = metav1.TypeMeta{Kind: "Namespace", APIVersion: metav1.SchemeGroupVersion.Version}
 	}
+	return ns, err
+}
+
+func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.Installation) (*v1.Namespace, error) {
+	projectRequest := &projectv1.ProjectRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+	if err := client.Create(ctx, projectRequest); err != nil {
+		return nil, fmt.Errorf("could not create %s ProjectRequest: %v", projectRequest.Name, err)
+	}
+
+	// when a namespace is created using the ProjectRequest object it drops labels and annotations
+	// so we need to retrieve the project as namespace and add them
+	ns, err := GetNS(ctx, namespace, client)
+	if err != nil {
+		return nil, fmt.Errorf("could not retreive %s namespace: %v", ns.Name, err)
+	}
+
+	PrepareObject(ns, inst)
+	if err := client.Update(ctx, ns); err != nil {
+		return nil, fmt.Errorf("failed to update the %s namespace definition: %v", ns.Name, err)
+	}
+
 	return ns, err
 }
 
 func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", ns.Name, err)
+		// Since we are using ProjectRequests and limited permissions,
+		// request can return "forbidden" error even when Namespace simply doesn't exist yet
+		if !k8serr.IsNotFound(err) && !k8serr.IsForbidden(err) {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", namespace, err)
 		}
-		PrepareObject(ns, inst)
-		if err = client.Create(ctx, ns); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create namespace: %s. %w", ns.Name, err)
+
+		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}
+
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 	// ns exists so check it is our namespace

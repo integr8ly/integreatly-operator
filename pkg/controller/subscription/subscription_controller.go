@@ -3,8 +3,6 @@ package subscription
 import (
 	"context"
 
-	"github.com/RHsyseng/operator-utils/pkg/resource/detector"
-
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
@@ -25,7 +23,7 @@ const (
 
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, _ []string, _ *detector.Detector) error {
+func Add(mgr manager.Manager, _ []string) error {
 	return add(mgr, newReconciler(mgr))
 }
 

@@ -6,6 +6,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: integreatly-operator
+  namespace: integreatly
 roleRef:
   kind: Role
   name: integreatly-operator
