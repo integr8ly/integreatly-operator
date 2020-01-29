@@ -392,7 +392,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func CreateBlackboxTarget(name string, target monitoring_v1alpha1.BlackboxtargetData, ctx context.Context, cfg *config.Monitoring, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) error {
+func CreateBlackboxTarget(ctx context.Context, name string, target monitoring_v1alpha1.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) error {
 	if cfg.GetNamespace() == "" {
 		// Retry later
 		return nil

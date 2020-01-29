@@ -49,7 +49,7 @@ func (f *Fuse) Read() ProductConfig {
 	return f.config
 }
 
-func (r *Fuse) GetLabelSelector() string {
+func (f *Fuse) GetLabelSelector() string {
 	return "middleware"
 }
 

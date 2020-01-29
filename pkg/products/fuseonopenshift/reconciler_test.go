@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	OPERATOR_NAMESPACE = "integreatly-operator"
+	OperatorNamespace = "integreatly-operator"
 )
 
 type FuseOnOpenShiftScenario struct {
@@ -41,7 +41,7 @@ type FuseOnOpenShiftScenario struct {
 func getFakeConfig() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		GetOperatorNamespaceFunc: func() string {
-			return OPERATOR_NAMESPACE
+			return OperatorNamespace
 		},
 		ReadFuseOnOpenshiftFunc: func() (ready *config.FuseOnOpenshift, e error) {
 			return config.NewFuseOnOpenshift(config.ProductConfig{}), nil
@@ -124,7 +124,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
-					Namespace: OPERATOR_NAMESPACE,
+					Namespace: OperatorNamespace,
 				},
 				Data: map[string]string{},
 			}),
@@ -140,7 +140,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
-					Namespace: OPERATOR_NAMESPACE,
+					Namespace: OperatorNamespace,
 				},
 				Data: map[string]string{
 					"fis-image-streams.json": `{ "items": [{
@@ -160,7 +160,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
-					Namespace: OPERATOR_NAMESPACE,
+					Namespace: OperatorNamespace,
 				},
 				Data: map[string]string{
 					"fis-image-streams.json":        `{ "items": [] }`,
@@ -179,7 +179,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
-					Namespace: OPERATOR_NAMESPACE,
+					Namespace: OperatorNamespace,
 				},
 				Data: map[string]string{
 					"fis-image-streams.json": `{ "items": [] }`,

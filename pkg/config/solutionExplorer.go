@@ -44,11 +44,11 @@ func (s *SolutionExplorer) GetHost() string {
 	return s.config["HOST"]
 }
 
-func (r *SolutionExplorer) GetLabelSelector() string {
+func (s *SolutionExplorer) GetLabelSelector() string {
 	return "middleware"
 }
 
-func (r *SolutionExplorer) GetTemplateList() []string {
+func (s *SolutionExplorer) GetTemplateList() []string {
 	templateList := []string{
 		"kube_state_metrics_solution_explorer_alerts.yaml",
 	}

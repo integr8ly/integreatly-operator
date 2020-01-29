@@ -3,10 +3,11 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -490,19 +491,19 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Sync keycloak with openshift users
-	users, err := syncronizeWithOpenshiftUsers(keycloakUsers, ctx, serverClient)
+	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to synchronize the users")
 	}
 
 	// Create / update the synchronized users
 	for _, user := range users {
-		or, err = r.createOrUpdateKeycloakUser(user, installation, ctx, serverClient)
+		or, err = r.createOrUpdateKeycloakUser(ctx, user, installation, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
-		} else {
-			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 		}
+		r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
+
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -640,10 +641,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost(),
 		Service: "rhsso-ui",
-	}, ctx, cfg, installation, client)
+	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
 	}
@@ -714,7 +715,7 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(keycloakUsers []keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
+func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
@@ -783,7 +784,7 @@ func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 	return false
 }
 
-func (r *Reconciler) createOrUpdateKeycloakUser(user keycloak.KeycloakAPIUser, inst *integreatlyv1alpha1.Installation, ctx context.Context, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
+func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, inst *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
 	selector := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("generated-%v", user.UserName),

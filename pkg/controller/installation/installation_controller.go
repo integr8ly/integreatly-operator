@@ -178,7 +178,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		r.context, r.cancel = context.WithCancel(context.Background())
 	}
 
-	err, installType := InstallationTypeFactory(installation.Spec.Type, r.productsToInstall)
+	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -242,10 +242,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
 				return retryRequeue, merr
-			} else {
-				logrus.Infof("uninstall completed")
-				return reconcile.Result{}, nil
 			}
+			logrus.Infof("uninstall completed")
+			return reconcile.Result{}, nil
 		}
 
 		return retryRequeue, nil

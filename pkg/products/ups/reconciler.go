@@ -246,10 +246,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-ups", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-ups", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
 		Service: "ups-ui",
-	}, ctx, cfg, installation, client)
+	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating ups blackbox target: %w", err)
 	}

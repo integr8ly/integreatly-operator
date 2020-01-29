@@ -330,10 +330,10 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
 	}
 
-	err = monitoring.CreateBlackboxTarget("integreatly-amqonline", monitoringv1alpha1.BlackboxtargetData{
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-amqonline", monitoringv1alpha1.BlackboxtargetData{
 		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
 		Service: "amq-service-broker",
-	}, ctx, cfg, installation, client)
+	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse blackbox target: %w", err)
 	}

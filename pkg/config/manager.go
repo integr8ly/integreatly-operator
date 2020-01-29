@@ -223,14 +223,13 @@ func (m *Manager) WriteConfig(config ConfigReadable) error {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}
 		ownerutil.EnsureOwner(m.cfgmap, m.installation)
 		return m.Client.Create(m.context, m.cfgmap)
-	} else {
-		if m.cfgmap.Data == nil {
-			m.cfgmap.Data = map[string]string{}
-		}
-		m.cfgmap.Data[string(config.GetProductName())] = string(stringConfig)
-		ownerutil.EnsureOwner(m.cfgmap, m.installation)
-		return m.Client.Update(m.context, m.cfgmap)
 	}
+	if m.cfgmap.Data == nil {
+		m.cfgmap.Data = map[string]string{}
+	}
+	m.cfgmap.Data[string(config.GetProductName())] = string(stringConfig)
+	ownerutil.EnsureOwner(m.cfgmap, m.installation)
+	return m.Client.Update(m.context, m.cfgmap)
 }
 
 func (m *Manager) readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error) {

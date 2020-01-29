@@ -56,8 +56,8 @@ code/compile:
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
 .PHONY: code/gen
-code/gen:
-	find ./ -name *_moq.go -type f -not -path "./vendor/*"  -delete
+code/gen: deploy/crds/integreatly.org_installations_crd.yaml
+	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	operator-sdk generate k8s
 	operator-sdk generate openapi
 	@go generate ./...

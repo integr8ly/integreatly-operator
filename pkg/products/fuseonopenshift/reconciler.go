@@ -405,7 +405,7 @@ func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient k8s
 func (r *Reconciler) getKeysFromMap(mapObj map[string]runtime.Object) []string {
 	var keys []string
 
-	for k, _ := range mapObj {
+	for k := range mapObj {
 		keys = append(keys, k)
 	}
 	return keys

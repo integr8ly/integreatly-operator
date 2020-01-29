@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	INTEGREATLY_OWNER_NAMESPACE = "integreatly-namespace"
-	INTEGREATLY_OWNER_NAME      = "integreatly-name"
+	IntegreatlyOwnerNamespace = "integreatly-namespace"
+	IntegreatlyOwnerName      = "integreatly-name"
 )
 
 type EnqueueIntegreatlyOwner struct {
@@ -47,8 +47,8 @@ func (e *EnqueueIntegreatlyOwner) Generic(evt event.GenericEvent, q workqueue.Ra
 func (e *EnqueueIntegreatlyOwner) getIntegreatlyOwner(object metav1.Object) (reconcile.Request, error) {
 	typeObj, _ := meta.TypeAccessor(object)
 	ant := object.GetAnnotations()
-	if ns, ok := ant[INTEGREATLY_OWNER_NAMESPACE]; ok {
-		if name, ok := ant[INTEGREATLY_OWNER_NAME]; ok {
+	if ns, ok := ant[IntegreatlyOwnerNamespace]; ok {
+		if name, ok := ant[IntegreatlyOwnerName]; ok {
 			logrus.Infof("%s %s/%s > got integreatly owner %s/%s", typeObj.GetKind(), object.GetNamespace(), object.GetName(), ns, name)
 			return reconcile.Request{
 				NamespacedName: types.NamespacedName{

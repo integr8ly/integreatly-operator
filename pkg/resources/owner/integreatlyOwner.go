@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	INTEGREATLY_OWNER_NAMESPACE = "integreatly-namespace"
-	INTEGREATLY_OWNER_NAME      = "integreatly-name"
+	IntegreatlyOwnerNamespace = "integreatly-namespace"
+	IntegreatlyOwnerName      = "integreatly-name"
 )
 
 func AddIntegreatlyOwnerAnnotations(obj metav1.Object, owner metav1.Object) metav1.Object {
@@ -17,8 +17,8 @@ func AddIntegreatlyOwnerAnnotations(obj metav1.Object, owner metav1.Object) meta
 	if ant == nil {
 		ant = map[string]string{}
 	}
-	ant[INTEGREATLY_OWNER_NAME] = owner.GetName()
-	ant[INTEGREATLY_OWNER_NAMESPACE] = owner.GetNamespace()
+	ant[IntegreatlyOwnerName] = owner.GetName()
+	ant[IntegreatlyOwnerNamespace] = owner.GetNamespace()
 	obj.SetAnnotations(ant)
 	return obj
 }
