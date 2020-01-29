@@ -89,7 +89,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 		APIURL:        APIURL,
-	}, nilW
+	}, nil
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
