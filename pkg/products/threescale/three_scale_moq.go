@@ -38,7 +38,7 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 //             AddUserFunc: func(username string, email string, password string, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the AddUser method")
 //             },
-//             DeleteUserFunc: func(userId int, accessToken string) (*http.Response, error) {
+//             DeleteUserFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the DeleteUser method")
 //             },
 //             GetAuthenticationProviderByNameFunc: func(name string, accessToken string) (*AuthProvider, error) {
@@ -56,13 +56,13 @@ var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
 //             SetNamespaceFunc: func(ns string)  {
 // 	               panic("mock out the SetNamespace method")
 //             },
-//             SetUserAsAdminFunc: func(userId int, accessToken string) (*http.Response, error) {
+//             SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the SetUserAsAdmin method")
 //             },
-//             SetUserAsMemberFunc: func(userId int, accessToken string) (*http.Response, error) {
+//             SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the SetUserAsMember method")
 //             },
-//             UpdateUserFunc: func(userId int, username string, email string, accessToken string) (*http.Response, error) {
+//             UpdateUserFunc: func(userID int, username string, email string, accessToken string) (*http.Response, error) {
 // 	               panic("mock out the UpdateUser method")
 //             },
 //         }
@@ -79,7 +79,7 @@ type ThreeScaleInterfaceMock struct {
 	AddUserFunc func(username string, email string, password string, accessToken string) (*http.Response, error)
 
 	// DeleteUserFunc mocks the DeleteUser method.
-	DeleteUserFunc func(userId int, accessToken string) (*http.Response, error)
+	DeleteUserFunc func(userID int, accessToken string) (*http.Response, error)
 
 	// GetAuthenticationProviderByNameFunc mocks the GetAuthenticationProviderByName method.
 	GetAuthenticationProviderByNameFunc func(name string, accessToken string) (*AuthProvider, error)
@@ -97,13 +97,13 @@ type ThreeScaleInterfaceMock struct {
 	SetNamespaceFunc func(ns string)
 
 	// SetUserAsAdminFunc mocks the SetUserAsAdmin method.
-	SetUserAsAdminFunc func(userId int, accessToken string) (*http.Response, error)
+	SetUserAsAdminFunc func(userID int, accessToken string) (*http.Response, error)
 
 	// SetUserAsMemberFunc mocks the SetUserAsMember method.
-	SetUserAsMemberFunc func(userId int, accessToken string) (*http.Response, error)
+	SetUserAsMemberFunc func(userID int, accessToken string) (*http.Response, error)
 
 	// UpdateUserFunc mocks the UpdateUser method.
-	UpdateUserFunc func(userId int, username string, email string, accessToken string) (*http.Response, error)
+	UpdateUserFunc func(userID int, username string, email string, accessToken string) (*http.Response, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -127,8 +127,8 @@ type ThreeScaleInterfaceMock struct {
 		}
 		// DeleteUser holds details about calls to the DeleteUser method.
 		DeleteUser []struct {
-			// UserId is the userId argument value.
-			UserId int
+			// UserID is the userID argument value.
+			UserID int
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
@@ -163,22 +163,22 @@ type ThreeScaleInterfaceMock struct {
 		}
 		// SetUserAsAdmin holds details about calls to the SetUserAsAdmin method.
 		SetUserAsAdmin []struct {
-			// UserId is the userId argument value.
-			UserId int
+			// UserID is the userID argument value.
+			UserID int
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
 		// SetUserAsMember holds details about calls to the SetUserAsMember method.
 		SetUserAsMember []struct {
-			// UserId is the userId argument value.
-			UserId int
+			// UserID is the userID argument value.
+			UserID int
 			// AccessToken is the accessToken argument value.
 			AccessToken string
 		}
 		// UpdateUser holds details about calls to the UpdateUser method.
 		UpdateUser []struct {
-			// UserId is the userId argument value.
-			UserId int
+			// UserID is the userID argument value.
+			UserID int
 			// Username is the username argument value.
 			Username string
 			// Email is the email argument value.
@@ -268,32 +268,32 @@ func (mock *ThreeScaleInterfaceMock) AddUserCalls() []struct {
 }
 
 // DeleteUser calls DeleteUserFunc.
-func (mock *ThreeScaleInterfaceMock) DeleteUser(userId int, accessToken string) (*http.Response, error) {
+func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) (*http.Response, error) {
 	if mock.DeleteUserFunc == nil {
 		panic("ThreeScaleInterfaceMock.DeleteUserFunc: method is nil but ThreeScaleInterface.DeleteUser was just called")
 	}
 	callInfo := struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}{
-		UserId:      userId,
+		UserID:      userID,
 		AccessToken: accessToken,
 	}
 	lockThreeScaleInterfaceMockDeleteUser.Lock()
 	mock.calls.DeleteUser = append(mock.calls.DeleteUser, callInfo)
 	lockThreeScaleInterfaceMockDeleteUser.Unlock()
-	return mock.DeleteUserFunc(userId, accessToken)
+	return mock.DeleteUserFunc(userID, accessToken)
 }
 
 // DeleteUserCalls gets all the calls that were made to DeleteUser.
 // Check the length with:
 //     len(mockedThreeScaleInterface.DeleteUserCalls())
 func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
-	UserId      int
+	UserID      int
 	AccessToken string
 } {
 	var calls []struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}
 	lockThreeScaleInterfaceMockDeleteUser.RLock()
@@ -466,32 +466,32 @@ func (mock *ThreeScaleInterfaceMock) SetNamespaceCalls() []struct {
 }
 
 // SetUserAsAdmin calls SetUserAsAdminFunc.
-func (mock *ThreeScaleInterfaceMock) SetUserAsAdmin(userId int, accessToken string) (*http.Response, error) {
+func (mock *ThreeScaleInterfaceMock) SetUserAsAdmin(userID int, accessToken string) (*http.Response, error) {
 	if mock.SetUserAsAdminFunc == nil {
 		panic("ThreeScaleInterfaceMock.SetUserAsAdminFunc: method is nil but ThreeScaleInterface.SetUserAsAdmin was just called")
 	}
 	callInfo := struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}{
-		UserId:      userId,
+		UserID:      userID,
 		AccessToken: accessToken,
 	}
 	lockThreeScaleInterfaceMockSetUserAsAdmin.Lock()
 	mock.calls.SetUserAsAdmin = append(mock.calls.SetUserAsAdmin, callInfo)
 	lockThreeScaleInterfaceMockSetUserAsAdmin.Unlock()
-	return mock.SetUserAsAdminFunc(userId, accessToken)
+	return mock.SetUserAsAdminFunc(userID, accessToken)
 }
 
 // SetUserAsAdminCalls gets all the calls that were made to SetUserAsAdmin.
 // Check the length with:
 //     len(mockedThreeScaleInterface.SetUserAsAdminCalls())
 func (mock *ThreeScaleInterfaceMock) SetUserAsAdminCalls() []struct {
-	UserId      int
+	UserID      int
 	AccessToken string
 } {
 	var calls []struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}
 	lockThreeScaleInterfaceMockSetUserAsAdmin.RLock()
@@ -501,32 +501,32 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdminCalls() []struct {
 }
 
 // SetUserAsMember calls SetUserAsMemberFunc.
-func (mock *ThreeScaleInterfaceMock) SetUserAsMember(userId int, accessToken string) (*http.Response, error) {
+func (mock *ThreeScaleInterfaceMock) SetUserAsMember(userID int, accessToken string) (*http.Response, error) {
 	if mock.SetUserAsMemberFunc == nil {
 		panic("ThreeScaleInterfaceMock.SetUserAsMemberFunc: method is nil but ThreeScaleInterface.SetUserAsMember was just called")
 	}
 	callInfo := struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}{
-		UserId:      userId,
+		UserID:      userID,
 		AccessToken: accessToken,
 	}
 	lockThreeScaleInterfaceMockSetUserAsMember.Lock()
 	mock.calls.SetUserAsMember = append(mock.calls.SetUserAsMember, callInfo)
 	lockThreeScaleInterfaceMockSetUserAsMember.Unlock()
-	return mock.SetUserAsMemberFunc(userId, accessToken)
+	return mock.SetUserAsMemberFunc(userID, accessToken)
 }
 
 // SetUserAsMemberCalls gets all the calls that were made to SetUserAsMember.
 // Check the length with:
 //     len(mockedThreeScaleInterface.SetUserAsMemberCalls())
 func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
-	UserId      int
+	UserID      int
 	AccessToken string
 } {
 	var calls []struct {
-		UserId      int
+		UserID      int
 		AccessToken string
 	}
 	lockThreeScaleInterfaceMockSetUserAsMember.RLock()
@@ -536,17 +536,17 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
 }
 
 // UpdateUser calls UpdateUserFunc.
-func (mock *ThreeScaleInterfaceMock) UpdateUser(userId int, username string, email string, accessToken string) (*http.Response, error) {
+func (mock *ThreeScaleInterfaceMock) UpdateUser(userID int, username string, email string, accessToken string) (*http.Response, error) {
 	if mock.UpdateUserFunc == nil {
 		panic("ThreeScaleInterfaceMock.UpdateUserFunc: method is nil but ThreeScaleInterface.UpdateUser was just called")
 	}
 	callInfo := struct {
-		UserId      int
+		UserID      int
 		Username    string
 		Email       string
 		AccessToken string
 	}{
-		UserId:      userId,
+		UserID:      userID,
 		Username:    username,
 		Email:       email,
 		AccessToken: accessToken,
@@ -554,20 +554,20 @@ func (mock *ThreeScaleInterfaceMock) UpdateUser(userId int, username string, ema
 	lockThreeScaleInterfaceMockUpdateUser.Lock()
 	mock.calls.UpdateUser = append(mock.calls.UpdateUser, callInfo)
 	lockThreeScaleInterfaceMockUpdateUser.Unlock()
-	return mock.UpdateUserFunc(userId, username, email, accessToken)
+	return mock.UpdateUserFunc(userID, username, email, accessToken)
 }
 
 // UpdateUserCalls gets all the calls that were made to UpdateUser.
 // Check the length with:
 //     len(mockedThreeScaleInterface.UpdateUserCalls())
 func (mock *ThreeScaleInterfaceMock) UpdateUserCalls() []struct {
-	UserId      int
+	UserID      int
 	Username    string
 	Email       string
 	AccessToken string
 } {
 	var calls []struct {
-		UserId      int
+		UserID      int
 		Username    string
 		Email       string
 		AccessToken string

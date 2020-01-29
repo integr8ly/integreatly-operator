@@ -75,6 +75,7 @@ spec:
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
           required:
+          - lastError
           - stages
           type: object
       type: object

@@ -153,7 +153,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	route, err := r.ensureAppUrl(ctx, serverClient)
+	route, err := r.ensureAppURL(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Route for solution explorer is not available", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -254,7 +254,7 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ensureAppUrl(ctx context.Context, client k8sclient.Client) (string, error) {
+func (r *Reconciler) ensureAppURL(ctx context.Context, client k8sclient.Client) (string, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),

@@ -50,7 +50,7 @@ const (
 	packageName                  = "integreatly-3scale"
 	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
-	clientId                     = "3scale"
+	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
 
 	tier                           = "production"
@@ -656,7 +656,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	kcClient := &keycloak.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientId,
+			Name:      clientID,
 			Namespace: rhssoNamespace,
 		},
 	}
@@ -688,7 +688,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		res, err := r.tsClient.AddAuthenticationProvider(map[string]string{
 			"kind":                              "keycloak",
 			"name":                              rhssoIntegrationName,
-			"client_id":                         clientId,
+			"client_id":                         clientID,
 			"client_secret":                     clientSecret,
 			"site":                              site,
 			"skip_ssl_certificate_verification": "true",
@@ -1023,8 +1023,8 @@ func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.Keycloa
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
 		Client: &keycloak.KeycloakAPIClient{
-			ID:                      clientId,
-			ClientID:                clientId,
+			ID:                      clientID,
+			ClientID:                clientID,
 			Enabled:                 true,
 			Secret:                  clientSecret,
 			ClientAuthenticatorType: "client-secret",

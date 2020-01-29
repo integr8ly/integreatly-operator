@@ -49,10 +49,10 @@ func (r *SolutionExplorer) GetLabelSelector() string {
 }
 
 func (r *SolutionExplorer) GetTemplateList() []string {
-	template_list := []string{
+	templateList := []string{
 		"kube_state_metrics_solution_explorer_alerts.yaml",
 	}
-	return template_list
+	return templateList
 }
 
 func (s *SolutionExplorer) SetHost(newHost string) {

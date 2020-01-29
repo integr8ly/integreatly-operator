@@ -36,10 +36,10 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 		return err
 	}
 
-	oauthId := installation.Spec.NamespacePrefix + string(tsConfig.GetProductName())
+	oauthID := installation.Spec.NamespacePrefix + string(tsConfig.GetProductName())
 	oauthClientSecrets := &corev1.Secret{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
-	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthId, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
+	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthID, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
 
 	// A namespace should have been created.
 	ns := &corev1.Namespace{}
@@ -81,15 +81,15 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	if tsIsNotFoundError(err) {
 		return fmt.Errorf("SSO integration was not created")
 	}
-	if authProvider.ProviderDetails.ClientId != clientId || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
+	if authProvider.ProviderDetails.ClientId != clientID || authProvider.ProviderDetails.Site != rhssoConfig.GetHost()+"/auth/realms/"+rhssoConfig.GetRealm() {
 		return fmt.Errorf("SSO integration request to 3scale API was incorrect")
 	}
 
 	// Service discovery should be configured
 	threeScaleOauth := &oauthv1.OAuthClient{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: oauthId}, threeScaleOauth)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: oauthID}, threeScaleOauth)
 	if k8serr.IsNotFound(err) {
-		return fmt.Errorf("3scale should have an Oauth client '%s' created", oauthId)
+		return fmt.Errorf("3scale should have an Oauth client '%s' created", oauthID)
 	}
 	if len(threeScaleOauth.RedirectURIs) == 0 || threeScaleOauth.RedirectURIs[0] == "" {
 		return fmt.Errorf("3scale Oauth Client redirect uri should be set, but is empty")

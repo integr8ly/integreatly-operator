@@ -14,6 +14,7 @@ require (
 	github.com/integr8ly/cloud-resource-operator v0.6.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
+	github.com/matryer/moq v0.0.0-20200120014657-072c0cd09bf3 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
