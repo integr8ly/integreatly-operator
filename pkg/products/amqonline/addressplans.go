@@ -90,6 +90,24 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
+				Name:      "standard-large-partitioned-queue",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressPlanSpec{
+				DisplayName:      "Large HA Queue",
+				DisplayOrder:     6,
+				ShortDescription: "Creates a large HA queue sharing underlying brokers with other queues.",
+				LongDescription:  "Creates a large HA queue sharing underlying brokers with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
+				AddressType:      "queue",
+				Resources: v1beta2.AddressPlanResources{
+					Router: 0.1,
+					Broker: 1.0,
+				},
+				Partitions: 3,
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-large-subscription",
 				Namespace: ns,
 			},
@@ -169,6 +187,24 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 					Router: 0.01,
 					Broker: 0.1,
 				},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "standard-medium-partitioned-queue",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressPlanSpec{
+				DisplayName:      "Medium HA Queue",
+				DisplayOrder:     5,
+				ShortDescription: "Creates a medium sized HA queue sharing underlying broker with other queues.",
+				LongDescription:  "Creates a medium sized HA queue sharing underlying broker with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
+				AddressType:      "queue",
+				Resources: v1beta2.AddressPlanResources{
+					Router: 0.01,
+					Broker: 0.1,
+				},
+				Partitions: 3,
 			},
 		},
 		{
@@ -256,6 +292,24 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 		},
 		{
 			ObjectMeta: metav1.ObjectMeta{
+				Name:      "standard-small-partitioned-queue",
+				Namespace: ns,
+			},
+			Spec: v1beta2.AddressPlanSpec{
+				DisplayName:      "Small HA Queue",
+				DisplayOrder:     4,
+				ShortDescription: "Creates a small HA queue sharing underlying broker with other queues.",
+				LongDescription:  "Creates a small HA queue sharing underlying broker with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
+				AddressType:      "queue",
+				Resources: v1beta2.AddressPlanResources{
+					Router: 0.001,
+					Broker: 0.01,
+				},
+				Partitions: 3,
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      "standard-small-subscription",
 				Namespace: ns,
 			},
@@ -301,7 +355,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
 					Router: 0.2,
-					Broker: 1.0,
+					Broker: 2.0,
 				},
 			},
 		},
@@ -318,7 +372,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
 					Router: 0.2,
-					Broker: 1.0,
+					Broker: 2.0,
 				},
 			},
 		},
