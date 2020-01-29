@@ -2,7 +2,7 @@
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling Integreatly products.
 
-### Project status: _alpha_ 
+### Project status: _alpha_
 
 This is a proof of concept/alpha version. Most functionality is present but it is highly likely there are bugs and improvements needed.
 
@@ -43,13 +43,13 @@ git clone https://github.com/integr8ly/integreatly-operator
 cd integreatly-operator
 ```
 
-Some products require certain credentials to be present in the namespace before installation can proceed: 
+Some products require certain credentials to be present in the namespace before installation can proceed:
 * RHSSO requires Github OAuth credentials to create a Github Identity Provider for Launcher (see [here](https://github.com/integr8ly/installation/#51-create-github-oauth-to-enable-github-authorization-for-launcher) for creating a Github OAuth app) and Codeready
 
 **Note:** If this secret isn't created, the integreatly preflight checks will fail
 
 ```sh
-# The project name for the integreatly operator to watch 
+# The project name for the integreatly operator to watch
 export NAMESPACE="integreatly-test"
 
 # RHSSO requires Github OAuth credentials to setup a Github identity provider
@@ -61,6 +61,27 @@ export GH_CLIENT_SECRET=<client secret>
 make cluster/prepare/local
 ```
 
+* 3Scale requires SMTP credentials to be able to send mail to users.
+
+**Note:** If this secret isn't created, the integreatly preflight checks will fail
+
+```sh
+kubectl apply -f - <<EOF
+kind: Secret
+apiVersion: v1
+metadata:
+  name: rhmi-smtp-two
+  labels:
+    owner: integreatly
+stringData:
+  host: smtp.sendgrid.net
+  password: <SENDGRID_SUB_USER_API_KEY>
+  port: "587"
+  tls: "true"
+  username: apikey
+type: Opaque
+EOF
+```
 
 * 3scale requires AWS S3 bucket credentials for storage. The bucket should have all public access turned off.
 Currently this secret (`threescale-blobstorage-<installation-name>`) is created with dummy credentials by the [cloud resource operator](https://github.com/integr8ly/cloud-resource-operator), in the namespace the integreatly operator is deployed into. In order for this feature to work, these credentials should be replaced:
@@ -86,7 +107,7 @@ oc process -f deploy/s3-secret.yaml -p AWS_ACCESS_KEY_ID=<YOURID> -p AWS_SECRET_
 An `Installation` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
 ```sh
 # Create the installation custom resource definition
-oc create -f deploy/crds/installation.crd.yaml   
+oc create -f deploy/crds/installation.crd.yaml
 
 # Create the installation custom resource
 oc create -f deploy/crds/examples/installation.cr.yaml
@@ -96,7 +117,7 @@ make code/run
 ```
 *Note:* if an operator doesn't find Installation resource, it will create one (Name: `integreatly-operator`).
 
-### Logging in to SSO 
+### Logging in to SSO
 
 In the OpenShift UI, in `Projects > integreatly-rhsso > Networking > Routes`, select the `sso` route to open up the SSO login page.
 
@@ -107,7 +128,7 @@ make cluster/prepare/local
 ```
 
 ### Configuring Github OAuth
-Log in to RHSSO (see above) and click `Identity Providers` in the left sidebar. In the Github identity provider, find the Redirect URI and paste this URL into the Homepage URL and Authorization callback URL fields of your Github OAuth app. 
+Log in to RHSSO (see above) and click `Identity Providers` in the left sidebar. In the Github identity provider, find the Redirect URI and paste this URL into the Homepage URL and Authorization callback URL fields of your Github OAuth app.
 
 ## Deploying to a Cluster with OLM
 Make sure to export the variables above (see [local setup](#local-setup)), then run:
@@ -133,7 +154,7 @@ spec:
   selfSignedCerts: true
 ```
 
-## Set up dedicated admins 
+## Set up dedicated admins
 
 To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
 
@@ -150,7 +171,7 @@ Update the operator version in the following files:
 
 * Update [version/version.go](version/version.go) (`Version = "<version>"`)
 
-* Update `TAG` and `PREVIOUS_TAG` (the previous version) in the [Makefile](Makefile) 
+* Update `TAG` and `PREVIOUS_TAG` (the previous version) in the [Makefile](Makefile)
 
 * Update the operator image version in [deploy/operator.yaml](deploy/operator.yaml)
 (`image: quay.io/integreatly/integreatly-operator:v<version>`)
