@@ -4,9 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"fmt"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Cut string size, but maintain a reference to the original string using a hash of the full string in the result
@@ -49,6 +50,7 @@ func buildAlphanumRegexp() (*regexp.Regexp, error) {
 	return anReg, nil
 }
 
+// StringOrDefault checks string and returns given default string if empty
 func StringOrDefault(str, defaultTo string) string {
 	if str == "" {
 		return defaultTo

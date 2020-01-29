@@ -11,7 +11,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/integr8ly/cloud-resource-operator v0.6.0
+	github.com/integr8ly/cloud-resource-operator v0.7.1
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/keycloak/keycloak-operator v0.0.0-20200110072030-70f3e5d0fa90
 	github.com/matryer/moq v0.0.0-20200120014657-072c0cd09bf3 // indirect
