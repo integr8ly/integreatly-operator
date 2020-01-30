@@ -69,6 +69,8 @@ spec:
               type: string
             preflightStatus:
               type: string
+            setupGHCredentials:
+              type: boolean
             stages:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate

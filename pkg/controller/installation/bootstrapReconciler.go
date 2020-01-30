@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -16,6 +17,7 @@ import (
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -23,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -54,6 +57,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilerGithubOauthSecret(ctx, serverClient, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile github oauth secrets", err)
 		return phase, err
 	}
 
@@ -156,6 +165,80 @@ func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*rou
 		return nil, err
 	}
 	return consoleRouteCR, nil
+}
+
+func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+
+	githubOauthSecretCR := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.ConfigManager.GetGHOauthClientsSecretName(),
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, githubOauthSecretCR, func() error {
+		ownerutil.EnsureOwner(githubOauthSecretCR, installation)
+
+		if len(githubOauthSecretCR.Data) == 0 {
+			githubOauthSecretCR.Data = map[string][]byte{
+				"clientId": []byte("dummy"),
+				"secret":   []byte("dummy"),
+			}
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling Github OAuth secrets: %w", err)
+	}
+
+	logrus.Info("Bootstrap Github OAuth secrets successfully reconciled")
+
+	secretRoleCR := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.ConfigManager.GetGHOauthClientsSecretName(),
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, secretRoleCR, func() error {
+		secretRoleCR.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups:     []string{""},
+				Resources:     []string{"secrets"},
+				Verbs:         []string{"update", "get"},
+				ResourceNames: []string{r.ConfigManager.GetGHOauthClientsSecretName()},
+			},
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role: %w", err)
+	}
+
+	secretRoleBindingCR := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.ConfigManager.GetGHOauthClientsSecretName(),
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, secretRoleBindingCR, func() error {
+		secretRoleBindingCR.RoleRef = rbacv1.RoleRef{
+			Name: secretRoleCR.GetName(),
+			Kind: "Role",
+		}
+		secretRoleBindingCR.Subjects = []rbacv1.Subject{
+			{
+				Name: "dedicated-admins",
+				Kind: "Group",
+			},
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role binding: %w", err)
+	}
+	logrus.Info("Bootstrap Github OAuth secrets Role and Role Binding successfully reconciled")
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func generateSecret(length int) string {

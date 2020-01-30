@@ -39,6 +39,7 @@ func NewManager(ctx context.Context, client k8sclient.Client, namespace string, 
 type ConfigReadWriter interface {
 	readConfigForProduct(product integreatlyv1alpha1.ProductName) (ProductConfig, error)
 	GetOauthClientsSecretName() string
+	GetGHOauthClientsSecretName() string
 	GetBackupsSecretName() string
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
@@ -125,6 +126,10 @@ func (m *Manager) GetOauthClientsSecretName() string {
 
 func (m *Manager) GetBackupsSecretName() string {
 	return "backups-s3-credentials"
+}
+
+func (m *Manager) GetGHOauthClientsSecretName() string {
+	return "github-oauth-secret"
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {

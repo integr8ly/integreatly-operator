@@ -23,6 +23,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"github.com/keycloak/keycloak-operator/pkg/common"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -489,12 +490,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			return errors.Wrap(err, "failed to setup Openshift IDP")
 		}
 
-		err = r.setupGithubIDP(ctx, kcr, serverClient)
+		err = r.setupGithubIDP(ctx, kc, kcr, serverClient, installation)
 		if err != nil {
 			return errors.Wrap(err, "failed to setup Github IDP")
 		}
 		return nil
 	})
+
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
@@ -668,9 +670,9 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client) error {
+func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client, installation *integreatlyv1alpha1.Installation) error {
 	githubCreds := &corev1.Secret{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: githubOauthAppCredentialsSecretName, Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.ConfigManager.GetGHOauthClientsSecretName(), Namespace: r.ConfigManager.GetOperatorNamespace()}, githubCreds)
 	if err != nil {
 		logrus.Errorf("Unable to find Github oauth credentials secret in namespace %s", r.ConfigManager.GetOperatorNamespace())
 		return err
@@ -700,8 +702,39 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kcr *keycloak.KeycloakR
 			},
 		})
 	}
-	// We need to revisit how the github idp gets created/updated
-	// client ID and secret can get outdated we need to ensure they are synced with the value secret in the github-oauth-secret
+
+	githubClientID := string(githubCreds.Data["clientId"])
+	githubClientSecret := string(githubCreds.Data["secret"])
+
+	// check if GH credentials have been set up
+	githubMockCred := "dummy"
+	if githubClientID == githubMockCred || githubClientSecret == githubMockCred {
+		return nil
+	}
+
+	logrus.Infof("Syncing github identity provider to the keycloak realm")
+
+	// Get an authenticated keycloak api client for the instance
+	keycloakFactory := common.LocalConfigKeycloakFactory{}
+	authenticated, err := keycloakFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return fmt.Errorf("Unable to authenticate to the Keycloak API: %s", err)
+	}
+
+	identityProvider, err := authenticated.GetIdentityProvider(githubIdpAlias, kcr.Spec.Realm.DisplayName)
+	if err != nil {
+		return fmt.Errorf("Unable to get Identity Provider from Keycloak API: %s", err)
+	}
+
+	identityProvider.Config["clientId"] = githubClientID
+	identityProvider.Config["clientSecret"] = githubClientSecret
+	err = authenticated.UpdateIdentityProvider(identityProvider, kcr.Spec.Realm.DisplayName)
+	if err != nil {
+		return fmt.Errorf("Unable to update Identity Provider to Keycloak API: %s", err)
+	}
+
+	installation.Status.SetupGHCredentials = true
+
 	return nil
 }
 

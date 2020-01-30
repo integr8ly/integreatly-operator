@@ -152,6 +152,12 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 							Format: "",
 						},
 					},
+					"setupGHCredentials": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"stages", "lastError"},
 			},
