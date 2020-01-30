@@ -18,7 +18,13 @@ rules:
       - create
       - update
       - patch
-
+  # For deleting configmaps in operator namespace
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - delete
   # For monitoring functions by operator-sdk
   - apiGroups:
       - ""

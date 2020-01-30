@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -72,9 +73,39 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.checkCloudResourcesConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check cloud resources config settings", err)
+		return phase, err
+	}
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	logrus.Infof("Bootstrap stage reconciled successfully")
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.UseClusterStorage {
+		cloudConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cloud-resource-config",
+				Namespace: r.installation.Namespace,
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
+			ownerutil.EnsureOwner(cloudConfig, r.installation)
+			cloudConfig.Data = map[string]string{
+				"managed":  `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
+				"workshop": `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
+			}
+			return nil
+		})
+
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

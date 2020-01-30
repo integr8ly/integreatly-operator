@@ -330,10 +330,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
+	result := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
 
-	result := reconcile.Result{}
-
-	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
 	err := r.client.List(r.context, namespaces)
 	if err != nil {
@@ -343,7 +344,6 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	}
 
 	for _, ns := range namespaces.Items {
-		logrus.Infof("checking namespace for conflicting products: %s", ns.Name)
 		products, err := r.checkNamespaceForProducts(ns, installation, installationType, configManager)
 		if err != nil {
 			// error searching for existing products, keep trying
@@ -372,18 +372,15 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
 	foundProducts := []string{}
 	if strings.HasPrefix(ns.Name, "openshift-") {
-		logrus.Infof("skipping openshift namespace: %s", ns.Name)
 		return foundProducts, nil
 	}
 	if strings.HasPrefix(ns.Name, "kube-") {
-		logrus.Infof("skipping kube namespace: %s", ns.Name)
 		return foundProducts, nil
 	}
 	// new client to avoid caching issues
 	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
 	for _, stage := range installationType.Stages {
 		for _, product := range stage.Products {
-			logrus.Infof("checking namespace %s for product %s", ns.Name, product.Name)
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 			if err != nil {
 				return foundProducts, err
