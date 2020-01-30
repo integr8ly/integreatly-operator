@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	usersv1 "github.com/openshift/api/user/v1"
+
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -82,6 +84,12 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 
 	// Watch for changes to primary resource Installation
 	err = c.Watch(&source.Kind{Type: &integreatlyv1alpha1.Installation{}}, &handler.EnqueueRequestForObject{})
+	if err != nil {
+		return err
+	}
+
+	// Watch for changes to users
+	err = c.Watch(&source.Kind{Type: &usersv1.User{}}, &EnqueueAllInstallations{})
 	if err != nil {
 		return err
 	}
