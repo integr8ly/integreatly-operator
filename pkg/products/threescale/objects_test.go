@@ -189,7 +189,7 @@ var installation = &integreatlyv1alpha1.Installation{
 var smtpSec = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "test-smtp",
-		Namespace: "integreatly-operator-namespace",
+		Namespace: "integreatly-operator-ns",
 		Labels:    map[string]string{config.SMTPSecretLabelKey: config.SMTPSecretLabelValue},
 	},
 	Data: map[string][]byte{
