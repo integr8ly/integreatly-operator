@@ -41,25 +41,25 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: configManager.GetOauthClientsSecretName(), Namespace: configManager.GetOperatorNamespace()}, oauthClientSecrets)
 	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", oauthID, oauthClientSecrets.Data[string(tsConfig.GetProductName())])
 
-	// A namespace should have been created.
+	// A ns should have been created.
 	ns := &corev1.Namespace{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: tsConfig.GetNamespace()}, ns)
 	if k8serr.IsNotFound(err) {
-		return fmt.Errorf("%s namespace should have been created", tsConfig.GetNamespace())
+		return fmt.Errorf("%s ns should have been created", tsConfig.GetNamespace())
 	}
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: packageName, Namespace: tsConfig.GetNamespace()}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: packageName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
 	if k8serr.IsNotFound(err) {
 		return fmt.Errorf("%s operator subscription was not created", packageName)
 	}
 
-	// The main s3credentials should have been copied into the 3scale namespace.
+	// The main s3credentials should have been copied into the 3scale ns.
 	s3Credentials := &corev1.Secret{}
 	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: s3CredentialsSecretName, Namespace: tsConfig.GetNamespace()}, s3Credentials)
 	if k8serr.IsNotFound(err) {
-		return fmt.Errorf("s3Credentials were not copied into %s namespace", tsConfig.GetNamespace())
+		return fmt.Errorf("s3Credentials were not copied into %s ns", tsConfig.GetNamespace())
 	}
 
 	// The product custom resource should have been created.

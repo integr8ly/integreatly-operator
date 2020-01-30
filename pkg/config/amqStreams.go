@@ -41,6 +41,9 @@ func (a *AMQStreams) SetNamespace(newNamespace string) {
 	a.config["NAMESPACE"] = newNamespace
 }
 
+func (a *AMQStreams) GetOperatorNamespace() string {
+	return a.config["NAMESPACE"] + "-operator"
+}
 func (a *AMQStreams) Read() ProductConfig {
 	return a.config
 }

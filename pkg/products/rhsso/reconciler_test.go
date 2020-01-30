@@ -279,7 +279,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 	}
 
@@ -290,7 +290,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 	}
 
@@ -433,7 +433,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	installation := &integreatlyv1alpha1.Installation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "installation",
-			Namespace:  defaultRhssoNamespace,
+			Namespace:  defaultOperandNamespace,
 			Finalizers: []string{"finalizer.rhsso.integreatly.org"},
 			UID:        types.UID("xyz"),
 		},
@@ -458,7 +458,19 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultRhssoNamespace,
+			Name: defaultOperandNamespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultOperandNamespace + "-operator",
 			Labels: map[string]string{
 				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
@@ -471,14 +483,14 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 	}
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 	}
 
@@ -503,7 +515,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	edgeRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak-edge",
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 		Spec: routev1.RouteSpec{
 			Host: "sampleHost",
@@ -527,7 +539,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -598,7 +610,7 @@ func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultOperandNamespace,
 		},
 		Spec: keycloak.KeycloakRealmSpec{
 			Realm: &keycloak.KeycloakAPIRealm{

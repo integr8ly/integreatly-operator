@@ -30,9 +30,9 @@ spec:
         - alert: FuseOnlinePodCount
           annotations:
             sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
-            message: Pod count for namespace {{ "{{" }} $labels.namespace {{ "}}" }} is {{ "{{" }} printf "%.0f" $value {{ "}}" }}. Expected at least 8 pods.
+            message: Pod count for namespace {{ "{{" }} $labels.namespace {{ "}}" }} is {{ "{{" }} printf "%.0f" $value {{ "}}" }}. Expected at least 6 pods.
           expr: |
-            (1-absent(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"})) or sum(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"}) < 8
+            (1-absent(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"})) or sum(kube_pod_status_ready{condition="true", namespace="{{ index .Params "Namespace" }}"}) < 6
           for: 5m
           labels:
             severity: critical

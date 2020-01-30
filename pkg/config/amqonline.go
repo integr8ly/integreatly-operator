@@ -69,6 +69,10 @@ func (a *AMQOnline) GetNamespace() string {
 	return a.config["NAMESPACE"]
 }
 
+func (a *AMQOnline) GetOperatorNamespace() string {
+	return a.config["NAMESPACE"] + "-operator"
+}
+
 func (a *AMQOnline) GetLabelSelector() string {
 	return "middleware"
 }

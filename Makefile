@@ -1,7 +1,7 @@
 include ./make/*.mk
 
 ORG=integreatly
-NAMESPACE=integreatly
+NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
@@ -33,6 +33,7 @@ setup/travis:
 
 .PHONY: setup/service_account
 setup/service_account:
+	@-oc new-project $(NAMESPACE)
 	@oc project $(NAMESPACE)
 	@oc replace --force -f deploy/role.yaml
 	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
@@ -88,7 +89,7 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
-	TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
+	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:integreatly-operator"
@@ -178,9 +179,9 @@ cluster/cleanup/crds:
 
 .PHONY: deploy/integreatly-installation-cr.yml
 deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
-deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly-operator
+deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
-deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := rhmi
+deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := redhat-rhmi
 deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \

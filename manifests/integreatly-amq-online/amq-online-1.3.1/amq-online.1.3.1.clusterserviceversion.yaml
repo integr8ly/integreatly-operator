@@ -564,7 +564,7 @@ spec:
                 - name: NAMESPACE
                   valueFrom:
                     fieldRef:
-                      fieldPath: metadata.namespace
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: OPERATOR_NAME
                   value: "enmasse-operator"
                 - name: IMAGE_PULL_POLICY

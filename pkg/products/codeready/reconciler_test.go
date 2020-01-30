@@ -529,6 +529,18 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		},
 	}
 
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-operator",
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
 	cluster := &chev1.CheCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,
@@ -610,7 +622,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			Name:           "test successful installation without errors",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   installation,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, dep, ns, cluster, installation, pg, sec, backupsSecretMock()),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, dep, ns, operatorNS, cluster, installation, pg, sec, backupsSecretMock()),
 			FakeConfig:     basicConfigMock(),
 			ValidateCallCounts: func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T) {
 				if len(mockConfig.ReadCodeReadyCalls()) != 1 {

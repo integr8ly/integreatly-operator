@@ -43,6 +43,9 @@ func (m *Monitoring) SetNamespace(newNamespace string) {
 	m.Config["NAMESPACE"] = newNamespace
 }
 
+func (m *Monitoring) GetOperatorNamespace() string {
+	return m.Config["NAMESPACE"] + "-operator"
+}
 func (m *Monitoring) GetNamespacePrefix() string {
 	return m.Config["NAMESPACE_PREFIX"]
 }

@@ -494,9 +494,39 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	operatorDeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse-operator",
+			Namespace: "amq-online-operator",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Env: []corev1.EnvVar{},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultInstallationNamespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-operator",
 			Labels: map[string]string{
 				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
@@ -521,7 +551,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, consoleSvc, installation, backupsSecretMock()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -570,7 +600,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			if err == nil && tc.ExpectError {

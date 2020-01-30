@@ -60,6 +60,9 @@ func (r *RHSSOUser) SetNamespace(newNamespace string) {
 	r.Config["NAMESPACE"] = newNamespace
 }
 
+func (r *RHSSOUser) GetOperatorNamespace() string {
+	return r.Config["NAMESPACE"] + "-operator"
+}
 func (r *RHSSOUser) GetRealm() string {
 	return r.Config["REALM"]
 }

@@ -4,5 +4,5 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-  namespacePrefix: rhmi-
+  namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
