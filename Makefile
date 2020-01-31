@@ -16,8 +16,6 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
-
-
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
@@ -74,7 +72,7 @@ code/gen: setup/moq deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/
 .PHONY: code/check
 code/check:
 	@diff -u <(echo -n) <(gofmt -d `find . -type f -name '*.go' -not -path "./vendor/*"`)
-	golint
+	golint ./pkg/... | grep -v  "comment on" | grep -v "or be unexported"
 	go vet ./...
 
 .PHONY: code/fix
