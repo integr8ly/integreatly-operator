@@ -39,6 +39,18 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 }
 
 func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installation, client *oauthv1.OAuthClient, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	// Make sure to use the redirect URIs supplied to the reconcile function and
+	// not those that are currently on the client. Copy the uris because arrays
+	// are references.
+	redirectUris := make([]string, len(client.RedirectURIs))
+	for index, uri := range client.RedirectURIs {
+		redirectUris[index] = uri
+	}
+
+	// Preserve secret and grant method too
+	secret := client.Secret
+	grantMethod := client.GrantMethod
+
 	if err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
 			PrepareObject(client, inst)
@@ -49,7 +61,12 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth client: %s. %w", client.Name, err)
 	}
+
 	PrepareObject(client, inst)
+	client.RedirectURIs = redirectUris
+	client.GrantMethod = grantMethod
+	client.Secret = secret
+
 	if err := apiClient.Update(ctx, client); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update oauth client: %s. %w", client.Name, err)
 	}
