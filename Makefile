@@ -53,19 +53,26 @@ code/run/service_account: setup/service_account
 	$(MAKE) code/run
 
 .PHONY: code/compile
-code/compile:
+code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
-.PHONY: code/gen
-code/gen: deploy/crds/integreatly.org_installations_crd.yaml
-	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
-	operator-sdk generate k8s
+deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate openapi
+pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/installation_types.go
+	operator-sdk generate openapi
+
+pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/installation_types.go
+	operator-sdk generate k8s
+
+.PHONY: code/gen
+code/gen: setup/moq deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
+	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	@go generate ./...
 
 .PHONY: code/check
 code/check:
 	@diff -u <(echo -n) <(gofmt -d `find . -type f -name '*.go' -not -path "./vendor/*"`)
+	golint ./pkg/... | grep -v  "comment on" | grep -v "or be unexported"
 	go vet ./...
 
 .PHONY: code/fix
