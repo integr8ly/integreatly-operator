@@ -67,7 +67,7 @@ pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1a
 	operator-sdk generate k8s
 
 .PHONY: code/gen
-code/gen: deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
+code/gen: setup/moq deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
 	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	@go generate ./...
 
