@@ -64,12 +64,6 @@ deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha
 pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate k8s
 
-.PHONY: code/output
-code/output:
-	@echo $(SOURCE_FILES)
-	@echo $(GENERATED_FILES)
-
-
 .PHONY: code/gen
 code/gen: deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go
 	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
