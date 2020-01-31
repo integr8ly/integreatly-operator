@@ -60,12 +60,14 @@ code/compile: code/gen
 
 deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate openapi
+pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/installation_types.go
+	operator-sdk generate openapi
 
 pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate k8s
 
 .PHONY: code/gen
-code/gen: setup/moq deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go
+code/gen: deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
 	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	@go generate ./...
 
