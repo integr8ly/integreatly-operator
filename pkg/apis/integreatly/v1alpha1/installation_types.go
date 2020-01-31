@@ -121,7 +121,7 @@ type InstallationStatus struct {
 	PreflightStatus    PreflightStatus                        `json:"preflightStatus,omitempty"`
 	PreflightMessage   string                                 `json:"preflightMessage,omitempty"`
 	LastError          string                                 `json:"lastError"`
-	SetupGHCredentials bool                                   `json:"setupGHCredentials,omitempty"`
+	GitHubOAuthEnabled bool                                   `json:"gitHubOAuthEnabled,omitempty"`
 	SMTPEnabled        bool                                   `json:"smtpEnabled,omitempty"`
 }
 

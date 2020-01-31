@@ -165,7 +165,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 							Format: "",
 						},
 					},
-					"setupGHCredentials": {
+					"gitHubOAuthEnabled": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
 							Format: "",

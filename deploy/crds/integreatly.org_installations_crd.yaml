@@ -69,14 +69,14 @@ spec:
         status:
           description: InstallationStatus defines the observed state of Installation
           properties:
+            gitHubOAuthEnabled:
+              type: boolean
             lastError:
               type: string
             preflightMessage:
               type: string
             preflightStatus:
               type: string
-            setupGHCredentials:
-              type: boolean
             smtpEnabled:
               type: boolean
             stages:

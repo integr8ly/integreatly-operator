@@ -695,7 +695,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 		return fmt.Errorf("Unable to update Identity Provider to Keycloak API: %s", err)
 	}
 
-	installation.Status.SetupGHCredentials = true
+	installation.Status.GitHubOAuthEnabled = true
 
 	return nil
 }
