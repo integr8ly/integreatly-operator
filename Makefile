@@ -16,6 +16,8 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
+
+
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
@@ -53,16 +55,24 @@ code/run/service_account: setup/service_account
 	$(MAKE) code/run
 
 .PHONY: code/compile
-code/compile:
+code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
 deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate openapi
 
-.PHONY: code/gen
-code/gen: deploy/crds/integreatly.org_installations_crd.yaml
-	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
+pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/installation_types.go
 	operator-sdk generate k8s
+
+.PHONY: code/output
+code/output:
+	@echo $(SOURCE_FILES)
+	@echo $(GENERATED_FILES)
+
+
+.PHONY: code/gen
+code/gen: deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go
+	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	@go generate ./...
 
 .PHONY: code/check
