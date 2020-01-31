@@ -26,6 +26,7 @@ func RemoveFinalizer(om *controllerruntime.ObjectMeta, finalizer string) {
 	om.SetFinalizers(remove(om.GetFinalizers(), finalizer))
 }
 
+//Contains checks if a string exists in a slice of strings
 func Contains(list []string, s string) bool {
 	for _, v := range list {
 		if v == s {

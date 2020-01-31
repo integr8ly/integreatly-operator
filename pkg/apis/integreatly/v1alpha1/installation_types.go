@@ -56,7 +56,7 @@ var (
 	VersionMonitoring          ProductVersion  = "1.0.2"
 	Version3Scale              ProductVersion  = "2.7"
 	VersionUps                 ProductVersion  = "2.3.2"
-	VersionCloudResources      ProductVersion  = "0.6.1"
+	VersionCloudResources      ProductVersion  = "0.7.1"
 	VersionFuseOnline          ProductVersion  = "7.5"
 	PreflightInProgress        PreflightStatus = ""
 	PreflightSuccess           PreflightStatus = "successful"
@@ -72,7 +72,7 @@ var (
 	OperatorVersionFuse                OperatorVersion = "1.5.0"
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
 	OperatorVersionUPS                 OperatorVersion = "0.4.1"
-	OperatorVersionCloudResources      OperatorVersion = "0.6.0"
+	OperatorVersionCloudResources      OperatorVersion = "0.7.1"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

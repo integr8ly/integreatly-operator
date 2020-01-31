@@ -2,8 +2,9 @@ package resources
 
 import (
 	"context"
-	croType "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"reflect"
+
+	croType "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -12,6 +13,7 @@ import (
 	errorUtil "github.com/pkg/errors"
 )
 
+//UpdatePhase Updates the custom resource with the current phase
 func UpdatePhase(ctx context.Context, client client.Client, inst runtime.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil
@@ -31,6 +33,7 @@ func UpdatePhase(ctx context.Context, client client.Client, inst runtime.Object,
 	return nil
 }
 
+//UpdateSnapshotPhase Updates the snapshot custom resource with the current phase
 func UpdateSnapshotPhase(ctx context.Context, client client.Client, inst runtime.Object, phase croType.StatusPhase, msg croType.StatusMessage) error {
 	if msg == croType.StatusEmpty {
 		return nil
