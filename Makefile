@@ -50,8 +50,8 @@ setup/git/hooks:
 	git config core.hooksPath .githooks
 
 .PHONY: code/run
-code/run:
-	@operator-sdk up local --namespace="${NAMESPACE}"
+code/run: code/gen cluster/prepare/smtp
+	@operator-sdk up local --namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
@@ -124,7 +124,7 @@ cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/smtp
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -145,7 +145,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/*_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -155,6 +155,15 @@ cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
 	$(call wait_command, oc get crd installations.integreatly.org, installations.integreatly.org crd, 1m, 10)
 	$(call wait_command, oc get deployments integreatly-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, integreatly-operator ,2m, 10)
+
+.PHONY: cluster/prepare/smtp
+cluster/prepare/smtp:
+	@-oc create secret generic rhmi-smtp -n $(NAMESPACE) \
+		--from-literal=host=smtp.example.com \
+		--from-literal=username=dummy \
+		--from-literal=password=dummy \
+		--from-literal=port=587 \
+		--from-literal=tls=true
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
