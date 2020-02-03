@@ -3,6 +3,7 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/pkg/errors"
@@ -431,7 +432,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 			FirstBrokerLoginFlowAlias: "first broker login",
 			Config: map[string]string{
 				"hideOnLoginPage": "",
-				"baseUrl":         r.ApiUrl,
+				"baseUrl":         "https://" + strings.Replace(r.installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
 				"clientId":        r.getOAuthClientName(),
 				"disableUserInfo": "",
 				"clientSecret":    clientSecret,
