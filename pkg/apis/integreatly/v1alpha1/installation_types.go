@@ -77,6 +77,7 @@ var (
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
 	EventInstallationCompleted string = "InstallationCompleted"
+	EventPreflightCheckPassed  string = "PreflightCheckPassed"
 )
 
 // InstallationSpec defines the desired state of Installation
@@ -92,6 +93,17 @@ type InstallationSpec struct {
 	SelfSignedCerts   bool           `json:"selfSignedCerts,omitempty"`
 	PullSecret        PullSecretSpec `json:"pullSecret,omitempty"`
 	UseClusterStorage bool           `json:"useClusterStorage,omitempty"`
+
+	// SMTPSecret is the name of a secret in the installation
+	// namespace containing SMTP connection details. The secret
+	// must contain the following fields:
+	//
+	// host
+	// port
+	// tls
+	// username
+	// password
+	SMTPSecret string `json:"smtpSecret,omitempty"`
 }
 
 type PullSecretSpec struct {
@@ -102,14 +114,15 @@ type PullSecretSpec struct {
 // InstallationStatus defines the observed state of Installation
 // +k8s:openapi-gen=true
 type InstallationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// INSERT ADDITIONAL STATUS FIELDS - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Stages             map[StageName]*InstallationStageStatus `json:"stages"`
 	PreflightStatus    PreflightStatus                        `json:"preflightStatus,omitempty"`
 	PreflightMessage   string                                 `json:"preflightMessage,omitempty"`
 	LastError          string                                 `json:"lastError"`
-	SetupGHCredentials bool                                   `json:"setupGHCredentials,omitempty"`
+	GitHubOAuthEnabled bool                                   `json:"gitHubOAuthEnabled,omitempty"`
+	SMTPEnabled        bool                                   `json:"smtpEnabled,omitempty"`
 }
 
 type InstallationStageStatus struct {

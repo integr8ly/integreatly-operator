@@ -7,3 +7,4 @@ spec:
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
   useClusterStorage: true
+  smtpSecret: rhmi-smtp

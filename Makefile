@@ -16,6 +16,12 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
+export SELF_SIGNED_CERTS   ?= true
+export INSTALLATION_TYPE   ?= managed
+export INSTALLATION_NAME   ?= integreatly
+export INSTALLATION_PREFIX ?= redhat-rhmi
+export USE_CLUSTER_STORAGE ?= true
+
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
@@ -44,8 +50,8 @@ setup/git/hooks:
 	git config core.hooksPath .githooks
 
 .PHONY: code/run
-code/run:
-	@operator-sdk up local --namespace="${NAMESPACE}"
+code/run: code/gen cluster/prepare/smtp
+	@operator-sdk up local --namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
@@ -110,7 +116,6 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
 
 .PHONY: cluster/deploy/integreatly-installation-cr.yml
-cluster/deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly-operator
 cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
@@ -119,7 +124,7 @@ cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/smtp
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -140,7 +145,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/*_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -150,6 +155,15 @@ cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
 	$(call wait_command, oc get crd installations.integreatly.org, installations.integreatly.org crd, 1m, 10)
 	$(call wait_command, oc get deployments integreatly-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, integreatly-operator ,2m, 10)
+
+.PHONY: cluster/prepare/smtp
+cluster/prepare/smtp:
+	@-oc create secret generic rhmi-smtp -n $(NAMESPACE) \
+		--from-literal=host=smtp.example.com \
+		--from-literal=username=dummy \
+		--from-literal=password=dummy \
+		--from-literal=port=587 \
+		--from-literal=tls=true
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
@@ -175,11 +189,6 @@ cluster/cleanup/crds:
 	@-oc delete crd webapps.integreatly.org
 
 .PHONY: deploy/integreatly-installation-cr.yml
-deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
-deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly
-deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
-deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := redhat-rhmi
-deploy/integreatly-installation-cr.yml: export USE_CLUSTER_STORAGE := true
 deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \

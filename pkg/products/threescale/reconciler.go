@@ -316,27 +316,15 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling smtp")
-	ns := r.installation.Namespace
-
-	// setup smtp credential set cr for the cloud resource operator
-	smtpCredName := fmt.Sprintf("threescale-smtp-%s", r.installation.Name)
-	smtpCred, err := croUtil.ReconcileSMTPCredentialSet(ctx, serverClient, r.installation.Spec.Type, tier, smtpCredName, ns, smtpCredName, ns, func(cr metav1.Object) error {
-		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile smtp credential request: %w", err)
-	}
-
-	// wait for the smtp credential set cr to reconcile
-	if smtpCred.Status.Phase != types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: smtpCred.Status.SecretRef.Name, Namespace: smtpCred.Status.SecretRef.Namespace}, credSec)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
+		// For non-managed installations, the SMTP secret isn't critical
+		if k8serr.IsNotFound(err) && r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
 	}
 	smtpCfgMap := &corev1.ConfigMap{

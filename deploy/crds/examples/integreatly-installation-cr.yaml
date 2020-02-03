@@ -7,3 +7,4 @@ spec:
   namespacePrefix: INSTALLATION_PREFIX-
   selfSignedCerts: SELF_SIGNED_CERTS
   useClusterStorage: USE_CLUSTER_STORAGE
+  smtpSecret: INSTALLATION_PREFIX-smtp

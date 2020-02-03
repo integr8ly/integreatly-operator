@@ -143,6 +143,7 @@ func TestThreeScale(t *testing.T) {
 				Spec: integreatlyv1alpha1.InstallationSpec{
 					MasterURL:        "https://console.apps.example.com",
 					RoutingSubdomain: "apps.example.com",
+					SMTPSecret:       "test-smtp",
 				},
 			},
 			MPM:            marketplace.NewManager(),
@@ -155,6 +156,11 @@ func TestThreeScale(t *testing.T) {
 		t.Run(scenario.Name, func(t *testing.T) {
 			ctx := context.TODO()
 			configManager, err := config.NewManager(ctx, scenario.FakeSigsClient, configManagerConfigMap.Namespace, configManagerConfigMap.Name, scenario.Installation)
+			if err != nil {
+				t.Fatalf("Error creating config manager")
+			}
+
+			err = configManager.Client.Create(ctx, smtpSec)
 			if err != nil {
 				t.Fatalf("Error creating config manager")
 			}
