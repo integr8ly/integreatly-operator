@@ -179,12 +179,14 @@ deploy/integreatly-installation-cr.yml: export SELF_SIGNED_CERTS := true
 deploy/integreatly-installation-cr.yml: export INSTALLATION_NAME := integreatly
 deploy/integreatly-installation-cr.yml: export INSTALLATION_TYPE := managed
 deploy/integreatly-installation-cr.yml: export INSTALLATION_PREFIX := redhat-rhmi
+deploy/integreatly-installation-cr.yml: export USE_CLUSTER_STORAGE := true
 deploy/integreatly-installation-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
-	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" > deploy/integreatly-installation-cr.yml
+	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
+	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-installation-cr.yml
 	@-oc create -f deploy/integreatly-installation-cr.yml
 
 .PHONY: gen/csv

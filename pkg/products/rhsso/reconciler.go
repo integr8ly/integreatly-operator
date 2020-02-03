@@ -343,15 +343,6 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integ
 // signing operator gives out self signed certs
 // to circumvent this we create another keycloak route with edge termination
 func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// We need to create a workaround service to allow accessing keycloak on
-	// the http port
-	httpService := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keycloak-http",
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-
 	// We need a route with edge termination to serve the correct cluster certificate
 	edgeRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
@@ -360,42 +351,13 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, httpService, func() error {
-		clusterIP := httpService.Spec.ClusterIP
-		httpService.Annotations = map[string]string{
-			"service.alpha.openshift.io/serving-cert-secret-name": "sso-x509-https-secret",
-		}
-		httpService.Spec = corev1.ServiceSpec{
-			ClusterIP: clusterIP,
-			Ports: []corev1.ServicePort{
-				{
-					Name:       "keycloak",
-					Protocol:   corev1.ProtocolTCP,
-					Port:       8443,
-					TargetPort: intstr.FromInt(8443),
-				},
-			},
-			Selector: map[string]string{
-				"app":       "keycloak",
-				"component": "keycloak",
-			},
-			Type: corev1.ServiceTypeClusterIP,
-		}
-		return nil
-	})
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
-	}
-	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", httpService.Name, or))
-
-	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
 		host := edgeRoute.Spec.Host
 		edgeRoute.Spec = routev1.RouteSpec{
 			Host: host,
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
-				Name: "keycloak-http",
+				Name: "keycloak",
 			},
 			Port: &routev1.RoutePort{
 				TargetPort: intstr.FromString("keycloak"),
@@ -409,7 +371,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	})
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak http service")
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak edge route")
 	}
 	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
 

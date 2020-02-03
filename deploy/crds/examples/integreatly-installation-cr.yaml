@@ -6,3 +6,4 @@ spec:
   type: INSTALLATION_TYPE
   namespacePrefix: INSTALLATION_PREFIX-
   selfSignedCerts: SELF_SIGNED_CERTS
+  useClusterStorage: USE_CLUSTER_STORAGE
