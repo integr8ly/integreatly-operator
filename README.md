@@ -139,10 +139,31 @@ To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-i
 
 ## Tests
 
+### Unit tests
+
 Running unit tests:
 ```sh
 make test/unit
 ```
+
+### E2E testing
+
+If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using [OCM CLI](https://github.com/openshift-online/ocm-cli/releases):
+
+1. Download the CLI tool and add it to your PATH
+2. Export [OCM_TOKEN](https://github.com/openshift-online/ocm-cli#log-in): `export OCM_TOKEN="<TOKEN_VALUE>"`
+3. Create cluster template: `make ocm/cluster.json`.
+
+This command will generate `ocm/cluster.json` file with generated cluster name. This file will be used as a template to create your cluster via OCM CLI.
+
+4. Create the cluster: `make ocm/cluster/create`.
+
+This command will send a request to [Red Hat OpenShift Cluster Manager](https://cloud.redhat.com/) to spin up your cluster and waits until it's ready. You can see the details of your cluster in `ocm/cluster-details.json` file
+
+5. Once your cluster is ready, you can login via `oc` and install integreatly-operator by following instructions above.
+
+**Note**: it is possible to install the latest released version of integreatly-operator as an addon.
+Run `make ocm/install/rhmi-addon` to trigger the installation
 
 ## Release
 
