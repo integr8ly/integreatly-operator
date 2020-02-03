@@ -321,6 +321,10 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 	credSec := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
+		// For non-managed installations, the SMTP secret isn't critical
+		if k8serr.IsNotFound(err) && r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
 	}
 	smtpCfgMap := &corev1.ConfigMap{
