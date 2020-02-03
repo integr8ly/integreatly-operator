@@ -17,6 +17,7 @@ import (
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	fakeoauthClient "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
@@ -74,7 +75,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = oauthv1.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
+	err = projectv1.AddToScheme(scheme)
+	err = routev1.AddToScheme(scheme)
 
 	return scheme, err
 }
@@ -503,6 +505,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	edgeRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-edge",
+			Namespace: "user-sso",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
 	cases := []struct {
 		Name            string
 		ExpectError     bool
@@ -520,7 +532,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
