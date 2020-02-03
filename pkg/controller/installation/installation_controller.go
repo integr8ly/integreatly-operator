@@ -128,7 +128,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			Spec: integreatlyv1alpha1.InstallationSpec{
 				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
 				NamespacePrefix: DefaultInstallationPrefix,
-				SelfSignedCerts: false,
+				SelfSignedCerts: true,
 			},
 		}
 
