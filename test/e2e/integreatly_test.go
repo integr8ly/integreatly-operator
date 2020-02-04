@@ -496,7 +496,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"rhsso":                          2,
 		"solution-explorer":              1,
 		"ups":                            1,
-		"user-sso":                       1,
+		"user-sso":                       2,
 	}
 
 	for product, numberRoutes := range expectedRoutes {

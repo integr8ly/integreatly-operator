@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	routev1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/pkg/errors"
 
@@ -160,6 +163,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	phase, err = r.createKeycloakRoute(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
 	}
 
@@ -378,7 +387,6 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config for user-sso: %w", err)
 	}
 	r.Config.SetRealm(keycloakRealmName)
-	r.Config.SetHost(kc.Status.InternalURL)
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
 		return fmt.Errorf("could not update keycloak config for user-sso: %w", err)
@@ -442,6 +450,53 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 		})
 	}
 	return nil
+}
+
+// workaround: the keycloak operator creates a route with TLS passthrough config
+// this should use the same valid certs as the cluster itself but for some reason the
+// signing operator gives out self signed certs
+// to circumvent this we create another keycloak route with edge termination
+func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	// We need a route with edge termination to serve the correct cluster certificate
+	edgeRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak-edge",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
+		host := edgeRoute.Spec.Host
+		edgeRoute.Spec = routev1.RouteSpec{
+			Host: host,
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "keycloak",
+			},
+			Port: &routev1.RoutePort{
+				TargetPort: intstr.FromString("keycloak"),
+			},
+			TLS: &routev1.TLSConfig{
+				Termination: routev1.TLSTerminationReencrypt,
+			},
+			WildcardPolicy: routev1.WildcardPolicyNone,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak edge route")
+	}
+	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
+
+	if edgeRoute.Spec.Host == "" {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	r.Config.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
+	r.ConfigManager.WriteConfig(r.Config)
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) getOAuthClientName() string {

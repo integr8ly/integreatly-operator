@@ -150,8 +150,10 @@ metadata:
   name: example-installation
 spec:
   type: workshop
-  namespacePrefix: integreatly-
+  namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
+  useClusterStorage: true
+  smtpSecret: rhmi-smtp
 ```
 
 ## Set up dedicated admins
