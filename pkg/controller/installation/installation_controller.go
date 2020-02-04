@@ -88,27 +88,19 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 		return err
 	}
 
+	// custom event handler to enqueue reconcile requests for all installation CRs
+	enqueueAllInstallations := &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: installationMapper{context: context.TODO(), client: mgr.GetClient()},
+	}
+
 	// Watch for changes to users
-	err = c.Watch(&source.Kind{Type: &usersv1.User{}}, &EnqueueAllInstallations{})
+	err = c.Watch(&source.Kind{Type: &usersv1.User{}}, enqueueAllInstallations)
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to Secrets to trigger reconciliation if the SMTP Secret changes.
-	//
-	// We don't know what the Secret name is at this point, so there's a predicate here to
-	// trigger only based on appropriately labelled Secrets in the namespace.
-	//
-	// Additionally, we don't know what the Installation CR name is, so if this watch picks up
-	// an event, it will enqueue a reconcile request for _all_ Installation CRs (in the same
-	// namespace as the Secret).
-	enqueueAllInstallations := &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: installationMapper{context: context.TODO(), client: mgr.GetClient()},
-	}
-	err = c.Watch(
-		&source.Kind{Type: &corev1.Secret{}},
-		enqueueAllInstallations,
-	)
+	// Watch for changes to Secrets (important for SMTP Secret)
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, enqueueAllInstallations)
 	if err != nil {
 		return err
 	}

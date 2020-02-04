@@ -23,10 +23,7 @@ type installationMapper struct {
 
 func (m installationMapper) Map(mo handler.MapObject) []reconcile.Request {
 	installationList := &integreatlyv1alpha1.InstallationList{}
-	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(mo.Meta.GetNamespace()),
-	}
-	err := m.client.List(m.context, installationList, listOpts...)
+	err := m.client.List(m.context, installationList)
 	if err != nil {
 		return []reconcile.Request{}
 	}
