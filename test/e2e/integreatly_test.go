@@ -69,7 +69,12 @@ func TestIntegreatly(t *testing.T) {
 }
 
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
-	namespace := intlyNamespacePrefix + product + "-operator"
+	namespace := ""
+	if deploymentName != "enmasse-operator" {
+		namespace = intlyNamespacePrefix + product + "-operator"
+	} else {
+		namespace = intlyNamespacePrefix + product
+	}
 	t.Logf("Checking %s:%s", namespace, deploymentName)
 
 	start := time.Now()
@@ -386,7 +391,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"3scale",
 		"3scale-operator",
 		"amq-online",
-		"amq-online-operator",
 		"codeready-workspaces",
 		"codeready-workspaces-operator",
 		"fuse",
