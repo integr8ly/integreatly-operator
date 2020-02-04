@@ -38,14 +38,13 @@ import (
 )
 
 var (
-	defaultOperandNamespace             = "rhsso"
-	keycloakName                        = "rhsso"
-	keycloakRealmName                   = "openshift"
-	defaultSubscriptionName             = "integreatly-rhsso"
-	idpAlias                            = "openshift-v4"
-	githubIdpAlias                      = "github"
-	githubOauthAppCredentialsSecretName = "github-oauth-secret"
-	manifestPackage                     = "integreatly-rhsso"
+	defaultOperandNamespace = "rhsso"
+	keycloakName            = "rhsso"
+	keycloakRealmName       = "openshift"
+	defaultSubscriptionName = "integreatly-rhsso"
+	idpAlias                = "openshift-v4"
+	githubIdpAlias          = "github"
+	manifestPackage         = "integreatly-rhsso"
 )
 
 const (
@@ -62,7 +61,6 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.Installation
 	logger        *logrus.Entry
 	oauthv1Client oauthClient.OauthV1Interface
-	KeycloakHost  string
 	APIURL        string
 	*resources.Reconciler
 	recorder record.EventRecorder
@@ -171,15 +169,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
-		return phase, err
-	}
-
 	phase, err = r.createKeycloakRoute(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileComponents(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
 	}
 
@@ -380,7 +378,11 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 
 	// Override the keycloak host to the host of the edge route (instead of the
 	// operator generated route)
-	r.KeycloakHost = fmt.Sprintf("https://%v", edgeRoute.Spec.Host)
+	r.Config.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Error writing to config in rhssouser reconciler")
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -408,11 +410,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
 	}
-	host := kc.Status.InternalURL
+	host := r.Config.GetHost()
 	if host == "" {
-		r.logger.Infof("Internal URL for Keycloak not yet available")
-		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Internal URL for Keycloak not yet available")
+		r.logger.Infof("URL for Keycloak not yet available")
+		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Host for Keycloak not yet available")
 	}
+
 	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
@@ -473,7 +476,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Sync keycloak with openshift users
-	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient)
+	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to synchronize the users")
 	}
@@ -543,11 +546,6 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	r.Config.SetRealm(keycloakRealmName)
-
-	// TODO: once the keycloak operator generates a route with a valid certificate, that
-	// should be reverted back to using the InternalURL
-	// r.Config.SetHost(kc.Status.InternalURL)
-	r.Config.SetHost(r.KeycloakHost)
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
@@ -716,34 +714,34 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 	}
 	return false
 }
-func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) ([]usersv1.User, []int) {
-	var added []usersv1.User
+
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
 	for _, osUser := range openshiftUsers {
 		if !kcContainsOsUser(keycloakUsers, osUser) {
 			added = append(added, osUser)
 		}
 	}
 
-	var deleted []int
-	for i, kcUser := range keycloakUsers {
+	for _, kcUser := range keycloakUsers {
 		if !OsUserInKc(openshiftUsers, kcUser) {
-			deleted = append(deleted, i)
+			deleted = append(deleted, kcUser)
 		}
 	}
 
 	return added, deleted
 }
 
-func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
+func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
 		return nil, err
 	}
-	added, deletedIndexes := getUserDiff(keycloakUsers, openshiftUsers.Items)
+	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items)
 
-	for index := range deletedIndexes {
-		keycloakUsers = remove(index, keycloakUsers)
+	keycloakUsers, err = deleteKeycloakUsers(keycloakUsers, deletedUsers, ns, ctx, serverClient)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, osUser := range added {
@@ -776,9 +774,33 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	return keycloakUsers, nil
 }
 
-func remove(index int, kcUsers []keycloak.KeycloakAPIUser) []keycloak.KeycloakAPIUser {
-	kcUsers[index] = kcUsers[len(kcUsers)-1]
-	return kcUsers[:len(kcUsers)-1]
+func deleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []keycloak.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
+
+	for _, delUser := range deletedUsers {
+		// Remove from all users list
+		for i, user := range allKcUsers {
+			// ID is not populated, have to use UserName. Should be unique on master Realm
+			if delUser.UserName == user.UserName {
+				allKcUsers[i] = allKcUsers[len(allKcUsers)-1]
+				allKcUsers = allKcUsers[:len(allKcUsers)-1]
+				break
+			}
+		}
+
+		// Delete the CR
+		kcUser := &keycloak.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("generated-%v", delUser.UserName),
+				Namespace: ns,
+			},
+		}
+		err := serverClient.Delete(ctx, kcUser)
+		if err != nil {
+			return nil, fmt.Errorf("failed to delete keycloak user: %w", err)
+		}
+	}
+
+	return allKcUsers, nil
 }
 
 func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) bool {
@@ -802,19 +824,19 @@ func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 }
 
 func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, inst *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
-	selector := &keycloak.KeycloakUser{
+	kcUser := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("generated-%v", user.UserName),
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 
-	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func() error {
-		selector.Spec.RealmSelector = &metav1.LabelSelector{
+	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
-		selector.Labels = GetInstanceLabels()
-		selector.Spec.User = user
+		kcUser.Labels = GetInstanceLabels()
+		kcUser.Spec.User = user
 		return nil
 	})
 }

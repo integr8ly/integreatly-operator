@@ -90,7 +90,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 	case integreatlyv1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
-		appsv1, err := appsv1Client.NewForConfig(rc)
+		client, err := appsv1Client.NewForConfig(rc)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 
 		tsClient := threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
 
-		reconciler, err = threescale.NewReconciler(configManager, installation, appsv1, oauthv1Client, tsClient, mpm, recorder)
+		reconciler, err = threescale.NewReconciler(configManager, installation, client, oauthv1Client, tsClient, mpm, recorder)
 		if err != nil {
 			return nil, err
 		}

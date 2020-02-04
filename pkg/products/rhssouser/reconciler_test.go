@@ -54,6 +54,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"NAMESPACE": "user-sso",
 				"REALM":     "openshift",
 				"URL":       "rhsso.openshift-cluster.com",
+				"HOST":      "edge/route",
 			}), nil
 		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
@@ -210,9 +211,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
-		},
 	}
 
 	group := &usersv1.Group{
@@ -339,9 +337,6 @@ func TestReconciler_handleProgress(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
-		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
 		},
 	}
 
@@ -551,9 +546,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultRhssoNamespace,
 		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
-		},
 	}
 
 	secret := &corev1.Secret{
@@ -686,14 +678,14 @@ func TestReconciler_fullReconcile(t *testing.T) {
 func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakRealmName,
+			Name:      masterRealmName,
 			Namespace: defaultRhssoNamespace,
 		},
 		Spec: keycloak.KeycloakRealmSpec{
 			Realm: &keycloak.KeycloakAPIRealm{
-				ID:          keycloakRealmName,
-				Realm:       keycloakRealmName,
-				DisplayName: keycloakRealmName,
+				ID:          masterRealmName,
+				Realm:       masterRealmName,
+				DisplayName: masterRealmName,
 				Enabled:     true,
 				EventsListeners: []string{
 					"metrics-listener",
@@ -705,11 +697,22 @@ func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 }
 
 func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
+	exInfo := []*keycloak.AuthenticationExecutionInfo{
+		&keycloak.AuthenticationExecutionInfo{
+			ProviderID: "identity-provider-redirector",
+			ID:         "123-123-123",
+		},
+	}
+
 	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
 		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
 			return nil
 		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
 			return nil, nil
+		}, ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) (infos []*keycloak.AuthenticationExecutionInfo, err error) {
+			return exInfo, nil
+		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) error {
+			return nil
 		}}, nil
 	}}
 }

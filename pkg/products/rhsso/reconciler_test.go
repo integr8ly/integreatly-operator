@@ -54,6 +54,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 				"NAMESPACE": "rhsso",
 				"REALM":     "openshift",
 				"URL":       "rhsso.openshift-cluster.com",
+				"HOST":      "edge/route",
 			}), nil
 		},
 		ReadMonitoringFunc: func() (*config.Monitoring, error) {
@@ -218,9 +219,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
 		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
-		},
 	}
 
 	oauthClientSecrets := &corev1.Secret{
@@ -336,9 +334,6 @@ func TestReconciler_handleProgress(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
-		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
 		},
 	}
 
@@ -558,9 +553,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
 			Namespace: defaultOperandNamespace,
-		},
-		Status: keycloak.KeycloakStatus{
-			InternalURL: "http://keycloak",
 		},
 	}
 

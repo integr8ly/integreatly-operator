@@ -199,17 +199,16 @@ rules:
       - get
       - update
       - delete
-  
-  # We need to known members of the dedicated-admins group to give them additional permissions in RHMI products
+
+  # We need to watch for the changes to members of the dedicated-admins group to give them additional permissions in RHMI products
   - apiGroups:
       - user.openshift.io
     resources:
       - groups
-    resourceNames: 
-      - dedicated-admins
     verbs:
       - get
-      # - watch will probably be needed in the near future
+      - list
+      - watch
 
   # We create the "rhmi-developers" group and populate it with users dynamically
   - apiGroups:
@@ -225,7 +224,6 @@ rules:
     resourceNames: 
       - rhmi-developers
     verbs:
-      - get
       - update
       - delete
   - apiGroups:
