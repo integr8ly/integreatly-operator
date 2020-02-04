@@ -39,6 +39,8 @@ const (
 	manifestPackage              = "integreatly-fuse"
 )
 
+// Reconciler reconciles everything needed to install Syndesis/Fuse. The resources that it works
+// with are considered secondary resources in the context of the installation controller.
 type Reconciler struct {
 	*resources.Reconciler
 	coreClient    kubernetes.Interface
@@ -50,6 +52,7 @@ type Reconciler struct {
 	recorder      record.EventRecorder
 }
 
+// NewReconciler instantiates and returns a reference to a new Reconciler.
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	fuseConfig, err := configManager.ReadFuse()
 	if err != nil {
@@ -75,6 +78,8 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}, nil
 }
 
+// GetPreflightObject returns an object that will be checked in the preflight checks in the main
+// Installation controller to ensure there isn't a conflicting Syndesis already installed.
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return &appsv1.DeploymentConfig{
 		ObjectMeta: metav1.ObjectMeta{
@@ -260,25 +265,18 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 				},
 			},
 			Addons: syndesisv1alpha1.AddonsSpec{
+				"ops": syndesisv1alpha1.Parameters{
+					"enabled": "true",
+				},
 				"todo": syndesisv1alpha1.Parameters{
 					"enabled": "false",
 				},
 			},
 		}
+		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update a Syndesis(Fuse) custom resource: %w", err)
-	}
-	owner.AddIntegreatlyOwnerAnnotations(cr, installation)
-	// attempt to create the custom resource
-	if err := client.Get(ctx, k8sclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr); err != nil {
-		if k8serr.IsNotFound(err) {
-			if err := client.Create(ctx, cr); err != nil && !k8serr.IsAlreadyExists(err) {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create a syndesis cr when reconciling custom resource: %w", err)
-			}
-			return integreatlyv1alpha1.PhaseInProgress, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get a syndesis cr when reconciling custom resource: %w", err)
 	}
 
 	if cr.Status.Phase == syndesisv1alpha1.SyndesisPhaseStartupFailed {
