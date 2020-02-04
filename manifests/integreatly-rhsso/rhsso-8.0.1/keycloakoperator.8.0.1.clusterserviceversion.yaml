@@ -185,13 +185,23 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/keycloak/keycloak-operator:8.0.1
+                    image: quay.io/pb82/keycloak-operator:no-default-credentials
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
                 serviceAccountName: keycloak-operator
       permissions:
         - rules:
+            - apiGroups:
+                - policy
+              resources:
+                - poddisruptionbudgets
+              verbs:
+                - get
+                - list
+                - create
+                - update
+                - watch
             - apiGroups:
                 - ""
               resources:
