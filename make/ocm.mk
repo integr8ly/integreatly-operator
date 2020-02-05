@@ -16,7 +16,7 @@ endef
 
 define save_cluster_credentials
 	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .kubeconfig > ocm/cluster.kubeconfig
-	$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
+	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
 endef
 
 ifeq ($(UNAME), Linux)
@@ -55,9 +55,9 @@ ocm/cluster/create: ocm/cluster/send_create_request
 	@$(call get_cluster_id)
 	$(call wait_command, $(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/status | jq -r .state | grep -q ready, cluster creation, 120m, 300)
 	$(call wait_command, $(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | grep -q admin, fetching cluster credentials, 10m, 30)
-	echo "Console URL:"
-	$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID} | jq -r .console.url
-	echo "Login credentials:"
+	@echo "Console URL:"
+	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID} | jq -r .console.url
+	@echo "Login credentials:"
 	@$(call save_cluster_credentials)
 
 .PHONY: ocm/cluster/send_create_request
@@ -68,7 +68,8 @@ ocm/cluster/send_create_request:
 ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
-	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation integreatly-operator -n redhat-rhmi-operator -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 30)
+	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation -n redhat-rhmi-operator | grep -q integreatly, installation CR created, 10m, 30)
+	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation integreatly -n redhat-rhmi-operator -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
