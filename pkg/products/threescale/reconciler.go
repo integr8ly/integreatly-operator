@@ -228,7 +228,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		RedirectURIs: []string{
 			"https://" + threescaleMasterRoute.Spec.Host,
 		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
+		GrantMethod: oauthv1.GrantHandlerAuto,
 	}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth client", err)

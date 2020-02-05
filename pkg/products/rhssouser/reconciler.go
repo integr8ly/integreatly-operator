@@ -420,7 +420,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 		RedirectURIs: []string{
 			r.Config.GetHost() + "/auth/realms/user-sso/broker/openshift-v4/endpoint",
 		},
-		GrantMethod: oauthv1.GrantHandlerPrompt,
+		GrantMethod: oauthv1.GrantHandlerAuto,
 	}
 	_, err = r.ReconcileOauthClient(ctx, installation, oauthc, serverClient)
 	if err != nil {
