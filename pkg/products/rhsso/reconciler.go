@@ -576,7 +576,7 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 		},
 		Secret:       clientSecret,
 		RedirectURIs: redirectUris,
-		GrantMethod:  oauthv1.GrantHandlerPrompt,
+		GrantMethod:  oauthv1.GrantHandlerAuto,
 	}
 
 	_, err = r.ReconcileOauthClient(ctx, installation, oauthClient, serverClient)
