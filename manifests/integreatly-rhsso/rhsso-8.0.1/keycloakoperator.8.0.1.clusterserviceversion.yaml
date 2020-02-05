@@ -5,7 +5,7 @@ metadata:
     capabilities: Basic Install
     categories: security
     certified: 'False'
-    containerImage: 'quay.io/keycloak/keycloak-operator:master'
+    containerImage: 'quay.io/wei_lee/keycloak-operator:intly'
     createdAt: 2019-11-08 00:00:00
     description: 'An Operator for installing and managing Keycloak'
     repository: 'https://github.com/keycloak/keycloak-operator'
@@ -185,7 +185,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/pb82/keycloak-operator:no-default-credentials
+                    image: quay.io/wei_lee/keycloak-operator:intly
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
