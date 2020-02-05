@@ -9,6 +9,7 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -33,6 +34,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err := upsv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
 	err = crov1.SchemeBuilder.AddToScheme(scheme)
+	err = monitoringv1.AddToScheme(scheme)
 	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
