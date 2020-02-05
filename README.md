@@ -146,7 +146,7 @@ Running unit tests:
 make test/unit
 ```
 
-### E2E testing
+## Using `ocm` for installation of RHMI
 
 If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using [OCM CLI](https://github.com/openshift-online/ocm-cli/releases):
 
@@ -160,10 +160,16 @@ This command will generate `ocm/cluster.json` file with generated cluster name. 
 
 This command will send a request to [Red Hat OpenShift Cluster Manager](https://cloud.redhat.com/) to spin up your cluster and waits until it's ready. You can see the details of your cluster in `ocm/cluster-details.json` file
 
-5. Once your cluster is ready, you can login via `oc` and install integreatly-operator by following instructions above.
+5. Once your cluster is ready, OpenShift Console URL will be printed out together with the `kubeadmin` user & password. These are also saved to `ocm/cluster-credentials.json` file. Also there will be `ocm/cluster.kubeconfig` file created that you can use for running `oc` commands right away, for example, for listing all projects on your OpenShift cluster:
 
-**Note**: it is possible to install the latest released version of integreatly-operator as an addon.
-Run `make ocm/install/rhmi-addon` to trigger the installation
+```
+oc --config ocm/cluster.kubeconfig projects
+```
+
+6. If you want to install the latest released RHMI, you can trigger it by applying an RHMI addon.
+Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installation is completed, the installation CR with RHMI components info will be printed to the console.
+
+7. If you want to delete your cluster, run `make ocm/cluster/delete`
 
 ## Release
 
