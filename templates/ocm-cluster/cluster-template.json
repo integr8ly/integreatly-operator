@@ -3,6 +3,7 @@
   "region": {
     "id": "OCM_CLUSTER_REGION"
   },
+  "expiration_timestamp": "OCM_CLUSTER_EXPIRATION_TIMESTAMP",
   "nodes" : {
     "compute" : 4,
     "compute_machine_type" : {"id" : "m5.xlarge" }
