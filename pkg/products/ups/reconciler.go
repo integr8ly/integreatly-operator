@@ -25,11 +25,9 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -178,14 +176,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
-	// get the secret created by the cloud resources operator
-	// containing postgres connection details
-	connSec := &corev1.Secret{}
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, connSec)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
-	}
-
 	// Reconcile ups custom resource
 	logrus.Info("Reconciling unified push server cr")
 	cr := &upsv1alpha1.UnifiedPushServer{
@@ -194,14 +184,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: upsv1alpha1.UnifiedPushServerSpec{
-			ExternalDB: true,
-			Database: upsv1alpha1.UnifiedPushServerDatabase{
-				Name:     string(connSec.Data["database"]),
-				Password: string(connSec.Data["password"]),
-				User:     string(connSec.Data["username"]),
-				Host:     string(connSec.Data["host"]),
-				Port:     intstr.FromString(string(connSec.Data["port"])),
-			},
+			ExternalDB:     true,
+			DatabaseSecret: postgres.Status.SecretRef.Name,
 		},
 	}
 

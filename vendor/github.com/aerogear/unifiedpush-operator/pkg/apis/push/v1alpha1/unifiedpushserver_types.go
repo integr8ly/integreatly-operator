@@ -17,7 +17,27 @@ type UnifiedPushServerSpec struct {
 	//ExternalDB can be set to true to use details from Database and connect to external db
 	ExternalDB bool `json:"externalDB,omitempty"`
 
+	// Database allows specifying the external PostgreSQL details directly in the CR. Only one
+	// of Database or DatabaseSecret should be specified, and ExternalDB must be true, otherwise
+	// a new PostgreSQL instance will be created (and deleted) on the cluster automatically.
 	Database UnifiedPushServerDatabase `json:"database,omitempty"`
+
+	// DatabaseSecret allows reading the external PostgreSQL details from a pre-existing Secret
+	// (ExternalDB must be true for it to be used). Only one of Database or DatabaseSecret
+	// should be specified, and ExternalDB must be true, otherwise a new PostgreSQL instance
+	// will be created (and deleted) on the cluster automatically.
+	//
+	// Here's an example of all of the fields that the secret must contain:
+	//
+	// POSTGRES_DATABASE: sampledb
+	// POSTGRES_HOST: 172.30.139.148
+	// POSTGRES_PORT: "5432"
+	// POSTGRES_USERNAME: userMSM
+	// POSTGRES_PASSWORD: RmwWKKIM7or7oJig
+	// POSTGRES_SUPERUSER: "false"
+	// POSTGRES_VERSION: "10"
+	//
+	DatabaseSecret string `json:"databaseSecret,omitempty"`
 
 	// Backups is an array of configs that will be used to create CronJob resource instances
 	Backups []UnifiedPushServerBackup `json:"backups,omitempty"`
@@ -31,20 +51,6 @@ type UnifiedPushServerSpec struct {
 
 	// PVC size for Postgres service
 	PostgresPVCSize string `json:"postgresPVCSize,omitempty"`
-}
-
-// UnifiedPushServerDatabase contains the data needed to connect to external database
-type UnifiedPushServerDatabase struct {
-	//Name for external database support
-	Name string `json:"name,omitempty"`
-	//Password for external database support
-	Password string `json:"password,omitempty"`
-	//User for external database support
-	User string `json:"user,omitempty"`
-	//Host for external database support
-	Host string `json:"host,omitempty"`
-	//Port for external database support
-	Port intstr.IntOrString `json:"port,omitempty"`
 }
 
 // UnifiedPushServerStatus defines the observed state of UnifiedPushServer
@@ -118,6 +124,20 @@ type UnifiedPushServerBackup struct {
 	// BackendSecretNamespace is the name of the namespace that
 	// the secret referenced in BackendSecretName resides in
 	BackendSecretNamespace string `json:"backendSecretNamespace,omitempty"`
+}
+
+// UnifiedPushServerDatabase contains the data needed to connect to external database
+type UnifiedPushServerDatabase struct {
+	//Name for external database support
+	Name string `json:"name,omitempty"`
+	//Password for external database support
+	Password string `json:"password,omitempty"`
+	//User for external database support
+	User string `json:"user,omitempty"`
+	//Host for external database support
+	Host string `json:"host,omitempty"`
+	//Port for external database support
+	Port intstr.IntOrString `json:"port,omitempty"`
 }
 
 type StatusPhase string

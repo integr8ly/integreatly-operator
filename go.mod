@@ -5,8 +5,8 @@ go 1.13
 require (
 	github.com/3scale/3scale-operator v0.4.0
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
-	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
 	github.com/coreos/prometheus-operator v0.35.0
+	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
