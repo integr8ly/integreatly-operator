@@ -3,6 +3,8 @@ package resources
 import (
 	"context"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -16,8 +18,8 @@ const (
 	DefaultOriginPullSecretNamespace = "openshift"
 )
 
-// Gets the default pull secret for pulling container images from registry
-func GetDefaultPullSecret(context context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.Installation) (corev1.Secret, error) {
+// CopyDefaultPullSecretToNamespace copies the default pull secret to a target namespace
+func CopyDefaultPullSecretToNameSpace(context context.Context, destNamespace, destName string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) error {
 	if inst.Spec.PullSecret.Name == "" {
 		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
 	}
@@ -25,31 +27,30 @@ func GetDefaultPullSecret(context context.Context, client k8sclient.Client, inst
 		inst.Spec.PullSecret.Namespace = DefaultOriginPullSecretNamespace
 	}
 
-	openshiftSecret := corev1.Secret{}
-
-	err := client.Get(context, types.NamespacedName{Name: inst.Spec.PullSecret.Name, Namespace: inst.Spec.PullSecret.Namespace}, &openshiftSecret)
-
-	return openshiftSecret, err
+	return CopySecret(context, client, inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace, destName, destNamespace)
 }
 
-// Copys the default pull secret to a target namespace
-func CopyDefaultPullSecretToNameSpace(context context.Context, nameSpaceToCopy string, nameOfSecret string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) error {
-	openshiftSecret, err := GetDefaultPullSecret(context, client, inst)
-
+//CopySecret will copy or update the destination secret from the source secret
+func CopySecret(ctx context.Context, client k8sclient.Client, srcName, srcNamespace, destName, destNamespace string) error {
+	srcSecret := corev1.Secret{}
+	err := client.Get(ctx, types.NamespacedName{Name: srcName, Namespace: srcNamespace}, &srcSecret)
 	if err != nil {
 		return err
 	}
 
-	componentSecret := &corev1.Secret{
+	destSecret := &corev1.Secret{
 		Type: corev1.SecretTypeDockerConfigJson,
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      nameOfSecret,
-			Namespace: nameSpaceToCopy,
+			Name:      destName,
+			Namespace: destNamespace,
 		},
-		Data: openshiftSecret.Data,
 	}
 
-	err = CreateOrUpdate(context, client, componentSecret)
+	_, err = controllerutil.CreateOrUpdate(ctx, client, destSecret, func() error {
+		destSecret.Data = srcSecret.Data
+		destSecret.Type = srcSecret.Type
+		return nil
+	})
 
 	return err
 }
