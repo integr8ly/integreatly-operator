@@ -207,7 +207,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
 		}
 		kc.Labels = getMasterLabels()
-		kc.Spec.Instances = 3
+		kc.Spec.Instances = 2
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		return nil
