@@ -112,8 +112,12 @@ test/e2e/prow: test/e2e
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
+.PHONY: install/olm
+install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
+
 .PHONY: test/e2e/olm
-test/e2e/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
+test/e2e/olm: install/olm
+#ToDo Trigger test suite here
 
 .PHONY: cluster/deploy/integreatly-installation-cr.yml
 cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
