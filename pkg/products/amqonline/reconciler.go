@@ -4,28 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/sirupsen/logrus"
 
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/sirupsen/logrus"
-
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -171,6 +174,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilePrometheusRule(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus rules", err)
 		return phase, err
 	}
 
@@ -346,6 +355,46 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse blackbox target: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
+	rule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-amq-online-sli",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	rules := []monitoringv1.Rule{}
+	rules = append(rules, monitoringv1.Rule{
+		Alert: fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace %s", r.Config.GetNamespace()),
+		Annotations: map[string]string{
+			"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+			"message": "AMQ Online Console is not available",
+		},
+		Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
+		For:    "60s",
+		Labels: map[string]string{"severity": "critical"},
+	})
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				monitoringv1.RuleGroup{
+					Name:  "general.rules",
+					Rules: rules,
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating enmasse reconcilePrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
