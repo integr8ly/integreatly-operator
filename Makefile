@@ -15,6 +15,7 @@ OPERATOR_SDK_VERSION=0.12.0
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+KUBECONFIG="${HOME}/.kube/config"
 
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
@@ -162,7 +163,7 @@ cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
-	@-oc create secret generic rhmi-smtp -n $(NAMESPACE) \
+	@-oc --config $(KUBECONFIG) create secret generic rhmi-smtp -n $(NAMESPACE) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \

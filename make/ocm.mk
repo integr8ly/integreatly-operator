@@ -69,6 +69,7 @@ ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
 	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation -n redhat-rhmi-operator | grep -q integreatly, installation CR created, 10m, 30)
+	@make KUBECONFIG="ocm/cluster.kubeconfig" cluster/prepare/smtp
 	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation integreatly -n redhat-rhmi-operator -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
 	@oc --config=ocm/cluster.kubeconfig get installation integreatly -n redhat-rhmi-operator -o json | jq -r '.status.stages'
 
