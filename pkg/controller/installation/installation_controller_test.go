@@ -106,14 +106,14 @@ func testCreateInstallationCR_useClusterStorage(t *testing.T, envValue string, a
 }
 
 // Utility function to retrieve the Installation CR
-func getInstallationCR(ctx context.Context, serverClient k8sclient.Client, t *testing.T) (*integreatlyv1alpha1.Installation, error) {
+func getInstallationCR(ctx context.Context, serverClient k8sclient.Client, t *testing.T) (*integreatlyv1alpha1.RHMI, error) {
 	namespace, err := k8sutil.GetWatchNamespace()
 
 	if err != nil {
 		return nil, err
 	}
 
-	installationList := &integreatlyv1alpha1.InstallationList{}
+	installationList := &integreatlyv1alpha1.RHMIList{}
 	listOps := []k8sclient.ListOption{
 		k8sclient.InNamespace(namespace),
 	}

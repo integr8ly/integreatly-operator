@@ -81,7 +81,7 @@ tags
 .vscode/*
 .history
 # End of https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
-deploy/integreatly-installation-cr.yml
+deploy/integreatly-rhmi-cr.yml
 #ocm generated templates
 ocm/
 htpasswd

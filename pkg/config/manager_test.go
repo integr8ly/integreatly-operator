@@ -33,7 +33,7 @@ func TestWriteConfig(t *testing.T) {
 		},
 	}
 
-	fakeInst := &integreatlyv1alpha1.Installation{}
+	fakeInst := &integreatlyv1alpha1.RHMI{}
 
 	tests := []struct {
 		productName       string
@@ -108,7 +108,7 @@ func TestWriteConfig(t *testing.T) {
 }
 
 func TestReadConfigForProduct(t *testing.T) {
-	fakeInst := &integreatlyv1alpha1.Installation{}
+	fakeInst := &integreatlyv1alpha1.RHMI{}
 
 	tests := []struct {
 		productName       string

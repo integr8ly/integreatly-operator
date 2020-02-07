@@ -66,7 +66,7 @@ func setupRecorder() record.EventRecorder {
 
 type ThreeScaleTestScenario struct {
 	Name                 string
-	Installation         *integreatlyv1alpha1.Installation
+	Installation         *integreatlyv1alpha1.RHMI
 	FakeSigsClient       k8sclient.Client
 	FakeAppsV1Client     appsv1Client.AppsV1Interface
 	FakeOauthClient      oauthClient.OauthV1Interface
@@ -74,17 +74,17 @@ type ThreeScaleTestScenario struct {
 	ExpectedStatus       integreatlyv1alpha1.StatusPhase
 	Assert               AssertFunc
 	MPM                  marketplace.MarketplaceInterface
-	Product              *integreatlyv1alpha1.InstallationProductStatus
+	Product              *integreatlyv1alpha1.RHMIProductStatus
 	Recorder             record.EventRecorder
 }
 
-func getTestInstallation() *integreatlyv1alpha1.Installation {
-	return &integreatlyv1alpha1.Installation{
+func getTestInstallation() *integreatlyv1alpha1.RHMI {
+	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: "test",
 		},
-		Spec: integreatlyv1alpha1.InstallationSpec{
+		Spec: integreatlyv1alpha1.RHMISpec{
 			Type: "managed",
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -130,7 +130,7 @@ func TestThreeScale(t *testing.T) {
 			FakeOauthClient:      fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeThreeScaleClient: getThreeScaleClient(),
 			Assert:               assertInstallationSuccessfull,
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "test-installation",
 					Namespace:  "integreatly-operator-ns",
@@ -140,7 +140,7 @@ func TestThreeScale(t *testing.T) {
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
-				Spec: integreatlyv1alpha1.InstallationSpec{
+				Spec: integreatlyv1alpha1.RHMISpec{
 					MasterURL:        "https://console.apps.example.com",
 					RoutingSubdomain: "apps.example.com",
 					SMTPSecret:       "test-smtp",
@@ -148,7 +148,7 @@ func TestThreeScale(t *testing.T) {
 			},
 			MPM:            marketplace.NewManager(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Product:        &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
 		},
 	}
@@ -197,7 +197,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
 		mpm           marketplace.MarketplaceInterface
-		installation  *integreatlyv1alpha1.Installation
+		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
 		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface
@@ -270,7 +270,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		ConfigManager config.ConfigReadWriter
 		Config        *config.ThreeScale
 		mpm           marketplace.MarketplaceInterface
-		installation  *integreatlyv1alpha1.Installation
+		installation  *integreatlyv1alpha1.RHMI
 		tsClient      ThreeScaleInterface
 		appsv1Client  appsv1Client.AppsV1Interface
 		oauthv1Client oauthClient.OauthV1Interface

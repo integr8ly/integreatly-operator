@@ -29,7 +29,7 @@ var _ Interface = &InterfaceMock{}
 //             GetPreflightObjectFunc: func(ns string) runtime.Object {
 // 	               panic("mock out the GetPreflightObject method")
 //             },
-//             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+//             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
 //         }
@@ -43,7 +43,7 @@ type InterfaceMock struct {
 	GetPreflightObjectFunc func(ns string) runtime.Object
 
 	// ReconcileFunc mocks the Reconcile method.
-	ReconcileFunc func(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
+	ReconcileFunc func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -57,9 +57,9 @@ type InterfaceMock struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// Installation is the installation argument value.
-			Installation *v1alpha1.Installation
+			Installation *v1alpha1.RHMI
 			// Product is the product argument value.
-			Product *v1alpha1.InstallationProductStatus
+			Product *v1alpha1.RHMIProductStatus
 			// ServerClient is the serverClient argument value.
 			ServerClient client.Client
 		}
@@ -98,14 +98,14 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 }
 
 // Reconcile calls ReconcileFunc.
-func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1.Installation, product *v1alpha1.InstallationProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
+func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 	if mock.ReconcileFunc == nil {
 		panic("InterfaceMock.ReconcileFunc: method is nil but Interface.Reconcile was just called")
 	}
 	callInfo := struct {
 		Ctx          context.Context
-		Installation *v1alpha1.Installation
-		Product      *v1alpha1.InstallationProductStatus
+		Installation *v1alpha1.RHMI
+		Product      *v1alpha1.RHMIProductStatus
 		ServerClient client.Client
 	}{
 		Ctx:          ctx,
@@ -124,14 +124,14 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1
 //     len(mockedInterface.ReconcileCalls())
 func (mock *InterfaceMock) ReconcileCalls() []struct {
 	Ctx          context.Context
-	Installation *v1alpha1.Installation
-	Product      *v1alpha1.InstallationProductStatus
+	Installation *v1alpha1.RHMI
+	Product      *v1alpha1.RHMIProductStatus
 	ServerClient client.Client
 } {
 	var calls []struct {
 		Ctx          context.Context
-		Installation *v1alpha1.Installation
-		Product      *v1alpha1.InstallationProductStatus
+		Installation *v1alpha1.RHMI
+		Product      *v1alpha1.RHMIProductStatus
 		ServerClient client.Client
 	}
 	lockInterfaceMockReconcile.RLock()

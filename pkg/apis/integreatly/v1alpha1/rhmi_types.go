@@ -80,9 +80,9 @@ var (
 	EventPreflightCheckPassed  string = "PreflightCheckPassed"
 )
 
-// InstallationSpec defines the desired state of Installation
+// RHMISpec defines the desired state of Installation
 // +k8s:openapi-gen=true
-type InstallationSpec struct {
+type RHMISpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
@@ -111,27 +111,27 @@ type PullSecretSpec struct {
 	Namespace string `json:"namespace"`
 }
 
-// InstallationStatus defines the observed state of Installation
+// RHMIStatus defines the observed state of Installation
 // +k8s:openapi-gen=true
-type InstallationStatus struct {
+type RHMIStatus struct {
 	// INSERT ADDITIONAL STATUS FIELDS - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages             map[StageName]*InstallationStageStatus `json:"stages"`
-	PreflightStatus    PreflightStatus                        `json:"preflightStatus,omitempty"`
-	PreflightMessage   string                                 `json:"preflightMessage,omitempty"`
-	LastError          string                                 `json:"lastError"`
-	GitHubOAuthEnabled bool                                   `json:"gitHubOAuthEnabled,omitempty"`
-	SMTPEnabled        bool                                   `json:"smtpEnabled,omitempty"`
+	Stages             map[StageName]*RHMIStageStatus `json:"stages"`
+	PreflightStatus    PreflightStatus                `json:"preflightStatus,omitempty"`
+	PreflightMessage   string                         `json:"preflightMessage,omitempty"`
+	LastError          string                         `json:"lastError"`
+	GitHubOAuthEnabled bool                           `json:"gitHubOAuthEnabled,omitempty"`
+	SMTPEnabled        bool                           `json:"smtpEnabled,omitempty"`
 }
 
-type InstallationStageStatus struct {
-	Name     StageName                                  `json:"name"`
-	Phase    StatusPhase                                `json:"phase"`
-	Products map[ProductName]*InstallationProductStatus `json:"products,omitempty"`
+type RHMIStageStatus struct {
+	Name     StageName                          `json:"name"`
+	Phase    StatusPhase                        `json:"phase"`
+	Products map[ProductName]*RHMIProductStatus `json:"products,omitempty"`
 }
 
-type InstallationProductStatus struct {
+type RHMIProductStatus struct {
 	Name            ProductName     `json:"name"`
 	OperatorVersion OperatorVersion `json:"operator,omitempty"`
 	Version         ProductVersion  `json:"version"`
@@ -143,38 +143,38 @@ type InstallationProductStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Installation is the Schema for the installations API
+// RHMI is the Schema for the RHMI API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=installations,scope=Namespaced
-type Installation struct {
+// +kubebuilder:resource:path=rhmis,scope=Namespaced
+type RHMI struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   InstallationSpec   `json:"spec,omitempty"`
-	Status InstallationStatus `json:"status,omitempty"`
+	Spec   RHMISpec   `json:"spec,omitempty"`
+	Status RHMIStatus `json:"status,omitempty"`
 }
 
-func (i *Installation) GetProductStatusObject(product ProductName) *InstallationProductStatus {
+func (i *RHMI) GetProductStatusObject(product ProductName) *RHMIProductStatus {
 	for _, stage := range i.Status.Stages {
 		if product, ok := stage.Products[product]; ok {
 			return product
 		}
 	}
-	return &InstallationProductStatus{
+	return &RHMIProductStatus{
 		Name: product,
 	}
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// InstallationList contains a list of Installation
-type InstallationList struct {
+// RHMIList contains a list of Installation
+type RHMIList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Installation `json:"items"`
+	Items           []RHMI `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Installation{}, &InstallationList{})
+	SchemeBuilder.Register(&RHMI{}, &RHMIList{})
 }

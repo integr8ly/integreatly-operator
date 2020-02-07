@@ -97,8 +97,8 @@ func TestReconciler_config(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
-		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.RHMI
+		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -106,28 +106,28 @@ func TestReconciler_config(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not retrieve fuse config: could not read fuse config",
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadFuseFunc: func() (ready *config.Fuse, e error) {
 					return nil, errors.New("could not read fuse config")
 				},
 			},
-			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 
 					return errors.New("dummy error")
 				},
 			},
-			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &integreatlyv1alpha1.Installation{
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "installation",
 					Namespace: defaultInstallationNamespace,
@@ -138,7 +138,7 @@ func TestReconciler_config(t *testing.T) {
 				},
 			}),
 			FakeConfig: basicConfigMock(),
-			Product:    &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
 		},
 	}
@@ -204,7 +204,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectError    bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -214,7 +214,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			Name:       "Test reconcile custom resource returns in progress when successful created",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, secret),
 			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -227,7 +227,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseStartupFailed)),
 			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -241,7 +241,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), route, secret),
 			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -254,7 +254,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
 			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalling), secret),
 			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -274,7 +274,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -316,7 +316,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	installation := &integreatlyv1alpha1.Installation{
+	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -415,8 +415,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
-		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.RHMI
+		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -451,7 +451,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: installation,
-			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 		},
 	}

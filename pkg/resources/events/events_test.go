@@ -15,7 +15,7 @@ const (
 
 type EventsScenario struct {
 	Name               string
-	Installation       *integreatlyv1alpha1.Installation
+	Installation       *integreatlyv1alpha1.RHMI
 	ExpectedEventCount int
 	Error              error
 	ErrorMessage       string
@@ -26,15 +26,15 @@ func TestHandleStageComplete(t *testing.T) {
 	cases := []EventsScenario{
 		{
 			Name:               "test stage complete event handler on a stage thats unavailable",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ExpectedEventCount: 1,
 		},
 		{
 			Name: "test stage complete event handler on a stage thats not completed",
-			Installation: &integreatlyv1alpha1.Installation{
-				Status: integreatlyv1alpha1.InstallationStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-						stageName: &integreatlyv1alpha1.InstallationStageStatus{
+			Installation: &integreatlyv1alpha1.RHMI{
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+						stageName: &integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
 						},
@@ -45,10 +45,10 @@ func TestHandleStageComplete(t *testing.T) {
 		},
 		{
 			Name: "test stage complete event handler on a stage thats completed",
-			Installation: &integreatlyv1alpha1.Installation{
-				Status: integreatlyv1alpha1.InstallationStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-						stageName: &integreatlyv1alpha1.InstallationStageStatus{
+			Installation: &integreatlyv1alpha1.RHMI{
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+						stageName: &integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseCompleted,
 						},
@@ -75,18 +75,18 @@ func TestHandleProductComplete(t *testing.T) {
 	cases := []EventsScenario{
 		{
 			Name:               "test product complete event handler on a stage thats unavailable",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ExpectedEventCount: 1,
 		},
 		{
 			Name: "test product complete event handler on a product thats unavailable",
-			Installation: &integreatlyv1alpha1.Installation{
-				Status: integreatlyv1alpha1.InstallationStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-						stageName: &integreatlyv1alpha1.InstallationStageStatus{
+			Installation: &integreatlyv1alpha1.RHMI{
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+						stageName: &integreatlyv1alpha1.RHMIStageStatus{
 							Name:     stageName,
 							Phase:    integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
+							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
 						},
 					},
 				},
@@ -95,14 +95,14 @@ func TestHandleProductComplete(t *testing.T) {
 		},
 		{
 			Name: "test product complete event handler on a product thats in progress",
-			Installation: &integreatlyv1alpha1.Installation{
-				Status: integreatlyv1alpha1.InstallationStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-						stageName: &integreatlyv1alpha1.InstallationStageStatus{
+			Installation: &integreatlyv1alpha1.RHMI{
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+						stageName: &integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
-								productName: &integreatlyv1alpha1.InstallationProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+								productName: &integreatlyv1alpha1.RHMIProductStatus{
 									Name:   productName,
 									Status: integreatlyv1alpha1.PhaseInProgress,
 								},
@@ -115,14 +115,14 @@ func TestHandleProductComplete(t *testing.T) {
 		},
 		{
 			Name: "test product complete event handler on a product thats completed",
-			Installation: &integreatlyv1alpha1.Installation{
-				Status: integreatlyv1alpha1.InstallationStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-						stageName: &integreatlyv1alpha1.InstallationStageStatus{
+			Installation: &integreatlyv1alpha1.RHMI{
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+						stageName: &integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
-								productName: &integreatlyv1alpha1.InstallationProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+								productName: &integreatlyv1alpha1.RHMIProductStatus{
 									Name:   productName,
 									Status: integreatlyv1alpha1.PhaseCompleted,
 								},
@@ -151,27 +151,27 @@ func TestHandleError(t *testing.T) {
 	cases := []EventsScenario{
 		{
 			Name:               "test error event handler with no errors and phase not failed",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ErrorMessage:       "failed installation",
 			ExpectedEventCount: 0,
 		},
 		{
 			Name:               "test error event handler with an error and phase not failed",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ExpectedEventCount: 0,
 			Error:              errors.New("an error occurred"),
 			ErrorMessage:       "failed installation",
 		},
 		{
 			Name:               "test error event handler with no errors and phase failed",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ExpectedEventCount: 0,
 			StatusPhase:        integreatlyv1alpha1.PhaseFailed,
 			ErrorMessage:       "failed installation",
 		},
 		{
 			Name:               "test error event handler with an error and phase failed",
-			Installation:       &integreatlyv1alpha1.Installation{},
+			Installation:       &integreatlyv1alpha1.RHMI{},
 			ExpectedEventCount: 1,
 			Error:              errors.New("an error occurred"),
 			ErrorMessage:       "failed installation",

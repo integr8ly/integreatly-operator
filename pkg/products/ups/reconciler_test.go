@@ -131,7 +131,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -141,7 +141,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: test custom resource is reconciled and phase complete returned",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "ups",
@@ -155,7 +155,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: Phase failed when error in creating custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient: &moqclient.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
@@ -172,7 +172,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: Phase failed when general error in finding custom resource",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient: &moqclient.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
@@ -186,7 +186,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			Name:           "UPS Test: Phase in progress when custom resource is not in phase complete",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test",
 					Namespace: "ups",
@@ -228,7 +228,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 		Name           string
 		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectErr      bool
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -238,7 +238,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			Name:           "UPS Test: Config is updated with route url correctly - phase complete",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeConfig:     basicConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
 			Recorder:       setupRecorder(),
@@ -248,7 +248,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
 			ExpectErr:      true,
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme),
 			Recorder:       setupRecorder(),
@@ -258,7 +258,7 @@ func TestReconciler_ReconcileHost(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
 			ExpectErr:      true,
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeConfig:     errorConfigMock(),
 			FakeClient:     fake.NewFakeClientWithScheme(scheme, basicRouteMock()),
 			Recorder:       setupRecorder(),

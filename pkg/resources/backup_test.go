@@ -36,7 +36,7 @@ func TestBackups(t *testing.T) {
 		BackupConfig  BackupConfig
 		Context       context.Context
 		ConfigManager *config.ConfigReadWriterMock
-		Instance      *integreatlyv1alpha1.Installation
+		Instance      *integreatlyv1alpha1.RHMI
 		Client        k8sclient.Client
 		Validation    func(e error, t *testing.T)
 	}{

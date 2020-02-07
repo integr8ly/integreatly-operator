@@ -33,8 +33,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func basicInstallation() *integreatlyv1alpha1.Installation {
-	return &integreatlyv1alpha1.Installation{
+func basicInstallation() *integreatlyv1alpha1.RHMI {
+	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -84,7 +84,7 @@ func TestReconciler_config(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -92,7 +92,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "could not read monitoring config",
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
@@ -103,7 +103,7 @@ func TestReconciler_config(t *testing.T) {
 		},
 		{
 			Name:         "test namespace is set without fail",
-			Installation: &integreatlyv1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.RHMI{},
 			FakeClient:   fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
@@ -118,7 +118,7 @@ func TestReconciler_config(t *testing.T) {
 			Name:           "test subscription phase with error from mpm",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy")
@@ -154,7 +154,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		Name           string
 		FakeClient     k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectError    bool
 		ExpectedError  string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -165,7 +165,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 			Name:           "Test reconcile custom resource returns success on successful create",
 			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
 			FakeConfig:     basicConfigMock(),
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Recorder:       setupRecorder(),
 		},
@@ -183,7 +183,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				},
 			},
 			FakeConfig:     basicConfigMock(),
-			Installation:   &integreatlyv1alpha1.Installation{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
 			ExpectedError:  "failed to create/update applicationmonitoring custom resource",
@@ -257,8 +257,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
-		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.RHMI
+		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -311,7 +311,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: basicInstallation(),
-			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 		},
 	}
@@ -373,8 +373,8 @@ func TestReconciler_testPhases(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
-		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.RHMI
+		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -398,7 +398,7 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
 		},
 		{
@@ -415,7 +415,7 @@ func TestReconciler_testPhases(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{}, &operatorsv1alpha1.Subscription{}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
 		},
 		{
@@ -444,7 +444,7 @@ func TestReconciler_testPhases(t *testing.T) {
 						}, nil
 				},
 			},
-			Product:  &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
 		},
 	}

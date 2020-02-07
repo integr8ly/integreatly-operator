@@ -62,16 +62,16 @@ code/run/service_account: setup/service_account
 code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
-deploy/crds/integreatly.org_installations_crd.yaml: pkg/apis/integreatly/v1alpha1/installation_types.go
+deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate openapi
-pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/installation_types.go
+pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate openapi
 
-pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/installation_types.go
+pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate k8s
 
 .PHONY: code/gen
-code/gen: setup/moq deploy/crds/integreatly.org_installations_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
+code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
 	find ./ -name *_moq.go -type f -not -path "./vendor/*" -delete
 	@go generate ./...
 
@@ -109,18 +109,18 @@ test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "registry.svc.ci.openshift.o
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
-test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-installation-cr.yml
+test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: install/olm
-install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/prepare/smtp cluster/deploy/integreatly-installation-cr.yml
+install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/prepare/smtp cluster/deploy/integreatly-rhmi-cr.yml
 
 .PHONY: test/e2e/olm
 test/e2e/olm: install/olm
 #ToDo Trigger test suite here
 
-.PHONY: cluster/deploy/integreatly-installation-cr.yml
-cluster/deploy/integreatly-installation-cr.yml: deploy/integreatly-installation-cr.yml
+.PHONY: cluster/deploy/integreatly-rhmi-cr.yml
+cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.bootstrap.phase}' | grep -q completed, bootstrap phase, 5m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
 	$(call wait_command, oc get Installation $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
@@ -157,7 +157,7 @@ cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepa
 .PHONY: cluster/prepare/olm
 cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
-	$(call wait_command, oc get crd installations.integreatly.org, installations.integreatly.org crd, 1m, 10)
+	$(call wait_command, oc get crd rhmis.integreatly.org, rhmis.integreatly.org crd, 1m, 10)
 	$(call wait_command, oc get deployments integreatly-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, integreatly-operator ,2m, 10)
 
 .PHONY: cluster/prepare/smtp
@@ -171,7 +171,7 @@ cluster/prepare/smtp:
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
-	@-oc delete -f deploy/integreatly-installation-cr.yml --timeout=240s --wait
+	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete -f deploy/role.yaml
 	@-oc delete -f deploy/role_binding.yaml
@@ -189,18 +189,18 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanadashboards.integreatly.org
 	@-oc delete crd grafanadatasources.integreatly.org
 	@-oc delete crd grafanas.integreatly.org
-	@-oc delete crd installations.integreatly.org
+	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
 
-.PHONY: deploy/integreatly-installation-cr.yml
-deploy/integreatly-installation-cr.yml:
+.PHONY: deploy/integreatly-rhmi-cr.yml
+deploy/integreatly-rhmi-cr.yml:
 	@echo "selfSignedCerts = $(SELF_SIGNED_CERTS)"
-	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-installation-cr.yaml | \
+	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-rhmi-cr.yaml | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
-	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-installation-cr.yml
-	@-oc create -f deploy/integreatly-installation-cr.yml
+	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
+	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
 .PHONY: gen/csv
 gen/csv:

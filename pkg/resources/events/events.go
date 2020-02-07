@@ -9,7 +9,7 @@ import (
 )
 
 // Emits a normal event upon successful completion of stage reconcile
-func HandleStageComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.Installation, stageName integreatlyv1alpha1.StageName) {
+func HandleStageComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, stageName integreatlyv1alpha1.StageName) {
 	stageStatus := installation.Status.Stages[stageName]
 	if stageStatus == nil || stageStatus.Phase != integreatlyv1alpha1.PhaseCompleted {
 		recorder.Event(installation, "Normal", integreatlyv1alpha1.EventInstallationCompleted, fmt.Sprintf("%s stage has reconciled successfully", stageName))
@@ -17,7 +17,7 @@ func HandleStageComplete(recorder record.EventRecorder, installation *integreatl
 }
 
 // Emits a normal event upon successful completion of product installation
-func HandleProductComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.Installation, stageName integreatlyv1alpha1.StageName, productName integreatlyv1alpha1.ProductName) {
+func HandleProductComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, stageName integreatlyv1alpha1.StageName, productName integreatlyv1alpha1.ProductName) {
 	stage := installation.Status.Stages[stageName]
 	if stage == nil || stage.Products[productName] == nil || stage.Products[productName].Status != integreatlyv1alpha1.PhaseCompleted {
 		recorder.Event(installation, "Normal", integreatlyv1alpha1.EventInstallationCompleted, fmt.Sprintf("%s was installed successfully", productName))
@@ -25,7 +25,7 @@ func HandleProductComplete(recorder record.EventRecorder, installation *integrea
 }
 
 // Emits a warning event when a processing error occurs during reconcile. It is only emitted on phase failed
-func HandleError(recorder record.EventRecorder, installation *integreatlyv1alpha1.Installation, phase integreatlyv1alpha1.StatusPhase, errorMessage string, err error) {
+func HandleError(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, phase integreatlyv1alpha1.StatusPhase, errorMessage string, err error) {
 	if err != nil && phase == integreatlyv1alpha1.PhaseFailed {
 		recorder.Event(installation, "Warning", integreatlyv1alpha1.EventProcessingError, fmt.Sprintf("%s:\n%s", errorMessage, err.Error()))
 	}

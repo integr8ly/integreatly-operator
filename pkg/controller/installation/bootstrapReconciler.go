@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
 		mpm:           mpm,
@@ -43,7 +43,7 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	Config        *config.ThreeScale
 	mpm           marketplace.MarketplaceInterface
-	installation  *integreatlyv1alpha1.Installation
+	installation  *integreatlyv1alpha1.RHMI
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
@@ -52,7 +52,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling bootstrap stage")
 
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
@@ -198,7 +198,7 @@ func getConsoleRouteCR(ctx context.Context, serverClient k8sclient.Client) (*rou
 	return consoleRouteCR, nil
 }
 
-func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.Installation) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 
 	githubOauthSecretCR := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

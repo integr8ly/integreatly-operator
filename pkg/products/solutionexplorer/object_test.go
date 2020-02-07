@@ -29,7 +29,7 @@ var webappRoute = &routev1.Route{
 	},
 }
 
-var installation = &integreatlyv1alpha1.Installation{
+var installation = &integreatlyv1alpha1.RHMI{
 	TypeMeta: metav1.TypeMeta{
 		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
@@ -39,37 +39,37 @@ var installation = &integreatlyv1alpha1.Installation{
 		Namespace: "integreatly-operator",
 		UID:       types.UID("xyz"),
 	},
-	Status: integreatlyv1alpha1.InstallationStatus{
-		Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{
-			"products": &integreatlyv1alpha1.InstallationStageStatus{
+	Status: integreatlyv1alpha1.RHMIStatus{
+		Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+			"products": &integreatlyv1alpha1.RHMIStageStatus{
 				Name:  "products",
 				Phase: integreatlyv1alpha1.PhaseCompleted,
-				Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
-					integreatlyv1alpha1.ProductFuse: &integreatlyv1alpha1.InstallationProductStatus{
+				Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductFuse: {
 						Name:    integreatlyv1alpha1.ProductFuse,
 						Host:    "http://syndesis.example.com",
 						Status:  integreatlyv1alpha1.PhaseCompleted,
 						Version: "0.0.1",
 					},
-					integreatlyv1alpha1.ProductRHSSOUser: &integreatlyv1alpha1.InstallationProductStatus{
+					integreatlyv1alpha1.ProductRHSSOUser: {
 						Name:    integreatlyv1alpha1.ProductRHSSOUser,
 						Host:    "http://sso.example.com",
 						Status:  integreatlyv1alpha1.PhaseCompleted,
 						Version: "0.0.1",
 					},
-					integreatlyv1alpha1.ProductCodeReadyWorkspaces: &integreatlyv1alpha1.InstallationProductStatus{
+					integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
 						Name:    integreatlyv1alpha1.ProductCodeReadyWorkspaces,
 						Host:    "http://codeready.example.com",
 						Status:  integreatlyv1alpha1.PhaseCompleted,
 						Version: "0.0.1",
 					},
-					integreatlyv1alpha1.ProductAMQStreams: &integreatlyv1alpha1.InstallationProductStatus{
+					integreatlyv1alpha1.ProductAMQStreams: {
 						Name:    integreatlyv1alpha1.ProductCodeReadyWorkspaces,
 						Host:    "",
 						Status:  integreatlyv1alpha1.PhaseCompleted,
 						Version: "0.0.1",
 					},
-					integreatlyv1alpha1.Product3Scale: &integreatlyv1alpha1.InstallationProductStatus{
+					integreatlyv1alpha1.Product3Scale: {
 						Name:    integreatlyv1alpha1.Product3Scale,
 						Host:    "http://3scale.example.com",
 						Status:  integreatlyv1alpha1.PhaseCompleted,

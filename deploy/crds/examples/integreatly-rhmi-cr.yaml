@@ -1,5 +1,5 @@
 apiVersion: integreatly.org/v1alpha1
-kind: Installation
+kind: RHMI
 metadata:
   name: INSTALLATION_NAME
 spec:
