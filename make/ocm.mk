@@ -5,6 +5,10 @@ OCM=ocm
 OCM_CLUSTER_NAME=rhmi-$(shell date +"%y%m%d-%H%M")
 # Lifespan in hours from the time the cluster.json was created
 OCM_CLUSTER_LIFESPAN=4
+# Namespace the RHMI operator is expected to be running in after addon installation
+RHMI_OPERATOR_NS=redhat-rhmi-operator
+# Path to the new cluster's kubeconfig
+CLUSTER_KUBECONFIG="ocm/cluster.kubeconfig"
 
 define get_cluster_id
 	@$(eval OCM_CLUSTER_ID=$(shell mkdir -p ocm && touch ocm/cluster-details.json && jq -r .id < ocm/cluster-details.json ))
@@ -15,7 +19,7 @@ define get_kubeadmin_password
 endef
 
 define save_cluster_credentials
-	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .kubeconfig > ocm/cluster.kubeconfig
+	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .kubeconfig > $(CLUSTER_KUBECONFIG)
 	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
 endef
 
@@ -68,9 +72,15 @@ ocm/cluster/send_create_request:
 ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
-	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation -n redhat-rhmi-operator | grep -q integreatly, installation CR created, 10m, 30)
-	$(call wait_command, oc --config=ocm/cluster.kubeconfig get installation integreatly -n redhat-rhmi-operator -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
-	@oc --config=ocm/cluster.kubeconfig get installation integreatly -n redhat-rhmi-operator -o json | jq -r '.status.stages'
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get installation -n $(RHMI_OPERATOR_NS) | grep -q integreatly, installation CR created, 10m, 30)
+	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic rhmi-smtp -n $(RHMI_OPERATOR_NS) \
+		--from-literal=host=smtp.example.com \
+		--from-literal=username=dummy \
+		--from-literal=password=dummy \
+		--from-literal=port=587 \
+		--from-literal=tls=true
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get installation integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
+	@oc --config=$(CLUSTER_KUBECONFIG) get installation integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
