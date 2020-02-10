@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+# This script extracts the most recent manifests from an image containing a manifests bundle and processes it into a version that works with this operator.
+#
+# Example:
+#
+#$ ./process-image-manifests registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-3scale-rhel7-operator-metadata:1.11.0-2
+#$ tree manifests/registry-proxy.engineering.redhat.com/rh-osbs/ -L 2
+#manifests/registry-proxy.engineering.redhat.com/rh-osbs/
+#└── 3scale-amp2-3scale-rhel7-operator-metadata:1.11.0-2
+#    ├── 0.3.0
+#    ├── 0.4.0
+#    ├── 0.4.1
+#    ├── 0.4.2
+#    ├── 0.5.0
+#    └── 3scale-operator.package.yaml
+
+set -e
+
+WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+MANIFESTS_DIR=${WORK_DIR}/../manifests
+MANIFEST_TMP_DIR=${MANIFESTS_DIR}/temp
+IMAGE=$1
+FOLDER_PRODUCT_NAME=3scale
+
+cleanup (){
+    echo "Cleaning up ${MANIFEST_TMP_DIR}"
+    rm -rf ${MANIFEST_TMP_DIR}
+}
+
+trap 'cleanup' EXIT
+
+extract_manifests_from_image() {
+    echo "Creating ${MANIFEST_TMP_DIR} directory"
+    mkdir -p ${MANIFEST_TMP_DIR}
+    echo "Extracting manifests from image '${IMAGE}' to ${MANIFEST_TMP_DIR}"
+    oc image extract $IMAGE --path /manifests/:${MANIFEST_TMP_DIR} --confirm
+    ls -la ${MANIFEST_TMP_DIR}
+}
+
+get_current_csv() {
+    echo "Getting current csv  from existing package.yaml"
+    CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels[0].currentCSV | sed -e s/^3scale-operator.v//)
+    echo $CURRENT_CSV
+}
+
+get_new_csv() {
+    IMAGE_MANIFEST_FILE=$(find ${MANIFEST_TMP_DIR} -name "*.package.yaml")
+    DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml defaultChannel)
+    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV | sed s/^3scale-operator.v//)
+    NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
+}
+
+copy_new_csv() {
+    echo "Copying process manifests to ${MANIFESTS_DIR}"
+    # Need to check here that the version is not the same, if it is do we need to do an update?
+    NEW_CSV_FOLDER=3scale-$NEW_CSV_SEMVER
+    mv ${MANIFEST_TMP_DIR}/$NEW_CSV_SEMVER ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER}
+    mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/
+}
+
+update_new_csv() {
+    echo "updating csv"
+    echo "${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
+    yq d -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
+    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
+}
+
+update_package_yaml() {
+    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels.(name==integreatly).currentCSV 3scale-operator.v0.5.0
+}
+
+process_image() {
+   echo "~~~~~~"
+   echo "Process Image '$IMAGE'"
+   echo "~~~~~~"
+   extract_manifests_from_image
+   get_current_csv
+   get_new_csv
+   copy_new_csv
+   update__new_csv
+   update_package_yaml
+}
+
+process_image
