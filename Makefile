@@ -113,7 +113,7 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: install/olm
-install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/deploy/integreatly-installation-cr.yml
+install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/prepare/smtp cluster/deploy/integreatly-installation-cr.yml
 
 .PHONY: test/e2e/olm
 test/e2e/olm: install/olm
@@ -162,7 +162,7 @@ cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
-	@-oc create secret generic rhmi-smtp -n $(NAMESPACE) \
+	@-oc create secret generic $(INSTALLATION_PREFIX)-smtp -n $(NAMESPACE) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \

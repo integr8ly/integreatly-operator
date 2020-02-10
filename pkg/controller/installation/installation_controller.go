@@ -140,7 +140,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
 				NamespacePrefix: DefaultInstallationPrefix,
 				SelfSignedCerts: false,
-				SMTPSecret:      "rhmi-smtp",
+				SMTPSecret:      DefaultInstallationPrefix + "smtp",
 			},
 		}
 
