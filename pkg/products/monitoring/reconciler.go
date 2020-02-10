@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -200,6 +201,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileBlackboxExporterConfig(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileBlackboxExporterConfig", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox exporter config", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -264,6 +272,53 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 	}
 
 	r.Logger.Info(fmt.Sprintf("operation result of creating additional scrape config secret was %v", or))
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// Update the blackbox exporter config for integreatly use
+// e.g. set tls cert config if using self signed certs
+func (r *Reconciler) reconcileBlackboxExporterConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	// Read the blackbox exporter configmap, which should already exist
+	blackboxExporterConfigmap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetBlackboxExporterConfigmapName(),
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: blackboxExporterConfigmap.Name, Namespace: blackboxExporterConfigmap.Namespace}, blackboxExporterConfigmap); err != nil {
+		logrus.Errorf("serverClient.Get %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting blackbox exporter configmap.: %w", err)
+	}
+
+	// Build the full blackbox config based on the Installation CR config
+	if r.extraParams == nil {
+		r.extraParams = map[string]string{}
+	}
+	r.extraParams["selfSignedCerts"] = strconv.FormatBool(r.installation.Spec.SelfSignedCerts)
+	templateHelper := NewTemplateHelper(r.extraParams)
+	blackboxExporterConfig, err := templateHelper.loadTemplate(r.Config.GetBlackboxExporterConfigTemplateName())
+	if err != nil {
+		logrus.Errorf("templateHelper.loadTemplate %v", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error loading template: %w", err)
+	}
+
+	// Update the configmap if needed
+	logrus.Infof("blackboxExporterConfigmap.Data[r.Config.GetBlackboxExporterConfigmapKey()] %s", blackboxExporterConfigmap.Data[r.Config.GetBlackboxExporterConfigmapKey()])
+	logrus.Infof("blackboxExporterConfig %s", string(blackboxExporterConfig))
+	// TODO: remove any logs above when no longer needed
+	if blackboxExporterConfigmap.Data[r.Config.GetBlackboxExporterConfigmapKey()] != string(blackboxExporterConfig) {
+		// TODO: logs for when doing this, or not doing it
+		blackboxExporterConfigmap.Data = map[string]string{
+			r.Config.GetBlackboxExporterConfigmapKey(): string(blackboxExporterConfig),
+		}
+		if err := serverClient.Update(ctx, blackboxExporterConfigmap); err != nil {
+			logrus.Errorf("serverClient.Update %v", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error updating blackbox exporter configmap: %w", err)
+		}
+
+		// TODO: Kill prometheus pod to redeploy it
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

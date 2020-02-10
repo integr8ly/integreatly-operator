@@ -102,6 +102,18 @@ func (m *Monitoring) GetAdditionalScrapeConfigSecretKey() string {
 	return "integreatly-additional.yaml"
 }
 
+func (m *Monitoring) GetBlackboxExporterConfigmapName() string {
+	return "blackbox-exporter-config"
+}
+
+func (m *Monitoring) GetBlackboxExporterConfigmapKey() string {
+	return "blackbox.yml"
+}
+
+func (m *Monitoring) GetBlackboxExporterConfigTemplateName() string {
+	return "blackbox/blackbox-exporter-config.yaml"
+}
+
 func (m *Monitoring) GetPrometheusRetention() string {
 	return "15d"
 }
