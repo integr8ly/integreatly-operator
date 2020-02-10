@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -131,16 +132,22 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		logrus.Infof("Creating a %s installation CR as no CR installations were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
 
+		useClusterStorage, err := useClusterStorage()
+		if err != nil {
+			return fmt.Errorf("Invalid value for USE_CLUSTER_STORAGE environment variable: %w", err)
+		}
+
 		installation = &integreatlyv1alpha1.Installation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      DefaultInstallationName,
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.InstallationSpec{
-				Type:            string(integreatlyv1alpha1.InstallationTypeManaged),
-				NamespacePrefix: DefaultInstallationPrefix,
-				SelfSignedCerts: false,
-				SMTPSecret:      DefaultInstallationPrefix + "smtp",
+				Type:              string(integreatlyv1alpha1.InstallationTypeManaged),
+				NamespacePrefix:   DefaultInstallationPrefix,
+				SelfSignedCerts:   false,
+				SMTPSecret:        DefaultInstallationPrefix + "smtp",
+				UseClusterStorage: useClusterStorage,
 			},
 		}
 
@@ -155,6 +162,25 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	}
 
 	return nil
+}
+
+// Whether to use cluster storage or not, based on an environment variable. If the variable
+// is not present, defaults to true
+func useClusterStorage() (bool, error) {
+	envValue, found := os.LookupEnv("USE_CLUSTER_STORAGE")
+
+	// Default to true if not present
+	if !found {
+		return true, nil
+	}
+
+	value, err := strconv.ParseBool(envValue)
+
+	if err != nil {
+		return false, err
+	}
+
+	return value, nil
 }
 
 var _ reconcile.Reconciler = &ReconcileInstallation{}
