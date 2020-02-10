@@ -369,17 +369,27 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, installation *
 		},
 	}
 
-	rules := []monitoringv1.Rule{}
-	rules = append(rules, monitoringv1.Rule{
-		Alert: fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace %s", r.Config.GetNamespace()),
-		Annotations: map[string]string{
-			"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-			"message": "AMQ Online Console is not available",
+	rules := []monitoringv1.Rule{
+		{
+			Alert: fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace %s", r.Config.GetNamespace()),
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"message": "AMQ Online Console is not available",
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
+			For:    "60s",
+			Labels: map[string]string{"severity": "critical"},
+		}, {
+			Alert: fmt.Sprintf("AMQ-SLI-1.3: Keycloak is not available in namespace %s", r.Config.GetNamespace()),
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"message": "Keycloak is not available, addresses requiring user authentication will not receive messages",
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"standard-authservice\",namespace=\"%s\"}==2)", r.Config.GetNamespace())),
+			For:    "60s",
+			Labels: map[string]string{"severity": "critical"},
 		},
-		Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
-		For:    "60s",
-		Labels: map[string]string{"severity": "critical"},
-	})
+	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
