@@ -55,7 +55,7 @@ type ResourceTypeStatus struct {
 // ResourceTypeSnapshotStatus Represents the basic status information provided by snapshot controller
 // +k8s:openapi-gen=true
 type ResourceTypeSnapshotStatus struct {
-	SnapshotID string        `json:"snapshotId,omitempty"`
+	SnapshotID string        `json:"snapshotID,omitempty"`
 	Phase      StatusPhase   `json:"phase,omitempty"`
 	Message    StatusMessage `json:"message,omitempty"`
 }

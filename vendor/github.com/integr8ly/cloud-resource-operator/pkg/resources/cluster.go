@@ -3,6 +3,7 @@ package resources
 import (
 	"bytes"
 	"context"
+	v1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/config/v1"
 	"io"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -13,7 +14,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	v1 "github.com/openshift/api/config/v1"
 	errorUtil "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,6 +25,17 @@ func GetClusterID(ctx context.Context, c client.Client) (string, error) {
 		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
 	}
 	return infra.Status.InfrastructureName, nil
+}
+
+func GetAWSRegion(ctx context.Context, c client.Client) (string, error) {
+	infra := &v1.Infrastructure{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
+		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
+	}
+	if infra.Status.Platform == v1.AWSPlatformType {
+		return infra.Status.PlatformStatus.AWS.Region, nil
+	}
+	return "", errorUtil.New("infrastructure does not container aws region")
 }
 
 //go:generate moq -out cluster_moq.go . PodCommander
