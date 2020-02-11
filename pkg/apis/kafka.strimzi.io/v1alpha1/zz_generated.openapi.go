@@ -11,9 +11,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.Kafka":       schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec":   schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaSpec(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus": schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaStatus(ref),
+		"github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.Kafka":       schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref),
+		"github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec":   schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaSpec(ref),
+		"github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus": schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaStatus(ref),
 	}
 }
 
@@ -45,19 +45,19 @@ func schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref common.ReferenceCallback)
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec"),
+							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus"),
+							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec", "github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -71,24 +71,24 @@ func schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaSpec(ref common.ReferenceCallb
 					"kafka": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Ref:         ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka"),
+							Ref:         ref("github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka"),
 						},
 					},
 					"zookeeper": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"),
+							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"),
 						},
 					},
 					"entityOperator": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator"),
+							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"},
+			"github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator", "github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka", "github.com/briangallagher/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"},
 	}
 }
 

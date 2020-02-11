@@ -106,6 +106,12 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 		return err
 	}
 
+	// Watch for changes to groups
+	err = c.Watch(&source.Kind{Type: &usersv1.Group{}}, enqueueAllInstallations)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
