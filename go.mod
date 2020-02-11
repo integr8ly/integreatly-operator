@@ -13,7 +13,6 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.9.0
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 	github.com/integr8ly/keycloak-client v0.0.0-20200129150536-05f149c2d427
 	github.com/keycloak/keycloak-operator v0.0.0-20200129141231-e99da8a15034
 	github.com/matryer/moq v0.0.0-20200125112110-7615cbe60268 // indirect

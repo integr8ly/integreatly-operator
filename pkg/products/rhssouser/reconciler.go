@@ -965,6 +965,10 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 	executionID := ""
 	for _, execution := range executions {
 		if execution.ProviderID == "identity-provider-redirector" {
+			if execution.AuthenticationConfig != "" {
+				r.logger.Infof("Authenticator Config exists on master realm, rhsso-user")
+				return integreatlyv1alpha1.PhaseCompleted, nil
+			}
 			executionID = execution.ID
 			break
 		}
