@@ -254,11 +254,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 
-	//phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
-	//if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-	//	events.HandleError(r.recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
-	//	return phase, err
-	//}
+	phase, err := r.reconcileBrowserAuthFlow(ctx, kc, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile browser authentication flow", err)
+		return phase, err
+	}
 
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
@@ -950,36 +950,36 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 // Add authenticator config to the master realm. Because it is the master realm we need to make direct calls
 // with the Keycloak client. This config allows for the automatic redirect to openshift-v4 as the IDP for Keycloak,
 // as apposed to presenting the user with multiple login options.
-//func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.Keycloak, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-//
-//	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
-//	if err != nil {
-//		return integreatlyv1alpha1.PhaseFailed, err
-//	}
-//
-//	executions, err := kcClient.ListAuthenticationExecutionsForFlow("browser", masterRealmName)
-//	if err != nil {
-//		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to retrieve execution flows on master realm ")
-//	}
-//
-//	executionID := ""
-//	for _, execution := range executions {
-//		if execution.ProviderID == "identity-provider-redirector" {
-//			executionID = execution.ID
-//			break
-//		}
-//	}
-//	if executionID == "" {
-//		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to find relevant ProviderID in Authentication Executions")
-//	}
-//
-//	config := keycloak.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
-//	err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
-//	if err != nil {
-//		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed ot ")
-//	}
-//
-//	r.logger.Infof("Successfully created Authenticator Config")
-//
-//	return integreatlyv1alpha1.PhaseCompleted, nil
-//}
+func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.Keycloak, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	executions, err := kcClient.ListAuthenticationExecutionsForFlow("browser", masterRealmName)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to retrieve execution flows on master realm ")
+	}
+
+	executionID := ""
+	for _, execution := range executions {
+		if execution.ProviderID == "identity-provider-redirector" {
+			executionID = execution.ID
+			break
+		}
+	}
+	if executionID == "" {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to find relevant ProviderID in Authentication Executions")
+	}
+
+	config := keycloak.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
+	err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed ot ")
+	}
+
+	r.logger.Infof("Successfully created Authenticator Config")
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
