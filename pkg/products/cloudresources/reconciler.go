@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -191,7 +190,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	blobStorageName := fmt.Sprintf("backups-blobstorage-%s", installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, defaultInstallationNamespace, installation.Spec.Type, "production", blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
-		ownerutil.EnsureOwner(cr, installation)
 		return nil
 	})
 	if err != nil {

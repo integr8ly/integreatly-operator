@@ -3,7 +3,7 @@ kind: Installation
 metadata:
   name: example-installation
 spec:
-  type: workshop
+  type: managed
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
   useClusterStorage: true

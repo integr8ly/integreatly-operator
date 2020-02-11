@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -667,7 +666,6 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		ownerutil.EnsureOwner(kcClient, r.installation)
 		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
 		return nil
 	})

@@ -26,8 +26,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -419,7 +417,6 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient k
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		ownerutil.EnsureOwner(kcClient, r.installation)
 		kcClient.Spec = getKeycloakClientSpec(cheURL)
 		return nil
 	})
@@ -509,7 +506,6 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 		},
 	}
 
-	ownerutil.EnsureOwner(cheCluster, r.installation)
 	owner.AddIntegreatlyOwnerAnnotations(cheCluster, r.installation)
 	if err := serverClient.Create(ctx, cheCluster); err != nil {
 		return nil, fmt.Errorf("failed to create che cluster resource: %w", err)
