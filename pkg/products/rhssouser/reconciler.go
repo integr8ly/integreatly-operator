@@ -11,7 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	usersv1 "github.com/openshift/api/user/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -354,7 +353,6 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, 
 	}
 
 	return controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
-		ownerutil.EnsureOwner(kcUser, inst)
 		kcUser.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: getMasterLabels(),
 		}
