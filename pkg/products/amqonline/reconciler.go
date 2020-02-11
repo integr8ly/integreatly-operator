@@ -362,6 +362,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 
 func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, installation *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
+	keycloakServicePortCount := "2"
 	rule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi-amq-online-sli",
@@ -371,21 +372,30 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, installation *
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace %s", r.Config.GetNamespace()),
+			Alert: fmt.Sprintf("AMQOnlineConsoleUnavailable"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": "AMQ Online Console is not available",
+				"message": fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace \"%s\"", r.Config.GetNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
 			For:    "60s",
 			Labels: map[string]string{"severity": "critical"},
 		}, {
-			Alert: fmt.Sprintf("AMQ-SLI-1.3: Keycloak is not available in namespace %s", r.Config.GetNamespace()),
+			Alert: fmt.Sprintf("AMQOnlineKeycloakUnavailable"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": "Keycloak is not available, addresses requiring user authentication will not receive messages",
+				"message": fmt.Sprintf("AMQ-SLI-1.3: Keycloak is not available in namespace %s", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"standard-authservice\",namespace=\"%s\"}==2)", r.Config.GetNamespace())),
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"standard-authservice\",namespace=\"%s\"}==\"%s\")", r.Config.GetNamespace(), keycloakServicePortCount)),
+			For:    "60s",
+			Labels: map[string]string{"severity": "critical"},
+		}, {
+			Alert: fmt.Sprintf("AMQOnlineAddressSpace"),
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"message": fmt.Sprintf("AMQ-SLI-1.1: AMQ Online console is not available in namespace \"%s\"", r.Config.GetNamespace()),
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
 			For:    "60s",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -404,7 +414,7 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, installation *
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating enmasse reconcilePrometheusRule: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse reconcilePrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
