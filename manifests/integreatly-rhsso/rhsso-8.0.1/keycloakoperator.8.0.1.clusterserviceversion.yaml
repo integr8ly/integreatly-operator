@@ -185,7 +185,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/wei_lee/keycloak-operator:intly
+                    image: quay.io/pb82/keycloak-operator:all-rhmi-branches
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
@@ -214,6 +214,7 @@ spec:
                 - configmaps
                 - secrets
               verbs:
+                - delete              
                 - list
                 - get
                 - create
