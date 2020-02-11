@@ -48,22 +48,25 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	amqOnlineConfig, err := configManager.ReadAMQOnline()
+	config, err := configManager.ReadAMQOnline()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve amq online config: %w", err)
 	}
 
-	if amqOnlineConfig.GetNamespace() == "" {
-		amqOnlineConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	}
+	if config.GetOperatorNamespace() == "" {
+		config.SetOperatorNamespace(config.GetNamespace())
 	}
 
-	amqOnlineConfig.SetBlackboxTargetPath("/oauth/healthz")
+	config.SetBlackboxTargetPath("/oauth/healthz")
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        amqOnlineConfig,
+		Config:        config,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),

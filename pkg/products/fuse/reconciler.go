@@ -54,15 +54,22 @@ type Reconciler struct {
 
 // NewReconciler instantiates and returns a reference to a new Reconciler.
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	fuseConfig, err := configManager.ReadFuse()
+	config, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
 	}
 
-	if fuseConfig.GetNamespace() == "" {
-		fuseConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
-	if err = fuseConfig.Validate(); err != nil {
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
+	}
+	if err = config.Validate(); err != nil {
 		return nil, fmt.Errorf("fuse config is not valid: %w", err)
 	}
 
@@ -70,7 +77,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        fuseConfig,
+		Config:        config,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),

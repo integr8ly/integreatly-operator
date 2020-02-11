@@ -70,7 +70,11 @@ func (a *AMQOnline) GetNamespace() string {
 }
 
 func (a *AMQOnline) GetOperatorNamespace() string {
-	return a.config["NAMESPACE"]
+	return a.config["OPERATOR_NAMESPACE"]
+}
+
+func (a *AMQOnline) SetOperatorNamespace(newNamespace string) {
+	a.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (a *AMQOnline) GetLabelSelector() string {

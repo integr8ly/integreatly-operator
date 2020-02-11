@@ -37,7 +37,11 @@ func (s *SolutionExplorer) SetNamespace(newNamespace string) {
 }
 
 func (s *SolutionExplorer) GetOperatorNamespace() string {
-	return s.config["NAMESPACE"] + "-operator"
+	return s.config["OPERATOR_NAMESPACE"]
+}
+
+func (s *SolutionExplorer) SetOperatorNamespace(newNamespace string) {
+	s.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (s *SolutionExplorer) Read() ProductConfig {

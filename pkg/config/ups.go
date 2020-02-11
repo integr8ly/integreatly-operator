@@ -53,7 +53,11 @@ func (u *Ups) SetNamespace(newNamespace string) {
 }
 
 func (u *Ups) GetOperatorNamespace() string {
-	return u.config["NAMESPACE"] + "-operator"
+	return u.config["OPERATOR_NAMESPACE"]
+}
+
+func (u *Ups) SetOperatorNamespace(newNamespace string) {
+	u.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (u *Ups) Read() ProductConfig {

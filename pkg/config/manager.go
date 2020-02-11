@@ -7,8 +7,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	"gopkg.in/yaml.v2"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -226,14 +224,12 @@ func (m *Manager) WriteConfig(config ConfigReadable) error {
 	err = m.Client.Get(m.context, k8sclient.ObjectKey{Name: m.cfgmap.Name, Namespace: m.Namespace}, m.cfgmap)
 	if errors.IsNotFound(err) {
 		m.cfgmap.Data = map[string]string{string(config.GetProductName()): string(stringConfig)}
-		ownerutil.EnsureOwner(m.cfgmap, m.installation)
 		return m.Client.Create(m.context, m.cfgmap)
 	}
 	if m.cfgmap.Data == nil {
 		m.cfgmap.Data = map[string]string{}
 	}
 	m.cfgmap.Data[string(config.GetProductName())] = string(stringConfig)
-	ownerutil.EnsureOwner(m.cfgmap, m.installation)
 	return m.Client.Update(m.context, m.cfgmap)
 }
 

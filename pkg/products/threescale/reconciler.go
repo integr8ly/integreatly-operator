@@ -64,18 +64,25 @@ const (
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
-	tsConfig, err := configManager.ReadThreeScale()
+	config, err := configManager.ReadThreeScale()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
 	}
-	if tsConfig.GetNamespace() == "" {
-		tsConfig.SetNamespace(ns)
-		configManager.WriteConfig(tsConfig)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(ns)
+		configManager.WriteConfig(config)
 	}
-	tsConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
+	}
+	config.SetBlackboxTargetPathForAdminUI("/p/login/")
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        tsConfig,
+		Config:        config,
 		mpm:           mpm,
 		installation:  installation,
 		tsClient:      tsClient,

@@ -59,17 +59,26 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
-	monitoringConfig, err := configManager.ReadMonitoring()
+	config, err := configManager.ReadMonitoring()
 
 	if err != nil {
 		return nil, err
 	}
 
-	monitoringConfig.SetNamespacePrefix(installation.Spec.NamespacePrefix)
-	monitoringConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	config.SetNamespacePrefix(installation.Spec.NamespacePrefix)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	}
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
+	}
 
 	return &Reconciler{
-		Config:        monitoringConfig,
+		Config:        config,
 		extraParams:   make(map[string]string),
 		ConfigManager: configManager,
 		Logger:        logger,

@@ -66,18 +66,25 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, apiUrl string, keycloakClientFactory keycloakCommon.KeycloakClientFactory) (*Reconciler, error) {
-	rhssoUserConfig, err := configManager.ReadRHSSOUser()
+	config, err := configManager.ReadRHSSOUser()
 	if err != nil {
 		return nil, err
 	}
-	if rhssoUserConfig.GetNamespace() == "" {
-		rhssoUserConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultRhssoNamespace)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultRhssoNamespace)
+	}
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		Config:                rhssoUserConfig,
+		Config:                config,
 		ConfigManager:         configManager,
 		mpm:                   mpm,
 		installation:          installation,

@@ -110,6 +110,13 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"operatorsInProductNamespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OperatorsInProductNamespace is a flag that decides if the product operators should be installed in the product namespace (when set to true) or in standalone namespace (when set to false, default). Standalone namespace will be used only for those operators that support it.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"smtpSecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SMTPSecret is the name of a secret in the installation namespace containing SMTP connection details. The secret must contain the following fields:\n\nhost port tls username password",

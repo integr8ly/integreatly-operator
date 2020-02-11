@@ -73,15 +73,22 @@ type productInfo struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, resolver OauthResolver, recorder record.EventRecorder) (*Reconciler, error) {
-	seConfig, err := configManager.ReadSolutionExplorer()
+	config, err := configManager.ReadSolutionExplorer()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve solution explorer config: %w", err)
 	}
 
-	if seConfig.GetNamespace() == "" {
-		seConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultName)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultName)
 	}
-	if err = seConfig.Validate(); err != nil {
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
+	}
+	if err = config.Validate(); err != nil {
 		return nil, fmt.Errorf("solution explorer config is not valid: %w", err)
 	}
 
@@ -89,7 +96,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        seConfig,
+		Config:        config,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
