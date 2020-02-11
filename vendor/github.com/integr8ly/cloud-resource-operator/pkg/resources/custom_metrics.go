@@ -3,9 +3,12 @@ package resources
 import (
 	"time"
 
+	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	errorUtil "github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -14,7 +17,7 @@ const (
 )
 
 var (
-	// create the map of vectors
+	//MetricVecs create the map of vectors
 	MetricVecs map[string]prometheus.GaugeVec
 	logger     *logrus.Entry
 )
@@ -23,7 +26,7 @@ func init() {
 	StartGaugeVector()
 }
 
-// periodic loop that is wiping all known vectors.
+//StartGaugeVector periodic loop that is wiping all known vectors.
 func StartGaugeVector() {
 	MetricVecs = map[string]prometheus.GaugeVec{}
 	logger = logrus.WithFields(logrus.Fields{"custom_metrics": "StartGaugeVector"})
@@ -39,7 +42,7 @@ func StartGaugeVector() {
 	}()
 }
 
-// Set exports a Prometheus Gauge
+//SetMetric Set exports a Prometheus Gauge
 func SetMetric(name string, labels map[string]string, value float64) error {
 	// set vector value
 	gv, ok := MetricVecs[name]
@@ -62,10 +65,48 @@ func SetMetric(name string, labels map[string]string, value float64) error {
 	return nil
 }
 
-// Set current time wraps set metric
+//SetMetricCurrentTime Set current time wraps set metric
 func SetMetricCurrentTime(name string, labels map[string]string) error {
 	if err := SetMetric(name, labels, float64(time.Now().UnixNano())/1e9); err != nil {
 		return errorUtil.Wrap(err, "unable to set current time gauge vector")
 	}
 	return nil
+}
+
+func createPrometheusRuleObject(ruleName string, namespace string, groups []prometheusv1.RuleGroup) *prometheusv1.PrometheusRule {
+	return &prometheusv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ruleName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"monitoring-key": "middleware",
+			},
+		},
+		Spec: prometheusv1.PrometheusRuleSpec{
+			Groups: groups,
+		},
+	}
+}
+
+// CreatePrometheusRule will create a PrometheusRule object
+func CreatePrometheusRule(ruleName string, namespace string, alertRuleName string, description string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
+	alertGroupName := alertRuleName + "Group"
+
+	groups := []prometheusv1.RuleGroup{
+		{
+			Name: alertGroupName,
+			Rules: []prometheusv1.Rule{
+				{
+					Alert:  alertRuleName,
+					Expr:   alertExp,
+					Labels: labels,
+					Annotations: map[string]string{
+						"description": description,
+					},
+				},
+			},
+		},
+	}
+
+	return createPrometheusRuleObject(ruleName, namespace, groups), nil
 }

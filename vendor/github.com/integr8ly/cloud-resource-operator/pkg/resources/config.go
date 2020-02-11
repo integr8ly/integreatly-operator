@@ -18,7 +18,7 @@ const (
 	SuccessReconcileTime     = time.Second * 60
 )
 
-// returns envar for reconcile time else returns default time
+//GetForcedReconcileTimeOrDefault returns envar for reconcile time else returns default time
 func GetForcedReconcileTimeOrDefault(defaultTo time.Duration) time.Duration {
 	recTime, exist := os.LookupEnv(EnvForceReconcileTimeout)
 	if exist {

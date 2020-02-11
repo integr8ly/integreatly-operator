@@ -5,17 +5,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SMTPCredentialsSpec defines the desired state of SMTPCredentials
+// SMTPCredentialSetSpec defines the desired state of SMTPCredentials
 // +k8s:openapi-gen=true
 type SMTPCredentialSetSpec types.ResourceTypeSpec
 
-// SMTPCredentialsStatus defines the observed state of SMTPCredentials
+// SMTPCredentialSetStatus defines the observed state of SMTPCredentials
 // +k8s:openapi-gen=true
 type SMTPCredentialSetStatus types.ResourceTypeStatus
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// SMTPCredentials is the Schema for the smtpcredentialset API
+// SMTPCredentialSet is the Schema for the smtpcredentialset API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 type SMTPCredentialSet struct {
@@ -28,7 +28,7 @@ type SMTPCredentialSet struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// SMTPCredentialsList contains a list of SMTPCredentials
+// SMTPCredentialSetList contains a list of SMTPCredentials
 type SMTPCredentialSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
