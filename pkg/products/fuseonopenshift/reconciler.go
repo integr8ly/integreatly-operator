@@ -11,8 +11,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -188,7 +186,6 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 		}
 
 		cfgMap.Data = configMapData
-		ownerutil.EnsureOwner(cfgMap, r.installation)
 		if err := serverClient.Create(ctx, cfgMap); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 		}

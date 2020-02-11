@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -395,7 +394,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
-		ownerutil.EnsureOwner(kc, installation)
 		kc.Spec.Extensions = []string{
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
 		}
@@ -418,7 +416,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	}
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcr, func() error {
-		ownerutil.EnsureOwner(kcr, installation)
 		kcr.Spec.RealmOverrides = []*keycloak.RedirectorIdentityProviderOverride{
 			{
 				IdentityProvider: idpAlias,
@@ -804,7 +801,6 @@ func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keyclo
 	}
 
 	return controllerutil.CreateOrUpdate(ctx, serverClient, selector, func() error {
-		ownerutil.EnsureOwner(selector, inst)
 		selector.Spec.RealmSelector = &metav1.LabelSelector{
 			MatchLabels: GetInstanceLabels(),
 		}
