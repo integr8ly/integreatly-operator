@@ -11,9 +11,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.Installation":       schema_pkg_apis_integreatly_v1alpha1_Installation(ref),
-		"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec":   schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref),
-		"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus": schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.Installation":       schema_pkg_apis_integreatly_v1alpha1_Installation(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec":   schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus": schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref),
 	}
 }
 
@@ -45,19 +45,19 @@ func schema_pkg_apis_integreatly_v1alpha1_Installation(ref common.ReferenceCallb
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec", "github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -101,7 +101,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 					},
 					"pullSecret": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
 						},
 					},
 					"useClusterStorage": {
@@ -122,7 +122,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
 	}
 }
 
@@ -141,7 +141,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"),
+										Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"),
 									},
 								},
 							},
@@ -182,6 +182,6 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/briangallagher/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"},
 	}
 }

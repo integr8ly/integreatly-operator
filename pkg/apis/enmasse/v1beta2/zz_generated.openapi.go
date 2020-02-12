@@ -11,8 +11,8 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlan":      schema_pkg_apis_enmasse_v1beta2_AddressPlan(ref),
-		"github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlan": schema_pkg_apis_enmasse_v1beta2_AddressSpacePlan(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlan":      schema_pkg_apis_enmasse_v1beta2_AddressPlan(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlan": schema_pkg_apis_enmasse_v1beta2_AddressSpacePlan(ref),
 	}
 }
 
@@ -44,19 +44,19 @@ func schema_pkg_apis_enmasse_v1beta2_AddressPlan(ref common.ReferenceCallback) c
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanSpec"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanStatus"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanSpec", "github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressPlanStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -88,18 +88,18 @@ func schema_pkg_apis_enmasse_v1beta2_AddressSpacePlan(ref common.ReferenceCallba
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanSpec"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanStatus"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanSpec", "github.com/briangallagher/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2.AddressSpacePlanStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
