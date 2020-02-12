@@ -11,9 +11,11 @@ metadata:
             "name": "example-installation"
           },
           "spec": {
-            "namespacePrefix": "integreatly-",
+            "namespacePrefix": "redhat-rhmi-",
             "selfSignedCerts": true,
-            "type": "workshop"
+            "smtpSecret": "redhat-rhmi-smtp",
+            "type": "managed",
+            "useClusterStorage": true
           }
         },
         {
@@ -23,20 +25,22 @@ metadata:
             "name": "INSTALLATION_NAME"
           },
           "spec": {
-            "namespacePrefix": "integreatly-",
+            "namespacePrefix": "INSTALLATION_PREFIX-",
             "selfSignedCerts": "SELF_SIGNED_CERTS",
-            "type": "INSTALLATION_TYPE"
+            "smtpSecret": "INSTALLATION_PREFIX-smtp",
+            "type": "INSTALLATION_TYPE",
+            "useClusterStorage": "USE_CLUSTER_STORAGE"
           }
         }
       ]
     capabilities: Basic Install
     categories: Integreating greatly
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v1.12.0
+    containerImage: quay.io/integreatly/integreatly-operator:v1.17.0
     createdAt: "2019-10-15 10:39:00"
     description: Greatly integrating integreatly greatness
     support: Integreatly
-  name: integreatly-operator.v1.13.0
+  name: integreatly-operator.v1.17.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -62,163 +66,83 @@ spec:
       - rules:
         - apiGroups:
           - integreatly.org
-          resources:
-          - '*'
-          verbs:
-          - '*'
-        - apiGroups:
           - applicationmonitoring.integreatly.org
           resources:
-          - applicationmonitorings
-          - blackboxtargets
-          verbs:
-          - get
-          - create
-          - update
-          - list
-          - delete
-        - apiGroups:
-          - batch
-          resources:
-          - cronjobs
-          verbs:
-          - create
-          - update
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - clusterroles
-          - clusterrolebindings
-          verbs:
-          - create
-          - update
-          - delete
-        - apiGroups:
-          - '*'
-          resources:
           - '*'
           verbs:
-          - get
-          - list
-          - watch
+          - '*'
         - apiGroups:
           - ""
+          - project.openshift.io
           resources:
-          - pods/exec
+          - projectrequests
           verbs:
           - create
-          - update
         - apiGroups:
           - ""
           resources:
           - namespaces
-          - namespaces/finalizers
-          - serviceaccounts
           verbs:
           - list
-          - create
-          - watch
           - get
+          - watch
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - list
+          - get
+          - watch
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          verbs:
+          - list
+          - get
+          - watch
+        - apiGroups:
+          - route.openshift.io
+          resourceNames:
+          - console
+          resources:
+          - routes
+          verbs:
+          - get
+        - apiGroups:
+          - template.openshift.io
+          resources:
+          - templates
+          verbs:
+          - get
+          - create
           - update
           - delete
         - apiGroups:
-          - operators.coreos.com
+          - image.openshift.io
           resources:
-          - catalogsourceconfigs
+          - imagestreams
           verbs:
-          - list
+          - get
           - create
-          - watch
           - delete
+          - update
         - apiGroups:
           - ""
+          resourceNames:
+          - samples-registry-credentials
           resources:
-          - pods
           - secrets
           verbs:
-          - list
           - get
         - apiGroups:
-          - operators.coreos.com
+          - ""
+          resourceNames:
+          - grafana-datasources
           resources:
-          - catalogsourceconfigs/finalizers
+          - secrets
           verbs:
-          - '*'
-        - apiGroups:
-          - operators.coreos.com
-          resources:
-          - operatorgroups
-          - subscriptions
-          - installplans
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-          - delete
-          - update
-        - apiGroups:
-          - aerogear.org
-          resources:
-          - keycloaks
-          - keycloakrealms
-          verbs:
-          - list
-          - create
-          - update
-          - watch
-          - get
-        - apiGroups:
-          - kafka.strimzi.io
-          resources:
-          - kafkas
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - apps.3scale.net
-          resources:
-          - apimanagers
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - org.eclipse.che
-          resources:
-          - checlusters
-          - checlusters/finalizers
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - syndesis.io
-          resources:
-          - syndesises
-          - syndesises/finalizers
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - admin.enmasse.io
-          resources:
-          - authenticationservices
-          - addressplans
-          - addressspaceplans
-          - brokeredinfraconfigs
-          - standardinfraconfigs
-          - consoleservices
-          verbs:
-          - list
-          - create
-          - watch
           - get
         - apiGroups:
           - oauth.openshift.io
@@ -230,123 +154,82 @@ spec:
           - update
           - delete
         - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - update
-          - create
-        - apiGroups:
-          - apps.openshift.io
-          resources:
-          - deploymentconfigs/instantiate
-          - deploymentconfigs
-          verbs:
-          - create
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - secrets
-          verbs:
-          - get
-          - create
-          - update
-        - apiGroups:
-          - gpte.opentlc.com
-          resources:
-          - nexus
-          verbs:
-          - list
-          - create
-          - watch
-          - get
-        - apiGroups:
-          - launcher.fabric8.io
-          resources:
-          - launchers
-          verbs:
-          - get
-          - create
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - rolebindings
-          verbs:
-          - create
-          - update
-        - apiGroups:
           - user.openshift.io
           resources:
-          - users
+          - groups
           verbs:
+          - get
+          - list
           - watch
         - apiGroups:
           - user.openshift.io
           resources:
           - groups
           verbs:
-          - get
           - create
+        - apiGroups:
+          - user.openshift.io
+          resourceNames:
+          - rhmi-developers
+          resources:
+          - groups
+          verbs:
           - update
+          - delete
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - users
+          verbs:
+          - watch
+          - get
+          - list
         - apiGroups:
           - samples.operator.openshift.io
+          resourceNames:
+          - cluster
           resources:
           - configs
           verbs:
           - get
           - update
         - apiGroups:
-          - image.openshift.io
+          - ""
           resources:
-          - imagestreams
+          - namespaces
           verbs:
-          - get
-          - create
-          - delete
           - update
         - apiGroups:
-          - template.openshift.io
+          - operators.coreos.com
           resources:
-          - templates
+          - catalogsources
+          - operatorgroups
           verbs:
-          - get
-          - create
-          - delete
-        - apiGroups:
-          - push.aerogear.org
-          resources:
-          - unifiedpushservers
-          verbs:
-          - get
           - create
         - apiGroups:
-          - mobile-security-service.aerogear.org
+          - operators.coreos.com
+          resourceNames:
+          - rhmi-registry-cs
           resources:
-          - '*'
+          - catalogsources
+          verbs:
+          - update
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - installplans
+          verbs:
+          - update
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
           verbs:
           - get
           - list
-          - watch
-          - update
           - create
-        - apiGroups:
-          - mdc.aerogear.org
-          resources:
-          - '*'
-          verbs:
-          - get
-          - list
-          - watch
           - update
-          - create
-        - apiGroups:
-          - build.openshift.io
-          resources:
-          - jenkins
-          verbs:
-          - '*'
+          - delete
         serviceAccountName: integreatly-operator
       deployments:
       - name: integreatly-operator
@@ -375,7 +258,9 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: integreatly-operator
-                image: quay.io/integreatly/integreatly-operator:v1.13.0
+                - name: USE_CLUSTER_STORAGE
+                  value: "true"
+                image: quay.io/integreatly/integreatly-operator:v1.17.0
                 imagePullPolicy: Always
                 name: integreatly-operator
                 resources: {}
@@ -386,29 +271,33 @@ spec:
           - ""
           resources:
           - pods
-          - services
-          - endpoints
-          - persistentvolumeclaims
           - events
           - configmaps
           - secrets
           verbs:
-          - '*'
+          - list
+          - get
+          - watch
+          - create
+          - update
+          - patch
         - apiGroups:
           - ""
           resources:
-          - namespaces
+          - configmaps
           verbs:
-          - get
+          - delete
         - apiGroups:
-          - apps
+          - ""
           resources:
-          - deployments
-          - daemonsets
-          - replicasets
-          - statefulsets
+          - services
+          - services/finalizers
           verbs:
-          - '*'
+          - list
+          - get
+          - watch
+          - create
+          - update
         - apiGroups:
           - monitoring.coreos.com
           resources:
@@ -418,28 +307,51 @@ spec:
           - create
         - apiGroups:
           - apps
-          resourceNames:
-          - integreatly-operator
           resources:
           - deployments/finalizers
           verbs:
           - update
         - apiGroups:
-          - integreatly.org
+          - operators.coreos.com
           resources:
-          - '*'
+          - subscriptions
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         serviceAccountName: integreatly-operator
     strategy: deployment
   installModes:
   - supported: true
     type: OwnNamespace
-  - supported: true
+  - supported: false
     type: SingleNamespace
-  - supported: true
+  - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - integreatly
@@ -450,12 +362,11 @@ spec:
   - email: integreatly-support@redhat.com
     name: Integr8ly
   maturity: alpha
-  minKubeVersion: 1.11.0
+  minKubeVersion: 1.12.0
   provider:
     name: Integr8ly
-  replaces: integreatly-operator.v1.12.0
   selector:
     matchLabels:
       alm-owner-integreatly: integreatly-operator
       operated-by: integreatly-operator
-  version: 1.13.0
+  version: 1.17.0
