@@ -135,6 +135,9 @@ github.com/integr8ly/keycloak-client/pkg/common
 github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.8
 github.com/json-iterator/go
+# github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
+github.com/jstemmer/go-junit-report/formatter
+github.com/jstemmer/go-junit-report/parser
 # github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common
@@ -454,7 +457,9 @@ k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.0.0 => k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme
+k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 # k8s.io/apimachinery v0.0.0 => k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
