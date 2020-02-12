@@ -123,17 +123,9 @@ func (in *RHMIStageStatus) DeepCopyInto(out *RHMIStageStatus) {
 	*out = *in
 	if in.Products != nil {
 		in, out := &in.Products, &out.Products
-		*out = make(map[ProductName]*RHMIProductStatus, len(*in))
+		*out = make(map[ProductName]RHMIProductStatus, len(*in))
 		for key, val := range *in {
-			var outVal *RHMIProductStatus
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = new(RHMIProductStatus)
-				**out = **in
-			}
-			(*out)[key] = outVal
+			(*out)[key] = val
 		}
 	}
 	return
@@ -154,17 +146,9 @@ func (in *RHMIStatus) DeepCopyInto(out *RHMIStatus) {
 	*out = *in
 	if in.Stages != nil {
 		in, out := &in.Stages, &out.Stages
-		*out = make(map[StageName]*RHMIStageStatus, len(*in))
+		*out = make(map[StageName]RHMIStageStatus, len(*in))
 		for key, val := range *in {
-			var outVal *RHMIStageStatus
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = new(RHMIStageStatus)
-				(*in).DeepCopyInto(*out)
-			}
-			(*out)[key] = outVal
+			(*out)[key] = *val.DeepCopy()
 		}
 	}
 	return

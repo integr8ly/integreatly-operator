@@ -11,7 +11,7 @@ import (
 // Emits a normal event upon successful completion of stage reconcile
 func HandleStageComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, stageName integreatlyv1alpha1.StageName) {
 	stageStatus := installation.Status.Stages[stageName]
-	if stageStatus == nil || stageStatus.Phase != integreatlyv1alpha1.PhaseCompleted {
+	if stageStatus.Phase != integreatlyv1alpha1.PhaseCompleted {
 		recorder.Event(installation, "Normal", integreatlyv1alpha1.EventInstallationCompleted, fmt.Sprintf("%s stage has reconciled successfully", stageName))
 	}
 }
@@ -19,7 +19,7 @@ func HandleStageComplete(recorder record.EventRecorder, installation *integreatl
 // Emits a normal event upon successful completion of product installation
 func HandleProductComplete(recorder record.EventRecorder, installation *integreatlyv1alpha1.RHMI, stageName integreatlyv1alpha1.StageName, productName integreatlyv1alpha1.ProductName) {
 	stage := installation.Status.Stages[stageName]
-	if stage == nil || stage.Products[productName] == nil || stage.Products[productName].Status != integreatlyv1alpha1.PhaseCompleted {
+	if stage.Products[productName].Status != integreatlyv1alpha1.PhaseCompleted {
 		recorder.Event(installation, "Normal", integreatlyv1alpha1.EventInstallationCompleted, fmt.Sprintf("%s was installed successfully", productName))
 	}
 }

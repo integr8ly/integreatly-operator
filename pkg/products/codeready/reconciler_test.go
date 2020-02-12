@@ -309,10 +309,10 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
 									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
 									Status: integreatlyv1alpha1.PhaseCreatingSubscription,
@@ -345,10 +345,10 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
 						"codeready-stage": {
 							Name: "codeready-stage",
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 								integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
 									Name:   integreatlyv1alpha1.ProductCodeReadyWorkspaces,
 									Status: integreatlyv1alpha1.PhaseCreatingSubscription,

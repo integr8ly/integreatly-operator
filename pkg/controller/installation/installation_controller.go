@@ -250,14 +250,14 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	if installation.Status.Stages == nil {
+		installation.Status.Stages = map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{}
+	}
+
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightFail {
 		return r.preflightChecks(installation, installType, configManager)
-	}
-
-	if installation.Status.Stages == nil {
-		installation.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{}
 	}
 
 	// If the CR is being deleted, cancel the current context
@@ -320,9 +320,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		if installation.Status.Stages == nil {
-			installation.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus)
+			installation.Status.Stages = make(map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus)
 		}
-		installation.Status.Stages[stage.Name] = &integreatlyv1alpha1.RHMIStageStatus{
+		installation.Status.Stages[stage.Name] = integreatlyv1alpha1.RHMIStageStatus{
 			Name:     stage.Name,
 			Phase:    stagePhase,
 			Products: stage.Products,
@@ -507,7 +507,10 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	var mErr error
+	productsAux := make(map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus)
+
 	for _, product := range stage.Products {
+
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
@@ -516,7 +519,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(r.context, installation, product, serverClient)
+		product.Status, err = reconciler.Reconcile(r.context, installation, &product, serverClient)
 		if err != nil {
 			if mErr == nil {
 				mErr = &multiErr{}
@@ -551,6 +554,8 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if product.Status != integreatlyv1alpha1.PhaseCompleted {
 			incompleteStage = true
 		}
+		productsAux[product.Name] = product
+		*stage = Stage{Name: stage.Name, Products: productsAux}
 	}
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {

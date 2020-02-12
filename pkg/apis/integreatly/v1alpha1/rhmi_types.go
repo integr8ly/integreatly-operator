@@ -129,18 +129,18 @@ type RHMIStatus struct {
 	// INSERT ADDITIONAL STATUS FIELDS - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Stages             map[StageName]*RHMIStageStatus `json:"stages"`
-	PreflightStatus    PreflightStatus                `json:"preflightStatus,omitempty"`
-	PreflightMessage   string                         `json:"preflightMessage,omitempty"`
-	LastError          string                         `json:"lastError"`
-	GitHubOAuthEnabled bool                           `json:"gitHubOAuthEnabled,omitempty"`
-	SMTPEnabled        bool                           `json:"smtpEnabled,omitempty"`
+	Stages             map[StageName]RHMIStageStatus `json:"stages"`
+	PreflightStatus    PreflightStatus               `json:"preflightStatus,omitempty"`
+	PreflightMessage   string                        `json:"preflightMessage,omitempty"`
+	LastError          string                        `json:"lastError"`
+	GitHubOAuthEnabled bool                          `json:"gitHubOAuthEnabled,omitempty"`
+	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
 }
 
 type RHMIStageStatus struct {
-	Name     StageName                          `json:"name"`
-	Phase    StatusPhase                        `json:"phase"`
-	Products map[ProductName]*RHMIProductStatus `json:"products,omitempty"`
+	Name     StageName                         `json:"name"`
+	Phase    StatusPhase                       `json:"phase"`
+	Products map[ProductName]RHMIProductStatus `json:"products,omitempty"`
 }
 
 type RHMIProductStatus struct {
@@ -170,7 +170,7 @@ type RHMI struct {
 func (i *RHMI) GetProductStatusObject(product ProductName) *RHMIProductStatus {
 	for _, stage := range i.Status.Stages {
 		if product, ok := stage.Products[product]; ok {
-			return product
+			return &product
 		}
 	}
 	return &RHMIProductStatus{

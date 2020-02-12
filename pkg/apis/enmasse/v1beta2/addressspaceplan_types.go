@@ -28,9 +28,9 @@ type AddressSpacePlanStatus struct {
 }
 
 type AddressSpacePlanResourceLimits struct {
-	Router    float32 `json:"router"`
-	Broker    float32 `json:"broker"`
-	Aggregate float32 `json:"aggregate"`
+	Router    string `json:"router"`
+	Broker    string `json:"broker"`
+	Aggregate string `json:"aggregate"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
