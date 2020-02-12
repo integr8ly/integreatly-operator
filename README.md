@@ -43,47 +43,15 @@ git clone https://github.com/integr8ly/integreatly-operator
 cd integreatly-operator
 ```
 
-Some products require certain credentials to be present in the namespace before installation can proceed:
-* RHSSO requires Github OAuth credentials to create a Github Identity Provider for Launcher (see [here](https://github.com/integr8ly/installation/#51-create-github-oauth-to-enable-github-authorization-for-launcher) for creating a Github OAuth app) and Codeready
-
-**Note:** If this secret isn't created, the integreatly preflight checks will fail
-
-```sh
-# The project name for the integreatly operator to watch
-export NAMESPACE="integreatly-test"
-
-# RHSSO requires Github OAuth credentials to setup a Github identity provider
-# for Fabric8 Launcher and Codeready
-export GH_CLIENT_ID=<client id>
-export GH_CLIENT_SECRET=<client secret>
-
-# Bootstrap the project
-make cluster/prepare/local
+If the cluster is not already prepared for the integreatly-operator, you will need to do the following:
 ```
-
-* 3Scale requires SMTP credentials to be able to send mail to users.
-
-**Note:** If this secret isn't created, the integreatly preflight checks will fail
-
-```sh
-kubectl apply -f - <<EOF
-kind: Secret
-apiVersion: v1
-metadata:
-  name: rhmi-smtp-two
-  labels:
-    owner: integreatly
-stringData:
-  host: smtp.sendgrid.net
-  password: <SENDGRID_SUB_USER_API_KEY>
-  port: "587"
-  tls: "true"
-  username: apikey
-type: Opaque
-EOF
+make cluster/prepare/project
+make cluster/prepare/crd
+make cluster/prepare/smtp
 ```
 
 * 3scale requires AWS S3 bucket credentials for storage. The bucket should have all public access turned off.
+
 Currently this secret (`threescale-blobstorage-<installation-name>`) is created with dummy credentials by the [cloud resource operator](https://github.com/integr8ly/cloud-resource-operator), in the namespace the integreatly operator is deployed into. In order for this feature to work, these credentials should be replaced:
     * _bucketName_: The name of the AWS bucket
     * _bucketRegion_: The AWS region where the bucket has been created
@@ -102,13 +70,9 @@ You can use this command to replace S3 credentials in backup secret:
 oc process -f deploy/s3-secret.yaml -p AWS_ACCESS_KEY_ID=<YOURID> -p AWS_SECRET_ACCESS_KEY=<YOURKEY> -p AWS_BUCKET=<YOURBUCKET> -p AWS_REGION=eu-west-1 -p NAMESPACE=<integreatly-operator-namespace> | oc replace -f -
 ```
 
-
 ### Installation custom resource
 An `Installation` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
 ```sh
-# Create the installation custom resource definition
-oc create -f deploy/crds/installation.crd.yaml
-
 # Create the installation custom resource
 oc create -f deploy/crds/examples/installation.cr.yaml
 
