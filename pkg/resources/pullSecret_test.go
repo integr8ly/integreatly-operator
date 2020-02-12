@@ -20,63 +20,6 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	return scheme, err
 }
 
-func TestGetDefaultPullSecret(t *testing.T) {
-	defPullSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      DefaultOriginPullSecretName,
-			Namespace: DefaultOriginPullSecretNamespace,
-		},
-		Data: map[string][]byte{
-			"test": {'t', 'e', 's', 't'},
-		},
-	}
-
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatalf("failed to build scheme: %s", err.Error())
-	}
-
-	scenarios := []struct {
-		Name         string
-		FakeClient   k8sclient.Client
-		Installation *integreatlyv1alpha1.Installation
-		Verify       func(secret corev1.Secret, err error, t *testing.T)
-	}{
-		{
-			Name:         "Test Default Pull Secret is successfully retrieved",
-			FakeClient:   fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
-			Installation: &integreatlyv1alpha1.Installation{},
-			Verify: func(secret corev1.Secret, err error, t *testing.T) {
-				if err != nil {
-					t.Fatalf("unexpected error: %s", err.Error())
-				}
-
-				if bytes.Compare(secret.Data["test"], defPullSecret.Data["test"]) != 0 {
-					t.Fatalf("expected data %v, but got %v", defPullSecret.Data["test"], secret.Data["test"])
-				}
-			},
-		},
-		{
-			Name:         "Test Get Default Pull Secret error",
-			FakeClient:   fakeclient.NewFakeClientWithScheme(scheme),
-			Installation: &integreatlyv1alpha1.Installation{},
-			Verify: func(secret corev1.Secret, err error, t *testing.T) {
-				if err == nil {
-					t.Fatal("Expected error but got none")
-				}
-			},
-		},
-	}
-
-	for _, scenario := range scenarios {
-		t.Run(scenario.Name, func(t *testing.T) {
-
-			res, err := GetDefaultPullSecret(context.TODO(), scenario.FakeClient, scenario.Installation)
-			scenario.Verify(res, err, t)
-		})
-	}
-}
-
 func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	defPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

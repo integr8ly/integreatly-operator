@@ -21,7 +21,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 github.com/RHsyseng/operator-utils/pkg/olm
-# github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
+# github.com/aerogear/unifiedpush-operator v0.5.0
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
@@ -129,13 +129,13 @@ github.com/integr8ly/cloud-resource-operator/pkg/resources
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/keycloak-client v0.0.0-20200129150536-05f149c2d427
+# github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
 github.com/integr8ly/keycloak-client/pkg/common
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv
 # github.com/json-iterator/go v1.1.8
 github.com/json-iterator/go
-# github.com/keycloak/keycloak-operator v0.0.0-20200129141231-e99da8a15034
+# github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common
 github.com/keycloak/keycloak-operator/pkg/model

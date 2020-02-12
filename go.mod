@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/3scale/3scale-operator v0.4.0
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
-	github.com/aerogear/unifiedpush-operator v0.0.0-20191212165307-3ea5e7aa705f
+	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
@@ -13,8 +13,8 @@ require (
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.9.0
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/integr8ly/keycloak-client v0.0.0-20200129150536-05f149c2d427
-	github.com/keycloak/keycloak-operator v0.0.0-20200129141231-e99da8a15034
+	github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
+	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71

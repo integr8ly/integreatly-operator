@@ -75,7 +75,15 @@ func schema_pkg_apis_push_v1alpha1_UnifiedPushServerSpec(ref common.ReferenceCal
 					},
 					"database": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1.UnifiedPushServerDatabase"),
+							Description: "Database allows specifying the external PostgreSQL details directly in the CR. Only one of Database or DatabaseSecret should be specified, and ExternalDB must be true, otherwise a new PostgreSQL instance will be created (and deleted) on the cluster automatically.",
+							Ref:         ref("github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1.UnifiedPushServerDatabase"),
+						},
+					},
+					"databaseSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DatabaseSecret allows reading the external PostgreSQL details from a pre-existing Secret (ExternalDB must be true for it to be used). Only one of Database or DatabaseSecret should be specified, and ExternalDB must be true, otherwise a new PostgreSQL instance will be created (and deleted) on the cluster automatically.\n\nHere's an example of all of the fields that the secret must contain:\n\nPOSTGRES_DATABASE: sampledb POSTGRES_HOST: 172.30.139.148 POSTGRES_PORT: \"5432\" POSTGRES_USERNAME: userMSM POSTGRES_PASSWORD: RmwWKKIM7or7oJig POSTGRES_SUPERUSER: \"false\" POSTGRES_VERSION: \"10\"",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"backups": {

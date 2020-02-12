@@ -71,8 +71,8 @@ var (
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0.0"
 	OperatorVersionFuse                OperatorVersion = "1.5.0"
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
-	OperatorVersionUPS                 OperatorVersion = "0.4.1"
 	OperatorVersionCloudResources      OperatorVersion = "0.9.0"
+	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

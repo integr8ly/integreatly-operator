@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -25,11 +29,9 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -60,6 +62,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	if upsConfig.GetNamespace() == "" {
 		upsConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+		configManager.WriteConfig(upsConfig)
 	}
 
 	upsConfig.SetBlackboxTargetPath("/rest/auth/config/")
@@ -124,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, ns, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
 
@@ -186,6 +189,26 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
 	}
 
+	postgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      postgres.Status.SecretRef.Name,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	controllerutil.CreateOrUpdate(ctx, client, postgresSecret, func() error {
+		postgresSecret.StringData = map[string]string{
+			"POSTGRES_DATABASE":  string(connSec.Data["database"]),
+			"POSTGRES_HOST":      string(connSec.Data["host"]),
+			"POSTGRES_PORT":      string(connSec.Data["port"]),
+			"POSTGRES_USERNAME":  string(connSec.Data["username"]),
+			"POSTGRES_PASSWORD":  string(connSec.Data["password"]),
+			"POSTGRES_SUPERUSER": "false",
+			"POSTGRES_VERSION":   "10",
+		}
+		return nil
+	})
+
 	// Reconcile ups custom resource
 	logrus.Info("Reconciling unified push server cr")
 	cr := &upsv1alpha1.UnifiedPushServer{
@@ -194,14 +217,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: upsv1alpha1.UnifiedPushServerSpec{
-			ExternalDB: true,
-			Database: upsv1alpha1.UnifiedPushServerDatabase{
-				Name:     string(connSec.Data["database"]),
-				Password: string(connSec.Data["password"]),
-				User:     string(connSec.Data["username"]),
-				Host:     string(connSec.Data["host"]),
-				Port:     intstr.FromString(string(connSec.Data["port"])),
-			},
+			ExternalDB:     true,
+			DatabaseSecret: postgres.Status.SecretRef.Name,
 		},
 	}
 
