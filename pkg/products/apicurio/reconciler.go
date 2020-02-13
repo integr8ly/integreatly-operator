@@ -456,7 +456,7 @@ func (r *Reconciler) addTlsToApicurioRoute(ctx context.Context, client k8sclient
 func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, client k8sclient.Client) error {
 
 	var dc = &appsv1.DeploymentConfig{}
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "fuse-apicurito-generator", Namespace: r.Config.GetNamespace()}, dc)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, dc)
 	if err != nil {
 		return fmt.Errorf("Failed to update apicurito deployment config: %w", err)
 	}
