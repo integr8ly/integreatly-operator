@@ -11,7 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/sirupsen/logrus"
 
@@ -20,26 +19,20 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-	errorUtil "github.com/pkg/errors"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	errorUtil "github.com/pkg/errors"
 
 	routev1 "github.com/openshift/api/route/v1"
-
-	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -196,13 +189,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
-	alertNamespace := postgres.Namespace
-	alertResourceID := postgres.Name
-	alertProductName := postgres.Labels["productName"]
-	alertName := alertProductName + "RDSInstanceUnavailable"
-
-	if err = r.CreateRDSAvailabilityAlert(ctx, postgres, client, alertName, alertNamespace, alertResourceID, alertProductName); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create alert: %s for Postgresql: %s error: %w", alertName, alertResourceID, err)
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, client, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for ups")
 	}
 
 	// get the secret created by the cloud resources operator
@@ -306,124 +296,4 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// CreateRDSAvailabilityAlert Call this when we create the RDS, to create a
-// PrometheusRule alert to watch for the availability of the RDS instance
-func (r *Reconciler) CreateRDSAvailabilityAlert(ctx context.Context, cr *v1alpha1.Postgres, serverClient k8sclient.Client,
-	alertName string, alertNamespace string, alertResourceID string, alertProductName string,
-) error {
-	ruleName := fmt.Sprintf("availability-rule-%s", alertResourceID)
-	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(cro_aws_rds_available{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
-			cr.Namespace, alertResourceID, alertProductName),
-	)
-	alertDescription := fmt.Sprintf("The product: %s, RDS instance: %s, in namespace: %s is unavailable", alertProductName, alertResourceID, alertNamespace)
-	labels := map[string]string{
-		"severity":    "critical",
-		"productName": cr.Labels["productName"],
-	}
-
-	// CreatePrometheusRule(ruleName string, namespace string, alertRuleName string,
-	//	description string, alertExp intstr.IntOrString, labels map[string]string)
-	pr, err := croResources.CreatePrometheusRule(ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
-	if err != nil {
-		return err
-	}
-
-	// Unless it already exists, call the kubernetes api and create this PrometheusRule
-	// Replace this with CreateOrUpdate if we can figure it out
-	err = serverClient.Create(ctx, pr)
-	if err != nil {
-		if !kerrors.IsAlreadyExists(err) {
-			return errorUtil.Wrap(err, fmt.Sprintf("exception calling Create prometheusrule: %s", ruleName))
-		}
-	}
-	logrus.Infof(fmt.Sprintf("PrometheusRule: %s reconciled successfully.", pr.Name))
-	return nil
-}
-
-// DeleteRDSAvailabilityAlert Call this when we delete the RDS instance,
-// The PrometheusRule alert will also be deleted.
-func (r *Reconciler) DeleteRDSAvailabilityAlert(ctx context.Context, serverClient k8sclient.Client, namespace string, instanceID string) error {
-	// query the kubernetes api to find the object we're looking for
-	ruleName := fmt.Sprintf("availability-rule-%s", instanceID)
-
-	pr := &prometheusv1.PrometheusRule{}
-	selector := client.ObjectKey{
-		Namespace: namespace,
-		Name:      ruleName,
-	}
-
-	if err := serverClient.Get(ctx, selector, pr); err != nil {
-		return errorUtil.Wrapf(err, "exception calling DeleteRDSAvailabilityAlert: %s", ruleName)
-	}
-
-	// call delete on that object
-	if err := serverClient.Delete(ctx, pr); err != nil {
-		return errorUtil.Wrapf(err, "exception calling DeleteRDSAvailabilityAlert: %s", ruleName)
-	}
-	logrus.Infof(fmt.Sprintf("PrometheusRule: %s reconciled successfully.", pr.Name))
-
-	return nil
-}
-
-// CreateElastiCacheAvailabilityAlert Call this when we create the ElastiCache, to create a
-// PrometheusRule alert to watch for the availability of the ElastiCache instance
-func (r *Reconciler) CreateElastiCacheAvailabilityAlert(ctx context.Context, cr *v1alpha1.Redis, serverClient k8sclient.Client,
-	alertName string, alertNamespace string, alertResourceID string, alertProductName string,
-) error {
-	ruleName := fmt.Sprintf("availability-rule-%s", alertResourceID)
-	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(cro_aws_elasticache_available{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
-			cr.Namespace, alertResourceID, alertProductName),
-	)
-	alertDescription := fmt.Sprintf("The product: %s, ElastiCache instance: %s, in namespace: %s is unavailable", alertProductName, alertResourceID, alertNamespace)
-	labels := map[string]string{
-		"severity":    "critical",
-		"productName": cr.Labels["productName"],
-	}
-
-	// CreatePrometheusRule(ruleName string, namespace string, alertRuleName string,
-	//	description string, alertExp intstr.IntOrString, labels map[string]string)
-	pr, err := croResources.CreatePrometheusRule(ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
-	if err != nil {
-		return err
-	}
-
-	// Unless it already exists, call the kubernetes api and create this PrometheusRule
-	// Replace this with CreateOrUpdate if we can figure it out
-	err = serverClient.Create(ctx, pr)
-	if err != nil {
-		if !kerrors.IsAlreadyExists(err) {
-			return errorUtil.Wrap(err, fmt.Sprintf("exception calling Create prometheusrule: %s", ruleName))
-		}
-	}
-	logrus.Infof(fmt.Sprintf("PrometheusRule: %s reconciled successfully.", pr.Name))
-	return nil
-}
-
-// DeleteElastiCacheAvailabilityAlert We call this when we delete an ElastiCache instance,
-// it removes the prometheusrule alert which watches for the availability of the instance.
-func (r *Reconciler) DeleteElastiCacheAvailabilityAlert(ctx context.Context, serverClient k8sclient.Client, namespace string, instanceID string) error {
-	// query the kubernetes api to find the object we're looking for
-	ruleName := fmt.Sprintf("availability-rule-%s", instanceID)
-
-	pr := &prometheusv1.PrometheusRule{}
-	selector := client.ObjectKey{
-		Namespace: namespace,
-		Name:      ruleName,
-	}
-
-	if err := serverClient.Get(ctx, selector, pr); err != nil {
-		return errorUtil.Wrapf(err, "exception calling DeleteRDSAvailabilityAlert: %s", ruleName)
-	}
-
-	// call delete on that object
-	if err := serverClient.Delete(ctx, pr); err != nil {
-		return errorUtil.Wrapf(err, "exception calling DeleteRDSAvailabilityAlert: %s", ruleName)
-	}
-	logrus.Infof(fmt.Sprintf("PrometheusRule: %s reconciled successfully.", pr.Name))
-
-	return nil
 }
