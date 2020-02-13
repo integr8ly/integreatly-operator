@@ -1,0 +1,11 @@
+apiVersion: integreatly.org/v1alpha1
+kind: Installation
+metadata:
+  name: integreatly
+spec:
+  type: managed
+  namespacePrefix: redhat-rhmi-
+  selfSignedCerts: true
+  useClusterStorage: true
+  operatorsInProductNamespace: true
+  smtpSecret: redhat-rhmi-smtp

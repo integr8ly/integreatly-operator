@@ -49,7 +49,11 @@ func (t *ThreeScale) GetNamespace() string {
 }
 
 func (t *ThreeScale) GetOperatorNamespace() string {
-	return t.config["NAMESPACE"] + "-operator"
+	return t.config["OPERATOR_NAMESPACE"]
+}
+
+func (t *ThreeScale) SetOperatorNamespace(newNamespace string) {
+	t.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (t *ThreeScale) GetLabelSelector() string {

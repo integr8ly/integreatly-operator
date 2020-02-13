@@ -149,11 +149,12 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
-				Type:              string(integreatlyv1alpha1.InstallationTypeManaged),
-				NamespacePrefix:   DefaultInstallationPrefix,
-				SelfSignedCerts:   false,
-				SMTPSecret:        DefaultInstallationPrefix + "smtp",
-				UseClusterStorage: useClusterStorage,
+				Type:                        string(integreatlyv1alpha1.InstallationTypeManaged),
+				NamespacePrefix:             DefaultInstallationPrefix,
+				SelfSignedCerts:             false,
+				SMTPSecret:                  DefaultInstallationPrefix + "smtp",
+				UseClusterStorage:           useClusterStorage,
+				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
 			},
 		}
 
@@ -290,7 +291,14 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		if len(merr.errors) == 0 && len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
-			err := resources.RemoveFinalizer(r.context, installation, r.client, deletionFinalizer)
+			// delete ConfigMap after all product finalizers finished
+			err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}})
+			if err != nil && !k8serr.IsNotFound(err) {
+				merr.Add(fmt.Errorf("Failed to remove ConfigMap: %w", err))
+				return retryRequeue, merr
+			}
+
+			err = resources.RemoveFinalizer(r.context, installation, r.client, deletionFinalizer)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
 				return retryRequeue, merr

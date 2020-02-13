@@ -133,6 +133,10 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 			if alert.Labels["alertname"] == "KubePodCrashLooping" {
 				continue
 			}
+			// FIXME: remove this condition once INTLY-5354 is addressed
+			if alert.Labels["alertname"] == "KeycloakAPIRequestDuration90PercThresholdExceeded" {
+				continue
+			}
 			if alert.State == "firing" {
 				firingalerts = append(firingalerts, string(alert.Labels["alertname"]))
 			}

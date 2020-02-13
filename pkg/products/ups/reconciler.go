@@ -55,23 +55,31 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	upsConfig, err := configManager.ReadUps()
+	config, err := configManager.ReadUps()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve ups config: %w", err)
 	}
 
-	if upsConfig.GetNamespace() == "" {
-		upsConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-		configManager.WriteConfig(upsConfig)
+	if config.GetNamespace() == "" {
+		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+		configManager.WriteConfig(config)
+	}
+	if config.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			config.SetOperatorNamespace(config.GetNamespace())
+		} else {
+			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+		}
+		configManager.WriteConfig(config)
 	}
 
-	upsConfig.SetBlackboxTargetPath("/rest/auth/config/")
+	config.SetBlackboxTargetPath("/rest/auth/config/")
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        upsConfig,
+		Config:        config,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),

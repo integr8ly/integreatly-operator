@@ -53,9 +53,15 @@ func (c *CloudResources) GetNamespace() string {
 func (c *CloudResources) SetNamespace(newNamespace string) {
 	c.Config["NAMESPACE"] = newNamespace
 }
+
 func (c *CloudResources) GetOperatorNamespace() string {
-	return c.Config["NAMESPACE"] + "-operator"
+	return c.Config["OPERATOR_NAMESPACE"]
 }
+
+func (c *CloudResources) SetOperatorNamespace(newNamespace string) {
+	c.Config["OPERATOR_NAMESPACE"] = newNamespace
+}
+
 func (c *CloudResources) Read() ProductConfig {
 	return c.Config
 }

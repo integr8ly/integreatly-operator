@@ -38,7 +38,11 @@ func (f *Fuse) SetNamespace(newNamespace string) {
 }
 
 func (f *Fuse) GetOperatorNamespace() string {
-	return f.config["NAMESPACE"] + "-operator"
+	return f.config["OPERATOR_NAMESPACE"]
+}
+
+func (f *Fuse) SetOperatorNamespace(newNamespace string) {
+	f.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (f *Fuse) GetHost() string {

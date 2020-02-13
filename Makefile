@@ -21,6 +21,7 @@ export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= integreatly
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
+export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -199,6 +200,7 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
+	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 

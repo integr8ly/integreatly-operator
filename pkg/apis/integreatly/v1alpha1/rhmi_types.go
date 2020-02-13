@@ -94,6 +94,13 @@ type RHMISpec struct {
 	PullSecret        PullSecretSpec `json:"pullSecret,omitempty"`
 	UseClusterStorage bool           `json:"useClusterStorage,omitempty"`
 
+	// OperatorsInProductNamespace is a flag that decides if
+	// the product operators should be installed in the product
+	// namespace (when set to true) or in standalone namespace
+	// (when set to false, default). Standalone namespace will
+	// be used only for those operators that support it.
+	OperatorsInProductNamespace bool `json:"operatorsInProductNamespace,omitempty"`
+
 	// SMTPSecret is the name of a secret in the installation
 	// namespace containing SMTP connection details. The secret
 	// must contain the following fields:
