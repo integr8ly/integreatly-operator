@@ -15,7 +15,7 @@ var (
 	lockConfigReadWriterMockGetOperatorNamespace        sync.RWMutex
 	lockConfigReadWriterMockReadAMQOnline               sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams              sync.RWMutex
-	lockConfigReadWriterMockReadApicurio                sync.RWMutex
+	lockConfigReadWriterMockReadApicurito               sync.RWMutex
 	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
 	lockConfigReadWriterMockReadFuse                    sync.RWMutex
@@ -59,8 +59,8 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
 // 	               panic("mock out the ReadAMQStreams method")
 //             },
-//             ReadApicurioFunc: func() (*Apicurio, error) {
-// 	               panic("mock out the ReadApicurio method")
+//             ReadApicuritoFunc: func() (*Apicurito, error) {
+// 	               panic("mock out the ReadApicurito method")
 //             },
 //             ReadCloudResourcesFunc: func() (*CloudResources, error) {
 // 	               panic("mock out the ReadCloudResources method")
@@ -126,8 +126,8 @@ type ConfigReadWriterMock struct {
 	// ReadAMQStreamsFunc mocks the ReadAMQStreams method.
 	ReadAMQStreamsFunc func() (*AMQStreams, error)
 
-	// ReadApicurioFunc mocks the ReadApicurio method.
-	ReadApicurioFunc func() (*Apicurio, error)
+	// ReadApicuritoFunc mocks the ReadApicurito method.
+	ReadApicuritoFunc func() (*Apicurito, error)
 
 	// ReadCloudResourcesFunc mocks the ReadCloudResources method.
 	ReadCloudResourcesFunc func() (*CloudResources, error)
@@ -188,8 +188,8 @@ type ConfigReadWriterMock struct {
 		// ReadAMQStreams holds details about calls to the ReadAMQStreams method.
 		ReadAMQStreams []struct {
 		}
-		// ReadApicurio holds details about calls to the ReadApicurio method.
-		ReadApicurio []struct {
+		// ReadApicurito holds details about calls to the ReadApicurito method.
+		ReadApicurito []struct {
 		}
 		// ReadCloudResources holds details about calls to the ReadCloudResources method.
 		ReadCloudResources []struct {
@@ -395,29 +395,29 @@ func (mock *ConfigReadWriterMock) ReadAMQStreamsCalls() []struct {
 	return calls
 }
 
-// ReadApicurio calls ReadApicurioFunc.
-func (mock *ConfigReadWriterMock) ReadApicurio() (*Apicurio, error) {
-	if mock.ReadApicurioFunc == nil {
-		panic("ConfigReadWriterMock.ReadApicurioFunc: method is nil but ConfigReadWriter.ReadApicurio was just called")
+// ReadApicurito calls ReadApicuritoFunc.
+func (mock *ConfigReadWriterMock) ReadApicurito() (*Apicurito, error) {
+	if mock.ReadApicuritoFunc == nil {
+		panic("ConfigReadWriterMock.ReadApicuritoFunc: method is nil but ConfigReadWriter.ReadApicurito was just called")
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadWriterMockReadApicurio.Lock()
-	mock.calls.ReadApicurio = append(mock.calls.ReadApicurio, callInfo)
-	lockConfigReadWriterMockReadApicurio.Unlock()
-	return mock.ReadApicurioFunc()
+	lockConfigReadWriterMockReadApicurito.Lock()
+	mock.calls.ReadApicurito = append(mock.calls.ReadApicurito, callInfo)
+	lockConfigReadWriterMockReadApicurito.Unlock()
+	return mock.ReadApicuritoFunc()
 }
 
-// ReadApicurioCalls gets all the calls that were made to ReadApicurio.
+// ReadApicuritoCalls gets all the calls that were made to ReadApicurito.
 // Check the length with:
-//     len(mockedConfigReadWriter.ReadApicurioCalls())
-func (mock *ConfigReadWriterMock) ReadApicurioCalls() []struct {
+//     len(mockedConfigReadWriter.ReadApicuritoCalls())
+func (mock *ConfigReadWriterMock) ReadApicuritoCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadWriterMockReadApicurio.RLock()
-	calls = mock.calls.ReadApicurio
-	lockConfigReadWriterMockReadApicurio.RUnlock()
+	lockConfigReadWriterMockReadApicurito.RLock()
+	calls = mock.calls.ReadApicurito
+	lockConfigReadWriterMockReadApicurito.RUnlock()
 	return calls
 }
 

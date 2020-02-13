@@ -77,7 +77,7 @@ func schema_pkg_apis_apicur_v1alpha1_ApicuritoSpec(ref common.ReferenceCallback)
 					},
 					"image": {
 						SchemaProps: spec.SchemaProps{
-							Description: "apicurio ui image",
+							Description: "apicurito ui image",
 							Type:        []string{"string"},
 							Format:      "",
 						},

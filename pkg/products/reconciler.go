@@ -4,7 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/integr8ly/integreatly-operator/pkg/products/apicurio"
+
+	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
@@ -90,8 +91,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		}
 	case integreatlyv1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
-	case integreatlyv1alpha1.ProductApicurio:
-		reconciler, err = apicurio.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductApicurito:
+		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
 		if err != nil {

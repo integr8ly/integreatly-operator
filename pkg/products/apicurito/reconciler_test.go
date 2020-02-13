@@ -1,4 +1,4 @@
-package apicurio
+package apicurito
 
 import "testing"
 

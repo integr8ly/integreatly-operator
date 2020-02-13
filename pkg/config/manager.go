@@ -53,7 +53,7 @@ type ConfigReadWriter interface {
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
-	ReadApicurio() (*Apicurio, error)
+	ReadApicurito() (*Apicurito, error)
 	ReadCloudResources() (*CloudResources, error)
 }
 
@@ -98,8 +98,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadSolutionExplorer()
 	case integreatlyv1alpha1.ProductUps:
 		return m.ReadUps()
-	case integreatlyv1alpha1.ProductApicurio:
-		return m.ReadApicurio()
+	case integreatlyv1alpha1.ProductApicurito:
+		return m.ReadApicurito()
 	case integreatlyv1alpha1.ProductCloudResources:
 		return m.ReadCloudResources()
 	case integreatlyv1alpha1.ProductMonitoring:
@@ -205,13 +205,13 @@ func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 	return NewMonitoring(config), nil
 }
 
-func (m *Manager) ReadApicurio() (*Apicurio, error) {
-	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurio)
+func (m *Manager) ReadApicurito() (*Apicurito, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurito)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewApicurio(config), nil
+	return NewApicurito(config), nil
 }
 
 func (m *Manager) ReadUps() (*Ups, error) {

@@ -1,4 +1,4 @@
-package apicurio
+package apicurito
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	apicurio "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
+	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -29,15 +29,15 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "apicurio"
-	defaultSubscriptionName      = "integreatly-apicurio"
-	manifestPackage              = "integreatly-apicurio"
-	apicurioName                 = "apicurio"
-	defaultApicurioPullSecret    = "apicurio-pull-secret"
+	defaultInstallationNamespace = "apicurito"
+	defaultSubscriptionName      = "integreatly-apicurito"
+	manifestPackage              = "integreatly-apicurito"
+	apicuritoName                = "apicurito"
+	defaultApicuritoPullSecret   = "apicurito-pull-secret"
 )
 
 type Reconciler struct {
-	Config        *config.Apicurio
+	Config        *config.Apicurito
 	extraParams   map[string]string
 	ConfigManager config.ConfigReadWriter
 	logger        *logrus.Entry
@@ -49,18 +49,18 @@ type Reconciler struct {
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
-	apicurioConfig, err := configManager.ReadApicurio()
+	apicuritoConfig, err := configManager.ReadApicurito()
 
 	if err != nil {
 		return nil, err
 	}
 
-	if apicurioConfig.GetNamespace() == "" {
-		apicurioConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+	if apicuritoConfig.GetNamespace() == "" {
+		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
 
 	return &Reconciler{
-		Config:        apicurioConfig,
+		Config:        apicuritoConfig,
 		extraParams:   make(map[string]string),
 		ConfigManager: configManager,
 		logger:        logger,
@@ -109,7 +109,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to write config in apicurio reconciler", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to write config in apicurito reconciler", err)
 		return phase, err
 	}
 
@@ -124,15 +124,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultApicurioPullSecret, installation, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultApicuritoPullSecret, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicurioPullSecret), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetOperatorNamespace(), defaultApicurioPullSecret, installation, serverClient)
+	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetOperatorNamespace(), defaultApicuritoPullSecret, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicurioPullSecret), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
 		return phase, err
 	}
 
@@ -165,35 +165,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s is successfully reconciled", apicurioName)
+	logrus.Infof("%s is successfully reconciled", apicuritoName)
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	r.logger.Info("Reconciling Apicurio components")
-	apicurioCR := &apicurio.Apicurito{
+	r.logger.Info("Reconciling Apicurito components")
+	apicuritoCR := &apicurito.Apicurito{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      apicurioName,
+			Name:      apicuritoName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicurioCR, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicuritoCR, func() error {
 		// Specify 2 pods to provide HA
-		apicurioCR.Spec.Size = 2
-		apicurioCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
+		apicuritoCR.Spec.Size = 2
+		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update apicurio custom resource")
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update apicurito custom resource")
 	}
-	r.logger.Infof("The operation result for apicurio %s was %s", apicurioCR.Name, or)
+	r.logger.Infof("The operation result for apicurito %s was %s", apicuritoCR.Name, or)
 
 	phase, err := r.reconcileHost(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile apicurio host"), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile apicurito host"), err)
 		return phase, err
 	}
 
@@ -204,14 +204,14 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// Create Service for apicurio generator
+	// Create Service for apicurito generator
 	err = r.createServiceForGenerator(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to create apicurito generator service"), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// Create Route for apicurio generator
+	// Create Route for apicurito generator
 	err = r.createRouteForGenerator(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to create apicurito generator route"), err)
@@ -226,7 +226,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Modify Route for Generator (add TLS)
-	err = r.addTlsToApicurioRoute(ctx, serverClient)
+	err = r.addTlsToApicuritoRoute(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to apicurito route to have tls"), err)
 		return phase, err
@@ -256,6 +256,7 @@ func (r *Reconciler) createDeployConfigForGenerator(ctx context.Context, client 
 			"app":       "apicurito",
 			"component": "fuse-apicurito-generator",
 		}
+		dc.Spec.Replicas = 1
 		dc.Spec.Template = &corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{{
@@ -277,9 +278,9 @@ func (r *Reconciler) createDeployConfigForGenerator(ctx context.Context, client 
 	//DeploymentConfig.apps.openshift.io "fuse-apicurito-generator" is invalid: spec.template.metadata.labels: Invalid value: map[string]string(nil): `selector` does not match template `labels`
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio generator dc")
+		return errors.Wrap(err, "failed to create/update apicurito generator dc")
 	}
-	r.logger.Infof("The operation result for apicurio %s was %s", dc.Name, or)
+	r.logger.Infof("The operation result for apicurito %s was %s", dc.Name, or)
 
 	return nil
 }
@@ -293,7 +294,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 	}
 	err := client.List(ctx, pods, listOpts...)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check apicurio installation: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check apicurito installation: %w", err)
 	}
 
 	//expecting 2 pods in total
@@ -314,7 +315,7 @@ checkPodStatus:
 		}
 	}
 
-	r.logger.Infof("all apicurio pods ready, returning complete")
+	r.logger.Infof("all apicurito pods ready, returning complete")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -322,7 +323,7 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.C
 	// Setting host on config to exposed route
 	logrus.Info("Getting apicurito host")
 	apicuritoRoute := &routev1.Route{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get route for apicurito: %w", err)
 	}
@@ -365,9 +366,9 @@ func (r *Reconciler) createServiceForGenerator(ctx context.Context, client k8scl
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio generator service")
+		return errors.Wrap(err, "failed to create/update apicurito generator service")
 	}
-	r.logger.Infof("The operation result for apicurio %s was %s", service.Name, or)
+	r.logger.Infof("The operation result for apicurito %s was %s", service.Name, or)
 
 	return nil
 }
@@ -398,9 +399,9 @@ func (r *Reconciler) createRouteForGenerator(ctx context.Context, client k8sclie
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio generator route")
+		return errors.Wrap(err, "failed to create/update apicurito generator route")
 	}
-	r.logger.Infof("The operation result for apicurio route %s was %s", route.Name, or)
+	r.logger.Infof("The operation result for apicurito route %s was %s", route.Name, or)
 
 	return nil
 }
@@ -428,16 +429,16 @@ func (r *Reconciler) createConfigMapForUI(ctx context.Context, client k8sclient.
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio generator route")
+		return errors.Wrap(err, "failed to create/update apicurito generator route")
 	}
-	r.logger.Infof("The operation result for apicurio config map %s was %s", cfgMap.Name, or)
+	r.logger.Infof("The operation result for apicurito config map %s was %s", cfgMap.Name, or)
 
 	return nil
 }
 
-func (r *Reconciler) addTlsToApicurioRoute(ctx context.Context, client k8sclient.Client) error {
+func (r *Reconciler) addTlsToApicuritoRoute(ctx context.Context, client k8sclient.Client) error {
 	apicuritoRoute := &routev1.Route{}
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
 	if err != nil {
 		return fmt.Errorf("Failed to update apicurito route: %w", err)
 	}
@@ -459,7 +460,7 @@ func (r *Reconciler) addTlsToApicurioRoute(ctx context.Context, client k8sclient
 func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, client k8sclient.Client) error {
 
 	var deployment = &v1.Deployment{}
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, deployment)
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, deployment)
 	if err != nil {
 		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %w, %w", r.Config.GetNamespace(), err)
 	}
@@ -486,7 +487,7 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio deployment config")
+		return errors.Wrap(err, "failed to create/update apicurito deployment config")
 	}
 	r.logger.Infof("The operation result for apicurito deployment config %s was %s", deployment.Name, or)
 
