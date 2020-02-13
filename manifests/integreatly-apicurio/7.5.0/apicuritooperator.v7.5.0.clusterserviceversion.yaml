@@ -48,7 +48,7 @@ spec:
         name: apicurito-service
       spec:
         size: 3
-        image: registry.stage.redhat.io/fuse7-tech-preview/fuse-apicurito-operator:version
+        image: registry.redhat.io/fuse7-tech-preview/fuse-apicurito-operator:version
     $ kubectl apply -f apicurito_cr.yaml
     ```
   keywords: ['api', 'apicurio', 'apicurito']
@@ -151,13 +151,13 @@ spec:
                 serviceAccountName: apicurito
                 containers:
                   - name: apicurito-operator
-                    image: registry.stage.redhat.io/fuse7-tech-preview/fuse-apicurito-operator:1.5
+                    image: registry.redhat.io/fuse7-tech-preview/fuse-apicurito-operator:1.5
                     imagePullPolicy: Always
                     env:
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
-                            fieldPath: metadata.namespace
+                            fieldPath: metadata.annotations['olm.targetNamespaces']
                       - name: POD_NAME
                         valueFrom:
                           fieldRef:

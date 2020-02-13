@@ -45,7 +45,7 @@ func (r *Apicurio) Read() ProductConfig {
 }
 
 func (r *Apicurio) GetProductName() integreatlyv1alpha1.ProductName {
-	return integreatlyv1alpha1.ProductRHSSO
+	return integreatlyv1alpha1.ProductApicurio
 }
 
 func (r *Apicurio) GetProductVersion() integreatlyv1alpha1.ProductVersion {
@@ -53,7 +53,7 @@ func (r *Apicurio) GetProductVersion() integreatlyv1alpha1.ProductVersion {
 }
 
 func (r *Apicurio) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
-	return integreatlyv1alpha1.OperatorVersionRHSSO
+	return integreatlyv1alpha1.OperatorVersionApicurio
 }
 
 func (r *Apicurio) SetProductVersion(version string) {

@@ -1,4 +1,4 @@
-packageName: fuse-apicurito
+packageName: integreatly-apicurio
 channels:
-  - name: alpha
+  - name: integreatly
     currentCSV: apicuritooperator.v7.5.0
