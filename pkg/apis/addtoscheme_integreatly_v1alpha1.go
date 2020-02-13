@@ -15,6 +15,7 @@ import (
 	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	apicurio "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	enmasseAdmin "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmasse "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
@@ -63,6 +64,7 @@ func init() {
 		monitoring.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
+		apicurio.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 
 		appsv1.AddToScheme,

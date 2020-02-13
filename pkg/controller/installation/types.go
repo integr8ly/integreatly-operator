@@ -51,6 +51,7 @@ var (
 				integreatlyv1alpha1.Product3Scale:              {Name: integreatlyv1alpha1.Product3Scale},
 				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
 				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
+				integreatlyv1alpha1.ProductApicurio:            {Name: integreatlyv1alpha1.ProductApicurio},
 			},
 		},
 		{
@@ -97,6 +98,7 @@ var (
 				integreatlyv1alpha1.ProductAMQStreams:          {Name: integreatlyv1alpha1.ProductAMQStreams},
 				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
 				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
+				integreatlyv1alpha1.ProductApicurio:            {Name: integreatlyv1alpha1.ProductApicurio},
 			},
 		},
 		{

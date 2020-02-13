@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.Kafka":       schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec":   schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaSpec(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus": schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaStatus(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.Apicurito":       schema_pkg_apis_apicur_v1alpha1_Apicurito(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoSpec":   schema_pkg_apis_apicur_v1alpha1_ApicuritoSpec(ref),
+		"github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoStatus": schema_pkg_apis_apicur_v1alpha1_ApicuritoStatus(ref),
 	}
 }
 
-func schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apicur_v1alpha1_Apicurito(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Installation is the Schema for the installations API",
+				Description: "Apicurito is the Schema for the apicuritos API",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -45,59 +45,78 @@ func schema_pkg_apis_kafkastrimziio_v1alpha1_Kafka(ref common.ReferenceCallback)
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus"),
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1.ApicuritoStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apicur_v1alpha1_ApicuritoSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InstallationSpec defines the desired state of Installation",
+				Description: "ApicuritoSpec defines the desired state of Apicurito",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"kafka": {
+					"size": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
-							Ref:         ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka"),
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
-					"zookeeper": {
+					"image": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"),
-						},
-					},
-					"entityOperator": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator"),
+							Description: "apicurio ui image",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
+				Required: []string{"size", "image"},
 			},
 		},
-		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecEntityOperator", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecKafka", "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1.KafkaSpecZookeeper"},
 	}
 }
 
-func schema_pkg_apis_kafkastrimziio_v1alpha1_KafkaStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_apicur_v1alpha1_ApicuritoStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InstallationStatus defines the observed state of Installation",
+				Description: "ApicuritoStatus defines the observed state of Apicurito",
 				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"nodes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "set",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Nodes are the names of the apicurito pods",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"nodes"},
 			},
 		},
 	}
