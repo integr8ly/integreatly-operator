@@ -365,7 +365,7 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 	keycloakServicePortCount := 2
 	rule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-amq-online-sli",
+			Name:      "rhmi-amq-online-slo",
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
@@ -375,9 +375,9 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 			Alert: fmt.Sprintf("AMQOnlineConsoleAvailable"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("AMQ-SLO-1.1: AMQ Online console is not available in namespace \"%s\"", r.Config.GetNamespace()),
+				"message": fmt.Sprintf("AMQ-SLO-1.1: AMQ Online console is not available in namespace '%s'", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"console\",namespace=\"%s\"}==1)", r.Config.GetNamespace())),
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='console',namespace='%s'}==1)", r.Config.GetNamespace())),
 			For:    "300s",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -387,7 +387,7 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": fmt.Sprintf("AMQ-SLO-1.4: Keycloak is not available in namespace %s", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint=\"standard-authservice\",namespace=\"%s\"}==%v)", r.Config.GetNamespace(), keycloakServicePortCount)),
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='standard-authservice',namespace='%s'}==%v)", r.Config.GetNamespace(), keycloakServicePortCount)),
 			For:    "300s",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -415,7 +415,7 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse reconcilePrometheusRule: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse PrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
