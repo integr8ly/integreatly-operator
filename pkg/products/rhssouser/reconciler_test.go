@@ -820,6 +820,11 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Reconciler{
 				logger: logrus.NewEntry(logrus.StandardLogger()),
+				Config: &config.RHSSOUser{
+					Config: map[string]string{
+						"NAMESPACE": defaultRhssoNamespace,
+					},
+				},
 			}
 			got, err := r.reconcileCloudResources(context.TODO(), tt.installation, tt.fakeClient())
 			if (err != nil) != tt.wantErr {
