@@ -190,7 +190,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, client, postgres)
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, client, installation, postgres)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for ups")
 	}

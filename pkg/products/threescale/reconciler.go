@@ -525,7 +525,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, backendRedis)
+	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create backend redis prometheus alert for threescale")
 	}
@@ -543,7 +543,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, systemRedis)
+	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create system redis prometheus alert for threescale")
 	}
@@ -561,7 +561,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, postgres)
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for threescale")
 	}

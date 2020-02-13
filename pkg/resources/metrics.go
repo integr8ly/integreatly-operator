@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,7 +17,12 @@ import (
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
-func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, cr *v1alpha1.Postgres) (*prometheusv1.PrometheusRule, error) {
+func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (*prometheusv1.PrometheusRule, error) {
+	if inst.Spec.UseClusterStorage {
+		logrus.Info("skipping postgres alert creation, useClusterStorage is true")
+		return nil, nil
+	}
+
 	productName := cr.Labels["productName"]
 	alertName := productName + "PostgresInstanceUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
@@ -36,8 +45,13 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 }
 
 // CreateRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
-// of a Redis cache
-func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, cr *v1alpha1.Redis) (*prometheusv1.PrometheusRule, error) {
+// of a Redis cacheu
+func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+	if inst.Spec.UseClusterStorage {
+		logrus.Info("skipping redis alert creation, useClusterStorage is true")
+		return nil, nil
+	}
+
 	productName := cr.Labels["productName"]
 	alertName := productName + "RedisCacheUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
