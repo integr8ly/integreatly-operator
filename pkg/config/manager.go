@@ -21,7 +21,7 @@ import (
 
 type ProductConfig map[string]string
 
-func NewManager(ctx context.Context, client k8sclient.Client, namespace string, configMapName string, installation *integreatlyv1alpha1.Installation) (*Manager, error) {
+func NewManager(ctx context.Context, client k8sclient.Client, namespace string, configMapName string, installation *integreatlyv1alpha1.RHMI) (*Manager, error) {
 	cfgmap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -74,7 +74,7 @@ type Manager struct {
 	Namespace    string
 	cfgmap       *corev1.ConfigMap
 	context      context.Context
-	installation *integreatlyv1alpha1.Installation
+	installation *integreatlyv1alpha1.RHMI
 }
 
 func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error) {

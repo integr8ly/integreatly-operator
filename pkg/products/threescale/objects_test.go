@@ -169,7 +169,7 @@ var oauthClientSecrets = &corev1.Secret{
 	},
 }
 
-var installation = &integreatlyv1alpha1.Installation{
+var installation = &integreatlyv1alpha1.RHMI{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:       "test-installation",
 		Namespace:  "integreatly-operator-ns",
@@ -179,7 +179,7 @@ var installation = &integreatlyv1alpha1.Installation{
 		Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 		APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 	},
-	Spec: integreatlyv1alpha1.InstallationSpec{
+	Spec: integreatlyv1alpha1.RHMISpec{
 		MasterURL:        "https://console.apps.example.com",
 		RoutingSubdomain: "apps.example.com",
 	},

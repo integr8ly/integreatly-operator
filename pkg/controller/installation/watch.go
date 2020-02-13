@@ -22,7 +22,7 @@ type installationMapper struct {
 }
 
 func (m installationMapper) Map(mo handler.MapObject) []reconcile.Request {
-	installationList := &integreatlyv1alpha1.InstallationList{}
+	installationList := &integreatlyv1alpha1.RHMIList{}
 	err := m.client.List(m.context, installationList)
 	if err != nil {
 		return []reconcile.Request{}

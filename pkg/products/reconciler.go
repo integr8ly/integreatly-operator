@@ -39,11 +39,11 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
-	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
+	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
 	GetPreflightObject(ns string) runtime.Object
 }
 
-func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mgr manager.Manager) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
 	oauthResolver.Host = rc.Host
@@ -126,7 +126,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 type NoOp struct {
 }
 
-func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.Installation, _ *integreatlyv1alpha1.InstallationProductStatus, _ k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *integreatlyv1alpha1.RHMIProductStatus, _ k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	return integreatlyv1alpha1.PhaseNone, nil
 }
 

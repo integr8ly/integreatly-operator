@@ -17,5 +17,5 @@ var (
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
 
-	SchemaGroupVersionKind = schema.GroupVersionKind{Group: "integreatly.org", Version: "v1alpha1", Kind: "Installation"}
+	SchemaGroupVersionKind = schema.GroupVersionKind{Group: "integreatly.org", Version: "v1alpha1", Kind: "RHMI"}
 )

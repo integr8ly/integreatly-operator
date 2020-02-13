@@ -10,7 +10,7 @@ import (
 )
 
 type Stage struct {
-	Products map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus
+	Products map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus
 	Name     integreatlyv1alpha1.StageName
 }
 
@@ -21,7 +21,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.CloudResourcesStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductCloudResources: {
 					Name: integreatlyv1alpha1.ProductCloudResources,
 				},
@@ -29,13 +29,13 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.MonitoringStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
 			},
 		},
 		{
 			Name: integreatlyv1alpha1.AuthenticationStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductRHSSO: {
 					Name: integreatlyv1alpha1.ProductRHSSO,
 				},
@@ -43,7 +43,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.ProductsStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
 				integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
 				integreatlyv1alpha1.ProductCodeReadyWorkspaces: {Name: integreatlyv1alpha1.ProductCodeReadyWorkspaces},
@@ -55,7 +55,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.SolutionExplorerStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
 			},
 		},
@@ -66,7 +66,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.CloudResourcesStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductCloudResources: {
 					Name: integreatlyv1alpha1.ProductCloudResources,
 				},
@@ -74,13 +74,13 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.MonitoringStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
 			},
 		},
 		{
 			Name: integreatlyv1alpha1.AuthenticationStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductRHSSO: {
 					Name: integreatlyv1alpha1.ProductRHSSO,
 				},
@@ -88,7 +88,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.ProductsStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
 				integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
 				integreatlyv1alpha1.ProductCodeReadyWorkspaces: {Name: integreatlyv1alpha1.ProductCodeReadyWorkspaces},
@@ -101,7 +101,7 @@ var (
 		},
 		{
 			Name: integreatlyv1alpha1.SolutionExplorerStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
 				integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
 			},
 		},
@@ -157,19 +157,19 @@ func buildProducts(t *Type, products []string, installType integreatlyv1alpha1.I
 	t.Stages = []Stage{
 		Stage{
 			Name:     integreatlyv1alpha1.BootstrapStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
 		},
 		Stage{
 			Name:     integreatlyv1alpha1.AuthenticationStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
 		},
 		Stage{
 			Name:     integreatlyv1alpha1.ProductsStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
 		},
 		Stage{
 			Name:     integreatlyv1alpha1.SolutionExplorerStage,
-			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.InstallationProductStatus{},
+			Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
 		},
 	}
 	for _, p := range products {
@@ -183,12 +183,12 @@ func buildProducts(t *Type, products []string, installType integreatlyv1alpha1.I
 			break
 		}
 		if integreatlyv1alpha1.ProductName(product) == integreatlyv1alpha1.ProductRHSSO {
-			t.Stages[1].Products[integreatlyv1alpha1.ProductRHSSO] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductRHSSO}
+			t.Stages[1].Products[integreatlyv1alpha1.ProductRHSSO] = &integreatlyv1alpha1.RHMIProductStatus{Name: integreatlyv1alpha1.ProductRHSSO}
 		}
 		if integreatlyv1alpha1.ProductName(product) == integreatlyv1alpha1.ProductSolutionExplorer {
-			t.Stages[3].Products[integreatlyv1alpha1.ProductSolutionExplorer] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductSolutionExplorer}
+			t.Stages[3].Products[integreatlyv1alpha1.ProductSolutionExplorer] = &integreatlyv1alpha1.RHMIProductStatus{Name: integreatlyv1alpha1.ProductSolutionExplorer}
 		}
 
-		t.Stages[2].Products[integreatlyv1alpha1.ProductName(product)] = &integreatlyv1alpha1.InstallationProductStatus{Name: integreatlyv1alpha1.ProductName(product)}
+		t.Stages[2].Products[integreatlyv1alpha1.ProductName(product)] = &integreatlyv1alpha1.RHMIProductStatus{Name: integreatlyv1alpha1.ProductName(product)}
 	}
 }

@@ -84,7 +84,7 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 	}
 
 	// Watch for changes to primary resource Installation
-	err = c.Watch(&source.Kind{Type: &integreatlyv1alpha1.Installation{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &integreatlyv1alpha1.RHMI{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -121,34 +121,34 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		return err
 	}
 
-	logrus.Infof("Looking for installation CR in %s namespace", namespace)
+	logrus.Infof("Looking for rhmi CR in %s namespace", namespace)
 
-	installationList := &integreatlyv1alpha1.InstallationList{}
+	installationList := &integreatlyv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(namespace),
 	}
 	err = serverClient.List(ctx, installationList, listOpts...)
 	if err != nil {
-		return fmt.Errorf("Could not get a list of installation CR: %w", err)
+		return fmt.Errorf("Could not get a list of rhmi CR: %w", err)
 	}
 
-	installation := &integreatlyv1alpha1.Installation{}
+	installation := &integreatlyv1alpha1.RHMI{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
 
-		logrus.Infof("Creating a %s installation CR as no CR installations were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
+		logrus.Infof("Creating a %s rhmi CR as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
 
 		useClusterStorage, err := useClusterStorage()
 		if err != nil {
 			return fmt.Errorf("Invalid value for USE_CLUSTER_STORAGE environment variable: %w", err)
 		}
 
-		installation = &integreatlyv1alpha1.Installation{
+		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      DefaultInstallationName,
 				Namespace: namespace,
 			},
-			Spec: integreatlyv1alpha1.InstallationSpec{
+			Spec: integreatlyv1alpha1.RHMISpec{
 				Type:              string(integreatlyv1alpha1.InstallationTypeManaged),
 				NamespacePrefix:   DefaultInstallationPrefix,
 				SelfSignedCerts:   false,
@@ -159,12 +159,12 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		err = serverClient.Create(ctx, installation)
 		if err != nil {
-			return fmt.Errorf("Could not create installation CR in %s namespace: %w", namespace, err)
+			return fmt.Errorf("Could not create rhmi CR in %s namespace: %w", namespace, err)
 		}
 	} else if len(installationList.Items) == 1 {
 		installation = &installationList.Items[0]
 	} else {
-		return fmt.Errorf("Too many Installation resources found. Expecting 1, found %s Installation resources in %s namespace", string(len(installationList.Items)), namespace)
+		return fmt.Errorf("Too many rhmi resources found. Expecting 1, found %s rhmi resources in %s namespace", string(len(installationList.Items)), namespace)
 	}
 
 	return nil
@@ -210,7 +210,7 @@ type ReconcileInstallation struct {
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	installInProgress := false
-	installation := &integreatlyv1alpha1.Installation{}
+	installation := &integreatlyv1alpha1.RHMI{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, installation)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -256,7 +256,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	if installation.Status.Stages == nil {
-		installation.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus{}
+		installation.Status.Stages = map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{}
 	}
 
 	// If the CR is being deleted, cancel the current context
@@ -312,9 +312,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		if installation.Status.Stages == nil {
-			installation.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.InstallationStageStatus)
+			installation.Status.Stages = make(map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus)
 		}
-		installation.Status.Stages[stage.Name] = &integreatlyv1alpha1.InstallationStageStatus{
+		installation.Status.Stages[stage.Name] = &integreatlyv1alpha1.RHMIStageStatus{
 			Name:     stage.Name,
 			Phase:    stagePhase,
 			Products: stage.Products,
@@ -372,7 +372,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
+func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
 	result := reconcile.Result{
 		Requeue:      true,
@@ -445,7 +445,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	return result, nil
 }
 
-func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.Installation, installationType *Type, configManager *config.Manager) ([]string, error) {
+func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) ([]string, error) {
 	foundProducts := []string{}
 	if strings.HasPrefix(ns.Name, "openshift-") {
 		return foundProducts, nil
@@ -477,7 +477,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	return foundProducts, nil
 }
 
-func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.Installation, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.RHMI, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	mpm := marketplace.NewManager()
 
 	reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(integreatlyv1alpha1.BootstrapStage)))
@@ -496,7 +496,7 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 	return phase, nil
 }
 
-func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.Installation, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	var mErr error
 	for _, product := range stage.Products {

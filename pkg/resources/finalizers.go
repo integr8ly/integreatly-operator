@@ -18,7 +18,7 @@ import (
 
 // AddFinalizer adds a finalizer to the custom resource. This allows us to clean up oauth clients
 // and other cluster level objects owned by the installation before the cr is deleted
-func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, finalizer string) error {
+func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
 	if !contains(inst.GetFinalizers(), finalizer) && inst.GetDeletionTimestamp() == nil {
 		inst.SetFinalizers(append(inst.GetFinalizers(), finalizer))
 		err := client.Update(ctx, inst)
@@ -31,7 +31,7 @@ func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.Installation, c
 }
 
 // RemoveOauthClient deletes an oauth client by name
-func RemoveOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, oauthClient oauthClient.OauthV1Interface, oauthClientName string) error {
+func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string) error {
 	err := oauthClient.OAuthClients().Delete(oauthClientName, &metav1.DeleteOptions{})
 	if err != nil && !k8serr.IsNotFound(err) {
 		logrus.Error("Error cleaning up oauth client", err)
@@ -41,7 +41,7 @@ func RemoveOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installati
 }
 
 // RemoveNamespace deletes a namespace of a product
-func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		// Since we are using ProjectRequests and limited permissions,
@@ -71,7 +71,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.Installation
 }
 
 // RemoveProductFinalizer removes a given finalizer from the installation custom resource
-func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, product string) error {
+func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, product string) error {
 	finalizer := "finalizer." + product + ".integreatly.org"
 	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
@@ -83,7 +83,7 @@ func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.Insta
 }
 
 // RemoveFinalizer removes a given finalizer from the installation custom resource
-func RemoveFinalizer(ctx context.Context, inst *integreatlyv1alpha1.Installation, client k8sclient.Client, finalizer string) error {
+func RemoveFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
 	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {

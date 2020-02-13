@@ -39,7 +39,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	scenarios := []struct {
 		Name         string
 		FakeClient   k8sclient.Client
-		Installation *integreatlyv1alpha1.Installation
+		Installation *integreatlyv1alpha1.RHMI
 		Verify       func(client k8sclient.Client, err error, t *testing.T)
 	}{
 		{
@@ -51,7 +51,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 					Labels:    map[string]string{"webapp": "true"},
 				},
 			}),
-			Installation: &integreatlyv1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.RHMI{},
 			Verify: func(c k8sclient.Client, err error, t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err.Error())
@@ -74,7 +74,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 					Labels:    map[string]string{"webapp": "true"},
 				},
 			}),
-			Installation: &integreatlyv1alpha1.Installation{},
+			Installation: &integreatlyv1alpha1.RHMI{},
 			Verify: func(c k8sclient.Client, err error, t *testing.T) {
 				if err == nil {
 					t.Fatal("Expected error but got none")

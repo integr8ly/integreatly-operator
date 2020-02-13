@@ -19,7 +19,7 @@ const (
 )
 
 // CopyDefaultPullSecretToNamespace copies the default pull secret to a target namespace
-func CopyDefaultPullSecretToNameSpace(context context.Context, destNamespace, destName string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) error {
+func CopyDefaultPullSecretToNameSpace(context context.Context, destNamespace, destName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) error {
 	if inst.Spec.PullSecret.Name == "" {
 		inst.Spec.PullSecret.Name = DefaultOriginPullSecretName
 	}

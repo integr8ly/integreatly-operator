@@ -57,7 +57,7 @@ const (
 )
 
 func TestIntegreatly(t *testing.T) {
-	installationList := &integreatlyv1alpha1.InstallationList{}
+	installationList := &integreatlyv1alpha1.RHMIList{}
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, installationList)
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
@@ -540,7 +540,7 @@ func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, names
 }
 
 func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operatorVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.Installation{}
+	installation := &integreatlyv1alpha1.RHMI{}
 
 	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
 	if err != nil {
@@ -558,7 +558,7 @@ func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace strin
 }
 
 func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.Installation{}
+	installation := &integreatlyv1alpha1.RHMI{}
 
 	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
 	if err != nil {
@@ -605,7 +605,7 @@ func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []s
 
 func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, namespace string, retryInterval, timeout time.Duration, phase string) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		installation := &integreatlyv1alpha1.Installation{}
+		installation := &integreatlyv1alpha1.RHMI{}
 		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
 		if err != nil {
 			if apierrors.IsNotFound(err) {

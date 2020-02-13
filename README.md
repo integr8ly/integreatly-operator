@@ -7,6 +7,7 @@ A Kubernetes Operator based on the Operator SDK for installing and reconciling I
 This is a proof of concept/alpha version. Most functionality is present but it is highly likely there are bugs and improvements needed.
 
 ### Installed products
+### Installed products
 Currently the operator installs the following products:
 - AMQ Online
 - AMQ Streams
@@ -70,11 +71,11 @@ You can use this command to replace S3 credentials in backup secret:
 oc process -f deploy/s3-secret.yaml -p AWS_ACCESS_KEY_ID=<YOURID> -p AWS_SECRET_ACCESS_KEY=<YOURKEY> -p AWS_BUCKET=<YOURBUCKET> -p AWS_REGION=eu-west-1 -p NAMESPACE=<integreatly-operator-namespace> | oc replace -f -
 ```
 
-### Installation custom resource
-An `Installation` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
+### RHMI custom resource
+An `RHMI` custom resource can now be created which will kick of the installation of the integreatly products, once the operator is running:
 ```sh
 # Create the installation custom resource
-oc create -f deploy/crds/examples/installation.cr.yaml
+oc create -f deploy/crds/examples/rhmi.cr.yaml
 
 # The operator can now be run locally
 make code/run
@@ -109,9 +110,9 @@ In `Catalog > Developer Catalog`, choose the Integreatly Installation and click 
 
 ```yml
 apiVersion: integreatly.org/v1alpha1
-kind: Installation
+kind: RHMI
 metadata:
-  name: example-installation
+  name: example-rhmi
 spec:
   type: workshop
   namespacePrefix: redhat-rhmi-

@@ -67,8 +67,8 @@ const (
 	defaultNamespace = "amq-online"
 )
 
-func basicInstallation() *integreatlyv1alpha1.Installation {
-	return &integreatlyv1alpha1.Installation{
+func basicInstallation() *integreatlyv1alpha1.RHMI {
+	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "integreatly",
 			Namespace: "integreatly",
@@ -126,7 +126,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		Name           string
 		Client         k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		AuthServices   []*enmassev1.AuthenticationService
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -138,7 +138,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			FakeConfig:     basicConfigMock(),
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-installation",
 					Namespace: "test-namespace",
@@ -152,7 +152,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			AuthServices:   GetDefaultAuthServices(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Installation: &integreatlyv1alpha1.Installation{
+			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-installation",
 					Namespace: "test-namespace",
@@ -184,7 +184,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 		Name                 string
 		Client               k8sclient.Client
 		FakeConfig           *config.ConfigReadWriterMock
-		Installation         *integreatlyv1alpha1.Installation
+		Installation         *integreatlyv1alpha1.RHMI
 		ExpectedStatus       integreatlyv1alpha1.StatusPhase
 		BrokeredInfraConfigs []*v1beta1.BrokeredInfraConfig
 		StandardInfraConfigs []*v1beta1.StandardInfraConfig
@@ -235,7 +235,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 		Name           string
 		Client         k8sclient.Client
 		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.Installation
+		Installation   *integreatlyv1alpha1.RHMI
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		AddressPlans   []*v1beta2.AddressPlan
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -283,7 +283,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 		Name              string
 		Client            k8sclient.Client
 		FakeConfig        *config.ConfigReadWriterMock
-		Installation      *integreatlyv1alpha1.Installation
+		Installation      *integreatlyv1alpha1.RHMI
 		ExpectedStatus    integreatlyv1alpha1.StatusPhase
 		AddressSpacePlans []*v1beta2.AddressSpacePlan
 		FakeMPM           *marketplace.MarketplaceInterfaceMock
@@ -482,7 +482,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
-	installation := &integreatlyv1alpha1.Installation{
+	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
 			Namespace: defaultInstallationNamespace,
@@ -544,8 +544,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Installation   *integreatlyv1alpha1.Installation
-		Product        *integreatlyv1alpha1.InstallationProductStatus
+		Installation   *integreatlyv1alpha1.RHMI
+		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
 	}{
 		{
@@ -580,7 +580,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			Installation: installation,
-			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 		},
 	}

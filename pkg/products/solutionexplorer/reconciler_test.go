@@ -33,10 +33,10 @@ type SolutionExplorerScenario struct {
 	FakeConfig      *config.ConfigReadWriterMock
 	FakeMPM         *marketplace.MarketplaceInterfaceMock
 	FakeOauthClient oauthClient.OauthV1Interface
-	Installation    *integreatlyv1alpha1.Installation
+	Installation    *integreatlyv1alpha1.RHMI
 	OauthResolver   func() OauthResolver
 	Validate        func(t *testing.T, mock interface{})
-	Product         *integreatlyv1alpha1.InstallationProductStatus
+	Product         *integreatlyv1alpha1.RHMIProductStatus
 	Recorder        record.EventRecorder
 }
 
@@ -166,7 +166,7 @@ func TestSolutionExplorer(t *testing.T) {
 			Installation: installation,
 			FakeConfig:   basicConfigMock(),
 			client:       fake.NewFakeClient(webappNS, operatorNS, webappCR, installation, webappRoute),
-			Product:      &integreatlyv1alpha1.InstallationProductStatus{},
+			Product:      &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:     setupRecorder(),
 		},
 	}

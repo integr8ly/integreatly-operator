@@ -38,7 +38,7 @@ func NewReconciler(mpm marketplace.MarketplaceInterface) *Reconciler {
 	}
 }
 
-func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatlyv1alpha1.Installation, client *oauthv1.OAuthClient, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client *oauthv1.OAuthClient, apiClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Make sure to use the redirect URIs supplied to the reconcile function and
 	// not those that are currently on the client. Copy the uris because arrays
 	// are references.
@@ -88,7 +88,7 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	return ns, err
 }
 
-func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.Installation) (*v1.Namespace, error) {
+func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (*v1.Namespace, error) {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
@@ -113,7 +113,7 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 	return ns, err
 }
 
-func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		// Since we are using ProjectRequests and limited permissions,
@@ -148,7 +148,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.Installation, productName string, finalFunc finalizerFunc) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := "finalizer." + productName + ".integreatly.org"
 	// Add finalizer if not there
 	err := AddFinalizer(ctx, inst, client, finalizer)
@@ -179,7 +179,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.Installation, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	pullSecretName := DefaultOriginPullSecretName
 	if secretName != "" {
 		pullSecretName = secretName
@@ -232,7 +232,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.Installation) {
+func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI) {
 	labels := ns.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
@@ -245,7 +245,7 @@ func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.Installation) 
 	ns.SetLabels(labels)
 }
 
-func IsOwnedBy(o metav1.Object, owner *integreatlyv1alpha1.Installation) bool {
+func IsOwnedBy(o metav1.Object, owner *integreatlyv1alpha1.RHMI) bool {
 	// TODO change logic to check for our finalizer?
 	for k, v := range o.GetLabels() {
 		if k == OwnerLabelKey && v == string(owner.UID) {

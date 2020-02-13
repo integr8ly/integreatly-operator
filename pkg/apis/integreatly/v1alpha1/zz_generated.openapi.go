@@ -11,17 +11,17 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.Installation":       schema_pkg_apis_integreatly_v1alpha1_Installation(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec":   schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref),
-		"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus": schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref),
+		"./pkg/apis/integreatly/v1alpha1.RHMI":       schema_pkg_apis_integreatly_v1alpha1_RHMI(ref),
+		"./pkg/apis/integreatly/v1alpha1.RHMISpec":   schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref),
+		"./pkg/apis/integreatly/v1alpha1.RHMIStatus": schema_pkg_apis_integreatly_v1alpha1_RHMIStatus(ref),
 	}
 }
 
-func schema_pkg_apis_integreatly_v1alpha1_Installation(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_integreatly_v1alpha1_RHMI(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Installation is the Schema for the installations API",
+				Description: "RHMI is the Schema for the RHMI API",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
@@ -45,27 +45,27 @@ func schema_pkg_apis_integreatly_v1alpha1_Installation(ref common.ReferenceCallb
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec"),
+							Ref: ref("./pkg/apis/integreatly/v1alpha1.RHMISpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus"),
+							Ref: ref("./pkg/apis/integreatly/v1alpha1.RHMIStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationSpec", "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"./pkg/apis/integreatly/v1alpha1.RHMISpec", "./pkg/apis/integreatly/v1alpha1.RHMIStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InstallationSpec defines the desired state of Installation",
+				Description: "RHMISpec defines the desired state of Installation",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {
@@ -101,7 +101,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 					},
 					"pullSecret": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
+							Ref: ref("./pkg/apis/integreatly/v1alpha1.PullSecretSpec"),
 						},
 					},
 					"useClusterStorage": {
@@ -122,15 +122,15 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationSpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
+			"./pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
 	}
 }
 
-func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_integreatly_v1alpha1_RHMIStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "InstallationStatus defines the observed state of Installation",
+				Description: "RHMIStatus defines the observed state of Installation",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"stages": {
@@ -141,7 +141,7 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"),
+										Ref: ref("./pkg/apis/integreatly/v1alpha1.RHMIStageStatus"),
 									},
 								},
 							},
@@ -182,6 +182,6 @@ func schema_pkg_apis_integreatly_v1alpha1_InstallationStatus(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.InstallationStageStatus"},
+			"./pkg/apis/integreatly/v1alpha1.RHMIStageStatus"},
 	}
 }
