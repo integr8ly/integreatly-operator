@@ -11,7 +11,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
 	github.com/go-openapi/spec v0.19.4
 	github.com/imdario/mergo v0.3.8 // indirect
-	github.com/integr8ly/cloud-resource-operator v0.9.0
+	github.com/integr8ly/cloud-resource-operator v0.10.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
@@ -34,7 +34,6 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/controller-tools v0.2.4 // indirect
 )
 
 // Pinned to kubernetes-1.15.4

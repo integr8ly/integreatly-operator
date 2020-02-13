@@ -32,7 +32,7 @@ func GetAWSRegion(ctx context.Context, c client.Client) (string, error) {
 	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
 		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
 	}
-	if infra.Status.Platform == v1.AWSPlatformType {
+	if infra.Status.PlatformStatus.Type == v1.AWSPlatformType {
 		return infra.Status.PlatformStatus.AWS.Region, nil
 	}
 	return "", errorUtil.New("infrastructure does not container aws region")
