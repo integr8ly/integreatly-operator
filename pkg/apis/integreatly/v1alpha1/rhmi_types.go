@@ -13,15 +13,17 @@ type PreflightStatus string
 type StageName string
 
 var (
-	PhaseNone                 StatusPhase = ""
-	PhaseAccepted             StatusPhase = "accepted"
-	PhaseCreatingSubscription StatusPhase = "creating subscription"
-	PhaseAwaitingOperator     StatusPhase = "awaiting operator"
-	PhaseCreatingComponents   StatusPhase = "creating components"
-	PhaseAwaitingComponents   StatusPhase = "awaiting components"
-	PhaseInProgress           StatusPhase = "in progress"
-	PhaseCompleted            StatusPhase = "completed"
-	PhaseFailed               StatusPhase = "failed"
+	PhaseNone                   StatusPhase = ""
+	PhaseAccepted               StatusPhase = "accepted"
+	PhaseCreatingSubscription   StatusPhase = "creating subscription"
+	PhaseAwaitingOperator       StatusPhase = "awaiting operator"
+	PhaseAwaitingCloudResources StatusPhase = "awaiting cloud resources"
+	PhaseCreatingComponents     StatusPhase = "creating components"
+	PhaseAwaitingComponents     StatusPhase = "awaiting components"
+
+	PhaseInProgress StatusPhase = "in progress"
+	PhaseCompleted  StatusPhase = "completed"
+	PhaseFailed     StatusPhase = "failed"
 
 	InstallationTypeWorkshop InstallationType = "workshop"
 	InstallationTypeManaged  InstallationType = "managed"

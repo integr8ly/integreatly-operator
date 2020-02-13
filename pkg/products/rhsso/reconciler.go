@@ -182,6 +182,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileCloudResources(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -394,6 +400,20 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.logger.Info("Reconciling Keycloak external database instance")
+	postgresName := fmt.Sprintf("rhsso-postgres-%s", installation.Name)
+	credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace())
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "")
+	}
+	// postgres provisioning is still in progress
+	if credentialSec == nil {
+		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak components")
 	kc := &keycloak.Keycloak{
@@ -408,6 +428,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Labels = GetInstanceLabels()
 		kc.Spec.Instances = 2
+		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{
 			Enabled: true,
 		}
