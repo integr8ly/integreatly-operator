@@ -3,6 +3,10 @@ package apicurio
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	v1 "k8s.io/api/apps/v1"
+
 	apicurio "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -13,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -26,7 +29,7 @@ import (
 )
 
 const (
-	defaultInstallationNamespace = "apicurio-2"
+	defaultInstallationNamespace = "apicurio"
 	defaultSubscriptionName      = "integreatly-apicurio"
 	manifestPackage              = "integreatly-apicurio"
 	apicurioName                 = "apicurio"
@@ -39,12 +42,12 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	logger        *logrus.Entry
 	mpm           marketplace.MarketplaceInterface
-	installation  *integreatlyv1alpha1.Installation
+	installation  *integreatlyv1alpha1.RHMI
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.Installation, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	apicurioConfig, err := configManager.ReadApicurio()
 
@@ -72,7 +75,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.Installation, product *integreatlyv1alpha1.InstallationProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 
 		// Check if namespace is still present before trying to delete it resources
@@ -167,7 +170,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.Installation, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	r.logger.Info("Reconciling Apicurio components")
 	apicurioCR := &apicurio.Apicurito{
@@ -455,20 +458,20 @@ func (r *Reconciler) addTlsToApicurioRoute(ctx context.Context, client k8sclient
 
 func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, client k8sclient.Client) error {
 
-	var dc = &appsv1.DeploymentConfig{}
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, dc)
+	var deployment = &v1.Deployment{}
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurio", Namespace: r.Config.GetNamespace()}, deployment)
 	if err != nil {
-		return fmt.Errorf("Failed to update apicurito deployment config: %w", err)
+		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %w, %w", r.Config.GetNamespace(), err)
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, client, dc, func() error {
-		dc.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+	or, err := controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
 			{
 				Name:      "config-volume",
 				MountPath: "/html/config",
 			},
 		}
-		dc.Spec.Template.Spec.Volumes = []corev1.Volume{
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{
 			{
 				Name: "config-volume",
 				VolumeSource: corev1.VolumeSource{
@@ -485,7 +488,7 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 	if err != nil {
 		return errors.Wrap(err, "failed to create/update apicurio deployment config")
 	}
-	r.logger.Infof("The operation result for apicurito deployment config %s was %s", dc.Name, or)
+	r.logger.Infof("The operation result for apicurito deployment config %s was %s", deployment.Name, or)
 
 	return nil
 }
