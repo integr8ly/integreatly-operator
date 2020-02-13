@@ -205,6 +205,10 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for codeready: %w", err)
 	}
+	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for codeready: %s", err)
+	}
 
 	// get the secret created by the cloud resources operator
 	croSec := &corev1.Secret{}

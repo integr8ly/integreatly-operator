@@ -525,6 +525,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
 	}
+	// create backend connectivity alert
+	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
+	}
 
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
@@ -543,6 +548,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
 	}
+	// create system redis connectivity alert
+	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
+	}
 
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision a postgres instance
@@ -560,6 +570,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
+	}
+	// create postgres connectivity alert
+	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// wait for the backend redis cr to reconcile

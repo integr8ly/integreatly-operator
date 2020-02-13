@@ -193,6 +193,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for ups: %w", err)
 	}
+	// create the prometheus connectivity rule
+	_, err = resources.CreatePostgresConnectivityAlert(ctx, client, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus rule: %s", err)
+	}
 
 	// get the secret created by the cloud resources operator
 	// containing postgres connection details

@@ -11,7 +11,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.5-0.20191022081736-744796356cda
 	github.com/integr8ly/application-monitoring-operator v1.1.1
-	github.com/integr8ly/cloud-resource-operator v0.10.0
+	github.com/integr8ly/cloud-resource-operator v0.11.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024

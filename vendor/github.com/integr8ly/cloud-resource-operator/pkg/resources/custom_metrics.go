@@ -5,14 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	prometheusv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/pkg/errors"
-	errorUtil "github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,9 +18,15 @@ import (
 )
 
 const (
-	sleepytime                     = 3600
-	DefaultPostgresAvailMetricName = "cro_postgres_available"
-	DefaultRedisAvailMetricName    = "cro_redis_available"
+	sleepytime                           = 3600
+	DefaultPostgresMaintenanceMetricName = "cro_postgres_service_maintenance"
+	DefaultPostgresInfoMetricName        = "cro_postgres_info"
+	DefaultPostgresAvailMetricName       = "cro_postgres_available"
+	DefaultPostgresConnectionMetricName  = "cro_postgres_connection"
+	DefaultRedisMaintenanceMetricName    = "cro_redis_service_maintenance"
+	DefaultRedisInfoMetricName           = "cro_redis_info"
+	DefaultRedisAvailMetricName          = "cro_redis_available"
+	DefaultRedisConnectionMetricName     = "cro_redis_connection"
 )
 
 var (
@@ -52,13 +55,14 @@ func StartGaugeVector() {
 	}()
 }
 
-// SetMetric Set exports a Prometheus Gauge
-func SetMetric(name string, labels map[string]string, value float64) error {
+//SetMetric Set exports a Prometheus Gauge
+func SetMetric(name string, labels map[string]string, value float64) {
 	// set vector value
 	gv, ok := MetricVecs[name]
 	if ok {
 		gv.With(labels).Set(value)
-		return nil
+		logrus.Info(fmt.Sprintf("successfully set metric value for %s", name))
+		return
 	}
 
 	// create label array for vector creation
@@ -72,15 +76,12 @@ func SetMetric(name string, labels map[string]string, value float64) error {
 	customMetrics.Registry.MustRegister(gv)
 	MetricVecs[name] = gv
 
-	return nil
+	logrus.Info(fmt.Sprintf("successfully created new gauge vector metric %s", name))
 }
 
-// SetMetricCurrentTime Set current time wraps set metric
-func SetMetricCurrentTime(name string, labels map[string]string) error {
-	if err := SetMetric(name, labels, float64(time.Now().UnixNano())/1e9); err != nil {
-		return errorUtil.Wrap(err, "unable to set current time gauge vector")
-	}
-	return nil
+//SetMetricCurrentTime Set current time wraps set metric
+func SetMetricCurrentTime(name string, labels map[string]string) {
+	SetMetric(name, labels, float64(time.Now().UnixNano())/1e9)
 }
 
 // CreatePrometheusRule will create a PrometheusRule object
@@ -141,68 +142,4 @@ func DeletePrometheusRule(ctx context.Context, client client.Client, ruleName, n
 	}
 
 	return nil
-}
-
-// CreatePostgresAvailabilityAlert creates an alert for the availability of a postgres instance
-func CreatePostgresAvailabilityAlert(ctx context.Context, client client.Client, cr *v1alpha1.Postgres) (*prometheusv1.PrometheusRule, error) {
-	clusterID, err := GetClusterID(ctx, client)
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "failed to retrieve cluster identifier")
-	}
-	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
-	alertRuleName := "PostgresInstanceUnavailable"
-	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s'} == 1)",
-			DefaultPostgresAvailMetricName, cr.Namespace, cr.Name),
-	)
-	alertDescription := fmt.Sprintf("Postgres instance: %s on cluster: %s for product: %s (strategy: %s) is unavailable", cr.Name, clusterID, cr.Labels["productName"], cr.Status.Strategy)
-	labels := map[string]string{
-		"severity":    "critical",
-		"productName": cr.Labels["productName"],
-	}
-
-	// create the rule
-	pr, err := ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertRuleName, alertDescription, alertExp, labels)
-	if err != nil {
-		return nil, err
-	}
-	return pr, nil
-}
-
-// DeletePostgresAvailabilityAlert deletes the postgres availability alert
-func DeletePostgresAvailabilityAlert(ctx context.Context, client client.Client, cr *v1alpha1.Postgres) error {
-	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
-	return DeletePrometheusRule(ctx, client, ruleName, cr.Namespace)
-}
-
-// CreateRedisAvailabilityAlert creates an alert for the availability of a redis cache
-func CreateRedisAvailabilityAlert(ctx context.Context, client client.Client, cr *v1alpha1.Redis) (*prometheusv1.PrometheusRule, error) {
-	clusterID, err := GetClusterID(ctx, client)
-	if err != nil {
-		return nil, errorUtil.Wrap(err, "failed to retrieve cluster identifier")
-	}
-	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
-	alertRuleName := "RedisInstanceUnavailable"
-	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s'} == 1)",
-			DefaultRedisAvailMetricName, cr.Namespace, cr.Name),
-	)
-	alertDescription := fmt.Sprintf("Redis cache: %s on cluster: %s for product: %s (strategy: %s) is unavailable", cr.Name, clusterID, cr.Labels["productName"], cr.Status.Strategy)
-	labels := map[string]string{
-		"severity":    "critical",
-		"productName": cr.Labels["productName"],
-	}
-
-	// create the rule
-	pr, err := ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertRuleName, alertDescription, alertExp, labels)
-	if err != nil {
-		return nil, err
-	}
-	return pr, nil
-}
-
-// DeleteRedisAvailabilityAlert deletes the redis availability alert
-func DeleteRedisAvailabilityAlert(ctx context.Context, client client.Client, cr *v1alpha1.Redis) error {
-	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
-	return DeletePrometheusRule(ctx, client, ruleName, cr.Namespace)
 }
