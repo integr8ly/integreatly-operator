@@ -127,6 +127,11 @@ test/e2e/prow: test/e2e
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
+.PHONY: test/functional
+test/functional:
+	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
+	go test ./test/functional
+
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/prepare/smtp cluster/deploy/integreatly-rhmi-cr.yml
 

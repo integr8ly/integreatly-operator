@@ -8,16 +8,30 @@
 
 * [`e2e`](./e2e)
   
-  The tests in this directory are executed using the operator-sdk's test command. It contains setup that are required to run tests using the operator-sdk.
+  This is used to initialise and run tests defined in `common` directory using the operator-sdk. Existing tests there should be refactored to move to the `common` directory.
+  
+  To run the `e2e` tests, execute:
+  
+  ```
+  make test/e2e
+  ```
+  
+  Because operator-sdk is used, they are useful for developing tests locally. You can run them against a clean OpenShift cluster, and operator-sdk will automatically clean up when the tests are finished.
  
 * [`functional`](./functional)
 
-  The tests in this directory will be used to build a container that can be used to run functional tests against an Integreatly cluster. See [this Dockerfile]('../Dockerfile.functional).
-  It contains setup that are required to run the tests from inside a container. 
+  This is used to initialise and run tests defined in `common` directory using `go test`. You can invoke the tests here against an existing RHMI cluster either using `go test`, or from an IDE.
   
-  Note that in order to run the tests, the container needs to have `admin` permission.
+  To run the `functional` tests, make sure you have logged in to the cluster first, then execute:
+  ```
+  make test/functional
+  ```
   
-  This container will be run as part of the [OSD Addon testing flow](https://github.com/openshift/osde2e/blob/master/docs/Addons.md). 
+  This is useful if you need to run the tests against an existing RHMI cluster for debugging or verification purposes.
+  
+  It will also be used to build the test harness image, and run tests from inside an container on a cluster. Note that in order to run the tests, the container needs to have `admin` permission. 
+  
+  This test harness image will be used as part of our own testing pipelines, as well as as part of the [OSD Addon testing flow](https://github.com/openshift/osde2e/blob/master/docs/Addons.md). 
 
 * [`metadata`](./metadata)  
   
