@@ -24,7 +24,8 @@ WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MANIFESTS_DIR=${WORK_DIR}/../manifests
 MANIFEST_TMP_DIR=${MANIFESTS_DIR}/temp
 IMAGE=$1
-FOLDER_PRODUCT_NAME=3scale
+PRODUCT=3scale
+PRODUCT_OPERATOR=3scale-operator
 
 function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
 
@@ -45,14 +46,18 @@ extract_manifests_from_image() {
 
 get_current_csv() {
     echo "Getting current csv  from existing package.yaml"
-    CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels[0].currentCSV | sed -e s/^3scale-operator.v//)
+    # The sed entry here will need to be fixed up for each product.
+    # The operator versions do not all follow the same syntax
+    CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels[0].currentCSV | sed -e s/^3scale-operator.v//)
     echo $CURRENT_CSV
 }
 
 get_new_csv() {
     IMAGE_MANIFEST_FILE=$(find ${MANIFEST_TMP_DIR} -name "*.package.yaml")
-    DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml defaultChannel)
-    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+    DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/${PRODUCT_OPERATOR}.package.yaml defaultChannel)
+    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/${PRODUCT_OPERATOR}.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+    # The sed entry here will need to be fixed up for each product.
+    # The operator versions do not all follow the same syntax
     NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
 }
 
@@ -72,20 +77,21 @@ check_versions() {
 
 copy_new_csv() {
     echo "Copying process manifests to ${MANIFESTS_DIR}"
-    NEW_CSV_FOLDER=3scale-$NEW_CSV_SEMVER
+    # The below line won't work for apicurito as it doesn't add the product name to the semver in it's folder structure
+    NEW_CSV_FOLDER=${PRODUCT}-$NEW_CSV_SEMVER
     mv ${MANIFEST_TMP_DIR}/$NEW_CSV_SEMVER ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER}
-    mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/
+    mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${PRODUCT}/
 }
 
 update_new_csv() {
     echo "updating csv"
-    echo "${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
-    yq d -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
-    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/${NEW_CSV_FOLDER}/3scale-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
+    echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
+    yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
 }
 
 update_package_yaml() {
-    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels.\(name==integreatly\).currentCSV $NEW_CSV
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels.\(name==integreatly\).currentCSV $NEW_CSV
 }
 
 process_image() {
