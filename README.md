@@ -7,7 +7,6 @@ A Kubernetes Operator based on the Operator SDK for installing and reconciling I
 This is a proof of concept/alpha version. Most functionality is present but it is highly likely there are bugs and improvements needed.
 
 ### Installed products
-### Installed products
 Currently the operator installs the following products:
 - AMQ Online
 - AMQ Streams
