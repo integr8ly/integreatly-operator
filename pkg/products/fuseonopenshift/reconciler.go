@@ -11,8 +11,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
 	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -31,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -115,7 +114,79 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	phase, err := r.reconcileConfigMap(ctx, serverClient)
+	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		// get config of the samples operator
+		clusterSampleCR := &samplesv1.Config{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "cluster",
+			},
+		}
+
+		if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterSampleCR.Name}, clusterSampleCR); err != nil {
+			// If the config cr for the sample operator is not found, the sample operator is not installed so no need to remove templates from it
+			if k8errors.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseCompleted, nil
+			}
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s config for samples operator: %w", clusterSampleCR.Name, err)
+		}
+
+		// get fuse on openshift template config map
+		templatesConfigMap, err := r.getTemplatesConfigMap(ctx, serverClient)
+		if err != nil {
+			if k8errors.IsNotFound(err) {
+				return integreatlyv1alpha1.PhaseCompleted, nil
+			}
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", templatesConfigMap.Name, templatesConfigMap.Namespace, err)
+		}
+
+		// remove fuse on openshift imagestreams from skippedImageStreams
+		imageStreams, err := r.getImageStreamsFromConfigMap(templatesConfigMap)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get image streams from configmap %s", templatesConfigMap.Name)
+		}
+		imageStreamNames := r.getKeysFromMap(imageStreams)
+
+		var skippedImageStreams []string
+		for _, v := range clusterSampleCR.Spec.SkippedImagestreams {
+			if !r.contains(imageStreamNames, v) {
+				skippedImageStreams = append(skippedImageStreams, v)
+			}
+		}
+		clusterSampleCR.Spec.SkippedImagestreams = skippedImageStreams
+
+		// remove fuse on openshift templates from skippedTemplates
+		templates, err := r.getTemplatesFromConfigMap(templatesConfigMap)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get templates from configmap %s: %w", templatesConfigMap.Name, err)
+		}
+		templateNames := r.getKeysFromMap(templates)
+
+		var skippedTemplates []string
+		for _, v := range clusterSampleCR.Spec.SkippedTemplates {
+			if !r.contains(templateNames, v) {
+				skippedTemplates = append(skippedTemplates, v)
+			}
+		}
+		clusterSampleCR.Spec.SkippedTemplates = skippedTemplates
+
+		// Update config of samples operator
+		if err := serverClient.Update(ctx, clusterSampleCR); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update %s config for samples operator: %w", clusterSampleCR.Name, err)
+		}
+
+		// remove fuse on openshift templates
+		if err := serverClient.Delete(ctx, templatesConfigMap); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete %s configmap: %w", templatesConfigMap.Name, err)
+		}
+
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	})
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileConfigMap(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile configmap", err)
 		return phase, err
@@ -127,7 +198,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient, installation)
+	phase, err = r.reconcileTemplates(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
@@ -155,43 +226,41 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
 	}
 
-	// Create configmap if not found
-	if k8errors.IsNotFound(err) {
-		configMapData := make(map[string]string)
-		fileNames := []string{
-			imageStreamFileName,
+	configMapData := make(map[string]string)
+	fileNames := []string{
+		imageStreamFileName,
+	}
+	fileNames = append(fileNames, consoleTemplates...)
+
+	for _, qn := range quickstartTemplates {
+		fileNames = append(fileNames, "quickstarts/"+qn)
+	}
+
+	for _, fn := range fileNames {
+		fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
+		content, err := r.getFileContentFromURL(fileURL)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
 		}
-		fileNames = append(fileNames, consoleTemplates...)
+		defer content.Close()
 
-		for _, qn := range quickstartTemplates {
-			fileNames = append(fileNames, "quickstarts/"+qn)
-		}
-
-		for _, fn := range fileNames {
-			fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
-			content, err := r.getFileContentFromURL(fileURL)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
-			}
-			defer content.Close()
-
-			data, err := ioutil.ReadAll(content)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
-			}
-
-			// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
-			key := strings.TrimPrefix(fn, "quickstarts/")
-
-			// Write content of file to configmap
-			configMapData[key] = string(data)
+		data, err := ioutil.ReadAll(content)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
 		}
 
+		// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
+		key := strings.TrimPrefix(fn, "quickstarts/")
+
+		// Write content of file to configmap
+		configMapData[key] = string(data)
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, cfgMap, func() error {
 		cfgMap.Data = configMapData
-		ownerutil.EnsureOwner(cfgMap, r.installation)
-		if err := serverClient.Create(ctx, cfgMap); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
-		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling %s configmap: %w", cfgMap.Name, err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -204,36 +273,9 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8s
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
 	}
 
-	content := []byte(cfgMap.Data[imageStreamFileName])
-
-	var fileContent map[string]interface{}
-	if err := json.Unmarshal(content, &fileContent); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
-	}
-
-	// The content of the imagestream file is a an object of kind List
-	// Create the imagestreams seperately
-	isList := r.getResourcesFromList(fileContent)
-	imageStreams := make(map[string]runtime.Object)
-	for _, is := range isList {
-		jsonData, err := json.Marshal(is)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
-		}
-
-		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace())
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
-		}
-
-		// Get unstructured of image stream so we can retrieve the image stream name
-		imageStreamUnstructured, err := resources.UnstructuredFromRuntimeObject(imageStreamRuntimeObj)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to parse runtime object to unstructured for imagestream: %w", err)
-		}
-
-		imageStreamName := imageStreamUnstructured.GetName()
-		imageStreams[imageStreamName] = imageStreamRuntimeObj
+	imageStreams, err := r.getImageStreamsFromConfigMap(cfgMap)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get image streams from configmap %s", cfgMap.Name)
 	}
 
 	imageStreamNames := r.getKeysFromMap(imageStreams)
@@ -252,41 +294,16 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8s
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infoln("Reconciling Fuse on OpenShift templates")
-	var templateFiles []string
-	templates := make(map[string]runtime.Object)
+	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
+	}
 
-	templateFiles = append(templateFiles, consoleTemplates...)
-	templateFiles = append(templateFiles, quickstartTemplates...)
-
-	for _, fileName := range templateFiles {
-		cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
-		}
-
-		content := []byte(cfgMap.Data[fileName])
-
-		if filepath.Ext(fileName) == ".yml" || filepath.Ext(fileName) == ".yaml" {
-			content, err = yaml.ToJSON(content)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to convert yaml to json %s: %w", fileName, err)
-			}
-		}
-
-		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace())
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to load resource %s: %w", fileName, err)
-		}
-
-		templateUnstructured, err := resources.UnstructuredFromRuntimeObject(templateRuntimeObj)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to parse object: %w", err)
-		}
-
-		templateName := templateUnstructured.GetName()
-		templates[templateName] = templateRuntimeObj
+	templates, err := r.getTemplatesFromConfigMap(cfgMap)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get templates from configmap %s: %w", cfgMap.Name, err)
 	}
 
 	templateNames := r.getKeysFromMap(templates)
@@ -367,6 +384,75 @@ func (r *Reconciler) getResourcesFromList(listObj map[string]interface{}) []inte
 	}
 
 	return resources
+}
+
+func (r *Reconciler) getImageStreamsFromConfigMap(configMap *corev1.ConfigMap) (map[string]runtime.Object, error) {
+	content := []byte(configMap.Data[imageStreamFileName])
+
+	var fileContent map[string]interface{}
+	if err := json.Unmarshal(content, &fileContent); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
+	}
+
+	// The content of the imagestream file is a an object of kind List
+	// Create the imagestreams seperately
+	isList := r.getResourcesFromList(fileContent)
+	imageStreams := make(map[string]runtime.Object)
+	for _, is := range isList {
+		jsonData, err := json.Marshal(is)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal data %s: %w", imageStreamFileName, err)
+		}
+
+		imageStreamRuntimeObj, err := resources.LoadKubernetesResource(jsonData, r.Config.GetNamespace())
+		if err != nil {
+			return nil, fmt.Errorf("failed to load kubernetes imagestream resource: %w", err)
+		}
+
+		// Get unstructured of image stream so we can retrieve the image stream name
+		imageStreamUnstructured, err := resources.UnstructuredFromRuntimeObject(imageStreamRuntimeObj)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse runtime object to unstructured for imagestream: %w", err)
+		}
+
+		imageStreamName := imageStreamUnstructured.GetName()
+		imageStreams[imageStreamName] = imageStreamRuntimeObj
+	}
+	return imageStreams, nil
+}
+
+func (r *Reconciler) getTemplatesFromConfigMap(configMap *corev1.ConfigMap) (map[string]runtime.Object, error) {
+	var templateFiles []string
+	templates := make(map[string]runtime.Object)
+
+	templateFiles = append(templateFiles, consoleTemplates...)
+	templateFiles = append(templateFiles, quickstartTemplates...)
+
+	for _, fileName := range templateFiles {
+		var err error
+		content := []byte(configMap.Data[fileName])
+
+		if filepath.Ext(fileName) == ".yml" || filepath.Ext(fileName) == ".yaml" {
+			content, err = yaml.ToJSON(content)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert yaml to json %s: %w", fileName, err)
+			}
+		}
+
+		templateRuntimeObj, err := resources.LoadKubernetesResource(content, r.Config.GetNamespace())
+		if err != nil {
+			return nil, fmt.Errorf("failed to load resource %s: %w", fileName, err)
+		}
+
+		templateUnstructured, err := resources.UnstructuredFromRuntimeObject(templateRuntimeObj)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse object: %w", err)
+		}
+
+		templateName := templateUnstructured.GetName()
+		templates[templateName] = templateRuntimeObj
+	}
+	return templates, nil
 }
 
 func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient k8sclient.Client, key string, value []string) error {

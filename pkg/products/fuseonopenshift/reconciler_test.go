@@ -100,13 +100,20 @@ func TestFuseOnOpenShift(t *testing.T) {
 		},
 	}
 
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "installation",
+			Namespace: OperatorNamespace,
+		},
+	}
+
 	cases := []FuseOnOpenShiftScenario{
 		{
 			Name:           "test error on failed config read",
 			ExpectError:    true,
 			ExpectedError:  fmt.Sprintf("could not retrieve %[1]s config: could not read %[1]s config", integreatlyv1alpha1.ProductFuseOnOpenshift),
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Installation:   &integreatlyv1alpha1.RHMI{},
+			Installation:   installation,
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadFuseOnOpenshiftFunc: func() (ready *config.FuseOnOpenshift, e error) {
@@ -120,7 +127,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test error on invalid image stream file content",
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Installation:   &integreatlyv1alpha1.RHMI{},
+			Installation:   installation,
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -136,7 +143,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test error on invalid image stream",
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Installation:   &integreatlyv1alpha1.RHMI{},
+			Installation:   installation,
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -156,7 +163,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test error on invalid template file content",
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Installation:   &integreatlyv1alpha1.RHMI{},
+			Installation:   installation,
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -175,7 +182,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test error on invalid template object",
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Installation:   &integreatlyv1alpha1.RHMI{},
+			Installation:   installation,
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      templatesConfigMapName,
@@ -195,8 +202,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 		{
 			Name:           "test successful reconcile when resource already exists",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient:     fakeclient.NewFakeClient(integreatlyImgStream),
+			Installation:   installation,
+			FakeClient:     fakeclient.NewFakeClient(integreatlyImgStream, installation),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
@@ -205,8 +212,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test successful reconcile without sample cluster operator installed",
 			ExpectError:    false,
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient:     fakeclient.NewFakeClient(),
+			Installation:   installation,
+			FakeClient:     fakeclient.NewFakeClient(installation),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
@@ -215,8 +222,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Name:           "test successful reconcile with sample cluster operator installed",
 			ExpectError:    false,
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient:     fakeclient.NewFakeClient(sampleClusterConfig, sampleClusterImgStream),
+			Installation:   installation,
+			FakeClient:     fakeclient.NewFakeClient(sampleClusterConfig, sampleClusterImgStream, installation),
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
