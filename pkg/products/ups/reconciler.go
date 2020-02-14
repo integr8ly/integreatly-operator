@@ -19,12 +19,12 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	errorUtil "github.com/pkg/errors"
 
 	routev1 "github.com/openshift/api/route/v1"
 
@@ -187,6 +187,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// wait for the postgres instance to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, client, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for ups")
 	}
 
 	// get the secret created by the cloud resources operator

@@ -34,6 +34,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	errorUtil "github.com/pkg/errors"
 )
 
 const (
@@ -199,6 +201,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for codeready")
 	}
 
 	// get the secret created by the cloud resources operator

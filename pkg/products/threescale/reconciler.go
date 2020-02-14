@@ -43,6 +43,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	errorUtil "github.com/pkg/errors"
 )
 
 const (
@@ -522,6 +524,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile backend redis request: %w", err)
 	}
 
+	// create the prometheus availability rule
+	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create backend redis prometheus alert for threescale")
+	}
+
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
@@ -534,6 +542,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile system redis request: %w", err)
 	}
 
+	// create the prometheus availability rule
+	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create system redis prometheus alert for threescale")
+	}
+
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision a postgres instance
 	logrus.Info("Creating postgres instance")
@@ -544,6 +558,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
+	}
+
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for threescale")
 	}
 
 	// wait for the backend redis cr to reconcile
