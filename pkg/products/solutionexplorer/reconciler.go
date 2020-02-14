@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/version"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -44,6 +45,7 @@ const (
 	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
 	paramInstalledServices  = "INSTALLED_SERVICES"
 	paramSSORoute           = "SSO_ROUTE"
+	paramIntegreatlyVersion = "INTEGREATLY_VERSION"
 	defaultRouteName        = "tutorial-web-app"
 	manifestPackage         = "integreatly-solution-explorer"
 )
@@ -323,6 +325,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramOpenShiftOauthHost: oauthURL,
 			paramOpenShiftVersion:   "4",
 			paramInstalledServices:  installedServices,
+			paramIntegreatlyVersion: version.IntegreatlyVersion,
 		}
 		return nil
 	})
