@@ -133,8 +133,8 @@ cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/sm
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
-	@oc new-project $(NAMESPACE)
-	@oc label namespace $(NAMESPACE) monitoring-key=middleware
+	@ - oc new-project $(NAMESPACE)
+	@oc label namespace $(NAMESPACE) monitoring-key=middleware --overwrite
 	@oc project $(NAMESPACE)
 
 .PHONY: cluster/prepare/configmaps
