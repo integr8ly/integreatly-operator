@@ -365,6 +365,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"fuse":                 "syndesis-operator",
 		"user-sso":             "keycloak-operator",
 		"ups":                  "unifiedpush-operator",
+		"apicurito":            "apicurito-operator",
 	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
@@ -396,6 +397,8 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"3scale",
 		"3scale-operator",
 		"amq-online",
+		"apicurito",
+		"apicurito-operator",
 		"codeready-workspaces",
 		"codeready-workspaces-operator",
 		"fuse",
@@ -499,6 +502,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	expectedRoutes := map[string]int{
 		"3scale":                         6,
 		"amq-online":                     2,
+		"apicurito":                      2,
 		"codeready-workspaces":           3,
 		"fuse":                           1,
 		"middleware-monitoring-operator": 3,

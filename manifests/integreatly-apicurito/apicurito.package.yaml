@@ -1,0 +1,4 @@
+packageName: integreatly-apicurito
+channels:
+  - name: integreatly
+    currentCSV: apicuritooperator.v7.5.0
