@@ -31,7 +31,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "apicurito"
-	defaultSubscriptionName      = "integreatly-apicurito"
+	defaultSubscriptionName      = "rhmi-apicurito"
 	manifestPackage              = "integreatly-apicurito"
 	apicuritoName                = "apicurito"
 	defaultApicuritoPullSecret   = "apicurito-pull-secret"

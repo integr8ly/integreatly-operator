@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.0
 
-ENV OPERATOR=/usr/local/bin/integreatly-operator \
+ENV OPERATOR=/usr/local/bin/rhmi-operator \
     USER_UID=1001 \
     USER_NAME=integreatly-operator \
     TEMPLATE_PATH=/usr/local/bin/templates/monitoring \

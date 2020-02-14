@@ -18,7 +18,7 @@ INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
-export INSTALLATION_NAME   ?= integreatly
+export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
@@ -56,7 +56,7 @@ code/run: code/gen cluster/prepare/smtp
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
-	@oc login --token=$(shell oc serviceaccounts get-token integreatly-operator -n ${NAMESPACE})
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE})
 	$(MAKE) code/run
 
 .PHONY: code/compile

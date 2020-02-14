@@ -1,4 +1,4 @@
-packageName: integreatly-codeready-workspaces
+packageName: rhmi-codeready-workspaces
 channels:
-- name: integreatly
+- name: rhmi
   currentCSV: crwoperator.v2.0.0

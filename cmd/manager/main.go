@@ -115,7 +115,7 @@ func main() {
 	ctx := context.TODO()
 
 	// Become the leader before proceeding
-	err = leader.Become(ctx, "integreatly-operator-lock")
+	err = leader.Become(ctx, "rhmi-operator-lock")
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)

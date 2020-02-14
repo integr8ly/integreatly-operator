@@ -45,7 +45,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "3scale"
-	packageName                  = "integreatly-3scale"
+	packageName                  = "rhmi-3scale"
 	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"

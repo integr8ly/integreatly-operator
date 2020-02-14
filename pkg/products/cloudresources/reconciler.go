@@ -26,7 +26,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "cloud-resources"
-	defaultSubscriptionName      = "integreatly-cloud-resources"
+	defaultSubscriptionName      = "rhmi-cloud-resources"
 	manifestPackage              = "integreatly-cloud-resources"
 )
 

@@ -100,7 +100,7 @@ func (m *Monitoring) GetLabelSelectorKey() string {
 }
 
 func (m *Monitoring) GetAdditionalScrapeConfigSecretName() string {
-	return "integreatly-additional-scrape-configs"
+	return "rhmi-additional-scrape-configs"
 }
 
 func (m *Monitoring) GetAdditionalScrapeConfigSecretKey() string {

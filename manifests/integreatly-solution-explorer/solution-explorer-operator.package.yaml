@@ -1,4 +1,4 @@
-packageName: integreatly-solution-explorer
+packageName: rhmi-solution-explorer
 channels:
 - currentCSV: solution-explorer-operator.v0.0.44
-  name: integreatly
+  name: rhmi

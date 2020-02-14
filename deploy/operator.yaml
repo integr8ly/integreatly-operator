@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: integreatly-operator
+  name: rhmi-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: integreatly-operator
+      name: rhmi-operator
   template:
     metadata:
       labels:
-        name: integreatly-operator
+        name: rhmi-operator
     spec:
-      serviceAccountName: integreatly-operator
+      serviceAccountName: rhmi-operator
       containers:
-        - name: integreatly-operator
+        - name: rhmi-operator
           # Replace this with the built image name
           image: quay.io/integreatly/integreatly-operator:v1.18.0
           command:
-          - integreatly-operator
+          - rhmi-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -30,6 +30,6 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "integreatly-operator"
+              value: "rhmi-operator"
             - name: USE_CLUSTER_STORAGE
               value: "true"

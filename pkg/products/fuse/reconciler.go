@@ -32,7 +32,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "fuse"
-	defaultSubscriptionName      = "integreatly-syndesis"
+	defaultSubscriptionName      = "rhmi-syndesis"
 	defaultFusePullSecret        = "syndesis-pull-secret"
 	developersGroupName          = "rhmi-developers"
 	clusterViewRoleName          = "view"

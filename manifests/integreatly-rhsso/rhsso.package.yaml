@@ -1,4 +1,4 @@
-packageName: integreatly-rhsso
+packageName: rhmi-rhsso
 channels:
-  - name: integreatly
+  - name: rhmi
     currentCSV: keycloak-operator.v8.0.1

@@ -38,7 +38,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "amq-online"
-	defaultSubscriptionName      = "integreatly-amq-online"
+	defaultSubscriptionName      = "rhmi-amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
 )

@@ -1,7 +1,7 @@
 apiVersion: template.openshift.io/v1
 kind: Template
 metadata:
-  name: integreatly-deploy
+  name: rhmi-deploy
 objects:
   - apiVersion: operators.coreos.com/v1
     kind: OperatorSource
@@ -10,7 +10,7 @@ objects:
       namespace: openshift-marketplace
     spec:
       authorizationToken: {}
-      displayName: Integreatly Operators
+      displayName: RHMI Operators
       endpoint: 'https://quay.io/cnr'
       publisher: Integreatly Publisher
       registryNamespace: ${OPERATOR_SOURCE_REGISTRY_NAMESPACE}
@@ -30,11 +30,11 @@ parameters:
   - description: The namespace to deploy into
     displayName: Namespace
     name: NAMESPACE
-    value: integreatly
+    value: redhat-rhmi-operator
   - description: The name of the operator source
     displayName: Operator Source Name
     name: OPERATOR_SOURCE_NAME
-    value: integreatly-operators
+    value: rhmi-operators
   - description: The name of the operator source registry namespace
     displayName: Operator Source Registry Namespace
     name: OPERATOR_SOURCE_REGISTRY_NAMESPACE
@@ -42,4 +42,4 @@ parameters:
   - description: The name of the catalog source config
     displayName: Catalog Source Config Name
     name: CATALOG_SOURCE_CONFIG_NAME
-    value: installed-integreatly-operator
+    value: installed-rhmi-operator

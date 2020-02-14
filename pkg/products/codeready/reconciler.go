@@ -38,8 +38,8 @@ import (
 const (
 	defaultInstallationNamespace = "codeready-workspaces"
 	defaultClientName            = "che-client"
-	defaultCheClusterName        = "integreatly-cluster"
-	defaultSubscriptionName      = "integreatly-codeready-workspaces"
+	defaultCheClusterName        = "rhmi-cluster"
+	defaultSubscriptionName      = "rhmi-codeready-workspaces"
 	manifestPackage              = "integreatly-codeready-workspaces"
 	tier                         = "production"
 )
