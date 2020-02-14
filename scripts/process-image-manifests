@@ -26,6 +26,8 @@ MANIFEST_TMP_DIR=${MANIFESTS_DIR}/temp
 IMAGE=$1
 FOLDER_PRODUCT_NAME=3scale
 
+function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
+
 cleanup (){
     echo "Cleaning up ${MANIFEST_TMP_DIR}"
     rm -rf ${MANIFEST_TMP_DIR}
@@ -54,9 +56,22 @@ get_new_csv() {
     NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
 }
 
+check_versions() {
+    if [ $(ver $NEW_CSV_SEMVER) -eq $(ver $CURRENT_CSV) ]
+    then
+        echo "Versions are the same so EXIT"
+        exit
+    fi
+    if [ $(ver $NEW_CSV_SEMVER) -lt $(ver $CURRENT_CSV) ]
+    then
+        echo "There is a newer version of the CSV present so EXIT"
+        exit
+    fi
+    echo "Newer version found, continuing"
+}
+
 copy_new_csv() {
     echo "Copying process manifests to ${MANIFESTS_DIR}"
-    # Need to check here that the version is not the same, if it is do we need to do an update?
     NEW_CSV_FOLDER=3scale-$NEW_CSV_SEMVER
     mv ${MANIFEST_TMP_DIR}/$NEW_CSV_SEMVER ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER}
     mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/
@@ -80,6 +95,7 @@ process_image() {
    extract_manifests_from_image
    get_current_csv
    get_new_csv
+   check_versions
    copy_new_csv
    update_new_csv
    update_package_yaml
