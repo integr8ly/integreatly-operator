@@ -6,9 +6,24 @@ metadata:
       [
         {
           "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "Installation",
+          "kind": "RHMI",
           "metadata": {
-            "name": "example-installation"
+            "name": "INSTALLATION_NAME"
+          },
+          "spec": {
+            "namespacePrefix": "INSTALLATION_PREFIX-",
+            "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
+            "selfSignedCerts": "SELF_SIGNED_CERTS",
+            "smtpSecret": "INSTALLATION_PREFIX-smtp",
+            "type": "INSTALLATION_TYPE",
+            "useClusterStorage": "USE_CLUSTER_STORAGE"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "RHMI",
+          "metadata": {
+            "name": "example-rhmi"
           },
           "spec": {
             "namespacePrefix": "redhat-rhmi-",
@@ -17,44 +32,30 @@ metadata:
             "type": "managed",
             "useClusterStorage": true
           }
-        },
-        {
-          "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "Installation",
-          "metadata": {
-            "name": "INSTALLATION_NAME"
-          },
-          "spec": {
-            "namespacePrefix": "INSTALLATION_PREFIX-",
-            "selfSignedCerts": "SELF_SIGNED_CERTS",
-            "smtpSecret": "INSTALLATION_PREFIX-smtp",
-            "type": "INSTALLATION_TYPE",
-            "useClusterStorage": "USE_CLUSTER_STORAGE"
-          }
         }
       ]
     capabilities: Basic Install
     categories: Integreating greatly
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v1.17.0
+    containerImage: quay.io/integreatly/integreatly-operator:v1.18.0
     createdAt: "2019-10-15 10:39:00"
     description: Greatly integrating integreatly greatness
     support: Integreatly
-  name: integreatly-operator.v1.17.0
+  name: integreatly-operator.v1.18.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents an installation of Integreatly.
-      displayName: Integreatly Installation
-      kind: Installation
-      name: installations.integreatly.org
-      specDescriptors:
-      - description: The desired integreatly products.
-        displayName: Products
-        path: products
+    - kind: RHMI
+      description: Represents an installation of RHMI.
+      displayName: RHMI Installation
+      name: rhmis.integreatly.org
       version: v1alpha1
+      specDescriptors:
+        - description: The desired integreatly products.
+          displayName: Products
+          path: products
   description: Integreatly installation and reconciliation operator
   displayName: Integreatly
   icon:
@@ -260,7 +261,7 @@ spec:
                   value: integreatly-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v1.17.0
+                image: quay.io/integreatly/integreatly-operator:v1.18.0
                 imagePullPolicy: Always
                 name: integreatly-operator
                 resources: {}
@@ -369,4 +370,4 @@ spec:
     matchLabels:
       alm-owner-integreatly: integreatly-operator
       operated-by: integreatly-operator
-  version: 1.17.0
+  version: 1.18.0
