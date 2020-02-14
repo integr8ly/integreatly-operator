@@ -30,6 +30,7 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,6 +61,7 @@ func buildScheme() *runtime.Scheme {
 	monitoring.SchemeBuilder.AddToScheme(scheme)
 	prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
 	projectv1.AddToScheme(scheme)
+	crov1alpha1.SchemeBuilder.AddToScheme(scheme)
 	return scheme
 }
 
@@ -117,6 +119,33 @@ func backupsSecretMock() *corev1.Secret {
 	}
 }
 
+func authServiceSecretMock() *corev1.Secret {
+	config := basicConfigMock()
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "standard-authservice-postgresql",
+			Namespace: config.GetOperatorNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+}
+
+func croPostgresSecretMock(installationNamespace string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "standard-authservice-postgresql",
+			Namespace: installationNamespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("dummy"),
+			"port":     []byte("5432"),
+			"database": []byte("dummy"),
+			"username": []byte("dummy"),
+			"password": []byte("dummy"),
+		},
+	}
+}
+
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
@@ -134,9 +163,8 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 	}{
 		{
 			Name:           "Test returns none phase if successfully creating new auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme()),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
 			FakeConfig:     basicConfigMock(),
-			AuthServices:   GetDefaultAuthServices(defaultNamespace),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
@@ -148,8 +176,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
-			AuthServices:   GetDefaultAuthServices(defaultNamespace),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -168,7 +195,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
-			phase, err := r.reconcileAuthServices(context.TODO(), s.Client, s.AuthServices)
+			phase, err := r.reconcileStandardAuthenticationService(context.TODO(), s.Client)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -203,7 +230,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 		},
 		{
 			Name:                 "Test returns none phase if trying to create existing address space plans",
-			Client:               fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
+			Client:               fake.NewFakeClientWithScheme(buildScheme()),
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			FakeConfig:           basicConfigMock(),
@@ -252,7 +279,7 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 		},
 		{
 			Name:           "Test returns none phase if trying to create existing address space plans",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
+			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -300,7 +327,7 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 		},
 		{
 			Name:              "Test returns none phase if trying to create existing address space plans",
-			Client:            fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAuthServices(defaultSubscriptionName)[0]),
+			Client:            fake.NewFakeClientWithScheme(buildScheme()),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			FakeConfig:        basicConfigMock(),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
@@ -551,7 +578,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace)),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

@@ -3,6 +3,7 @@ package amqonline
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,9 +19,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -131,9 +135,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileAuthServices(ctx, serverClient, GetDefaultAuthServices(ns))
+	phase, err = r.reconcileNoneAuthenticationService(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile auth services", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 'none' auth service", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileStandardAuthenticationService(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 'standard' auth service", err)
 		return phase, err
 	}
 
@@ -232,17 +242,125 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileAuthServices(ctx context.Context, serverClient k8sclient.Client, authSvcs []*enmasseadminv1beta1.AuthenticationService) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")
 
-	for _, as := range authSvcs {
-		as.Namespace = r.Config.GetNamespace()
-		owner.AddIntegreatlyOwnerAnnotations(as, r.inst)
-		err := serverClient.Create(ctx, as)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create auth service %v: %w", as, err)
-		}
+	noneAuthService := &enmasseadminv1beta1.AuthenticationService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "none-authservice",
+			Namespace: r.Config.GetNamespace(),
+		},
 	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, noneAuthService, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(noneAuthService, r.inst)
+		noneAuthService.Spec.Type = "none"
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update 'none' AuthenticationService: %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.logger.Info("reconciling standard AuthenticationService")
+
+	const postgresqlName string = "standard-authservice-postgresql"
+
+	// Get CRO to create a Postgresql in the integreatly operator namespace. The
+	// CRO operator SA only has permissions to create the secret in the intly
+	// operator namespace, so it will be first created there, then copied into
+	// the enmasse namespace.
+	_, err := croUtil.ReconcilePostgres(
+		ctx,
+		serverClient,
+		defaultInstallationNamespace,
+		"workshop", // workshop here so that it creates in-cluster postgresql
+		"production",
+		postgresqlName,
+		r.inst.Namespace,
+		postgresqlName,
+		r.inst.Namespace,
+		func(cr metav1.Object) error {
+			owner.AddIntegreatlyOwnerAnnotations(cr, r.inst)
+			return nil
+		},
+	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
+	}
+
+	// Read the CRO secret, to get values to copy to enmasse namespace.
+	croSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.inst.Namespace,
+			Name:      postgresqlName,
+		},
+	}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: croSecret.Name, Namespace: croSecret.Namespace}, croSecret)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Copy secret to enmasse namespace (adjust keys for keycloak)
+	keycloakSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: r.Config.GetNamespace(),
+			Name:      postgresqlName,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, keycloakSecret, func() error {
+		// I think it would be better to set the owner here to be the
+		// AuthService, but I can't immediately figure out how to get a
+		// reference to the scheme.
+		owner.AddIntegreatlyOwnerAnnotations(keycloakSecret, r.inst)
+
+		if keycloakSecret.Data == nil {
+			keycloakSecret.Data = make(map[string][]byte, 2)
+		}
+
+		keycloakSecret.Data["database-user"] = croSecret.Data["username"]
+		keycloakSecret.Data["database-password"] = croSecret.Data["password"]
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling enmasse standard auth service keycloak secret: %w", err)
+	}
+
+	standardAuthSvc := &enmasseadminv1beta1.AuthenticationService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "standard-authservice",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, standardAuthSvc, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(standardAuthSvc, r.inst)
+		standardAuthSvc.Spec.Type = "standard"
+
+		if standardAuthSvc.Spec.Standard == nil {
+			standardAuthSvc.Spec.Standard = &enmasseadminv1beta1.AuthenticationServiceSpecStandard{}
+		}
+		if standardAuthSvc.Spec.Standard.Datasource == nil {
+			standardAuthSvc.Spec.Standard.Datasource = &enmasseadminv1beta1.AuthenticationServiceSpecStandardDatasource{}
+		}
+
+		standardAuthSvc.Spec.Standard.Datasource.CredentialsSecret = corev1.SecretReference{
+			Name:      keycloakSecret.Name,
+			Namespace: keycloakSecret.Namespace,
+		}
+		standardAuthSvc.Spec.Standard.Datasource.Type = enmasseadminv1beta1.PostgresqlDatasource
+		standardAuthSvc.Spec.Standard.Datasource.Database = string(croSecret.Data["database"])
+		standardAuthSvc.Spec.Standard.Datasource.Host = string(croSecret.Data["host"])
+		standardAuthSvc.Spec.Standard.Datasource.Port, err = strconv.Atoi(string(croSecret.Data["port"]))
+		return err // either nil or failed to convert port to an int
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling standard AuthenticationService: %w", err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
