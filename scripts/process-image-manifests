@@ -29,12 +29,20 @@ PRODUCT_OPERATOR=3scale-operator
 
 function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
 
-cleanup (){
+catch() {
+    if [ "$1" == "127" ]; then
+        echo "This script depends on the package yq"
+        echo "For installation instructions visit: https://mikefarah.gitbook.io/yq/#install"
+    fi
     echo "Cleaning up ${MANIFEST_TMP_DIR}"
     rm -rf ${MANIFEST_TMP_DIR}
 }
 
-trap 'cleanup' EXIT
+trap 'catch $?' EXIT
+
+check_yq() {
+    yq > /dev/null
+}
 
 extract_manifests_from_image() {
     echo "Creating ${MANIFEST_TMP_DIR} directory"
@@ -95,6 +103,7 @@ update_package_yaml() {
 }
 
 process_image() {
+   check_yq
    echo "~~~~~~"
    echo "Process Image '$IMAGE'"
    echo "~~~~~~"
