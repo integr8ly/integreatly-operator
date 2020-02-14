@@ -47,7 +47,7 @@ get_current_csv() {
 get_new_csv() {
     IMAGE_MANIFEST_FILE=$(find ${MANIFEST_TMP_DIR} -name "*.package.yaml")
     DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml defaultChannel)
-    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV | sed s/^3scale-operator.v//)
+    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/3scale-operator.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
     NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
 }
 
@@ -67,7 +67,7 @@ update_new_csv() {
 }
 
 update_package_yaml() {
-    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels.(name==integreatly).currentCSV 3scale-operator.v0.5.0
+    yq w -i ${MANIFESTS_DIR}/integreatly-${FOLDER_PRODUCT_NAME}/3scale.package.yaml channels.\(name==integreatly\).currentCSV $NEW_CSV
 }
 
 process_image() {
@@ -78,7 +78,7 @@ process_image() {
    get_current_csv
    get_new_csv
    copy_new_csv
-   update__new_csv
+   update_new_csv
    update_package_yaml
 }
 
