@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 staged_go_files=$(git diff --cached --name-only | grep ".go$" | grep -v "vendor/")
 [ -z "$staged_go_files" ] && exit 0
