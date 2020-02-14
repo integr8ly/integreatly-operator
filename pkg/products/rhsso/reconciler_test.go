@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/sirupsen/logrus"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -29,6 +32,8 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -125,6 +130,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = projectv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +251,31 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 		},
 	}
 
+	//completed postgres that points at the secret croPostgresSecret
+	croPostgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhsso-postgres-",
+			Namespace: defaultOperatorNamespace,
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      "test",
+				Namespace: defaultOperatorNamespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
 	cases := []struct {
 		Name            string
 		FakeClient      k8sclient.Client
@@ -257,7 +291,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}{
 		{
 			Name:            "Test reconcile custom resource returns completed when successful created",
-			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc),
+			FakeClient:      fakeclient.NewFakeClientWithScheme(scheme, oauthClientSecrets, githubOauthSecret, kc, croPostgres, croPostgresSecret),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -595,6 +629,31 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	//completed postgres that points at the secret croPostgresSecret
+	croPostgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("rhsso-postgres-%s", installation.Name),
+			Namespace: defaultOperandNamespace,
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      "test",
+				Namespace: defaultOperandNamespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: defaultOperandNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
 	cases := []struct {
 		Name            string
 		ExpectError     bool
@@ -612,7 +671,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, croPostgres, croPostgresSecret),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
@@ -674,6 +733,105 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileCloudResources(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: controllerruntime.ObjectMeta{
+			Name:      "test",
+			Namespace: defaultOperatorNamespace,
+		},
+	}
+
+	//completed postgres that points at the secret croPostgresSecret
+	croPostgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("rhsso-postgres-%s", installation.Name),
+			Namespace: defaultOperatorNamespace,
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      "test",
+				Namespace: defaultOperatorNamespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name         string
+		installation *integreatlyv1alpha1.RHMI
+		fakeClient   func() k8sclient.Client
+		want         integreatlyv1alpha1.StatusPhase
+		wantErr      bool
+	}{
+		{
+			name:         "error creating postgres cr causes state failed",
+			installation: &integreatlyv1alpha1.RHMI{},
+			fakeClient: func() k8sclient.Client {
+				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
+				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("test error")
+				}
+				return mockClient
+			},
+			wantErr: true,
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name:         "nil secret causes state awaiting",
+			installation: installation,
+			fakeClient: func() k8sclient.Client {
+				pendingCroPostgres := croPostgres.DeepCopy()
+				pendingCroPostgres.Status.Phase = croTypes.PhaseInProgress
+				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgresSecret, pendingCroPostgres)
+			},
+			want: integreatlyv1alpha1.PhaseAwaitingCloudResources,
+		},
+		{
+			name:         "defined secret causes state completed",
+			installation: installation,
+			fakeClient: func() k8sclient.Client {
+				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Reconciler{
+				logger: logrus.NewEntry(logrus.StandardLogger()),
+				Config: &config.RHSSO{
+					Config: map[string]string{
+						"NAMESPACE": defaultOperatorNamespace,
+					},
+				},
+			}
+			got, err := r.reconcileCloudResources(context.TODO(), tt.installation, tt.fakeClient())
+			if (err != nil) != tt.wantErr {
+				t.Errorf("reconcileCloudResources() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileCloudResources() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
