@@ -22,10 +22,10 @@ set -e
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MANIFESTS_DIR=${WORK_DIR}/../manifests
-MANIFEST_TMP_DIR=${MANIFESTS_DIR}/temp
+MANIFEST_TMP_DIR=${MANIFESTS_DIR}/tmp
 IMAGE=$1
-PRODUCT=3scale
-PRODUCT_OPERATOR=3scale-operator
+PRODUCT=$2
+PRODUCT_OPERATOR=$3
 
 function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
 
