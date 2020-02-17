@@ -470,7 +470,7 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 	var deployment = &v1.Deployment{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, deployment)
 	if err != nil {
-		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %w, %w", r.Config.GetNamespace(), err)
+		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %v, %w", r.Config.GetNamespace(), err)
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
