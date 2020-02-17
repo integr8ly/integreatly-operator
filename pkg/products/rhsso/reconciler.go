@@ -433,6 +433,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Enabled: true,
 		}
 		kc.Spec.Profile = RHSSOProfile
+		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		return nil
 	})
 	if err != nil {
