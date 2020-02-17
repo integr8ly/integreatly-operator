@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -37,7 +38,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to provision postgres instance while reconciling rhsso postgres credentials, %s", name)
+		return nil, fmt.Errorf("failed to provision postgres instance while reconciling rhsso postgres credentials, %s: %w", name, err)
 	}
 	if postgres.Status.Phase != types.PhaseComplete {
 		return nil, nil
@@ -45,7 +46,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 	postgresSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresSec)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get postgres credential secret while reconciling rhsso postgres credentials, %s", name)
+		return nil, fmt.Errorf("failed to get postgres credential secret while reconciling rhsso postgres credentials, %s: %w", name, err)
 	}
 	// create secret using the default name which the keycloak operator expects
 	keycloakSec := &corev1.Secret{
@@ -69,7 +70,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create keycloak external database secret, %s", name)
+		return nil, fmt.Errorf("failed to create keycloak external database secret, %s: %w", name, err)
 	}
 	return keycloakSec, nil
 }

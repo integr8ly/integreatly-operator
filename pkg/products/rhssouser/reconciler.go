@@ -11,7 +11,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	usersv1 "github.com/openshift/api/user/v1"
-	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -210,7 +209,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	postgresName := fmt.Sprintf("rhssouser-postgres-%s", installation.Name)
 	credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso: %w", err)
 	}
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
@@ -272,11 +271,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	exists, err := identityProviderExists(kcClient)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Error attempting to get existing idp on user sso, master realm")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error attempting to get existing idp on user sso, master realm: %w", err)
 	} else if !exists {
 		err = kcClient.CreateIdentityProvider(masterKcr.Spec.Realm.IdentityProviders[0], masterKcr.Spec.Realm.Realm)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Error creating idp on master realm, user sso")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating idp on master realm, user sso: %w", err)
 		}
 	}
 
@@ -289,20 +288,20 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to list the keycloak users")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list the keycloak users: %w", err)
 	}
 
 	// Sync keycloak with openshift users
 	users, err := syncAdminUsersInMasterRealm(keycloakUsers, ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to synchronize the users")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to synchronize the users: %w", err)
 	}
 
 	// Create / update the synchronized users
 	for _, user := range users {
 		or, err = r.createOrUpdateKeycloakAdmin(user, ctx, serverClient)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
 		} else {
 			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 		}
@@ -358,7 +357,7 @@ func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclie
 		// the realms
 		err := r.setupOpenshiftIDP(ctx, installation, kcr, serverClient)
 		if err != nil {
-			return errors.Wrap(err, "failed to setup Openshift IDP for user-sso")
+			return fmt.Errorf("failed to setup Openshift IDP for user-sso: %w", err)
 		}
 
 		return nil
@@ -939,7 +938,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	})
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak edge route")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating keycloak edge route: %w", err)
 	}
 	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
 
@@ -953,7 +952,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	r.Config.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Error writing to config in rhssouser reconciler")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhssouser reconciler: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -984,7 +983,7 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 
 	executions, err := kcClient.ListAuthenticationExecutionsForFlow("browser", masterRealmName)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to retrieve execution flows on master realm ")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to retrieve execution flows on master realm: %w", err)
 	}
 
 	executionID := ""
@@ -999,13 +998,13 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 		}
 	}
 	if executionID == "" {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed to find relevant ProviderID in Authentication Executions")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to find relevant ProviderID in Authentication Executions: %w", err)
 	}
 
 	config := keycloak.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
 	err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Failed ot ")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create Authenticator Config: %w", err)
 	}
 
 	r.logger.Infof("Successfully created Authenticator Config")

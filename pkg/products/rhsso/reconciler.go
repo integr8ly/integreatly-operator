@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -381,7 +380,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	})
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "error creating keycloak edge route")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating keycloak edge route: %w", err)
 	}
 	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
 
@@ -394,7 +393,7 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 	r.Config.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "Error writing to config in rhssouser reconciler")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhssouser reconciler: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -405,7 +404,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	postgresName := fmt.Sprintf("rhsso-postgres-%s", installation.Name)
 	credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
 	}
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
@@ -436,7 +435,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update keycloak custom resource")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak custom resource: %w", err)
 	}
 	host := r.Config.GetHost()
 	if host == "" {
@@ -482,12 +481,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		// the realms
 		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient, host)
 		if err != nil {
-			return errors.Wrap(err, "failed to setup Openshift IDP")
+			return fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
 
 		err = r.setupGithubIDP(ctx, kc, kcr, serverClient, installation)
 		if err != nil {
-			return errors.Wrap(err, "failed to setup Github IDP")
+			return fmt.Errorf("failed to setup Github IDP: %w", err)
 		}
 		return nil
 	})
@@ -500,20 +499,20 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to list the keycloak users")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list the keycloak users: %w", err)
 	}
 
 	// Sync keycloak with openshift users
 	users, err := syncronizeWithOpenshiftUsers(ctx, keycloakUsers, serverClient, r.Config.GetNamespace())
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to synchronize the users")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to synchronize the users: %w", err)
 	}
 
 	// Create / update the synchronized users
 	for _, user := range users {
 		or, err = r.createOrUpdateKeycloakUser(ctx, user, serverClient)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update the customer admin user")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
 		}
 		r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 
@@ -550,7 +549,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8scl
 	if kcr.Status.Phase == keycloak.PhaseReconciling {
 		err = r.exportConfig(ctx, serverClient)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to write rhsso config")
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
 		}
 
 		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
@@ -577,7 +576,7 @@ func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Cl
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		return errors.Wrap(err, "could not update keycloak config")
+		return fmt.Errorf("could not update keycloak config: %w", err)
 	}
 	return nil
 }
@@ -591,12 +590,12 @@ func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integr
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
 	if err != nil {
-		return errors.Wrapf(err, "Could not find %s Secret", oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
 	}
 
 	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
 	if !ok {
-		return errors.Wrapf(err, "Could not find %s key in %s Secret", string(r.Config.GetProductName()), oauthClientSecrets.Name)
+		return fmt.Errorf("Could not find %s key in %s Secret: %w", string(r.Config.GetProductName()), oauthClientSecrets.Name, err)
 	}
 	clientSecret := string(clientSecretBytes)
 

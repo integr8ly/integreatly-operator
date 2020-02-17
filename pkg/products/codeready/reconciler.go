@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
-	"github.com/pkg/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -34,8 +33,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	errorUtil "github.com/pkg/errors"
 )
 
 const (
@@ -206,7 +203,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create the prometheus availability rule
 	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for codeready")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for codeready: %w", err)
 	}
 
 	// get the secret created by the cloud resources operator
@@ -437,7 +434,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient k
 	})
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not create/update codeready keycloak client")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update codeready keycloak client: %w", err)
 	}
 
 	r.logger.Infof("The operation result for keycloakclient %s was %s", kcClient.Name, or)

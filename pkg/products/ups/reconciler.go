@@ -24,7 +24,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	errorUtil "github.com/pkg/errors"
 
 	routev1 "github.com/openshift/api/route/v1"
 
@@ -192,7 +191,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// create the prometheus availability rule
 	_, err = resources.CreatePostgresAvailabilityAlert(ctx, client, installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for ups")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for ups: %w", err)
 	}
 
 	// get the secret created by the cloud resources operator
