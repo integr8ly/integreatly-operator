@@ -228,7 +228,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Modify Route for Generator (add TLS)
-	err = r.addTlsToApicuritoRoute(ctx, serverClient)
+	err = r.addTLSToApicuritoRoute(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to apicurito route to have tls"), err)
 		return phase, err
@@ -444,7 +444,7 @@ func (r *Reconciler) createConfigMapForUI(ctx context.Context, client k8sclient.
 	return nil
 }
 
-func (r *Reconciler) addTlsToApicuritoRoute(ctx context.Context, client k8sclient.Client) error {
+func (r *Reconciler) addTLSToApicuritoRoute(ctx context.Context, client k8sclient.Client) error {
 	apicuritoRoute := &routev1.Route{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
 	if err != nil {
