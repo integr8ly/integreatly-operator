@@ -9,6 +9,7 @@ import (
 
 	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -226,7 +228,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// Modify Route for Generator (add TLS)
-	err = r.addTlsToApicuritoRoute(ctx, serverClient)
+	err = r.addTLSToApicuritoRoute(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to apicurito route to have tls"), err)
 		return phase, err
@@ -236,6 +238,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	err = r.updateDeploymentWithConfigMapVolume(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to update apicurito deployment config with config map"), err)
+		return phase, err
+	}
+
+	err = r.reconcilePodCountAlert(ctx, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to CreateOrUpdate PrometheusRule for Apicurito", err)
 		return phase, err
 	}
 
@@ -416,7 +424,7 @@ func (r *Reconciler) createConfigMapForUI(ctx context.Context, client k8sclient.
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, cfgMap, func() error {
 		cfgMap.Data = map[string]string{
-			"config.js": `var ApicuritoConfig = { 
+			"config.js": `var ApicuritoConfig = {
 					"generators": [
 					{
 						"name":"Fuse 7.1 Camel Project",
@@ -436,7 +444,7 @@ func (r *Reconciler) createConfigMapForUI(ctx context.Context, client k8sclient.
 	return nil
 }
 
-func (r *Reconciler) addTlsToApicuritoRoute(ctx context.Context, client k8sclient.Client) error {
+func (r *Reconciler) addTLSToApicuritoRoute(ctx context.Context, client k8sclient.Client) error {
 	apicuritoRoute := &routev1.Route{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, apicuritoRoute)
 	if err != nil {
@@ -462,7 +470,7 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 	var deployment = &v1.Deployment{}
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: "apicurito", Namespace: r.Config.GetNamespace()}, deployment)
 	if err != nil {
-		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %w, %w", r.Config.GetNamespace(), err)
+		return fmt.Errorf("Failed to update apicurito deployment config in namespace: %v, %w", r.Config.GetNamespace(), err)
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
@@ -490,6 +498,48 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 		return errors.Wrap(err, "failed to create/update apicurito deployment config")
 	}
 	r.logger.Infof("The operation result for apicurito deployment config %s was %s", deployment.Name, or)
+
+	return nil
+}
+
+func (r *Reconciler) reconcilePodCountAlert(ctx context.Context, client k8sclient.Client) error {
+	const apicuritoPodCountExpected int = 3
+	ns := r.Config.GetNamespace()
+	prometheusRule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ksm-apicurito-alerts",
+			Namespace: ns,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, prometheusRule, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(prometheusRule, r.installation)
+
+		prometheusRule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name: "apicurito.rules",
+					Rules: []monitoringv1.Rule{
+						{
+							Alert: "ApicuritoPodCount",
+							Annotations: map[string]string{
+								"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+								"message": fmt.Sprintf("Pod count for namespace %s is %s. Expected exactly %d pods.", "{{ $labels.namespace }}", "{{  printf \"%.0f\" $value }}", apicuritoPodCountExpected),
+							},
+							Expr: intstr.FromString(
+								fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) != %d", ns, ns, apicuritoPodCountExpected)),
+							For:    "5m",
+							Labels: map[string]string{"severity": "critical"},
+						},
+					},
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error creating Apicurito PrometheusRule: %w", err)
+	}
 
 	return nil
 }
