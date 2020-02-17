@@ -40,11 +40,11 @@ var installation = &integreatlyv1alpha1.RHMI{
 		UID:       types.UID("xyz"),
 	},
 	Status: integreatlyv1alpha1.RHMIStatus{
-		Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-			"products": &integreatlyv1alpha1.RHMIStageStatus{
+		Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+			"products": integreatlyv1alpha1.RHMIStageStatus{
 				Name:  "products",
 				Phase: integreatlyv1alpha1.PhaseCompleted,
-				Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductFuse: {
 						Name:    integreatlyv1alpha1.ProductFuse,
 						Host:    "http://syndesis.example.com",

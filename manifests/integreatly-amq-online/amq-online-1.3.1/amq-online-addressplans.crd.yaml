@@ -48,9 +48,9 @@ spec:
               type: object
               properties:
                 router:
-                  type: number
+                  type: string
                 broker:
-                  type: number
+                  type: string
         displayName:
           type: string
         displayOrder:

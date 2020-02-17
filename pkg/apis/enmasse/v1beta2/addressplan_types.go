@@ -27,8 +27,8 @@ type AddressPlanStatus struct {
 }
 
 type AddressPlanResources struct {
-	Router float32 `json:"router"`
-	Broker float32 `json:"broker"`
+	Router string `json:"router"`
+	Broker string `json:"broker"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

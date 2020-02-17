@@ -33,8 +33,8 @@ func TestHandleStageComplete(t *testing.T) {
 			Name: "test stage complete event handler on a stage thats not completed",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-						stageName: &integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+						stageName: integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
 						},
@@ -47,8 +47,8 @@ func TestHandleStageComplete(t *testing.T) {
 			Name: "test stage complete event handler on a stage thats completed",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-						stageName: &integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+						stageName: integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseCompleted,
 						},
@@ -82,11 +82,11 @@ func TestHandleProductComplete(t *testing.T) {
 			Name: "test product complete event handler on a product thats unavailable",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-						stageName: &integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+						stageName: integreatlyv1alpha1.RHMIStageStatus{
 							Name:     stageName,
 							Phase:    integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{},
+							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{},
 						},
 					},
 				},
@@ -97,12 +97,12 @@ func TestHandleProductComplete(t *testing.T) {
 			Name: "test product complete event handler on a product thats in progress",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-						stageName: &integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+						stageName: integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
-								productName: &integreatlyv1alpha1.RHMIProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+								productName: integreatlyv1alpha1.RHMIProductStatus{
 									Name:   productName,
 									Status: integreatlyv1alpha1.PhaseInProgress,
 								},
@@ -117,12 +117,12 @@ func TestHandleProductComplete(t *testing.T) {
 			Name: "test product complete event handler on a product thats completed",
 			Installation: &integreatlyv1alpha1.RHMI{
 				Status: integreatlyv1alpha1.RHMIStatus{
-					Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
-						stageName: &integreatlyv1alpha1.RHMIStageStatus{
+					Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+						stageName: integreatlyv1alpha1.RHMIStageStatus{
 							Name:  stageName,
 							Phase: integreatlyv1alpha1.PhaseInProgress,
-							Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
-								productName: &integreatlyv1alpha1.RHMIProductStatus{
+							Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+								productName: integreatlyv1alpha1.RHMIProductStatus{
 									Name:   productName,
 									Status: integreatlyv1alpha1.PhaseCompleted,
 								},

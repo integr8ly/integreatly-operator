@@ -50,11 +50,11 @@ spec:
               type: object
               properties:
                 aggregate:
-                  type: number
+                  type: string
                 router:
-                  type: number
+                  type: string
                 broker:
-                  type: number
+                  type: string
             addressPlans:
               type: array
               items:

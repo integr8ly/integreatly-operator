@@ -19,12 +19,12 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
@@ -87,10 +87,45 @@ spec:
             smtpEnabled:
               type: boolean
             stages:
+              additionalProperties:
+                properties:
+                  name:
+                    type: string
+                  phase:
+                    type: string
+                  products:
+                    additionalProperties:
+                      properties:
+                        host:
+                          type: string
+                        mobile:
+                          type: boolean
+                        name:
+                          type: string
+                        operator:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - host
+                      - name
+                      - status
+                      - version
+                      type: object
+                    type: object
+                required:
+                - name
+                - phase
+                type: object
               description: 'INSERT ADDITIONAL STATUS FIELDS - define observed state
                 of cluster Important: Run "operator-sdk generate k8s" to regenerate
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
+              type: object
           required:
           - lastError
           - stages

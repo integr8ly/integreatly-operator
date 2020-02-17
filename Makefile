@@ -11,7 +11,7 @@ PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
-OPERATOR_SDK_VERSION=0.12.0
+OPERATOR_SDK_VERSION=0.15.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
@@ -64,9 +64,10 @@ code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
 deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_types.go
-	operator-sdk generate openapi
+	operator-sdk generate crds
+
 pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/rhmi_types.go
-	operator-sdk generate openapi
+	which ./bin/openapi-gen > /dev/null || go build -o ./bin/openapi-gen k8s.io/kube-openapi/cmd/openapi-gen
 
 pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate k8s
