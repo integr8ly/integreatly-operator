@@ -166,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileServiceAdmin(ctx, serverClient, GetServiceAdminRole(ns))
+	phase, err = r.reconcileServiceAdmin(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile service admin role to dedicated admins group", err)
 		return phase, err
@@ -419,12 +419,31 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8sclient.Client, serviceAdminRole *rbacv1.Role) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling service admin role to the dedicated admins group")
 
-	err := serverClient.Create(ctx, serviceAdminRole)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create service admin role %v: %w", serviceAdminRole, err)
+	serviceAdminRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse.io:service-admin",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, serviceAdminRole, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(serviceAdminRole, r.inst)
+
+		serviceAdminRole.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"admin.enmasse.io"},
+				Resources: []string{"addressplans", "addressspaceplans", "brokeredinfraconfigs", "standardinfraconfigs", "authenticationservices"},
+				Verbs:     []string{"create", "get", "update", "delete", "list", "watch", "patch"},
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role %v: %w", serviceAdminRole, err)
 	}
 
 	// Bind the amq online service admin role to the dedicated-admins group
@@ -433,21 +452,26 @@ func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8s
 			Name:      "dedicated-admins-service-admin",
 			Namespace: r.Config.GetNamespace(),
 		},
-		RoleRef: rbacv1.RoleRef{
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, serviceAdminRoleBinding, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(serviceAdminRoleBinding, r.inst)
+
+		serviceAdminRoleBinding.RoleRef = rbacv1.RoleRef{
 			Name: serviceAdminRole.GetName(),
 			Kind: "Role",
-		},
-		Subjects: []rbacv1.Subject{
+		}
+		serviceAdminRoleBinding.Subjects = []rbacv1.Subject{
 			{
 				Name: "dedicated-admins",
 				Kind: "Group",
 			},
-		},
-	}
+		}
 
-	err = serverClient.Create(ctx, serviceAdminRoleBinding)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create service admin role binding %v: %w", serviceAdminRoleBinding, err)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role binding %v: %w", serviceAdminRoleBinding, err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -581,21 +605,4 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// Get the amq online service admin role
-func GetServiceAdminRole(ns string) *rbacv1.Role {
-	return &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "enmasse.io:service-admin",
-			Namespace: ns,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"admin.enmasse.io"},
-				Resources: []string{"addressplans", "addressspaceplans", "brokeredinfraconfigs", "standardinfraconfigs", "authenticationservices"},
-				Verbs:     []string{"create", "get", "update", "delete", "list", "watch", "patch"},
-			},
-		},
-	}
 }

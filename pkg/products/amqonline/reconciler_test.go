@@ -144,6 +144,41 @@ func croPostgresSecretMock(installationNamespace string) *corev1.Secret {
 	}
 }
 
+func serviceAdminRoleMock(installationNamespace string) *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse.io:service-admin",
+			Namespace: installationNamespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"dummy"},
+				Resources: []string{"dummy"},
+				Verbs:     []string{"dummy"},
+			},
+		},
+	}
+}
+
+func serviceAdminRoleBindingMock(installationNamespace string) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dedicated-admins-service-admin",
+			Namespace: installationNamespace,
+		},
+		RoleRef: rbacv1.RoleRef{
+			Name: "dummy",
+			Kind: "Role",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Name: "dummy",
+				Kind: "Group",
+			},
+		},
+	}
+}
+
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
@@ -363,22 +398,20 @@ func TestReconcile_reconcileServiceAdmin(t *testing.T) {
 		Recorder         record.EventRecorder
 	}{
 		{
-			Name:             "Test returns completed phase if successfully creating amq online service admin role and role binding",
-			Client:           fake.NewFakeClientWithScheme(buildScheme()),
-			FakeConfig:       basicConfigMock(),
-			ServiceAdminRole: GetServiceAdminRole(defaultNamespace),
-			ExpectedStatus:   integreatlyv1alpha1.PhaseCompleted,
-			Installation:     basicInstallation(),
-			Recorder:         setupRecorder(),
+			Name:           "Test returns completed phase if successfully creating amq online service admin role and role binding",
+			Client:         fake.NewFakeClientWithScheme(buildScheme()),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
 		},
 		{
-			Name:             "Test returns completed phase if trying to create existing amq online service admin role and role binding",
-			Client:           fake.NewFakeClientWithScheme(buildScheme(), GetServiceAdminRole(defaultNamespace)),
-			FakeConfig:       basicConfigMock(),
-			ServiceAdminRole: GetServiceAdminRole(defaultNamespace),
-			ExpectedStatus:   integreatlyv1alpha1.PhaseCompleted,
-			Installation:     basicInstallation(),
-			Recorder:         setupRecorder(),
+			Name:           "Test returns completed phase if trying to create existing amq online service admin role and role binding",
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), serviceAdminRoleMock(defaultNamespace), serviceAdminRoleBindingMock(defaultNamespace)),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
 		},
 	}
 
@@ -388,7 +421,7 @@ func TestReconcile_reconcileServiceAdmin(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
-			phase, err := r.reconcileServiceAdmin(context.TODO(), s.Client, s.ServiceAdminRole)
+			phase, err := r.reconcileServiceAdmin(context.TODO(), s.Client)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
