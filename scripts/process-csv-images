@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# This script locates the current cluster service version file (csv) for a given product and replaces all occurrences of internal image registries with a deloeran version and generates an image_mirror_mapping file.
+#
+# Example: Running the script and checking the changes produced
+#
+#$ ./scripts/process-csv-images 3scale
+#$ grep delorean manifests/integreatly-3scale/3scale-0.5.0/3scale-operator.v0.5.0.clusterserviceversion.yaml
+#    image: quay.io/integreatly/delorean/3scale-amp2-apicast-gateway-rhel8_3scale2.8
+#    image: quay.io/integreatly/delorean/3scale-amp2-backend-rhel7_3scale2.8
+#    image: quay.io/integreatly/delorean/3scale-amp2-system-rhel7_3scale2.8
+#    image: quay.io/integreatly/delorean/3scale-amp2-zync-rhel7_3scale2.8
+#    image: quay.io/integreatly/delorean/3scale-amp2-memcached-rhel7_3scale2.8
+#$ cat manifests/integreatly-3scale/image_mirror_mapping
+#registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-apicast-gateway-rhel8:3scale2.8 quay.io/integreatly/delorean/3scale-amp2-apicast-gateway-rhel8_3scale2.8
+#registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-backend-rhel7:3scale2.8 quay.io/integreatly/delorean/3scale-amp2-backend-rhel7_3scale2.8
+#registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-system-rhel7:3scale2.8 quay.io/integreatly/delorean/3scale-amp2-system-rhel7_3scale2.8
+#registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-zync-rhel7:3scale2.8 quay.io/integreatly/delorean/3scale-amp2-zync-rhel7_3scale2.8
+#registry-proxy.engineering.redhat.com/rh-osbs/3scale-amp2-memcached-rhel7:3scale2.8 quay.io/integreatly/delorean/3scale-amp2-memcached-rhel7_3scale2.8
+
+set -e
+
+WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+source $WORK_DIR/csv_helper
+
+RH_REGISTRY_PROD=registry.redhat.io
+RH_REGISTRY_STAGE=registry.stage.redhat.io
+RH_REGISTRY_OSBS=registry-proxy.engineering.redhat.com/rh-osbs
+DELOREAN_REGISTRY=quay.io/integreatly/delorean
+
+collect_csv_images() {
+    csv_images=(`grep -o $RH_REGISTRY_STAGE.* $1 || true`)
+}
+
+process_csv_images() {
+    echo "Generate Image Mirror Mapping for $2"
+    image_mirror_mapping=${MANIFESTS_DIR}/integreatly-${2}/image_mirror_mapping
+
+    for image in "${csv_images[@]}"
+    do
+        echo "Processing image $image"
+
+        image_path="$(echo $image | grep / | cut -d/ -f2-)"
+        osbs_image_path="$(echo $image_path | sed 's/\//-/')"
+        delorean_image_tag="$(echo $osbs_image_path | sed 's/:/_/')"
+
+        osbs_image="${RH_REGISTRY_OSBS}/${osbs_image_path}"
+        delorean_image="${DELOREAN_REGISTRY}:${delorean_image_tag}"
+
+        echo "CSV Image: ${image}"
+        echo "OSBS Image: ${osbs_image}"
+        echo "Delorean Image: ${delorean_image}"
+
+        #Update image reference in csv to use delorean registry
+        sed -i.bak "s|${image}|${delorean_image}|g" $1
+        rm $1.bak
+
+        #Add the image mapping if it doesn't already exist
+        osbs_delorean_map="${osbs_image} ${delorean_image}"
+        grep -qxF "$osbs_delorean_map" $image_mirror_mapping || echo $osbs_delorean_map >> $image_mirror_mapping
+    done
+}
+
+PRODUCT=$1
+
+process_csv() {
+    echo "~~~~~~"
+    echo "Process CSV images for Product $PRODUCT"
+    echo "~~~~~~"
+
+    current_csv=$(get_current_csv_file $PRODUCT)
+    collect_csv_images $current_csv
+    process_csv_images $current_csv $PRODUCT
+}
+
+process_csv
