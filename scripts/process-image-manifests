@@ -48,7 +48,7 @@ extract_manifests_from_image() {
     echo "Creating ${MANIFEST_TMP_DIR} directory"
     mkdir -p ${MANIFEST_TMP_DIR}
     echo "Extracting manifests from image '${IMAGE}' to ${MANIFEST_TMP_DIR}"
-    oc image extract $IMAGE --path /manifests/:${MANIFEST_TMP_DIR} --confirm
+    oc image extract $IMAGE --path /manifests/:${MANIFEST_TMP_DIR}
     ls -la ${MANIFEST_TMP_DIR}
 }
 
