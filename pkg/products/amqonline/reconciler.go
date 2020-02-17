@@ -25,6 +25,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -147,7 +148,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBrokerConfigs(ctx, serverClient, GetDefaultBrokeredInfraConfigs(ns), GetDefaultStandardInfraConfigs(ns))
+	phase, err = r.reconcileInfraConfigs(ctx, serverClient, GetDefaultBrokeredInfraConfigs(ns), GetDefaultStandardInfraConfigs(ns))
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile broker configs", err)
 		return phase, err
@@ -162,6 +163,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileAddressSpacePlans(ctx, serverClient, GetDefaultAddressSpacePlans(ns))
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile address space plans", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileServiceAdmin(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile service admin role to dedicated admins group", err)
 		return phase, err
 	}
 
@@ -364,7 +371,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileBrokerConfigs(ctx context.Context, serverClient k8sclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileInfraConfigs(ctx context.Context, serverClient k8sclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default infra configs")
 
 	for _, bic := range brokeredCfgs {
@@ -409,6 +416,64 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create address space plan %v: %w", asp, err)
 		}
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.logger.Info("reconciling service admin role to the dedicated admins group")
+
+	serviceAdminRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse.io:service-admin",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, serviceAdminRole, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(serviceAdminRole, r.inst)
+
+		serviceAdminRole.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"admin.enmasse.io"},
+				Resources: []string{"addressplans", "addressspaceplans", "brokeredinfraconfigs", "standardinfraconfigs", "authenticationservices"},
+				Verbs:     []string{"create", "get", "update", "delete", "list", "watch", "patch"},
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role %v: %w", serviceAdminRole, err)
+	}
+
+	// Bind the amq online service admin role to the dedicated-admins group
+	serviceAdminRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dedicated-admins-service-admin",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, serviceAdminRoleBinding, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(serviceAdminRoleBinding, r.inst)
+
+		serviceAdminRoleBinding.RoleRef = rbacv1.RoleRef{
+			Name: serviceAdminRole.GetName(),
+			Kind: "Role",
+		}
+		serviceAdminRoleBinding.Subjects = []rbacv1.Subject{
+			{
+				Name: "dedicated-admins",
+				Kind: "Group",
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role binding %v: %w", serviceAdminRoleBinding, err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

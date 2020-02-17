@@ -12,9 +12,7 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
@@ -146,6 +144,41 @@ func croPostgresSecretMock(installationNamespace string) *corev1.Secret {
 	}
 }
 
+func serviceAdminRoleMock(installationNamespace string) *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse.io:service-admin",
+			Namespace: installationNamespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"dummy"},
+				Resources: []string{"dummy"},
+				Verbs:     []string{"dummy"},
+			},
+		},
+	}
+}
+
+func serviceAdminRoleBindingMock(installationNamespace string) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dedicated-admins-service-admin",
+			Namespace: installationNamespace,
+		},
+		RoleRef: rbacv1.RoleRef{
+			Name: "dummy",
+			Kind: "Role",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Name: "dummy",
+				Kind: "Group",
+			},
+		},
+	}
+}
+
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
@@ -162,7 +195,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name:           "Test returns none phase if successfully creating new auth services",
+			Name:           "Test returns completed phase if successfully creating new auth services",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -175,7 +208,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 			Recorder: setupRecorder(),
 		},
 		{
-			Name:           "Test returns none phase if trying to create existing auth services",
+			Name:           "Test returns completed phase if trying to create existing auth services",
 			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -206,20 +239,20 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 	}
 }
 
-func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
+func TestReconcile_reconcileInfraConfigs(t *testing.T) {
 	scenarios := []struct {
 		Name                 string
 		Client               k8sclient.Client
 		FakeConfig           *config.ConfigReadWriterMock
 		Installation         *integreatlyv1alpha1.RHMI
 		ExpectedStatus       integreatlyv1alpha1.StatusPhase
-		BrokeredInfraConfigs []*v1beta1.BrokeredInfraConfig
-		StandardInfraConfigs []*v1beta1.StandardInfraConfig
+		BrokeredInfraConfigs []*enmassev1beta1.BrokeredInfraConfig
+		StandardInfraConfigs []*enmassev1beta1.StandardInfraConfig
 		FakeMPM              *marketplace.MarketplaceInterfaceMock
 		Recorder             record.EventRecorder
 	}{
 		{
-			Name:                 "Test returns none phase if successfully creating new address space plans",
+			Name:                 "Test returns completed phase if successfully creating new infra configs",
 			Client:               fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:           basicConfigMock(),
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
@@ -229,8 +262,8 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			Recorder:             setupRecorder(),
 		},
 		{
-			Name:                 "Test returns none phase if trying to create existing address space plans",
-			Client:               fake.NewFakeClientWithScheme(buildScheme()),
+			Name:                 "Test returns completed phase if trying to create existing infra configs",
+			Client:               fake.NewFakeClientWithScheme(buildScheme(), GetDefaultBrokeredInfraConfigs(defaultNamespace)[0], GetDefaultStandardInfraConfigs(defaultNamespace)[0]),
 			BrokeredInfraConfigs: GetDefaultBrokeredInfraConfigs(defaultNamespace),
 			StandardInfraConfigs: GetDefaultStandardInfraConfigs(defaultNamespace),
 			FakeConfig:           basicConfigMock(),
@@ -246,7 +279,7 @@ func TestReconcile_reconcileBrokerConfigs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not create reconciler %v", err)
 			}
-			phase, err := r.reconcileBrokerConfigs(context.TODO(), s.Client, s.BrokeredInfraConfigs, s.StandardInfraConfigs)
+			phase, err := r.reconcileInfraConfigs(context.TODO(), s.Client, s.BrokeredInfraConfigs, s.StandardInfraConfigs)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
@@ -264,12 +297,12 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 		FakeConfig     *config.ConfigReadWriterMock
 		Installation   *integreatlyv1alpha1.RHMI
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
-		AddressPlans   []*v1beta2.AddressPlan
+		AddressPlans   []*enmassev1beta2.AddressPlan
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name:           "Test returns none phase if successfully creating new address space plans",
+			Name:           "Test returns completed phase if successfully creating new address plans",
 			Client:         fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:     basicConfigMock(),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
@@ -278,8 +311,8 @@ func TestReconcile_reconcileAddressPlans(t *testing.T) {
 			Recorder:       setupRecorder(),
 		},
 		{
-			Name:           "Test returns none phase if trying to create existing address space plans",
-			Client:         fake.NewFakeClientWithScheme(buildScheme()),
+			Name:           "Test returns completed phase if trying to create existing address plans",
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAddressPlans(defaultNamespace)[0]),
 			AddressPlans:   GetDefaultAddressPlans(defaultNamespace),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -312,12 +345,12 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 		FakeConfig        *config.ConfigReadWriterMock
 		Installation      *integreatlyv1alpha1.RHMI
 		ExpectedStatus    integreatlyv1alpha1.StatusPhase
-		AddressSpacePlans []*v1beta2.AddressSpacePlan
+		AddressSpacePlans []*enmassev1beta2.AddressSpacePlan
 		FakeMPM           *marketplace.MarketplaceInterfaceMock
 		Recorder          record.EventRecorder
 	}{
 		{
-			Name:              "Test returns none phase if successfully creating new address space plans",
+			Name:              "Test returns completed phase if successfully creating new address space plans",
 			Client:            fake.NewFakeClientWithScheme(buildScheme()),
 			FakeConfig:        basicConfigMock(),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
@@ -326,8 +359,8 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 			Recorder:          setupRecorder(),
 		},
 		{
-			Name:              "Test returns none phase if trying to create existing address space plans",
-			Client:            fake.NewFakeClientWithScheme(buildScheme()),
+			Name:              "Test returns completed phase if trying to create existing address space plans",
+			Client:            fake.NewFakeClientWithScheme(buildScheme(), GetDefaultAddressSpacePlans(defaultNamespace)[0]),
 			AddressSpacePlans: GetDefaultAddressSpacePlans(defaultNamespace),
 			FakeConfig:        basicConfigMock(),
 			ExpectedStatus:    integreatlyv1alpha1.PhaseCompleted,
@@ -343,6 +376,52 @@ func TestReconcile_reconcileAddressSpacePlans(t *testing.T) {
 				t.Fatalf("could not create reconciler %v", err)
 			}
 			phase, err := r.reconcileAddressSpacePlans(context.TODO(), s.Client, s.AddressSpacePlans)
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+			if phase != s.ExpectedStatus {
+				t.Fatalf("expected status %s but got %s", s.ExpectedStatus, phase)
+			}
+		})
+	}
+}
+
+func TestReconcile_reconcileServiceAdmin(t *testing.T) {
+	scenarios := []struct {
+		Name             string
+		Client           k8sclient.Client
+		FakeConfig       *config.ConfigReadWriterMock
+		Installation     *integreatlyv1alpha1.RHMI
+		ExpectedStatus   integreatlyv1alpha1.StatusPhase
+		ServiceAdminRole *rbacv1.Role
+		FakeMPM          *marketplace.MarketplaceInterfaceMock
+		Recorder         record.EventRecorder
+	}{
+		{
+			Name:           "Test returns completed phase if successfully creating amq online service admin role and role binding",
+			Client:         fake.NewFakeClientWithScheme(buildScheme()),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
+		},
+		{
+			Name:           "Test returns completed phase if trying to create existing amq online service admin role and role binding",
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), serviceAdminRoleMock(defaultNamespace), serviceAdminRoleBindingMock(defaultNamespace)),
+			FakeConfig:     basicConfigMock(),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			Installation:   basicInstallation(),
+			Recorder:       setupRecorder(),
+		},
+	}
+
+	for _, s := range scenarios {
+		t.Run(s.Name, func(t *testing.T) {
+			r, err := NewReconciler(s.FakeConfig, s.Installation, s.FakeMPM, s.Recorder)
+			if err != nil {
+				t.Fatalf("could not create reconciler %v", err)
+			}
+			phase, err := r.reconcileServiceAdmin(context.TODO(), s.Client)
 			if err != nil {
 				t.Fatalf("unexpected error %v", err)
 			}
