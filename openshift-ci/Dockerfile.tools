@@ -18,3 +18,8 @@ RUN mkdir -p $GOPATH/src/github.com/operator-framework \
 RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 \
     && chmod +x ./jq \
     && cp jq /usr/bin
+
+# install yq
+RUN wget -O yq https://github.com/mikefarah/yq/releases/download/3.1.1/yq_linux_amd64 \
+    && chmod +x ./yq \
+    && cp yq /usr/bin
