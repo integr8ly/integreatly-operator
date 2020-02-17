@@ -86,3 +86,20 @@ deploy/integreatly-rhmi-cr.yml
 #ocm generated templates
 ocm/
 htpasswd
+
+# CRDs that get generated because of our odd duplicated type stuff in
+# pkg/apis. We should really not have those in pkg/apis, and instead
+# depend on them as Go modules.
+deploy/crds/apicur.io_apicuritoes_crd.yaml
+deploy/crds/enmasse.io_addresses_crd.yaml
+deploy/crds/enmasse.io_addressplans_crd.yaml
+deploy/crds/enmasse.io_addressspaces_crd.yaml
+deploy/crds/integreatly.org_webapps_crd.yaml
+deploy/crds/kafka.strimzi.io_kafkas_crd.yaml
+deploy/crds/enmasse.io_addressspaceplans_crd.yaml
+deploy/crds/admin.enmasse.io_consoleservices_crd.yaml
+deploy/crds/admin.enmasse.io_brokeredinfraconfigs_crd.yaml
+deploy/crds/admin.enmasse.io_standardinfraconfigs_crd.yaml
+deploy/crds/admin.enmasse.io_authenticationservices_crd.yaml
+deploy/crds/applicationmonitoring.integreatly.org_blackboxtargets_crd.yaml
+deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
