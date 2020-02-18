@@ -120,6 +120,17 @@ spec:
   smtpSecret: rhmi-smtp
 ```
 
+## Set up testing IDP for OSD cluster
+You can use the `scripts/setup-sso-idp.sh` script to setup a "testing-idp" realm in cluster SSO instance and add it as IDP of your OSD cluster.
+With this script you will get few regular users - test-user[01-10] and few users that will be added to dedicated-admins group - customer-admin[01-03].
+
+Prerequisites:
+- OC session with cluster admin permissions in a target cluster
+- OCM session
+
+Tip: set `PASSWORD` env var to define a password for the users. Random password is generated when this env var is not set.
+
+
 ## Set up dedicated admins
 
 To setup your cluster to have dedicated admins run the `./scripts/setup-htpass-idp.sh` script which creates htpasswd identity provider and creates users.
