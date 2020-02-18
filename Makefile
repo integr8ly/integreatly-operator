@@ -65,6 +65,19 @@ code/compile: code/gen
 
 deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate crds
+	- rm -f deploy/crds/apicur.io_apicuritoes_crd.yaml
+	- rm -f deploy/crds/enmasse.io_addresses_crd.yaml
+	- rm -f deploy/crds/enmasse.io_addressplans_crd.yaml
+	- rm -f deploy/crds/enmasse.io_addressspaces_crd.yaml
+	- rm -f deploy/crds/integreatly.org_webapps_crd.yaml
+	- rm -f deploy/crds/kafka.strimzi.io_kafkas_crd.yaml
+	- rm -f deploy/crds/enmasse.io_addressspaceplans_crd.yaml
+	- rm -f deploy/crds/admin.enmasse.io_consoleservices_crd.yaml
+	- rm -f deploy/crds/admin.enmasse.io_brokeredinfraconfigs_crd.yaml
+	- rm -f deploy/crds/admin.enmasse.io_standardinfraconfigs_crd.yaml
+	- rm -f deploy/crds/admin.enmasse.io_authenticationservices_crd.yaml
+	- rm -f deploy/crds/applicationmonitoring.integreatly.org_blackboxtargets_crd.yaml
+	- rm -f deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
 
 pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	which ./bin/openapi-gen > /dev/null || go build -o ./bin/openapi-gen k8s.io/kube-openapi/cmd/openapi-gen

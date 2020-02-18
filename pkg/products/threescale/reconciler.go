@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -43,8 +41,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	errorUtil "github.com/pkg/errors"
 )
 
 const (
@@ -527,7 +523,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create the prometheus availability rule
 	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create backend redis prometheus alert for threescale")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
 	}
 
 	// setup system redis custom resource
@@ -545,7 +541,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create the prometheus availability rule
 	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create system redis prometheus alert for threescale")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
 	}
 
 	// setup postgres cr for the cloud resource operator
@@ -563,7 +559,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create the prometheus availability rule
 	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errorUtil.Wrap(err, "failed to create postgres prometheus alert for threescale")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
 	}
 
 	// wait for the backend redis cr to reconcile
@@ -697,7 +693,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not create/update 3scale keycloak client")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w", err)
 	}
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)

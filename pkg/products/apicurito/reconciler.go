@@ -12,7 +12,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -189,7 +188,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "failed to create/update apicurito custom resource")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update apicurito custom resource: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito %s was %s", apicuritoCR.Name, or)
 
@@ -286,7 +285,7 @@ func (r *Reconciler) createDeployConfigForGenerator(ctx context.Context, client 
 	//DeploymentConfig.apps.openshift.io "fuse-apicurito-generator" is invalid: spec.template.metadata.labels: Invalid value: map[string]string(nil): `selector` does not match template `labels`
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurito generator dc")
+		return fmt.Errorf("failed to create/update apicurito generator dc: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito %s was %s", dc.Name, or)
 
@@ -374,7 +373,7 @@ func (r *Reconciler) createServiceForGenerator(ctx context.Context, client k8scl
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurito generator service")
+		return fmt.Errorf("failed to create/update apicurito generator service: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito %s was %s", service.Name, or)
 
@@ -407,7 +406,7 @@ func (r *Reconciler) createRouteForGenerator(ctx context.Context, client k8sclie
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurito generator route")
+		return fmt.Errorf("failed to create/update apicurito generator route: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito route %s was %s", route.Name, or)
 
@@ -437,7 +436,7 @@ func (r *Reconciler) createConfigMapForUI(ctx context.Context, client k8sclient.
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurito generator route")
+		return fmt.Errorf("failed to create/update apicurito generator route: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito config map %s was %s", cfgMap.Name, or)
 
@@ -458,7 +457,7 @@ func (r *Reconciler) addTLSToApicuritoRoute(ctx context.Context, client k8sclien
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurio route")
+		return fmt.Errorf("failed to create/update apicurio route: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito route %s was %s", apicuritoRoute.Name, or)
 
@@ -495,7 +494,7 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 		return nil
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to create/update apicurito deployment config")
+		return fmt.Errorf("failed to create/update apicurito deployment config: %w", err)
 	}
 	r.logger.Infof("The operation result for apicurito deployment config %s was %s", deployment.Name, or)
 
