@@ -52,6 +52,7 @@ var (
 				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
 				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
 				integreatlyv1alpha1.ProductApicurito:           {Name: integreatlyv1alpha1.ProductApicurito},
+				integreatlyv1alpha1.ProductDataSync:            {Name: integreatlyv1alpha1.ProductDataSync},
 			},
 		},
 		{
@@ -99,6 +100,7 @@ var (
 				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
 				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
 				integreatlyv1alpha1.ProductApicurito:           {Name: integreatlyv1alpha1.ProductApicurito},
+				integreatlyv1alpha1.ProductDataSync:            {Name: integreatlyv1alpha1.ProductDataSync},
 			},
 		},
 		{

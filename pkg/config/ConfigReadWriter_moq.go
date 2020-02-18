@@ -18,6 +18,7 @@ var (
 	lockConfigReadWriterMockReadApicurito               sync.RWMutex
 	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
+	lockConfigReadWriterMockReadDataSync                sync.RWMutex
 	lockConfigReadWriterMockReadFuse                    sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
@@ -67,6 +68,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadCodeReadyFunc: func() (*CodeReady, error) {
 // 	               panic("mock out the ReadCodeReady method")
+//             },
+//             ReadDataSyncFunc: func() (*DataSync, error) {
+// 	               panic("mock out the ReadDataSync method")
 //             },
 //             ReadFuseFunc: func() (*Fuse, error) {
 // 	               panic("mock out the ReadFuse method")
@@ -135,6 +139,9 @@ type ConfigReadWriterMock struct {
 	// ReadCodeReadyFunc mocks the ReadCodeReady method.
 	ReadCodeReadyFunc func() (*CodeReady, error)
 
+	// ReadDataSyncFunc mocks the ReadDataSync method.
+	ReadDataSyncFunc func() (*DataSync, error)
+
 	// ReadFuseFunc mocks the ReadFuse method.
 	ReadFuseFunc func() (*Fuse, error)
 
@@ -196,6 +203,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadCodeReady holds details about calls to the ReadCodeReady method.
 		ReadCodeReady []struct {
+		}
+		// ReadDataSync holds details about calls to the ReadDataSync method.
+		ReadDataSync []struct {
 		}
 		// ReadFuse holds details about calls to the ReadFuse method.
 		ReadFuse []struct {
@@ -470,6 +480,32 @@ func (mock *ConfigReadWriterMock) ReadCodeReadyCalls() []struct {
 	lockConfigReadWriterMockReadCodeReady.RLock()
 	calls = mock.calls.ReadCodeReady
 	lockConfigReadWriterMockReadCodeReady.RUnlock()
+	return calls
+}
+
+// ReadDataSync calls ReadDataSyncFunc.
+func (mock *ConfigReadWriterMock) ReadDataSync() (*DataSync, error) {
+	if mock.ReadDataSyncFunc == nil {
+		panic("ConfigReadWriterMock.ReadDataSyncFunc: method is nil but ConfigReadWriter.ReadDataSync was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadDataSync.Lock()
+	mock.calls.ReadDataSync = append(mock.calls.ReadDataSync, callInfo)
+	lockConfigReadWriterMockReadDataSync.Unlock()
+	return mock.ReadDataSyncFunc()
+}
+
+// ReadDataSyncCalls gets all the calls that were made to ReadDataSync.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadDataSyncCalls())
+func (mock *ConfigReadWriterMock) ReadDataSyncCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadDataSync.RLock()
+	calls = mock.calls.ReadDataSync
+	lockConfigReadWriterMockReadDataSync.RUnlock()
 	return calls
 }
 
