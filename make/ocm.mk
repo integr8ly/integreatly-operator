@@ -9,6 +9,8 @@ OCM_CLUSTER_LIFESPAN=4
 RHMI_OPERATOR_NS=redhat-rhmi-operator
 # Path to the new cluster's kubeconfig
 CLUSTER_KUBECONFIG="ocm/cluster.kubeconfig"
+# Whether to use BYOC method (specify your own AWS credentials)
+BYOC=false
 
 define get_cluster_id
 	@$(eval OCM_CLUSTER_ID=$(shell mkdir -p ocm && touch ocm/cluster-details.json && jq -r .id < ocm/cluster-details.json ))
@@ -88,9 +90,19 @@ ocm/cluster/delete:
 	${OCM} delete /api/clusters_mgmt/v1/clusters/$(OCM_CLUSTER_ID)
 
 .PHONY: ocm/cluster.json
-ocm/cluster.json: export OCM_CLUSTER_REGION := "eu-west-1"
+ocm/cluster.json: export OCM_CLUSTER_REGION := eu-west-1
 ocm/cluster.json:
 	@mkdir -p ocm
-	sed "s/OCM_CLUSTER_NAME/$(OCM_CLUSTER_NAME)/g" templates/ocm-cluster/cluster-template.json | \
-	sed "s/OCM_CLUSTER_REGION/$(OCM_CLUSTER_REGION)/g" | \
-	sed "s/OCM_CLUSTER_EXPIRATION_TIMESTAMP/$(OCM_CLUSTER_EXPIRATION_TIMESTAMP)/g" > ocm/cluster.json
+	@jq '\
+	.expiration_timestamp = "$(OCM_CLUSTER_EXPIRATION_TIMESTAMP)" | \
+	.name = "$(OCM_CLUSTER_NAME)" | \
+	.region.id = "$(OCM_CLUSTER_REGION)"' < templates/ocm-cluster/cluster-template.json > ocm/cluster.json
+	@if [ $(BYOC) = true ]; then\
+	  jq '\
+	  .byoc = true | \
+	  .aws.access_key_id = "$(AWS_ACCESS_KEY_ID)" | \
+	  .aws.secret_access_key = "$(AWS_SECRET_ACCESS_KEY)" | \
+	  .aws.account_id = "$(AWS_ACCOUNT_ID)"' < ocm/cluster.json > ocm/cluster.json.tmp \
+	  && mv ocm/cluster.json.tmp ocm/cluster.json;\
+	fi
+	@cat ocm/cluster.json
