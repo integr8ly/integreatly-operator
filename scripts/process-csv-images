@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-# This script processes a given cluster service version file (csv) to replace all occurrences of internal image registries with a deloeran version and generate an image_mirror_mapping file.
+# This script locates the current cluster service version file (csv) for a given product and replaces all occurrences of internal image registries with a deloeran version and generates an image_mirror_mapping file.
 #
 # Example: Running the script and checking the changes produced
 #
-#$ ./scripts/process-csv-images manifests/integreatly-3scale/3scale-0.5.0/3scale-operator.v0.5.0.clusterserviceversion.yaml 3scale
+#$ ./scripts/process-csv-images 3scale
 #$ grep delorean manifests/integreatly-3scale/3scale-0.5.0/3scale-operator.v0.5.0.clusterserviceversion.yaml
 #    image: quay.io/integreatly/delorean/3scale-amp2-apicast-gateway-rhel8_3scale2.8
 #    image: quay.io/integreatly/delorean/3scale-amp2-backend-rhel7_3scale2.8
@@ -21,8 +21,8 @@
 set -e
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MANIFESTS_DIR=${WORK_DIR}/../manifests
-MANIFEST_TMP_DIR=${MANIFESTS_DIR}/tmp
+
+source $WORK_DIR/csv_helper
 
 RH_REGISTRY_PROD=registry.redhat.io
 RH_REGISTRY_STAGE=registry.stage.redhat.io
@@ -43,10 +43,10 @@ process_csv_images() {
 
         image_path="$(echo $image | grep / | cut -d/ -f2-)"
         osbs_image_path="$(echo $image_path | sed 's/\//-/')"
-        delorean_image_path="$(echo $osbs_image_path | sed 's/:/_/')"
+        delorean_image_tag="$(echo $osbs_image_path | sed 's/:/_/')"
 
         osbs_image="${RH_REGISTRY_OSBS}/${osbs_image_path}"
-        delorean_image="${DELOREAN_REGISTRY}/${delorean_image_path}"
+        delorean_image="${DELOREAN_REGISTRY}:${delorean_image_tag}"
 
         echo "CSV Image: ${image}"
         echo "OSBS Image: ${osbs_image}"
@@ -62,21 +62,16 @@ process_csv_images() {
     done
 }
 
-CSV=$1
-PRODUCT=$2
+PRODUCT=$1
 
 process_csv() {
     echo "~~~~~~"
-    echo "Process CSV '$CSV' for Product $PRODUCT"
+    echo "Process CSV images for Product $PRODUCT"
     echo "~~~~~~"
 
-    if [ ! -f "$CSV" ]; then
-        echo "$CSV does not exist"
-        exit 1
-    fi
-
-    collect_csv_images $CSV
-    process_csv_images $CSV $PRODUCT
+    current_csv=$(get_current_csv_file $PRODUCT)
+    collect_csv_images $current_csv
+    process_csv_images $current_csv $PRODUCT
 }
 
 process_csv
