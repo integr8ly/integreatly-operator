@@ -3,6 +3,7 @@ package cloudresources
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	"github.com/sirupsen/logrus"
 
@@ -198,7 +199,7 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 }
 
 func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	blobStorageName := fmt.Sprintf("backups-blobstorage-%s", installation.Name)
+	blobStorageName := fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, defaultInstallationNamespace, installation.Spec.Type, "production", blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
 		return nil
 	})
