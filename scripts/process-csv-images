@@ -43,7 +43,7 @@ process_csv_images() {
 
         image_path="$(echo $image | grep / | cut -d/ -f2-)"
         osbs_image_path="$(echo $image_path | sed 's/\//-/')"
-        delorean_image_tag="$(echo $osbs_image_path | sed 's/:/_/')"
+        delorean_image_tag="$(echo $osbs_image_path | sed 's/:/_/' | sed 's/@sha256.*$/_latest/')"
 
         osbs_image="${RH_REGISTRY_OSBS}/${osbs_image_path}"
         delorean_image="${DELOREAN_REGISTRY}:${delorean_image_tag}"
