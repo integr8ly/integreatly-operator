@@ -40,7 +40,7 @@ import (
 var (
 	defaultRhssoNamespace   = "user-sso"
 	keycloakName            = "rhssouser"
-	defaultSubscriptionName = "integreatly-rhsso"
+	defaultSubscriptionName = "rhmi-rhsso"
 	idpAlias                = "openshift-v4"
 	manifestPackage         = "integreatly-rhsso"
 	masterRealmName         = "master"

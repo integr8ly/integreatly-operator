@@ -43,7 +43,7 @@ const (
 	cleanupTimeout               = time.Second * 5
 	intlyNamespacePrefix         = "redhat-rhmi-"
 	namespaceLabel               = "integreatly"
-	installationName             = "integreatly"
+	installationName             = "rhmi"
 	bootstrapStage               = "bootstrap"
 	bootStrapStageTimeout        = time.Minute * 5
 	cloudResourcesStage          = "cloud-resources"
@@ -700,7 +700,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 
 	// wait for integreatly-operator to be ready
-	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "integreatly-operator", 1, retryInterval, timeout)
+	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "rhmi-operator", 1, retryInterval, timeout)
 	if err != nil {
 		t.Fatal(err)
 	}

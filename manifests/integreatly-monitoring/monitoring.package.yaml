@@ -1,4 +1,4 @@
-packageName: integreatly-monitoring
+packageName: rhmi-monitoring
 channels:
 - currentCSV: application-monitoring-operator.v1.0.2
-  name: integreatly
+  name: rhmi

@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	IntegreatlyChannel = "integreatly"
+	IntegreatlyChannel = "rhmi"
 	CatalogSourceName  = "rhmi-registry-cs"
 	OperatorGroupName  = "rhmi-registry-og"
+	Publisher          = "RHMI"
 )
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
@@ -211,7 +212,7 @@ func (m *Manager) reconcileCatalogSource(ctx context.Context, client k8sclient.C
 		SourceType:  coreosv1alpha1.SourceTypeConfigmap,
 		ConfigMap:   configMapName,
 		DisplayName: CatalogSourceName,
-		Publisher:   "Integreatly",
+		Publisher:   Publisher,
 	}
 
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: catalogSource.Name, Namespace: catalogSource.Namespace}, catalogSource)

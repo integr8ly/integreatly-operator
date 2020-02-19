@@ -1,4 +1,4 @@
-packageName: integreatly-apicurito
+packageName: rhmi-apicurito
 channels:
-  - name: integreatly
+  - name: rhmi
     currentCSV: apicuritooperator.v7.5.0

@@ -40,9 +40,9 @@ type BackupSecretLocation struct {
 }
 
 var (
-	BackupServiceAccountName = "integreatly-backupjob"
-	BackupRoleName           = "integreatly-backupjob"
-	BackupRoleBindingName    = "integreatly-backupjob"
+	BackupServiceAccountName = "rhmi-backupjob"
+	BackupRoleName           = "rhmi-backupjob"
+	BackupRoleBindingName    = "rhmi-backupjob"
 )
 
 func ReconcileBackup(ctx context.Context, serverClient k8sclient.Client, config BackupConfig, configManager productsConfig.ConfigReadWriter) error {

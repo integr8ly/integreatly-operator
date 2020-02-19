@@ -37,7 +37,7 @@ import (
 
 const (
 	defaultName             = "solution-explorer"
-	defaultSubNameAndPkg    = "integreatly-solution-explorer"
+	defaultSubNameAndPkg    = "rhmi-solution-explorer"
 	defaultTemplateLoc      = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
 	paramOpenShiftHost      = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost = "OPENSHIFT_OAUTH_HOST"

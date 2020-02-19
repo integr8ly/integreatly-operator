@@ -3,6 +3,7 @@ package codeready
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -322,7 +323,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 					},
 				},
 			},
-			ExpectedError: "could not retrieve checluster for keycloak client update: checlusters.org.eclipse.che \"integreatly-cluster\" not found",
+			ExpectedError: fmt.Sprintf("could not retrieve checluster for keycloak client update: checlusters.org.eclipse.che \"%s\" not found", defaultCheClusterName),
 			FakeClient:    fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm),
 			FakeConfig:    basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

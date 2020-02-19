@@ -1,4 +1,4 @@
-packageName: integreatly-syndesis
+packageName: rhmi-syndesis
 channels:
-- name: integreatly
+- name: rhmi
   currentCSV: fuse-online-operator.v7.5.0

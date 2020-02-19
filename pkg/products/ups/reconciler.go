@@ -38,7 +38,7 @@ import (
 const (
 	defaultInstallationNamespace = "ups"
 	defaultUpsName               = "ups"
-	defaultSubscriptionName      = "integreatly-unifiedpush"
+	defaultSubscriptionName      = "rhmi-unifiedpush"
 	defaultRoutename             = defaultUpsName + "-unifiedpush-proxy"
 	manifestPackage              = "integreatly-unifiedpush"
 	tier                         = "production"

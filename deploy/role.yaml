@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: integreatly-operator
+  name: rhmi-operator
 rules:
   - apiGroups:
       - ""
@@ -92,7 +92,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: integreatly-operator
+  name: rhmi-operator
 rules:
   - apiGroups:
       - integreatly.org

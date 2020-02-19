@@ -1,4 +1,4 @@
-packageName: integreatly-amq-online
+packageName: rhmi-amq-online
 channels:
-- name: integreatly
+- name: rhmi
   currentCSV: amqonline.1.3.1

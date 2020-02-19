@@ -40,7 +40,7 @@ var (
 	defaultOperandNamespace = "rhsso"
 	keycloakName            = "rhsso"
 	keycloakRealmName       = "openshift"
-	defaultSubscriptionName = "integreatly-rhsso"
+	defaultSubscriptionName = "rhmi-rhsso"
 	idpAlias                = "openshift-v4"
 	githubIdpAlias          = "github"
 	manifestPackage         = "integreatly-rhsso"

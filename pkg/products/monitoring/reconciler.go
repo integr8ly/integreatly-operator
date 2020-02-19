@@ -31,7 +31,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "middleware-monitoring"
-	defaultSubscriptionName      = "integreatly-monitoring"
+	defaultSubscriptionName      = "rhmi-monitoring"
 	defaultMonitoringName        = "middleware-monitoring"
 	packageName                  = "monitoring"
 	openshiftMonitoringNamespace = "openshift-monitoring"

@@ -26,8 +26,8 @@ import (
 
 var (
 	defaultInstallationNamespace = "amq-streams"
-	defaultSubscriptionName      = "integreatly-amq-streams"
-	clusterName                  = "integreatly-cluster"
+	defaultSubscriptionName      = "rhmi-amq-streams"
+	clusterName                  = "rhmi-cluster"
 	manifestPackage              = "integreatly-amq-streams"
 )
 

@@ -18,7 +18,7 @@ INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
-export INSTALLATION_NAME   ?= integreatly
+export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
@@ -56,7 +56,7 @@ code/run: code/gen cluster/prepare/smtp
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
-	@oc login --token=$(shell oc serviceaccounts get-token integreatly-operator -n ${NAMESPACE})
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE})
 	$(MAKE) code/run
 
 .PHONY: code/compile
@@ -173,7 +173,7 @@ cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepa
 cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
 	$(call wait_command, oc get crd rhmis.integreatly.org, rhmis.integreatly.org crd, 1m, 10)
-	$(call wait_command, oc get deployments integreatly-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, integreatly-operator ,2m, 10)
+	$(call wait_command, oc get deployments rhmi-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, rhmi-operator ,2m, 10)
 
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
@@ -194,8 +194,8 @@ cluster/cleanup:
 .PHONY: cluster/cleanup/olm
 cluster/cleanup/olm: cluster/cleanup
 	$(call wait_command, oc get projects -l integreatly=true -o jsonpath='{.items}' | grep -q '\[\]', integreatly namespace cleanup, 4m, 10)
-	@-oc delete catalogsourceconfig.operators.coreos.com/installed-integreatly-operator -n openshift-marketplace
-	@-oc delete operatorsource.operators.coreos.com/integreatly-operators -n openshift-marketplace
+	@-oc delete catalogsourceconfig.operators.coreos.com/installed-rhmi-operator -n openshift-marketplace
+	@-oc delete operatorsource.operators.coreos.com/rhmi-operators -n openshift-marketplace
 
 .PHONY: cluster/cleanup/crds
 cluster/cleanup/crds:
@@ -223,7 +223,7 @@ gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
 	@sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
-	operator-sdk olm-catalog gen-csv --csv-version $(TAG) --default-channel --csv-channel=integreatly --update-crds --from-version $(PREVIOUS_TAG)
+	operator-sdk generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
 	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml

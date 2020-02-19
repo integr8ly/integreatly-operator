@@ -194,7 +194,7 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 }
 
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS []string, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, "integreatly", target.Namespace)
+	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, marketplace.IntegreatlyChannel, target.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, owner, target, operandNS, operatorsv1alpha1.ApprovalManual)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
