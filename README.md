@@ -146,14 +146,26 @@ make test/unit
 
 ## Using `ocm` for installation of RHMI
 
-If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using [OCM CLI](https://github.com/openshift-online/ocm-cli/releases):
+If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using [OCM CLI](https://github.com/openshift-online/ocm-cli/releases). If you want to spin up a cluster using BYOC (your own AWS credentials), follow the additional steps marked as `BYOC`:
 
 1. Download the CLI tool and add it to your PATH
 2. Export [OCM_TOKEN](https://github.com/openshift-online/ocm-cli#log-in): `export OCM_TOKEN="<TOKEN_VALUE>"`
+
+**BYOC**
+Make sure you have credentials for IAM user with admin access to AWS and other IAM user called "osdCcsAdmin" created in AWS, also with admin access.
+Export the credentials for your IAM user, set BYOC variable to `true` and create a new access key for "osdCcsAdmin" user:
+```
+export AWS_ACCOUNT_ID=<REPLACE_ME>
+export AWS_ACCESS_KEY_ID=<REPLACE_ME>
+export AWS_SECRET_ACCESS_KEY=<REPLACE_ME>
+export BYOC=true
+make ocm/aws/create_access_key
+```
+
 3. Create cluster template: `make ocm/cluster.json`.
 
 This command will generate `ocm/cluster.json` file with generated cluster name. This file will be used as a template to create your cluster via OCM CLI.
-By default, it will set the expiration timestamp for a cluster for 4 hours, meaning your cluster will be automatically deleted after 4 hours after you generated this template. If you want to change the default timestamp, you can update it in `ocm/cluster.json` or delete the whole line from the file if you don't want your cluster to be deleted automatically at all.
+By default, it will set the expiration timestamp for a cluster for 4 hours, meaning your cluster will be automatically deleted after 4 hours after you generated this template. If you want to change the default timestamp, you can update it in `ocm/cluster.json` or delete the whole line from the file if you don't want your cluster to be deleted automatically at all. 
 
 4. Create the cluster: `make ocm/cluster/create`.
 
@@ -169,6 +181,7 @@ oc --config ocm/cluster.kubeconfig projects
 Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installation is completed, the installation CR with RHMI components info will be printed to the console.
 
 7. If you want to delete your cluster, run `make ocm/cluster/delete`
+**BYOC**
 
 ## Release
 
