@@ -8,7 +8,7 @@ INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o j
 INSTALLATION_PREFIX=${INSTALLATION_PREFIX%-} # remove trailing dash
 
 # If CLUSTER_ID is not passed, find out ID based on currently targeted server
-CLUSTER_ID="${CLUSTER_ID:-$(ocm get /api/clusters_mgmt/v1/clusters/ | jq -r ".items[] | select(.api.url == \"$(oc cluster-info | grep -Eo 'https?://[a-zA-Z0-9\.:]*')\") | .id ")}"
+CLUSTER_ID="${CLUSTER_ID:-$(ocm get /api/clusters_mgmt/v1/clusters/ | jq -r ".items[] | select(.api.url == \"$(oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*')\") | .id ")}"
 
 echo "Cluster ID: $CLUSTER_ID"
 echo "User password set to \"${PASSWORD}\""
