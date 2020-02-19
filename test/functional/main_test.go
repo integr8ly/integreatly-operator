@@ -79,22 +79,26 @@ func TestMain(t *testing.M) {
 		exitCode = t.Run()
 	})
 
-	err := writeOutputToFile(output, filepath.Join(testResultsDirectory, testOutputFileName))
-	if err != nil {
-		fmt.Printf("error while writing the test output: %v", err)
-		os.Exit(1)
-	}
+	fmt.Printf(output)
 
-	err = writeJunitReportFile(output, filepath.Join(testResultsDirectory, jUnitOutputFilename))
-	if err != nil {
-		fmt.Printf("error while writing the junit report file: %v", err)
-		os.Exit(1)
-	}
+	if _, err := os.Stat(testResultsDirectory); !os.IsNotExist(err) {
+		err := writeOutputToFile(output, filepath.Join(testResultsDirectory, testOutputFileName))
+		if err != nil {
+			fmt.Printf("error while writing the test output: %v", err)
+			os.Exit(1)
+		}
 
-	err = metadata.Instance.WriteToJSON(filepath.Join(testResultsDirectory, addonMetadataName))
-	if err != nil {
-		fmt.Printf("error while writing metadata: %v", err)
-		os.Exit(1)
+		err = writeJunitReportFile(output, filepath.Join(testResultsDirectory, jUnitOutputFilename))
+		if err != nil {
+			fmt.Printf("error while writing the junit report file: %v", err)
+			os.Exit(1)
+		}
+
+		err = metadata.Instance.WriteToJSON(filepath.Join(testResultsDirectory, addonMetadataName))
+		if err != nil {
+			fmt.Printf("error while writing metadata: %v", err)
+			os.Exit(1)
+		}
 	}
 
 	os.Exit(exitCode)

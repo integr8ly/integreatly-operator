@@ -143,6 +143,18 @@ Running unit tests:
 make test/unit
 ```
 
+### E2E tests
+
+To run E2E tests against a clean OpenShift cluster using operator-sdk:
+```
+make test/e2e
+```
+
+To run E2E tests against an existing RHMI cluster:
+```
+make test/functional
+```
+
 ## Using `ocm` for installation of RHMI
 
 If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using [OCM CLI](https://github.com/openshift-online/ocm-cli/releases):

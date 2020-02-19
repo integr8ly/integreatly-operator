@@ -13,11 +13,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
+	config2 "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"testing"
 )
 
 func TestIntegreatly(t *testing.T) {
-	config, err := rest.InClusterConfig()
+	config, err := config2.GetConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
