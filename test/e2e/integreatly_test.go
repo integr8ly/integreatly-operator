@@ -6,12 +6,13 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/common"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/test/common"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 
@@ -100,6 +101,12 @@ func TestIntegreatly(t *testing.T) {
 		t.Run("Cluster", func(t *testing.T) {
 			IntegreatlyCluster(t, f, ctx)
 		})
+
+		for _, test := range common.AFTER_INSTALL_TESTS {
+			t.Run(test.Description, func(t *testing.T) {
+				test.Test(t, testingContext)
+			})
+		}
 	})
 
 }
