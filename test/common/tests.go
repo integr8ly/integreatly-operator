@@ -17,5 +17,6 @@ var (
 		{"Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
 		{"Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
 		{"Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
+		{"Verify all products routes are created", TestIntegreatlyRoutesExist},
 	}
 )

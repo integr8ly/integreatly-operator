@@ -21,9 +21,7 @@ import (
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-
-	routev1 "github.com/openshift/api/route/v1"
-
+	
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -528,28 +526,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check routes were created by checking hardcoded number of routes
-	// would be nice if expected routes can be dynamically discovered
-	expectedRoutes := map[string]int{
-		"3scale":                         6,
-		"amq-online":                     2,
-		"apicurito":                      2,
-		"codeready-workspaces":           3,
-		"fuse":                           1,
-		"middleware-monitoring-operator": 3,
-		"rhsso":                          2,
-		"solution-explorer":              1,
-		"ups":                            1,
-		"user-sso":                       2,
-	}
-
-	for product, numberRoutes := range expectedRoutes {
-		err = checkRoutes(t, f, product, numberRoutes)
-		if err != nil {
-			return err
-		}
-	}
-
 	// check no failed PVCs
 	pvcNamespaces := []string{
 		string(integreatlyv1alpha1.Product3Scale),
@@ -611,18 +587,6 @@ func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string
 		}
 	}
 
-	return nil
-}
-
-func checkRoutes(t *testing.T, f *framework.Framework, product string, numberRoutes int) error {
-	routes := &routev1.RouteList{}
-	err := f.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{Namespace: intlyNamespacePrefix + product})
-	if err != nil {
-		return fmt.Errorf("Error getting routes for %s namespace: %w", product, err)
-	}
-	if len(routes.Items) != numberRoutes {
-		return fmt.Errorf("Expected %v routes in %v%v namespace. Found %v", numberRoutes, intlyNamespacePrefix, product, len(routes.Items))
-	}
 	return nil
 }
 

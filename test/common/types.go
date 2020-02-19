@@ -47,3 +47,19 @@ type Product struct {
 	Name             string
 	ExpectedReplicas int32
 }
+
+// ExpectedRoute contains the data of a route that is expected to be found
+type ExpectedRoute struct {
+	// Name is either the name of the route or the generated name (if the
+	// `IsGeneratedName` field is true)
+	Name string
+
+	isTLS bool
+
+	// ServiceName is the name of the service that the route points to (used
+	// when the name is generated as there can be multiple routes with the same
+	// generated name)
+	ServiceName string
+
+	IsGeneratedName bool
+}
