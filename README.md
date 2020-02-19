@@ -19,7 +19,7 @@ Currently the operator installs the following products:
 - Integreatly solution explorer
 
 ## Prerequisites
-- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.12.0.
+- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.15.1.
 - [go](https://golang.org/dl/) version 1.13.4+
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/3.11/cli_reference/get_started_cli.html#cli-reference-get-started-cli) version v3.11+
