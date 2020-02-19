@@ -25,10 +25,20 @@ define save_cluster_credentials
 	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
 endef
 
+define get_aws_credentials
+	$(eval ACCESS_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .AccessKeyId < ocm/aws.json))
+	$(eval SECRET_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .SecretAccessKey < ocm/aws.json))
+endef
+
 ifeq ($(UNAME), Linux)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date --date="${OCM_CLUSTER_LIFESPAN} hour" "+%FT%TZ")
 else ifeq ($(UNAME), Darwin)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date -v+${OCM_CLUSTER_LIFESPAN}H "+%FT%TZ")
+endif
+
+ifeq ($(BYOC), true)
+	ACCESS_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .AccessKeyId < ocm/aws.json)
+	SECRET_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .SecretAccessKey < ocm/aws.json)
 endif
 
 .PHONY: ocm/version
@@ -100,9 +110,14 @@ ocm/cluster.json:
 	@if [ $(BYOC) = true ]; then\
 	  jq '\
 	  .byoc = true | \
-	  .aws.access_key_id = "$(AWS_ACCESS_KEY_ID)" | \
-	  .aws.secret_access_key = "$(AWS_SECRET_ACCESS_KEY)" | \
+	  .aws.access_key_id = "$(ACCESS_KEY)" | \
+	  .aws.secret_access_key = "$(SECRET_KEY)" | \
 	  .aws.account_id = "$(AWS_ACCOUNT_ID)"' < ocm/cluster.json > ocm/cluster.json.tmp \
 	  && mv ocm/cluster.json.tmp ocm/cluster.json;\
 	fi
 	@cat ocm/cluster.json
+
+.PHONY: ocm/aws/create_access_key
+ocm/aws/create_access_key:
+	@mkdir -p ocm
+	@aws iam create-access-key --user-name osdCcsAdmin | jq -r .AccessKey | tee ocm/aws.json
