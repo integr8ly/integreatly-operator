@@ -12,7 +12,6 @@ Currently the operator installs the following products:
 - AMQ Streams
 - Codeready
 - Fuse
-- Launcher
 - Nexus
 - RHSSO (both a cluster instance and a user instance)
 - 3scale
@@ -79,11 +78,11 @@ oc create -f deploy/crds/examples/rhmi.cr.yaml
 # The operator can now be run locally
 make code/run
 ```
-*Note:* if an operator doesn't find Installation resource, it will create one (Name: `integreatly-operator`).
+*Note:* if an operator doesn't find RHMI resource, it will create one (Name: `rhmi`).
 
 ### Logging in to SSO
 
-In the OpenShift UI, in `Projects > integreatly-rhsso > Networking > Routes`, select the `sso` route to open up the SSO login page.
+In the OpenShift UI, in `Projects > redhat-rhmi-rhsso > Networking > Routes`, select the `sso` route to open up the SSO login page.
 
 # Bootstrap the project
 
@@ -103,9 +102,9 @@ make cluster/prepare
 
 Within a few minutes, the Integreatly operator should be visible in the OperatorHub (`Catalog > OperatorHub`). To create a new subscription, click on the Install button, choose to install the operator in the created namespace and keep the approval strategy on automatic.
 
-Once the subscription shows a status of `installed`, a new Integreatly `Installation` custom resource can be created which will begin to install the supported products.
+Once the subscription shows a status of `installed`, a new `RHMI` custom resource can be created which will begin to install the supported products.
 
-In `Catalog > Developer Catalog`, choose the Integreatly Installation and click create. An example installation CR can be found below:
+In `Catalog > Developer Catalog`, choose the RHMI Installation and click create. An example RHMI CR can be found below:
 
 ```yml
 apiVersion: integreatly.org/v1alpha1
@@ -113,7 +112,7 @@ kind: RHMI
 metadata:
   name: example-rhmi
 spec:
-  type: workshop
+  type: managed
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
   useClusterStorage: true
@@ -174,12 +173,7 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 
 Update the operator version in the following files:
 
-* Update [version/version.go](version/version.go) (`Version = "<version>"`)
-
 * Update `TAG` and `PREVIOUS_TAG` (the previous version) in the [Makefile](Makefile)
-
-* Update the operator image version in [deploy/operator.yaml](deploy/operator.yaml)
-(`image: quay.io/integreatly/integreatly-operator:v<version>`)
 
 * Generate a new CSV:
 ```sh

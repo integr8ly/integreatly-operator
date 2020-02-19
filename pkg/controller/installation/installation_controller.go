@@ -40,7 +40,7 @@ import (
 const (
 	deletionFinalizer                = "foregroundDeletion"
 	DefaultInstallationName          = "rhmi"
-	DefaultInstallationConfigMapName = "integreatly-installation-config"
+	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
 )
 
