@@ -2,6 +2,7 @@ package apicurito
 
 import (
 	"context"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
@@ -435,6 +436,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = monitoringv1.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
 	return scheme, err
 }
 
@@ -451,10 +456,10 @@ func getInstallation() *integreatlyv1alpha1.RHMI {
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 		Status: integreatlyv1alpha1.RHMIStatus{
-			Stages: map[integreatlyv1alpha1.StageName]*integreatlyv1alpha1.RHMIStageStatus{
+			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
 				"apicurito-stage": {
 					Name: "apicurito-stage",
-					Products: map[integreatlyv1alpha1.ProductName]*integreatlyv1alpha1.RHMIProductStatus{
+					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 						integreatlyv1alpha1.ProductApicurito: {
 							Name:   integreatlyv1alpha1.ProductApicurito,
 							Status: integreatlyv1alpha1.PhaseCreatingComponents,
