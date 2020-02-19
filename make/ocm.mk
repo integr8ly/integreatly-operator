@@ -9,6 +9,8 @@ OCM_CLUSTER_LIFESPAN=4
 RHMI_OPERATOR_NS=redhat-rhmi-operator
 # Path to the new cluster's kubeconfig
 CLUSTER_KUBECONFIG="ocm/cluster.kubeconfig"
+# Whether to use BYOC method (specify your own AWS credentials)
+BYOC=false
 
 define get_cluster_id
 	@$(eval OCM_CLUSTER_ID=$(shell mkdir -p ocm && touch ocm/cluster-details.json && jq -r .id < ocm/cluster-details.json ))
@@ -27,6 +29,11 @@ ifeq ($(UNAME), Linux)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date --date="${OCM_CLUSTER_LIFESPAN} hour" "+%FT%TZ")
 else ifeq ($(UNAME), Darwin)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date -v+${OCM_CLUSTER_LIFESPAN}H "+%FT%TZ")
+endif
+
+ifeq ($(BYOC), true)
+	ACCESS_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .AccessKeyId < ocm/aws.json)
+	SECRET_KEY=$(shell mkdir -p ocm && touch ocm/aws.json && jq -r .SecretAccessKey < ocm/aws.json)
 endif
 
 .PHONY: ocm/version
@@ -88,9 +95,24 @@ ocm/cluster/delete:
 	${OCM} delete /api/clusters_mgmt/v1/clusters/$(OCM_CLUSTER_ID)
 
 .PHONY: ocm/cluster.json
-ocm/cluster.json: export OCM_CLUSTER_REGION := "eu-west-1"
+ocm/cluster.json: export OCM_CLUSTER_REGION := eu-west-1
 ocm/cluster.json:
 	@mkdir -p ocm
-	sed "s/OCM_CLUSTER_NAME/$(OCM_CLUSTER_NAME)/g" templates/ocm-cluster/cluster-template.json | \
-	sed "s/OCM_CLUSTER_REGION/$(OCM_CLUSTER_REGION)/g" | \
-	sed "s/OCM_CLUSTER_EXPIRATION_TIMESTAMP/$(OCM_CLUSTER_EXPIRATION_TIMESTAMP)/g" > ocm/cluster.json
+	@jq '\
+	.expiration_timestamp = "$(OCM_CLUSTER_EXPIRATION_TIMESTAMP)" | \
+	.name = "$(OCM_CLUSTER_NAME)" | \
+	.region.id = "$(OCM_CLUSTER_REGION)"' < templates/ocm-cluster/cluster-template.json > ocm/cluster.json
+	@if [ $(BYOC) = true ]; then\
+	  jq '\
+	  .byoc = true | \
+	  .aws.access_key_id = "$(ACCESS_KEY)" | \
+	  .aws.secret_access_key = "$(SECRET_KEY)" | \
+	  .aws.account_id = "$(AWS_ACCOUNT_ID)"' < ocm/cluster.json > ocm/cluster.json.tmp \
+	  && mv ocm/cluster.json.tmp ocm/cluster.json;\
+	fi
+	@cat ocm/cluster.json
+
+.PHONY: ocm/aws/create_access_key
+ocm/aws/create_access_key:
+	@mkdir -p ocm
+	@aws iam create-access-key --user-name osdCcsAdmin | jq -r .AccessKey | tee ocm/aws.json
