@@ -99,7 +99,7 @@ update_new_csv() {
 }
 
 update_package_yaml() {
-    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels.\(name==integreatly\).currentCSV $NEW_CSV
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels.\(name==rhmi\).currentCSV $NEW_CSV
 }
 
 process_image() {
