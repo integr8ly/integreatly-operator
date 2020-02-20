@@ -18,7 +18,7 @@ Currently the operator installs the following products:
 - Integreatly solution explorer
 
 ## Prerequisites
-- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.15.1.
+- [operator-sdk](https://github.com/operator-framework/operator-sdk) version v0.15.2.
 - [go](https://golang.org/dl/) version 1.13.4+
 - [moq](https://github.com/matryer/moq)
 - [oc](https://docs.okd.io/3.11/cli_reference/get_started_cli.html#cli-reference-get-started-cli) version v3.11+
@@ -28,7 +28,7 @@ Currently the operator installs the following products:
 
 After installation, the following commands must be run to avoid a known [issue](https://github.com/matryer/moq/issues/98) related to the Moq package:
 ```
-go get -u .
+make code/compile
 go install github.com/matryer/moq
 ```
 
