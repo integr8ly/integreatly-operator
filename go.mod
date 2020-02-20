@@ -8,22 +8,20 @@ require (
 	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
-	github.com/ghodss/yaml v1.0.1-0.20180820084758-c7ce16629ff4
+	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.4
-	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/integr8ly/cloud-resource-operator v0.10.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
-	github.com/matryer/moq v0.0.0-20200125112110-7615cbe60268 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
-	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190605231540-b8a4faf68e36
+	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
-	github.com/operator-framework/operator-sdk v0.12.1-0.20191112211508-82fc57de5e5b
-	github.com/prometheus/client_golang v1.1.0
+	github.com/operator-framework/operator-sdk v0.15.1
+	github.com/prometheus/client_golang v1.2.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
@@ -67,3 +65,5 @@ replace (
 )
 
 replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
+
+replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
