@@ -94,6 +94,24 @@ spec:
         for: 5m
         labels:
           severity: critical
+      - alert: ThreeScaleZyncPodAvailability
+        annotations:
+          message:  3Scale Zync has no pods in a ready state.
+          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
+        expr: |
+          absent(count((kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}",pod=~"zync-1.*"}) + on(pod) (kube_pod_container_status_running{namespace="{{ index .Params "Namespace" }}",container="zync"}))==2)
+        for: 5m
+        labels:
+          severity: critical
+      - alert: ThreeScaleZyncDatabasePodAvailiblity
+        annotations:
+          message:  3Scale Zync-database has no pods in a ready state.
+          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
+        expr: |
+          absent(count((kube_pod_labels{ namespace="{{ index .Params "Namespace" }}", pod=~"zync-database.*",label_threescale_component_element="database"}) + on(pod) (kube_pod_status_ready{ namespace="{{ index .Params "Namespace" }}", pod=~"zync-database.*",condition="true" })==2))
+        for: 5m
+        labels:
+          severity: critical
       - alert: ThreeScalePodCount
         annotations:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
