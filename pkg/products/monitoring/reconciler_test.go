@@ -3,6 +3,7 @@ package monitoring
 import (
 	"context"
 	"errors"
+	v1 "github.com/openshift/api/route/v1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -33,6 +34,12 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+const (
+	mockSMTPSecretName      = "test-smtp"
+	mockPagerdutySecretName = "test-pd"
+	mockDMSSecretName       = "test-dms"
+)
+
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,6 +50,11 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 		TypeMeta: metav1.TypeMeta{
 			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			SMTPSecret:           mockSMTPSecretName,
+			PagerDutySecret:      mockPagerdutySecretName,
+			DeadMansSnitchSecret: mockDMSSecretName,
 		},
 	}
 }
@@ -60,15 +72,34 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err = operatorsv1alpha1.AddToScheme(scheme)
-	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
-	return scheme, err
+	if err := monitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := coreosv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := projectv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	return scheme, nil
 }
 
 func setupRecorder() record.EventRecorder {
@@ -249,6 +280,55 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			"prometheus.yaml": []byte("{\"datasources\":[{\"basicAuthUser\":\"testuser\",\"basicAuthPassword\":\"testpass\"}]}"),
 		},
 	}
+
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.sendgrid.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockPagerdutySecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"serviceKey": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	dmsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockDMSSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"url": []byte("https://example.com"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	alertmanagerRoute := &v1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerRouteName,
+			Namespace: defaultInstallationNamespace,
+		},
+		Spec: v1.RouteSpec{
+			Host: "example.com",
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -264,11 +344,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
-						"NAMESPACE": "",
+						"NAMESPACE":          "",
+						"OPERATOR_NAMESPACE": defaultInstallationNamespace,
 					}), nil
 				},
 				ReadThreeScaleFunc: func() (ready *config.ThreeScale, e error) {

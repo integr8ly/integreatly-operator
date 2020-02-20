@@ -153,6 +153,8 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				NamespacePrefix:             DefaultInstallationPrefix,
 				SelfSignedCerts:             false,
 				SMTPSecret:                  DefaultInstallationPrefix + "smtp",
+				DeadMansSnitchSecret:        DefaultInstallationPrefix + "deadmanssnitch",
+				PagerDutySecret:             DefaultInstallationPrefix + "pagerduty",
 				UseClusterStorage:           useClusterStorage,
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
 			},
@@ -390,7 +392,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
 
 	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
-		requiredSecrets := []string{installation.Spec.SMTPSecret}
+		requiredSecrets := []string{installation.Spec.SMTPSecret, installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {
 			secret := &corev1.Secret{

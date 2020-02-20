@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	v1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"os"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -39,6 +42,12 @@ const (
 	grafanaDataSourceSecretKey   = "prometheus.yaml"
 	defaultBlackboxModule        = "http_2xx"
 	manifestPackagae             = "integreatly-monitoring"
+
+	// alert manager configuration
+	alertManagerRouteName            = "alertmanager-route"
+	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
+	alertManagerConfigSecretFileName = "alertmanager.yaml"
+	alertmanagerAlertAddressEnv      = "ALERTING_EMAIL_ADDRESS"
 )
 
 type Reconciler struct {
@@ -185,6 +194,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
+	logrus.Infof("Phase %s reconcileAlertManagerConfigSecret", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
+		logrus.Errorf("failed to reconcile alert manager config secret: %w", err)
 		return phase, err
 	}
 
@@ -399,6 +416,83 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.Logger.Infof("reconciling alertmanager configuration secret")
+	operatorNs := r.installation.Namespace
+	// handle smtp credentials
+	smtpSecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: operatorNs}, smtpSecret); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain smtp credentials secret: %w", err)
+	}
+
+	// handle pagerduty credentials
+	pagerdutySecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret, Namespace: operatorNs}, pagerdutySecret); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
+	}
+	if len(pagerdutySecret.Data["serviceKey"]) == 0 {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("serviceKey is undefined in pager duty secret")
+	}
+
+	// handle dead mans snitch credentials
+	dmsSecret := &corev1.Secret{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret, Namespace: operatorNs}, dmsSecret); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
+	}
+	if len(dmsSecret.Data["url"]) == 0 {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("url is undefined in dead mans switch secret")
+	}
+
+	// handle alert manager route
+	alertmanagerRoute := &v1.Route{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerRouteName, Namespace: r.Config.GetOperatorNamespace()}, alertmanagerRoute); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain alert manager route: %w", err)
+	}
+
+	// only set the to address to a real value for managed deployments
+	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToAddressEnvVal := os.Getenv(alertmanagerAlertAddressEnv)
+	if smtpToAddressEnvVal != "" {
+		smtpToAddress = smtpToAddressEnvVal
+	}
+
+	// parse the config template into a secret object
+	templateUtil := NewTemplateHelper(map[string]string{
+		"SMTPHost":            string(smtpSecret.Data["host"]),
+		"SMTPPort":            string(smtpSecret.Data["port"]),
+		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
+		"SMTPUsername":        string(smtpSecret.Data["username"]),
+		"SMTPPassword":        string(smtpSecret.Data["password"]),
+		"SMTPToAddress":       smtpToAddress,
+		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
+		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+	})
+	configSecretData, err := templateUtil.loadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
+	}
+	configSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerConfigSecretName,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	// create the config secret
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, configSecret, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(configSecret, r.installation)
+		configSecret.Data = map[string][]byte{
+			alertManagerConfigSecretFileName: configSecretData,
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create or update alert manager secret: %w", err)
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
