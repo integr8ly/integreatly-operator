@@ -2,6 +2,7 @@
 scripts/htpasswd
 htpasswd
 .DS_Store
+router-ca.tmp
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
 cmd/manager/debug
