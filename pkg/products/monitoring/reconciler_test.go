@@ -7,6 +7,7 @@ import (
 	"fmt"
 	v1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
+	"os"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -604,7 +605,14 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
-
+	alertmanagerConfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerConfigSecretName,
+			Namespace: defaultInstallationNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
 	alertmanagerRoute := &v1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      alertManagerRouteName,
@@ -632,6 +640,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		name         string
 		serverClient func() k8sclient.Client
 		reconciler   func() *Reconciler
+		setup        func() error
 		want         integreatlyv1alpha1.StatusPhase
 		wantFn       func(c k8sclient.Client) error
 		wantErr      string
@@ -726,17 +735,76 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return nil
 			},
 		},
-		//{
-		//	name: "secret data is overridden if already exists",
-		//},
-		//{
-		//	name: "alert address env override is successful",
-		//},
+		{
+			name: "secret data is overridden if already exists",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+			wantFn: func(c k8sclient.Client) error {
+				configSecret := &corev1.Secret{}
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+					return err
+				}
+				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				}
+				return nil
+			},
+		},
+		{
+			name: "alert address env override is successful",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			setup: func() error {
+				return os.Setenv(alertmanagerAlertAddressEnv, "test")
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+			wantFn: func(c k8sclient.Client) error {
+				configSecret := &corev1.Secret{}
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+					return err
+				}
+				templateUtil := NewTemplateHelper(map[string]string{
+					"SMTPHost":            string(smtpSecret.Data["host"]),
+					"SMTPPort":            string(smtpSecret.Data["port"]),
+					"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
+					"SMTPUsername":        string(smtpSecret.Data["username"]),
+					"SMTPPassword":        string(smtpSecret.Data["password"]),
+					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
+					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+					"SMTPToAddress":       "test",
+				})
+
+				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				}
+				return nil
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				err = tt.setup()
+				if err != nil {
+					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
+				}
+			}
 			reconciler := tt.reconciler()
 			serverClient := tt.serverClient()
+
 			got, err := reconciler.reconcileAlertManagerConfigSecret(context.TODO(), serverClient)
 			if tt.wantErr != "" && err.Error() != tt.wantErr {
 				t.Errorf("reconcileAlertManagerConfigSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)

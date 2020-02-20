@@ -204,7 +204,7 @@ cluster/prepare/pagerduty:
 .PHONY: cluster/prepare/dms
 cluster/prepare/dms:
 	@-oc create secret generic $(INSTALLATION_PREFIX)-deadmanssnitch -n $(NAMESPACE) \
-		--from-literal=url=dms.example.com
+		--from-literal=url=https://dms.example.com
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
