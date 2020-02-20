@@ -711,7 +711,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 		Type: corev1.SecretTypeOpaque,
 	}
 	err = f.Client.Create(context.TODO(), pagerdutySecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		t.Fatal(err)
 	}
 
@@ -727,7 +727,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 		Type: corev1.SecretTypeOpaque,
 	}
 	err = f.Client.Create(context.TODO(), dmsSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		t.Fatal(err)
 	}
 
