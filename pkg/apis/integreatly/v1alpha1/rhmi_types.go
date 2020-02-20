@@ -133,6 +133,7 @@ type RHMIStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	Stages             map[StageName]RHMIStageStatus `json:"stages"`
+	Stage              StageName                     `json:"stage"`
 	PreflightStatus    PreflightStatus               `json:"preflightStatus,omitempty"`
 	PreflightMessage   string                        `json:"preflightMessage,omitempty"`
 	LastError          string                        `json:"lastError"`
