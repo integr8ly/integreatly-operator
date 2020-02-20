@@ -119,6 +119,21 @@ type RHMISpec struct {
 	// username
 	// password
 	SMTPSecret string `json:"smtpSecret,omitempty"`
+
+	// PagerDutySecret is the name of a secret in the
+	// installation namespace containing PagerDuty account
+	// details. The secret must contain the following fields:
+	//
+	// serviceKey
+	PagerDutySecret string `json:"pagerdutySecret,omitempty"`
+
+	// DeadMansSnitchSecret is the name of a secret in the
+	// installation namespace containing connection details
+	// for Dead Mans Snitch. The secret must contain the
+	// following fields:
+	//
+	// url
+	DeadMansSnitchSecret string `json:"deadMansSnitchSecret,omitempty"`
 }
 
 type PullSecretSpec struct {

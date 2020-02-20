@@ -51,7 +51,7 @@ setup/git/hooks:
 	git config core.hooksPath .githooks
 
 .PHONY: code/run
-code/run: code/gen cluster/prepare/smtp
+code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
 	@operator-sdk run --local --namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
@@ -134,7 +134,7 @@ test/functional:
 	go test ./test/functional
 
 .PHONY: install/olm
-install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment
+install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
 
 .PHONY: test/e2e/olm
 test/e2e/olm: install/olm
@@ -149,7 +149,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -170,7 +170,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/*_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -195,6 +195,16 @@ cluster/prepare/smtp:
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
+
+.PHONY: cluster/prepare/pagerduty
+cluster/prepare/pagerduty:
+	@-oc create secret generic $(INSTALLATION_PREFIX)-pagerduty -n $(NAMESPACE) \
+		--from-literal=serviceKey=test
+
+.PHONY: cluster/prepare/dms
+cluster/prepare/dms:
+	@-oc create secret generic $(INSTALLATION_PREFIX)-deadmanssnitch -n $(NAMESPACE) \
+		--from-literal=url=dms.example.com
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
