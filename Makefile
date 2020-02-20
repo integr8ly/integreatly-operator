@@ -125,7 +125,7 @@ test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
-test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/configmaps cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/functional
@@ -134,7 +134,7 @@ test/functional:
 	go test ./test/functional
 
 .PHONY: install/olm
-install/olm: cluster/cleanup/olm cluster/prepare/olm cluster/prepare/configmaps cluster/prepare/smtp cluster/deploy/integreatly-rhmi-cr.yml
+install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment
 
 .PHONY: test/e2e/olm
 test/e2e/olm: install/olm
@@ -149,7 +149,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/smtp
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -175,11 +175,17 @@ cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepa
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
 
-.PHONY: cluster/prepare/olm
-cluster/prepare/olm: cluster/prepare/project cluster/prepare/osrc
+.PHONY: cluster/prepare/olm/subscription
+cluster/prepare/olm/subscription:
 	oc process -p NAMESPACE=$(NAMESPACE) -f deploy/operator-subscription-template.yml | oc create -f - -n $(NAMESPACE)
 	$(call wait_command, oc get crd rhmis.integreatly.org, rhmis.integreatly.org crd, 1m, 10)
+
+.PHONY: cluster/check/operator/deployment
+cluster/check/operator/deployment:
 	$(call wait_command, oc get deployments rhmi-operator -n $(NAMESPACE) --output=json -o jsonpath='{.status.availableReplicas}' | grep -q 1, rhmi-operator ,2m, 10)
+
+.PHONY: cluster/prepare/olm
+cluster/prepare/olm: cluster/prepare cluster/prepare/olm/subscription cluster/check/operator/deployment
 
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
