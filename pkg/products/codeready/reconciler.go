@@ -346,12 +346,6 @@ func (r *Reconciler) reconcileBackups(ctx context.Context, serverClient k8sclien
 		BackendSecret: resources.BackupSecretLocation{Name: r.Config.GetBackupsSecretName(), Namespace: r.Config.GetNamespace()},
 		Components: []resources.BackupComponent{
 			{
-				Name:     "codeready-postgres-backup",
-				Type:     "postgres",
-				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
-				Schedule: r.Config.GetBackupSchedule(),
-			},
-			{
 				Name:     "codeready-pv-backup",
 				Type:     "codeready_pv",
 				Schedule: r.Config.GetBackupSchedule(),
