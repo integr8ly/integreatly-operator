@@ -7,10 +7,6 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-const (
-	ApplicationMonitoringKind = "ApplicationMonitoring"
-)
-
 // ApplicationMonitoringSpec defines the desired state of ApplicationMonitoring
 type ApplicationMonitoringSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -22,6 +18,7 @@ type ApplicationMonitoringSpec struct {
 	PrometheusStorageRequest         string `json:"prometheusStorageRequest,omitempty"`
 	PrometheusInstanceNamespaces     string `json:"prometheusInstanceNamespaces,omitempty"`
 	AlertmanagerInstanceNamespaces   string `json:"alertmanagerInstanceNamespaces,omitempty"`
+	SelfSignedCerts                  bool   `json:"selfSignedCerts,omitempty"`
 }
 
 // ApplicationMonitoringStatus defines the observed state of ApplicationMonitoring
@@ -36,21 +33,13 @@ type ApplicationMonitoringStatus struct {
 
 // ApplicationMonitoring is the Schema for the applicationmonitorings API
 // +k8s:openapi-gen=true
+// +kubebuilder:resource:path=applicationmonitorings,scope=Namespaced
 type ApplicationMonitoring struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ApplicationMonitoringSpec   `json:"spec,omitempty"`
 	Status ApplicationMonitoringStatus `json:"status,omitempty"`
-}
-
-type GrafanaDataSource struct {
-	BasicAuthPassword string `json:"basicAuthPassword"`
-	BasicAuthUser     string `json:"basicAuthUSer"`
-}
-
-type GrafanaDataSourceSecret struct {
-	DataSources []GrafanaDataSource `json:"datasources"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -60,6 +49,15 @@ type ApplicationMonitoringList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ApplicationMonitoring `json:"items"`
+}
+
+type GrafanaDataSource struct {
+	BasicAuthPassword string `json:"basicAuthPassword"`
+	BasicAuthUser     string `json:"basicAuthUSer"`
+}
+
+type GrafanaDataSourceSecret struct {
+	DataSources []GrafanaDataSource `json:"datasources"`
 }
 
 func init() {
