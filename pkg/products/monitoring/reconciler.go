@@ -48,6 +48,7 @@ const (
 	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
 	alertManagerConfigSecretFileName = "alertmanager.yaml"
 	alertmanagerAlertAddressEnv      = "ALERTING_EMAIL_ADDRESS"
+	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"
 )
 
 type Reconciler struct {
@@ -421,16 +422,16 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 
 func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Infof("reconciling alertmanager configuration secret")
-	operatorNs := r.installation.Namespace
+	rhmiOperatorNs := r.installation.Namespace
 	// handle smtp credentials
 	smtpSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: operatorNs}, smtpSecret); err != nil {
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: rhmiOperatorNs}, smtpSecret); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain smtp credentials secret: %w", err)
 	}
 
 	// handle pagerduty credentials
 	pagerdutySecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret, Namespace: operatorNs}, pagerdutySecret); err != nil {
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret, Namespace: rhmiOperatorNs}, pagerdutySecret); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
 	}
 	if len(pagerdutySecret.Data["serviceKey"]) == 0 {
@@ -439,7 +440,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	// handle dead mans snitch credentials
 	dmsSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret, Namespace: operatorNs}, dmsSecret); err != nil {
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret, Namespace: rhmiOperatorNs}, dmsSecret); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
 	}
 	if len(dmsSecret.Data["url"]) == 0 {
@@ -470,7 +471,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
 	})
-	configSecretData, err := templateUtil.loadTemplate("alertmanager/alertmanager-application-monitoring.yaml")
+	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not parse alert manager configuration template: %w", err)
 	}
