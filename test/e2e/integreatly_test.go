@@ -699,6 +699,38 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 		t.Fatal(err)
 	}
 
+	// create pagerduty secret
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprint(installationPrefix, "-pagerduty"),
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"secretKey": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+	err = f.Client.Create(context.TODO(), pagerdutySecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// create dead mans snitch secret
+	dmsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprint(installationPrefix, "-deadmanssnitch"),
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			"url": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+	err = f.Client.Create(context.TODO(), dmsSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// wait for integreatly-operator to be ready
 	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "rhmi-operator", 1, retryInterval, timeout)
 	if err != nil {
