@@ -521,13 +521,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
+	if _, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
 	}
 	// create backend connectivity alert
-	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
+	if _, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
 	}
 

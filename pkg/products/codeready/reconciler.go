@@ -201,12 +201,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
+	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for codeready: %w", err)
 	}
-	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
+	// create the prometheus connectivity rule
+	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for codeready: %s", err)
 	}
 
