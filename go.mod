@@ -6,6 +6,7 @@ require (
 	github.com/3scale/3scale-operator v0.4.0
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
+	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -22,12 +23,15 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-sdk v0.15.1
+	github.com/pelletier/go-toml v1.3.0 // indirect
 	github.com/prometheus/client_golang v1.3.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
+	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/tools v0.0.0-20200207224406-61798d64f025 // indirect
+	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.17.0
@@ -35,6 +39,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	sigs.k8s.io/controller-runtime v0.4.0
+	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )
 
 // Pinned to kubernetes-1.16.2

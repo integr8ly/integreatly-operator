@@ -411,8 +411,13 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 	}
 
+	// create the prometheus availability rule
+	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
+	}
+
 	// create the prometheus connectivity rule
-	if _, err := resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
+	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for rhsso : %s", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
