@@ -278,10 +278,10 @@ func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	if len(apiCallOutput) != 1 {
-		return fmt.Errorf("grafana dashboard not found")
+		return fmt.Errorf("grafana dashboard not found :(")
 	}
 
-	t.Logf("Grafana dashboard found")
+	t.Logf("Grafana dashboard found :((")
 	return nil
 }
 
