@@ -648,7 +648,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "fails when smtp secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
@@ -659,7 +659,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
@@ -672,7 +672,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
 				emptyPagerdutySecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, emptyPagerdutySecret)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
@@ -683,7 +683,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		{
 			name: "fails when dead mans snitch secret cannot be found",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
@@ -696,7 +696,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			serverClient: func() k8sclient.Client {
 				emptyDMSSecret := dmsSecret.DeepCopy()
 				emptyDMSSecret.Data = map[string][]byte{}
-				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret)
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
@@ -705,14 +705,28 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
-			name: "fails when alert manager route cannot be found",
+			name: "awaiting components when alert manager route cannot be found",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret)
 			},
 			reconciler: func() *Reconciler {
 				return basicReconciler
 			},
-			wantErr: "could not obtain alert manager route: routes.route.openshift.io \"alertmanager-route\" not found",
+			want: integreatlyv1alpha1.PhaseAwaitingComponents,
+		},
+		{
+			name: "fails when alert manager route fails to be retrieved",
+			serverClient: func() k8sclient.Client {
+				return &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("test")
+					},
+				}
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain alert manager route: test",
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{

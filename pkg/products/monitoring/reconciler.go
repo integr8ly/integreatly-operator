@@ -424,6 +424,17 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Infof("reconciling alertmanager configuration secret")
 	rhmiOperatorNs := r.installation.Namespace
+
+	// handle alert manager route
+	alertmanagerRoute := &v1.Route{}
+	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerRouteName, Namespace: r.Config.GetOperatorNamespace()}, alertmanagerRoute); err != nil {
+		if k8serr.IsNotFound(err) {
+			r.Logger.Infof("alert manager route %s is not available, cannot create alert manager config secret", alertManagerRouteName)
+			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain alert manager route: %w", err)
+	}
+
 	// handle smtp credentials
 	smtpSecret := &corev1.Secret{}
 	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: rhmiOperatorNs}, smtpSecret); err != nil {
@@ -446,12 +457,6 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	}
 	if len(dmsSecret.Data["url"]) == 0 {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("url is undefined in dead mans switch secret")
-	}
-
-	// handle alert manager route
-	alertmanagerRoute := &v1.Route{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: alertManagerRouteName, Namespace: r.Config.GetOperatorNamespace()}, alertmanagerRoute); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain alert manager route: %w", err)
 	}
 
 	// only set the to address to a real value for managed deployments
