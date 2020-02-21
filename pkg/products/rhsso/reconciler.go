@@ -402,13 +402,18 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak external database instance")
 	postgresName := fmt.Sprintf("rhsso-postgres-%s", installation.Name)
-	credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace())
+	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace())
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
 	}
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
+	}
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
