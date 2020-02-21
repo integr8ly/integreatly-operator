@@ -10,10 +10,10 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 )
 
 type Parameters struct {
@@ -52,7 +52,7 @@ func NewTemplateHelper(extraParams map[string]string) *TemplateHelper {
 
 // Takes a list of strings, wraps each string in double quotes and joins them
 // Used for building yaml arrays
-func joinQuote(values []monitoring_v1alpha1.BlackboxtargetData) string {
+func joinQuote(values []monitoring.BlackboxtargetData) string {
 	var result []string
 	for _, s := range values {
 		result = append(result, fmt.Sprintf("\"%v@%v@%v\"", s.Module, s.Service, s.Url))

@@ -14,8 +14,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	monitoring_v1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -48,7 +48,7 @@ type Reconciler struct {
 	Logger        *logrus.Entry
 	mpm           marketplace.MarketplaceInterface
 	installation  *integreatlyv1alpha1.RHMI
-	monitoring    *monitoring_v1alpha1.ApplicationMonitoring
+	monitoring    *monitoring.ApplicationMonitoring
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
@@ -101,7 +101,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer list blackboxtargets")
-		blackboxtargets := &monitoring_v1alpha1.BlackboxTargetList{}
+		blackboxtargets := &monitoring.BlackboxTargetList{}
 		blackboxtargetsListOpts := []k8sclient.ListOption{
 			k8sclient.MatchingLabels(map[string]string{r.Config.GetLabelSelectorKey(): r.Config.GetLabelSelector()}),
 		}
@@ -115,7 +115,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			// do something to delete these dashboards
 			for _, bbt := range blackboxtargets.Items {
 				logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
-				b := &monitoring_v1alpha1.BlackboxTarget{}
+				b := &monitoring.BlackboxTarget{}
 				err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetOperatorNamespace()}, b)
 				if k8serr.IsNotFound(err) {
 					continue
@@ -132,7 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 
-		m := &monitoring_v1alpha1.ApplicationMonitoring{}
+		m := &monitoring.ApplicationMonitoring{}
 		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetOperatorNamespace()}, m)
 		if err != nil && !k8serr.IsNotFound(err) {
 			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
@@ -292,7 +292,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
-	m := &monitoring_v1alpha1.ApplicationMonitoring{
+	m := &monitoring.ApplicationMonitoring{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultMonitoringName,
 			Namespace: r.Config.GetOperatorNamespace(),
@@ -300,7 +300,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 	}
 	owner.AddIntegreatlyOwnerAnnotations(m, r.installation)
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, m, func() error {
-		m.Spec = monitoring_v1alpha1.ApplicationMonitoringSpec{
+		m.Spec = monitoring.ApplicationMonitoringSpec{
 			LabelSelector:                    r.Config.GetLabelSelector(),
 			AdditionalScrapeConfigSecretName: r.Config.GetAdditionalScrapeConfigSecretName(),
 			AdditionalScrapeConfigSecretKey:  r.Config.GetAdditionalScrapeConfigSecretKey(),
@@ -308,6 +308,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			PrometheusStorageRequest:         r.Config.GetPrometheusStorageRequest(),
 			AlertmanagerInstanceNamespaces:   r.Config.GetOperatorNamespace(),
 			PrometheusInstanceNamespaces:     r.Config.GetOperatorNamespace(),
+			SelfSignedCerts:                  r.installation.Spec.SelfSignedCerts,
 		}
 		r.monitoring = m
 		return nil
@@ -352,7 +353,7 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 
 // Read the credentials of the Prometheus instance in the openshift-monitoring
 // namespace from the grafana datasource secret
-func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, serverClient k8sclient.Client) (*monitoring_v1alpha1.GrafanaDataSourceSecret, error) {
+func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, serverClient k8sclient.Client) (*monitoring.GrafanaDataSourceSecret, error) {
 	secret := &corev1.Secret{}
 
 	selector := k8sclient.ObjectKey{
@@ -366,7 +367,7 @@ func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, ser
 	}
 
 	prometheusConfig := secret.Data[grafanaDataSourceSecretKey]
-	datasources := monitoring_v1alpha1.GrafanaDataSourceSecret{}
+	datasources := monitoring.GrafanaDataSourceSecret{}
 
 	err = json.Unmarshal(prometheusConfig, &datasources)
 	if err != nil {
@@ -402,7 +403,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func CreateBlackboxTarget(ctx context.Context, name string, target monitoring_v1alpha1.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) error {
+func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.BlackboxtargetData, cfg *config.Monitoring, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) error {
 	if cfg.GetOperatorNamespace() == "" {
 		// Retry later
 		return nil
