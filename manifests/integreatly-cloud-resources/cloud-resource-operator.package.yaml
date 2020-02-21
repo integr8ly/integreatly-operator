@@ -1,5 +1,5 @@
 channels:
 - currentCSV: cloud-resources.v0.13.0
-  name: integreatly
-defaultChannel: integreatly
-packageName: integreatly-cloud-resources
+  name: rhmi
+defaultChannel: rhmi
+packageName: rhmi-cloud-resources
