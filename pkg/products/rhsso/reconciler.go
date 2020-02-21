@@ -773,11 +773,13 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	}
 
 	for _, osUser := range added {
-		email := osUser.Name
-		if !strings.Contains(email, "@") {
-			email = email + "@example.com"
+		email, err := GetUserEmailFromIdentity(ctx, serverClient, osUser)
+
+		if err != nil {
+			return nil, err
 		}
-		keycloakUsers = append(keycloakUsers, keycloak.KeycloakAPIUser{
+
+		newKeycloakUser := keycloak.KeycloakAPIUser{
 			Enabled:       true,
 			UserName:      osUser.Name,
 			EmailVerified: true,
@@ -789,7 +791,10 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 					UserName:         osUser.Name,
 				},
 			},
-		})
+		}
+		AppendUpdateProfileActionForUserWithoutEmail(&newKeycloakUser)
+
+		keycloakUsers = append(keycloakUsers, newKeycloakUser)
 	}
 
 	if err != nil && !k8serr.IsNotFound(err) {

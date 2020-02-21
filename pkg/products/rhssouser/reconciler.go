@@ -452,15 +452,10 @@ func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.
 
 	for _, osUser := range added {
 
-		email := osUser.Name
-		if !strings.Contains(email, "@") {
-			email = email + "@example.com"
-		}
 		keycloakUsers = append(keycloakUsers, keycloak.KeycloakAPIUser{
 			Enabled:       true,
 			UserName:      osUser.Name,
 			EmailVerified: true,
-			Email:         email,
 			FederatedIdentities: []keycloak.FederatedIdentity{
 				{
 					IdentityProvider: idpAlias,
