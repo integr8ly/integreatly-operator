@@ -21,6 +21,7 @@ import (
 
 const (
 	defaultOperatorNamespace = "test"
+	defaultRHSSONamespace    = "test"
 )
 
 func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
@@ -141,7 +142,7 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, got, err := ReconcileRHSSOPostgresCredentials(context.TODO(), tt.installation, tt.fakeClient(), tt.postgresName, defaultOperatorNamespace)
+			_, got, err := ReconcileRHSSOPostgresCredentials(context.TODO(), tt.installation, tt.fakeClient(), tt.postgresName, defaultOperatorNamespace, defaultRHSSONamespace)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReconcileRHSSOPostgresCredentials() error = %v, wantErr %v", err, tt.wantErr)
 				return

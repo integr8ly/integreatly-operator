@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	databaseSecretName = "keycloak-db-secret"
-
+	databaseSecretName         = "keycloak-db-secret"
 	databaseSecretKeyDatabase  = "POSTGRES_DATABASE"
 	databaseSecretKeyExtPort   = "POSTGRES_EXTERNAL_PORT"
 	databaseSecretKeyExtHost   = "POSTGRES_EXTERNAL_ADDRESS"
@@ -31,10 +30,10 @@ const (
 )
 
 //ReconcileRHSSOPostgresCredentials Provisions postgres and creates external database secret based on Installation CR, secret will be nil while the postgres instance is provisioning
-func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, name, ns string) (*v1alpha1.Postgres, *corev1.Secret, error) {
+func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client, name, ns, nsPostfix string) (*v1alpha1.Postgres, *corev1.Secret, error) {
 	postgresNS := installation.Namespace
 	postgresTier := "production"
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, postgresNS, installation.Spec.Type, postgresTier, name, postgresNS, name, postgresNS, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, nsPostfix, installation.Spec.Type, postgresTier, name, postgresNS, name, postgresNS, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil
 	})
