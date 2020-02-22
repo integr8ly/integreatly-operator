@@ -94,7 +94,6 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 		}
 
 		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
-			ownerutil.EnsureOwner(cloudConfig, r.installation)
 			cloudConfig.Data = map[string]string{
 				"managed":  `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
 				"workshop": `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
