@@ -3,6 +3,7 @@ package installation
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -27,9 +28,9 @@ const (
 // Test that the installation CR spec value for UseClusterStorage is true when the
 // USE_CLUSTER_STORAGE environment variable is set to true
 func TestCreateInstallationCR_useClusterStorage_true(t *testing.T) {
-	err := testCreateInstallationCR_useClusterStorage(t, "true", func(useClusterStorage bool) {
-		if !useClusterStorage {
-			t.Fatalf("Expected Installation.Spec.UseClusterStorage value to be true, but got %t", useClusterStorage)
+	err := testCreateInstallationCR_useClusterStorage(t, "true", func(useClusterStorage string) {
+		if strings.ToLower(useClusterStorage) != "true" {
+			t.Fatalf("Expected Installation.Spec.UseClusterStorage value to be true, but got %s", useClusterStorage)
 		}
 	})
 
@@ -41,9 +42,9 @@ func TestCreateInstallationCR_useClusterStorage_true(t *testing.T) {
 // Test that the installation CR spec value for UseClusterStorage is false when the
 // USE_CLUSTER_STORAGE environment variable is set to false
 func TestCreateInstallationCR_useClusterStorage_false(t *testing.T) {
-	err := testCreateInstallationCR_useClusterStorage(t, "false", func(useClusterStorage bool) {
-		if useClusterStorage {
-			t.Fatalf("Expected Installation.Spec.UseClusterStorage value to be false, but got %t", useClusterStorage)
+	err := testCreateInstallationCR_useClusterStorage(t, "false", func(useClusterStorage string) {
+		if strings.ToLower(useClusterStorage) != "false" {
+			t.Fatalf("Expected Installation.Spec.UseClusterStorage value to be false, but got %s", useClusterStorage)
 		}
 	})
 
@@ -52,33 +53,19 @@ func TestCreateInstallationCR_useClusterStorage_false(t *testing.T) {
 	}
 }
 
-// Test that the creation of the Installation CR fails when the USE_CLUSTER_STORAGE
-// environment variable has an invalid value
-func TestCreateInstallationCR_useClusterStorage_invalid(t *testing.T) {
-	err := testCreateInstallationCR_useClusterStorage(t, "Invalid", func(u bool) {})
-
-	if err == nil {
-		t.Fatal("Expected installation to fail due to invalid USE_CLUSTER_STORAGE value")
-	}
-}
-
 // Test that the installation CR spec value for UseClusterStorage is true when the
 // USE_CLUSTER_STORAGE environment is not set
 func TestCreateInstallationCR_useClusterStorage_default(t *testing.T) {
-	err := testCreateInstallationCR_useClusterStorage(t, "", func(useClusterStorage bool) {
-		if useClusterStorage {
-			t.Fatalf("Expected default value of Installation.Spec.UseClusterStorage to be true, instead got %t", useClusterStorage)
+	testCreateInstallationCR_useClusterStorage(t, "", func(useClusterStorage string) {
+		if useClusterStorage != "" {
+			t.Fatalf("Expected default value of Installation.Spec.UseClusterStorage to be '', instead got %s", useClusterStorage)
 		}
 	})
-
-	if err == nil {
-		t.Fatal("Expected installation to fail due to invalid USE_CLUSTER_STORAGE value")
-	}
 }
 
 // Utility higher order function to test the `createInstallationCR` function. Calls the function,
 // retrieves the created Installation CR and delegates the assertion on a given function
-func testCreateInstallationCR_useClusterStorage(t *testing.T, envValue string, assertCRValue func(useClusterStorage bool)) error {
+func testCreateInstallationCR_useClusterStorage(t *testing.T, envValue string, assertCRValue func(useClusterStorage string)) error {
 	mockClient := fake.NewFakeClientWithScheme(buildScheme())
 	ctx := context.TODO()
 

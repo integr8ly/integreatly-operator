@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -136,12 +135,9 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
 
-		logrus.Infof("Creating a %s rhmi CR as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), namespace)
+		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 
-		useClusterStorage, err := useClusterStorage()
-		if err != nil {
-			return fmt.Errorf("Invalid value for USE_CLUSTER_STORAGE environment variable: %w", err)
-		}
+		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
 
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
@@ -171,25 +167,6 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	}
 
 	return nil
-}
-
-// Whether to use cluster storage or not, based on an environment variable. If the variable
-// is not present, defaults to true
-func useClusterStorage() (bool, error) {
-	envValue, found := os.LookupEnv("USE_CLUSTER_STORAGE")
-
-	// Default to true if not present
-	if !found {
-		return true, nil
-	}
-
-	value, err := strconv.ParseBool(envValue)
-
-	if err != nil {
-		return false, err
-	}
-
-	return value, nil
 }
 
 var _ reconcile.Reconciler = &ReconcileInstallation{}
@@ -396,6 +373,14 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	}
 
 	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
+
+	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
+		installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
+		installation.Status.PreflightMessage = "Spec.useClusterStorage must be set to either 'true' or 'false' to continue"
+		_ = r.client.Status().Update(r.context, installation)
+		logrus.Infof("preflight checks failed on useClusterStorage value")
+		return result, nil
+	}
 
 	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
 		requiredSecrets := []string{installation.Spec.SMTPSecret, installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}

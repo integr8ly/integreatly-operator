@@ -6,5 +6,5 @@ spec:
   type: managed
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
-  useClusterStorage: true
+  useClusterStorage: 'true'
   smtpSecret: redhat-rhmi-smtp

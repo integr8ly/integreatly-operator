@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,7 @@ import (
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
 func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (*prometheusv1.PrometheusRule, error) {
-	if inst.Spec.UseClusterStorage {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping postgres alert creation, useClusterStorage is true")
 		return nil, nil
 	}
@@ -46,7 +47,7 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 // CreatePostgresConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Postgres instance
 func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (*prometheusv1.PrometheusRule, error) {
-	if inst.Spec.UseClusterStorage {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping postgres connectivity alert creation, useClusterStorage is true")
 		return nil, nil
 	}
@@ -74,7 +75,7 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 // CreateRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Redis cacheu
 func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
-	if inst.Spec.UseClusterStorage {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
 	}
@@ -103,7 +104,7 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 // CreateRedisConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Redis cache
 func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
-	if inst.Spec.UseClusterStorage {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis connectivity alert creation, useClusterStorage is true")
 		return nil, nil
 	}

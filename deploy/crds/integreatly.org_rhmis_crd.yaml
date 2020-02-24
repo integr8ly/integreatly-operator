@@ -78,7 +78,7 @@ spec:
                 https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
             useClusterStorage:
-              type: boolean
+              type: string
           required:
           - namespacePrefix
           - type

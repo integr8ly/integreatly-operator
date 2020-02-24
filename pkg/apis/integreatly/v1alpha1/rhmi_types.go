@@ -100,7 +100,7 @@ type RHMISpec struct {
 	NamespacePrefix   string         `json:"namespacePrefix"`
 	SelfSignedCerts   bool           `json:"selfSignedCerts,omitempty"`
 	PullSecret        PullSecretSpec `json:"pullSecret,omitempty"`
-	UseClusterStorage bool           `json:"useClusterStorage,omitempty"`
+	UseClusterStorage string         `json:"useClusterStorage,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product

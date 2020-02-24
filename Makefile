@@ -20,7 +20,7 @@ export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
-export USE_CLUSTER_STORAGE ?= true
+export USE_CLUSTER_STORAGE ?= "true"
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 
 define wait_command
