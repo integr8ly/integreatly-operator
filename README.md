@@ -116,7 +116,9 @@ spec:
   namespacePrefix: redhat-rhmi-
   selfSignedCerts: true
   useClusterStorage: true
-  smtpSecret: rhmi-smtp
+  smtpSecret: redhat-rhmi-smtp
+  deadMansSnitchSecret: redhat-rhmi-deadmanssnitch
+  pagerdutySecret: redhat-rhmi-pagerduty
 ```
 
 ## Set up testing IDP for OSD cluster
