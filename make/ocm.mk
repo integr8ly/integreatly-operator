@@ -78,7 +78,7 @@ ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
 	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q integreatly, installation CR created, 10m, 30)
-	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic rhmi-smtp -n $(RHMI_OPERATOR_NS) \
+	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-smtp -n $(RHMI_OPERATOR_NS) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
