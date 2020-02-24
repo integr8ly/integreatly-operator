@@ -8,6 +8,8 @@ import (
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
+	consolev1 "github.com/openshift/api/console/v1"
+
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
@@ -76,5 +78,6 @@ func init() {
 		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
+		consolev1.AddToScheme,
 	)
 }

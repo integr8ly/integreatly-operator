@@ -11,6 +11,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
+	consolev1 "github.com/openshift/api/console/v1"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -132,6 +134,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		cl := &consolev1.ConsoleLink{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "rhmi-solution-explorer",
+			},
+		}
+
+		err = serverClient.Delete(ctx, cl)
+		if err != nil && !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
 		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName())
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -184,6 +197,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		r.ConfigManager.WriteConfig(r.Config)
 	}
 
+	phase, err = r.reconcileConsoleLink(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
+		return phase, err
+	}
+
 	phase, err = r.ReconcileOauthClient(ctx, installation, &oauthv1.OAuthClient{
 		RedirectURIs: []string{route},
 		GrantMethod:  oauthv1.GrantHandlerAuto,
@@ -214,6 +233,31 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.SolutionExplorerStage, r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cl := &consolev1.ConsoleLink{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "rhmi-solution-explorer",
+		},
+		Spec: consolev1.ConsoleLinkSpec{
+			ApplicationMenu: &consolev1.ApplicationMenuSpec{},
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
+		cl.Spec.ApplicationMenu.ImageURL = "https://avatars1.githubusercontent.com/u/41683098"
+		cl.Spec.ApplicationMenu.Section = "Red Hat Applications"
+		cl.Spec.Href = r.Config.GetHost()
+		cl.Spec.Location = consolev1.ApplicationMenu
+		cl.Spec.Text = "Solution Explorer"
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating or updating solution explorer console link, %s", err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
