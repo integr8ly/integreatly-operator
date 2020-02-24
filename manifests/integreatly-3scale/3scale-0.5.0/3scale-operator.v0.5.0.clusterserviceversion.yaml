@@ -30,15 +30,15 @@ metadata:
 spec:
   relatedImages:
   - name: apicast-gateway-rhel8
-    image: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8:3scale2.8
+    image: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_3scale2.8
   - name: backend-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/backend-rhel7:3scale2.8
+    image: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_3scale2.8
   - name: system-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/system-rhel7:3scale2.8
+    image: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_3scale2.8
   - name: zync-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/zync-rhel7:3scale2.8
+    image: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_3scale2.8
   - name: memcached-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/memcached-rhel7:3scale2.8
+    image: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_3scale2.8
   customresourcedefinitions:
     owned:
     - kind: APIManager
@@ -172,16 +172,16 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/backend-rhel7:3scale2.8
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_3scale2.8
                 - name: APICAST_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8:3scale2.8
+                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_3scale2.8
                 - name: SYSTEM_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/system-rhel7:3scale2.8
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_3scale2.8
                 - name: ZYNC_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/zync-rhel7:3scale2.8
+                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_3scale2.8
                 - name: SYSTEM_MEMCACHED_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/memcached-rhel7:3scale2.8
-                image: registry.stage.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:0208475c26aac01766244dc7e32aec576c484646838790d4f65d8c2e63f6611b
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_3scale2.8
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_latest
                 name: 3scale-operator
                 resources: {}
               serviceAccountName: 3scale-operator
