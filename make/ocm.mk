@@ -79,18 +79,19 @@ ocm/cluster/send_create_request:
 ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get installation -n $(RHMI_OPERATOR_NS) | grep -q integreatly, installation CR created, 10m, 30)
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q integreatly, installation CR created, 10m, 30)
 	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic rhmi-smtp -n $(RHMI_OPERATOR_NS) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get installation integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
-	@oc --config=$(CLUSTER_KUBECONFIG) get installation integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
+	@oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
+	@oc --config=$(CLUSTER_KUBECONFIG) delete rhmi integreatly -n redhat-rhmi-operator
 	@$(call get_cluster_id)
 	${OCM} delete /api/clusters_mgmt/v1/clusters/$(OCM_CLUSTER_ID)
 
@@ -102,7 +103,7 @@ ocm/cluster.json:
 	.expiration_timestamp = "$(OCM_CLUSTER_EXPIRATION_TIMESTAMP)" | \
 	.name = "$(OCM_CLUSTER_NAME)" | \
 	.region.id = "$(OCM_CLUSTER_REGION)"' < templates/ocm-cluster/cluster-template.json > ocm/cluster.json
-	@if [ $(BYOC) = true ]; then\
+	@if [ "${BYOC}" = true ]; then\
 	  jq '\
 	  .byoc = true | \
 	  .aws.access_key_id = "$(ACCESS_KEY)" | \
