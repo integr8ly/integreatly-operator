@@ -356,7 +356,7 @@ func (r *Reconciler) getInstalledProducts(installation *integreatlyv1alpha1.RHMI
 	// Ensure that ups is not added to the installed products
 	products := make(map[integreatlyv1alpha1.ProductName]productInfo)
 	for name, info := range installedProducts {
-		if name != integreatlyv1alpha1.ProductAMQOnline && name != integreatlyv1alpha1.ProductUps && info.Host != "" {
+		if info.Host != "" {
 			id := r.getProductID(name)
 			products[id] = productInfo{
 				Host:    info.Host,
