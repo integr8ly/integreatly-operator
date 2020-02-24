@@ -112,6 +112,10 @@ func (a *AMQOnline) GetBackupsSecretName() string {
 	return "backups-s3-credentials"
 }
 
+func (c *AMQOnline) GetPostgresBackupSecretName() string {
+	return "enmasse-postgres-secret"
+}
+
 func (a *AMQOnline) GetBackupSchedule() string {
 	return "30 2 * * *"
 }

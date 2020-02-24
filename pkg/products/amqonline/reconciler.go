@@ -514,6 +514,12 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 		},
 		Components: []resources.BackupComponent{
 			{
+				Name:     "enmasse-postgres-backup",
+				Type:     "postgres",
+				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
+				Schedule: r.Config.GetBackupSchedule(),
+			},
+			{
 				Name:     "enmasse-pv-backup",
 				Type:     "enmasse_pv",
 				Schedule: r.Config.GetBackupSchedule(),
