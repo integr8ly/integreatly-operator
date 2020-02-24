@@ -124,6 +124,8 @@ You can use the `scripts/setup-sso-idp.sh` script to setup a "testing-idp" realm
 With this script you will get few regular users - test-user[01-10] and few users that will be added to dedicated-admins group - customer-admin[01-03].
 
 Prerequisites:
+- `oc` command available on your machine (`sudo dnf install oc` on Fedora)
+- `ocm` command available ( the newest CLI can be downloaded [here](https://github.com/openshift-online/ocm-cli/releases) and you install it with `mv (your downloaded file) /usr/local/bin/ocm`)
 - OC session with cluster admin permissions in a target cluster
 - OCM session
 
