@@ -54,7 +54,7 @@ var (
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	VersionAMQOnline           ProductVersion = "1.3.1"
-	VersionApicurito           ProductVersion = "0.0.1"
+	VersionApicurito           ProductVersion = "1.0.1"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.0.0.GA"
 	VersionFuseOnOpenshift     ProductVersion = "master"
@@ -80,7 +80,7 @@ var (
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.13.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
-	OperatorVersionApicurito           OperatorVersion = "0.1.0"
+	OperatorVersionApicurito           OperatorVersion = "1.5.0"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

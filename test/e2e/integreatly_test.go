@@ -488,6 +488,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	productOperators := map[string]string{
 		"3scale":               string(integreatlyv1alpha1.OperatorVersion3Scale),
 		"amqonline":            string(integreatlyv1alpha1.OperatorVersionAMQOnline),
+		"apicurito":            string(integreatlyv1alpha1.OperatorVersionApicurito),
 		"codeready-workspaces": string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(integreatlyv1alpha1.OperatorVersionFuse),
 		"ups":                  string(integreatlyv1alpha1.OperatorVersionUPS),
@@ -523,6 +524,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	productOperands := map[string]string{
 		"3scale":               string(integreatlyv1alpha1.Version3Scale),
 		"amqonline":            string(integreatlyv1alpha1.VersionAMQOnline),
+		"apicurito":            string(integreatlyv1alpha1.VersionApicurito),
 		"codeready-workspaces": string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(integreatlyv1alpha1.VersionFuseOnOpenshift),
 		"ups":                  string(integreatlyv1alpha1.VersionUps),
