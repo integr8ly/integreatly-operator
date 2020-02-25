@@ -101,7 +101,16 @@ rules:
       - "*"
     verbs:
       - "*"
-
+  # We need to create consolelinks which are cluster level objects
+  - apiGroups:
+      - console.openshift.io
+    resources:
+      - "consolelinks"
+    verbs:
+      - get
+      - create
+      - update
+      - delete
   # We are using ProjectRequests API to create namespaces where we automatically become admins
   - apiGroups:
       - ''

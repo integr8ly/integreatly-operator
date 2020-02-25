@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	consolev1 "github.com/openshift/api/console/v1"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -43,7 +45,9 @@ type SolutionExplorerScenario struct {
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		ReadSolutionExplorerFunc: func() (explorer *config.SolutionExplorer, e error) {
-			return config.NewSolutionExplorer(config.ProductConfig{}), nil
+			return config.NewSolutionExplorer(config.ProductConfig{
+				"HOST": "https://test-host.com",
+			}), nil
 		},
 		ReadRHSSOFunc: func() (*config.RHSSO, error) {
 			return config.NewRHSSO(config.ProductConfig{
@@ -106,7 +110,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 			mockResolver := tc.OauthResolver()
 			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder)
 			if err != nil {
-				t.Fatal("unexpected err settin up reconciler ", err)
+				t.Fatal("unexpected err setting up reconciler ", err)
 			}
 			status, err := reconciler.ReconcileCustomResource(context.TODO(), tc.Installation, tc.client)
 			if tc.ExpectErr && err == nil {
@@ -130,6 +134,10 @@ func TestSolutionExplorer(t *testing.T) {
 	scheme := scheme.Scheme
 	if err := apis.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to initialize scheme: %s", err)
+	}
+
+	if err := consolev1.AddToScheme(scheme); err != nil {
+		t.Fatalf("failed to initialize scheme : %s", err)
 	}
 
 	cases := []SolutionExplorerScenario{

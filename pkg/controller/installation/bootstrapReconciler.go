@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
@@ -85,7 +86,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.UseClusterStorage {
+	if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
 		cloudConfig := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "cloud-resource-config",
