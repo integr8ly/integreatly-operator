@@ -47,6 +47,7 @@ const (
 	paramInstalledServices  = "INSTALLED_SERVICES"
 	paramSSORoute           = "SSO_ROUTE"
 	paramIntegreatlyVersion = "INTEGREATLY_VERSION"
+	paramClusterType        = "CLUSTER_TYPE"
 	defaultRouteName        = "tutorial-web-app"
 	manifestPackage         = "integreatly-solution-explorer"
 )
@@ -325,6 +326,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramOpenShiftHost:      installation.Spec.MasterURL,
 			paramOpenShiftOauthHost: oauthURL,
 			paramOpenShiftVersion:   "4",
+			paramClusterType:        "osd",
 			paramInstalledServices:  installedServices,
 			paramIntegreatlyVersion: version.IntegreatlyVersion,
 		}
