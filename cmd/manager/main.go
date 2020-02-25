@@ -18,9 +18,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
+	integreatlymetrics "github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/version"
 
-	"github.com/prometheus/client_golang/prometheus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -47,25 +47,12 @@ var (
 	products            []string
 )
 
-// Custom metrics
-var (
-	operatorVersion = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "integreatly_version_info",
-			Help: "Integreatly operator information",
-			ConstLabels: prometheus.Labels{
-				"operator_version": version.Version,
-				"version":          version.IntegreatlyVersion,
-			},
-		},
-	)
-)
-
 var log = logf.Log.WithName("cmd")
 
 func init() {
 	// Register custom metrics with the global prometheus registry
-	customMetrics.Registry.MustRegister(operatorVersion)
+	customMetrics.Registry.MustRegister(integreatlymetrics.OperatorVersion)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatusAvailable)
 }
 
 func printVersion() {

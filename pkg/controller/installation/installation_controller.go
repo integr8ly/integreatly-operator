@@ -14,6 +14,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/products"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -265,6 +266,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	// If the CR is being deleted, cancel the current context
 	// and attempt to clean up the products with finalizers
 	if installation.DeletionTimestamp != nil {
+
+		// Set metrics status to unavalible
+		metrics.RHMIStatusAvailable.Set(0)
+		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
+		_ = r.client.Status().Update(r.context, installation)
+
 		// Cancel this context to kill all ongoing requests to the API
 		// and use a new context to handle deletion logic
 		r.cancel()
@@ -384,12 +391,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if installInProgress {
 		return retryRequeue, nil
 	}
+	installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
+	_ = r.client.Status().Update(r.context, installation)
+	metrics.RHMIStatusAvailable.Set(1)
 	logrus.Infof("installation completed succesfully")
 	return reconcile.Result{}, nil
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
+	installation.Status.Stage = integreatlyv1alpha1.StageName("Preflight Checks")
 	result := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
@@ -494,6 +505,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 }
 
 func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.RHMI, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+	installation.Status.Stage = integreatlyv1alpha1.BootstrapStage
 	mpm := marketplace.NewManager()
 
 	reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(integreatlyv1alpha1.BootstrapStage)))
@@ -516,6 +528,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	incompleteStage := false
 	var mErr error
 	productsAux := make(map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus)
+	installation.Status.Stage = stage.Name
 
 	for _, product := range stage.Products {
 

@@ -96,6 +96,8 @@ spec:
               type: string
             smtpEnabled:
               type: boolean
+            stage:
+              type: string
             stages:
               additionalProperties:
                 properties:
@@ -138,6 +140,7 @@ spec:
               type: object
           required:
           - lastError
+          - stage
           - stages
           type: object
       type: object
