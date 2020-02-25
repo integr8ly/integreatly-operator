@@ -22,7 +22,6 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
-	errorUtil "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -45,6 +44,7 @@ const (
 	DefaultInstallationName          = "rhmi"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
+	DefaultCloudResourceConfigName   = "cloud-resource-config"
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -577,9 +577,9 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1.RHMI) error {
 	// get cloud resource config map
 	croConf := &corev1.ConfigMap{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: "cloud-resource-config"}, croConf)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: DefaultCloudResourceConfigName}, croConf)
 	if err != nil && !k8serr.IsNotFound(err) {
-		return errorUtil.Wrap(err, "error occurred trying to get cro config map")
+		return fmt.Errorf("error occurred trying to get cro config map %w", err)
 	}
 
 	// remove cloud resource config deletion finalizer if it exists
@@ -587,14 +587,14 @@ func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1
 		croConf.SetFinalizers(resources.Remove(croConf.Finalizers, deletionFinalizer))
 
 		if err := r.client.Update(context.TODO(), croConf); err != nil {
-			return errorUtil.Wrap(err, "error occurred trying to update cro config map")
+			return fmt.Errorf("error occurred trying to update cro config map %w", err)
 		}
 	}
 
 	// remove cloud resource config map
 	err = r.client.Delete(context.TODO(), croConf)
 	if err != nil && !k8serr.IsNotFound(err) {
-		return errorUtil.Wrap(err, "error occurred trying to delete cro config map")
+		return fmt.Errorf("error occurred trying to delete cro config map, %w", err)
 	}
 
 	return nil
