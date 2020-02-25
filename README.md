@@ -91,7 +91,26 @@ make cluster/prepare/local
 ```
 
 ### Configuring Github OAuth
-Log in to RHSSO (see above) and click `Identity Providers` in the left sidebar. In the Github identity provider, find the Redirect URI and paste this URL into the Homepage URL and Authorization callback URL fields of your Github OAuth app.
+
+*Note:* The following steps are only valid for OCP4 environments and will not work on OSD due to the Oauth resource being periodically reset by Hive.
+
+Follow [docs](https://docs.openshift.com/container-platform/4.1/authentication/identity_providers/configuring-github-identity-provider.html#identity-provider-registering-github_configuring-github-identity-provider) on how to register a new Github Oauth application and add the necessary authorization callback URL for your cluster as outlined below:
+
+```
+https://oauth-openshift.apps.<cluster-name>.<cluster-domain>/oauth2callback/github
+```
+
+Once the Oauth application has been registered, navigate to the Openshift console and complete the following steps:
+
+*Note:* These steps need to be performed by a cluster admin
+
+- Select the `Search` option in the left hand nav of the console and select `Oauth` from the dropdown
+- A single Oauth resource should exist named `cluster`, click into this resource
+- Scroll to the bottom of the console and select the `Github` option from the `add` dropdown
+- Next, add the `Client ID` and `Client Secret` of the registered Github Oauth application
+- Ensure that the Github organization from where the Oauth application was created is specified in the Organization field
+- Once happy that all necessary configurations have been added, click the `Add` button
+- For validation purposes, log into the Openshift console from another browser and check that the Github IDP is listed on the login screen
 
 ## Deploying to a Cluster with OLM
 Make sure to export the variables above (see [local setup](#local-setup)), then run:
