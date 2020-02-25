@@ -743,7 +743,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 
 	t.Log("Waiting for alerts to normalise")
-	time.Sleep(5 * time.Minute)
+	time.Sleep(15 * time.Minute)
 
 	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
 		t.Fatal(err)
