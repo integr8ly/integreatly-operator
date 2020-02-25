@@ -23,6 +23,19 @@ define save_cluster_credentials
 	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
 endef
 
+# Get BYOC clusters that are to be retired in next 2 hours
+define get_byoc_clusters_to_be_retired_soon
+	@$(eval CLUSTER_IDS=$(shell $(OCM) get /api/clusters_mgmt/v1/clusters | \
+		jq --raw-output '\
+			.items[] | \
+			select( \
+				.byoc and \
+				has("expiration_timestamp") and \
+				(.expiration_timestamp | match("([^\\.Z]*)") | "\(.string)Z" | (fromdate - now) < (2 * 3600)) \
+			) | \
+			.id'))
+endef
+
 ifeq ($(UNAME), Linux)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date --date="${OCM_CLUSTER_LIFESPAN} hour" "+%FT%TZ")
 else ifeq ($(UNAME), Darwin)
@@ -108,3 +121,15 @@ ocm/cluster.json:
 ocm/aws/create_access_key:
 	@mkdir -p ocm
 	@aws iam create-access-key --user-name osdCcsAdmin | jq -r .AccessKey | tee ocm/aws.json
+
+# Cleanup AWS resources for BYOC clusters that are to be retired soon
+.PHONY: ocm/cleanup
+ocm/cleanup:
+	@$(call get_byoc_clusters_to_be_retired_soon)
+	@for cluster_id in $(CLUSTER_IDS); do \
+		echo "Removing RHMI CR from cluster: $$($(OCM) get /api/clusters_mgmt/v1/clusters/$$cluster_id | jq --raw-output '.name')" && \
+		$(OCM) get /api/clusters_mgmt/v1/clusters/$$cluster_id/credentials | jq -r .kubeconfig > $(CLUSTER_KUBECONFIG).remove && \
+		RHMI_NAME=$$(oc --kubeconfig=$(CLUSTER_KUBECONFIG).remove get rhmi -n redhat-rhmi-operator -o jsonpath='{.items[*].metadata.name}' || true) \
+		oc --kubeconfig=$(CLUSTER_KUBECONFIG).remove delete rhmi $$RHMI_NAME --wait=false -n redhat-rhmi-operator || true && \
+		rm $(CLUSTER_KUBECONFIG).remove; \
+	done
