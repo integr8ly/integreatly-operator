@@ -134,7 +134,6 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 }
 
 func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
-
 	type apiResponse struct {
 		Status    string                 `json:"status"`
 		Data      json.RawMessage        `json:"data"`
