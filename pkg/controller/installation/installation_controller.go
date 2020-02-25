@@ -296,7 +296,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			// delete ConfigMap after all product finalizers finished
 			err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}})
 			if err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("Failed to remove ConfigMap: %w", err))
+				merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
+				return retryRequeue, merr
+			}
+
+			err = r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cloud-resource-config", Namespace: installation.Namespace}})
+			if err != nil && !k8serr.IsNotFound(err) {
+				merr.Add(fmt.Errorf("failed to remove cloud resources ConfigMap: %w", err))
 				return retryRequeue, merr
 			}
 

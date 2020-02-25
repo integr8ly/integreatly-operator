@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -135,6 +136,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = crov1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

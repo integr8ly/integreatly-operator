@@ -533,8 +533,8 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/integr8ly/application-monitoring-operator v1.1.1 h1:qd/ctydmBZpaUhPqtXWlLfOxGP0aOep7C+OhCvS+fzk=
 github.com/integr8ly/application-monitoring-operator v1.1.1/go.mod h1:oG6qQ2kOQr2XOZZ2Clo0Bh7wgiHTg3ZwE3AF6If9pXU=
-github.com/integr8ly/cloud-resource-operator v0.10.0 h1:lQ61l13Y+/yNkxv+V2hHj8kpQNNm+YmfAl5iAXGkMIA=
-github.com/integr8ly/cloud-resource-operator v0.10.0/go.mod h1:R4CEvpUb1bDgRI+Zgvzi7P0xbXYANVTdnogmqoZlEG8=
+github.com/integr8ly/cloud-resource-operator v0.11.0 h1:edqMkb6PsSnL/vb7VawRvxkA3OUy3WWzhHMyAI5guKc=
+github.com/integr8ly/cloud-resource-operator v0.11.0/go.mod h1:msU3lhYqs7wdJ4h+V9avZDZtd/by1zjuZdCLWXQtijM=
 github.com/integr8ly/grafana-operator v1.3.1 h1:3fknUP3pI9/H0/HTxOOR5hzJVo1wPs5HMfBUlMYpzWk=
 github.com/integr8ly/grafana-operator v1.3.1/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
 github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4 h1://E7j42AwTNj3oPVr7/yS0Ztbm7iunOppSs9VJ3nGMc=
@@ -601,6 +601,7 @@ github.com/kshvakov/clickhouse v1.3.5/go.mod h1:DMzX7FxRymoNkVgizH0DWAL8Cur7wHLg
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
+github.com/lib/pq v1.3.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/libopenstorage/openstorage v0.0.0-20170906232338-093a0c388875/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
