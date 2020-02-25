@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	usersv1 "github.com/openshift/api/user/v1"
 
 	"github.com/sirupsen/logrus"
@@ -20,6 +22,7 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
+	errorUtil "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -294,15 +297,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 		if len(merr.errors) == 0 && len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
 			// delete ConfigMap after all product finalizers finished
-			err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}})
-			if err != nil && !k8serr.IsNotFound(err) {
+			if err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
 				merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
 				return retryRequeue, merr
 			}
 
-			err = r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cloud-resource-config", Namespace: installation.Namespace}})
-			if err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("failed to remove cloud resources ConfigMap: %w", err))
+			if err = r.handleCROConfigDeletion(*installation); err != nil {
+				merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
 				return retryRequeue, merr
 			}
 
@@ -570,6 +571,33 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		return integreatlyv1alpha1.PhaseInProgress, mErr
 	}
 	return integreatlyv1alpha1.PhaseCompleted, mErr
+}
+
+// handle the deletion of CRO config map
+func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1.RHMI) error {
+	// get cloud resource config map
+	croConf := &corev1.ConfigMap{}
+	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: "cloud-resource-config"}, croConf)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return errorUtil.Wrap(err, "error occurred trying to get cro config map")
+	}
+
+	// remove cloud resource config deletion finalizer if it exists
+	if resources.Contains(croConf.Finalizers, deletionFinalizer) {
+		croConf.SetFinalizers(resources.Remove(croConf.Finalizers, deletionFinalizer))
+
+		if err := r.client.Update(context.TODO(), croConf); err != nil {
+			return errorUtil.Wrap(err, "error occurred trying to update cro config map")
+		}
+	}
+
+	// remove cloud resource config map
+	err = r.client.Delete(context.TODO(), croConf)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return errorUtil.Wrap(err, "error occurred trying to delete cro config map")
+	}
+
+	return nil
 }
 
 func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace string) error {

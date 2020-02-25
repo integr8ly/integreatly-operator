@@ -88,8 +88,9 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 	if r.installation.Spec.UseClusterStorage {
 		cloudConfig := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "cloud-resource-config",
-				Namespace: r.installation.Namespace,
+				Name:       "cloud-resource-config",
+				Namespace:  r.installation.Namespace,
+				Finalizers: []string{deletionFinalizer},
 			},
 		}
 
