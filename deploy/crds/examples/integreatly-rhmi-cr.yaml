@@ -9,3 +9,5 @@ spec:
   useClusterStorage: USE_CLUSTER_STORAGE
   operatorsInProductNamespace: OPERATORS_IN_PRODUCT_NAMESPACE
   smtpSecret: INSTALLATION_PREFIX-smtp
+  deadMansSnitchSecret: INSTALLATION_PREFIX-deadmanssnitch
+  pagerdutySecret: INSTALLATION_PREFIX-pagerduty

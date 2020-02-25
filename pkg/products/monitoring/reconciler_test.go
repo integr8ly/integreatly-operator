@@ -1,8 +1,13 @@
 package monitoring
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	v1 "github.com/openshift/api/route/v1"
+	"github.com/sirupsen/logrus"
+	"os"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -33,6 +38,12 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+const (
+	mockSMTPSecretName      = "test-smtp"
+	mockPagerdutySecretName = "test-pd"
+	mockDMSSecretName       = "test-dms"
+)
+
 func basicInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,6 +54,11 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 		TypeMeta: metav1.TypeMeta{
 			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			SMTPSecret:           mockSMTPSecretName,
+			PagerDutySecret:      mockPagerdutySecretName,
+			DeadMansSnitchSecret: mockDMSSecretName,
 		},
 	}
 }
@@ -60,15 +76,34 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := monitoringv1.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err = operatorsv1alpha1.AddToScheme(scheme)
-	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme)
-	projectv1.AddToScheme(scheme)
-	return scheme, err
+	if err := monitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := coreosv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := projectv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	return scheme, nil
 }
 
 func setupRecorder() record.EventRecorder {
@@ -249,6 +284,55 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			"prometheus.yaml": []byte("{\"datasources\":[{\"basicAuthUser\":\"testuser\",\"basicAuthPassword\":\"testpass\"}]}"),
 		},
 	}
+
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.sendgrid.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockPagerdutySecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"serviceKey": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	dmsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockDMSSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"url": []byte("https://example.com"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	alertmanagerRoute := &v1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerRouteName,
+			Namespace: defaultInstallationNamespace,
+		},
+		Spec: v1.RouteSpec{
+			Host: "example.com",
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -264,11 +348,12 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
-						"NAMESPACE": "",
+						"NAMESPACE":          "",
+						"OPERATOR_NAMESPACE": defaultInstallationNamespace,
 					}), nil
 				},
 				ReadThreeScaleFunc: func() (ready *config.ThreeScale, e error) {
@@ -462,6 +547,290 @@ func TestReconciler_testPhases(t *testing.T) {
 			}
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
+	basicScheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	basicLogger := logrus.NewEntry(logrus.StandardLogger())
+	basicReconciler := &Reconciler{
+		installation: basicInstallation(),
+		Logger:       basicLogger,
+		Config: &config.Monitoring{
+			Config: map[string]string{
+				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+			},
+		},
+	}
+
+	installation := basicInstallation()
+
+	smtpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockSMTPSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"host":     []byte("smtp.sendgrid.com"),
+			"port":     []byte("587"),
+			"username": []byte("test"),
+			"password": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockPagerdutySecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"serviceKey": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	dmsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockDMSSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"url": []byte("https://example.com"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+	alertmanagerConfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerConfigSecretName,
+			Namespace: defaultInstallationNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+	alertmanagerRoute := &v1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      alertManagerRouteName,
+			Namespace: defaultInstallationNamespace,
+		},
+		Spec: v1.RouteSpec{
+			Host: "example.com",
+		},
+	}
+
+	templateUtil := NewTemplateHelper(map[string]string{
+		"SMTPHost":            string(smtpSecret.Data["host"]),
+		"SMTPPort":            string(smtpSecret.Data["port"]),
+		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
+		"SMTPUsername":        string(smtpSecret.Data["username"]),
+		"SMTPPassword":        string(smtpSecret.Data["password"]),
+		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
+		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+		"SMTPToAddress":       fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+	})
+
+	testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+
+	tests := []struct {
+		name         string
+		serverClient func() k8sclient.Client
+		reconciler   func() *Reconciler
+		setup        func() error
+		want         integreatlyv1alpha1.StatusPhase
+		wantFn       func(c k8sclient.Client) error
+		wantErr      string
+	}{
+		{
+			name: "fails when smtp secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain smtp credentials secret: secrets \"test-smtp\" not found",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "fails when pager duty secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "fails when pager duty service key is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
+				emptyPagerdutySecret.Data = map[string][]byte{}
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "serviceKey is undefined in pager duty secret",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "fails when dead mans snitch secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "fails when dead mans snitch url is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyDMSSecret := dmsSecret.DeepCopy()
+				emptyDMSSecret.Data = map[string][]byte{}
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "url is undefined in dead mans switch secret",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "awaiting components when alert manager route cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: integreatlyv1alpha1.PhaseAwaitingComponents,
+		},
+		{
+			name: "fails when alert manager route fails to be retrieved",
+			serverClient: func() k8sclient.Client {
+				return &moqclient.SigsClientInterfaceMock{
+					GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+						return fmt.Errorf("test")
+					},
+				}
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain alert manager route: test",
+			want:    integreatlyv1alpha1.PhaseFailed,
+		},
+		{
+			name: "secret created successfully",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+			wantFn: func(c k8sclient.Client) error {
+				configSecret := &corev1.Secret{}
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+					return err
+				}
+				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				}
+				return nil
+			},
+		},
+		{
+			name: "secret data is overridden if already exists",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+			wantFn: func(c k8sclient.Client) error {
+				configSecret := &corev1.Secret{}
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+					return err
+				}
+				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				}
+				return nil
+			},
+		},
+		{
+			name: "alert address env override is successful",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			setup: func() error {
+				return os.Setenv(alertmanagerAlertAddressEnv, "test")
+			},
+			want: integreatlyv1alpha1.PhaseCompleted,
+			wantFn: func(c k8sclient.Client) error {
+				configSecret := &corev1.Secret{}
+				if err := c.Get(context.TODO(), types.NamespacedName{Name: alertManagerConfigSecretName, Namespace: defaultInstallationNamespace}, configSecret); err != nil {
+					return err
+				}
+				templateUtil := NewTemplateHelper(map[string]string{
+					"SMTPHost":            string(smtpSecret.Data["host"]),
+					"SMTPPort":            string(smtpSecret.Data["port"]),
+					"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
+					"SMTPUsername":        string(smtpSecret.Data["username"]),
+					"SMTPPassword":        string(smtpSecret.Data["password"]),
+					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
+					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+					"SMTPToAddress":       "test",
+				})
+
+				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(configSecret.Data[alertManagerConfigSecretFileName], testSecretData) {
+					return fmt.Errorf("secret data is not equal, got = %v,\n want = %v", string(configSecret.Data[alertManagerConfigSecretFileName]), string(testSecretData))
+				}
+				return nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.setup != nil {
+				err = tt.setup()
+				if err != nil {
+					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
+				}
+			}
+			reconciler := tt.reconciler()
+			serverClient := tt.serverClient()
+
+			got, err := reconciler.reconcileAlertManagerConfigSecret(context.TODO(), serverClient)
+			if tt.wantErr != "" && err.Error() != tt.wantErr {
+				t.Errorf("reconcileAlertManagerConfigSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("reconcileAlertManagerConfigSecret() got = %v, want %v", got, tt.want)
+			}
+			if tt.wantFn != nil {
+				if err := tt.wantFn(serverClient); err != nil {
+					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
+				}
 			}
 		})
 	}

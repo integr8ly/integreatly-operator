@@ -31,6 +31,11 @@ spec:
         spec:
           description: RHMISpec defines the desired state of Installation
           properties:
+            deadMansSnitchSecret:
+              description: "DeadMansSnitchSecret is the name of a secret in the installation
+                namespace containing connection details for Dead Mans Snitch. The
+                secret must contain the following fields: \n url"
+              type: string
             masterURL:
               type: string
             namespacePrefix:
@@ -42,6 +47,11 @@ spec:
                 Standalone namespace will be used only for those operators that support
                 it.
               type: boolean
+            pagerdutySecret:
+              description: "PagerDutySecret is the name of a secret in the installation
+                namespace containing PagerDuty account details. The secret must contain
+                the following fields: \n serviceKey"
+              type: string
             pullSecret:
               properties:
                 name:
