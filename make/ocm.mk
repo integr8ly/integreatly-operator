@@ -84,7 +84,7 @@ ocm/install/rhmi-addon:
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 60m, 300)
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 90m, 300)
 	@oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
 
 .PHONY: ocm/cluster/delete
