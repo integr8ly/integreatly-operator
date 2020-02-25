@@ -295,6 +295,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return phase, err
 	}
 
+	phase, err = r.reconcileDevelopersGroup(kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile rhmi-developers group: %w", err)
+	}
+
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
@@ -1013,6 +1018,103 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 	}
 
 	r.logger.Infof("Successfully created Authenticator Config")
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+const (
+	developersGroupName     string = "rhmi-developers"
+	developersGroupRoleName        = "query-realms"
+	masterRealmClientName          = "master-realm"
+)
+
+// Create a default group called `rhmi-developers` with the "query-realms" role
+func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	// Get Keycloak client
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Look for the group in the realm
+	existingGroup, err := kcClient.FindGroupByName(developersGroupName, masterRealmName)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	var groupID string
+
+	// If the group is not found, created, if it is, use its ID
+	if existingGroup == nil {
+		// Greate group
+		groupID, err = kcClient.CreateGroup(developersGroupName, masterRealmName)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		logrus.Infof("Created %s group", developersGroupName)
+	} else {
+		groupID = existingGroup.ID
+		logrus.Infof("Found group %s already existing in master realm", developersGroupName)
+	}
+
+	// Make it default in the realm
+	err = kcClient.MakeGroupDefault(groupID, masterRealmName)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	logrus.Infof("Made group %s a default group", developersGroupName)
+
+	// Predicate to check that a role matches the role to map to the group
+	isRole := func(role *keycloak.KeycloakUserRole) bool {
+		return role.Name == developersGroupRoleName
+	}
+
+	masterRealmClients, err := kcClient.ListClients(masterRealmName)
+	var masterRealmClient *keycloak.KeycloakAPIClient
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	for _, client := range masterRealmClients {
+		if client.ClientID == masterRealmClientName {
+			masterRealmClient = client
+		}
+	}
+
+	if masterRealmClient == nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Client ID not found for %s in master realm", masterRealmClientName)
+	}
+
+	// Check if the role is already mapped to the group
+	existingRole, err := kcClient.FindGroupClientRole(masterRealmName, masterRealmClient.ID, groupID, isRole)
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	// If the role is found, complete the phase and return
+	if existingRole != nil {
+		logrus.Infof("Role %s already mapped to group %s", developersGroupRoleName, developersGroupName)
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	// Get the view-realm role from the list of available roles
+	role, err := kcClient.FindAvailableGroupClientRole(masterRealmName, masterRealmClient.ID, groupID, isRole)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if role == nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("%s role not found as available role for realm %s", developersGroupRoleName, masterRealmName)
+	}
+
+	// Create the role mapping
+	err = kcClient.CreateGroupClientRole(role, masterRealmName, masterRealmClient.ID, groupID)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	logrus.Infof("Mapped role %s to newly created group %s", developersGroupRoleName, developersGroupName)
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

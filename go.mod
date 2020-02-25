@@ -13,7 +13,7 @@ require (
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.11.0
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
+	github.com/integr8ly/keycloak-client v0.0.0-20200225080707-ccc77cd8b2cc
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
