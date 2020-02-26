@@ -3,6 +3,7 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"strings"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -383,7 +384,7 @@ func (r *Reconciler) updateMasterRealm(ctx context.Context, serverClient k8sclie
 func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, ctx context.Context, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
 	kcUser := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("generated-%v", user.UserName),
+			Name:      userHelper.GetValidGeneratedUserName(user),
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
@@ -581,7 +582,7 @@ func deleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []k
 		// Delete the CR
 		kcUser := &keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("generated-%v", delUser.UserName),
+				Name:      userHelper.GetValidGeneratedUserName(delUser),
 				Namespace: ns,
 			},
 		}
