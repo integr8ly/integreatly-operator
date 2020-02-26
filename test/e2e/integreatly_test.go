@@ -263,7 +263,7 @@ func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	type Output []Dashboard
 
-	output, err := execToPod("curl localhost:3000/api/search?query=resource%20usage%20by%20namespace",
+	output, err := execToPod("curl localhost:3000/api/search",
 		pods.Items[0].ObjectMeta.Name,
 		intlyNamespacePrefix+"middleware-monitoring-operator",
 		"grafana", f)
@@ -277,11 +277,10 @@ func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework
 		t.Logf("Failed to unmarshall json: %s", err)
 	}
 
-	if len(apiCallOutput) != 1 {
-		return fmt.Errorf("grafana dashboard not found")
+	if len(apiCallOutput) == 0 {
+		return fmt.Errorf("grafana dashboard not found : %v", apiCallOutput)
 	}
-
-	t.Logf("Grafana dashboard found")
+	t.Logf("Grafana dashboard found: %v", apiCallOutput)
 	return nil
 }
 
