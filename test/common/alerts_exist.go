@@ -155,7 +155,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 
 	// add external database alerts to list of expected rules if
 	// cluster storage is not being used
-	if !rhmi.Spec.UseClusterStorage {
+	if rhmi.Spec.UseClusterStorage != "true" {
 		for file, rules := range expectedExtRules {
 			expectedRules[file] = append(expectedRules[file], rules...)
 		}
