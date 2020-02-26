@@ -160,7 +160,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 	// Run finalization logic. If it fails, don't remove the finalizer
 	// so that we can retry during the next reconciliation
 	if inst.GetDeletionTimestamp() != nil {
-		if contains(inst.GetFinalizers(), finalizer) {
+		if Contains(inst.GetFinalizers(), finalizer) {
 			phase, err := finalFunc()
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err

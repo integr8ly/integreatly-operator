@@ -19,7 +19,7 @@ import (
 // AddFinalizer adds a finalizer to the custom resource. This allows us to clean up oauth clients
 // and other cluster level objects owned by the installation before the cr is deleted
 func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
-	if !contains(inst.GetFinalizers(), finalizer) && inst.GetDeletionTimestamp() == nil {
+	if !Contains(inst.GetFinalizers(), finalizer) && inst.GetDeletionTimestamp() == nil {
 		inst.SetFinalizers(append(inst.GetFinalizers(), finalizer))
 		err := client.Update(ctx, inst)
 		if err != nil {
@@ -73,7 +73,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 // RemoveProductFinalizer removes a given finalizer from the installation custom resource
 func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, product string) error {
 	finalizer := "finalizer." + product + ".integreatly.org"
-	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
+	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
 		logrus.Info("Error removing finalizer from custom resource", err)
@@ -84,7 +84,7 @@ func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI,
 
 // RemoveFinalizer removes a given finalizer from the installation custom resource
 func RemoveFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
-	inst.SetFinalizers(remove(inst.GetFinalizers(), finalizer))
+	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
 		logrus.Info("Error removing finalizer from custom resource", err)
@@ -93,7 +93,8 @@ func RemoveFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 	return nil
 }
 
-func contains(list []string, s string) bool {
+// Contains checks an array of strings for a specific string
+func Contains(list []string, s string) bool {
 	for _, v := range list {
 		if v == s {
 			return true
@@ -102,7 +103,8 @@ func contains(list []string, s string) bool {
 	return false
 }
 
-func remove(list []string, s string) []string {
+// Remove removes a string from an array of strings
+func Remove(list []string, s string) []string {
 	for i, v := range list {
 		if v == s {
 			list = append(list[:i], list[i+1:]...)
