@@ -301,6 +301,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return phase, err
 	}
 
+	phase, err = r.reconcileFirstLoginAuthFlow(kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile first broker login authentication flow: %w", err)
+	}
+
 	phase, err = r.reconcileDevelopersGroup(kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile rhmi-developers group: %w", err)
@@ -1172,4 +1177,43 @@ func mapRoleToGroupByName(
 
 	// Map the role to the group
 	return mapRoleToGroup(role)
+}
+
+func (r *Reconciler) reconcileFirstLoginAuthFlow(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	// Get Keycloak client
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Find the "review profile" execution for the first broker login
+	// authentication flow
+	authenticationExecution, err := kcClient.FindAuthenticationExecutionForFlow(firstBrokerLoginFlowAlias, masterRealmName, func(execution *keycloak.AuthenticationExecutionInfo) bool {
+		return execution.Alias == reviewProfileExecutionAlias
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// If the execution is not found, nothing needs to be done
+	if authenticationExecution == nil {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+	// If the execution is already disabled, nothing needs to be done
+	if strings.ToUpper(authenticationExecution.Requirement) == "DISABLED" {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
+	logrus.Info("Disabling \"review profile\" execution from first broker login authentication flow")
+
+	// Update the execution to "DISABLED"
+	authenticationExecution.Requirement = "DISABLED"
+	err = kcClient.UpdateAuthenticationExecutionForFlow(firstBrokerLoginFlowAlias, masterRealmName, authenticationExecution)
+
+	// Return the phase status depending on whether the update operation
+	// succeeded or failed
+	if err == nil {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+	return integreatlyv1alpha1.PhaseFailed, err
 }

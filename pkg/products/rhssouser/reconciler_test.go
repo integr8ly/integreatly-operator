@@ -845,6 +845,45 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 	}
 }
 
+func TestReconciler_reconcileFirstLoginAuthFlow(t *testing.T) {
+	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
+
+	r := &Reconciler{
+		logger: logrus.NewEntry(logrus.StandardLogger()),
+		Config: &config.RHSSOUser{
+			Config: map[string]string{
+				"NAMESPACE": defaultRhssoNamespace,
+			},
+		},
+		keycloakClientFactory: keycloakClientFactory,
+	}
+
+	kc := &keycloak.Keycloak{}
+	statusPhase, err := r.reconcileFirstLoginAuthFlow(kc)
+
+	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
+		t.Errorf("Expected phase to be completed, got %s", statusPhase)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error occurred: %s", err)
+	}
+
+	executions := mockContext.AuthenticationFlowsExecutions[firstBrokerLoginFlowAlias]
+
+	// Iterate through the executions for the first broker login flow and, for
+	// the "review profile config" execution, assert that it's disabled after
+	// the reconciliation finished
+	for _, execution := range executions {
+		if execution.Alias != reviewProfileExecutionAlias {
+			continue
+		}
+
+		if execution.Requirement != "DISABLED" {
+			t.Errorf("Expected execution %s to be DISABLED, got %s", execution.Alias, execution.Requirement)
+		}
+	}
+}
+
 func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
 	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
 
@@ -962,31 +1001,36 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 		},
 	}
 
-	keycloakInterfaceMock, _ := createKeycloakInterfaceMock()
+	keycloakInterfaceMock, context := createKeycloakInterfaceMock()
+
+	// Add the browser flow execution mock to the context in order to test
+	// the reconcileComponents phase
+	context.AuthenticationFlowsExecutions["browser"] = exInfo
 
 	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
 		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
 			return nil
 		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
 			return nil, nil
-		}, ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) (infos []*keycloak.AuthenticationExecutionInfo, err error) {
-			return exInfo, nil
 		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) error {
 			return nil
 		},
-			FindGroupByNameFunc:               keycloakInterfaceMock.FindGroupByName,
-			CreateGroupFunc:                   keycloakInterfaceMock.CreateGroup,
-			MakeGroupDefaultFunc:              keycloakInterfaceMock.MakeGroupDefault,
-			ListDefaultGroupsFunc:             keycloakInterfaceMock.ListDefaultGroups,
-			CreateGroupClientRoleFunc:         keycloakInterfaceMock.CreateGroupClientRole,
-			ListGroupClientRolesFunc:          keycloakInterfaceMock.ListGroupClientRoles,
-			FindGroupClientRoleFunc:           keycloakInterfaceMock.FindGroupClientRole,
-			ListAvailableGroupClientRolesFunc: keycloakInterfaceMock.ListAvailableGroupClientRoles,
-			FindAvailableGroupClientRoleFunc:  keycloakInterfaceMock.FindAvailableGroupClientRole,
-			ListGroupRealmRolesFunc:           keycloakInterfaceMock.ListGroupRealmRoles,
-			ListAvailableGroupRealmRolesFunc:  keycloakInterfaceMock.ListAvailableGroupRealmRoles,
-			CreateGroupRealmRoleFunc:          keycloakInterfaceMock.CreateGroupRealmRole,
-			ListClientsFunc:                   keycloakInterfaceMock.ListClients,
+			FindGroupByNameFunc:                      keycloakInterfaceMock.FindGroupByName,
+			CreateGroupFunc:                          keycloakInterfaceMock.CreateGroup,
+			MakeGroupDefaultFunc:                     keycloakInterfaceMock.MakeGroupDefault,
+			ListDefaultGroupsFunc:                    keycloakInterfaceMock.ListDefaultGroups,
+			CreateGroupClientRoleFunc:                keycloakInterfaceMock.CreateGroupClientRole,
+			ListGroupClientRolesFunc:                 keycloakInterfaceMock.ListGroupClientRoles,
+			FindGroupClientRoleFunc:                  keycloakInterfaceMock.FindGroupClientRole,
+			ListAvailableGroupClientRolesFunc:        keycloakInterfaceMock.ListAvailableGroupClientRoles,
+			FindAvailableGroupClientRoleFunc:         keycloakInterfaceMock.FindAvailableGroupClientRole,
+			ListGroupRealmRolesFunc:                  keycloakInterfaceMock.ListGroupRealmRoles,
+			ListAvailableGroupRealmRolesFunc:         keycloakInterfaceMock.ListAvailableGroupRealmRoles,
+			CreateGroupRealmRoleFunc:                 keycloakInterfaceMock.CreateGroupRealmRole,
+			ListAuthenticationExecutionsForFlowFunc:  keycloakInterfaceMock.ListAuthenticationExecutionsForFlow,
+			FindAuthenticationExecutionForFlowFunc:   keycloakInterfaceMock.FindAuthenticationExecutionForFlow,
+			UpdateAuthenticationExecutionForFlowFunc: keycloakInterfaceMock.UpdateAuthenticationExecutionForFlow,
+			ListClientsFunc:                          keycloakInterfaceMock.ListClients,
 		}, nil
 	}}
 }
@@ -994,10 +1038,11 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 // Mock context of the Keycloak interface. Allows to check that the operations
 // performed by the client were correct
 type mockClientContext struct {
-	Groups        []*keycloakCommon.Group
-	DefaultGroups []*keycloakCommon.Group
-	ClientRoles   map[string][]*keycloak.KeycloakUserRole
-	RealmRoles    map[string][]*keycloak.KeycloakUserRole
+	Groups                        []*keycloakCommon.Group
+	DefaultGroups                 []*keycloakCommon.Group
+	ClientRoles                   map[string][]*keycloak.KeycloakUserRole
+	RealmRoles                    map[string][]*keycloak.KeycloakUserRole
+	AuthenticationFlowsExecutions map[string][]*keycloak.AuthenticationExecutionInfo
 }
 
 func createKeycloakClientFactoryMock() (keycloakCommon.KeycloakClientFactory, *mockClientContext) {
@@ -1019,6 +1064,19 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		DefaultGroups: []*keycloakCommon.Group{},
 		ClientRoles:   map[string][]*keycloak.KeycloakUserRole{},
 		RealmRoles:    map[string][]*keycloak.KeycloakUserRole{},
+		AuthenticationFlowsExecutions: map[string][]*keycloak.AuthenticationExecutionInfo{
+			firstBrokerLoginFlowAlias: []*keycloak.AuthenticationExecutionInfo{
+				&keycloak.AuthenticationExecutionInfo{
+					Requirement: "REQUIRED",
+					Alias:       reviewProfileExecutionAlias,
+				},
+				// dummy ones
+				&keycloak.AuthenticationExecutionInfo{
+					Requirement: "REQUIRED",
+					Alias:       "dummy execution",
+				},
+			},
+		},
 	}
 
 	availableGroupClientRoles := []*keycloak.KeycloakUserRole{
@@ -1207,20 +1265,67 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		}, nil
 	}
 
-	return &keycloakCommon.KeycloakInterfaceMock{
-		FindGroupByNameFunc:               findGroupByNameFunc,
-		CreateGroupFunc:                   createGroupFunc,
-		MakeGroupDefaultFunc:              makeGroupDefaultFunc,
-		ListDefaultGroupsFunc:             listDefaultGroupsFunc,
-		CreateGroupClientRoleFunc:         createGroupClientRoleFunc,
-		ListGroupClientRolesFunc:          listGroupClientRolesFunc,
-		ListAvailableGroupClientRolesFunc: listAvailableGroupClientRolesFunc,
-		FindGroupClientRoleFunc:           findGroupClientRoleFunc,
-		FindAvailableGroupClientRoleFunc:  findAvailableGroupClientRoleFunc,
-		ListGroupRealmRolesFunc:           listGroupRealmRolesFunc,
-		ListAvailableGroupRealmRolesFunc:  listAvailableGroupRealmRolesFunc,
-		CreateGroupRealmRoleFunc:          createGroupRealmRoleFunc,
+	listAuthenticationExecutionsForFlowFunc := func(flowAlias, realmName string) ([]*keycloak.AuthenticationExecutionInfo, error) {
+		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
 
-		ListClientsFunc: listClientsFunc,
+		if !ok {
+			return nil, errors.New("Authentication flow not found")
+		}
+
+		return executions, nil
+	}
+
+	findAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, predicate func(*keycloak.AuthenticationExecutionInfo) bool) (*keycloak.AuthenticationExecutionInfo, error) {
+		executions, err := listAuthenticationExecutionsForFlowFunc(flowAlias, realmName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, execution := range executions {
+			if predicate(execution) {
+				return execution, nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	updateAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, execution *keycloak.AuthenticationExecutionInfo) error {
+		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
+
+		if !ok {
+			return fmt.Errorf("Authentication flow %s not found", flowAlias)
+		}
+
+		for i, currentExecution := range executions {
+			if currentExecution.Alias != execution.Alias {
+				continue
+			}
+
+			context.AuthenticationFlowsExecutions[flowAlias][i] = execution
+			break
+		}
+
+		return nil
+	}
+
+	return &keycloakCommon.KeycloakInterfaceMock{
+		FindGroupByNameFunc:                      findGroupByNameFunc,
+		CreateGroupFunc:                          createGroupFunc,
+		MakeGroupDefaultFunc:                     makeGroupDefaultFunc,
+		ListDefaultGroupsFunc:                    listDefaultGroupsFunc,
+		CreateGroupClientRoleFunc:                createGroupClientRoleFunc,
+		ListGroupClientRolesFunc:                 listGroupClientRolesFunc,
+		ListAvailableGroupClientRolesFunc:        listAvailableGroupClientRolesFunc,
+		FindGroupClientRoleFunc:                  findGroupClientRoleFunc,
+		FindAvailableGroupClientRoleFunc:         findAvailableGroupClientRoleFunc,
+		ListGroupRealmRolesFunc:                  listGroupRealmRolesFunc,
+		ListAvailableGroupRealmRolesFunc:         listAvailableGroupRealmRolesFunc,
+		CreateGroupRealmRoleFunc:                 createGroupRealmRoleFunc,
+		ListAuthenticationExecutionsForFlowFunc:  listAuthenticationExecutionsForFlowFunc,
+		FindAuthenticationExecutionForFlowFunc:   findAuthenticationExecutionForFlowFunc,
+		UpdateAuthenticationExecutionForFlowFunc: updateAuthenticationExecutionForFlowFunc,
+		ListClientsFunc:                          listClientsFunc,
 	}, &context
 }
