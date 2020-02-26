@@ -208,7 +208,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileOpenshiftUsers(ctx, serverClient)
+	phase, err = r.reconcileOpenshiftUsers(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile openshift users", err)
 		return phase, err
@@ -740,7 +740,7 @@ func (r *Reconciler) getOAuthClientName() string {
 	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
 }
 
-func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
@@ -800,7 +800,8 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, serverClient k
 			continue
 		}
 
-		if userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != adminRole {
+		// In workshop mode, developer users also get admin permissions in 3scale
+		if (userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)) && tsUser.UserDetails.Role != adminRole {
 			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
