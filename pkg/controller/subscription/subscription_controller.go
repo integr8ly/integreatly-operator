@@ -58,7 +58,8 @@ type ReconcileSubscription struct {
 // In a namespaced installation of integreatly operator it will only reconcile Subscription of the integreatly operator itself
 func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
-	if request.Namespace != r.operatorNamespace || request.Name != IntegreatlyPackage {
+	if request.Namespace != r.operatorNamespace ||
+		(request.Name != IntegreatlyPackage && request.Name != "addon-rhmi") {
 		return reconcile.Result{}, nil
 	}
 
