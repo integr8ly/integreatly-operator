@@ -23,6 +23,10 @@ define save_cluster_credentials
 	@$(OCM) get /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/credentials | jq -r .admin | tee ocm/cluster-credentials.json
 endef
 
+define get_rhmi_name
+	@$(eval RHMI_NAME=$(shell oc --kubeconfig=$(CLUSTER_KUBECONFIG) get rhmi -n redhat-rhmi-operator -o jsonpath='{.items[*].metadata.name}' ))
+endef
+
 ifeq ($(UNAME), Linux)
 	OCM_CLUSTER_EXPIRATION_TIMESTAMP=$(shell date --date="${OCM_CLUSTER_LIFESPAN} hour" "+%FT%TZ")
 else ifeq ($(UNAME), Darwin)
@@ -77,19 +81,21 @@ ocm/cluster/send_create_request:
 ocm/install/rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q integreatly, installation CR created, 10m, 30)
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q NAME, installation CR created, 10m, 30)
 	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-smtp -n $(RHMI_OPERATOR_NS) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 90m, 300)
-	@oc --config=$(CLUSTER_KUBECONFIG) get rhmi integreatly -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
+	@$(call get_rhmi_name)
+	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 90m, 300)
+	@oc --config=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
-	@oc --config=$(CLUSTER_KUBECONFIG) delete rhmi integreatly -n redhat-rhmi-operator
+	@$(call get_rhmi_name)
+	@oc --config=$(CLUSTER_KUBECONFIG) delete rhmi $(RHMI_NAME) -n redhat-rhmi-operator
 	@$(call get_cluster_id)
 	${OCM} delete /api/clusters_mgmt/v1/clusters/$(OCM_CLUSTER_ID)
 
