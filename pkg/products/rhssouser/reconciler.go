@@ -47,8 +47,14 @@ var (
 )
 
 const (
-	masterRealmLabelKey   = "sso"
-	masterRealmLabelValue = "master"
+	masterRealmLabelKey         = "sso"
+	masterRealmLabelValue       = "master"
+	developersGroupName         = "rhmi-developers"
+	viewRealmRoleName           = "view-realm"
+	createRealmRoleName         = "create-realm"
+	masterRealmClientName       = "master-realm"
+	firstBrokerLoginFlowAlias   = "first broker login"
+	reviewProfileExecutionAlias = "review profile config"
 )
 
 type Reconciler struct {
@@ -1022,13 +1028,8 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-const (
-	developersGroupName     string = "rhmi-developers"
-	developersGroupRoleName        = "query-realms"
-	masterRealmClientName          = "master-realm"
-)
-
-// Create a default group called `rhmi-developers` with the "query-realms" role
+// Create a default group called `rhmi-developers` with the "view-realm" client role and
+// the "create-realm" realm role
 func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
 	// Get Keycloak client
 	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
@@ -1066,11 +1067,6 @@ func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatl
 
 	logrus.Infof("Made group %s a default group", developersGroupName)
 
-	// Predicate to check that a role matches the role to map to the group
-	isRole := func(role *keycloak.KeycloakUserRole) bool {
-		return role.Name == developersGroupRoleName
-	}
-
 	masterRealmClients, err := kcClient.ListClients(masterRealmName)
 	var masterRealmClient *keycloak.KeycloakAPIClient
 	if err != nil {
@@ -1087,34 +1083,93 @@ func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatl
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Client ID not found for %s in master realm", masterRealmClientName)
 	}
 
-	// Check if the role is already mapped to the group
-	existingRole, err := kcClient.FindGroupClientRole(masterRealmName, masterRealmClient.ID, groupID, isRole)
-
+	err = mapClientRoleToGroup(kcClient, groupID, masterRealmClient.ID, viewRealmRoleName)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	// If the role is found, complete the phase and return
-	if existingRole != nil {
-		logrus.Infof("Role %s already mapped to group %s", developersGroupRoleName, developersGroupName)
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
+	logrus.Infof("Mapped client role %s to newly created group %s", viewRealmRoleName, developersGroupName)
 
-	// Get the view-realm role from the list of available roles
-	role, err := kcClient.FindAvailableGroupClientRole(masterRealmName, masterRealmClient.ID, groupID, isRole)
+	err = mapRealmRoleToGroup(kcClient, groupID, createRealmRoleName)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	if role == nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("%s role not found as available role for realm %s", developersGroupRoleName, masterRealmName)
-	}
-
-	// Create the role mapping
-	err = kcClient.CreateGroupClientRole(role, masterRealmName, masterRealmClient.ID, groupID)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	logrus.Infof("Mapped role %s to newly created group %s", developersGroupRoleName, developersGroupName)
+	logrus.Infof("Mapped realm role %s to newly created group %s", createRealmRoleName, developersGroupName)
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, groupID, clientID, roleName string) error {
+	return mapRoleToGroupByName(roleName,
+		func() ([]*keycloak.KeycloakUserRole, error) {
+			return kcClient.ListGroupClientRoles(masterRealmName, clientID, groupID)
+		},
+		func() ([]*keycloak.KeycloakUserRole, error) {
+			return kcClient.ListAvailableGroupClientRoles(masterRealmName, clientID, groupID)
+		},
+		func(role *keycloak.KeycloakUserRole) error {
+			return kcClient.CreateGroupClientRole(role, masterRealmName, clientID, groupID)
+		},
+	)
+}
+
+func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, groupID, roleName string) error {
+	return mapRoleToGroupByName(roleName,
+		func() ([]*keycloak.KeycloakUserRole, error) {
+			return kcClient.ListGroupRealmRoles(masterRealmName, groupID)
+		},
+		func() ([]*keycloak.KeycloakUserRole, error) {
+			return kcClient.ListAvailableGroupRealmRoles(masterRealmName, groupID)
+		},
+		func(role *keycloak.KeycloakUserRole) error {
+			return kcClient.CreateGroupRealmRole(role, masterRealmName, groupID)
+		},
+	)
+}
+
+// Map a role to a group given the name of the role to map and the logic to:
+// list the roles already mapped, list the roles available to the group, and
+// to map a role to the group
+func mapRoleToGroupByName(
+	roleName string,
+	listMappedRoles func() ([]*keycloak.KeycloakUserRole, error),
+	listAvailableRoles func() ([]*keycloak.KeycloakUserRole, error),
+	mapRoleToGroup func(*keycloak.KeycloakUserRole) error,
+) error {
+	// Utility local function to look for the role in a list
+	findRole := func(roles []*keycloak.KeycloakUserRole) *keycloak.KeycloakUserRole {
+		for _, role := range roles {
+			if role.Name == roleName {
+				return role
+			}
+		}
+
+		return nil
+	}
+
+	// Get the existing roles mapped to the group
+	existingRoles, err := listMappedRoles()
+	if err != nil {
+		return err
+	}
+
+	// Look for the role among them, if it's already there, return
+	existingRole := findRole(existingRoles)
+	if existingRole != nil {
+		return nil
+	}
+
+	// Get the available roles for the group
+	availableRoles, err := listAvailableRoles()
+	if err != nil {
+		return err
+	}
+
+	// Look for the role among them. If it's not found, return an error
+	role := findRole(availableRoles)
+	if role == nil {
+		return fmt.Errorf("%s role not found as available role for group", roleName)
+	}
+
+	// Map the role to the group
+	return mapRoleToGroup(role)
 }

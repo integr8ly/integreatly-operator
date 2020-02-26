@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"testing"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	"github.com/sirupsen/logrus"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -895,22 +896,40 @@ func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
 		t.Errorf("Group %s not found among default groups in mock Keycloak interface", developersGroupName)
 	}
 
-	// Assert that the `query-realm` role is mapped to the group
+	// Assert that the `view-realm` role is mapped to the group
 	groupRoles, ok := mockContext.ClientRoles[groupID]
 	foundRole := false
 	if !ok {
-		t.Errorf("Group %s not found in role mappings", developersGroupName)
+		t.Errorf("Group %s not found in client role mappings", developersGroupName)
 	}
 
 	for _, role := range groupRoles {
-		if role.Name == developersGroupRoleName {
+		if role.Name == viewRealmRoleName {
 			foundRole = true
 			break
 		}
 	}
 
 	if !foundRole {
-		t.Errorf("Role %s not found in role mappings for group %s", developersGroupRoleName, developersGroupName)
+		t.Errorf("Role %s not found in client role mappings for group %s", viewRealmRoleName, developersGroupName)
+	}
+
+	// Assert that the `create-realm` role is mapped to the group
+	clientRoles, ok := mockContext.RealmRoles[groupID]
+	foundRole = false
+	if !ok {
+		t.Errorf("Group %s not found in realm role mappings", developersGroupName)
+	}
+
+	for _, role := range clientRoles {
+		if role.Name == createRealmRoleName {
+			foundRole = true
+			break
+		}
+	}
+
+	if !foundRole {
+		t.Errorf("Role %s not found in realm role mappings for group %s", createRealmRoleName, developersGroupName)
 	}
 }
 
@@ -964,6 +983,9 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 			FindGroupClientRoleFunc:           keycloakInterfaceMock.FindGroupClientRole,
 			ListAvailableGroupClientRolesFunc: keycloakInterfaceMock.ListAvailableGroupClientRoles,
 			FindAvailableGroupClientRoleFunc:  keycloakInterfaceMock.FindAvailableGroupClientRole,
+			ListGroupRealmRolesFunc:           keycloakInterfaceMock.ListGroupRealmRoles,
+			ListAvailableGroupRealmRolesFunc:  keycloakInterfaceMock.ListAvailableGroupRealmRoles,
+			CreateGroupRealmRoleFunc:          keycloakInterfaceMock.CreateGroupRealmRole,
 			ListClientsFunc:                   keycloakInterfaceMock.ListClients,
 		}, nil
 	}}
@@ -975,6 +997,7 @@ type mockClientContext struct {
 	Groups        []*keycloakCommon.Group
 	DefaultGroups []*keycloakCommon.Group
 	ClientRoles   map[string][]*keycloak.KeycloakUserRole
+	RealmRoles    map[string][]*keycloak.KeycloakUserRole
 }
 
 func createKeycloakClientFactoryMock() (keycloakCommon.KeycloakClientFactory, *mockClientContext) {
@@ -995,20 +1018,36 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		Groups:        []*keycloakCommon.Group{},
 		DefaultGroups: []*keycloakCommon.Group{},
 		ClientRoles:   map[string][]*keycloak.KeycloakUserRole{},
+		RealmRoles:    map[string][]*keycloak.KeycloakUserRole{},
 	}
 
-	availableGroupRoles := []*keycloak.KeycloakUserRole{
+	availableGroupClientRoles := []*keycloak.KeycloakUserRole{
 		&keycloak.KeycloakUserRole{
 			ID:   "mock-role-1",
 			Name: "mock-role-1",
 		},
 		&keycloak.KeycloakUserRole{
-			ID:   "query-realms",
-			Name: "query-realms",
+			ID:   "view-realm",
+			Name: "view-realm",
 		},
 		&keycloak.KeycloakUserRole{
 			ID:   "mock-role-2",
 			Name: "mock-role-2",
+		},
+	}
+
+	availableGroupRealmRoles := []*keycloak.KeycloakUserRole{
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-3",
+			Name: "mock-role-3",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "create-realm",
+			Name: "create-realm",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-4",
+			Name: "mock-role-4",
 		},
 	}
 
@@ -1031,7 +1070,10 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		}
 
 		context.Groups = append(context.Groups, newGroup)
+
 		context.ClientRoles[nextID] = []*keycloak.KeycloakUserRole{}
+		context.RealmRoles[nextID] = []*keycloak.KeycloakUserRole{}
+
 		return nextID, nil
 	}
 
@@ -1085,7 +1127,7 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 			return nil, fmt.Errorf("Referenced group not found")
 		}
 
-		return availableGroupRoles, nil
+		return availableGroupClientRoles, nil
 	}
 
 	findGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*keycloak.KeycloakUserRole) bool) (*keycloak.KeycloakUserRole, error) {
@@ -1120,6 +1162,37 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return nil, nil
 	}
 
+	listGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		groupRoles, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return groupRoles, nil
+	}
+
+	listAvailableGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		_, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return availableGroupRealmRoles, nil
+	}
+
+	createGroupRealmRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, groupID string) error {
+		groupRealmRoles, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return fmt.Errorf("Referenced group not found")
+		}
+
+		context.RealmRoles[groupID] = append(groupRealmRoles, role)
+		return nil
+	}
+
 	listClientsFunc := func(realmName string) ([]*keycloak.KeycloakAPIClient, error) {
 		return []*keycloak.KeycloakAPIClient{
 			&keycloak.KeycloakAPIClient{
@@ -1144,6 +1217,10 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		ListAvailableGroupClientRolesFunc: listAvailableGroupClientRolesFunc,
 		FindGroupClientRoleFunc:           findGroupClientRoleFunc,
 		FindAvailableGroupClientRoleFunc:  findAvailableGroupClientRoleFunc,
-		ListClientsFunc:                   listClientsFunc,
+		ListGroupRealmRolesFunc:           listGroupRealmRolesFunc,
+		ListAvailableGroupRealmRolesFunc:  listAvailableGroupRealmRolesFunc,
+		CreateGroupRealmRoleFunc:          createGroupRealmRoleFunc,
+
+		ListClientsFunc: listClientsFunc,
 	}, &context
 }

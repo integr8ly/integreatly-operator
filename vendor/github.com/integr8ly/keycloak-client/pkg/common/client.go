@@ -646,6 +646,27 @@ func (c *Client) ListAuthenticationExecutionsForFlow(flowAlias, realmName string
 	return result.([]*v1alpha1.AuthenticationExecutionInfo), err
 }
 
+func (c *Client) FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error) {
+	executions, err := c.ListAuthenticationExecutionsForFlow(flowAlias, realmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, execution := range executions {
+		if predicate(execution) {
+			return execution, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (c *Client) UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error {
+	path := fmt.Sprintf("realms/%s/authentication/flows/%s/executions", realmName, flowAlias)
+	return c.update(execution, path, "AuthenticationExecution")
+}
+
 func (c *Client) FindGroupByName(groupName string, realmName string) (*Group, error) {
 	// Get a list of the groups in the realm
 	tGroups, err := c.list(fmt.Sprintf("realms/%s/groups", realmName), "Group", func(body []byte) (T, error) {
@@ -798,6 +819,46 @@ func (c *Client) FindGroupClientRole(realmName, clientID, groupID string, predic
 	return nil, nil
 }
 
+func (c *Client) CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName, groupID string) error {
+	return c.create(
+		[]*v1alpha1.KeycloakUserRole{role},
+		fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm", realmName, groupID),
+		"group-realm-role",
+	)
+}
+
+func (c *Client) ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm", realmName, groupID)
+	objects, err := c.list(path, "groupRealmRoles", func(body []byte) (t T, e error) {
+		var groupRealmRoles []*v1alpha1.KeycloakUserRole
+		err := json.Unmarshal(body, &groupRealmRoles)
+		return groupRealmRoles, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if objects == nil {
+		return nil, nil
+	}
+	return objects.([]*v1alpha1.KeycloakUserRole), err
+}
+
+func (c *Client) ListAvailableGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
+	path := fmt.Sprintf("realms/%s/groups/%s/role-mappings/realm/available", realmName, groupID)
+	objects, err := c.list(path, "groupClientRoles", func(body []byte) (t T, e error) {
+		var groupRealmRoles []*v1alpha1.KeycloakUserRole
+		err := json.Unmarshal(body, &groupRealmRoles)
+		return groupRealmRoles, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if objects == nil {
+		return nil, nil
+	}
+	return objects.([]*v1alpha1.KeycloakUserRole), err
+}
+
 func (c *Client) Ping() error {
 	u := c.URL + "/auth/"
 	req, err := http.NewRequest("GET", u, nil)
@@ -918,6 +979,10 @@ type KeycloakInterface interface {
 	ListAvailableGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
 	FindAvailableGroupClientRole(realmName, clientID, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error)
 
+	CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName, groupID string) error
+	ListGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
+	ListAvailableGroupRealmRoles(realmName, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
+
 	CreateIdentityProvider(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error
 	GetIdentityProvider(alias, realmName string) (*v1alpha1.KeycloakIdentityProvider, error)
 	UpdateIdentityProvider(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error
@@ -935,6 +1000,8 @@ type KeycloakInterface interface {
 	DeleteUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) error
 
 	ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error)
+	FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error)
+	UpdateAuthenticationExecutionForFlow(flowAlias, realmName string, execution *v1alpha1.AuthenticationExecutionInfo) error
 
 	CreateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName, executionID string) error
 	GetAuthenticatorConfig(configID, realmName string) (*v1alpha1.AuthenticatorConfig, error)
