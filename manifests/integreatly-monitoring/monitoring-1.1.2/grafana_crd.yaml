@@ -1,4 +1,4 @@
-av1.1.2piVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: grafanas.integreatly.org
