@@ -125,6 +125,7 @@ ocm/aws/create_access_key:
 # Cleanup AWS resources for BYOC clusters that are to be retired soon
 .PHONY: ocm/cleanup
 ocm/cleanup:
+	@mkdir -p ocm
 	@$(call get_byoc_clusters_to_be_retired_soon)
 	@for cluster_id in $(CLUSTER_IDS); do \
 		echo "Removing RHMI CR from cluster: $$($(OCM) get /api/clusters_mgmt/v1/clusters/$$cluster_id | jq --raw-output '.name')" && \
