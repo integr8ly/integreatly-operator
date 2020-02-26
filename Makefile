@@ -15,6 +15,7 @@ OPERATOR_SDK_VERSION=0.15.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+IMAGE_MAPPINGS?=$(shell sh -c "find manifests/ -name image_mirror_mapping")
 
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
@@ -269,3 +270,14 @@ vendor/check: vendor/fix
 vendor/fix:
 	go mod tidy
 	go mod vendor
+
+.PHONY: manifest/check/image_mirror_mapping
+manifest/check/image_mirror_mapping:
+ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
+		$(error found image_mirror_mapping in $(IMAGE_MAPPINGS))
+else
+		@echo "No image_mirror_mapping files found in manifests directory"
+endif
+
+.PHONY: manifest/check
+manifest/check: manifest/check/image_mirror_mapping
