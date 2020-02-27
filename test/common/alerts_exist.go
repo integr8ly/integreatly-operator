@@ -61,8 +61,8 @@ var expectedRules = map[string][]string{
 		"CronJobExists_redhat-rhmi-amq-online_enmasse-pv-backup",
 	},
 	"/redhat-rhmi-fuse": {
-		"FuseOnlinePodCount",
-		"FuseOnlineSyndesisServerInstanceDown",
+		//"FuseOnlinePodCount",
+		//"FuseOnlineSyndesisServerInstanceDown",
 		"FuseOnlineSyndesisUIInstanceDown",
 		"FuseOnlineDatabaseInstanceDown",
 		"FuseOnlinePostgresExporterDown",
@@ -182,11 +182,12 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("Failed to unmarshal json:", err)
 	}
 
-	var diff []string
+	// build a map of found rules for each file name. The difference between this
+	// actual map and the expected map will provide any additional or missing rules
 	actualRules := make(map[string][]string, 0)
+	missingRules := make(map[string][]string, 0)
+	extraRules := make(map[string][]string, 0)
 	for file, rules := range expectedRules {
-		// build a map of found rules for each file name. The difference
-		// between this actual map and the expected map will provide any missing rules
 		for _, group := range rulesResult.Groups {
 			if !strings.Contains(group.File, file) {
 				continue
@@ -209,12 +210,22 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 				}
 			}
 		}
-		// get the diff between the two lists of rules
-		diff = append(diff, difference(rules, actualRules[file])...)
+		// missing alerts
+		diff := difference(rules, actualRules[file])
+		if len(diff) != 0 {
+			missingRules[file] = append(missingRules[file], diff...)
+		}
+		// additional alerts
+		diff = difference(actualRules[file], rules)
+		if len(diff) != 0 {
+			extraRules[file] = append(extraRules[file], diff...)
+		}
 	}
 	// output the missing rules
-	if len(diff) != 0 {
-		t.Fatalf("Missing alerts: %v:", diff)
+	if len(missingRules) > 0 || len(extraRules) > 0 {
+		fmt.Printf("Missing alerts: %v\n", missingRules)
+		fmt.Printf("Additional alerts: %v\n", extraRules)
+		t.Fatal("Found missing or too many alerts")
 	}
 }
 
