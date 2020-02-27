@@ -117,7 +117,7 @@ github.com/integr8ly/cloud-resource-operator/pkg/resources
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/keycloak-client v0.0.0-20200129153447-ae34238c1f86
+# github.com/integr8ly/keycloak-client v0.0.0-20200226115136-9879bc925afe
 github.com/integr8ly/keycloak-client/pkg/common
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv

@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+
 	"github.com/sirupsen/logrus"
 	controllerruntime "sigs.k8s.io/controller-runtime"
-	"testing"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -843,6 +845,133 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 	}
 }
 
+func TestReconciler_reconcileFirstLoginAuthFlow(t *testing.T) {
+	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
+
+	r := &Reconciler{
+		logger: logrus.NewEntry(logrus.StandardLogger()),
+		Config: &config.RHSSOUser{
+			Config: map[string]string{
+				"NAMESPACE": defaultRhssoNamespace,
+			},
+		},
+		keycloakClientFactory: keycloakClientFactory,
+	}
+
+	kc := &keycloak.Keycloak{}
+	statusPhase, err := r.reconcileFirstLoginAuthFlow(kc)
+
+	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
+		t.Errorf("Expected phase to be completed, got %s", statusPhase)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error occurred: %s", err)
+	}
+
+	executions := mockContext.AuthenticationFlowsExecutions[firstBrokerLoginFlowAlias]
+
+	// Iterate through the executions for the first broker login flow and, for
+	// the "review profile config" execution, assert that it's disabled after
+	// the reconciliation finished
+	for _, execution := range executions {
+		if execution.Alias != reviewProfileExecutionAlias {
+			continue
+		}
+
+		if execution.Requirement != "DISABLED" {
+			t.Errorf("Expected execution %s to be DISABLED, got %s", execution.Alias, execution.Requirement)
+		}
+	}
+}
+
+func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
+	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
+
+	r := &Reconciler{
+		logger: logrus.NewEntry(logrus.StandardLogger()),
+		Config: &config.RHSSOUser{
+			Config: map[string]string{
+				"NAMESPACE": defaultRhssoNamespace,
+			},
+		},
+		keycloakClientFactory: keycloakClientFactory,
+	}
+
+	kc := &keycloak.Keycloak{}
+	statusPhase, err := r.reconcileDevelopersGroup(kc)
+
+	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
+		t.Errorf("Expected phase to be completed, got %s", statusPhase)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error occurred: %s", err)
+	}
+
+	// Assert that the group `rhmi-developers` was created
+	foundGroup := false
+	var groupID string
+	for _, group := range mockContext.Groups {
+		if group.Name == developersGroupName {
+			foundGroup = true
+			groupID = group.ID
+			break
+		}
+	}
+
+	if !foundGroup {
+		t.Errorf("Group %s not found in mock Keycloak interface", developersGroupName)
+	}
+
+	// Assert that the group `rhmi-developers` is among the default groups
+	foundDefaultGroup := false
+	for _, group := range mockContext.DefaultGroups {
+		if group.Name == developersGroupName {
+			foundDefaultGroup = true
+			break
+		}
+	}
+
+	if !foundDefaultGroup {
+		t.Errorf("Group %s not found among default groups in mock Keycloak interface", developersGroupName)
+	}
+
+	// Assert that the `view-realm` role is mapped to the group
+	groupRoles, ok := mockContext.ClientRoles[groupID]
+	foundRole := false
+	if !ok {
+		t.Errorf("Group %s not found in client role mappings", developersGroupName)
+	}
+
+	for _, role := range groupRoles {
+		if role.Name == viewRealmRoleName {
+			foundRole = true
+			break
+		}
+	}
+
+	if !foundRole {
+		t.Errorf("Role %s not found in client role mappings for group %s", viewRealmRoleName, developersGroupName)
+	}
+
+	// Assert that the `create-realm` role is mapped to the group
+	clientRoles, ok := mockContext.RealmRoles[groupID]
+	foundRole = false
+	if !ok {
+		t.Errorf("Group %s not found in realm role mappings", developersGroupName)
+	}
+
+	for _, role := range clientRoles {
+		if role.Name == createRealmRoleName {
+			foundRole = true
+			break
+		}
+	}
+
+	if !foundRole {
+		t.Errorf("Role %s not found in realm role mappings for group %s", createRealmRoleName, developersGroupName)
+	}
+}
+
 func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
@@ -872,15 +1001,331 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 		},
 	}
 
+	keycloakInterfaceMock, context := createKeycloakInterfaceMock()
+
+	// Add the browser flow execution mock to the context in order to test
+	// the reconcileComponents phase
+	context.AuthenticationFlowsExecutions["browser"] = exInfo
+
 	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
 		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
 			return nil
 		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
 			return nil, nil
-		}, ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) (infos []*keycloak.AuthenticationExecutionInfo, err error) {
-			return exInfo, nil
 		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) error {
 			return nil
-		}}, nil
+		},
+			FindGroupByNameFunc:                      keycloakInterfaceMock.FindGroupByName,
+			CreateGroupFunc:                          keycloakInterfaceMock.CreateGroup,
+			MakeGroupDefaultFunc:                     keycloakInterfaceMock.MakeGroupDefault,
+			ListDefaultGroupsFunc:                    keycloakInterfaceMock.ListDefaultGroups,
+			CreateGroupClientRoleFunc:                keycloakInterfaceMock.CreateGroupClientRole,
+			ListGroupClientRolesFunc:                 keycloakInterfaceMock.ListGroupClientRoles,
+			FindGroupClientRoleFunc:                  keycloakInterfaceMock.FindGroupClientRole,
+			ListAvailableGroupClientRolesFunc:        keycloakInterfaceMock.ListAvailableGroupClientRoles,
+			FindAvailableGroupClientRoleFunc:         keycloakInterfaceMock.FindAvailableGroupClientRole,
+			ListGroupRealmRolesFunc:                  keycloakInterfaceMock.ListGroupRealmRoles,
+			ListAvailableGroupRealmRolesFunc:         keycloakInterfaceMock.ListAvailableGroupRealmRoles,
+			CreateGroupRealmRoleFunc:                 keycloakInterfaceMock.CreateGroupRealmRole,
+			ListAuthenticationExecutionsForFlowFunc:  keycloakInterfaceMock.ListAuthenticationExecutionsForFlow,
+			FindAuthenticationExecutionForFlowFunc:   keycloakInterfaceMock.FindAuthenticationExecutionForFlow,
+			UpdateAuthenticationExecutionForFlowFunc: keycloakInterfaceMock.UpdateAuthenticationExecutionForFlow,
+			ListClientsFunc:                          keycloakInterfaceMock.ListClients,
+		}, nil
 	}}
+}
+
+// Mock context of the Keycloak interface. Allows to check that the operations
+// performed by the client were correct
+type mockClientContext struct {
+	Groups                        []*keycloakCommon.Group
+	DefaultGroups                 []*keycloakCommon.Group
+	ClientRoles                   map[string][]*keycloak.KeycloakUserRole
+	RealmRoles                    map[string][]*keycloak.KeycloakUserRole
+	AuthenticationFlowsExecutions map[string][]*keycloak.AuthenticationExecutionInfo
+}
+
+func createKeycloakClientFactoryMock() (keycloakCommon.KeycloakClientFactory, *mockClientContext) {
+	keycloakInterfaceMock, ctx := createKeycloakInterfaceMock()
+
+	return &keycloakCommon.KeycloakClientFactoryMock{
+		AuthenticatedClientFunc: func(_ keycloak.Keycloak) (keycloakCommon.KeycloakInterface, error) {
+			return keycloakInterfaceMock, nil
+		},
+	}, ctx
+}
+
+// Create a mock of the `KeycloakClientFactory` that creates a `KeycloakInterface` mock that
+// manages groups and their client roles ignoring realm or client parameters. This mock is
+// implemented to test the `reconcileDevelopersGroup` phase
+func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClientContext) {
+	context := mockClientContext{
+		Groups:        []*keycloakCommon.Group{},
+		DefaultGroups: []*keycloakCommon.Group{},
+		ClientRoles:   map[string][]*keycloak.KeycloakUserRole{},
+		RealmRoles:    map[string][]*keycloak.KeycloakUserRole{},
+		AuthenticationFlowsExecutions: map[string][]*keycloak.AuthenticationExecutionInfo{
+			firstBrokerLoginFlowAlias: []*keycloak.AuthenticationExecutionInfo{
+				&keycloak.AuthenticationExecutionInfo{
+					Requirement: "REQUIRED",
+					Alias:       reviewProfileExecutionAlias,
+				},
+				// dummy ones
+				&keycloak.AuthenticationExecutionInfo{
+					Requirement: "REQUIRED",
+					Alias:       "dummy execution",
+				},
+			},
+		},
+	}
+
+	availableGroupClientRoles := []*keycloak.KeycloakUserRole{
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-1",
+			Name: "mock-role-1",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "view-realm",
+			Name: "view-realm",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-2",
+			Name: "mock-role-2",
+		},
+	}
+
+	availableGroupRealmRoles := []*keycloak.KeycloakUserRole{
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-3",
+			Name: "mock-role-3",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "create-realm",
+			Name: "create-realm",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "mock-role-4",
+			Name: "mock-role-4",
+		},
+	}
+
+	findGroupByNameFunc := func(groupName string, realmName string) (*keycloakCommon.Group, error) {
+		for _, group := range context.Groups {
+			if group.Name == groupName {
+				return group, nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	createGroupFunc := func(groupName string, realmName string) (string, error) {
+		nextID := fmt.Sprintf("group-%d", len(context.Groups))
+
+		newGroup := &keycloakCommon.Group{
+			ID:   string(nextID),
+			Name: groupName,
+		}
+
+		context.Groups = append(context.Groups, newGroup)
+
+		context.ClientRoles[nextID] = []*keycloak.KeycloakUserRole{}
+		context.RealmRoles[nextID] = []*keycloak.KeycloakUserRole{}
+
+		return nextID, nil
+	}
+
+	makeGroupDefaultFunc := func(groupID string, realmName string) error {
+		var group *keycloakCommon.Group
+
+		for _, existingGroup := range context.Groups {
+			if existingGroup.ID == groupID {
+				group = existingGroup
+				break
+			}
+		}
+
+		if group == nil {
+			return fmt.Errorf("Referenced group not found")
+		}
+
+		context.DefaultGroups = append(context.DefaultGroups, group)
+		return nil
+	}
+
+	listDefaultGroupsFunc := func(realmName string) ([]*keycloakCommon.Group, error) {
+		return context.DefaultGroups, nil
+	}
+
+	createGroupClientRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, clientID, groupID string) error {
+		groupClientRoles, ok := context.ClientRoles[groupID]
+
+		if !ok {
+			return fmt.Errorf("Referenced group not found")
+		}
+
+		context.ClientRoles[groupID] = append(groupClientRoles, role)
+		return nil
+	}
+
+	listGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		groupRoles, ok := context.ClientRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return groupRoles, nil
+	}
+
+	listAvailableGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		_, ok := context.ClientRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return availableGroupClientRoles, nil
+	}
+
+	findGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*keycloak.KeycloakUserRole) bool) (*keycloak.KeycloakUserRole, error) {
+		all, err := listGroupClientRolesFunc(realmName, clientID, groupID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, role := range all {
+			if predicate(role) {
+				return role, nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	findAvailableGroupClientRoleFunc := func(realmName, clientID, groupID string, predicate func(*keycloak.KeycloakUserRole) bool) (*keycloak.KeycloakUserRole, error) {
+		all, err := listAvailableGroupClientRolesFunc(realmName, clientID, groupID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, role := range all {
+			if predicate(role) {
+				return role, nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	listGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		groupRoles, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return groupRoles, nil
+	}
+
+	listAvailableGroupRealmRolesFunc := func(realmName, groupID string) ([]*keycloak.KeycloakUserRole, error) {
+		_, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return nil, fmt.Errorf("Referenced group not found")
+		}
+
+		return availableGroupRealmRoles, nil
+	}
+
+	createGroupRealmRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, groupID string) error {
+		groupRealmRoles, ok := context.RealmRoles[groupID]
+
+		if !ok {
+			return fmt.Errorf("Referenced group not found")
+		}
+
+		context.RealmRoles[groupID] = append(groupRealmRoles, role)
+		return nil
+	}
+
+	listClientsFunc := func(realmName string) ([]*keycloak.KeycloakAPIClient, error) {
+		return []*keycloak.KeycloakAPIClient{
+			&keycloak.KeycloakAPIClient{
+				ID:   "client-1",
+				Name: "client1",
+			},
+			&keycloak.KeycloakAPIClient{
+				ClientID: "master-realm",
+				ID:       "master-realm",
+				Name:     "master-realm",
+			},
+		}, nil
+	}
+
+	listAuthenticationExecutionsForFlowFunc := func(flowAlias, realmName string) ([]*keycloak.AuthenticationExecutionInfo, error) {
+		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
+
+		if !ok {
+			return nil, errors.New("Authentication flow not found")
+		}
+
+		return executions, nil
+	}
+
+	findAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, predicate func(*keycloak.AuthenticationExecutionInfo) bool) (*keycloak.AuthenticationExecutionInfo, error) {
+		executions, err := listAuthenticationExecutionsForFlowFunc(flowAlias, realmName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, execution := range executions {
+			if predicate(execution) {
+				return execution, nil
+			}
+		}
+
+		return nil, nil
+	}
+
+	updateAuthenticationExecutionForFlowFunc := func(flowAlias, realmName string, execution *keycloak.AuthenticationExecutionInfo) error {
+		executions, ok := context.AuthenticationFlowsExecutions[flowAlias]
+
+		if !ok {
+			return fmt.Errorf("Authentication flow %s not found", flowAlias)
+		}
+
+		for i, currentExecution := range executions {
+			if currentExecution.Alias != execution.Alias {
+				continue
+			}
+
+			context.AuthenticationFlowsExecutions[flowAlias][i] = execution
+			break
+		}
+
+		return nil
+	}
+
+	return &keycloakCommon.KeycloakInterfaceMock{
+		FindGroupByNameFunc:                      findGroupByNameFunc,
+		CreateGroupFunc:                          createGroupFunc,
+		MakeGroupDefaultFunc:                     makeGroupDefaultFunc,
+		ListDefaultGroupsFunc:                    listDefaultGroupsFunc,
+		CreateGroupClientRoleFunc:                createGroupClientRoleFunc,
+		ListGroupClientRolesFunc:                 listGroupClientRolesFunc,
+		ListAvailableGroupClientRolesFunc:        listAvailableGroupClientRolesFunc,
+		FindGroupClientRoleFunc:                  findGroupClientRoleFunc,
+		FindAvailableGroupClientRoleFunc:         findAvailableGroupClientRoleFunc,
+		ListGroupRealmRolesFunc:                  listGroupRealmRolesFunc,
+		ListAvailableGroupRealmRolesFunc:         listAvailableGroupRealmRolesFunc,
+		CreateGroupRealmRoleFunc:                 createGroupRealmRoleFunc,
+		ListAuthenticationExecutionsForFlowFunc:  listAuthenticationExecutionsForFlowFunc,
+		FindAuthenticationExecutionForFlowFunc:   findAuthenticationExecutionForFlowFunc,
+		UpdateAuthenticationExecutionForFlowFunc: updateAuthenticationExecutionForFlowFunc,
+		ListClientsFunc:                          listClientsFunc,
+	}, &context
 }
