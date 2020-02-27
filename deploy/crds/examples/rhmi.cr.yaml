@@ -8,3 +8,5 @@ spec:
   selfSignedCerts: true
   useClusterStorage: 'true'
   smtpSecret: redhat-rhmi-smtp
+  deadMansSnitchSecret: redhat-rhmi-deadmanssnitch
+  pagerdutySecret: redhat-rhmi-pagerduty
