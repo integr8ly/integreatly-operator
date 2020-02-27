@@ -96,31 +96,22 @@ spec:
           severity: critical
       - alert: ThreeScaleZyncPodAvailability
         annotations:
-          message:  3Scale Zync has {{ "{{" }} printf "%.0f" $value {{ "}}" }} in a ready state. Expected at least 2 pod.
+          message:  3Scale Zync has {{ "{{" }} printf "%.0f" $value {{ "}}" }} pods in a ready state. Expected a minimum of 2 pods.
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
         expr: |
           (1-absent(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"} * on (pod, namespace) kube_pod_labels{namespace="{{ index .Params "Namespace" }}", label_threescale_component="zync", label_threescale_component_element=""})) or count(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"} * on (pod, namespace) kube_pod_labels{namespace="{{ index .Params "Namespace" }}", label_threescale_component="zync", label_threescale_component_element=""}) != 2
         for: 5m
         labels:
           severity: critical
-      - alert: ThreeScaleZyncDatabasePodAvailiblity
+      - alert: ThreeScaleZyncDatabasePodAvailability
         annotations:
-          message:  3Scale Zync-database has {{ "{{" }} printf "%.0f" $value {{ "}}" }} in a ready state. Expected at least 1 pod.
+          message:  3Scale Zync-database has {{ "{{" }} printf "%.0f" $value {{ "}}" }} pods in a ready state. Expected a minimum of 1 pod.
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
         expr: |
           (1-absent(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"} * on (pod, namespace) kube_pod_labels{namespace="{{ index .Params "Namespace" }}", label_threescale_component="zync", label_threescale_component_element="database"})) or count(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"} * on (pod, namespace) kube_pod_labels{namespace="{{ index .Params "Namespace" }}", label_threescale_component="zync", label_threescale_component_element="database"}) != 1
         for: 5m
         labels:
           severity: critical
-      - alert: ThreeScalePodCount
-        annotations:
-          sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
-          message: Pod count for namespace {{ "{{" }} $labels.namespace {{ "}}" }} is {{ "{{" }} printf "%.0f" $value {{ "}}" }}. Expected at least 15 pods.
-        expr: |
-          (1-absent(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"})) or count(kube_pod_status_ready{condition="true",namespace="{{ index .Params "Namespace" }}"}) < 14
-        for: 5m
-        labels:
-          severity: warning
       - alert: ThreeScalePodHighMemory
         annotations:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
