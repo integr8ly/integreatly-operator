@@ -168,10 +168,6 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 			if alert.Labels["alertname"] == "KubePodCrashLooping" {
 				continue
 			}
-			// FIXME: remove this condition once INTLY-5354 is addressed
-			if alert.Labels["alertname"] == "KeycloakAPIRequestDuration90PercThresholdExceeded" {
-				continue
-			}
 
 			// FIXME: remove this condition once INTLY-5638 is addressed
 			if alert.Labels["alertname"] == "PVCStorageWillFillIn4Days" || alert.Labels["alertname"] == "PVCStorageWillFillIn4Hours" {
@@ -747,10 +743,17 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 		t.Fatal(err)
 	}
 
-	t.Log("Waiting for alerts to normalise")
-	time.Sleep(5 * time.Minute)
+	monitoringTimeout := 15 * time.Minute
+	monitoringRetryInterval := 1 * time.Minute
+	err = wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
+		if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
+			t.Log("Waiting 1 minute for alerts to normalise before retrying integreatlyMonitoringTest")
+			return false, nil
+		}
 
-	if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
+		return true, nil
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
