@@ -770,7 +770,7 @@ spec:
         ]
       },
       "timezone": "",
-      "uid": "a9ce5290ba1d485ca67e05c0a63aa2d8",
+      "uid": "",
       "title": "Resource Usage By Namespace",
       "version": 1
     }
