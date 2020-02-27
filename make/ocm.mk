@@ -78,24 +78,27 @@ ocm/cluster/send_create_request:
 	@${OCM} post /api/clusters_mgmt/v1/clusters --body=ocm/cluster.json | jq -r > ocm/cluster-details.json
 
 .PHONY: ocm/install/rhmi-addon
-ocm/install/rhmi-addon:
+ocm/install/rhmi-addon: ocm/install/apply-rhmi-addon
+	@$(call get_rhmi_name)
+	$(call wait_command, oc --kubeconfig=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 90m, 300)
+	@oc --kubeconfig=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
+
+.PHONY: ocm/install/apply-rhmi-addon
+ocm/install/apply-rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q NAME, installation CR created, 10m, 30)
-	@-oc --config=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-smtp -n $(RHMI_OPERATOR_NS) \
+	$(call wait_command, oc --kubeconfig=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q NAME, installation CR created, 10m, 30)
+	@-oc --kubeconfig=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-smtp -n $(RHMI_OPERATOR_NS) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
-	@$(call get_rhmi_name)
-	$(call wait_command, oc --config=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed, rhmi installation, 90m, 300)
-	@oc --config=$(CLUSTER_KUBECONFIG) get rhmi $(RHMI_NAME) -n $(RHMI_OPERATOR_NS) -o json | jq -r '.status.stages'
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
 	@$(call get_rhmi_name)
-	@oc --config=$(CLUSTER_KUBECONFIG) delete rhmi $(RHMI_NAME) -n redhat-rhmi-operator
+	@oc --kubeconfig=$(CLUSTER_KUBECONFIG) delete rhmi $(RHMI_NAME) -n redhat-rhmi-operator
 	@$(call get_cluster_id)
 	${OCM} delete /api/clusters_mgmt/v1/clusters/$(OCM_CLUSTER_ID)
 
