@@ -806,7 +806,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
-		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole {
+		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole && installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeWorkshop) {
 			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
