@@ -36,7 +36,7 @@ const (
 	defaultFusePullSecret        = "syndesis-pull-secret"
 	developersGroupName          = "rhmi-developers"
 	clusterViewRoleName          = "view"
-	manifestPackage              = "integreatly-fuse"
+	manifestPackage              = "integreatly-fuse-online"
 )
 
 // Reconciler reconciles everything needed to install Syndesis/Fuse. The resources that it works
