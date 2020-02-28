@@ -75,11 +75,11 @@ get_current_csv() {
 set_package_name_for_new_csv() {
   # In the case of fuse-online the package name in the brew image needs to be customised
   case $PRODUCT in
-  "fuse-online")
-    NEW_PACKAGE_NAME=${PRODUCT}.package.yaml
+  "3scale")
+    NEW_PACKAGE_NAME=${PRODUCT}-operator.package.yaml
     ;;
   *)
-    NEW_PACKAGE_NAME=${PRODUCT_OPERATOR}.package.yaml
+    NEW_PACKAGE_NAME=${PRODUCT}.package.yaml
   esac
 }
 
@@ -126,9 +126,9 @@ copy_new_csv() {
 
 update_new_csv() {
     echo "updating csv"
-    echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
-    yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
-    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT_OPERATOR}.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
+    echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
+    yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
 }
 
 update_package_yaml() {
