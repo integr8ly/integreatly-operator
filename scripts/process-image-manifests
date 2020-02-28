@@ -73,7 +73,7 @@ get_current_csv() {
 }
 
 set_package_name_for_new_csv() {
-  # In the case of fuse-online the package name in the brew image needs to be customised
+  # In the case of 3scale the package name needs to be customised
   case $PRODUCT in
   "3scale")
     NEW_PACKAGE_NAME=${PRODUCT}-operator.package.yaml
