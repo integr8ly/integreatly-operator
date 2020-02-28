@@ -53,20 +53,53 @@ extract_manifests_from_image() {
 }
 
 get_current_csv() {
-    echo "Getting current csv  from existing package.yaml"
+    echo "Getting current csv from existing package.yaml"
     # The sed entry here will need to be fixed up for each product.
     # The operator versions do not all follow the same syntax
-    CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels[0].currentCSV | sed -e s/^3scale-operator.v//)
-    echo $CURRENT_CSV
+    case "$PRODUCT" in
+    "fuse-online")
+       CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels[0].currentCSV | sed -e s/^fuse-online-operator.v//)
+       echo $CURRENT_CSV
+       ;;
+    "3scale")
+       CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels[0].currentCSV | sed -e s/^3scale-operator.v//)
+       echo $CURRENT_CSV
+       ;;
+     *)
+       echo "Passed an unknown product $PRODUCT"
+       exit
+       ;;
+    esac
+}
+
+set_package_name_for_new_csv() {
+  # In the case of fuse-online the package name in the brew image needs to be customised
+  case $PRODUCT in
+  "fuse-online")
+    NEW_PACKAGE_NAME=${PRODUCT}.package.yaml
+    ;;
+  *)
+    NEW_PACKAGE_NAME=${PRODUCT_OPERATOR}.package.yaml
+  esac
 }
 
 get_new_csv() {
     IMAGE_MANIFEST_FILE=$(find ${MANIFEST_TMP_DIR} -name "*.package.yaml")
-    DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/${PRODUCT_OPERATOR}.package.yaml defaultChannel)
-    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/${PRODUCT_OPERATOR}.package.yaml channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+    DEFAUlT_CHANNEL=$(yq r ${MANIFEST_TMP_DIR}/${NEW_PACKAGE_NAME} defaultChannel)
+    NEW_CSV=$(yq r ${MANIFEST_TMP_DIR}/${NEW_PACKAGE_NAME} channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
     # The sed entry here will need to be fixed up for each product.
     # The operator versions do not all follow the same syntax
-    NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
+    case $PRODUCT in
+    "fuse-online")
+      NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^fuse-online-operator.v//)
+      ;;
+    "3scale")
+      NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
+      ;;
+    *)
+      echo "Passed an unknown product $PRODUCT"
+      exit
+    esac
 }
 
 check_versions() {
@@ -109,6 +142,7 @@ process_image() {
    echo "~~~~~~"
    extract_manifests_from_image
    get_current_csv
+   set_package_name_for_new_csv
    get_new_csv
    check_versions
    copy_new_csv
