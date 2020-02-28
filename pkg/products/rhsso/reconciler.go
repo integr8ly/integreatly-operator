@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -783,7 +784,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	}
 
 	for _, osUser := range added {
-		email, err := GetUserEmailFromIdentity(ctx, serverClient, osUser)
+		email, err := userHelper.GetUserEmailFromIdentity(ctx, serverClient, osUser)
 
 		if err != nil {
 			return nil, err
@@ -802,7 +803,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 				},
 			},
 		}
-		AppendUpdateProfileActionForUserWithoutEmail(&newKeycloakUser)
+		userHelper.AppendUpdateProfileActionForUserWithoutEmail(&newKeycloakUser)
 
 		keycloakUsers = append(keycloakUsers, newKeycloakUser)
 	}
@@ -833,7 +834,7 @@ func deleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []k
 		// Delete the CR
 		kcUser := &keycloak.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("generated-%v", delUser.UserName),
+				Name:      userHelper.GetValidGeneratedUserName(delUser),
 				Namespace: ns,
 			},
 		}
@@ -869,7 +870,7 @@ func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
 func (r *Reconciler) createOrUpdateKeycloakUser(ctx context.Context, user keycloak.KeycloakAPIUser, serverClient k8sclient.Client) (controllerutil.OperationResult, error) {
 	kcUser := &keycloak.KeycloakUser{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("generated-%v", user.UserName),
+			Name:      userHelper.GetValidGeneratedUserName(user),
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
