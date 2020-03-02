@@ -20,127 +20,185 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-var expectedRules = map[string][]string{
-	"/redhat-rhmi-middleware-monitoring": {
-		"DeadMansSwitch",
-		"KubePodBadConfig",
-		"KubePodCrashLooping",
-		"KubePodImagePullBackOff",
-		"KubePodNotReady",
-		"KubePodStuckCreating",
-		"ClusterSchedulableMemoryLow",
-		"ClusterSchedulableCPULow",
-		"PVCStorageAvailable",
-		"PVCStorageMetricsAvailable",
-		"CronJobNotRunInThreshold",
-		"CronJobSuspended",
-		"CronJobsFailed",
-		"JobRunningTimeExceeded",
-		"JobRunningTimeExceeded",
-		"MiddlewareMonitoringPodCount",
-	},
-	"/redhat-rhmi-3scale": {
-		"ThreeScaleAdminUIBBT",
-		"ThreeScaleApicastProductionPod",
-		"ThreeScaleApicastStagingPod",
-		"ThreeScaleBackendListenerPod",
-		"ThreeScaleBackendWorkerPod",
-		"ThreeScaleDeveloperUIBBT",
-		"ThreeScalePodCount",
-		"ThreeScalePodHighCPU",
-		"ThreeScalePodHighMemory",
-		"ThreeScaleSystemAdminUIBBT",
-		"ThreeScaleSystemAppPod",
-	},
-	"/redhat-rhmi-amq-online": {
-		"AMQOnlinePodCount",
-		"AMQOnlinePodHighMemory",
-		"AMQOnlineConsoleAvailable",
-		"AMQOnlineKeycloakAvailable",
-		"AMQOnlineOperatorAvailable",
-		"CronJobExists_redhat-rhmi-amq-online_enmasse-pv-backup",
-	},
-	"/redhat-rhmi-fuse": {
-		//"FuseOnlinePodCount",
-		//"FuseOnlineSyndesisServerInstanceDown",
-		"FuseOnlineSyndesisUIInstanceDown",
-		"FuseOnlineDatabaseInstanceDown",
-		"FuseOnlinePostgresExporterDown",
-		"FuseOnlineRestApiHighEndpointErrorRate",
-		"FuseOnlineRestApiHighEndpointLatency",
-		"FuseOnlineRestApiHighEndpointErrorRate",
-		"FuseOnlineRestApiHighEndpointLatency",
-		"IntegrationExchangesHighFailureRate",
-	},
-	"/redhat-rhmi-codeready": {
-		"CodeReadyPodCount",
-		"CronJobExists_redhat-rhmi-codeready-workspaces_codeready-pv-backup",
-	},
-	"/redhat-rhmi-solutionexplorer": {
-		"SolutionExplorerPodCount",
-	},
-	"/redhat-rhmi-ups": {
-		"UnifiedPushOperatorDown",
-		"UnifiedPushConsoleDown",
-		"UnifiedPushDown",
-		"UnifiedPushJavaDeadlockedThreads",
-		"UnifiedPushJavaGCTimePerMinuteScavenge",
-		"UnifiedPushJavaHeapThresholdExceeded",
-		"UnifiedPushJavaNonHeapThresholdExceeded",
-		"UnifiedPushMessagesFailures",
-	},
-	"/redhat-rhmi-rhsso": {
-		"KeycloakAPIRequestDuration90PercThresholdExceeded",
-		"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
-		"KeycloakInstanceNotAvailable",
-		"KeycloakJavaDeadlockedThreads",
-		"KeycloakJavaGCTimePerMinuteMarkSweep",
-		"KeycloakJavaGCTimePerMinuteScavenge",
-		"KeycloakJavaHeapThresholdExceeded",
-		"KeycloakJavaNonHeapThresholdExceeded",
-		"KeycloakLoginFailedThresholdExceeded",
-	},
-	"/redhat-rhmi-user-sso": {
-		"KeycloakAPIRequestDuration90PercThresholdExceeded",
-		"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
-		"KeycloakInstanceNotAvailable",
-		"KeycloakJavaDeadlockedThreads",
-		"KeycloakJavaGCTimePerMinuteMarkSweep",
-		"KeycloakJavaGCTimePerMinuteScavenge",
-		"KeycloakJavaHeapThresholdExceeded",
-		"KeycloakJavaNonHeapThresholdExceeded",
-		"KeycloakLoginFailedThresholdExceeded",
-	},
+type alertsTestRule struct {
+	File  string   `json:"file"`
+	Rules []string `json:"rules"`
 }
 
-var expectedExtRules = map[string][]string{
-	"/redhat-rhmi-3scale": {
-		"ThreeScalePostgresUnavailable",
-		"ThreeScalePostgresConnectivity",
-		"BackendRedisUnavailable",
-		"BackendRedisConnectivity",
-		"SystemRedisUnavailable",
-		"SystemRedisConnectivity",
+type alertsTestReport struct {
+	MissingRules    []string             `json:"missing"`
+	AdditionalRules []string             `json:"additional"`
+	Status          alertsTestFileStatus `json:"status"`
+}
+
+func newDefaultReport(status alertsTestFileStatus) *alertsTestReport {
+	return &alertsTestReport{
+		MissingRules:    []string{},
+		AdditionalRules: []string{},
+		Status:          status,
+	}
+}
+
+type alertsTestFileStatus string
+
+var (
+	fileMissing    alertsTestFileStatus = "File expected but not found"
+	fileAdditional alertsTestFileStatus = "File found but not expected"
+	fileExists     alertsTestFileStatus = "File found with missing or unexpected rules"
+	fileCorrect    alertsTestFileStatus = "File found with all alerts present"
+)
+
+var expectedRules = []alertsTestRule{
+	{
+		File: "redhat-rhmi-middleware-monitoring-operator-backup-monitoring-alerts.yaml",
+		Rules: []string{
+			"JobRunningTimeExceeded",
+			"JobRunningTimeExceeded",
+			"CronJobSuspended",
+			"CronJobsFailed",
+			"CronJobNotRunInThreshold",
+		},
 	},
-	"/redhat-rhmi-codeready": {
-		"CodeReadyPostgresUnavailable",
-		"CodeReadyPostgresConnectivity",
+	{
+		File: "redhat-rhmi-amq-online-backupjobs-exist-alerts.yaml",
+		Rules: []string{
+			"CronJobExists_redhat-rhmi-amq-online_enmasse-pv-backup",
+		},
 	},
-	"/redhat-rhmi-ups": {
-		"UPSPostgresUnavailable",
-		"UPSPostgresConnectivity",
+	{
+		File: "redhat-rhmi-rhsso-keycloak.yaml",
+		Rules: []string{
+			"KeycloakJavaHeapThresholdExceeded",
+			"KeycloakJavaNonHeapThresholdExceeded",
+			"KeycloakJavaGCTimePerMinuteScavenge",
+			"KeycloakJavaGCTimePerMinuteMarkSweep",
+			"KeycloakJavaDeadlockedThreads",
+			"KeycloakLoginFailedThresholdExceeded",
+			"KeycloakInstanceNotAvailable",
+			"KeycloakAPIRequestDuration90PercThresholdExceeded",
+			"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+		},
 	},
-	"/redhat-rhmi-user-sso": {
-		"UserSSOPostgresUnavailable",
-		"UserSSOPostgresConnectivity",
+	{
+		File: "redhat-rhmi-user-sso-keycloak.yaml",
+		Rules: []string{
+			"KeycloakJavaHeapThresholdExceeded",
+			"KeycloakJavaNonHeapThresholdExceeded",
+			"KeycloakJavaGCTimePerMinuteScavenge",
+			"KeycloakJavaGCTimePerMinuteMarkSweep",
+			"KeycloakJavaDeadlockedThreads",
+			"KeycloakLoginFailedThresholdExceeded",
+			"KeycloakInstanceNotAvailable",
+			"KeycloakAPIRequestDuration90PercThresholdExceeded",
+			"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+		},
 	},
-	"/redhat-rhmi-sso": {
-		"SSOPostgresUnavailable",
-		"SSOPostgresConnectivity",
+	{
+		File: "redhat-rhmi-middleware-monitoring-operator-ksm-alerts.yaml",
+		Rules: []string{
+			"KubePodCrashLooping",
+			"KubePodNotReady",
+			"KubePodImagePullBackOff",
+			"KubePodBadConfig",
+			"KubePodStuckCreating",
+			"ClusterSchedulableMemoryLow",
+			"ClusterSchedulableCPULow",
+			"PVCStorageAvailable",
+			"PVCStorageMetricsAvailable",
+		},
 	},
-	"/redhat-rhmi-amq-online": {
-		"AMQOnlineSSOPostgresUnavailable",
-		"AMQOnlineSSOPostgresConnectivity",
+	{
+		File: "redhat-rhmi-amq-online-ksm-amqonline-alerts.yaml",
+		Rules: []string{
+			"AMQOnlinePodCount",
+			"AMQOnlinePodHighMemory",
+		},
+	},
+	{
+		File: "redhat-rhmi-apicurito-ksm-apicurito-alerts.yaml",
+		Rules: []string{
+			//"ApicuritoPodCount",
+			"test",
+		},
+	},
+	{
+		File: "redhat-rhmi-fuse-ksm-fuse-online-alerts.yaml",
+		Rules: []string{
+			"FuseOnlineSyndesisServerInstanceDown",
+			"FuseOnlineSyndesisUIInstanceDown",
+			"FuseOnlinePodCount",
+		},
+	},
+	{
+		File: "redhat-rhmi-middleware-monitoring-operator-ksm-monitoring-alerts.yaml",
+		Rules: []string{
+			"MiddlewareMonitoringPodCount",
+		},
+	},
+	{
+		File: "redhat-rhmi-rhsso-ksm-rhsso-alerts.yaml",
+		Rules: []string{
+			"RHSSOPodHighMemory",
+		},
+	},
+	{
+		File: "redhat-rhmi-middleware-monitoring-operator-prometheus-application-monitoring-rules.yaml",
+		Rules: []string{
+			"DeadMansSwitch",
+		},
+	},
+	{
+		File: "redhat-rhmi-amq-online-rhmi-amq-online-slo.yaml",
+		Rules: []string{
+			"AMQOnlineConsoleAvailable",
+			"AMQOnlineKeycloakAvailable",
+			"AMQOnlineOperatorAvailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-fuse-syndesis-infra-db-alerting-rules.yaml",
+		Rules: []string{
+			"FuseOnlineDatabaseInstanceDown",
+			"FuseOnlinePostgresExporterDown",
+		},
+	},
+	{
+		File: "redhat-rhmi-fuse-syndesis-infra-meta-alerting-rules.yaml",
+		Rules: []string{
+			"FuseOnlineRestApiHighEndpointErrorRate",
+			"FuseOnlineRestApiHighEndpointLatency",
+		},
+	},
+	{
+		File: "redhat-rhmi-fuse-syndesis-infra-server-alerting-rules.yaml",
+		Rules: []string{
+			"FuseOnlineRestApiHighEndpointErrorRate",
+			"FuseOnlineRestApiHighEndpointLatency",
+		},
+	},
+	{
+		File: "redhat-rhmi-fuse-syndesis-integrations-alerting-rules.yaml",
+		Rules: []string{
+			"IntegrationExchangesHighFailureRate",
+		},
+	},
+	{
+		File: "redhat-rhmi-ups-unifiedpush.yaml",
+		Rules: []string{
+			"UnifiedPushDown",
+			"UnifiedPushConsoleDown",
+			"UnifiedPushJavaHeapThresholdExceeded",
+			"UnifiedPushJavaNonHeapThresholdExceeded",
+			"UnifiedPushJavaGCTimePerMinuteScavenge",
+			"UnifiedPushJavaDeadlockedThreads",
+			"UnifiedPushMessagesFailures",
+		},
+	},
+	{
+		File: "redhat-rhmi-ups-operator-unifiedpush-operator.yaml",
+		Rules: []string{
+			"UnifiedPushOperatorDown",
+		},
 	},
 }
 
@@ -155,11 +213,11 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 
 	// add external database alerts to list of expected rules if
 	// cluster storage is not being used
-	if rhmi.Spec.UseClusterStorage != "true" {
-		for file, rules := range expectedExtRules {
-			expectedRules[file] = append(expectedRules[file], rules...)
-		}
-	}
+	//if rhmi.Spec.UseClusterStorage != "true" {
+	//	for file, rules := range expectedExtRules {
+	//		expectedRules[file] = append(expectedRules[file], rules...)
+	//	}
+	//}
 
 	// exec into the prometheus pod
 	output, err := execToPod("curl localhost:9090/api/v1/rules",
@@ -182,49 +240,83 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("Failed to unmarshal json:", err)
 	}
 
-	// build a map of found rules for each file name. The difference between this
-	// actual map and the expected map will provide any additional or missing rules
-	actualRules := make(map[string][]string, 0)
-	missingRules := make(map[string][]string, 0)
-	extraRules := make(map[string][]string, 0)
-	for file, rules := range expectedRules {
-		for _, group := range rulesResult.Groups {
-			if !strings.Contains(group.File, file) {
-				continue
-			}
-			// create an empty entry in the map
-			if _, ok := actualRules[file]; !ok {
-				actualRules[file] = []string{}
-			}
-			// add found rules to the actual rules map
-			for _, rule := range group.Rules {
-				switch v := rule.(type) {
-				case prometheusv1.RecordingRule:
-					rule := rule.(prometheusv1.RecordingRule)
-					actualRules[file] = append(actualRules[file], rule.Name)
-				case prometheusv1.AlertingRule:
-					rule := rule.(prometheusv1.AlertingRule)
-					actualRules[file] = append(actualRules[file], rule.Name)
-				default:
-					fmt.Printf("unknown rule type %s", v)
-				}
+	// convert prometheus rule to PrometheusRule type
+	var actualRules []alertsTestRule
+	for _, group := range rulesResult.Groups {
+		ruleName := strings.Split(group.File, "/")
+		rule := alertsTestRule{
+			File: ruleName[len(ruleName)-1],
+		}
+		for _, promRule := range group.Rules {
+			switch v := promRule.(type) {
+			case prometheusv1.RecordingRule:
+				recRule := promRule.(prometheusv1.RecordingRule)
+				rule.Rules = append(rule.Rules, recRule.Name)
+			case prometheusv1.AlertingRule:
+				alertRule := promRule.(prometheusv1.AlertingRule)
+				rule.Rules = append(rule.Rules, alertRule.Name)
+			default:
+				fmt.Printf("unknown rule type %s", v)
 			}
 		}
-		// missing alerts
-		diff := difference(rules, actualRules[file])
-		if len(diff) != 0 {
-			missingRules[file] = append(missingRules[file], diff...)
-		}
-		// additional alerts
-		diff = difference(actualRules[file], rules)
-		if len(diff) != 0 {
-			extraRules[file] = append(extraRules[file], diff...)
+		actualRules = append(actualRules, rule)
+	}
+
+	// build up a reportMapping of missing or unexpected files
+	reportMapping := make(map[string]*alertsTestReport, 0)
+
+	// if an unexpected file is found, add it to the reportMapping
+	ruleDiff := ruleDifference(actualRules, expectedRules)
+	for _, rule := range ruleDiff {
+		reportMapping[rule.File] = &alertsTestReport{
+			AdditionalRules: rule.Rules,
+			Status:          fileAdditional,
 		}
 	}
-	// output the missing rules
-	if len(missingRules) > 0 || len(extraRules) > 0 {
-		fmt.Printf("Missing alerts: %v\n", missingRules)
-		fmt.Printf("Additional alerts: %v\n", extraRules)
+
+	// if an expected file is not found, add it to the reportMapping
+	ruleDiff = ruleDifference(expectedRules, actualRules)
+	for _, rule := range ruleDiff {
+		reportMapping[rule.File] = &alertsTestReport{
+			MissingRules: rule.Rules,
+			Status:       fileMissing,
+		}
+	}
+
+	// the file exists, do left and right diffs to ensure
+	// all rules exist and no unexpected rules are found
+	for _, actualRule := range actualRules {
+		for _, expectedRule := range expectedRules {
+			if actualRule.File == expectedRule.File {
+				reportMapping[actualRule.File] = buildReport(actualRule, expectedRule, reportMapping[actualRule.File])
+			}
+		}
+	}
+
+	missingCount := 0
+	extraCount := 0
+	for k, v := range reportMapping {
+		if v.Status != fileCorrect {
+			fmt.Println("File Name:", k)
+			fmt.Println("Missing Rules:", v.MissingRules)
+			fmt.Println("Additional Rules:", v.AdditionalRules)
+			fmt.Println("Status:\n", v.Status)
+		}
+		if v.Status == fileMissing || len(v.MissingRules) > 0 {
+			missingCount++
+		}
+		if v.Status == fileAdditional || len(v.AdditionalRules) > 0 {
+			extraCount++
+		}
+	}
+
+	if missingCount > 0 {
+		fmt.Println("\nMissing alerts were found from Prometheus. If the removal of these Alert rules was intentional, please update this test to remove them from the check. If the removal of these Alert rules was not intendended or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed")
+	}
+	if extraCount > 0 {
+		fmt.Println("\nUnexpected alerts were found in Prometheus. If these Alert rules were intentionally added, please update this test to add them to the check. If these Alert rules were not added intentionally or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed.")
+	}
+	if extraCount > 0 || missingCount > 0 {
 		t.Fatal("Found missing or too many alerts")
 	}
 }
@@ -283,4 +375,35 @@ func difference(a, b []string) []string {
 		}
 	}
 	return diff
+}
+
+// difference returns the elements in list of PrometheusRule `a` that aren't in list `b`.
+func ruleDifference(a, b []alertsTestRule) []alertsTestRule {
+	mb := make(map[string]struct{}, len(b))
+	for _, x := range b {
+		mb[x.File] = struct{}{}
+	}
+
+	var diff []alertsTestRule
+	for _, x := range a {
+		if _, found := mb[x.File]; !found {
+			diff = append(diff, x)
+		}
+	}
+	return diff
+}
+
+// build report builds up a report of missing or unexpected rules for a given file name
+func buildReport(actualRule, expectedRule alertsTestRule, report *alertsTestReport) *alertsTestReport {
+	// pre-req
+	if report == nil {
+		report = newDefaultReport(fileCorrect)
+	}
+	// build report
+	report.MissingRules = append(report.MissingRules, difference(actualRule.Rules, expectedRule.Rules)...)
+	report.AdditionalRules = append(report.AdditionalRules, difference(expectedRule.Rules, actualRule.Rules)...)
+	if len(report.MissingRules) != 0 || len(report.AdditionalRules) != 0 {
+		report.Status = fileExists
+	}
+	return report
 }
