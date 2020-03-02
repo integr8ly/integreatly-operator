@@ -74,20 +74,34 @@ get_current_csv() {
     "3scale")
        CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${CURRENT_CSV_FILE_NAME} channels[0].currentCSV | sed -e s/^3scale-operator.v//)
        ;;
+    "amq-online")
+       CURRENT_CSV=$(yq r ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${CURRENT_CSV_FILE_NAME} channels[0].currentCSV | sed -e s/^amqonline.//)
+       ;;
      *)
        echo "Passed an unknown product $PRODUCT"
        exit
        ;;
     esac
     echo "Current CSV $CURRENT_CSV"
-
 }
 
 
 get_new_csv() {
     IMAGE_MANIFEST_FILE=$(find ${MANIFEST_TMP_DIR} -name "*.package.yaml")
-    DEFAUlT_CHANNEL=$(yq r ${IMAGE_MANIFEST_FILE} defaultChannel)
-    NEW_CSV=$(yq r ${IMAGE_MANIFEST_FILE} channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+    # Get CSV case statement below as there are some differences in the amq-online package.yaml
+    # Read more about it here: https://issues.redhat.com/browse/DEL-62?focusedCommentId=13985142&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-13985142
+    case $PRODUCT in
+    "fuse-online" | "3scale")
+        DEFAUlT_CHANNEL=$(yq r ${IMAGE_MANIFEST_FILE} defaultChannel)
+        NEW_CSV=$(yq r ${IMAGE_MANIFEST_FILE} channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+        ;;
+    "amq-online")
+        NEW_CSV=$(yq r ${IMAGE_MANIFEST_FILE} channels.\(name==stable\).currentCSV)
+        ;;
+    *)
+      echo "Passed an unknown product $PRODUCT"
+      exit
+    esac
     # The sed entry here will need to be fixed up for each product.
     # The operator versions do not all follow the same syntax
     case $PRODUCT in
@@ -97,10 +111,15 @@ get_new_csv() {
     "3scale")
       NEW_CSV_SEMVER=$(echo ${NEW_CSV} | sed s/^3scale-operator.v//)
       ;;
+    "amq-online")
+      NEW_CSV_SEMVER=$(echo $NEW_CSV | sed -e s/^amq-online.//)
+      ;;
     *)
       echo "Passed an unknown product $PRODUCT"
       exit
     esac
+    echo "New CSV $NEW_CSV_SEMVER"
+ 
 }
 
 check_versions() {
@@ -125,12 +144,38 @@ copy_new_csv() {
     mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${PRODUCT}/
 }
 
+get_file_name_for_new_csv() {
+  # In the case of 3scale the package name needs to be customised	
+  case $PRODUCT in
+  "3scale" | "fuse-online")
+    NEW_CSV_FILE_NAME=${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml
+    ;;
+  "amq-online")
+    NEW_CSV_FILE_NAME=${PRODUCT}.$NEW_CSV_SEMVER.clusterserviceversion.yaml
+    ;;
+  esac
+}
+
+
 update_new_csv() {
     echo "updating csv"
-    echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml"
-    yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.replaces
-    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${PRODUCT}-operator.v$NEW_CSV_SEMVER.clusterserviceversion.yaml spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
+    case $PRODUCT in
+    "fuse-online" | "3scale")
+        DEFAUlT_CHANNEL=$(yq r ${IMAGE_MANIFEST_FILE} defaultChannel)
+        NEW_CSV=$(yq r ${IMAGE_MANIFEST_FILE} channels.\(name==${DEFAUlT_CHANNEL}\).currentCSV)
+        ;;
+    "amq-online")
+        NEW_CSV=$(yq r ${IMAGE_MANIFEST_FILE} channels.\(name==stable\).currentCSV)
+        ;;
+    *)
+      echo "Passed an unknown product $PRODUCT"
+      exit
+    esac
+    echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME}"
+    yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} spec.replaces
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations['olm.targetNamespaces']
 }
+
 
 update_package_yaml() {
     yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${PRODUCT}.package.yaml channels.\(name==rhmi\).currentCSV $NEW_CSV
@@ -147,6 +192,7 @@ process_image() {
    get_new_csv
    check_versions
    copy_new_csv
+   get_file_name_for_new_csv
    update_new_csv
    update_package_yaml
 }
