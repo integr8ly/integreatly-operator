@@ -11,5 +11,5 @@ get_current_csv() {
 }
 
 get_current_csv_file() {
-    echo "$(grep -lR "name: $(get_current_csv $1)" ${MANIFESTS_DIR}/integreatly-$1/)"
+    echo "$(grep -lR "name: $(get_current_csv $1)" ${MANIFESTS_DIR}/integreatly-$1)"
 }
