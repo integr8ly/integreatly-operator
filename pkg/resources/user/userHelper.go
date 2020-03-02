@@ -3,11 +3,12 @@ package user
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	usersv1 "github.com/openshift/api/user/v1"
-	"regexp"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 // Helper for User associated functions
@@ -15,7 +16,7 @@ import (
 const (
 	updateProfileAction         = "UPDATE_PROFILE"
 	invalidCharacterReplacement = "-"
-	generatedNameSuffix         = "generated-"
+	GeneratedNamePrefix         = "generated-"
 )
 
 func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (string, error) {
@@ -65,5 +66,5 @@ func GetValidGeneratedUserName(keycloakUser keycloak.KeycloakAPIUser) string {
 		}
 	}
 
-	return fmt.Sprintf("%v%v", generatedNameSuffix, processedString)
+	return fmt.Sprintf("%v%v", GeneratedNamePrefix, processedString)
 }
