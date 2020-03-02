@@ -66,6 +66,12 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
+		File: "redhat-rhmi-codeready-workspaces-backupjobs-exist-alerts.yaml",
+		Rules: []string{
+			"CronJobExists_redhat-rhmi-codeready-workspaces_codeready-pv-backup",
+		},
+	},
+	{
 		File: "redhat-rhmi-rhsso-keycloak.yaml",
 		Rules: []string{
 			"KeycloakJavaHeapThresholdExceeded",
@@ -117,8 +123,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: "redhat-rhmi-apicurito-ksm-apicurito-alerts.yaml",
 		Rules: []string{
-			//"ApicuritoPodCount",
-			"test",
+			"ApicuritoPodCount",
 		},
 	},
 	{
@@ -142,6 +147,28 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
+		File: "redhat-rhmi-codeready-workspaces-ksm-codeready-alerts.yaml",
+		Rules: []string{
+			"CodeReadyPodCount",
+		},
+	},
+	{
+		File: "redhat-rhmi-3scale-ksm-3scale-alerts.yaml",
+		Rules: []string{
+			"ThreeScaleApicastStagingPod",
+			"ThreeScaleApicastProductionPod",
+			"ThreeScaleBackendWorkerPod",
+			"ThreeScaleBackendListenerPod",
+			"ThreeScaleSystemAppPod",
+			"ThreeScaleAdminUIBBT",
+			"ThreeScaleDeveloperUIBBT",
+			"ThreeScaleSystemAdminUIBBT",
+			"ThreeScalePodCount",
+			"ThreeScalePodHighMemory",
+			"ThreeScalePodHighCPU",
+		},
+	},
+	{
 		File: "redhat-rhmi-middleware-monitoring-operator-prometheus-application-monitoring-rules.yaml",
 		Rules: []string{
 			"DeadMansSwitch",
@@ -153,6 +180,12 @@ var expectedRules = []alertsTestRule{
 			"AMQOnlineConsoleAvailable",
 			"AMQOnlineKeycloakAvailable",
 			"AMQOnlineOperatorAvailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-solution-explorer-ksm-solution-explorer-alerts.yaml",
+		Rules: []string{
+			"SolutionExplorerPodCount",
 		},
 	},
 	{
@@ -202,6 +235,93 @@ var expectedRules = []alertsTestRule{
 	},
 }
 
+var expectedAWSRules = []alertsTestRule{
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-threescale-redis-example-rhmi.yaml",
+		Rules: []string{
+			"3scaleRedisCacheConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-threescale-backend-redis-example-rhmi.yaml",
+		Rules: []string{
+			"3scaleRedisCacheConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-threescale-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"3scalePostgresConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-threescale-redis-example-rhmi.yaml",
+		Rules: []string{
+			"3scaleRedisCacheUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-threescale-backend-redis-example-rhmi.yaml",
+		Rules: []string{
+			"3scaleRedisCacheUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-threescale-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"3scalePostgresInstanceUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-ups-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"upsPostgresConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-ups-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"upsPostgresInstanceUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-codeready-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"codeready-workspacesPostgresInstanceUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-codeready-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"codeready-workspacesPostgresConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-rhssouser-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"user-ssoPostgresConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-rhssouser-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"user-ssoPostgresInstanceUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-connectivity-rule-rhsso-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"rhssoPostgresConnectionFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-availability-rule-rhsso-postgres-example-rhmi.yaml",
+		Rules: []string{
+			"rhssoPostgresInstanceUnavailable",
+		},
+	},
+}
+
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	// get the RHMI custom resource to check what storage type is being used
 	rhmi := &v1alpha1.RHMI{}
@@ -213,11 +333,11 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 
 	// add external database alerts to list of expected rules if
 	// cluster storage is not being used
-	//if rhmi.Spec.UseClusterStorage != "true" {
-	//	for file, rules := range expectedExtRules {
-	//		expectedRules[file] = append(expectedRules[file], rules...)
-	//	}
-	//}
+	if rhmi.Spec.UseClusterStorage != "true" {
+		for _, rule := range expectedAWSRules {
+			expectedRules = append(expectedRules, rule)
+		}
+	}
 
 	// exec into the prometheus pod
 	output, err := execToPod("curl localhost:9090/api/v1/rules",
@@ -293,14 +413,15 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		}
 	}
 
+	// report the status
 	missingCount := 0
 	extraCount := 0
 	for k, v := range reportMapping {
 		if v.Status != fileCorrect {
-			fmt.Println("File Name:", k)
+			fmt.Println("\nFile Name:", k)
 			fmt.Println("Missing Rules:", v.MissingRules)
 			fmt.Println("Additional Rules:", v.AdditionalRules)
-			fmt.Println("Status:\n", v.Status)
+			fmt.Println("Status:", v.Status)
 		}
 		if v.Status == fileMissing || len(v.MissingRules) > 0 {
 			missingCount++
