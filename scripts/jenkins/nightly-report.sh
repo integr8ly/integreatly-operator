@@ -40,7 +40,7 @@ do
   firstBuildNumber=$(curl $JENKINS_URL/$job/api/json --silent | jq -r .firstBuild.number)
   lastBuildNumber=$(curl $JENKINS_URL/$job/api/json --silent | jq -r .builds[0].number)
   
-  for ((buildNumber=$lastBuildNumber; buildNumber > $firstBuildNumber; buildNumber--))
+  for ((buildNumber=$lastBuildNumber; buildNumber >= $firstBuildNumber; buildNumber--))
   do
     rm -f build.json
     curl $JENKINS_URL/$job/$buildNumber/api/json --silent > build.json
