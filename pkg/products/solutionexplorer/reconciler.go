@@ -248,7 +248,7 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
-		cl.Spec.ApplicationMenu.ImageURL = "https://avatars1.githubusercontent.com/u/41683098"
+		cl.Spec.ApplicationMenu.ImageURL = "https://github.com/integr8ly/integreatly-operator/raw/master/assets/icons/Product_Icon-Red_Hat-Managed_Integration_Solution_Explorer-RGB.png"
 		cl.Spec.ApplicationMenu.Section = "Red Hat Applications"
 		cl.Spec.Href = r.Config.GetHost()
 		cl.Spec.Location = consolev1.ApplicationMenu
