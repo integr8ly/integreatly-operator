@@ -517,13 +517,13 @@ func (c *Client) list(resourcePath, resourceName string, unMarshalListFunc func(
 	return objs, nil
 }
 
-func (c *Client) ListRealms() ([]*v1alpha1.KeycloakRealm, error) {
+func (c *Client) ListRealms() ([]*v1alpha1.KeycloakAPIRealm, error) {
 	result, err := c.list("realms", "realm", func(body []byte) (T, error) {
-		var realms []*v1alpha1.KeycloakRealm
+		var realms []*v1alpha1.KeycloakAPIRealm
 		err := json.Unmarshal(body, &realms)
 		return realms, err
 	})
-	resultAsRealm, ok := result.([]*v1alpha1.KeycloakRealm)
+	resultAsRealm, ok := result.([]*v1alpha1.KeycloakAPIRealm)
 	if !ok {
 		return nil, err
 	}
@@ -560,6 +560,37 @@ func (c *Client) ListUsers(realmName string) ([]*v1alpha1.KeycloakAPIUser, error
 		return nil, err
 	}
 	return result.([]*v1alpha1.KeycloakAPIUser), err
+}
+
+func (c *Client) ListUsersInGroup(realmName, groupID string) ([]*v1alpha1.KeycloakAPIUser, error) {
+	path := fmt.Sprintf("realms/%s/groups/%s/members", realmName, groupID)
+	result, err := c.list(path, "users", func(body []byte) (T, error) {
+		var users []*v1alpha1.KeycloakAPIUser
+		err := json.Unmarshal(body, &users)
+		return users, err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.([]*v1alpha1.KeycloakAPIUser), nil
+}
+
+func (c *Client) AddUserToGroup(realmName, userID, groupID string) error {
+	add := map[string]string{
+		"userId":  userID,
+		"groupId": groupID,
+		"realm":   realmName,
+	}
+	path := fmt.Sprintf("realms/%s/users/%s/groups/%s", realmName, userID, groupID)
+
+	return c.update(add, path, "user-group")
+}
+
+func (c *Client) DeleteUserFromGroup(realmName, userID, groupID string) error {
+	path := fmt.Sprintf("realms/%s/users/%s/groups/%s", realmName, userID, groupID)
+
+	return c.delete(path, "user-group", nil)
 }
 
 func (c *Client) ListIdentityProviders(realmName string) ([]*v1alpha1.KeycloakIdentityProvider, error) {
@@ -669,7 +700,7 @@ func (c *Client) UpdateAuthenticationExecutionForFlow(flowAlias, realmName strin
 
 func (c *Client) FindGroupByName(groupName string, realmName string) (*Group, error) {
 	// Get a list of the groups in the realm
-	tGroups, err := c.list(fmt.Sprintf("realms/%s/groups", realmName), "Group", func(body []byte) (T, error) {
+	groups, err := c.list(fmt.Sprintf("realms/%s/groups", realmName), "Group", func(body []byte) (T, error) {
 		var groups []*Group
 		err := json.Unmarshal(body, &groups)
 		return groups, err
@@ -679,18 +710,26 @@ func (c *Client) FindGroupByName(groupName string, realmName string) (*Group, er
 		return nil, err
 	}
 
-	// Iterate through the list of groups and return
-	// the one that matches the name
-	groups := tGroups.([]*Group)
-	for _, group := range groups {
-		if group.Name == groupName {
-			return group, nil
+	// Function that recursively looks for the group in the hierarchy
+	var findInList func([]*Group) *Group
+	findInList = func(groupList []*Group) *Group {
+		for _, group := range groupList {
+			if group.Name == groupName {
+				return group
+			}
+
+			childGroup := findInList(group.SubGroups)
+			if childGroup != nil {
+				return childGroup
+			}
 		}
+
+		return nil
 	}
 
 	// If the loop finishes without finding the group,
 	// return nil
-	return nil, nil
+	return findInList(groups.([]*Group)), nil
 }
 
 func (c *Client) CreateGroup(groupName string, realmName string) (string, error) {
@@ -745,6 +784,38 @@ func (c *Client) ListDefaultGroups(realmName string) ([]*Group, error) {
 	}
 
 	return groups.([]*Group), nil
+}
+
+func (c *Client) SetGroupChild(groupID, realmName string, childGroup *Group) error {
+	// Get the parent group
+	parentGroup, err := c.get(
+		fmt.Sprintf("realms/%s/groups/%s", realmName, groupID),
+		"group",
+		func(body []byte) (T, error) {
+			group := &Group{}
+			err := json.Unmarshal(body, group)
+			return group, err
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// If the child group to add is already in the list of children groups,
+	// finish
+	for _, existingChildren := range parentGroup.(*Group).SubGroups {
+		if existingChildren.ID == childGroup.ID {
+			return nil
+		}
+	}
+
+	// Otherwise, set the child group
+	return c.create(
+		childGroup,
+		fmt.Sprintf("realms/%s/groups/%s/children", realmName, groupID),
+		"group-child",
+	)
 }
 
 func (c *Client) CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, groupID string) error {
@@ -946,7 +1017,7 @@ type KeycloakInterface interface {
 	GetRealm(realmName string) (*v1alpha1.KeycloakRealm, error)
 	UpdateRealm(specRealm *v1alpha1.KeycloakRealm) error
 	DeleteRealm(realmName string) error
-	ListRealms() ([]*v1alpha1.KeycloakRealm, error)
+	ListRealms() ([]*v1alpha1.KeycloakAPIRealm, error)
 
 	CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) error
 	GetClient(clientID, realmName string) (*v1alpha1.KeycloakAPIClient, error)
@@ -967,11 +1038,15 @@ type KeycloakInterface interface {
 	UpdateUser(specUser *v1alpha1.KeycloakAPIUser, realmName string) error
 	DeleteUser(userID, realmName string) error
 	ListUsers(realmName string) ([]*v1alpha1.KeycloakAPIUser, error)
+	ListUsersInGroup(realmName, groupID string) ([]*v1alpha1.KeycloakAPIUser, error)
+	AddUserToGroup(realmName, userID, groupID string) error
+	DeleteUserFromGroup(realmName, userID, groupID string) error
 
 	FindGroupByName(groupName string, realmName string) (*Group, error)
 	CreateGroup(group string, realmName string) (string, error)
 	MakeGroupDefault(groupID string, realmName string) error
 	ListDefaultGroups(realmName string) ([]*Group, error)
+	SetGroupChild(groupID, realmName string, childGroup *Group) error
 
 	CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName, clientID, groupID string) error
 	ListGroupClientRoles(realmName, clientID, groupID string) ([]*v1alpha1.KeycloakUserRole, error)

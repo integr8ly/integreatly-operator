@@ -373,7 +373,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	_ = r.client.Status().Update(r.context, installation)
 	metrics.RHMIStatusAvailable.Set(1)
 	logrus.Infof("installation completed succesfully")
-	return reconcile.Result{}, nil
+	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {

@@ -972,6 +972,86 @@ func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
 	}
 }
 
+func TestReconciler_reconcileDedicatedAdminsGroup(t *testing.T) {
+	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
+
+	r := &Reconciler{
+		logger: logrus.NewEntry(logrus.StandardLogger()),
+		Config: &config.RHSSOUser{
+			Config: map[string]string{
+				"NAMESPACE": defaultRhssoNamespace,
+			},
+		},
+		keycloakClientFactory: keycloakClientFactory,
+	}
+
+	kc := &keycloak.Keycloak{}
+	statusPhase, err := r.reconcileDedicatedAdminsGroup(kc)
+
+	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
+		t.Errorf("Expected phase to be completed, got %s", statusPhase)
+	}
+	if err != nil {
+		t.Errorf("Unexpected error occurred: %s", err)
+	}
+
+	foundDedicatedAdminsGroupID := ""
+	foundRealmManagersGroupID := ""
+	for _, group := range mockContext.Groups {
+		if group.Name != dedicatedAdminsGroupName {
+			continue
+		}
+
+		foundDedicatedAdminsGroupID = group.ID
+		for _, childGroup := range group.SubGroups {
+			if childGroup.Name == realmManagersGroupName {
+				foundRealmManagersGroupID = childGroup.ID
+			}
+		}
+	}
+
+	if foundDedicatedAdminsGroupID == "" {
+		t.Fatal("dedicated-admins group not found")
+	}
+
+	if foundRealmManagersGroupID == "" {
+		t.Fatal("realm-managers group not found")
+	}
+
+	hasManageUsersRole := false
+	hasViewRealmRole := false
+	for _, clientRole := range mockContext.ClientRoles[foundDedicatedAdminsGroupID] {
+		if clientRole.Name == manageUsersRoleName {
+			hasManageUsersRole = true
+		}
+		if clientRole.Name == viewRealmRoleName {
+			hasViewRealmRole = true
+		}
+	}
+
+	if !hasManageUsersRole {
+		t.Fatal("manage-users role not found for dedicated-admins group")
+	}
+	if !hasViewRealmRole {
+		t.Fatal("view-realm role not found for dedicated-admins group")
+	}
+
+	for _, expectedRole := range realmManagersClientRoles {
+		hasRole := false
+
+		for _, mappedRole := range mockContext.ClientRoles[foundRealmManagersGroupID] {
+			if mappedRole.Name == expectedRole {
+				hasRole = true
+				break
+			}
+		}
+
+		if !hasRole {
+			t.Errorf("Expected client role %s mapped to realm-managers group not found", expectedRole)
+		}
+	}
+}
+
 func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1015,9 +1095,12 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) error {
 			return nil
 		},
+			ListRealmsFunc:                           keycloakInterfaceMock.ListRealms,
 			FindGroupByNameFunc:                      keycloakInterfaceMock.FindGroupByName,
 			CreateGroupFunc:                          keycloakInterfaceMock.CreateGroup,
+			SetGroupChildFunc:                        keycloakInterfaceMock.SetGroupChild,
 			MakeGroupDefaultFunc:                     keycloakInterfaceMock.MakeGroupDefault,
+			ListUsersInGroupFunc:                     keycloakInterfaceMock.ListUsersInGroup,
 			ListDefaultGroupsFunc:                    keycloakInterfaceMock.ListDefaultGroups,
 			CreateGroupClientRoleFunc:                keycloakInterfaceMock.CreateGroupClientRole,
 			ListGroupClientRolesFunc:                 keycloakInterfaceMock.ListGroupClientRoles,
@@ -1081,16 +1164,72 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 
 	availableGroupClientRoles := []*keycloak.KeycloakUserRole{
 		&keycloak.KeycloakUserRole{
-			ID:   "mock-role-1",
-			Name: "mock-role-1",
+			ID:   "create-client",
+			Name: "create-client",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-authorization",
+			Name: "manage-authorization",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-clients",
+			Name: "manage-clients",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-events",
+			Name: "manage-events",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-identity-providers",
+			Name: "manage-identity-providers",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-realm",
+			Name: "manage-realm",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "manage-users",
+			Name: "manage-users",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "query-clients",
+			Name: "query-clients",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "query-groups",
+			Name: "query-groups",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "query-realms",
+			Name: "query-realms",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "query-users",
+			Name: "query-users",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "view-authorization",
+			Name: "view-authorization",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "view-clients",
+			Name: "view-clients",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "view-events",
+			Name: "view-events",
+		},
+		&keycloak.KeycloakUserRole{
+			ID:   "view-identity-providers",
+			Name: "view-identity-providers",
 		},
 		&keycloak.KeycloakUserRole{
 			ID:   "view-realm",
 			Name: "view-realm",
 		},
 		&keycloak.KeycloakUserRole{
-			ID:   "mock-role-2",
-			Name: "mock-role-2",
+			ID:   "view-users",
+			Name: "view-users",
 		},
 	}
 
@@ -1107,6 +1246,17 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 			ID:   "mock-role-4",
 			Name: "mock-role-4",
 		},
+	}
+
+	listRealmsFunc := func() ([]*keycloak.KeycloakAPIRealm, error) {
+		return []*keycloak.KeycloakAPIRealm{
+			&keycloak.KeycloakAPIRealm{
+				Realm: "master",
+			},
+			&keycloak.KeycloakAPIRealm{
+				Realm: "test",
+			},
+		}, nil
 	}
 
 	findGroupByNameFunc := func(groupName string, realmName string) (*keycloakCommon.Group, error) {
@@ -1133,6 +1283,37 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		context.RealmRoles[nextID] = []*keycloak.KeycloakUserRole{}
 
 		return nextID, nil
+	}
+
+	setGroupChildFunc := func(groupID, realmName string, childGroup *keycloakCommon.Group) error {
+		var childGroupToAppend *keycloakCommon.Group
+		for _, group := range context.Groups {
+			if group.ID == childGroup.ID {
+				childGroupToAppend = group
+			}
+		}
+
+		if childGroupToAppend == nil {
+			childGroupToAppend = childGroup
+		}
+
+		found := false
+		for _, group := range context.Groups {
+			if group.ID == groupID {
+				group.SubGroups = append(group.SubGroups, childGroupToAppend)
+				found = true
+			}
+		}
+
+		if !found {
+			return fmt.Errorf("Group %s not found", groupID)
+		}
+
+		return nil
+	}
+
+	listUsersInGroupFunc := func(realmName, groupID string) ([]*keycloak.KeycloakAPIUser, error) {
+		return []*keycloak.KeycloakAPIUser{}, nil
 	}
 
 	makeGroupDefaultFunc := func(groupID string, realmName string) error {
@@ -1254,8 +1435,9 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 	listClientsFunc := func(realmName string) ([]*keycloak.KeycloakAPIClient, error) {
 		return []*keycloak.KeycloakAPIClient{
 			&keycloak.KeycloakAPIClient{
-				ID:   "client-1",
-				Name: "client1",
+				ClientID: "test-realm",
+				ID:       "test-realm",
+				Name:     "test-realm",
 			},
 			&keycloak.KeycloakAPIClient{
 				ClientID: "master-realm",
@@ -1311,8 +1493,11 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 	}
 
 	return &keycloakCommon.KeycloakInterfaceMock{
+		ListRealmsFunc:                           listRealmsFunc,
 		FindGroupByNameFunc:                      findGroupByNameFunc,
 		CreateGroupFunc:                          createGroupFunc,
+		SetGroupChildFunc:                        setGroupChildFunc,
+		ListUsersInGroupFunc:                     listUsersInGroupFunc,
 		MakeGroupDefaultFunc:                     makeGroupDefaultFunc,
 		ListDefaultGroupsFunc:                    listDefaultGroupsFunc,
 		CreateGroupClientRoleFunc:                createGroupClientRoleFunc,
