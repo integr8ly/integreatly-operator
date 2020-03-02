@@ -30,7 +30,14 @@ RH_REGISTRY_OSBS=registry-proxy.engineering.redhat.com/rh-osbs
 DELOREAN_REGISTRY=quay.io/integreatly/delorean
 
 collect_csv_images() {
-    csv_images=(`grep -o $RH_REGISTRY_STAGE.* $1 || true`)
+    case $PRODUCT in
+    "fuse-online" | "3scale")
+        csv_images=(`grep -o $RH_REGISTRY_STAGE.* $1 || true`)
+        ;;
+    "amq-online")
+        csv_images=(`grep -o $RH_REGISTRY_PROD.* $1 || true`)
+        ;;
+    esac
 }
 
 process_csv_images() {
