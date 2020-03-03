@@ -30,7 +30,7 @@ RH_REGISTRY_OSBS=registry-proxy.engineering.redhat.com/rh-osbs
 DELOREAN_REGISTRY=quay.io/integreatly/delorean
 
 collect_csv_images() {
-    csv_images=(`grep -o ''${RH_REGISTRY_PROD}'.*\|'${RH_REGISTRY_STAGE}'.*'  $1 || true`)
+    csv_images=(`grep -o ''${RH_REGISTRY_PROD}'.*\|'${RH_REGISTRY_STAGE}'.*' $1 | sed 's/"//' || true`)
 }
 
 process_csv_images() {
@@ -40,9 +40,16 @@ process_csv_images() {
     for image in "${csv_images[@]}"
     do
         echo "Processing image $image"
-
-        image_path="$(echo $image | grep / | cut -d/ -f2-)"
-        osbs_image_path="$(echo $image_path | sed 's/\//-/')"
+        # The below logic is specific to the amq-broker image
+        if [[ $image == *"amq-broker"* ]]; then
+            image_version="$(echo $image | cut -f2 -d":")"
+            group_image_version="$(echo ${image_version} | tr -d '.')"
+            major_version="$(echo $image_version | cut -f1 -d".")"
+            osbs_image_path="amq-broker-$major_version-amq-broker-$group_image_version-openshift:${image_version}"
+        else
+            image_path="$(echo $image | grep / | cut -d/ -f2-)"
+            osbs_image_path="$(echo $image_path | sed 's/\//-/')"
+        fi
         delorean_image_tag="$(echo $osbs_image_path | sed 's/:/_/' | sed 's/@sha256.*$/_latest/')"
 
         osbs_image="${RH_REGISTRY_OSBS}/${osbs_image_path}"
