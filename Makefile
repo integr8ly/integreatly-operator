@@ -134,6 +134,7 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 .PHONY: test/functional
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
+	PASSWORD=Password1 ./scripts/setup-sso-idp.sh
 	go clean -testcache && go test ./test/functional
 
 .PHONY: install/olm
