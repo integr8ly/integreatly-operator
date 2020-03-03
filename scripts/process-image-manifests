@@ -52,7 +52,7 @@ extract_manifests_from_image() {
     ls -la ${MANIFEST_TMP_DIR}
 }
 
-set_package_name_for_current_csv() {
+get_current_csv_filename() {
   # In the case of 3scale the package name needs to be customised
   case $PRODUCT in
   "3scale")
@@ -142,7 +142,7 @@ process_image() {
    echo "Process Image '$IMAGE'"
    echo "~~~~~~"
    extract_manifests_from_image
-   set_package_name_for_current_csv
+   get_current_csv_filename
    get_current_csv
    get_new_csv
    check_versions
