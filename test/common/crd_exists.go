@@ -1,9 +1,10 @@
 package common
 
 import (
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/metadata"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestIntegreatlyCRDExists(t *testing.T, ctx *TestingContext) {
