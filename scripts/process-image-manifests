@@ -25,7 +25,6 @@ MANIFESTS_DIR=${WORK_DIR}/../manifests
 MANIFEST_TMP_DIR=${MANIFESTS_DIR}/tmp
 IMAGE=$1
 PRODUCT=$2
-PRODUCT_OPERATOR=$3
 
 function ver { printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
 
