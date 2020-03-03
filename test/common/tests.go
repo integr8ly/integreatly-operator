@@ -7,6 +7,7 @@ var (
 	ALL_TESTS = []TestCase{
 		// Add all tests that can be executed prior to a completed installation here
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
+		{"Verify User Permissions are Correct", TestIntegreatlyUserPermissions},
 	}
 
 	HAPPY_PATH_TESTS = []TestCase{
