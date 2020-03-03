@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"strconv"
 
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,6 +107,17 @@ func (r *RHSSOUser) SetProductVersion(version string) {
 
 func (r *RHSSOUser) SetOperatorVersion(operator string) {
 	r.Config["OPERATOR"] = operator
+}
+
+func (r *RHSSOUser) SetDevelopersGroupConfigured(configured bool) {
+	r.Config["DEVELOPERS_GROUP_CONFIGURED"] = strconv.FormatBool(configured)
+}
+
+func (r *RHSSOUser) GetDevelopersGroupConfigured() (bool, error) {
+	if r.Config["DEVELOPERS_GROUP_CONFIGURED"] == "" {
+		return false, nil
+	}
+	return strconv.ParseBool(r.Config["DEVELOPERS_GROUP_CONFIGURED"])
 }
 
 func (r *RHSSOUser) Validate() error {

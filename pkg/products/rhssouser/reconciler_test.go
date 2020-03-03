@@ -894,6 +894,7 @@ func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
 				"NAMESPACE": defaultRhssoNamespace,
 			},
 		},
+		ConfigManager:         basicConfigMock(),
 		keycloakClientFactory: keycloakClientFactory,
 	}
 
