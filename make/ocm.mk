@@ -125,5 +125,5 @@ ocm/aws/create_access_key:
 .PHONY: ocm/cluster/upgrade
 ocm/cluster/upgrade:
 	@$(call get_cluster_id)
-	@-oc adm upgrade --to $(UPGRADE_VERSION)
+	@oc adm upgrade --to $(UPGRADE_VERSION)
 	$(call wait_command, $(OCM) get cluster $(OCM_CLUSTER_ID) | jq -r .openshift_version | grep -q $(UPGRADE_VERSION), OpenShift upgrade, 90m, 300)
