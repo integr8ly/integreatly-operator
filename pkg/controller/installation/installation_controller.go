@@ -3,11 +3,10 @@ package installation
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/types"
 
 	usersv1 "github.com/openshift/api/user/v1"
 
@@ -40,7 +39,7 @@ import (
 )
 
 const (
-	deletionFinalizer                = "foregroundDeletion"
+	deletionFinalizer                = "finalizer/configmaps"
 	DefaultInstallationName          = "rhmi"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
@@ -286,12 +285,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 				return retryRequeue, merr
 			}
 
-			if err = r.handleCROConfigDeletion(*installation); err != nil {
+			if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
 				merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
 				return retryRequeue, merr
 			}
 
-			err = resources.RemoveFinalizer(r.context, installation, r.client, deletionFinalizer)
+			err = resources.RemoveFinalizer(context.TODO(), installation, r.client, deletionFinalizer)
 			if err != nil {
 				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
 				return retryRequeue, merr
@@ -576,8 +575,8 @@ func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1
 	// get cloud resource config map
 	croConf := &corev1.ConfigMap{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: DefaultCloudResourceConfigName}, croConf)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return fmt.Errorf("error occurred trying to get cro config map %w", err)
+	if err != nil {
+		return err
 	}
 
 	// remove cloud resource config deletion finalizer if it exists
