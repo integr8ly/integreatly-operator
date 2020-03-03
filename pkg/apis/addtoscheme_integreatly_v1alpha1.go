@@ -28,6 +28,7 @@ import (
 	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
+	confv1 "github.com/openshift/api/config/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -74,6 +75,7 @@ func init() {
 		templatev1.AddToScheme,
 		rbacv1.SchemeBuilder.AddToScheme,
 		usersv1.AddToScheme,
+		confv1.AddToScheme,
 		samplesv1.SchemeBuilder.AddToScheme,
 		upsv1alpha1.SchemeBuilder.AddToScheme,
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
