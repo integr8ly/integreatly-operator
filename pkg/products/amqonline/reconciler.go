@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
@@ -514,6 +515,10 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres: %w", err)
 	}
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
 	// get the secret created by the cloud resources operator
 	croSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)

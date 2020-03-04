@@ -12,6 +12,8 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crotypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
@@ -588,6 +590,21 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-postgres-",
+			Namespace: "test-namespace",
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: crotypes.PhaseComplete,
+			SecretRef: &crotypes.SecretRef{
+				Name: "test-postgres-",
+				Namespace: "test-postgres-namespace",
+			},
+		},
+	}
+
 	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
@@ -657,7 +674,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace)),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace), postgres),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
