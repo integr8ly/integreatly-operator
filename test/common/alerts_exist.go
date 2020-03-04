@@ -111,6 +111,9 @@ var expectedRules = []alertsTestRule{
 			"ClusterSchedulableCPULow",
 			"PVCStorageAvailable",
 			"PVCStorageMetricsAvailable",
+			"PVCStorageWillFillIn4Days",
+			"PVCStorageWillFillIn4Hours",
+			"PersistentVolumeErrors",
 		},
 	},
 	{
@@ -163,9 +166,10 @@ var expectedRules = []alertsTestRule{
 			"ThreeScaleAdminUIBBT",
 			"ThreeScaleDeveloperUIBBT",
 			"ThreeScaleSystemAdminUIBBT",
-			"ThreeScalePodCount",
 			"ThreeScalePodHighMemory",
 			"ThreeScalePodHighCPU",
+			"ThreeScaleZyncPodAvailability",
+			"ThreeScaleZyncDatabasePodAvailability",
 		},
 	},
 	{
@@ -385,6 +389,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	// build up a reportMapping of missing or unexpected files
 	reportMapping := make(map[string]*alertsTestReport, 0)
 
+	// unexpected/additional
 	// if an unexpected file is found, add it to the reportMapping
 	ruleDiff := ruleDifference(actualRules, expectedRules)
 	for _, rule := range ruleDiff {
@@ -394,6 +399,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		}
 	}
 
+	// missing file
 	// if an expected file is not found, add it to the reportMapping
 	ruleDiff = ruleDifference(expectedRules, actualRules)
 	for _, rule := range ruleDiff {
@@ -420,7 +426,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		if v.Status != fileCorrect {
 			fmt.Println("\nFile Name:", k)
 			fmt.Println("Missing Rules:", v.MissingRules)
-			fmt.Println("Additional Rules:", v.AdditionalRules)
+			fmt.Println("Unexpected Rules:", v.AdditionalRules)
 			fmt.Println("Status:", v.Status)
 		}
 		if v.Status == fileMissing || len(v.MissingRules) > 0 {
@@ -498,7 +504,7 @@ func difference(a, b []string) []string {
 	return diff
 }
 
-// difference returns the elements in list of PrometheusRule `a` that aren't in list `b`.
+// difference returns the elements in list of alertsTestRule `a` that aren't in list `b`.
 func ruleDifference(a, b []alertsTestRule) []alertsTestRule {
 	mb := make(map[string]struct{}, len(b))
 	for _, x := range b {
@@ -521,8 +527,8 @@ func buildReport(actualRule, expectedRule alertsTestRule, report *alertsTestRepo
 		report = newDefaultReport(fileCorrect)
 	}
 	// build report
-	report.MissingRules = append(report.MissingRules, difference(actualRule.Rules, expectedRule.Rules)...)
-	report.AdditionalRules = append(report.AdditionalRules, difference(expectedRule.Rules, actualRule.Rules)...)
+	report.MissingRules = append(report.MissingRules, difference(expectedRule.Rules, actualRule.Rules)...)
+	report.AdditionalRules = append(report.AdditionalRules, difference(actualRule.Rules, expectedRule.Rules)...)
 	if len(report.MissingRules) != 0 || len(report.AdditionalRules) != 0 {
 		report.Status = fileExists
 	}
