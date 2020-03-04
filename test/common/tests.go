@@ -11,6 +11,7 @@ var (
 		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 		{"Verify alerts exist", TestIntegreatlyAlertsExist},
+		{"Verify dashboards exist", TestIntegreatlyDashboardsExist},
 		{"Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 		{"Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
 		{"Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
