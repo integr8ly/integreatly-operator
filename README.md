@@ -230,17 +230,16 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 
 ## Release
 
-Update the operator version in the following files:
-
-* Update `TAG` and `PREVIOUS_TAG` (the previous version) in the [Makefile](Makefile)
-
-* Generate a new CSV:
-```sh
-make gen/csv
-```
-
-Commit changes and open pull request. When the PR is accepted, create a new release tag:
-
-```sh
-git tag v<version> && git push upstream v<version>
-```
+- Create `release-<release-number>` branch
+- Update `tag` and `previoustag` in makefile
+- Run `make gen/csv`
+- - Perform any manual tidying up of the generated CSV as required.
+- Make a PR against this repo
+- Get a review on PR and see e2e test pass
+- Wait for merge
+- run `make image/build/push REPO=integreatly`
+- Run `make push/csv REPO=integreatly` (doesn’t affect managed-tenants)
+- Make <release-number> tag on `release-<release-number>` branch and push it to integr8ly/integreatly-operator repo
+- Make a release in github UI
+- Tell QE, so they can update pipelines to new release-number
+- Take CSV files from deploy/olm-catalog and make a PR to managed-tenants, make any changes as required beforehand.
