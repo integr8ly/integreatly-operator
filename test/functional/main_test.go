@@ -3,15 +3,17 @@ package functional
 import (
 	"bytes"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/metadata"
-	"github.com/jstemmer/go-junit-report/formatter"
-	"github.com/jstemmer/go-junit-report/parser"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/metadata"
+	"github.com/jstemmer/go-junit-report/formatter"
+	"github.com/jstemmer/go-junit-report/parser"
 )
 
 const (
@@ -21,31 +23,83 @@ const (
 	testOutputFileName   = "test-output.txt"
 )
 
-func captureOutput(f func()) string {
-	r, w, err := os.Pipe()
+func teeOutput(f func()) string {
+
+	var output bytes.Buffer
+
+	stdoutReader, stdoutWriter, err := os.Pipe()
 	if err != nil {
 		panic(err)
 	}
 
-	stdout := os.Stdout
-	os.Stdout = w
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+
+	originalStdout := os.Stdout
+	os.Stdout = stdoutWriter
 	defer func() {
-		os.Stdout = stdout
+		os.Stdout = originalStdout
 	}()
 
-	stderr := os.Stderr
-	os.Stderr = w
+	originalStderr := os.Stderr
+	os.Stderr = stderrWriter
 	defer func() {
-		os.Stderr = stderr
+		os.Stderr = originalStderr
 	}()
+
+	var wg sync.WaitGroup
+
+	// this function will keep reading
+	// from the piped stdout/stderr and write
+	// to the original stdout/stderr
+	t := func(r, w *os.File) {
+		buf := make([]byte, 4096)
+		for true {
+			l, err := r.Read(buf)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				panic(err)
+			}
+			if l == 0 {
+				break
+			}
+
+			_, err = w.Write(buf[:l])
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = output.Write(buf[:l])
+			if err != nil {
+				break
+			}
+		}
+
+		wg.Done()
+	}
+
+	wg.Add(2)
+
+	go t(stdoutReader, originalStderr)
+	go t(stderrReader, originalStderr)
 
 	f()
-	w.Close()
 
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	err = stdoutWriter.Close()
+	if err != nil {
+		panic(err)
+	}
 
-	return buf.String()
+	err = stderrWriter.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	return output.String()
 }
 
 func writeOutputToFile(output string, filepath string) error {
@@ -75,11 +129,9 @@ func writeJunitReportFile(output string, junitReportPath string) error {
 func TestMain(t *testing.M) {
 	exitCode := 0
 
-	output := captureOutput(func() {
+	output := teeOutput(func() {
 		exitCode = t.Run()
 	})
-
-	fmt.Printf(output)
 
 	if _, err := os.Stat(testResultsDirectory); !os.IsNotExist(err) {
 		err := writeOutputToFile(output, filepath.Join(testResultsDirectory, testOutputFileName))
