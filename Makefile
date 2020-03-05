@@ -5,8 +5,8 @@ NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-PREVIOUS_TAG=1.18.0
-TAG=1.19.0
+PREVIOUS_TAG=1.19.0
+TAG=2.0.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -244,14 +244,14 @@ deploy/integreatly-rhmi-cr.yml:
 gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
+	@sed -i '' 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
 	operator-sdk generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
-	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
-	@sed -i 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
+	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
+	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
 	@mv deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG)
 	@mv deploy/olm-catalog/integreatly-operator/$(TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
+	@sed -i '' 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
 
 .PHONY: push/csv
 push/csv:

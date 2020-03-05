@@ -16,7 +16,7 @@ spec:
       containers:
         - name: rhmi-operator
           # Replace this with the built image name
-          image: quay.io/integreatly/integreatly-operator:v1.19.0
+          image: quay.io/integreatly/integreatly-operator:v2.0.0-er3
           command:
           - rhmi-operator
           imagePullPolicy: Always

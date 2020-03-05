@@ -31,6 +31,11 @@ spec:
         spec:
           description: RHMISpec defines the desired state of Installation
           properties:
+            deadMansSnitchSecret:
+              description: "DeadMansSnitchSecret is the name of a secret in the installation
+                namespace containing connection details for Dead Mans Snitch. The
+                secret must contain the following fields: \n url"
+              type: string
             masterURL:
               type: string
             namespacePrefix:
@@ -42,6 +47,11 @@ spec:
                 Standalone namespace will be used only for those operators that support
                 it.
               type: boolean
+            pagerdutySecret:
+              description: "PagerDutySecret is the name of a secret in the installation
+                namespace containing PagerDuty account details. The secret must contain
+                the following fields: \n serviceKey"
+              type: string
             pullSecret:
               properties:
                 name:
@@ -68,7 +78,7 @@ spec:
                 https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: string
             useClusterStorage:
-              type: boolean
+              type: string
           required:
           - namespacePrefix
           - type
@@ -86,6 +96,8 @@ spec:
               type: string
             smtpEnabled:
               type: boolean
+            stage:
+              type: string
             stages:
               additionalProperties:
                 properties:
@@ -128,6 +140,7 @@ spec:
               type: object
           required:
           - lastError
+          - stage
           - stages
           type: object
       type: object

@@ -11,8 +11,10 @@ metadata:
             "name": "INSTALLATION_NAME"
           },
           "spec": {
+            "deadMansSnitchSecret": "INSTALLATION_PREFIX-deadmanssnitch",
             "namespacePrefix": "INSTALLATION_PREFIX-",
             "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
+            "pagerdutySecret": "INSTALLATION_PREFIX-pagerduty",
             "selfSignedCerts": "SELF_SIGNED_CERTS",
             "smtpSecret": "INSTALLATION_PREFIX-smtp",
             "type": "INSTALLATION_TYPE",
@@ -26,28 +28,30 @@ metadata:
             "name": "example-rhmi"
           },
           "spec": {
+            "deadMansSnitchSecret": "redhat-rhmi-deadmanssnitch",
             "namespacePrefix": "redhat-rhmi-",
+            "pagerdutySecret": "redhat-rhmi-pagerduty",
             "selfSignedCerts": true,
             "smtpSecret": "redhat-rhmi-smtp",
             "type": "managed",
-            "useClusterStorage": true
+            "useClusterStorage": "true"
           }
         }
       ]
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v1.19.0
+    containerImage: quay.io/integreatly/integreatly-operator:v2.0.0-er3
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     support: RHMI
-  name: integreatly-operator.v1.19.0
+  name: integreatly-operator.v2.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents an installation of RHMI.
+    - description: RHMI is the Schema for the RHMI API
       kind: RHMI
       name: rhmis.integreatly.org
       version: v1alpha1
@@ -68,6 +72,15 @@ spec:
           - '*'
           verbs:
           - '*'
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consolelinks
+          verbs:
+          - get
+          - create
+          - update
+          - delete
         - apiGroups:
           - ""
           - project.openshift.io
@@ -257,7 +270,7 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v1.19.0
+                image: quay.io/integreatly/integreatly-operator:v2.0.0-er3
                 imagePullPolicy: Always
                 name: rhmi-operator
                 resources: {}
@@ -367,4 +380,4 @@ spec:
     matchLabels:
       alm-owner-rhmi: rhmi-operator
       operated-by: rhmi-operator
-  version: 1.19.0
+  version: 2.0.0
