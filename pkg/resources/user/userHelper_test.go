@@ -3,13 +3,14 @@ package user
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 const (
@@ -121,21 +122,21 @@ func TestGetValidGeneratedUserName(t *testing.T) {
 			KeyCloakUser: keycloak.KeycloakAPIUser{
 				UserName: "TEST",
 			},
-			ExpectedGeneratedName: fmt.Sprintf("%s%s", generatedNameSuffix, "test"),
+			ExpectedGeneratedName: fmt.Sprintf("%s%s", GeneratedNamePrefix, "test"),
 		},
 		{
 			Name: "Test - Username is lower cased and invalid characters replaced",
 			KeyCloakUser: keycloak.KeycloakAPIUser{
 				UserName: "TEST_USER@Example.com",
 			},
-			ExpectedGeneratedName: fmt.Sprintf("%s%s%s%s%s%s%s%s", generatedNameSuffix, "test", invalidCharacterReplacement, "user", invalidCharacterReplacement, "example", invalidCharacterReplacement, "com"),
+			ExpectedGeneratedName: fmt.Sprintf("%s%s%s%s%s%s%s%s", GeneratedNamePrefix, "test", invalidCharacterReplacement, "user", invalidCharacterReplacement, "example", invalidCharacterReplacement, "com"),
 		},
 		{
 			Name: "Test - Username replacement character is not added to the end of generated name",
 			KeyCloakUser: keycloak.KeycloakAPIUser{
 				UserName: "Tester01#",
 			},
-			ExpectedGeneratedName: fmt.Sprintf("%s%s", generatedNameSuffix, "tester01"),
+			ExpectedGeneratedName: fmt.Sprintf("%s%s", GeneratedNamePrefix, "tester01"),
 		},
 		{
 			Name: "Test - UserId is added to generated name",
@@ -147,7 +148,7 @@ func TestGetValidGeneratedUserName(t *testing.T) {
 					},
 				},
 			},
-			ExpectedGeneratedName: fmt.Sprintf("%s%s%s%s", generatedNameSuffix, "tester", invalidCharacterReplacement, "01-54d19771-aab6-49bb-913f-ce94e0ae5600"),
+			ExpectedGeneratedName: fmt.Sprintf("%s%s%s%s", GeneratedNamePrefix, "tester", invalidCharacterReplacement, "01-54d19771-aab6-49bb-913f-ce94e0ae5600"),
 		},
 	}
 	for _, tt := range tests {
