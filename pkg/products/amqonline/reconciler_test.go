@@ -189,18 +189,26 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 
 	postgres := &crov1.Postgres{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-postgres-",
+			Name:      "standard-authservice-postgresql",
 			Namespace: "test-namespace",
 		},
 		Spec: crov1.PostgresSpec{},
 		Status: crov1.PostgresStatus{
 			Phase: crotypes.PhaseComplete,
 			SecretRef: &crotypes.SecretRef{
-				Name:      "test-postgres-",
-				Namespace: "test-postgres-namespace",
+				Name:      "enmasse-postgres-secret",
+				Namespace: "test-namespace",
 			},
 		},
 	}
+
+	backupSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse-postgres-secret",
+			Namespace: "test-namespace",
+		},
+	}
+
 	scenarios := []struct {
 		Name           string
 		Client         k8sclient.Client
@@ -213,7 +221,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 	}{
 		{
 			Name:           "Test returns completed phase if successfully creating new auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"),postgres),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -226,7 +234,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		},
 		{
 			Name:           "Test returns completed phase if trying to create existing auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"),postgres),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -607,16 +615,23 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	postgres := &crov1.Postgres{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-postgres-",
-			Namespace: "test-namespace",
+			Name:      "standard-authservice-postgresql",
+			Namespace: defaultInstallationNamespace,
 		},
 		Spec: crov1.PostgresSpec{},
 		Status: crov1.PostgresStatus{
 			Phase: crotypes.PhaseComplete,
 			SecretRef: &crotypes.SecretRef{
-				Name:      "test-postgres-",
-				Namespace: "test-postgres-namespace",
+				Name:      "enmasse-postgres-secret",
+				Namespace: defaultInstallationNamespace,
 			},
+		},
+	}
+
+	backupSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: defaultInstallationNamespace,
+			Name:      "enmasse-postgres-secret",
 		},
 	}
 
@@ -688,8 +703,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace), postgres),
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

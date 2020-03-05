@@ -295,6 +295,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 			return nil
 		},
 	)
+
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
@@ -343,13 +344,6 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling enmasse standard auth service keycloak secret: %w", err)
 	}
 
-	// get the secret created by the cloud resources operator
-	croSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
-	}
-
 	// create backup secret
 	logrus.Info("Reconciling amq-online postgres backup secret")
 	amqOnlneBackUpSecret := &corev1.Secret{
@@ -362,11 +356,11 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 
 	// create or update backup secret
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, amqOnlneBackUpSecret, func() error {
-		amqOnlneBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
-		amqOnlneBackUpSecret.Data["POSTGRES_USERNAME"] = croSec.Data["username"]
-		amqOnlneBackUpSecret.Data["POSTGRES_PASSWORD"] = croSec.Data["password"]
-		amqOnlneBackUpSecret.Data["POSTGRES_DATABASE"] = croSec.Data["database"]
-		amqOnlneBackUpSecret.Data["POSTGRES_PORT"] = croSec.Data["port"]
+		amqOnlneBackUpSecret.Data["POSTGRES_HOST"] = croSecret.Data["host"]
+		amqOnlneBackUpSecret.Data["POSTGRES_USERNAME"] = croSecret.Data["username"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PASSWORD"] = croSecret.Data["password"]
+		amqOnlneBackUpSecret.Data["POSTGRES_DATABASE"] = croSecret.Data["database"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PORT"] = croSecret.Data["port"]
 		amqOnlneBackUpSecret.Data["POSTGRES_VERSION"] = []byte("10")
 		return nil
 	})
