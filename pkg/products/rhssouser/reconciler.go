@@ -885,12 +885,15 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8scl
 	kc := &keycloak.Keycloak{}
 	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
-	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
-		r.Config.SetProductVersion(kc.Status.Version)
-		err = r.ConfigManager.WriteConfig(r.Config)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write keycloak config: %w", err)
-		}
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// The keycloak operator does not set the product version currently - should fetch from KeyCloak.Status.Version when fixed
+	r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionRHSSOUser))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write keycloak config: %w", err)
 	}
 
 	r.logger.Info("checking ready status for user-sso")
