@@ -39,19 +39,21 @@ import (
 )
 
 const (
-	defaultName             = "solution-explorer"
-	defaultSubNameAndPkg    = "rhmi-solution-explorer"
-	defaultTemplateLoc      = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	paramOpenShiftHost      = "OPENSHIFT_HOST"
-	paramOpenShiftOauthHost = "OPENSHIFT_OAUTH_HOST"
-	paramOauthClient        = "OPENSHIFT_OAUTHCLIENT_ID"
-	paramOpenShiftVersion   = "OPENSHIFT_VERSION"
-	paramInstalledServices  = "INSTALLED_SERVICES"
-	paramSSORoute           = "SSO_ROUTE"
-	paramIntegreatlyVersion = "INTEGREATLY_VERSION"
-	paramClusterType        = "CLUSTER_TYPE"
-	defaultRouteName        = "tutorial-web-app"
-	manifestPackage         = "integreatly-solution-explorer"
+	defaultName               = "solution-explorer"
+	defaultSubNameAndPkg      = "rhmi-solution-explorer"
+	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.0"
+	paramOpenShiftHost        = "OPENSHIFT_HOST"
+	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
+	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
+	paramOpenShiftVersion     = "OPENSHIFT_VERSION"
+	paramInstalledServices    = "INSTALLED_SERVICES"
+	paramSSORoute             = "SSO_ROUTE"
+	paramIntegreatlyVersion   = "INTEGREATLY_VERSION"
+	paramClusterType          = "CLUSTER_TYPE"
+	paramWalkthroughLocations = "WALKTHROUGH_LOCATIONS"
+	defaultRouteName          = "tutorial-web-app"
+	manifestPackage           = "integreatly-solution-explorer"
 )
 
 type Reconciler struct {
@@ -365,14 +367,15 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 		seCR.Spec.AppLabel = "tutorial-web-app"
 		seCR.Spec.Template.Path = defaultTemplateLoc
 		seCR.Spec.Template.Parameters = map[string]string{
-			paramOauthClient:        r.getOAuthClientName(),
-			paramSSORoute:           ssoConfig.GetHost(),
-			paramOpenShiftHost:      installation.Spec.MasterURL,
-			paramOpenShiftOauthHost: oauthURL,
-			paramOpenShiftVersion:   "4",
-			paramClusterType:        "osd",
-			paramInstalledServices:  installedServices,
-			paramIntegreatlyVersion: version.IntegreatlyVersion,
+			paramOauthClient:          r.getOAuthClientName(),
+			paramSSORoute:             ssoConfig.GetHost(),
+			paramOpenShiftHost:        installation.Spec.MasterURL,
+			paramOpenShiftOauthHost:   oauthURL,
+			paramOpenShiftVersion:     "4",
+			paramClusterType:          "osd",
+			paramInstalledServices:    installedServices,
+			paramIntegreatlyVersion:   version.IntegreatlyVersion,
+			paramWalkthroughLocations: defaultWalkthroughsLoc,
 		}
 		return nil
 	})
