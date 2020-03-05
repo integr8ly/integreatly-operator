@@ -7,7 +7,6 @@ var (
 	ALL_TESTS = []TestCase{
 		// Add all tests that can be executed prior to a completed installation here
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
-		{"Verify User Permissions are Correct", TestIntegreatlyUserPermissions},
 	}
 
 	HAPPY_PATH_TESTS = []TestCase{
@@ -27,7 +26,6 @@ var (
 		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 		{"C01 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
