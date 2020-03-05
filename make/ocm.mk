@@ -111,9 +111,19 @@ ocm/cluster.json:
 		jq '.byoc = true | .aws.access_key_id = "$(ACCESS_KEY)" | .aws.secret_access_key = "$(SECRET_KEY)" | .aws.account_id = "$(AWS_ACCOUNT_ID)"' < ocm/cluster.json > ocm/cluster.json.tmp \
 		&& mv ocm/cluster.json.tmp ocm/cluster.json;\
 	fi
+	@if ! [[ -z "$(OPENSHIFT_VERSION)" ]]; then\
+		jq '.version = {"kind": "VersionLink","id": "openshift-v$(OPENSHIFT_VERSION)", "href": "/api/clusters_mgmt/v1/versions/openshift-v$(OPENSHIFT_VERSION)"}' < ocm/cluster.json > ocm/cluster.json.tmp \
+		&& mv ocm/cluster.json.tmp ocm/cluster.json;\
+	fi
 	@cat ocm/cluster.json
 
 .PHONY: ocm/aws/create_access_key
 ocm/aws/create_access_key:
 	@mkdir -p ocm
 	@aws iam create-access-key --user-name osdCcsAdmin | jq -r .AccessKey | tee ocm/aws.json
+
+.PHONY: ocm/cluster/upgrade
+ocm/cluster/upgrade:
+	@$(call get_cluster_id)
+	@oc adm upgrade --to $(UPGRADE_VERSION)
+	$(call wait_command, $(OCM) get cluster $(OCM_CLUSTER_ID) | jq -r .openshift_version | grep -q $(UPGRADE_VERSION), OpenShift upgrade, 90m, 300)
