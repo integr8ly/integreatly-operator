@@ -186,6 +186,21 @@ func setupRecorder() record.EventRecorder {
 }
 
 func TestReconcile_reconcileAuthServices(t *testing.T) {
+
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-postgres-",
+			Namespace: "test-namespace",
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: crotypes.PhaseComplete,
+			SecretRef: &crotypes.SecretRef{
+				Name:      "test-postgres-",
+				Namespace: "test-postgres-namespace",
+			},
+		},
+	}
 	scenarios := []struct {
 		Name           string
 		Client         k8sclient.Client
@@ -198,7 +213,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 	}{
 		{
 			Name:           "Test returns completed phase if successfully creating new auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"),postgres),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -211,7 +226,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		},
 		{
 			Name:           "Test returns completed phase if trying to create existing auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"),postgres),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -599,7 +614,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Status: crov1.PostgresStatus{
 			Phase: crotypes.PhaseComplete,
 			SecretRef: &crotypes.SecretRef{
-				Name: "test-postgres-",
+				Name:      "test-postgres-",
 				Namespace: "test-postgres-namespace",
 			},
 		},
@@ -673,7 +688,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}{
 		{
 			Name:           "test successful reconcile",
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedStatus: integreatlyv1alpha1.PhaseAwaitingComponents,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace), postgres),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

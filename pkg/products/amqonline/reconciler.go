@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
@@ -20,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
+	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -280,7 +280,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	// CRO operator SA only has permissions to create the secret in the intly
 	// operator namespace, so it will be first created there, then copied into
 	// the enmasse namespace.
-	_, err := croUtil.ReconcilePostgres(
+	postgres, err := croUtil.ReconcilePostgres(
 		ctx,
 		serverClient,
 		defaultInstallationNamespace,
@@ -295,6 +295,10 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 			return nil
 		},
 	)
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
 	}
@@ -337,6 +341,37 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling enmasse standard auth service keycloak secret: %w", err)
+	}
+
+	// get the secret created by the cloud resources operator
+	croSec := &corev1.Secret{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
+	}
+
+	// create backup secret
+	logrus.Info("Reconciling amq-online postgres backup secret")
+	amqOnlneBackUpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetPostgresBackupSecretName(),
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+
+	// create or update backup secret
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, amqOnlneBackUpSecret, func() error {
+		amqOnlneBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
+		amqOnlneBackUpSecret.Data["POSTGRES_USERNAME"] = croSec.Data["username"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PASSWORD"] = croSec.Data["password"]
+		amqOnlneBackUpSecret.Data["POSTGRES_DATABASE"] = croSec.Data["database"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PORT"] = croSec.Data["port"]
+		amqOnlneBackUpSecret.Data["POSTGRES_VERSION"] = []byte("10")
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update %s connection secret: %w", r.Config.GetPostgresBackupSecretName(), err)
 	}
 
 	standardAuthSvc := &enmasseadminv1beta1.AuthenticationService{
@@ -508,48 +543,6 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient k8sclient
 
 func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.inst.Spec.Type, postgresTier, r.Config.GetPostgresBackupSecretName(), r.inst.Namespace, r.Config.GetPostgresBackupSecretName(), r.inst.Namespace, func(cr metav1.Object) error {
-		owner.AddIntegreatlyOwnerAnnotations(cr, r.inst)
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres: %w", err)
-	}
-	if postgres.Status.Phase != cro1types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// get the secret created by the cloud resources operator
-	croSec := &corev1.Secret{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret: %w", err)
-	}
-
-	// create backup secret
-	logrus.Info("Reconciling amq-online postgres backup secret")
-	amqOnlneBackUpSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.Config.GetPostgresBackupSecretName(),
-			Namespace: r.Config.GetNamespace(),
-		},
-		Data: map[string][]byte{},
-	}
-
-	// create or update backup secret
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, amqOnlneBackUpSecret, func() error {
-		amqOnlneBackUpSecret.Data["POSTGRES_HOST"] = croSec.Data["host"]
-		amqOnlneBackUpSecret.Data["POSTGRES_USERNAME"] = croSec.Data["username"]
-		amqOnlneBackUpSecret.Data["POSTGRES_PASSWORD"] = croSec.Data["password"]
-		amqOnlneBackUpSecret.Data["POSTGRES_DATABASE"] = croSec.Data["database"]
-		amqOnlneBackUpSecret.Data["POSTGRES_PORT"] = croSec.Data["port"]
-		amqOnlneBackUpSecret.Data["POSTGRES_VERSION"] = []byte("10")
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update %s connection secret: %w", r.Config.GetPostgresBackupSecretName(), err)
-	}
-
 	backupConfig := resources.BackupConfig{
 		Namespace: r.Config.GetNamespace(),
 		Name:      string(r.Config.GetProductName()),
@@ -572,7 +565,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 		},
 	}
 
-	err = resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager)
+	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for amq-online: %w", err)
 	}
