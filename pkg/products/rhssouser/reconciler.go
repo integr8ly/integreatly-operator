@@ -3,8 +3,9 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"strings"
+
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -51,12 +52,36 @@ const (
 	masterRealmLabelKey         = "sso"
 	masterRealmLabelValue       = "master"
 	developersGroupName         = "rhmi-developers"
+	dedicatedAdminsGroupName    = "dedicated-admins"
+	realmManagersGroupName      = "realm-managers"
 	viewRealmRoleName           = "view-realm"
 	createRealmRoleName         = "create-realm"
+	manageRealmRoleName         = "manage-realm"
+	manageUsersRoleName         = "manage-users"
 	masterRealmClientName       = "master-realm"
 	firstBrokerLoginFlowAlias   = "first broker login"
 	reviewProfileExecutionAlias = "review profile config"
 )
+
+var realmManagersClientRoles = []string{
+	"create-client",
+	"manage-authorization",
+	"manage-clients",
+	"manage-events",
+	"manage-identity-providers",
+	"manage-realm",
+	"manage-users",
+	"query-clients",
+	"query-groups",
+	"query-realms",
+	"query-users",
+	"view-authorization",
+	"view-clients",
+	"view-events",
+	"view-identity-providers",
+	"view-realm",
+	"view-users",
+}
 
 type Reconciler struct {
 	Config        *config.RHSSOUser
@@ -312,6 +337,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile rhmi-developers group: %w", err)
 	}
 
+	// Reconcile dedicated-admins group
+	phase, err = r.reconcileDedicatedAdminsGroup(kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile dedicated-admins group: %v", err)
+	}
+
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {
@@ -332,6 +363,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		} else {
 			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 		}
+	}
+
+	// Reconcile dedicated-admin group members based on the openshift users
+	phase, err = r.reconcileDedicatedAdminUsers(serverClient, ctx, kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile dedicated-admins members: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -502,6 +539,7 @@ func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.
 					"manage-users",
 				},
 			},
+			Groups: []string{dedicatedAdminsGroupName, realmManagersGroupName},
 		})
 	}
 	return keycloakUsers
@@ -524,6 +562,25 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 						"manage-users",
 					}}
 				allUsers[i].RealmRoles = []string{"offline_access", "uma_authorization", "create-realm"}
+
+				// Add the "dedicated-admins" group if it's not there
+				hasDedicatedAdminGroup := false
+				hasRealmManagerGroup := false
+				for _, group := range allUsers[i].Groups {
+					if group == dedicatedAdminsGroupName {
+						hasDedicatedAdminGroup = true
+					}
+					if group == realmManagersGroupName {
+						hasRealmManagerGroup = true
+					}
+				}
+				if !hasDedicatedAdminGroup {
+					allUsers[i].Groups = append(allUsers[i].Groups, dedicatedAdminsGroupName)
+				}
+				if !hasRealmManagerGroup {
+					allUsers[i].Groups = append(allUsers[i].Groups, realmManagersGroupName)
+				}
+
 				break
 			}
 		}
@@ -545,6 +602,14 @@ func demoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, demoted []keycloak
 						"view-profile",
 					}}
 				allUsers[i].RealmRoles = []string{"offline_access", "uma_authorization"}
+				// Remove the dedicated-admins group from the user groups list
+				groups := []string{}
+				for _, group := range allUsers[i].Groups {
+					if (group != dedicatedAdminsGroupName) && (group != realmManagersGroupName) {
+						groups = append(groups, group)
+					}
+				}
+				allUsers[i].Groups = groups
 				break
 			}
 		}
@@ -1043,91 +1108,245 @@ func (r *Reconciler) reconcileDevelopersGroup(kc *keycloak.Keycloak) (integreatl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// Look for the group in the realm
-	existingGroup, err := kcClient.FindGroupByName(developersGroupName, masterRealmName)
+	groupSpec := &keycloakGroupSpec{
+		Name:        developersGroupName,
+		RealmName:   masterRealmName,
+		IsDefault:   true,
+		ChildGroups: []*keycloakGroupSpec{},
+		RealmRoles: []string{
+			createRealmRoleName,
+		},
+		ClientRoles: []*keycloakClientRole{
+			&keycloakClientRole{
+				ClientName: masterRealmClientName,
+				RoleName:   viewRealmRoleName,
+			},
+		},
+	}
+
+	_, err = reconcileGroup(kcClient, groupSpec)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-
-	var groupID string
-
-	// If the group is not found, created, if it is, use its ID
-	if existingGroup == nil {
-		// Greate group
-		groupID, err = kcClient.CreateGroup(developersGroupName, masterRealmName)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		logrus.Infof("Created %s group", developersGroupName)
-	} else {
-		groupID = existingGroup.ID
-		logrus.Infof("Found group %s already existing in master realm", developersGroupName)
-	}
-
-	// Make it default in the realm
-	err = kcClient.MakeGroupDefault(groupID, masterRealmName)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	logrus.Infof("Made group %s a default group", developersGroupName)
-
-	masterRealmClients, err := kcClient.ListClients(masterRealmName)
-	var masterRealmClient *keycloak.KeycloakAPIClient
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	for _, client := range masterRealmClients {
-		if client.ClientID == masterRealmClientName {
-			masterRealmClient = client
-		}
-	}
-
-	if masterRealmClient == nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Client ID not found for %s in master realm", masterRealmClientName)
-	}
-
-	err = mapClientRoleToGroup(kcClient, groupID, masterRealmClient.ID, viewRealmRoleName)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	logrus.Infof("Mapped client role %s to newly created group %s", viewRealmRoleName, developersGroupName)
-
-	err = mapRealmRoleToGroup(kcClient, groupID, createRealmRoleName)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	logrus.Infof("Mapped realm role %s to newly created group %s", createRealmRoleName, developersGroupName)
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, groupID, clientID, roleName string) error {
+func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	// Get Keycloak client
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	dedicatedAdminsSpec := &keycloakGroupSpec{
+		Name:       dedicatedAdminsGroupName,
+		RealmName:  masterRealmName,
+		RealmRoles: []string{},
+		ClientRoles: []*keycloakClientRole{
+			&keycloakClientRole{
+				ClientName: masterRealmClientName,
+				RoleName:   manageUsersRoleName,
+			},
+			&keycloakClientRole{
+				ClientName: masterRealmClientName,
+				RoleName:   viewRealmRoleName,
+			},
+		},
+		ChildGroups: []*keycloakGroupSpec{
+			&keycloakGroupSpec{
+				Name:        realmManagersGroupName,
+				RealmName:   masterRealmName,
+				ClientRoles: []*keycloakClientRole{},
+				RealmRoles:  []string{},
+				ChildGroups: []*keycloakGroupSpec{},
+			},
+		},
+	}
+
+	// Reconcile the dedicated-admins group hierarchy
+	_, err = reconcileGroup(kcClient, dedicatedAdminsSpec)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Get all the realms
+	realms, err := kcClient.ListRealms()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Create a "manage-realm" role for each realm
+	clientRoles := []*keycloakClientRole{}
+	for _, realm := range realms {
+		// Skip the master realm
+		if realm.Realm == masterRealmName {
+			continue
+		}
+
+		clientName := fmt.Sprintf("%s-realm", realm.Realm)
+
+		for _, roleName := range realmManagersClientRoles {
+			clientRole := &keycloakClientRole{
+				ClientName: clientName,
+				RoleName:   roleName,
+			}
+
+			clientRoles = append(clientRoles, clientRole)
+		}
+	}
+
+	// Reconcile the realm-managers group with the manage-realm roles
+	realmManagersSpec := &keycloakGroupSpec{
+		Name:        realmManagersGroupName,
+		RealmName:   masterRealmName,
+		ClientRoles: clientRoles,
+		ChildGroups: []*keycloakGroupSpec{},
+		RealmRoles:  []string{},
+	}
+
+	_, err = reconcileGroup(kcClient, realmManagersSpec)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, err
+}
+
+// Reconcile the members of the dedicated-admin and realm-managers groups. Gets
+// the dedicated admin users from Openshift and compares them with the current
+// members of the groups, adding or removing them from the groups.
+// NOTE: The Keyclock operator does not reconcile the KeycloakUser.Spec.user.groups
+//       array, that's why this is done manually. If the operator is updated to
+//		 reconcile this field, this function will become redundant, as the membership
+//       could be declared in the CR spec.
+func (r *Reconciler) reconcileDedicatedAdminUsers(serverClient k8sclient.Client, ctx context.Context, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	// Get Keycloak client
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	openshiftUsers := &usersv1.UserList{}
+	err = serverClient.List(ctx, openshiftUsers)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	openshiftGroups := &usersv1.GroupList{}
+	err = serverClient.List(ctx, openshiftGroups)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Get OS dedicated-admin users
+	dedicatedAdminUsers := getDedicatedAdmins(*openshiftUsers, *openshiftGroups)
+
+	// Reconcile their membership to the dedicated-admins and realm-managers
+	// groups
+	for _, groupName := range []string{dedicatedAdminsGroupName, realmManagersGroupName} {
+		err = reconcileDedicatedAdminsMembership(kcClient, dedicatedAdminUsers, groupName)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func reconcileDedicatedAdminsMembership(kcClient keycloakCommon.KeycloakInterface, dedicatedAdminUsers []usersv1.User, groupName string) error {
+	group, err := kcClient.FindGroupByName(groupName, masterRealmName)
+	if err != nil {
+		return err
+	}
+
+	groupMembers, err := kcClient.ListUsersInGroup(masterRealmName, group.ID)
+	if err != nil {
+		return err
+	}
+
+	// Look for the users in OS that are not members of the group and add
+	// them to it
+	for _, osDedicatedAdmin := range dedicatedAdminUsers {
+		// Search for the user in the group members list
+		ssoUserID := ""
+		for _, groupMember := range groupMembers {
+			if osDedicatedAdmin.Name == groupMember.UserName {
+				ssoUserID = groupMember.ID
+				break
+			}
+		}
+
+		// If the user is found, skip it
+		if ssoUserID != "" {
+			continue
+		}
+
+		// Look for the user in the keycloak API. If the user is not found,
+		// skip it, as it might not have been reconciled yet
+		kcUser, err := kcClient.FindUserByUsername(osDedicatedAdmin.Name, masterRealmName)
+		if err != nil {
+			return err
+		}
+		if kcUser == nil {
+			logrus.Infof("Openshift dedicated-admin %s not found in User SSO, skipping...", osDedicatedAdmin.Name)
+			continue
+		}
+
+		// Add the user to the group
+		err = kcClient.AddUserToGroup(masterRealmName, kcUser.ID, group.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Look for the users in the group that are not dedicated admins in OS
+	// and remove them from the group
+	for _, groupMember := range groupMembers {
+		found := false
+		for _, osDedicatedAdmin := range dedicatedAdminUsers {
+			if osDedicatedAdmin.Name == groupMember.UserName {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			continue
+		}
+
+		err = kcClient.DeleteUserFromGroup(masterRealmName, groupMember.ID, group.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, clientID, roleName string) error {
 	return mapRoleToGroupByName(roleName,
 		func() ([]*keycloak.KeycloakUserRole, error) {
-			return kcClient.ListGroupClientRoles(masterRealmName, clientID, groupID)
+			return kcClient.ListGroupClientRoles(realmName, clientID, groupID)
 		},
 		func() ([]*keycloak.KeycloakUserRole, error) {
-			return kcClient.ListAvailableGroupClientRoles(masterRealmName, clientID, groupID)
+			return kcClient.ListAvailableGroupClientRoles(realmName, clientID, groupID)
 		},
 		func(role *keycloak.KeycloakUserRole) error {
-			return kcClient.CreateGroupClientRole(role, masterRealmName, clientID, groupID)
+			return kcClient.CreateGroupClientRole(role, realmName, clientID, groupID)
 		},
 	)
 }
 
-func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, groupID, roleName string) error {
+func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, roleName string) error {
 	return mapRoleToGroupByName(roleName,
 		func() ([]*keycloak.KeycloakUserRole, error) {
-			return kcClient.ListGroupRealmRoles(masterRealmName, groupID)
+			return kcClient.ListGroupRealmRoles(realmName, groupID)
 		},
 		func() ([]*keycloak.KeycloakUserRole, error) {
-			return kcClient.ListAvailableGroupRealmRoles(masterRealmName, groupID)
+			return kcClient.ListAvailableGroupRealmRoles(realmName, groupID)
 		},
 		func(role *keycloak.KeycloakUserRole) error {
-			return kcClient.CreateGroupRealmRole(role, masterRealmName, groupID)
+			return kcClient.CreateGroupRealmRole(role, realmName, groupID)
 		},
 	)
 }
@@ -1217,4 +1436,134 @@ func (r *Reconciler) reconcileFirstLoginAuthFlow(kc *keycloak.Keycloak) (integre
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 	return integreatlyv1alpha1.PhaseFailed, err
+}
+
+// Struct to define the desired status of a Keycloak group
+type keycloakGroupSpec struct {
+	Name      string
+	RealmName string
+	IsDefault bool
+
+	RealmRoles  []string
+	ClientRoles []*keycloakClientRole
+
+	ChildGroups []*keycloakGroupSpec
+}
+
+type keycloakClientRole struct {
+	ClientName string
+	RoleName   string
+}
+
+func reconcileGroup(kcClient keycloakCommon.KeycloakInterface, group *keycloakGroupSpec) (string, error) {
+	// Look for the group in case it already exists
+	existingGroup, err := kcClient.FindGroupByName(group.Name, group.RealmName)
+	if err != nil {
+		return "", fmt.Errorf("Error querying groups in realm %s: %v", group.RealmName, err)
+	}
+
+	// Store the group ID based on the existing group ID (in case it already
+	// exists), or the newly created group ID if
+	var groupID string
+	if existingGroup != nil {
+		groupID = existingGroup.ID
+	} else {
+		groupID, err = kcClient.CreateGroup(group.Name, group.RealmName)
+		if err != nil {
+			return "", fmt.Errorf("Error creating new group %s: %v", group.Name, err)
+		}
+	}
+
+	// If the group is meant to be default make it default
+	if group.IsDefault {
+		err = kcClient.MakeGroupDefault(groupID, group.RealmName)
+		if err != nil {
+			return "", fmt.Errorf("Error making group %s default: %v", group.Name, err)
+		}
+	}
+
+	// Create its client roles
+	err = reconcileGroupClientRoles(kcClient, groupID, group)
+	if err != nil {
+		return "", err
+	}
+	// Create its realm roles
+	err = reconcileGroupRealmRoles(kcClient, groupID, group)
+	if err != nil {
+		return "", err
+	}
+
+	// Create its child groups
+	for _, childGroup := range group.ChildGroups {
+		childGroupID, err := reconcileGroup(kcClient, childGroup)
+		if err != nil {
+			return "", fmt.Errorf("Error creating child group %s for group %s: %v",
+				childGroup.Name, group.Name, err)
+		}
+
+		err = kcClient.SetGroupChild(groupID, group.RealmName, &keycloakCommon.Group{
+			ID: childGroupID,
+		})
+		if err != nil {
+			return "", fmt.Errorf("Error assigning child group %s to parent group %s: %v",
+				childGroup.Name, group.Name, err)
+		}
+	}
+
+	return groupID, nil
+}
+
+func reconcileGroupClientRoles(kcClient keycloakCommon.KeycloakInterface, groupID string, group *keycloakGroupSpec) error {
+	if len(group.ClientRoles) == 0 {
+		return nil
+	}
+
+	realmClients, err := listClientsByName(kcClient, group.RealmName)
+	if err != nil {
+		return err
+	}
+
+	for _, role := range group.ClientRoles {
+		client, ok := realmClients[role.ClientName]
+
+		if !ok {
+			return fmt.Errorf("Client %s required for role %s not found in realm %s",
+				role.ClientName, role.RoleName, group.RealmName)
+		}
+
+		err = mapClientRoleToGroup(kcClient, group.RealmName, groupID, client.ID, role.RoleName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func reconcileGroupRealmRoles(kcClient keycloakCommon.KeycloakInterface, groupID string, group *keycloakGroupSpec) error {
+	for _, role := range group.RealmRoles {
+		err := mapRealmRoleToGroup(kcClient, group.RealmName, groupID, role)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Query the clients in a realm and return a map where the key is the client name
+// (`ClientID` field) and the value is the struct with the client information
+func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName string) (map[string]*keycloak.KeycloakAPIClient, error) {
+	clients, err := kcClient.ListClients(realmName)
+	if err != nil {
+		return nil, err
+	}
+
+	clientsByID := map[string]*keycloak.KeycloakAPIClient{}
+
+	for _, client := range clients {
+		clientsByID[client.ClientID] = client
+	}
+
+	return clientsByID, nil
 }
