@@ -17,11 +17,6 @@ const (
 	InstallationName      = "rhmi"
 )
 
-const (
-	namespacePrefix  = "redhat-rhmi-"
-	installationName = "example-rhmi"
-)
-
 type TestingContext struct {
 	Client          dynclient.Client
 	KubeConfig      *rest.Config

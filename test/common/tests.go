@@ -5,7 +5,6 @@ var (
 		// Add all the tests that should be executed in both e2e and osd suites here.
 		// It is an array so the tests will be executed in the same order as they defined here.
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
-		{"Verify User Permissions are Correct", TestIntegreatlyUserPermissions},
 	}
 
 	AFTER_INSTALL_PREREQUISITES = []TestCase{
@@ -14,7 +13,6 @@ var (
 	}
 
 	AFTER_INSTALL_TESTS = []TestCase{
-		// Test to be execute after RHMI has been installed
 		{"Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
