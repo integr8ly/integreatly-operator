@@ -507,6 +507,15 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
+	// check authentication stage operand versions
+	authOperands := map[string]string{
+		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
+	}
+	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperands)
+	if err != nil {
+		return err
+	}
+
 	// check cloud resources stage operand versions
 	stage = integreatlyv1alpha1.StageName("cloud-resources")
 	resouceOperands := map[string]string{
@@ -536,6 +545,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"codeready-workspaces": string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
 		"fuse-on-openshift":    string(integreatlyv1alpha1.VersionFuseOnOpenshift),
 		"ups":                  string(integreatlyv1alpha1.VersionUps),
+		string(integreatlyv1alpha1.ProductRHSSOUser): string(integreatlyv1alpha1.VersionRHSSOUser),
 	}
 	err = checkOperandVersions(t, f, namespace, stage, productOperands)
 	if err != nil {

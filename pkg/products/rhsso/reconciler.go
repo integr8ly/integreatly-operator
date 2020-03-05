@@ -534,15 +534,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	kc := &keycloak.Keycloak{}
-	// if this errors, it can be ignored
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
-	if err == nil && string(r.Config.GetProductVersion()) != kc.Status.Version {
-		r.Config.SetProductVersion(kc.Status.Version)
-		err = r.ConfigManager.WriteConfig(r.Config)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	// The keycloak operator does not set the product version currently - should fetch from KeyCloak.Status.Version when fixed
+	r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionRHSSO))
 	// The Keycloak Operator doesn't currently set the operator version
 	r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionRHSSO))
 	err = r.ConfigManager.WriteConfig(r.Config)

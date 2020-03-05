@@ -64,6 +64,8 @@ var (
 	VersionCloudResources      ProductVersion = "0.13.0"
 	VersionFuseOnline          ProductVersion = "7.5"
 	VersionDataSync            ProductVersion = "0.9.4"
+	VersionRHSSO               ProductVersion = "8.0.1"
+	VersionRHSSOUser           ProductVersion = "8.0.1"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
