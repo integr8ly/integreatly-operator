@@ -11,6 +11,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.5-0.20191022081736-744796356cda
 	github.com/google/go-cmp v0.4.0 // indirect
+	github.com/google/go-querystring v1.0.0
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.11.0
 	github.com/integr8ly/grafana-operator v1.3.1
@@ -30,6 +31,7 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
+	golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271
 	golang.org/x/tools v0.0.0-20200207224406-61798d64f025 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
