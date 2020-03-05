@@ -488,33 +488,37 @@ func execToPod(command string, podname string, namespace string, container strin
 	return stdout.String(), nil
 }
 
-// difference returns the elements in `a` that aren't in `b`.
-func difference(a, b []string) []string {
-	mb := make(map[string]struct{}, len(b))
-	for _, x := range b {
-		mb[x] = struct{}{}
+// difference one-way diff that return strings in sliceSource that are not in sliceTarget
+func difference(sliceSource, sliceTarget []string) []string {
+	// create an empty lookup map with keys from sliceTarget
+	diffSourceLookupMap := make(map[string]struct{}, len(sliceTarget))
+	for _, item := range sliceTarget {
+		diffSourceLookupMap[item] = struct{}{}
 	}
-
+	// use the lookup map to find items in sliceSource that are not in sliceTarget
+	// and store them in a diff slice
 	var diff []string
-	for _, x := range a {
-		if _, found := mb[x]; !found {
-			diff = append(diff, x)
+	for _, item := range sliceSource {
+		if _, found := diffSourceLookupMap[item]; !found {
+			diff = append(diff, item)
 		}
 	}
 	return diff
 }
 
-// difference returns the elements in list of alertsTestRule `a` that aren't in list `b`.
-func ruleDifference(a, b []alertsTestRule) []alertsTestRule {
-	mb := make(map[string]struct{}, len(b))
-	for _, x := range b {
-		mb[x.File] = struct{}{}
+// ruleDifference one-way diff that return rules in diffSource that are not in diffTarget
+func ruleDifference(diffSource, diffTarget []alertsTestRule) []alertsTestRule {
+	// create an empty lookup map with keys from diffTarget
+	diffSourceLookupMap := make(map[string]struct{}, len(diffTarget))
+	for _, rule := range diffTarget {
+		diffSourceLookupMap[rule.File] = struct{}{}
 	}
-
+	// use the lookup map to find items in diffSource that are not in diffTarget
+	// and store them in a diff slice
 	var diff []alertsTestRule
-	for _, x := range a {
-		if _, found := mb[x.File]; !found {
-			diff = append(diff, x)
+	for _, rule := range diffSource {
+		if _, found := diffSourceLookupMap[rule.File]; !found {
+			diff = append(diff, rule)
 		}
 	}
 	return diff
