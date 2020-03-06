@@ -2085,7 +2085,7 @@ spec:
           "thresholds": "70,80",
           "timeFrom": null,
           "timeShift": null,
-          "title": "Memory Requests (Total)",
+          "title": "Memory Requests (Available)",
           "tooltip": {
             "shared": true,
             "sort": 0,
