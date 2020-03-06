@@ -140,6 +140,8 @@ copy_new_csv() {
     # The below line won't work for apicurito as it doesn't add the product name to the semver in it's folder structure
     NEW_CSV_FOLDER=${PRODUCT}-$NEW_CSV_SEMVER
     mv ${MANIFEST_TMP_DIR}/${NEW_CSV_SEMVER} ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER}
+    #Delete the target directory if it already exists
+    rm -rf ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}
     mv ${MANIFEST_TMP_DIR}/${NEW_CSV_FOLDER} ${MANIFESTS_DIR}/integreatly-${PRODUCT}/
 }
 
