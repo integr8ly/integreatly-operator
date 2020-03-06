@@ -2,6 +2,8 @@ package functional
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -14,7 +16,6 @@ import (
 	"k8s.io/client-go/restmapper"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	config2 "sigs.k8s.io/controller-runtime/pkg/client/config"
-	"testing"
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -28,6 +29,11 @@ func TestIntegreatly(t *testing.T) {
 	}
 	t.Run("Integreatly Happy Path Tests", func(t *testing.T) {
 		for _, test := range common.ALL_TESTS {
+			t.Run(test.Description, func(t *testing.T) {
+				test.Test(t, testingContext)
+			})
+		}
+		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
 				test.Test(t, testingContext)
 			})

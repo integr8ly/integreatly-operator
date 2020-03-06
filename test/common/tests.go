@@ -10,5 +10,6 @@ var (
 	AFTER_INSTALL_TESTS = []TestCase{
 		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
+		{"Verify alerts exist", TestIntegreatlyAlertsExist},
 	}
 )
