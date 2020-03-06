@@ -174,7 +174,8 @@ update_new_csv() {
     esac
     echo "${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME}"
     yq d -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} spec.replaces
-    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} spec.install.spec.deployments[0].spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath metadata.annotations[\'olm.targetNamespaces\']
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} 'spec.install.spec.deployments[0].spec.template.spec.containers[0].env.name==WATCH_NAMESPACE.valueFrom.fieldRef.fieldPath' metadata.annotations[\'olm.targetNamespaces\']
+    yq w -i ${MANIFESTS_DIR}/integreatly-${PRODUCT}/${NEW_CSV_FOLDER}/${NEW_CSV_FILE_NAME} 'spec.install.spec.deployments[0].spec.template.spec.containers[0].env.name==NAMESPACE.valueFrom.fieldRef.fieldPath' metadata.annotations[\'olm.targetNamespaces\']
 }
 
 
