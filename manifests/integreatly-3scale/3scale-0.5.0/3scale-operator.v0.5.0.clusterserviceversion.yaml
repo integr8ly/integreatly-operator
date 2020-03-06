@@ -9,7 +9,7 @@ metadata:
     categories: "Integration & Delivery"
     certified: "false"
     description: 3scale Operator to provision 3scale and publish/manage API
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_latest
+    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:18daec52cad9903efe87feb441a5076d50a1c1e6dc4cfba008528f6c51890b58
     createdAt: 2019-05-30T22:40:00Z
     support: Red Hat, Inc.
     tectonic-visibility: ocs
@@ -30,21 +30,21 @@ metadata:
 spec:
   relatedImages:
   - name: apicast-gateway-rhel8
-    image: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_latest
+    image: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:e4c66743114069bb359fba424707c8a45f47782a6a47271e77503c06be3cb303
   - name: backend-rhel7
-    image: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_latest
+    image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:aa65e43a7a75b174713426f0ff1ac54e79c9f3c2262d8d938755f4608a2ba350
   - name: system-rhel7
-    image: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_latest
+    image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:13e0671094098a643591975d7b2a4eff404795d368051650dedd44203fe73bc5
   - name: zync-rhel7
-    image: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_latest
+    image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:7053614c9d76bc6c262f3548d65eecac8e6bb72beed5e9e57703a72fb0507fc8
   - name: memcached-rhel7
-    image: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_latest
+    image: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:4bc6e943bbfb46a7090cc3f7e99edb123921830ad690d5af8e2a0fc06c94471e
   - name: redis-32-rhel7
-    value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_latest
+    value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
   - name: mysql-57-rhel7
-    value: quay.io/integreatly/delorean:rhscl-mysql-57-rhel7_latest
+    value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
   - name: postgresql-10-rhel7
-    value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_latest
+    value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
   customresourcedefinitions:
     owned:
     - kind: APIManager
@@ -168,26 +168,26 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_latest
+                  value: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:aa65e43a7a75b174713426f0ff1ac54e79c9f3c2262d8d938755f4608a2ba350
                 - name: APICAST_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_latest
+                  value: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:e4c66743114069bb359fba424707c8a45f47782a6a47271e77503c06be3cb303
                 - name: SYSTEM_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_latest
+                  value: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:13e0671094098a643591975d7b2a4eff404795d368051650dedd44203fe73bc5
                 - name: ZYNC_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_latest
+                  value: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:7053614c9d76bc6c262f3548d65eecac8e6bb72beed5e9e57703a72fb0507fc8
                 - name: SYSTEM_MEMCACHED_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_latest
+                  value: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:4bc6e943bbfb46a7090cc3f7e99edb123921830ad690d5af8e2a0fc06c94471e
                 - name: BACKEND_REDIS_IMAGE
-                  value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_latest
+                  value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
                 - name: SYSTEM_REDIS_IMAGE
-                  value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_latest
+                  value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
                 - name: SYSTEM_MYSQL_IMAGE
-                  value: quay.io/integreatly/delorean:rhscl-mysql-57-rhel7_latest
+                  value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
                 - name: SYSTEM_POSTGRESQL_IMAGE
-                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_latest
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
                 - name: ZYNC_POSTGRESQL_IMAGE
-                  value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_latest
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_latest
+                  value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+                image: registry.stage.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:18daec52cad9903efe87feb441a5076d50a1c1e6dc4cfba008528f6c51890b58
                 name: 3scale-operator
                 resources: {}
               serviceAccountName: 3scale-operator
