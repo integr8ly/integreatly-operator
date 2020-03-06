@@ -793,28 +793,34 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
-	for _, tsUser := range newTsUsers.Users {
 
+	isWorkshop := installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)
+
+	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers *Users, systemAdminUsername string, isWorkshop bool, tsClient ThreeScaleInterface, accessToken string) error {
+	for _, tsUser := range newTsUsers.Users {
 		// skip if ts user is the system user admin
-		if tsUser.UserDetails.Username == *systemAdminUsername {
+		if tsUser.UserDetails.Username == systemAdminUsername {
 			continue
 		}
 
 		// In workshop mode, developer users also get admin permissions in 3scale
-		if (userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeWorkshop)) && tsUser.UserDetails.Role != adminRole {
-			res, err := r.tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, *accessToken)
+		if (userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) || isWorkshop) && tsUser.UserDetails.Role != adminRole {
+			res, err := tsClient.SetUserAsAdmin(tsUser.UserDetails.Id, accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
-				return integreatlyv1alpha1.PhaseInProgress, err
-			}
-		} else if !userIsOpenshiftAdmin(tsUser, openshiftAdminGroup) && tsUser.UserDetails.Role != memberRole && installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeWorkshop) {
-			res, err := r.tsClient.SetUserAsMember(tsUser.UserDetails.Id, *accessToken)
-			if err != nil || res.StatusCode != http.StatusOK {
-				return integreatlyv1alpha1.PhaseInProgress, err
+				return err
 			}
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	return nil
 }
 
 func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
