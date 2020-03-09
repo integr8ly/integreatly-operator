@@ -3,7 +3,7 @@
 set -e
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MANIFESTS_DIR=${WORK_DIR}/../manifests
+MANIFESTS_DIR=${WORK_DIR}/../../manifests
 MANIFEST_TMP_DIR=${MANIFESTS_DIR}/tmp
 
 get_current_csv() {
