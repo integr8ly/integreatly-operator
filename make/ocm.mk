@@ -9,6 +9,7 @@ OCM_CLUSTER_LIFESPAN=4
 RHMI_OPERATOR_NS=redhat-rhmi-operator
 # Path to the new cluster's kubeconfig
 CLUSTER_KUBECONFIG="ocm/cluster.kubeconfig"
+USE_CLUSTER_STORAGE=false
 
 define get_cluster_id
 	@$(eval OCM_CLUSTER_ID=$(shell mkdir -p ocm && touch ocm/cluster-details.json && jq -r .id < ocm/cluster-details.json ))
@@ -88,12 +89,18 @@ ocm/install/apply-rhmi-addon:
 	@$(call get_cluster_id)
 	@echo '{"addon":{"id":"rhmi"}}' | ${OCM} post /api/clusters_mgmt/v1/clusters/${OCM_CLUSTER_ID}/addons
 	$(call wait_command, oc --kubeconfig=$(CLUSTER_KUBECONFIG) get rhmi -n $(RHMI_OPERATOR_NS) | grep -q NAME, installation CR created, 10m, 30)
+	@-oc --kubeconfig=$(CLUSTER_KUBECONFIG) patch rhmi rhmi -n $(RHMI_OPERATOR_NS) \
+		--type='json' -p '[{"op": "replace", "path": "/spec/useClusterStorage", "value": "$(USE_CLUSTER_STORAGE)"}]'
 	@-oc --kubeconfig=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-smtp -n $(RHMI_OPERATOR_NS) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
 		--from-literal=port=587 \
 		--from-literal=tls=true
+	@-oc --kubeconfig=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-pagerduty -n $(RHMI_OPERATOR_NS) \
+		--from-literal=serviceKey=dummykey
+	@-oc --kubeconfig=$(CLUSTER_KUBECONFIG) create secret generic redhat-rhmi-deadmanssnitch -n $(RHMI_OPERATOR_NS) \
+		--from-literal=url=https://dms.example.com
 
 .PHONY: ocm/cluster/delete
 ocm/cluster/delete:
