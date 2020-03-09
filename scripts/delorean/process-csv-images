@@ -28,6 +28,7 @@ RH_REGISTRY_PROD=registry.redhat.io
 RH_REGISTRY_STAGE=registry.stage.redhat.io
 RH_REGISTRY_OSBS=registry-proxy.engineering.redhat.com/rh-osbs
 DELOREAN_REGISTRY=quay.io/integreatly/delorean
+IMAGE_PULL_SECRET=integreatly-delorean-pull-secret
 
 collect_csv_images() {
     csv_images=(`grep -o ''${RH_REGISTRY_PROD}'.*\|'${RH_REGISTRY_STAGE}'.*' $1 | sed 's/"//' || true`)
@@ -69,6 +70,17 @@ process_csv_images() {
     done
 }
 
+update_image_pull_secret() {
+  current_csv=$(get_current_csv_file $PRODUCT)
+  case $PRODUCT in
+  "amq-online")
+    yq w -i ${current_csv} spec.install.spec.deployments[0].spec.template.spec.imagePullSecrets[0].name ${IMAGE_PULL_SECRET}
+    ;;
+  *)
+    echo "skipping pull secret"
+  esac
+}
+
 PRODUCT=$1
 
 process_csv() {
@@ -82,3 +94,6 @@ process_csv() {
 }
 
 process_csv
+if [[ ! -s ${MANIFESTS_DIR}/integreatly-${PRODUCT}/image_mirror_mapping ]]; then
+  update_image_pull_secret
+fi
