@@ -11,7 +11,7 @@
 set -e
 
 WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MANIFESTS_DIR=${WORK_DIR}/../manifests
+MANIFESTS_DIR=${WORK_DIR}/../../manifests
 ARGS=
 # ARGS is a fix for running it locally on mac. It is defaulted to empty for other OSs.
 if [[ "$OSTYPE" == "darwin"* ]]; then
