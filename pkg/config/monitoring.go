@@ -108,11 +108,11 @@ func (m *Monitoring) GetAdditionalScrapeConfigSecretKey() string {
 }
 
 func (m *Monitoring) GetPrometheusRetention() string {
-	return "15d"
+	return "45d"
 }
 
 func (m *Monitoring) GetPrometheusStorageRequest() string {
-	return "10Gi"
+	return "50Gi"
 }
 
 func (m *Monitoring) GetTemplateList() []string {
