@@ -84,7 +84,7 @@ func teeOutput(f func()) string {
 
 	wg.Add(2)
 
-	go t(stdoutReader, originalStderr)
+	go t(stdoutReader, originalStdout)
 	go t(stderrReader, originalStderr)
 
 	f()
