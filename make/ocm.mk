@@ -52,6 +52,6 @@ ocm/aws/create_access_key:
 ocm/cluster/upgrade:
 	@./scripts/ocm.sh upgrade_cluster
 
-.PHONY: ocm/test
-ocm/test:
+.PHONY: ocm/help
+ocm/help:
 	@./scripts/ocm.sh -h
