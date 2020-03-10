@@ -315,3 +315,12 @@ rules:
       - delete
       
   # END Permissions needed for our namespaces, but not given by "admin" role
+
+  # Permission to fetch identity to get email for created Keycloak users in openshift realm
+  - apiGroups:
+      - user.openshift.io
+    resources:
+      - identities
+    verbs:
+      - get
+  # END Permission to fetch identity to get email for created Keycloak users in openshift realm
