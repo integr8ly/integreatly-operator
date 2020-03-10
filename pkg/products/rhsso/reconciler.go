@@ -48,9 +48,10 @@ var (
 )
 
 const (
-	SSOLabelKey   = "sso"
-	SSOLabelValue = "integreatly"
-	RHSSOProfile  = "RHSSO"
+	SSOLabelKey               = "sso"
+	SSOLabelValue             = "integreatly"
+	RHSSOProfile              = "RHSSO"
+	adminCredentialSecretName = "credential-rhsso"
 )
 
 type Reconciler struct {
@@ -168,6 +169,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetNamespace()), err)
 		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err = resources.ReconcileRHSSOAdminCredentials(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
+		return phase, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)

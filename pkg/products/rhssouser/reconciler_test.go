@@ -71,6 +71,20 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		GetOauthClientsSecretNameFunc: func() string {
 			return "oauth-client-secrets"
 		},
+		GetRHSSOAdminCredentialSeedSecretNameFunc: func() string {
+			return "credential-rhsso-seed"
+		},
+	}
+}
+
+func getRHSSOCredentialSeed() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "credential-rhsso-seed",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
 	}
 }
 
@@ -677,7 +691,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed()),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{

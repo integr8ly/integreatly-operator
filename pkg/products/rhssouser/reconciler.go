@@ -61,6 +61,7 @@ const (
 	masterRealmClientName       = "master-realm"
 	firstBrokerLoginFlowAlias   = "first broker login"
 	reviewProfileExecutionAlias = "review profile config"
+	adminCredentialSecretName   = "credential-rhssouser"
 )
 
 var realmManagersClientRoles = []string{
@@ -188,6 +189,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetNamespace()), err)
+		return phase, err
+	}
+
+	phase, err = resources.ReconcileRHSSOAdminCredentials(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
 	}
 

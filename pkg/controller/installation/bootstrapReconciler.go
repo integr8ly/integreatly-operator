@@ -30,6 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	rhssoAdminCredentialUsernameSeed = "admin"
+)
+
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -79,6 +83,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check cloud resources config settings", err)
 		return phase, err
 	}
+
+	phase, err = r.reconcileRHSSOAdminCredentials(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile RHSSO Admin credentials secret", err)
+		return phase, err
+	}
+
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	logrus.Infof("Bootstrap stage reconciled successfully")
@@ -281,4 +292,28 @@ func generateSecret(length int) string {
 		buf[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(buf)
+}
+
+func (r *Reconciler) reconcileRHSSOAdminCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	rhssoAdminCredentialSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.ConfigManager.GetRHSSOAdminCredentialSeedSecretName(),
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhssoAdminCredentialSecret, func() error {
+		if len(rhssoAdminCredentialSecret.Data) == 0 {
+			rhssoAdminCredentialSecret.Data = map[string][]byte{
+				"ADMIN_USERNAME": []byte(rhssoAdminCredentialUsernameSeed),
+				"ADMIN_PASSWORD": []byte(generateSecret(16)),
+			}
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling RHSSO admin credentials secret: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

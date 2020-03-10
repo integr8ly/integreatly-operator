@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -17,12 +18,24 @@ import (
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
 	defaultOperatorNamespace = "test"
 	defaultRHSSONamespace    = "test"
 )
+
+func getRHSSOCredentialSeed() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "credential-rhsso-seed",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+}
 
 func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 	scheme := runtime.NewScheme()
@@ -160,6 +173,79 @@ func TestReconcileRHSSOPostgresCredentials(t *testing.T) {
 				if !bytes.Equal(val, got.Data[key]) {
 					t.Errorf("ReconcileRHSSOPostgresCredentials() got = %v, want %v", got.Data, tt.want.Data)
 				}
+			}
+		})
+	}
+}
+
+func TestReconcileRHSSOAdminCredentials(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	basicConfig := &config.ConfigReadWriterMock{
+		GetOperatorNamespaceFunc: func() string {
+			return defaultOperatorNamespace
+		},
+		ReadRHSSOUserFunc: func() (*config.RHSSOUser, error) {
+			return config.NewRHSSOUser(config.ProductConfig{
+				"NAMESPACE": "user-sso",
+				"REALM":     "openshift",
+				"URL":       "rhsso.openshift-cluster.com",
+				"HOST":      "edge/route",
+			}), nil
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
+		GetOauthClientsSecretNameFunc: func() string {
+			return "oauth-client-secrets"
+		},
+		GetRHSSOAdminCredentialSeedSecretNameFunc: func() string {
+			return "credential-rhsso-seed"
+		},
+	}
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		ExpectedError  bool
+	}{
+		{
+			Name:           "Successfully created RHSSO Admin Credential",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedError:  false,
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getRHSSOCredentialSeed()),
+		},
+		{
+			Name:           "Failed created RHSSO Admin Credential",
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			ExpectedError:  true,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return nil
+				},
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+					return errors.New("dummy create error")
+				},
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					return errors.New("dummy update error")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			got, err := ReconcileRHSSOAdminCredentials(context.TODO(), tt.FakeClient, basicConfig, "credentials-sso", basicConfig.GetOperatorNamespace())
+			if (err != nil) != tt.ExpectedError {
+				t.Errorf("reconcileRHSSOAdminCredentials() error = %v, wantErr %v", err, tt.ExpectedError)
+				return
+			}
+			if got != tt.ExpectedStatus {
+				t.Errorf("reconcileRHSSOAdminCredentials() got = %v, want %v", got, tt.ExpectedStatus)
 			}
 		})
 	}

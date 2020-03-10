@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -73,4 +74,14 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		return nil, nil, fmt.Errorf("failed to create keycloak external database secret, %s: %w", name, err)
 	}
 	return postgres, keycloakSec, nil
+}
+
+func ReconcileRHSSOAdminCredentials(ctx context.Context, client k8sclient.Client, configManager config.ConfigReadWriter, adminCredentialSecretName string, productNameSpace string) (integreatlyv1alpha1.StatusPhase, error) {
+	err := CopySecret(ctx, client, configManager.GetRHSSOAdminCredentialSeedSecretName(), configManager.GetOperatorNamespace(), adminCredentialSecretName, productNameSpace)
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to seed RHSSO Admin credentials: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
