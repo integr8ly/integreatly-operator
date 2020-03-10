@@ -12,6 +12,8 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	crotypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	enmassev1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
@@ -184,6 +186,29 @@ func setupRecorder() record.EventRecorder {
 }
 
 func TestReconcile_reconcileAuthServices(t *testing.T) {
+
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "standard-authservice-postgresql",
+			Namespace: "test-namespace",
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: crotypes.PhaseComplete,
+			SecretRef: &crotypes.SecretRef{
+				Name:      "enmasse-postgres-secret",
+				Namespace: "test-namespace",
+			},
+		},
+	}
+
+	backupSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "enmasse-postgres-secret",
+			Namespace: "test-namespace",
+		},
+	}
+
 	scenarios := []struct {
 		Name           string
 		Client         k8sclient.Client
@@ -196,7 +221,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 	}{
 		{
 			Name:           "Test returns completed phase if successfully creating new auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -209,7 +234,7 @@ func TestReconcile_reconcileAuthServices(t *testing.T) {
 		},
 		{
 			Name:           "Test returns completed phase if trying to create existing auth services",
-			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace")),
+			Client:         fake.NewFakeClientWithScheme(buildScheme(), croPostgresSecretMock("test-namespace"), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
@@ -588,6 +613,28 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	postgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "standard-authservice-postgresql",
+			Namespace: defaultInstallationNamespace,
+		},
+		Spec: crov1.PostgresSpec{},
+		Status: crov1.PostgresStatus{
+			Phase: crotypes.PhaseComplete,
+			SecretRef: &crotypes.SecretRef{
+				Name:      "enmasse-postgres-secret",
+				Namespace: defaultInstallationNamespace,
+			},
+		},
+	}
+
+	backupSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: defaultInstallationNamespace,
+			Name:      "enmasse-postgres-secret",
+		},
+	}
+
 	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
@@ -657,7 +704,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace)),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(buildScheme(), ns, operatorNS, consoleSvc, installation, operatorDeployment, backupsSecretMock(), croPostgresSecretMock(installation.Namespace), postgres, backupSecret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {

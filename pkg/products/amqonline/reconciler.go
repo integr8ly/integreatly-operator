@@ -19,6 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
+	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -41,6 +42,7 @@ const (
 	defaultSubscriptionName      = "rhmi-amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
+	postgresTier                 = "production"
 )
 
 type Reconciler struct {
@@ -278,12 +280,12 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	// CRO operator SA only has permissions to create the secret in the intly
 	// operator namespace, so it will be first created there, then copied into
 	// the enmasse namespace.
-	_, err := croUtil.ReconcilePostgres(
+	postgres, err := croUtil.ReconcilePostgres(
 		ctx,
 		serverClient,
 		defaultInstallationNamespace,
 		"workshop", // workshop here so that it creates in-cluster postgresql
-		"production",
+		postgresTier,
 		postgresqlName,
 		r.inst.Namespace,
 		postgresqlName,
@@ -293,6 +295,11 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 			return nil
 		},
 	)
+
+	if postgres.Status.Phase != cro1types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
 	}
@@ -335,6 +342,30 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed reconciling enmasse standard auth service keycloak secret: %w", err)
+	}
+
+	// create backup secret
+	logrus.Info("Reconciling amq-online postgres backup secret")
+	amqOnlneBackUpSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      r.Config.GetPostgresBackupSecretName(),
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+
+	// create or update backup secret
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, amqOnlneBackUpSecret, func() error {
+		amqOnlneBackUpSecret.Data["POSTGRES_HOST"] = croSecret.Data["host"]
+		amqOnlneBackUpSecret.Data["POSTGRES_USERNAME"] = croSecret.Data["username"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PASSWORD"] = croSecret.Data["password"]
+		amqOnlneBackUpSecret.Data["POSTGRES_DATABASE"] = croSecret.Data["database"]
+		amqOnlneBackUpSecret.Data["POSTGRES_PORT"] = croSecret.Data["port"]
+		amqOnlneBackUpSecret.Data["POSTGRES_VERSION"] = []byte("10")
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update %s connection secret: %w", r.Config.GetPostgresBackupSecretName(), err)
 	}
 
 	standardAuthSvc := &enmasseadminv1beta1.AuthenticationService{
@@ -505,6 +536,7 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient k8sclient
 }
 
 func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
 	backupConfig := resources.BackupConfig{
 		Namespace: r.Config.GetNamespace(),
 		Name:      string(r.Config.GetProductName()),
@@ -513,6 +545,12 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 			Namespace: r.Config.GetNamespace(),
 		},
 		Components: []resources.BackupComponent{
+			{
+				Name:     "enmasse-postgres-backup",
+				Type:     "postgres",
+				Secret:   resources.BackupSecretLocation{Name: r.Config.GetPostgresBackupSecretName(), Namespace: r.Config.GetNamespace()},
+				Schedule: r.Config.GetBackupSchedule(),
+			},
 			{
 				Name:     "enmasse-pv-backup",
 				Type:     "enmasse_pv",
