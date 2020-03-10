@@ -2,6 +2,7 @@ package threescale
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -341,5 +342,78 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				t.Errorf("reconcileComponents() got = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
+	calledSetUserAsAdmin := false
+
+	tsClientMock := ThreeScaleInterfaceMock{
+		SetUserAsAdminFunc: func(userID int, accessToken string) (*http.Response, error) {
+			if userID != 1 {
+				t.Fatalf("Unexpected user promoted to admin. Expected User with ID 1, got user with ID %d", userID)
+			} else {
+				calledSetUserAsAdmin = true
+			}
+
+			return &http.Response{
+				StatusCode: 200,
+			}, nil
+		},
+		SetUserAsMemberFunc: func(userID int, accessToken string) (*http.Response, error) {
+			t.Fatalf("Unexpected call to `SetUserAsMember`. Called with userID %d", userID)
+
+			return &http.Response{
+				StatusCode: 200,
+			}, nil
+		},
+	}
+
+	openshiftAdminGroup := &usersv1.Group{
+		Users: usersv1.OptionalNames{
+			"user1",
+			"user2",
+		},
+	}
+
+	newTsUsers := &Users{
+		Users: []*User{
+			&User{
+				UserDetails: UserDetails{
+					Id:   1,
+					Role: memberRole,
+					// User is in OS admin group. Should be promoted
+					Username: "user1",
+				},
+			},
+			&User{
+				UserDetails: UserDetails{
+					Id:   2,
+					Role: adminRole,
+					// User is in OS admin group and admin in 3scale. Should
+					// be ignored
+					Username: "user2",
+				},
+			},
+			&User{
+				UserDetails{
+					Id:   3,
+					Role: adminRole,
+					// User is not in OS admin group but is already admin.
+					// Should NOT be demoted
+					Username: "user3",
+				},
+			},
+		},
+	}
+
+	err := syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, "", false, &tsClientMock, "")
+
+	if err != nil {
+		t.Fatalf("Unexpected error when reconcilling openshift admin membership: %s", err)
+	}
+
+	if !calledSetUserAsAdmin {
+		t.Fatal("Expected user with ID 1 to be promoted as admin, but no promotion was invoked")
 	}
 }
