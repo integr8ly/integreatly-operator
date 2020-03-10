@@ -19,6 +19,7 @@ readonly RHMI_OPERATOR_NAMESPACE="redhat-rhmi-operator"
 readonly ERROR_MISSING_AWS_ENV_VARS="ERROR: Not all required AWS environment are set. Please make sure you've exported all following env vars:"
 readonly ERROR_MISSING_AWS_JSON="ERROR: ${AWS_CREDENTIALS_FILE} file does not exist. Please run 'make ocm/aws/create_access_key' first"
 readonly ERROR_MISSING_CLUSTER_JSON="ERROR: ${CLUSTER_CONFIGURATION_FILE} file does not exist. Please run 'make ocm/cluster.json' first"
+readonly ERROR_UPGRADE_VERSION_REQUIRED="ERROR: UPGRADE_VERSION variable is not exported. Please specify OpenShift version"
 
 create_access_key() {
     if [[ -z "${AWS_ACCOUNT_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" || -z "${AWS_ACCESS_KEY_ID:-}" ]]; then
@@ -40,7 +41,7 @@ create_cluster_configuration_file() {
     : "${BYOC:=false}"
     : "${OPENSHIFT_VERSION:=}"
 
-    timestamp=$(get_expiration_timestamp "${OCM_CLUSTER_LIFESPAN:-4}")
+    timestamp=$(get_expiration_timestamp "${OCM_CLUSTER_LIFESPAN}")
 
     jq ".expiration_timestamp = \"${timestamp}\" | .name = \"${OCM_CLUSTER_NAME}\" | .region.id = \"${OCM_CLUSTER_REGION}\"" \
         < "${REPO_DIR}/templates/ocm-cluster/cluster-template.json" \
@@ -71,7 +72,7 @@ create_cluster() {
     wait_for "ocm get /api/clusters_mgmt/v1/clusters/${cluster_id}/credentials | jq -r .admin | grep -q admin" "fetching cluster credentials" "10m" "30"
 
     save_cluster_credentials "${cluster_id}"
-    printf "Console URL: %s\n Login credentials: %s\n" "$(jq -r .console.url < "${CLUSTER_DETAILS_FILE}")" "$(jq -r < "${CLUSTER_CREDENTIALS_FILE}")"
+    printf "Console URL: %s\nLogin credentials: \n%s\n" "$(jq -r .console.url < "${CLUSTER_DETAILS_FILE}")" "$(jq -r < "${CLUSTER_CREDENTIALS_FILE}")"
 }
 
 install_rhmi() {
@@ -114,10 +115,14 @@ delete_cluster() {
 }
 
 upgrade_cluster() {
-    local cluster_id
+    if [[ -z "${UPGRADE_VERSION:-}" ]]; then
+        printf "%s\n" "${ERROR_UPGRADE_VERSION_REQUIRED}"
+        exit 1
+    fi
 
+    local cluster_id
     cluster_id=$(get_cluster_id)
-    oc adm upgrade --to "${UPGRADE_VERSION}"
+    oc --kubeconfig "${CLUSTER_KUBECONFIG_FILE}" adm upgrade --to "${UPGRADE_VERSION}"
     wait_for "ocm get cluster ${cluster_id} | jq -r .openshift_version | grep -q ${UPGRADE_VERSION}" "OpenShift upgrade" "90m" "300"
 }
 
@@ -152,6 +157,7 @@ wait_for() {
         sleep ${interval}
     done
     "
+    printf "%s finished!\n" "${description}"
 }
 
 save_cluster_credentials() {
@@ -207,12 +213,37 @@ display_help() {
 "Usage: %s <command>
 
 Commands:
+==========================================================================================
 create_access_key                 - create aws access key (required for BYOC-type cluster)
+------------------------------------------------------------------------------------------
+Required exported variables:
+- AWS_ACCOUNT_ID
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+==========================================================================================
 create_cluster_configuration_file - create cluster.json
+------------------------------------------------------------------------------------------
+Optional exported variables:
+- OCM_CLUSTER_LIFESPAN              How many hours should cluster stay until it's deleted?
+- OCM_CLUSTER_NAME                  e.g. my-cluster (lowercase, numbers, hyphens)
+- OCM_CLUSTER_REGION                e.g. eu-west-1
+- BYOC                              true/false (default: false)
+- OPENSHIFT_VERSION                 to get OpenShift versions, run: ocm cluster versions
+==========================================================================================
 create_cluster                    - spin up OSD cluster
+==========================================================================================
 install_rhmi                      - install RHMI using addon-type installation
+------------------------------------------------------------------------------------------
+Optional exported variables:
+- USE_CLUSTER_STORAGE               true/false - use OpenShift/AWS storage (default: true)
+==========================================================================================
 upgrade_cluster                   - upgrade OSD cluster
-delete_cluster                    - delete RHMI & OSD cluster
+------------------------------------------------------------------------------------------
+Required exported variables:
+- UPGRADE_VERSION                   to get OpenShift versions, run: ocm cluster versions
+==========================================================================================
+delete_cluster                    - delete RHMI product & OSD cluster
+==========================================================================================
 " "${0}"
 }
 
@@ -225,27 +256,27 @@ main() {
         case "${1:-}" in
         create_access_key)
             create_access_key
-            shift
+            exit 0
             ;;
         create_cluster_configuration_file)
             create_cluster_configuration_file
-            shift
+            exit 0
             ;;
         create_cluster)
             create_cluster
-            shift
+            exit 0
             ;;
         install_rhmi)
             install_rhmi
-            shift
+            exit 0
             ;;
         delete_cluster)
             delete_cluster
-            shift
+            exit 0
             ;;
         upgrade_cluster)
             upgrade_cluster
-            shift
+            exit 0
             ;;
         -h | --help)
             display_help
@@ -255,8 +286,8 @@ main() {
             echo "Error: Unknown option: $1" >&2
             exit 1
             ;;
-        *)  
-            echo "Error: Unknown command: $1" >&2
+        *)
+            echo "Error: Unknown command: ${1}" >&2
             exit 1
             ;;
         esac
