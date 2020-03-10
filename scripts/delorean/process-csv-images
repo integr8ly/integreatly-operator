@@ -94,6 +94,6 @@ process_csv() {
 }
 
 process_csv
-if [[ ! -s ${MANIFESTS_DIR}/integreatly-${PRODUCT}/image_mirror_mapping ]]; then
+if [[ -s ${MANIFESTS_DIR}/integreatly-${PRODUCT}/image_mirror_mapping ]]; then
   update_image_pull_secret
 fi
