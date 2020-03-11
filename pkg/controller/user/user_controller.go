@@ -25,16 +25,6 @@ var (
 	}
 )
 
-var (
-	defaultOperandNamespace = "rhsso"
-	keycloakName            = "rhsso"
-	keycloakRealmName       = "openshift"
-	defaultSubscriptionName = "rhmi-rhsso"
-	idpAlias                = "openshift-v4"
-	githubIdpAlias          = "github"
-	manifestPackage         = "integreatly-rhsso"
-)
-
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager, products []string) error {
