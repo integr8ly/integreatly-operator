@@ -35,7 +35,7 @@ create_access_key() {
 create_cluster_configuration_file() {
     local timestamp
 
-    : "${OCM_CLUSTER_LIFESPAN:-4}"
+    : "${OCM_CLUSTER_LIFESPAN:=4}"
     : "${OCM_CLUSTER_NAME:=rhmi-$(date +"%y%m%d-%H%M")}"
     : "${OCM_CLUSTER_REGION:=eu-west-1}"
     : "${BYOC:=false}"
