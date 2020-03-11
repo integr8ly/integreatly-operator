@@ -47,6 +47,10 @@ var (
 	githubIdpAlias            = "github"
 	manifestPackage           = "integreatly-rhsso"
 	adminCredentialSecretName = "credential-" + keycloakName
+	exclusionGroups           = []string{
+		"layered-cs-sre-admins",
+		"osd-sre-admins",
+	}
 )
 
 const (
@@ -766,9 +770,9 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 	return false
 }
 
-func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User, groups *usersv1.GroupList) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
 	for _, osUser := range openshiftUsers {
-		if !kcContainsOsUser(keycloakUsers, osUser) {
+		if !kcContainsOsUser(keycloakUsers, osUser) && !userInExclusionGroup(osUser, groups) {
 			added = append(added, osUser)
 		}
 	}
@@ -782,13 +786,38 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 	return added, deleted
 }
 
+func userInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
+
+	// Below is a slightly complex way to determine if the user exists in an exlcusion group
+	// Ideally we would use the user.Groups field but this does not seem to get populated.
+	for _, group := range groups.Items {
+		for _, xGroup := range exclusionGroups {
+			if group.Name == xGroup {
+				for _, groupUser := range group.Users {
+					if groupUser == user.Name {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.KeycloakAPIUser, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {
 	openshiftUsers := &usersv1.UserList{}
 	err := serverClient.List(ctx, openshiftUsers)
 	if err != nil {
 		return nil, err
 	}
-	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items)
+
+	groups := &usersv1.GroupList{}
+	err = serverClient.List(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
+
+	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items, groups)
 
 	keycloakUsers, err = deleteKeycloakUsers(keycloakUsers, deletedUsers, ns, ctx, serverClient)
 	if err != nil {

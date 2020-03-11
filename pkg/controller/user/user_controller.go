@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	usersv1 "github.com/openshift/api/user/v1"
@@ -17,7 +16,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_user")
+var (
+	log = logf.Log.WithName("controller_user")
+	// A set of pre configured groups used to exclude a user from rhmi specific groups
+	exclusionGroups = []string{
+		"layered-cs-sre-admins",
+		"osd-sre-admins",
+	}
+)
+
+var (
+	defaultOperandNamespace = "rhsso"
+	keycloakName            = "rhsso"
+	keycloakRealmName       = "openshift"
+	defaultSubscriptionName = "rhmi-rhsso"
+	idpAlias                = "openshift-v4"
+	githubIdpAlias          = "github"
+	manifestPackage         = "integreatly-rhsso"
+)
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -67,6 +83,7 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 			Name: "rhmi-developers",
 		},
 	}
+
 	or, err := controllerutil.CreateOrUpdate(ctx, c, rhmiGroup, func() error {
 		users := &usersv1.UserList{}
 		err := c.List(ctx, users)
@@ -74,7 +91,13 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 			return err
 		}
 
-		rhmiGroup.Users = mapUserNames(users)
+		groups := &usersv1.GroupList{}
+		err = c.List(ctx, groups)
+		if err != nil {
+			return err
+		}
+
+		rhmiGroup.Users = mapUserNames(users, groups)
 
 		return nil
 	})
@@ -83,11 +106,32 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 	return reconcile.Result{}, err
 }
 
-func mapUserNames(users *usersv1.UserList) []string {
+func mapUserNames(users *usersv1.UserList, groups *usersv1.GroupList) []string {
 	var result = []string{}
 	for _, user := range users.Items {
-		result = append(result, user.Name)
+		// Certain users such as sre do not need to be added
+		if !userInExclusionGroup(user, groups) {
+			result = append(result, user.Name)
+		}
 	}
 
 	return result
+}
+
+func userInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
+
+	// Below is a slightly complex way to determine if the user exists in an exlcusion group
+	// Ideally we would use the user.Groups field but this does not seem to get populated.
+	for _, group := range groups.Items {
+		for _, xGroup := range exclusionGroups {
+			if group.Name == xGroup {
+				for _, groupUser := range group.Users {
+					if groupUser == user.Name {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
