@@ -116,7 +116,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
+              "expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -254,7 +254,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "1 - avg(node:node_cpu_utilisation:avg1m * on(node) group_left (instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "1-avg(label_replace(instance:node_cpu_utilisation:rate1m, \"node\", \"$1\", \"instance\", \"(.*)\") * on(node) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -530,7 +530,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
+              "expr": "sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -668,7 +668,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
+              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -806,7 +806,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "(1 - sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}) / sum(kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores))\n",
+              "expr": "(1 - sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores))\n",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -920,7 +920,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "avg(node:node_cpu_utilisation:avg1m * on(node) group_left (instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "avg(label_replace(instance:node_cpu_utilisation:rate1m, \"node\", \"$1\", \"instance\", \"(.*)\") * on(node) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "intervalFactor": 1,
               "refId": "A"
@@ -1025,7 +1025,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -1163,7 +1163,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}) / sum(kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
+              "expr": "sum(kube_pod_container_resource_requests_cpu_cores * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_role{role=\"worker\"} * on(node) group_left (instance) kube_node_status_allocatable_cpu_cores)\n",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -1266,7 +1266,7 @@ spec:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
+              "expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "{{ "{{" }}namespace{{ "}}" }}",
@@ -1479,7 +1479,7 @@ spec:
           ],
           "targets": [
             {
-              "expr": "sum(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
+              "expr": "sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -1497,7 +1497,7 @@ spec:
               "step": 10
             },
             {
-              "expr": "(sum(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_requests_cpu_cores) by (namespace)",
+              "expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_requests_cpu_cores) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -1515,7 +1515,7 @@ spec:
               "step": 10
             },
             {
-              "expr": "(sum(namespace_pod_name_container_name:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_limits_cpu_cores) by (namespace)",
+              "expr": "(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_limits_cpu_cores) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -1660,7 +1660,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(container_memory_rss{container_name!='',container_name!='POD'} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_status_capacity_memory_bytes  * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(container_memory_rss{container!='',container!='POD'} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_status_capacity_memory_bytes  * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -1798,7 +1798,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "1 -avg(sum(node:node_memory_utilisation:  * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}))",
+              "expr": "1-avg(label_replace(instance:node_memory_utilisation:ratio, \"node\", \"$1\", \"instance\", \"(.*)\")  * on(node) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2074,7 +2074,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2085,7 +2085,7 @@ spec:
           "thresholds": "70,80",
           "timeFrom": null,
           "timeShift": null,
-          "title": "Memory Requests (Total)",
+          "title": "Memory Requests (Available)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2213,7 +2213,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2351,7 +2351,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "1 - sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "1 - sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2489,7 +2489,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "avg(sum(node:node_memory_utilisation:  * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}))",
+              "expr": "avg(label_replace(instance:node_memory_utilisation:ratio, \"node\", \"$1\", \"instance\", \"(.*)\")  * on(node) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2627,7 +2627,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2765,7 +2765,7 @@ spec:
           "tableColumn": "",
           "targets": [
             {
-              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_labels{label_node_role_kubernetes_io_compute=\"true\"})",
+              "expr": "sum(kube_pod_container_resource_requests_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"}) / sum(kube_node_status_allocatable_memory_bytes * on(node) group_left(instance) kube_node_role{role=\"worker\"})",
               "format": "time_series",
               "instant": true,
               "intervalFactor": 2,
@@ -2868,7 +2868,7 @@ spec:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(container_memory_rss{container_name!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
+              "expr": "sum(container_memory_rss{container!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
               "format": "time_series",
               "intervalFactor": 2,
               "legendFormat": "{{ "{{" }}namespace{{ "}}" }}",
@@ -3080,7 +3080,7 @@ spec:
           ],
           "targets": [
             {
-              "expr": "sum(container_memory_rss{container_name!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
+              "expr": "sum(container_memory_rss{container!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -3098,7 +3098,7 @@ spec:
               "step": 10
             },
             {
-              "expr": "(sum(container_memory_rss{container_name!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_requests_memory_bytes) by (namespace)",
+              "expr": "(sum(container_memory_rss{container!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_requests_memory_bytes) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -3116,7 +3116,7 @@ spec:
               "step": 10
             },
             {
-              "expr": "(sum(container_memory_rss{container_name!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_limits_memory_bytes) by (namespace)",
+              "expr": "(sum(container_memory_rss{container!=''} * on (namespace) group_left(label_monitoring_key) sum(kube_namespace_labels{label_monitoring_key=~'middleware'}) by (namespace)) by (namespace)) / sum(kube_pod_container_resource_limits_memory_bytes) by (namespace)",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
