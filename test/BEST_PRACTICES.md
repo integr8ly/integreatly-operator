@@ -33,15 +33,15 @@ instead you should create a loop to check if the resource is available or the op
 
 ## Independent
 
-A test must always be independent of other tests, which mean:
+A test must always be independent of other tests, which means:
 
-- it should not rely on other tests changes so that it would be possible to run it independently
+- it should not rely on the successful execution of other tests so the test can be run independently
 
-- it should clean up after himself so that it would be possible to run it multiple time
+- it should clean up after itself so it is possible to run the test concurrently or multiple times
 
 - it should not rely on a static order when querying data because multiple tests may run in parallel
 
-- it should not delete or modify other tests data because multiple tests may run in parallel
+- it should not delete or modify resources used by other tests so tests may run in parallel
 
 - it should not destruct any resource because other tests may rely on them
 
