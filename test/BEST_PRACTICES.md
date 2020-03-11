@@ -28,7 +28,7 @@ tutorial.
 
 ## Don't Sleep
 
-When waiting for a resource to become available or an operation to complete do not use fixed wait time,
+When waiting for a resource to become available or an operation to complete do not use fixed wait times and/or sleep statements,
 instead you should create a loop to check if the resource is available or the operation has completed
 
 ## Independent
