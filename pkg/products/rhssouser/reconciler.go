@@ -466,7 +466,7 @@ func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns str
 		return nil, err
 	}
 
-	mappedUsers := make([]keycloak.KeycloakAPIUser, len(users.Items))
+	var mappedUsers []keycloak.KeycloakAPIUser
 	for _, user := range users.Items {
 		if strings.HasPrefix(user.ObjectMeta.Name, userHelper.GeneratedNamePrefix) {
 			mappedUsers = append(mappedUsers, user.Spec.User)
@@ -728,7 +728,7 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 
 func kcUserInDedicatedAdmins(kcUser keycloak.KeycloakAPIUser, admins []usersv1.User) bool {
 	for _, admin := range admins {
-		if kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
+		if len(kcUser.FederatedIdentities) >= 1 && kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
 			return true
 		}
 	}
@@ -763,7 +763,7 @@ func contains(items []string, find string) bool {
 
 func getKeyCloakUser(admin usersv1.User, kcUsers []keycloak.KeycloakAPIUser) *keycloak.KeycloakAPIUser {
 	for _, kcUser := range kcUsers {
-		if kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
+		if len(kcUser.FederatedIdentities) >= 1 && kcUser.FederatedIdentities[0].UserID == string(admin.UID) {
 			return &kcUser
 		}
 	}
