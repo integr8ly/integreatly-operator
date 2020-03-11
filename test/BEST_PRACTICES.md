@@ -3,18 +3,21 @@
 This is a collection of best practices to write high quality tests. The best practices
 can be referenced in review comments to speed up the review process.
 
-- [Go Style](#go-style)
+- [Code Style](#code-style)
 - [Test Case Traceability](#test-case-traceability)
 - [Don't Sleep](#dont-sleep)
 - [Independent](#independent)
 - [Secrets](#secrets)
 - [Logging](#logging)
 
-## Go Style
+## Code Style
 
-We don't want to redefine best practices for go, therefore we should reuse the existing ones
-described in the [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
-and in the [Effective Go](https://golang.org/doc/effective_go.html) documents.
+These best practices focus only on test design and implementation.
+
+For Go code, we are reusing the standard best practices:
+
+- [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+- [Effective Go](https://golang.org/doc/effective_go.html) documents.
 
 ## Test Case Traceability
 
