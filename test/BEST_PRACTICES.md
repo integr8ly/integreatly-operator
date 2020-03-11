@@ -14,7 +14,7 @@ can be referenced in review comments to speed up the review process.
 
 We don't want to redefine best practices for go, therefore we should reuse the existing ones
 described in the [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
-and in the[Effective Go](https://golang.org/doc/effective_go.html) documents.
+and in the [Effective Go](https://golang.org/doc/effective_go.html) documents.
 
 ## Test Case Traceability
 
