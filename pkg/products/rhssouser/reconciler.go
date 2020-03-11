@@ -465,7 +465,7 @@ func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns str
 		return nil, err
 	}
 
-	mappedUsers := make([]keycloak.KeycloakAPIUser, len(users.Items))
+	var mappedUsers []keycloak.KeycloakAPIUser
 	for _, user := range users.Items {
 		if strings.HasPrefix(user.ObjectMeta.Name, userHelper.GeneratedNamePrefix) {
 			mappedUsers = append(mappedUsers, user.Spec.User)
