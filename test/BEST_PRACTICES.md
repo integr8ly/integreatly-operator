@@ -43,7 +43,7 @@ A test must always be independent of other tests, which means:
 
 ## Secrets
 
-Do not commit or log any sensitive data or secrets, and always double check for it because it can happen unconsciously
+Ensure secret or sensitive data is not included in commits or log output. 
 
 ## Logging
 
