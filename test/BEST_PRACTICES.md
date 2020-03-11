@@ -39,11 +39,7 @@ A test must always be independent of other tests, which means:
 
 - it should clean up after itself so it is possible to run the test concurrently or multiple times
 
-- it should not rely on a static order when querying data because multiple tests may run in parallel
-
 - it should not delete or modify resources used by other tests so tests may run in parallel
-
-- it should not destruct any resource because other tests may rely on them
 
 ## Secrets
 
