@@ -187,7 +187,6 @@ func TestThreeScale(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestReconciler_reconcileBlobStorage(t *testing.T) {

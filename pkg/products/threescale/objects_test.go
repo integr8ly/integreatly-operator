@@ -80,6 +80,12 @@ var threeScaleAdminDetailsSecret = &corev1.Secret{
 	Data: map[string][]byte{},
 }
 
+var threeScaleApiCastSecret = &corev1.Secret{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "system-master-apicast",
+	},
+	Data: map[string][]byte{},
+}
 var threeScaleServiceDiscoveryConfigMap = &corev1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "system",
@@ -386,6 +392,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
 	s3CredentialsSecret.Namespace = integreatlyOperatorNamespace
 	threeScaleAdminDetailsSecret.Namespace = threeScaleInstallationNamepsace
+	threeScaleApiCastSecret.Namespace = threeScaleInstallationNamepsace
 	threeScaleServiceDiscoveryConfigMap.Namespace = threeScaleInstallationNamepsace
 	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
 	oauthClientSecrets.Namespace = integreatlyOperatorNamespace
@@ -396,6 +403,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		s3CredentialsSecret,
 		configManagerConfigMap,
 		threeScaleAdminDetailsSecret,
+		threeScaleApiCastSecret,
 		threeScaleServiceDiscoveryConfigMap,
 		systemEnvConfigMap,
 		testDedicatedAdminsGroup,
