@@ -170,10 +170,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 		if alert.Labels["alertname"] == "DeadMansSwitch" && alert.State == "firing" {
 			deadmanswitchfiring = true
 		}
-		if alert.Labels["alertname"] != "DeadMansSwitch" {
-			if alert.Labels["alertname"] == "KubePodCrashLooping" {
-				continue
-			}
+		if alert.Labels["alertname"] != "DeadMansSwitch" {	
 
 			if alert.State == "firing" {
 				firingalerts = append(firingalerts, string(alert.Labels["alertname"]))
