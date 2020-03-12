@@ -175,11 +175,6 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 				continue
 			}
 
-			// FIXME: remove this condition once INTLY-5638 is addressed
-			// if alert.Labels["alertname"] == "PVCStorageWillFillIn4Days" || alert.Labels["alertname"] == "PVCStorageWillFillIn4Hours" {
-			// 	continue
-			// }
-
 			if alert.State == "firing" {
 				firingalerts = append(firingalerts, string(alert.Labels["alertname"]))
 			}
