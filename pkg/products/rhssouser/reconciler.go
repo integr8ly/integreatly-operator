@@ -40,12 +40,13 @@ import (
 )
 
 var (
-	defaultRhssoNamespace   = "user-sso"
-	keycloakName            = "rhssouser"
-	defaultSubscriptionName = "rhmi-rhsso"
-	idpAlias                = "openshift-v4"
-	manifestPackage         = "integreatly-rhsso"
-	masterRealmName         = "master"
+	defaultRhssoNamespace     = "user-sso"
+	keycloakName              = "rhssouser"
+	defaultSubscriptionName   = "rhmi-rhsso"
+	idpAlias                  = "openshift-v4"
+	manifestPackage           = "integreatly-rhsso"
+	masterRealmName           = "master"
+	adminCredentialSecretName = "credential-" + keycloakName
 )
 
 const (
@@ -61,7 +62,6 @@ const (
 	masterRealmClientName       = "master-realm"
 	firstBrokerLoginFlowAlias   = "first broker login"
 	reviewProfileExecutionAlias = "review profile config"
-	adminCredentialSecretName   = "credential-rhssouser"
 )
 
 var realmManagersClientRoles = []string{
@@ -192,7 +192,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = resources.ReconcileRHSSOAdminCredentials(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
@@ -231,6 +231,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.handleProgressPhase(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
+		return phase, err
+	}
+
+	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
 		return phase, err
 	}
 

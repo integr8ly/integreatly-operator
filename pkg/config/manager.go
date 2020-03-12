@@ -39,7 +39,6 @@ type ConfigReadWriter interface {
 	GetOauthClientsSecretName() string
 	GetGHOauthClientsSecretName() string
 	GetBackupsSecretName() string
-	GetRHSSOAdminCredentialSeedSecretName() string
 	WriteConfig(config ConfigReadable) error
 	ReadAMQStreams() (*AMQStreams, error)
 	ReadRHSSO() (*RHSSO, error)
@@ -135,10 +134,6 @@ func (m *Manager) GetBackupsSecretName() string {
 
 func (m *Manager) GetGHOauthClientsSecretName() string {
 	return "github-oauth-secret"
-}
-
-func (m *Manager) GetRHSSOAdminCredentialSeedSecretName() string {
-	return "credential-rhsso-seed"
 }
 
 func (m *Manager) ReadAMQStreams() (*AMQStreams, error) {

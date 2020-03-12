@@ -38,20 +38,20 @@ import (
 )
 
 var (
-	defaultOperandNamespace = "rhsso"
-	keycloakName            = "rhsso"
-	keycloakRealmName       = "openshift"
-	defaultSubscriptionName = "rhmi-rhsso"
-	idpAlias                = "openshift-v4"
-	githubIdpAlias          = "github"
-	manifestPackage         = "integreatly-rhsso"
+	defaultOperandNamespace   = "rhsso"
+	keycloakName              = "rhsso"
+	keycloakRealmName         = "openshift"
+	defaultSubscriptionName   = "rhmi-rhsso"
+	idpAlias                  = "openshift-v4"
+	githubIdpAlias            = "github"
+	manifestPackage           = "integreatly-rhsso"
+	adminCredentialSecretName = "credential-" + keycloakName
 )
 
 const (
-	SSOLabelKey               = "sso"
-	SSOLabelValue             = "integreatly"
-	RHSSOProfile              = "RHSSO"
-	adminCredentialSecretName = "credential-rhsso"
+	SSOLabelKey   = "sso"
+	SSOLabelValue = "integreatly"
+	RHSSOProfile  = "RHSSO"
 )
 
 type Reconciler struct {
@@ -171,7 +171,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = resources.ReconcileRHSSOAdminCredentials(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
@@ -216,6 +216,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
 		return phase, err
 	}
 

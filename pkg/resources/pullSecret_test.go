@@ -3,6 +3,10 @@ package resources
 import (
 	"bytes"
 	"context"
+	"errors"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"testing"
 
@@ -165,6 +169,148 @@ func TestCopySecret(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			err := CopySecret(context.TODO(), tt.FakeClient, sourceSecret.Name, sourceSecret.Namespace, tt.DestinationSecretName, tt.DestinationSecretNamespace)
 			tt.Verify(tt.FakeClient, err, t, tt.DestinationSecretName, tt.DestinationSecretNamespace)
+		})
+	}
+}
+
+func TestReconcileSecretToRHMIOperatorNamespace(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	operatorSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "credential-rhsso",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	basicConfig := &config.ConfigReadWriterMock{
+		GetOperatorNamespaceFunc: func() string {
+			return defaultOperatorNamespace
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
+	}
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		ExpectedError  bool
+	}{
+		{
+			Name:           "Test - Successfully copied secret to operator namespace",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedError:  false,
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, operatorSecret),
+		},
+		{
+			Name:           "Test - Failed copying secret to operator namespace",
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			ExpectedError:  true,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return nil
+				},
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+					return errors.New("dummy create error")
+				},
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					return errors.New("dummy update error")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			got, err := ReconcileSecretToRHMIOperatorNamespace(context.TODO(), tt.FakeClient, basicConfig, operatorSecret.Name, basicConfig.GetOperatorNamespace())
+			if (err != nil) != tt.ExpectedError {
+				t.Errorf("ReconcileSecretToRHMIOperatorNamespace() error = %v, wantErr %v", err, tt.ExpectedError)
+				return
+			}
+			if got != tt.ExpectedStatus {
+				t.Errorf("ReconcileSecretToRHMIOperatorNamespace() got = %v, want %v", got, tt.ExpectedStatus)
+			}
+		})
+	}
+}
+
+func TestReconcileSecretToProductNamespace(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	productSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "credential-rhsso",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	basicConfig := &config.ConfigReadWriterMock{
+		GetOperatorNamespaceFunc: func() string {
+			return defaultOperatorNamespace
+		},
+		WriteConfigFunc: func(config config.ConfigReadable) error {
+			return nil
+		},
+	}
+
+	tests := []struct {
+		Name           string
+		FakeClient     k8sclient.Client
+		ExpectedStatus integreatlyv1alpha1.StatusPhase
+		ExpectedError  bool
+	}{
+		{
+			Name:           "Test - Successfully copied secret to product namespace",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedError:  false,
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, productSecret),
+		},
+		{
+			Name:           "Test - Phase complete on failure to get secret",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
+			ExpectedError:  false,
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
+		},
+		{
+			Name:           "Test - Failed copied secret to product namespace",
+			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			ExpectedError:  true,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return nil
+				},
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+					return errors.New("dummy create error")
+				},
+				UpdateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.UpdateOption) error {
+					return errors.New("dummy update error")
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			got, err := ReconcileSecretToProductNamespace(context.TODO(), tt.FakeClient, basicConfig, productSecret.Name, basicConfig.GetOperatorNamespace())
+			if (err != nil) != tt.ExpectedError {
+				t.Errorf("ReconcileSecretToProductNamespace() error = %v, wantErr %v", err, tt.ExpectedError)
+				return
+			}
+			if got != tt.ExpectedStatus {
+				t.Errorf("ReconcileSecretToProductNamespace() got = %v, want %v", got, tt.ExpectedStatus)
+			}
 		})
 	}
 }

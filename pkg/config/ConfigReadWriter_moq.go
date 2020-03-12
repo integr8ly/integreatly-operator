@@ -9,28 +9,27 @@ import (
 )
 
 var (
-	lockConfigReadWriterMockGetBackupsSecretName                  sync.RWMutex
-	lockConfigReadWriterMockGetGHOauthClientsSecretName           sync.RWMutex
-	lockConfigReadWriterMockGetOauthClientsSecretName             sync.RWMutex
-	lockConfigReadWriterMockGetOperatorNamespace                  sync.RWMutex
-	lockConfigReadWriterMockGetRHSSOAdminCredentialSeedSecretName sync.RWMutex
-	lockConfigReadWriterMockReadAMQOnline                         sync.RWMutex
-	lockConfigReadWriterMockReadAMQStreams                        sync.RWMutex
-	lockConfigReadWriterMockReadApicurito                         sync.RWMutex
-	lockConfigReadWriterMockReadCloudResources                    sync.RWMutex
-	lockConfigReadWriterMockReadCodeReady                         sync.RWMutex
-	lockConfigReadWriterMockReadDataSync                          sync.RWMutex
-	lockConfigReadWriterMockReadFuse                              sync.RWMutex
-	lockConfigReadWriterMockReadFuseOnOpenshift                   sync.RWMutex
-	lockConfigReadWriterMockReadMonitoring                        sync.RWMutex
-	lockConfigReadWriterMockReadProduct                           sync.RWMutex
-	lockConfigReadWriterMockReadRHSSO                             sync.RWMutex
-	lockConfigReadWriterMockReadRHSSOUser                         sync.RWMutex
-	lockConfigReadWriterMockReadSolutionExplorer                  sync.RWMutex
-	lockConfigReadWriterMockReadThreeScale                        sync.RWMutex
-	lockConfigReadWriterMockReadUps                               sync.RWMutex
-	lockConfigReadWriterMockWriteConfig                           sync.RWMutex
-	lockConfigReadWriterMockreadConfigForProduct                  sync.RWMutex
+	lockConfigReadWriterMockGetBackupsSecretName        sync.RWMutex
+	lockConfigReadWriterMockGetGHOauthClientsSecretName sync.RWMutex
+	lockConfigReadWriterMockGetOauthClientsSecretName   sync.RWMutex
+	lockConfigReadWriterMockGetOperatorNamespace        sync.RWMutex
+	lockConfigReadWriterMockReadAMQOnline               sync.RWMutex
+	lockConfigReadWriterMockReadAMQStreams              sync.RWMutex
+	lockConfigReadWriterMockReadApicurito               sync.RWMutex
+	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
+	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
+	lockConfigReadWriterMockReadDataSync                sync.RWMutex
+	lockConfigReadWriterMockReadFuse                    sync.RWMutex
+	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
+	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
+	lockConfigReadWriterMockReadProduct                 sync.RWMutex
+	lockConfigReadWriterMockReadRHSSO                   sync.RWMutex
+	lockConfigReadWriterMockReadRHSSOUser               sync.RWMutex
+	lockConfigReadWriterMockReadSolutionExplorer        sync.RWMutex
+	lockConfigReadWriterMockReadThreeScale              sync.RWMutex
+	lockConfigReadWriterMockReadUps                     sync.RWMutex
+	lockConfigReadWriterMockWriteConfig                 sync.RWMutex
+	lockConfigReadWriterMockreadConfigForProduct        sync.RWMutex
 )
 
 // Ensure, that ConfigReadWriterMock does implement ConfigReadWriter.
@@ -54,9 +53,6 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             GetOperatorNamespaceFunc: func() string {
 // 	               panic("mock out the GetOperatorNamespace method")
-//             },
-//             GetRHSSOAdminCredentialSeedSecretNameFunc: func() string {
-// 	               panic("mock out the GetRHSSOAdminCredentialSeedSecretName method")
 //             },
 //             ReadAMQOnlineFunc: func() (*AMQOnline, error) {
 // 	               panic("mock out the ReadAMQOnline method")
@@ -128,9 +124,6 @@ type ConfigReadWriterMock struct {
 	// GetOperatorNamespaceFunc mocks the GetOperatorNamespace method.
 	GetOperatorNamespaceFunc func() string
 
-	// GetRHSSOAdminCredentialSeedSecretNameFunc mocks the GetRHSSOAdminCredentialSeedSecretName method.
-	GetRHSSOAdminCredentialSeedSecretNameFunc func() string
-
 	// ReadAMQOnlineFunc mocks the ReadAMQOnline method.
 	ReadAMQOnlineFunc func() (*AMQOnline, error)
 
@@ -195,9 +188,6 @@ type ConfigReadWriterMock struct {
 		}
 		// GetOperatorNamespace holds details about calls to the GetOperatorNamespace method.
 		GetOperatorNamespace []struct {
-		}
-		// GetRHSSOAdminCredentialSeedSecretName holds details about calls to the GetRHSSOAdminCredentialSeedSecretName method.
-		GetRHSSOAdminCredentialSeedSecretName []struct {
 		}
 		// ReadAMQOnline holds details about calls to the ReadAMQOnline method.
 		ReadAMQOnline []struct {
@@ -360,32 +350,6 @@ func (mock *ConfigReadWriterMock) GetOperatorNamespaceCalls() []struct {
 	lockConfigReadWriterMockGetOperatorNamespace.RLock()
 	calls = mock.calls.GetOperatorNamespace
 	lockConfigReadWriterMockGetOperatorNamespace.RUnlock()
-	return calls
-}
-
-// GetRHSSOAdminCredentialSeedSecretName calls GetRHSSOAdminCredentialSeedSecretNameFunc.
-func (mock *ConfigReadWriterMock) GetRHSSOAdminCredentialSeedSecretName() string {
-	if mock.GetRHSSOAdminCredentialSeedSecretNameFunc == nil {
-		panic("ConfigReadWriterMock.GetRHSSOAdminCredentialSeedSecretNameFunc: method is nil but ConfigReadWriter.GetRHSSOAdminCredentialSeedSecretName was just called")
-	}
-	callInfo := struct {
-	}{}
-	lockConfigReadWriterMockGetRHSSOAdminCredentialSeedSecretName.Lock()
-	mock.calls.GetRHSSOAdminCredentialSeedSecretName = append(mock.calls.GetRHSSOAdminCredentialSeedSecretName, callInfo)
-	lockConfigReadWriterMockGetRHSSOAdminCredentialSeedSecretName.Unlock()
-	return mock.GetRHSSOAdminCredentialSeedSecretNameFunc()
-}
-
-// GetRHSSOAdminCredentialSeedSecretNameCalls gets all the calls that were made to GetRHSSOAdminCredentialSeedSecretName.
-// Check the length with:
-//     len(mockedConfigReadWriter.GetRHSSOAdminCredentialSeedSecretNameCalls())
-func (mock *ConfigReadWriterMock) GetRHSSOAdminCredentialSeedSecretNameCalls() []struct {
-} {
-	var calls []struct {
-	}
-	lockConfigReadWriterMockGetRHSSOAdminCredentialSeedSecretName.RLock()
-	calls = mock.calls.GetRHSSOAdminCredentialSeedSecretName
-	lockConfigReadWriterMockGetRHSSOAdminCredentialSeedSecretName.RUnlock()
 	return calls
 }
 
