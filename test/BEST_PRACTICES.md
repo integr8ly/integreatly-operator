@@ -12,9 +12,9 @@ can be referenced in review comments to speed up the review process.
 
 ## Code Style
 
-These best practices focus only on test design and implementation.
+The code style should be consistent with the style used in the integreatly-operator codebase [TODO: link to golang practices used by engineering]
 
-For Go code, we are reusing the standard best practices:
+Also, in case of doubt, the Golang standard best practices can be used:
 
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
 - [Effective Go](https://golang.org/doc/effective_go.html) documents.
