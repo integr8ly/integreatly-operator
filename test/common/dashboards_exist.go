@@ -99,28 +99,21 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("no grafana dashboards were found : %w", grafanaApiCallOutput)
 	}
 
-	dashboardDiffUnexpected := dashboardDifference(grafanaApiCallOutput, expectedDashboards)
-	dashboardDiffMissing := dashboardDifference(expectedDashboards, grafanaApiCallOutput)
+	var expectedDashboardTitles []string
+	for _, dashboard := range expectedDashboards {
+		expectedDashboardTitles = append(expectedDashboardTitles, dashboard.Title)
+	}
+	var actualDashboardTitles []string
+	for _, dashboard := range grafanaApiCallOutput {
+		actualDashboardTitles = append(actualDashboardTitles, dashboard.Title)
+	}
+
+	dashboardDiffUnexpected := difference(actualDashboardTitles, expectedDashboardTitles)
+	dashboardDiffMissing := difference(expectedDashboardTitles, actualDashboardTitles)
 
 	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
 		t.Logf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))
 		t.Logf("missing dashboards found: %s", strings.Join(dashboardDiffMissing, ", "))
 		t.Fail()
 	}
-}
-
-// dashboardDifference returns the elements in list of dashboardsTestRule `diffSource` that aren't in list `diffTarget`.
-func dashboardDifference(diffSource, diffTarget []dashboardsTestRule) []string {
-	diffLookupMap := make(map[string]struct{}, len(diffTarget))
-	for _, dashboard := range diffTarget {
-		diffLookupMap[dashboard.Title] = struct{}{}
-	}
-
-	var diff []string
-	for _, x := range diffSource {
-		if _, found := diffLookupMap[x.Title]; !found {
-			diff = append(diff, x.Title)
-		}
-	}
-	return diff
 }

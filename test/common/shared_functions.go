@@ -48,3 +48,21 @@ func execToPod(command string, podName string, namespace string, container strin
 	}
 	return stdout.String(), nil
 }
+
+// difference one-way diff that return strings in sliceSource that are not in sliceTarget
+func difference(sliceSource, sliceTarget []string) []string {
+	// create an empty lookup map with keys from sliceTarget
+	diffSourceLookupMap := make(map[string]struct{}, len(sliceTarget))
+	for _, item := range sliceTarget {
+		diffSourceLookupMap[item] = struct{}{}
+	}
+	// use the lookup map to find items in sliceSource that are not in sliceTarget
+	// and store them in a diff slice
+	var diff []string
+	for _, item := range sliceSource {
+		if _, found := diffSourceLookupMap[item]; !found {
+			diff = append(diff, item)
+		}
+	}
+	return diff
+}
