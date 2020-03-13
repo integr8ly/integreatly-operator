@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	corev1 "k8s.io/api/core/v1"
