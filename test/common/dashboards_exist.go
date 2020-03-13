@@ -111,9 +111,15 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 	dashboardDiffUnexpected := difference(actualDashboardTitles, expectedDashboardTitles)
 	dashboardDiffMissing := difference(expectedDashboardTitles, actualDashboardTitles)
 
-	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
+	if len(dashboardDiffUnexpected) > 0 {
 		t.Logf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))
+	}
+
+	if len(dashboardDiffMissing) > 0 {
 		t.Logf("missing dashboards found: %s", strings.Join(dashboardDiffMissing, ", "))
-		t.Fail()
+	}
+
+	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
+		t.Fatal("missing or too many dashboards found")
 	}
 }
