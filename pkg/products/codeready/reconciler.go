@@ -25,6 +25,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -187,7 +188,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	ns := r.installation.Namespace
 
 	// setup postgres custom resource
-	postgresName := fmt.Sprintf("codeready-postgres-%s", r.installation.Name)
+	postgresName := fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil

@@ -44,24 +44,17 @@ const (
 	cleanupTimeout               = time.Second * 5
 	intlyNamespacePrefix         = "redhat-rhmi-"
 	namespaceLabel               = "integreatly"
-	installationName             = "rhmi"
-	bootstrapStage               = "bootstrap"
 	bootStrapStageTimeout        = time.Minute * 5
-	cloudResourcesStage          = "cloud-resources"
 	cloudResourcesStageTimeout   = time.Minute * 10
-	monitoringStage              = "monitoring"
 	monitoringStageTimeout       = time.Minute * 10
-	authenticationStage          = "authentication"
 	authenticationStageTimeout   = time.Minute * 30
-	productsStage                = "products"
 	productsStageTimout          = time.Minute * 30
-	solutionExplorerStage        = "solution-explorer"
 	solutionExplorerStageTimeout = time.Minute * 10
 )
 
 func TestIntegreatly(t *testing.T) {
-	installationList := &integreatlyv1alpha1.RHMIList{}
-	err := framework.AddToFrameworkScheme(apis.AddToScheme, installationList)
+	err := framework.AddToFrameworkScheme(apis.AddToScheme, &integreatlyv1alpha1.RHMIList{})
+
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
@@ -358,43 +351,43 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for cloud resource phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, cloudResourcesStageTimeout, cloudResourcesStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, cloudResourcesStageTimeout, string(integreatlyv1alpha1.CloudResourcesStage))
 	if err != nil {
 		return err
 	}
 
 	// wait for cloud resource to deploy
-	err = waitForProductDeployment(t, f, ctx, "cloud-resources", "cloud-resource-operator")
+	err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductCloudResources), "cloud-resource-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for bootstrap phase to complete (5 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, bootStrapStageTimeout, bootstrapStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, bootStrapStageTimeout, string(integreatlyv1alpha1.BootstrapStage))
 	if err != nil {
 		return err
 	}
 
 	// wait for middleware-monitoring to deploy
-	err = waitForProductDeployment(t, f, ctx, "middleware-monitoring", "application-monitoring-operator")
+	err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductMonitoring), "application-monitoring-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for middleware-monitoring phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, monitoringStageTimeout, monitoringStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, monitoringStageTimeout, string(integreatlyv1alpha1.MonitoringStage))
 	if err != nil {
 		return err
 	}
 
 	// wait for keycloak-operator to deploy
-	err = waitForProductDeployment(t, f, ctx, "rhsso", "keycloak-operator")
+	err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductRHSSO), "keycloak-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for authentication phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, authenticationStageTimeout, authenticationStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, authenticationStageTimeout, string(integreatlyv1alpha1.AuthenticationStage))
 	if err != nil {
 		return err
 	}
@@ -417,19 +410,19 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// wait for products phase to complete (30 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, productsStageTimout, productsStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, productsStageTimout, string(integreatlyv1alpha1.ProductsStage))
 	if err != nil {
 		return err
 	}
 
 	// wait for solution-explorer operator to deploy
-	err = waitForProductDeployment(t, f, ctx, "solution-explorer", "tutorial-web-app-operator")
+	err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductSolutionExplorer), "tutorial-web-app-operator")
 	if err != nil {
 		return err
 	}
 
 	// wait for solution-explorer phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, solutionExplorerStageTimeout, solutionExplorerStage)
+	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, solutionExplorerStageTimeout, string(integreatlyv1alpha1.SolutionExplorerStage))
 	if err != nil {
 		return err
 	}
@@ -461,47 +454,43 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// check auth stage operator versions
-	stage := integreatlyv1alpha1.StageName("authentication")
 	authOperators := map[string]string{
-		"rhsso": string(integreatlyv1alpha1.OperatorVersionRHSSO),
+		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.OperatorVersionRHSSO),
 	}
-	err = checkOperatorVersions(t, f, namespace, stage, authOperators)
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperators)
 	if err != nil {
 		return err
 	}
 
 	// check cloud resources stage operator versions
-	stage = integreatlyv1alpha1.StageName("cloud-resources")
 	resouceOperators := map[string]string{
-		"cloud-resources": string(integreatlyv1alpha1.OperatorVersionCloudResources),
+		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.OperatorVersionCloudResources),
 	}
-	err = checkOperatorVersions(t, f, namespace, stage, resouceOperators)
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperators)
 	if err != nil {
 		return err
 	}
 
 	// check monitoring stage operator versions
-	stage = integreatlyv1alpha1.StageName("monitoring")
 	monitoringOperators := map[string]string{
-		"monitoring": string(integreatlyv1alpha1.OperatorVersionMonitoring),
+		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.OperatorVersionMonitoring),
 	}
-	err = checkOperatorVersions(t, f, namespace, stage, monitoringOperators)
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperators)
 	if err != nil {
 		return err
 	}
 
 	// check products stage operator versions
-	stage = integreatlyv1alpha1.StageName("products")
 	productOperators := map[string]string{
-		"3scale":               string(integreatlyv1alpha1.OperatorVersion3Scale),
-		"amqonline":            string(integreatlyv1alpha1.OperatorVersionAMQOnline),
-		"apicurito":            string(integreatlyv1alpha1.OperatorVersionApicurito),
-		"codeready-workspaces": string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
-		"fuse-on-openshift":    string(integreatlyv1alpha1.OperatorVersionFuse),
-		"ups":                  string(integreatlyv1alpha1.OperatorVersionUPS),
-		"rhssouser":            string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
+		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.OperatorVersion3Scale),
+		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.OperatorVersionAMQOnline),
+		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.OperatorVersionApicurito),
+		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
+		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.OperatorVersionFuse),
+		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.OperatorVersionUPS),
+		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
 	}
-	err = checkOperatorVersions(t, f, namespace, stage, productOperators)
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperators)
 	if err != nil {
 		return err
 	}
@@ -516,37 +505,34 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 
 	// check cloud resources stage operand versions
-	stage = integreatlyv1alpha1.StageName("cloud-resources")
 	resouceOperands := map[string]string{
-		"cloud-resources": string(integreatlyv1alpha1.VersionCloudResources),
+		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.VersionCloudResources),
 	}
-	err = checkOperandVersions(t, f, namespace, stage, resouceOperands)
+	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperands)
 	if err != nil {
 		return err
 	}
 
 	// check monitoring stage operand versions
-	stage = integreatlyv1alpha1.StageName("monitoring")
 	monitoringOperands := map[string]string{
-		"monitoring": string(integreatlyv1alpha1.VersionMonitoring),
+		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.VersionMonitoring),
 	}
-	err = checkOperandVersions(t, f, namespace, stage, monitoringOperands)
+	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperands)
 	if err != nil {
 		return err
 	}
 
 	// check products stage operands versions
-	stage = integreatlyv1alpha1.StageName("products")
 	productOperands := map[string]string{
-		"3scale":               string(integreatlyv1alpha1.Version3Scale),
-		"amqonline":            string(integreatlyv1alpha1.VersionAMQOnline),
-		"apicurito":            string(integreatlyv1alpha1.VersionApicurito),
-		"codeready-workspaces": string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
-		"fuse-on-openshift":    string(integreatlyv1alpha1.VersionFuseOnOpenshift),
-		"ups":                  string(integreatlyv1alpha1.VersionUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser): string(integreatlyv1alpha1.VersionRHSSOUser),
+		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.Version3Scale),
+		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.VersionAMQOnline),
+		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.VersionApicurito),
+		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
+		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.VersionFuseOnOpenshift),
+		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.VersionUps),
+		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.VersionRHSSOUser),
 	}
-	err = checkOperandVersions(t, f, namespace, stage, productOperands)
+	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperands)
 	if err != nil {
 		return err
 	}
@@ -575,12 +561,12 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	// check no failed PVCs
 	pvcNamespaces := []string{
-		"3scale",
-		"fuse",
-		"rhsso",
-		"solution-explorer",
-		"ups",
-		"user-sso",
+		string(integreatlyv1alpha1.Product3Scale),
+		string(integreatlyv1alpha1.ProductFuse),
+		string(integreatlyv1alpha1.ProductRHSSO),
+		string(integreatlyv1alpha1.ProductSolutionExplorer),
+		string(integreatlyv1alpha1.ProductUps),
+		string(integreatlyv1alpha1.ProductRHSSOUser),
 	}
 	err = checkPvcs(t, f, namespace, pvcNamespaces)
 	return err
@@ -604,7 +590,7 @@ func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, names
 func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operatorVersions map[string]string) error {
 	installation := &integreatlyv1alpha1.RHMI{}
 
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
+	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
 	if err != nil {
 		return fmt.Errorf("Error getting installation CR from cluster when checking operator versions: %w", err)
 	}
@@ -622,7 +608,7 @@ func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace strin
 func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
 	installation := &integreatlyv1alpha1.RHMI{}
 
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
+	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
 	if err != nil {
 		return fmt.Errorf("Error getting installation CR from cluster when checking operand versions: %w", err)
 	}
@@ -668,10 +654,10 @@ func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []s
 func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, namespace string, retryInterval, timeout time.Duration, phase string) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		installation := &integreatlyv1alpha1.RHMI{}
-		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: namespace}, installation)
+		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				t.Logf("Waiting for availability of %s installation in namespace: %s, phase: %s\n", installationName, namespace, phase)
+				t.Logf("Waiting for availability of %s installation in namespace: %s, phase: %s\n", common.InstallationName, namespace, phase)
 				return false, nil
 			}
 			return false, err

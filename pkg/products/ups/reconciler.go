@@ -27,6 +27,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -174,7 +175,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// setup postgres custom resource
 	// this will be used by the cloud resources operator to provision a postgres instance
-	postgresName := fmt.Sprintf("ups-postgres-%s", installation.Name)
+	postgresName := fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, client, defaultInstallationNamespace, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil

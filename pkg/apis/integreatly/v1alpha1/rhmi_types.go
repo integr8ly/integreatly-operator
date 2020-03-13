@@ -46,7 +46,7 @@ var (
 	Product3Scale              ProductName = "3scale"
 	ProductUps                 ProductName = "ups"
 	ProductApicurito           ProductName = "apicurito"
-	ProductMonitoring          ProductName = "monitoring"
+	ProductMonitoring          ProductName = "middleware-monitoring"
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
 

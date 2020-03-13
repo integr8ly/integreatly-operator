@@ -3,6 +3,7 @@ package amqonline
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
@@ -274,7 +275,7 @@ func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, ser
 func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling standard AuthenticationService")
 
-	const postgresqlName string = "standard-authservice-postgresql"
+	const postgresqlName string = constants.AMQAuthServicePostgres
 
 	// Get CRO to create a Postgresql in the integreatly operator namespace. The
 	// CRO operator SA only has permissions to create the secret in the intly
