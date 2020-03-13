@@ -415,7 +415,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			Name:      apiManagerName,
 			Namespace: r.Config.GetNamespace(),
 		},
-		Spec: threescalev1.APIManagerSpec{
+	}
+
+	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
+
+		apim.Spec = threescalev1.APIManagerSpec{
 			HighAvailability: &threescalev1.HighAvailabilitySpec{
 				Enabled: true,
 			},
@@ -444,21 +448,17 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{numberOfReplicas}[0]},
 				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{numberOfReplicas}[0]},
 			},
-		},
-	}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: apim.Name, Namespace: r.Config.GetNamespace()}, apim)
-	if err != nil && !k8serr.IsNotFound(err) {
+		}
+		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
+
+		return nil
+	})
+
+	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	if err != nil {
-		logrus.Infof("Creating API Manager")
-		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
-		err := serverClient.Create(ctx, apim)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
+	logrus.Info("API Manager: ", status)
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
 
@@ -884,23 +884,23 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: system.Name, Namespace: system.Namespace}, system)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-	sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", r.getOAuthClientName(), clientSecret)
 
-	if system.Data["service_discovery.yml"] != sdConfig {
-		system.Data["service_discovery.yml"] = sdConfig
-		err := serverClient.Update(ctx, system)
+	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, system, func() error {
+		clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseInProgress, err
+			return err
 		}
+		sdConfig := fmt.Sprintf("production:\n  enabled: true\n  authentication_method: oauth\n  oauth_server_type: builtin\n  client_id: '%s'\n  client_secret: '%s'\n", r.getOAuthClientName(), clientSecret)
 
+		system.Data["service_discovery.yml"] = sdConfig
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	if status != controllerutil.OperationResultNone {
 		err = r.RolloutDeployment("system-app")
 		if err != nil {
 			return integreatlyv1alpha1.PhaseInProgress, err
@@ -1006,24 +1006,16 @@ func (r *Reconciler) SetAdminDetailsOnSecret(ctx context.Context, serverClient k
 			Name:      "system-seed",
 		},
 	}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: s.Name, Namespace: r.Config.GetNamespace()}, s)
-	if err != nil {
-		return err
-	}
 
-	currentAdminUser := string(s.Data["ADMIN_USER"])
-	currentAdminEmail := string(s.Data["ADMIN_EMAIL"])
-	if currentAdminUser == username && currentAdminEmail == email {
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, s, func() error {
+		s.Data["ADMIN_USER"] = []byte(username)
+		s.Data["ADMIN_EMAIL"] = []byte(email)
 		return nil
-	}
+	})
 
-	s.Data["ADMIN_USER"] = []byte(username)
-	s.Data["ADMIN_EMAIL"] = []byte(email)
-	err = serverClient.Update(ctx, s)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

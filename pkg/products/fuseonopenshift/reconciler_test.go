@@ -2,7 +2,12 @@ package fuseonopenshift
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
@@ -18,7 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 const (
@@ -70,7 +74,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 		},
 	}
 
-	// Sample imagestream that's managed by the sample cluster operator
+	//Sample imagestream that's managed by the sample cluster operator
 	sampleClusterImgStream := &imagev1.ImageStream{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ImageStream",
@@ -85,7 +89,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 		},
 	}
 
-	// Sample imagestream that's created by integreatly
+	//Sample imagestream that's created by integreatly
 	integreatlyImgStream := &imagev1.ImageStream{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ImageStream",
@@ -121,13 +125,11 @@ func TestFuseOnOpenShift(t *testing.T) {
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      templatesConfigMapName,
-					Namespace: OperatorNamespace,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("dummy get error")
 				},
-				Data: map[string]string{},
-			}),
+			},
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
@@ -137,25 +139,18 @@ func TestFuseOnOpenShift(t *testing.T) {
 			ExpectError:    true,
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			Installation:   &integreatlyv1alpha1.RHMI{},
-			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      templatesConfigMapName,
-					Namespace: OperatorNamespace,
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("dummy get error")
 				},
-				Data: map[string]string{
-					"fis-image-streams.json": `{ "items": [{
-                        "name": "invalid-image-stream"
-                    }] }`,
-				},
-			}),
+			},
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
 		},
 		{
-			Name:           "test error on invalid template file content",
-			ExpectError:    true,
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Name:           "test pass on invalid template file content set to required state",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -172,9 +167,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			Recorder:   setupRecorder(),
 		},
 		{
-			Name:           "test error on invalid template object",
-			ExpectError:    true,
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
+			Name:           "test pass on invalid template object set to required state",
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeClient: fakeclient.NewFakeClient(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -184,8 +178,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 				Data: map[string]string{
 					"fis-image-streams.json": `{ "items": [] }`,
 					"fuse-console-cluster-os4.json": `{
-                        "name": "invalid-template"
-                    }`,
+                      "name": "invalid-template"
+                  }`,
 				},
 			}),
 			FakeConfig: getFakeConfig(),

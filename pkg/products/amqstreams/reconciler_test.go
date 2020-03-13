@@ -191,6 +191,9 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
 					return errors.New("dummy create error")
 				},
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("dummy get error")
+				},
 			},
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{

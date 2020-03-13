@@ -3,6 +3,7 @@ package amqstreams
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -17,7 +18,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -147,54 +147,47 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 	r.logger.Debug("reconciling amq streams custom resource")
 
 	kafka := &kafkav1.Kafka{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: fmt.Sprintf(
-				"%s/%s",
-				kafkav1.SchemeGroupVersion.Group,
-				kafkav1.SchemeGroupVersion.Version),
-			Kind: kafkav1.KafkaKind,
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: r.Config.GetNamespace(),
 		},
-		Spec: kafkav1.KafkaSpec{
-			Kafka: kafkav1.KafkaSpecKafka{
-				Version:  "2.1.1",
-				Replicas: 3,
-				Listeners: map[string]kafkav1.KafkaListener{
-					"plain": {},
-					"tls":   {},
-				},
-				Config: kafkav1.KafkaSpecKafkaConfig{
-					OffsetsTopicReplicationFactor:        "3",
-					TransactionStateLogReplicationFactor: "3",
-					TransactionStateLogMinIsr:            "2",
-					LogMessageFormatVersion:              "2.1",
-				},
-				Storage: kafkav1.KafkaStorage{
-					Type:        "persistent-claim",
-					Size:        "10Gi",
-					DeleteClaim: false,
-				},
-			},
-			Zookeeper: kafkav1.KafkaSpecZookeeper{
-				Replicas: 3,
-				Storage: kafkav1.KafkaStorage{
-					Type:        "persistent-claim",
-					Size:        "10Gi",
-					DeleteClaim: false,
-				},
-			},
-			EntityOperator: kafkav1.KafkaSpecEntityOperator{
-				TopicOperator: kafkav1.KafkaTopicOperator{},
-				UserOperator:  kafkav1.KafkaUserOperator{},
-			},
-		},
 	}
-	owner.AddIntegreatlyOwnerAnnotations(kafka, installation)
-	// attempt to create the custom resource
-	if err := client.Create(ctx, kafka); err != nil && !k8serr.IsAlreadyExists(err) {
+
+	// attempt to create or update the custom resource
+	_, err := controllerutil.CreateOrUpdate(ctx, client, kafka, func() error {
+		kafka.APIVersion = fmt.Sprintf("%s/%s", kafkav1.SchemeGroupVersion.Group, kafkav1.SchemeGroupVersion.Version)
+		kafka.Kind = kafkav1.KafkaKind
+
+		kafka.Name = clusterName
+		kafka.Namespace = r.Config.GetNamespace()
+
+		kafka.Spec.Kafka.Version = "2.1.1"
+		kafka.Spec.Kafka.Replicas = 3
+		kafka.Spec.Kafka.Listeners = map[string]kafkav1.KafkaListener{
+			"plain": {},
+			"tls":   {},
+		}
+		kafka.Spec.Kafka.Config.OffsetsTopicReplicationFactor = "3"
+		kafka.Spec.Kafka.Config.TransactionStateLogReplicationFactor = "3"
+		kafka.Spec.Kafka.Config.TransactionStateLogMinIsr = "2"
+		kafka.Spec.Kafka.Config.LogMessageFormatVersion = "2.1"
+		kafka.Spec.Kafka.Storage.Type = "persistent-claim"
+		kafka.Spec.Kafka.Storage.Size = "10Gi"
+		kafka.Spec.Kafka.Storage.DeleteClaim = false
+
+		kafka.Spec.Zookeeper.Replicas = 3
+		kafka.Spec.Zookeeper.Storage.Type = "persistent-claim"
+		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
+		kafka.Spec.Zookeeper.Storage.DeleteClaim = false
+
+		kafka.Spec.EntityOperator.TopicOperator = kafkav1.KafkaTopicOperator{}
+		kafka.Spec.EntityOperator.UserOperator = kafkav1.KafkaUserOperator{}
+
+		owner.AddIntegreatlyOwnerAnnotations(kafka, installation)
+		return nil
+	})
+
+	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get or create a kafka custom resource: %w", err)
 	}
 

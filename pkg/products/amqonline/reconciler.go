@@ -408,18 +408,24 @@ func (r *Reconciler) reconcileInfraConfigs(ctx context.Context, serverClient k8s
 	r.logger.Info("reconciling default infra configs")
 
 	for _, bic := range brokeredCfgs {
-		bic.Namespace = r.Config.GetNamespace()
-		owner.AddIntegreatlyOwnerAnnotations(bic, r.inst)
-		err := serverClient.Create(ctx, bic)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
+
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, bic, func() error {
+			bic.Namespace = r.Config.GetNamespace()
+			owner.AddIntegreatlyOwnerAnnotations(bic, r.inst)
+			return nil
+		})
+		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create brokered infra config %v: %w", bic, err)
 		}
 	}
 	for _, sic := range stdCfgs {
 		sic.Namespace = r.Config.GetNamespace()
-		owner.AddIntegreatlyOwnerAnnotations(sic, r.inst)
-		err := serverClient.Create(ctx, sic)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, sic, func() error {
+			sic.Namespace = r.Config.GetNamespace()
+			owner.AddIntegreatlyOwnerAnnotations(sic, r.inst)
+			return nil
+		})
+		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create standard infra config %v: %w", sic, err)
 		}
 	}
@@ -430,9 +436,11 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient k8s
 	r.logger.Info("reconciling default address plans")
 
 	for _, ap := range addrPlans {
-		owner.AddIntegreatlyOwnerAnnotations(ap, r.inst)
-		err := serverClient.Create(ctx, ap)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, ap, func() error {
+			owner.AddIntegreatlyOwnerAnnotations(ap, r.inst)
+			return nil
+		})
+		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create address plan %v: %w", ap, err)
 		}
 	}
@@ -443,9 +451,11 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 	r.logger.Info("reconciling default address space plans")
 
 	for _, asp := range addrSpacePlans {
-		owner.AddIntegreatlyOwnerAnnotations(asp, r.inst)
-		err := serverClient.Create(ctx, asp)
-		if err != nil && !k8serr.IsAlreadyExists(err) {
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, asp, func() error {
+			owner.AddIntegreatlyOwnerAnnotations(asp, r.inst)
+			return nil
+		})
+		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create address space plan %v: %w", asp, err)
 		}
 	}
