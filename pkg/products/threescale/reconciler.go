@@ -58,6 +58,9 @@ const (
 	externalPostgresSecretName     = "system-database"
 
 	numberOfReplicas int64 = 2
+
+	systemSeedSecretName          = "system-seed"
+	systemMasterApiCastSecretName = "system-master-apicast"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -145,6 +148,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", r.Config.GetNamespace()), err)
+		return phase, err
+	}
+
+	phase, err = r.restoreSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", r.Config.GetNamespace()), err)
 		return phase, err
@@ -245,8 +254,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, installation, serverClient)
+	phase, err = r.reconcileTemplates(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		return phase, err
+	}
+
+	phase, err = r.backupSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
@@ -261,7 +276,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+// restores seed and master api cast secrets if available
+func (r *Reconciler) restoreSystemSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	for _, secretName := range []string{systemSeedSecretName, systemMasterApiCastSecretName} {
+		err := resources.CopySecret(ctx, serverClient, secretName, installation.Namespace, secretName, r.Config.GetNamespace())
+		if err != nil {
+			if !k8serr.IsNotFound(err) && !k8serr.IsConflict(err) {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			logrus.Info(fmt.Sprintf("no backed up secret %v found in %v", secretName, installation.Namespace))
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// Copies the seed and master api cast secrets for later restoration
+func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	for _, secretName := range []string{systemSeedSecretName, systemMasterApiCastSecretName} {
+		err := resources.CopySecret(ctx, serverClient, secretName, r.Config.GetNamespace(), secretName, installation.Namespace)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Interate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
