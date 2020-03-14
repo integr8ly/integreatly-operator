@@ -348,9 +348,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile first broker login authentication flow: %w", err)
 	}
 
-	phase, err = r.reconcileDevelopersGroup(kc)
+	rolesConfigured, err := r.Config.GetDevelopersGroupConfigured()
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile rhmi-developers group: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if !rolesConfigured {
+		phase, err = r.reconcileDevelopersGroup(kc)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile rhmi-developers group: %w", err)
+		}
+
+		r.Config.SetDevelopersGroupConfigured(true)
+		err = r.ConfigManager.WriteConfig(r.Config)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update keycloak config for user-sso: %w", err)
+		}
 	}
 
 	// Reconcile dedicated-admins group
