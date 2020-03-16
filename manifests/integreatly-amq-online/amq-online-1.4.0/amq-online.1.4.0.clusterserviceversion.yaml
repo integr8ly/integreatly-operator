@@ -12,7 +12,7 @@ metadata:
     certified: "false"
     description: Red Hat Integration - AMQ Online provides messaging as a managed
       service on OpenShift
-    containerImage: quay.io/integreatly/delorean:amq7-amq-online-1-controller-manager-rhel7-operator_1.4
+    containerImage: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
     createdAt: 2019-02-19T00:00:00Z
     capabilities: Seamless Upgrades
     repository: ""
@@ -339,59 +339,59 @@ spec:
     supported: true
   relatedImages:
   - name: address-space-controller
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-address-space-controller_1.4
+    image: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4
   - name: standard-controller
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-standard-controller_1.4
+    image: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4
   - name: router
-    image: quay.io/integreatly/delorean:amq7-amq-interconnect_1.7
+    image: registry.redhat.io/amq7/amq-interconnect:1.7
   - name: broker
     image: registry-proxy.engineering.redhat.com/rh-osbs/amq-broker-7-amq-broker-76-openshift:7.6
   - name: broker-plugin
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-broker-plugin_1.4
+    image: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4
   - name: topic-forwarder
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-topic-forwarder_1.4
+    image: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4
   - name: agent
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-agent_1.4
+    image: registry.redhat.io/amq7/amq-online-1-agent:1.4
   - name: none-authservice
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-none-auth-service_1.4
+    image: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4
   - name: keycloak
-    image: quay.io/integreatly/delorean:redhat-sso-7-sso73-openshift_latest
+    image: registry.redhat.io/redhat-sso-7/sso73-openshift:latest
   - name: keycloak-plugin
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-auth-plugin_1.4
+    image: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4
   - name: mqtt-gateway
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-mqtt-gateway_1.4
+    image: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4
   - name: mqtt-lwt
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-mqtt-lwt_1.4
+    image: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4
   - name: console-init
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-console-init_1.4
+    image: registry.redhat.io/amq7/amq-online-1-console-init:1.4
   - name: console-proxy-openshift
-    image: quay.io/integreatly/delorean:openshift3-oauth-proxy_latest
+    image: registry.redhat.io/openshift3/oauth-proxy:latest
   - name: console-proxy-kubernetes
     image: quay.io/pusher/oauth2_proxy:latest
   - name: console-server
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-console-server-rhel7_1.4
+    image: registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4
   - name: controller-manager
-    image: quay.io/integreatly/delorean:amq7-amq-online-1-controller-manager-rhel7-operator_1.4
+    image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
   - name: iot-proxy-configurator
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-proxy-configurator_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4
   - name: iot-auth-service
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-auth-service_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4
   - name: iot-device-registry-file
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-device-registry-file_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4
   - name: iot-device-registry-infinispan
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-device-registry-datagrid_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4
   - name: iot-http-adapter
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-http-adapter_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4
   - name: iot-mqtt-adapter
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-mqtt-adapter_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4
   - name: iot-lorawan-adapter
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-lorawan-adapter-rhel7_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4
   - name: iot-sigfox-adapter
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-sigfox-adapter-rhel7_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4
   - name: iot-tenant-service
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-tenant-service_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4
   - name: iot-tenant-cleaner
-    image: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-tenant-cleaner-rhel7_1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4
   install:
     strategy: deployment
     spec:
@@ -595,7 +595,7 @@ spec:
               serviceAccountName: enmasse-operator
               containers:
               - name: controller
-                image: quay.io/integreatly/delorean:amq7-amq-online-1-controller-manager-rhel7-operator_1.4
+                image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
                 imagePullPolicy: Always
                 env:
                 - name: POD_NAME
@@ -629,59 +629,59 @@ spec:
                 - name: ADDRESS_SPACE_CONTROLLER_MEMORY_LIMIT
                   value: "1Gi"
                 - name: ADDRESS_SPACE_CONTROLLER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-address-space-controller_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4
                 - name: CONTROLLER_MANAGER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-controller-manager-rhel7-operator_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
                 - name: IOT_AUTH_SERVICE_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-auth-service_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4
                 - name: IOT_DEVICE_REGISTRY_FILE_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-device-registry-file_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4
                 - name: IOT_DEVICE_REGISTRY_INFINISPAN_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-device-registry-datagrid_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4
                 - name: IOT_HTTP_ADAPTER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-http-adapter_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4
                 - name: IOT_MQTT_ADAPTER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-mqtt-adapter_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4
                 - name: IOT_LORAWAN_ADAPTER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-lorawan-adapter-rhel7_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4
                 - name: IOT_SIGFOX_ADAPTER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-sigfox-adapter-rhel7_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4
                 - name: IOT_TENANT_CLEANER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-tenant-cleaner-rhel7_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4
                 - name: IOT_TENANT_SERVICE_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-tenant-service_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4
                 - name: IOT_PROXY_CONFIGURATOR_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-proxy-configurator_1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4
                 - name: ROUTER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-interconnect_1.7
+                  value: registry.redhat.io/amq7/amq-interconnect:1.7
                 - name: STANDARD_CONTROLLER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-standard-controller_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4
                 - name: AGENT_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-agent_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-agent:1.4
                 - name: BROKER_IMAGE
                   value: registry-proxy.engineering.redhat.com/rh-osbs/amq-broker-7-amq-broker-76-openshift:7.6
                 - name: BROKER_PLUGIN_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-broker-plugin_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4
                 - name: TOPIC_FORWARDER_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-topic-forwarder_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4
                 - name: MQTT_GATEWAY_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-mqtt-gateway_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4
                 - name: MQTT_LWT_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-mqtt-lwt_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4
                 - name: NONE_AUTHSERVICE_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-none-auth-service_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4
                 - name: KEYCLOAK_IMAGE
-                  value: quay.io/integreatly/delorean:redhat-sso-7-sso73-openshift_latest
+                  value: registry.redhat.io/redhat-sso-7/sso73-openshift:latest
                 - name: KEYCLOAK_PLUGIN_IMAGE
-                  value: quay.io/integreatly/delorean:amq7-amq-online-1-auth-plugin_1.4
+                  value: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4
                 - name: CONTROLLER_ENABLE_CONSOLE_SERVICE
                   value: "true"
                 - name: CONSOLE_INIT_IMAGE
-                  value: "quay.io/integreatly/delorean:amq7-amq-online-1-console-init_1.4"
+                  value: "registry.redhat.io/amq7/amq-online-1-console-init:1.4"
                 - name: CONSOLE_SERVER_IMAGE
-                  value: "quay.io/integreatly/delorean:amq7-amq-online-1-console-server-rhel7_1.4"
+                  value: "registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4"
                 - name: CONSOLE_PROXY_OPENSHIFT_IMAGE
-                  value: "quay.io/integreatly/delorean:openshift3-oauth-proxy_latest"
+                  value: "registry.redhat.io/openshift3/oauth-proxy:latest"
                 - name: CONSOLE_PROXY_KUBERNETES_IMAGE
                   value: "quay.io/pusher/oauth2_proxy:latest"
                 - name: "FS_GROUP_FALLBACK_MAP"
