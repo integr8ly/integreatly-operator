@@ -106,7 +106,7 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 					},
 					"useClusterStorage": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"boolean"},
+							Type:   []string{"string"},
 							Format: "",
 						},
 					},
@@ -120,6 +120,20 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 					"smtpSecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SMTPSecret is the name of a secret in the installation namespace containing SMTP connection details. The secret must contain the following fields:\n\nhost port tls username password",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"pagerdutySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PagerDutySecret is the name of a secret in the installation namespace containing PagerDuty account details. The secret must contain the following fields:\n\nserviceKey",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"deadMansSnitchSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DeadMansSnitchSecret is the name of a secret in the installation namespace containing connection details for Dead Mans Snitch. The secret must contain the following fields:\n\nurl",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -154,6 +168,12 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMIStatus(ref common.ReferenceCallbac
 							},
 						},
 					},
+					"stage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"preflightStatus": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -185,7 +205,7 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMIStatus(ref common.ReferenceCallbac
 						},
 					},
 				},
-				Required: []string{"stages", "lastError"},
+				Required: []string{"stages", "stage", "lastError"},
 			},
 		},
 		Dependencies: []string{
