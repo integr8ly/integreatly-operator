@@ -2,11 +2,15 @@ package common
 
 import (
 	"bytes"
+	goctx "context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
@@ -65,4 +69,20 @@ func difference(sliceSource, sliceTarget []string) []string {
 		}
 	}
 	return diff
+}
+
+// Is the cluster using on cluster or external storage
+func isClusterStorage(ctx *TestingContext) (bool, error) {
+	rhmi := &integreatlyv1alpha1.RHMI{}
+
+	// get the RHMI custom resource to check what storage type is being used
+	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: rhmiOperatorNamespace}, rhmi)
+	if err != nil {
+		return true, fmt.Errorf("error getting RHMI CR: %v", err)
+	}
+
+	if rhmi.Spec.UseClusterStorage == "true" {
+		return true, nil
+	}
+	return false, nil
 }
