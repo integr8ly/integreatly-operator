@@ -56,7 +56,7 @@ var (
 	VersionAMQOnline           ProductVersion = "1.3.1"
 	VersionApicurito           ProductVersion = "1.0.1"
 	VersionAMQStreams          ProductVersion = "1.1.0"
-	VersionCodeReadyWorkspaces ProductVersion = "2.0.0.GA"
+	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionMonitoring          ProductVersion = "1.1.4"
 	Version3Scale              ProductVersion = "2.7"
