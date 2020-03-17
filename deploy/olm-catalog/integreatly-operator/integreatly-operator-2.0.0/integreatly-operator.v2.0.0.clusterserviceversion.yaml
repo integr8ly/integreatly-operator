@@ -14,7 +14,7 @@ metadata:
             "deadMansSnitchSecret": "INSTALLATION_PREFIX-deadmanssnitch",
             "namespacePrefix": "INSTALLATION_PREFIX-",
             "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
-            "pagerdutySecret": "INSTALLATION_PREFIX-pagerduty",
+            "pagerDutySecret": "INSTALLATION_PREFIX-pagerduty",
             "selfSignedCerts": "SELF_SIGNED_CERTS",
             "smtpSecret": "INSTALLATION_PREFIX-smtp",
             "type": "INSTALLATION_TYPE",
@@ -30,7 +30,7 @@ metadata:
           "spec": {
             "deadMansSnitchSecret": "redhat-rhmi-deadmanssnitch",
             "namespacePrefix": "redhat-rhmi-",
-            "pagerdutySecret": "redhat-rhmi-pagerduty",
+            "pagerDutySecret": "redhat-rhmi-pagerduty",
             "selfSignedCerts": true,
             "smtpSecret": "redhat-rhmi-smtp",
             "type": "managed",

@@ -142,7 +142,7 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
-					"pagerdutySecret": {
+					"pagerDutySecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PagerDutySecret is the name of a secret in the installation namespace containing PagerDuty account details. The secret must contain the following fields:\n\nserviceKey",
 							Type:        []string{"string"},

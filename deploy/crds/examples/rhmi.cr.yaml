@@ -9,4 +9,4 @@ spec:
   useClusterStorage: 'true'
   smtpSecret: redhat-rhmi-smtp
   deadMansSnitchSecret: redhat-rhmi-deadmanssnitch
-  pagerdutySecret: redhat-rhmi-pagerduty
+  pagerDutySecret: redhat-rhmi-pagerduty
