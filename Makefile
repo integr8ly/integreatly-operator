@@ -47,7 +47,7 @@ endef
 
 .PHONY: setup/moq
 setup/moq:
-	go get github.com/matryer/moq
+	go install github.com/matryer/moq
 
 .PHONY: setup/service_account
 setup/service_account:
