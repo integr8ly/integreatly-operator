@@ -1,16 +1,15 @@
 # Test Best Practices
 
-This is a collection of best practices to write high quality tests. The best practices
-can be referenced in review comments to speed up the review process.
+This is a collection of best practices to write high quality tests. These best practices should be referenced in the comments that you provide when you perform code reviews of tests.
 
-- [Code Style](#code-style)
+- [Coding Style](#coding-style)
 - [Test Case Traceability](#test-case-traceability)
 - [Don't Sleep](#dont-sleep)
 - [Independent](#independent)
 - [Secrets](#secrets)
 - [Logging](#logging)
 
-## Code Style
+## Coding Style
 
 The code style should be consistent with the style used in the integreatly-operator codebase [TODO: link to golang practices used by engineering]
 
@@ -21,15 +20,11 @@ Also, in case of doubt, the Golang standard best practices can be used:
 
 ## Test Case Traceability
 
-In order to compute test coverage and test automation progress across multiple test suites all
-automated tests must have an ID and must be traced back to the [integreatly-test-cases](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases)
-repo following the [How to automate a test case and link it back](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases#how-to-automate-a-test-case-and-link-it-back)
-tutorial.
+In order to compute test coverage and test automation progress across multiple test suites all automated tests must have an ID and must be traced back to the [integreatly-test-cases](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases) repo following the [How to automate a test case and link it back](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases#how-to-automate-a-test-case-and-link-it-back) tutorial.
 
 ## Don't Sleep
 
-When waiting for a resource to become available or an operation to complete do not use fixed wait times and/or sleep statements,
-instead you should create a loop to check if the resource is available or the operation has completed
+When waiting for a resource to become available or an operation to complete do not use fixed wait times and/or sleep statements, instead you should create a loop to check if the resource is available or the operation has completed
 
 ## Independent
 
@@ -43,11 +38,10 @@ A test must always be independent of other tests, which means:
 
 ## Secrets
 
-Ensure secret or sensitive data is not included in commits or log output. 
+Ensure secret or sensitive data is not included in commits or log output.
 
 ## Logging
 
-Do not be afraid of logging, if the test pass we will ignore the logs but if the test fail logs will help
-understand why the test has failed, especially if the tests fail during an unexpected step.
+Do not be afraid of logging, if the test pass we will ignore the logs but if the test fail logs will help understand why the test has failed, especially if the tests fail during an unexpected step.
 
 Use the [`t.Log`](https://golang.org/pkg/testing/#B.Log) to print to the console instead of `fmt.Print`.
