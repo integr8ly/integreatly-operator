@@ -334,6 +334,9 @@ github.com/mailru/easyjson/jwriter
 github.com/markbates/inflect
 # github.com/martinlindhe/base36 v1.0.0
 github.com/martinlindhe/base36
+# github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54
+github.com/matryer/moq
+github.com/matryer/moq/pkg/moq
 # github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 github.com/mattbaird/jsonpatch
 # github.com/mattn/go-isatty v0.0.8
