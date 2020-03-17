@@ -1,15 +1,10 @@
 package common
 
 import (
-	goctx "context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-
-	"k8s.io/apimachinery/pkg/types"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
@@ -236,85 +231,85 @@ var expectedRules = []alertsTestRule{
 
 var expectedAWSRules = []alertsTestRule{
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-threescale-redis-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-threescale-backend-redis-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-backend-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-threescale-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scalePostgresConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-threescale-redis-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-threescale-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-threescale-backend-redis-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-threescale-backend-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-threescale-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-threescale-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scalePostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-ups-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-ups-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"upsPostgresConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-ups-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-ups-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"upsPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-codeready-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-codeready-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"codeready-workspacesPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-codeready-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-codeready-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"codeready-workspacesPostgresConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-rhssouser-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-rhssouser-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"user-ssoPostgresConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-rhssouser-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-rhssouser-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"user-ssoPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-connectivity-rule-rhsso-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-connectivity-rule-rhsso-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"rhssoPostgresConnectionFailed",
 		},
 	},
 	{
-		File: "redhat-rhmi-operator-availability-rule-rhsso-postgres-example-rhmi.yaml",
+		File: rhmiOperatorNamespace + "-availability-rule-rhsso-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"rhssoPostgresInstanceUnavailable",
 		},
@@ -322,17 +317,14 @@ var expectedAWSRules = []alertsTestRule{
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
-	// get the RHMI custom resource to check what storage type is being used
-	rhmi := &v1alpha1.RHMI{}
-	ns := fmt.Sprintf("%soperator", namespacePrefix)
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: installationName, Namespace: ns}, rhmi)
+	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
-		t.Fatal("error getting RHMI CR:", err)
+		t.Fatal("error getting isClusterStorage:", err)
 	}
 
 	// add external database alerts to list of expected rules if
 	// cluster storage is not being used
-	if rhmi.Spec.UseClusterStorage != "true" {
+	if !isClusterStorage {
 		for _, rule := range expectedAWSRules {
 			expectedRules = append(expectedRules, rule)
 		}

@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	namespacePrefix  = "redhat-rhmi-"
-	installationName = "rhmi"
+	namespacePrefix       = "redhat-rhmi-"
+	rhmiOperatorNamespace = namespacePrefix + "operator"
+	InstallationName      = "rhmi"
 )
 
 type TestingContext struct {

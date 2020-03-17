@@ -21,8 +21,21 @@ type Product struct {
 }
 
 func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
-
 	deployment := getDeployment()
+
+	isClusterStorage, err := isClusterStorage(ctx)
+	if err != nil {
+		t.Fatal("error getting isClusterStorage:", err)
+	}
+	// If the cluster is using in cluster storage instead of AWS resources
+	// These deployments will also need to be checked
+	if isClusterStorage {
+		clusterStorageDeployments := getClusterStorageDeployments()
+		for _, clusterStorageDeployment := range clusterStorageDeployments {
+			deployment = append(deployment, clusterStorageDeployment)
+		}
+	}
+
 	for _, namespace := range deployment {
 		for _, product := range namespace.Products {
 			deployment, err := ctx.KubeClient.AppsV1().Deployments(namespace.Name).Get(product.Name, v1.GetOptions{})
@@ -217,13 +230,6 @@ func getDeployment() []Namespace {
 		Namespace{
 			Name: "redhat-rhmi-operator",
 			Products: []Product{
-				Product{Name: "codeready-postgres-rhmi", ExpectedReplicas: 1},
-				Product{Name: "threescale-backend-redis-rhmi", ExpectedReplicas: 1},
-				Product{Name: "threescale-postgres-rhmi", ExpectedReplicas: 1},
-				Product{Name: "threescale-redis-rhmi", ExpectedReplicas: 1},
-				Product{Name: "ups-postgres-rhmi", ExpectedReplicas: 1},
-				Product{Name: "rhsso-postgres-rhmi", ExpectedReplicas: 1},
-				Product{Name: "rhssouser-postgres-rhmi", ExpectedReplicas: 1},
 				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
 			},
 		},
@@ -255,6 +261,24 @@ func getDeployment() []Namespace {
 			Name: "redhat-rhmi-user-sso-operator",
 			Products: []Product{
 				Product{Name: "keycloak-operator", ExpectedReplicas: 1},
+			},
+		},
+	}
+}
+
+func getClusterStorageDeployments() []Namespace {
+	return []Namespace{
+		{
+			Name: "redhat-rhmi-operator",
+			Products: []Product{
+				Product{Name: "codeready-postgres-rhmi", ExpectedReplicas: 1},
+				Product{Name: "threescale-backend-redis-rhmi", ExpectedReplicas: 1},
+				Product{Name: "threescale-postgres-rhmi", ExpectedReplicas: 1},
+				Product{Name: "threescale-redis-rhmi", ExpectedReplicas: 1},
+				Product{Name: "ups-postgres-rhmi", ExpectedReplicas: 1},
+				Product{Name: "rhsso-postgres-rhmi", ExpectedReplicas: 1},
+				Product{Name: "rhssouser-postgres-rhmi", ExpectedReplicas: 1},
+				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
 			},
 		},
 	}

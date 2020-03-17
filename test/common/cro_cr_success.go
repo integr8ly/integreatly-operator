@@ -1,15 +1,13 @@
 package common
 
 import (
-	goctx "context"
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"k8s.io/apimachinery/pkg/types"
-	"testing"
 )
 
 const (
@@ -132,13 +130,12 @@ func getCustomResourceJson(ctx *TestingContext, resource string, resourceName st
 
 // Get resource provision strategy
 func getResourceStrategy(t *testing.T, ctx *TestingContext) string {
-	rhmi := &integreatlyv1alpha1.RHMI{}
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: requestNameSpace}, rhmi)
+	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
-		t.Fatal("error getting RHMI CR:", err)
+		t.Fatal("error getting isClusterStorage:", err)
 	}
 
-	if rhmi.Spec.UseClusterStorage == "false" {
+	if !isClusterStorage {
 		return externalProvider
 	}
 
