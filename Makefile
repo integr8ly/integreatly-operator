@@ -16,6 +16,14 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 
+# If openapi-gen is available on the path, use that; otherwise use it through
+# "go run" (slower)
+ifneq (, $(shell which openapi-gen 2> /dev/null))
+	OPENAPI_GEN ?= openapi-gen
+else
+	OPENAPI_GEN ?= go run k8s.io/kube-openapi/cmd/openapi-gen
+endif
+
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
@@ -80,7 +88,12 @@ deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_t
 	- rm -f deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
 
 pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/rhmi_types.go
-	which ./bin/openapi-gen > /dev/null || go build -o ./bin/openapi-gen k8s.io/kube-openapi/cmd/openapi-gen
+	$(OPENAPI_GEN) --logtostderr=true -o "" \
+		-i ./pkg/apis/integreatly/v1alpha1/ \
+		-p ./pkg/apis/integreatly/v1alpha1/ \
+		-O zz_generated.openapi \
+		-h ./hack/boilerplate.go.txt \
+		-r "-"
 
 pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	operator-sdk generate k8s
