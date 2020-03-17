@@ -240,6 +240,12 @@ spec:
           - create
           - update
           - delete
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - identities
+          verbs:
+          - get
         serviceAccountName: rhmi-operator
       deployments:
       - name: rhmi-operator
