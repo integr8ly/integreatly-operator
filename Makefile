@@ -49,11 +49,6 @@ endef
 setup/moq:
 	go get github.com/matryer/moq
 
-.PHONY: setup/travis
-setup/travis:
-	@echo Installing Operator SDK
-	@curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v$(OPERATOR_SDK_VERSION)/operator-sdk-v$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu && chmod +x operator-sdk && sudo mv operator-sdk /usr/local/bin/
-
 .PHONY: setup/service_account
 setup/service_account:
 	@-oc new-project $(NAMESPACE)
