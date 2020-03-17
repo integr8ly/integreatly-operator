@@ -24,6 +24,14 @@ else
 	OPENAPI_GEN ?= go run k8s.io/kube-openapi/cmd/openapi-gen
 endif
 
+# If the _correct_ version of operator-sdk is on the path, use that (faster);
+# otherwise use it through "go run" (slower but will always work and will use correct version)
+ifeq ($(shell operator-sdk version 2> /dev/null | sed -e 's/", .*/"/' -e 's/.* //'), "v$(OPERATOR_SDK_VERSION)")
+	OPERATOR_SDK ?= operator-sdk
+else
+	OPERATOR_SDK ?= go run github.com/operator-framework/operator-sdk/cmd/operator-sdk
+endif
+
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
@@ -60,7 +68,7 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
-	@operator-sdk run --local --namespace="$(NAMESPACE)"
+	@$(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
@@ -72,7 +80,7 @@ code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
 deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_types.go
-	operator-sdk generate crds
+	$(OPERATOR_SDK) generate crds
 	- rm -f deploy/crds/apicur.io_apicuritoes_crd.yaml
 	- rm -f deploy/crds/enmasse.io_addresses_crd.yaml
 	- rm -f deploy/crds/enmasse.io_addressplans_crd.yaml
@@ -96,7 +104,7 @@ pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1al
 		-r "-"
 
 pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1alpha1/rhmi_types.go
-	operator-sdk generate k8s
+	$(OPERATOR_SDK) generate k8s
 
 .PHONY: code/gen
 code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
@@ -115,7 +123,7 @@ code/fix:
 
 .PHONY: image/build
 image/build: code/compile
-	@operator-sdk build $(INTEGREATLY_OPERATOR_IMAGE)
+	@$(OPERATOR_SDK) build $(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: image/push
 image/push:
@@ -126,7 +134,7 @@ image/build/push: image/build image/push
 
 .PHONY: image/build/test
 image/build/test:
-	operator-sdk build --enable-tests $(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) build --enable-tests $(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/unit
 test/unit:
@@ -139,7 +147,7 @@ test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	operator-sdk --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/functional
 test/functional:
@@ -258,7 +266,7 @@ gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
 	@sed -i '' 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
-	operator-sdk generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
+	$(OPERATOR_SDK) generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
 	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
 	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
