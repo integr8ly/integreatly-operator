@@ -26,7 +26,6 @@ import (
 
 var (
 	defaultInstallationNamespace = "amq-streams"
-	defaultSubscriptionName      = "rhmi-amq-streams"
 	clusterName                  = "rhmi-cluster"
 	manifestPackage              = "integreatly-amq-streams"
 )
@@ -116,9 +115,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: constants.AMQStreamsSubscriptionName, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQStreamsSubscriptionName), err)
 		return phase, err
 	}
 

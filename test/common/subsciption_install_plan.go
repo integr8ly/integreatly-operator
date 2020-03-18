@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
@@ -20,68 +21,62 @@ type SubscriptionCheck struct {
 var (
 	subscriptionsToCheck = []SubscriptionCheck{
 		{
-			Name:      "rhmi-3scale",
-			Namespace: "redhat-rhmi-3scale-operator",
+			Name:      constants.AMQOnlineSubscriptionName,
+			Namespace: fmt.Sprintf("%samq-online", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-amq-online",
-			Namespace: "redhat-rhmi-amq-online",
+			Name:      constants.ApicuritoSubscriptionName,
+			Namespace: fmt.Sprintf("%sapicurito-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-apicurito",
-			Namespace: "redhat-rhmi-apicurito-operator",
+			Name:      constants.CloudResourceSubscriptionName,
+			Namespace: fmt.Sprintf("%scloud-resources-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-cloud-resources",
-			Namespace: "redhat-rhmi-cloud-resources-operator",
+			Name:      constants.CodeReadySubscriptionName,
+			Namespace: fmt.Sprintf("%scodeready-workspaces-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-codeready-workspaces",
-			Namespace: "redhat-rhmi-codeready-workspaces-operator",
+			Name:      constants.FuseSubscriptionName,
+			Namespace: fmt.Sprintf("%sfuse-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-monitoring",
-			Namespace: "redhat-rhmi-middleware-monitoring-operator",
+			Name:      constants.MonitoringSubscriptionName,
+			Namespace: fmt.Sprintf("%smiddleware-monitoring-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-rhsso",
-			Namespace: "redhat-rhmi-user-sso-operator",
+			Name:      constants.RHSSOUserSubscriptionName,
+			Namespace: fmt.Sprintf("%suser-sso-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-rhsso",
-			Namespace: "redhat-rhmi-rhsso-operator",
+			Name:      constants.RHSSOSubscriptionName,
+			Namespace: fmt.Sprintf("%srhsso-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-solution-explorer",
-			Namespace: "redhat-rhmi-solution-explorer-operator",
+			Name:      constants.SolutionExplorerSubscriptionName,
+			Namespace: fmt.Sprintf("%ssolution-explorer-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-syndesis",
-			Namespace: "redhat-rhmi-fuse-operator",
+			Name:      constants.ThreeScaleSubscriptionName,
+			Namespace: fmt.Sprintf("%s3scale-operator", namespacePrefix),
 		},
 		{
-			Name:      "rhmi-unifiedpush",
-			Namespace: "redhat-rhmi-ups-operator",
+			Name:      constants.UPSSubscriptionName,
+			Namespace: fmt.Sprintf("%sups-operator", namespacePrefix),
 		},
 	}
 )
 
 func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
-	var testErrors []string
-
 	for _, subscription := range subscriptionsToCheck {
 		sub := &coreosv1alpha1.Subscription{}
 		err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: subscription.Name, Namespace: subscription.Namespace}, sub)
 		if err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("\nError getting subscription %s in ns: %s", subscription.Name, subscription.Namespace))
+			t.Errorf("Error getting subscription %s in ns %s: %s", subscription.Name, subscription.Namespace, err)
 		}
 
 		if err == nil && sub.Spec.InstallPlanApproval != expectedApprovalStrategy {
-			testErrors = append(testErrors, fmt.Sprintf("\nExpected %s approval but got %s", sub.Spec.InstallPlanApproval, expectedApprovalStrategy))
+			t.Errorf("Expected %s approval but got %s", sub.Spec.InstallPlanApproval, expectedApprovalStrategy)
 		}
-	}
-
-	if len(testErrors) != 0 {
-		t.Fatalf("Test subscription install plan type failed with the following errors: %s", testErrors)
 	}
 }

@@ -3,6 +3,7 @@ package apicurito
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"strings"
 
 	v1 "k8s.io/api/apps/v1"
@@ -31,7 +32,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "apicurito"
-	defaultSubscriptionName      = "rhmi-apicurito"
 	manifestPackage              = "integreatly-apicurito"
 	apicuritoName                = "apicurito"
 	defaultApicuritoPullSecret   = "apicurito-pull-secret"
@@ -145,9 +145,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ApicuritoSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ApicuritoSubscriptionName), err)
 		return phase, err
 	}
 
