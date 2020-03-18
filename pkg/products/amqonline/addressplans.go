@@ -20,6 +20,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
 					Broker: "0.0",
+					Router: "0.0",
 				},
 			},
 		},
@@ -36,6 +37,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
 					Broker: "0.0",
+					Router: "0.0",
 				},
 			},
 		},
@@ -52,6 +54,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.1",
+					Broker: "0.0",
 				},
 			},
 		},
@@ -68,6 +71,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.1",
+					Broker: "0.0",
 				},
 			},
 		},
@@ -153,6 +157,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.01",
+					Broker: "0.0",
 				},
 			},
 		},
@@ -169,6 +174,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.01",
+					Broker: "0.0",
 				},
 			},
 		},
@@ -254,6 +260,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.001",
+					Broker: "0.0",
 				},
 			},
 		},
@@ -270,6 +277,7 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
 					Router: "0.001",
+					Broker: "0.0",
 				},
 			},
 		},
