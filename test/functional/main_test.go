@@ -80,6 +80,7 @@ func TestMain(t *testing.M) {
 	})
 
 	fmt.Printf(output)
+	//TODO Remove this before merging, used for debugging
 
 	if _, err := os.Stat(testResultsDirectory); !os.IsNotExist(err) {
 		err := writeOutputToFile(output, filepath.Join(testResultsDirectory, testOutputFileName))

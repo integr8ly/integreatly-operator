@@ -4,6 +4,10 @@ import (
 	"bytes"
 	goctx "context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -85,4 +89,30 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+func FindTag(key, value string, tags []*rds.Tag) *rds.Tag {
+	for _, tag := range tags {
+		if key == aws.StringValue(tag.Key) && value == aws.StringValue(tag.Value) {
+			return tag
+		}
+	}
+	return nil
+}
+
+// arrayContains to return boolean flag if an arbitrary specified element is an element of that slice
+func arrayContains(arr []string, targetValue string) bool {
+	for _, element := range arr {
+		if element != "" && element == targetValue {
+			return true
+		}
+	}
+	return false
+}
+
+//WrapLog Wrap an existing error with a message and log the provided message
+func WrapLog(err error, msg string, logger *logrus.Entry) error {
+	logger.Error(msg)
+	return wrap(err, msg)
+}
+func wrap(err error, msg string) error {
+	return fmt.Errorf("%s: %w", msg, err)
 }
