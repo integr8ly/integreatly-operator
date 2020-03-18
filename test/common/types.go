@@ -36,3 +36,14 @@ type prometheusAPIResponse struct {
 	Error     string                 `json:"error"`
 	Warnings  []string               `json:"warnings,omitempty"`
 }
+
+type Namespace struct {
+	Name                     string
+	Products                 []Product
+	PodDisruptionBudgetNames []string
+}
+
+type Product struct {
+	Name             string
+	ExpectedReplicas int32
+}

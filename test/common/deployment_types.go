@@ -11,16 +11,6 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Namespace struct {
-	Name     string
-	Products []Product
-}
-
-type Product struct {
-	Name             string
-	ExpectedReplicas int32
-}
-
 var (
 	deployments = []Namespace{
 		{
