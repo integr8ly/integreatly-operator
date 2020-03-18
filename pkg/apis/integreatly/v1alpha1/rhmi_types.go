@@ -50,37 +50,38 @@ var (
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
 
-	// PBrookes 08/08/2019:
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
-	VersionAMQOnline           ProductVersion = "1.3.1"
-	VersionApicurito           ProductVersion = "1.0.1"
+	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
+	VersionAMQOnline           ProductVersion = "1.3"
+	VersionApicurito           ProductVersion = "7.5"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
 	VersionFuseOnOpenshift     ProductVersion = "master"
 	VersionMonitoring          ProductVersion = "1.1.4"
 	Version3Scale              ProductVersion = "2.7"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.13.0"
+	VersionCloudResources      ProductVersion = "0.13.1"
 	VersionFuseOnline          ProductVersion = "7.5"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "8.0.1"
-	VersionRHSSOUser           ProductVersion = "8.0.1"
+	VersionRHSSO               ProductVersion = "7.3"
+	VersionRHSSOUser           ProductVersion = "7.3"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
 	PreflightFail       PreflightStatus = "failed"
 
+	// Operator image tags
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline           OperatorVersion = "1.3.1"
+	OperatorVersionAMQOnline           OperatorVersion = "1.3"
 	OperatorVersionMonitoring          OperatorVersion = "1.1.4"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.46"
 	OperatorVersionRHSSO               OperatorVersion = "8.0.1"
 	OperatorVersionRHSSOUser           OperatorVersion = "8.0.1"
-	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0.0"
+	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
 	OperatorVersionFuse                OperatorVersion = "1.5.0"
 	OperatorVersion3Scale              OperatorVersion = "0.4.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.13.0"
+	OperatorVersionCloudResources      OperatorVersion = "0.13.1"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.5.0"
 
