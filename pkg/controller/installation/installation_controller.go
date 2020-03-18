@@ -151,7 +151,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
-				Type:                        string(integreatlyv1alpha1.InstallationTypeManaged),
+				Type:                        string(integreatlyv1alpha1.InstallationTypeWorkshop),
 				NamespacePrefix:             DefaultInstallationPrefix,
 				SelfSignedCerts:             false,
 				SMTPSecret:                  DefaultInstallationPrefix + "smtp",
