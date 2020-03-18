@@ -82,7 +82,7 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("grafana pod not found")
 	}
 
-	output, err := execToPod("curl localhost:3000/api/search",
+	output, err := ExecToPod("curl localhost:3000/api/search",
 		pods.Items[0].ObjectMeta.Name,
 		NamespacePrefix+"middleware-monitoring-operator",
 		"grafana", ctx)
@@ -109,8 +109,8 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		actualDashboardTitles = append(actualDashboardTitles, dashboard.Title)
 	}
 
-	dashboardDiffUnexpected := difference(actualDashboardTitles, expectedDashboardTitles)
-	dashboardDiffMissing := difference(expectedDashboardTitles, actualDashboardTitles)
+	dashboardDiffUnexpected := Difference(actualDashboardTitles, expectedDashboardTitles)
+	dashboardDiffMissing := Difference(expectedDashboardTitles, actualDashboardTitles)
 
 	if len(dashboardDiffUnexpected) > 0 {
 		t.Logf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))

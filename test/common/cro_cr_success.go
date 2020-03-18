@@ -130,7 +130,7 @@ func getCustomResourceJson(ctx *TestingContext, resource string, resourceName st
 
 // Get resource provision strategy
 func getResourceStrategy(t *testing.T, ctx *TestingContext) string {
-	isClusterStorage, err := isClusterStorage(ctx)
+	isClusterStorage, err := IsClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
 	}
