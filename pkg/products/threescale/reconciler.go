@@ -46,7 +46,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "3scale"
-	packageName                  = "rhmi-3scale"
 	manifestPackage              = "integreatly-3scale"
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
@@ -118,7 +117,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling %s", packageName)
+	logrus.Infof("Reconciling %s", r.Config.GetProductName())
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
@@ -172,9 +171,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ThreeScaleSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", packageName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
 		return phase, err
 	}
 
@@ -204,7 +203,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	logrus.Infof("%s is successfully deployed", packageName)
+	logrus.Infof("%s is successfully deployed", r.Config.GetProductName())
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -273,7 +272,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s installation is reconciled successfully", packageName)
+	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

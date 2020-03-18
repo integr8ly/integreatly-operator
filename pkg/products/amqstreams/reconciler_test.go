@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -250,7 +251,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		unreadyPods = append(unreadyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -268,7 +269,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		readyPods = append(readyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQOnlineSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -408,7 +409,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{

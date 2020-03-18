@@ -38,7 +38,6 @@ import (
 const (
 	defaultInstallationNamespace = "ups"
 	defaultUpsName               = "ups"
-	defaultSubscriptionName      = "rhmi-unifiedpush"
 	defaultRoutename             = defaultUpsName + "-unifiedpush-proxy"
 	manifestPackage              = "integreatly-unifiedpush"
 	tier                         = "production"
@@ -134,9 +133,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.UPSSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.UPSSubscriptionName), err)
 
 		return phase, err
 	}
