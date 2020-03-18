@@ -69,7 +69,7 @@ var expectedDashboards = []dashboardsTestRule{
 func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(namespacePrefix + "middleware-monitoring-operator"),
+		k8sclient.InNamespace(NamespacePrefix + "middleware-monitoring-operator"),
 		k8sclient.MatchingLabels{"app": "grafana"},
 	}
 
@@ -82,9 +82,9 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("grafana pod not found")
 	}
 
-	output, err := execToPod("curl localhost:3000/api/search",
+	output, err := ExecToPod("curl localhost:3000/api/search",
 		pods.Items[0].ObjectMeta.Name,
-		namespacePrefix+"middleware-monitoring-operator",
+		NamespacePrefix+"middleware-monitoring-operator",
 		"grafana", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)
@@ -109,8 +109,8 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		actualDashboardTitles = append(actualDashboardTitles, dashboard.Title)
 	}
 
-	dashboardDiffUnexpected := difference(actualDashboardTitles, expectedDashboardTitles)
-	dashboardDiffMissing := difference(expectedDashboardTitles, actualDashboardTitles)
+	dashboardDiffUnexpected := Difference(actualDashboardTitles, expectedDashboardTitles)
+	dashboardDiffMissing := Difference(expectedDashboardTitles, actualDashboardTitles)
 
 	if len(dashboardDiffUnexpected) > 0 {
 		t.Logf("unexpected dashboards found: %s", strings.Join(dashboardDiffUnexpected, ", "))
