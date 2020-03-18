@@ -472,9 +472,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
-		if kc.Spec.Instances < numberOfReplicas {
-			kc.Spec.Instances = numberOfReplicas
-		}
+		kc.Spec.Instances = 1
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{
 			Enabled: true,
