@@ -12,9 +12,20 @@ import (
 )
 
 const (
-	NamespacePrefix       = "redhat-rhmi-"
-	RHMIOperatorNamespace = NamespacePrefix + "operator"
-	InstallationName      = "rhmi"
+	InstallationName                  = "rhmi"
+	NamespacePrefix                   = "redhat-rhmi-"
+	RHMIOperatorNameSpace             = NamespacePrefix + "operator"
+	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
+	ApicuritoOperatorNamespace        = NamespacePrefix + "apicurito-operator"
+	CloudResourceOperatorNamespace    = NamespacePrefix + "cloud-resources-operator"
+	CodeReadyOperatorNamespace        = NamespacePrefix + "codeready-workspaces-operator"
+	FuseOperatorNamespace             = NamespacePrefix + "fuse-operator"
+	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
+	RHSSOUserOperatorNamespace        = NamespacePrefix + "user-sso-operator"
+	RHSSOOperatorNamespace            = NamespacePrefix + "rhsso-operator"
+	SolutionExplorerOperatorNamespace = NamespacePrefix + "solution-explorer-operator"
+	ThreeScaleOperatorNamespace       = NamespacePrefix + "3scale-operator"
+	UPSOperatorNamespace              = NamespacePrefix + "ups-operator"
 )
 
 type TestingContext struct {
@@ -63,4 +74,9 @@ type ExpectedRoute struct {
 	ServiceName string
 
 	IsGeneratedName bool
+}
+
+type SubscriptionCheck struct {
+	Name      string
+	Namespace string
 }

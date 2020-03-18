@@ -41,7 +41,6 @@ const (
 	deploymentTimeout            = time.Minute * 20
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
-	intlyNamespacePrefix         = "redhat-rhmi-"
 	namespaceLabel               = "integreatly"
 	bootStrapStageTimeout        = time.Minute * 5
 	cloudResourcesStageTimeout   = time.Minute * 10
@@ -119,9 +118,9 @@ func TestIntegreatly(t *testing.T) {
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
 	namespace := ""
 	if deploymentName != "enmasse-operator" {
-		namespace = intlyNamespacePrefix + product + "-operator"
+		namespace = common.NamespacePrefix + product + "-operator"
 	} else {
-		namespace = intlyNamespacePrefix + product
+		namespace = common.NamespacePrefix + product
 	}
 	t.Logf("Checking %s:%s", namespace, deploymentName)
 
@@ -150,7 +149,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	// Get active alerts
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring-operator",
+		common.MonitoringOperatorNamespace,
 		"prometheus", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -188,7 +187,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 	// Get all rules
 	output, err = execToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring-operator",
+		common.MonitoringOperatorNamespace,
 		"prometheus", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -250,7 +249,7 @@ func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framew
 func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(intlyNamespacePrefix + "middleware-monitoring-operator"),
+		k8sclient.InNamespace(common.MonitoringOperatorNamespace),
 		k8sclient.MatchingLabels{"app": "grafana"},
 	}
 	err := f.Client.List(goctx.TODO(), pods, opts...)
@@ -269,7 +268,7 @@ func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	output, err := execToPod("curl localhost:3000/api/search",
 		pods.Items[0].ObjectMeta.Name,
-		intlyNamespacePrefix+"middleware-monitoring-operator",
+		common.MonitoringOperatorNamespace,
 		"grafana", f)
 	if err != nil {
 		return fmt.Errorf("failed to exec to pod: %s", err)
@@ -556,7 +555,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
 	for _, namespaceName := range namespaces {
 		namespace := &corev1.Namespace{}
-		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: intlyNamespacePrefix + namespaceName}, namespace)
+		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: common.NamespacePrefix + namespaceName}, namespace)
 		if err != nil {
 			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
 		}
@@ -607,7 +606,7 @@ func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string
 func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
 	for _, pvcNamespace := range pvcNamespaces {
 		pvcs := &corev1.PersistentVolumeClaimList{}
-		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: intlyNamespacePrefix + pvcNamespace})
+		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: common.NamespacePrefix + pvcNamespace})
 		if err != nil {
 			return fmt.Errorf("Error getting PVCs for namespace: %v. %w", pvcNamespace, err)
 		}
