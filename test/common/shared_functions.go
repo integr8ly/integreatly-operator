@@ -74,7 +74,7 @@ func execToPod(command string, podName string, namespace string, container strin
 }
 
 // difference one-way diff that return strings in sliceSource that are not in sliceTarget
-func difference(sliceSource, sliceTarget []string) []string {
+func Difference(sliceSource, sliceTarget []string) []string {
 	// create an empty lookup map with keys from sliceTarget
 	diffSourceLookupMap := make(map[string]struct{}, len(sliceTarget))
 	for _, item := range sliceTarget {
@@ -92,7 +92,7 @@ func difference(sliceSource, sliceTarget []string) []string {
 }
 
 // Is the cluster using on cluster or external storage
-func isClusterStorage(ctx *TestingContext) (bool, error) {
+func IsClusterStorage(ctx *TestingContext) (bool, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
 	// get the RHMI custom resource to check what storage type is being used
 	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
