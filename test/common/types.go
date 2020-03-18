@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	namespacePrefix       = "redhat-rhmi-"
-	rhmiOperatorNamespace = namespacePrefix + "operator"
+	NamespacePrefix       = "redhat-rhmi-"
+	RHMIOperatorNamespace = NamespacePrefix + "operator"
 	InstallationName      = "rhmi"
 )
 

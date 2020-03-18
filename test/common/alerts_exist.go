@@ -225,85 +225,85 @@ var expectedRules = []alertsTestRule{
 
 var expectedAWSRules = []alertsTestRule{
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-backend-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-threescale-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scalePostgresConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-threescale-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-backend-redis-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scaleRedisCacheUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-threescale-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"3scalePostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-ups-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-ups-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"upsPostgresConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-ups-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-ups-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"upsPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-codeready-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-codeready-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"codeready-workspacesPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-codeready-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-codeready-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"codeready-workspacesPostgresConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-rhssouser-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"user-ssoPostgresConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-rhssouser-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"user-ssoPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-connectivity-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-rhsso-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"rhssoPostgresConnectionFailed",
 		},
 	},
 	{
-		File: rhmiOperatorNamespace + "-availability-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-rhsso-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"rhssoPostgresInstanceUnavailable",
 		},
@@ -311,7 +311,7 @@ var expectedAWSRules = []alertsTestRule{
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
-	isClusterStorage, err := isClusterStorage(ctx)
+	isClusterStorage, err := IsClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
 	}
@@ -325,9 +325,9 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	}
 
 	// exec into the prometheus pod
-	output, err := execToPod("curl localhost:9090/api/v1/rules",
+	output, err := ExecToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
-		namespacePrefix+"middleware-monitoring-operator",
+		NamespacePrefix+"middleware-monitoring-operator",
 		"prometheus", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)
@@ -454,8 +454,8 @@ func buildReport(actualRule, expectedRule alertsTestRule, report *alertsTestRepo
 		report = newDefaultReport(fileCorrect)
 	}
 	// build report
-	report.MissingRules = append(report.MissingRules, difference(expectedRule.Rules, actualRule.Rules)...)
-	report.AdditionalRules = append(report.AdditionalRules, difference(actualRule.Rules, expectedRule.Rules)...)
+	report.MissingRules = append(report.MissingRules, Difference(expectedRule.Rules, actualRule.Rules)...)
+	report.AdditionalRules = append(report.AdditionalRules, Difference(actualRule.Rules, expectedRule.Rules)...)
 	if len(report.MissingRules) != 0 || len(report.AdditionalRules) != 0 {
 		report.Status = fileExists
 	}

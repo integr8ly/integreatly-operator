@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"fmt"
 	"github.com/google/go-querystring/query"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
@@ -15,9 +16,16 @@ const (
 	expectedFusePodCount              = 6
 )
 
+// struct used to create query string for fuse logs endpoint
+type LogOptions struct {
+	Container string `url:"container"`
+	Follow    string `url:"follow"`
+	TailLines string `url:"tailLines"`
+}
+
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	// get console master url
-	rhmi, err := getRHMI(ctx)
+	rhmi, err := GetRHMI(ctx)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -25,36 +33,35 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// get oauth route
 	oauthRoute := &v1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: openshiftOAuthRouteName, Namespace: openshiftAuthenticationNamespace}, oauthRoute); err != nil {
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		t.Fatal("error getting Openshift Oauth Route: ", err)
 	}
 
 	// get rhmi developer user tokens
-	rhmiDevUserToken, err := doAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, defaultIDP, "test-user01", "Password1")
+	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user01", "Password1")
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
 	// get projects for rhmi developer
-	rhmiDevfoundProjects, err := doOpenshiftGetProjects(masterURL, rhmiDevUserToken)
+	rhmiDevfoundProjects, err := resources.DoOpenshiftGetProjects(masterURL, rhmiDevUserToken)
 	if err != nil {
 		t.Fatalf("error occured while getting user projects : %v", err)
 	}
 
 	// check if projects are as expected for rhmi developer
 	for projectCount, p := range rhmiDevfoundProjects.Items {
-		t.Log(fmt.Sprintf("found rhmi-developer project - %s", p.Name))
 		if projectCount >= expectedRhmiDeveloperProjectCount {
-			t.Fatal(fmt.Sprintf("test failed - project count for rhmi-developer exceeded expected 1"))
+			t.Fatalf("test failed - found rhmi developer project count : %s expected rhmi-developer project count : %s", projectCount, expectedRhmiDeveloperProjectCount)
 		}
 		if p.Name != expectedRhmiDeveloperNamespace {
-			t.Fatal(fmt.Sprintf("test failed - found project for rhmi-developer does not match expected : %s", expectedRhmiDeveloperNamespace))
+			t.Fatalf("test failed - found rhmi developer project: %s expected rhmi developer project : %s", p.Name, expectedRhmiDeveloperNamespace)
 		}
 	}
-	t.Log("test-passed - found projects for rhmi-developer are as expected")
 
 	// get fuse pods for rhmi developer
-	podlist, err := doOpenshiftGetNamespacePods(masterURL, pathFusePods, rhmiDevUserToken)
+	fuseNamespace := fmt.Sprintf("%s-fuse", NamespacePrefix)
+	podlist, err := resources.DoOpenshiftGetPodsForNamespacePods(masterURL, fuseNamespace, rhmiDevUserToken)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
 	}
@@ -69,7 +76,6 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	if runningCount != expectedFusePodCount {
 		t.Fatalf("test-failed - expected fuse pod count : %d found fuse pod count: %d", expectedFusePodCount, runningCount)
 	}
-	t.Logf("test-passed - found expected %d running pods in fuse namespace", expectedFusePodCount)
 
 	// log through rhmi developer fuse podlist
 	for _, p := range podlist.Items {
@@ -80,12 +86,12 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 				t.Fatal(err)
 			}
 			// verify an rhmi developer can access the pods logs
-			resp, err := doOpenshiftGetRequest(fmt.Sprintf("%s/%s/%s/log?%s", masterURL, pathFusePods, p.Name, lv.Encode()), "", rhmiDevUserToken)
+			resp, err := resources.DoOpenshiftGetRequest(fmt.Sprintf("%s/%s/%s/log?%s", masterURL, resources.PathFusePods, p.Name, lv.Encode()), "", rhmiDevUserToken)
 			if err != nil {
-				t.Fatalf("error occured while making Openshift request: %v", err)
+				t.Fatalf("error occurred making oc get request: %v", err)
 			}
 			if resp.StatusCode != 200 {
-				t.Fatalf("test-failed - rhmi devolper unable to access fuse logs at %s, error : %v", p.Name, err)
+				t.Fatalf("test-failed - status code %d RHMI developer unable to access fuse logs in pod %s : %v", resp.StatusCode, p.Name, err)
 			}
 		}
 	}

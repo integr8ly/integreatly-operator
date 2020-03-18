@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -11,7 +12,7 @@ import (
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	// get console master url
-	rhmi, err := getRHMI(ctx)
+	rhmi, err := GetRHMI(ctx)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -19,18 +20,18 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// get oauth route
 	oauthRoute := &v1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: openshiftOAuthRouteName, Namespace: openshiftAuthenticationNamespace}, oauthRoute); err != nil {
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		t.Fatal("error getting Openshift Oauth Route: ", err)
 	}
 
 	// get dedicated admin token
-	dedicatedAdminToken, err := doAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, defaultIDP, "customer-admin01", "Password1")
+	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin01", "Password1")
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
 	// get projects for dedicated admin
-	dedicatedAdminFoundProjects, err := doOpenshiftGetProjects(masterURL, dedicatedAdminToken)
+	dedicatedAdminFoundProjects, err := resources.DoOpenshiftGetProjects(masterURL, dedicatedAdminToken)
 	if err != nil {
 		t.Fatalf("error occured while getting user projects : %v", err)
 	}
@@ -39,7 +40,6 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	if result := verifyDedicatedAdminProjectPermissions(dedicatedAdminFoundProjects.Items); !result {
 		t.Fatal("test-failed - projects missing for dedicated-admins")
 	}
-	t.Log("test-passed - found projects for dedicated-admins are as expected")
 }
 
 // verifies that there is at least 1 project with a prefix `openshift` , `redhat` and `kube`
