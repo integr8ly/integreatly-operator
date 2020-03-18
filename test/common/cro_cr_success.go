@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	requestNameSpace  = "redhat-rhmi-operator"
 	requestUrl        = "/apis/integreatly.org/v1alpha1"
 	openShiftProvider = "openshift"
 	externalProvider  = "aws"
@@ -52,9 +51,10 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 
 		if err != nil {
 			t.Errorf("Failed to retrieve postgres custom resource: %s", err)
+			continue
 		}
 
-		if err == nil && postgres.Status.Phase != croTypes.PhaseComplete && postgres.Status.Strategy != strategy {
+		if postgres.Status.Phase != croTypes.PhaseComplete && postgres.Status.Strategy != strategy {
 			t.Errorf("%s Postgres not ready with phase: %s, message: %s, provider, %s", postgresName, postgres.Status.Phase, postgres.Status.Message, postgres.Status.Provider)
 		}
 	}
@@ -69,9 +69,10 @@ func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
 
 		if err != nil {
 			t.Errorf("Failed to retrieve redis custom resource: %s", err)
+			continue
 		}
 
-		if err == nil && redis.Status.Phase != croTypes.PhaseComplete && redis.Status.Strategy != strategy {
+		if redis.Status.Phase != croTypes.PhaseComplete && redis.Status.Strategy != strategy {
 			t.Errorf("%s redis not ready with phase: %s, message: %s, provider, %s", redisName, redis.Status.Phase, redis.Status.Message, redis.Status.Provider)
 		}
 	}
@@ -86,9 +87,10 @@ func TestCROBlobStorageSuccessfulState(t *testing.T, ctx *TestingContext) {
 
 		if err != nil {
 			t.Errorf("Failed to retrieve blobstorage custom resource: %s", err)
+			continue
 		}
 
-		if err == nil && blobStorage.Status.Phase != croTypes.PhaseComplete && blobStorage.Status.Strategy != strategy {
+		if blobStorage.Status.Phase != croTypes.PhaseComplete && blobStorage.Status.Strategy != strategy {
 			t.Errorf("%s blob storage not ready with phase: %s, message: %s, provider, %s", blobStorageName, blobStorage.Status.Phase, blobStorage.Status.Message, blobStorage.Status.Provider)
 		}
 	}
@@ -113,7 +115,7 @@ func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string,
 
 // Function to get a custom resource json without needing to depend on operator-sdk
 func getCustomResourceJson(ctx *TestingContext, resource string, resourceName string) ([]byte, error) {
-	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(requestNameSpace).RequestURI(requestUrl).Do()
+	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNameSpace).RequestURI(requestUrl).Do()
 	requestBody, err := request.Raw()
 
 	if err != nil {
