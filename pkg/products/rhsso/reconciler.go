@@ -766,9 +766,9 @@ func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 	return false
 }
 
-func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
+func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User, groups *usersv1.GroupList) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
 	for _, osUser := range openshiftUsers {
-		if !kcContainsOsUser(keycloakUsers, osUser) {
+		if !kcContainsOsUser(keycloakUsers, osUser) && !userHelper.UserInExclusionGroup(osUser, groups) {
 			added = append(added, osUser)
 		}
 	}
@@ -788,7 +788,14 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	if err != nil {
 		return nil, err
 	}
-	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items)
+
+	groups := &usersv1.GroupList{}
+	err = serverClient.List(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
+
+	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items, groups)
 
 	keycloakUsers, err = deleteKeycloakUsers(keycloakUsers, deletedUsers, ns, ctx, serverClient)
 	if err != nil {

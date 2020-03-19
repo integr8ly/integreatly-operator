@@ -385,6 +385,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// Create / update the synchronized users
 	for _, user := range users {
+		if user.UserName == "" {
+			continue
+		}
 		or, err = r.createOrUpdateKeycloakAdmin(user, ctx, serverClient)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
@@ -680,6 +683,11 @@ func getOsUsersInAdminsGroup(groups usersv1.GroupList) (users []string) {
 func deleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []keycloak.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
 
 	for _, delUser := range deletedUsers {
+
+		if delUser.UserName == "" {
+			continue
+		}
+
 		// Remove from all users list
 		for i, user := range allKcUsers {
 			// ID is not populated, have to use UserName. Should be unique on master Realm
