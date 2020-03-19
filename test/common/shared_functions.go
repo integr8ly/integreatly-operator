@@ -21,6 +21,8 @@ import (
 	"k8s.io/client-go/restmapper"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"strings"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -33,6 +35,8 @@ import (
 	cached "k8s.io/client-go/discovery/cached"
 	cgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
+
+const tagKeyClusterId = "integreatly.org/clusterID"
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
 	req := ctx.KubeClient.CoreV1().RESTClient().Post().
@@ -201,4 +205,26 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
 	}
+}
+
+func buildHTTPClientFromContext(ctx *TestingContext) (*http.Client, error) {
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cookie jar for http client: %w", err)
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ctx.SelfSignedCerts,
+			},
+		},
+		Jar: jar,
+	}, nil
+}
+
+func EqualResourceBool(a, b []bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	return true
 }
