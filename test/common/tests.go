@@ -15,5 +15,6 @@ var (
 		{"Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 		{"Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
 		{"Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
+		{"WIP: Verify Address", TestCreateAddressSpace},
 	}
 )
