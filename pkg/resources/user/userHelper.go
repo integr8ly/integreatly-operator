@@ -19,6 +19,13 @@ const (
 	GeneratedNamePrefix         = "generated-"
 )
 
+var (
+	exclusionGroups = []string{
+		"layered-cs-sre-admins",
+		"osd-sre-admins",
+	}
+)
+
 func GetUserEmailFromIdentity(ctx context.Context, serverClient k8sclient.Client, user usersv1.User) (string, error) {
 	email := ""
 
@@ -67,4 +74,22 @@ func GetValidGeneratedUserName(keycloakUser keycloak.KeycloakAPIUser) string {
 	}
 
 	return fmt.Sprintf("%v%v", GeneratedNamePrefix, processedString)
+}
+
+func UserInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
+
+	// Below is a slightly complex way to determine if the user exists in an exlcusion group
+	// Ideally we would use the user.Groups field but this does not seem to get populated.
+	for _, group := range groups.Items {
+		for _, xGroup := range exclusionGroups {
+			if group.Name == xGroup {
+				for _, groupUser := range group.Users {
+					if groupUser == user.Name {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }

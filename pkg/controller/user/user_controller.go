@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	usersv1 "github.com/openshift/api/user/v1"
@@ -19,10 +20,6 @@ import (
 var (
 	log = logf.Log.WithName("controller_user")
 	// A set of pre configured groups used to exclude a user from rhmi specific groups
-	exclusionGroups = []string{
-		"layered-cs-sre-admins",
-		"osd-sre-admins",
-	}
 )
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -100,28 +97,10 @@ func mapUserNames(users *usersv1.UserList, groups *usersv1.GroupList) []string {
 	var result = []string{}
 	for _, user := range users.Items {
 		// Certain users such as sre do not need to be added
-		if !userInExclusionGroup(user, groups) {
+		if !userHelper.UserInExclusionGroup(user, groups) {
 			result = append(result, user.Name)
 		}
 	}
 
 	return result
-}
-
-func userInExclusionGroup(user usersv1.User, groups *usersv1.GroupList) bool {
-
-	// Below is a slightly complex way to determine if the user exists in an exlcusion group
-	// Ideally we would use the user.Groups field but this does not seem to get populated.
-	for _, group := range groups.Items {
-		for _, xGroup := range exclusionGroups {
-			if group.Name == xGroup {
-				for _, groupUser := range group.Users {
-					if groupUser == user.Name {
-						return true
-					}
-				}
-			}
-		}
-	}
-	return false
 }
