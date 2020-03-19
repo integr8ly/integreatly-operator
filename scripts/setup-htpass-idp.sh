@@ -25,4 +25,3 @@ oc patch oauth cluster --type=merge -p '{ "spec": { "identityProviders": [{ "nam
 
 oc adm groups add-users dedicated-admins customer-admin
 oc adm groups add-users osd-sre-admins sre-user-1
-#uMlQslDI4V0Mpgnc
