@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"testing"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,14 +117,14 @@ var (
 		{
 			Name: "redhat-rhmi-operator",
 			Products: []Product{
-				Product{Name: "codeready-postgres-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "threescale-backend-redis-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "threescale-postgres-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "threescale-redis-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "ups-postgres-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "rhsso-postgres-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "rhssouser-postgres-" + InstallationName, ExpectedReplicas: 1},
-				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
+				Product{Name: constants.CodeReadyPostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScalePostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.UPSPostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOPostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOUserProstgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.AMQAuthServicePostgres, ExpectedReplicas: 1},
 			},
 		},
 	}
