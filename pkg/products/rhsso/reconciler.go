@@ -802,6 +802,10 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 			return nil, err
 		}
 
+		if email == "" {
+			email = osUser.Name + "@rhmi.io"
+		}
+
 		newKeycloakUser := keycloak.KeycloakAPIUser{
 			Enabled:       true,
 			UserName:      osUser.Name,
