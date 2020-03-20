@@ -315,7 +315,7 @@ var expectedAWSRules = []alertsTestRule{
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
-	isClusterStorage, err := IsClusterStorage(ctx)
+	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
 	}
@@ -329,7 +329,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	}
 
 	// exec into the prometheus pod
-	output, err := ExecToPod("curl localhost:9090/api/v1/rules",
+	output, err := execToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
 		"prometheus", ctx)
@@ -457,8 +457,8 @@ func buildReport(actualRule, expectedRule alertsTestRule, report *alertsTestRepo
 		report = newDefaultReport(fileCorrect)
 	}
 	// build report
-	report.MissingRules = append(report.MissingRules, Difference(expectedRule.Rules, actualRule.Rules)...)
-	report.AdditionalRules = append(report.AdditionalRules, Difference(actualRule.Rules, expectedRule.Rules)...)
+	report.MissingRules = append(report.MissingRules, difference(expectedRule.Rules, actualRule.Rules)...)
+	report.AdditionalRules = append(report.AdditionalRules, difference(actualRule.Rules, expectedRule.Rules)...)
 	if len(report.MissingRules) != 0 || len(report.AdditionalRules) != 0 {
 		report.Status = fileExists
 	}

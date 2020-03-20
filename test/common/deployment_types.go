@@ -179,7 +179,7 @@ var (
 func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	deployments := deployments
 
-	isClusterStorage, err := IsClusterStorage(ctx)
+	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
 		t.Fatal("error getting isClusterStorage:", err)
 	}
