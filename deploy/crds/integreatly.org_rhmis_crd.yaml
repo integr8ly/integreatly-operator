@@ -47,7 +47,7 @@ spec:
                 Standalone namespace will be used only for those operators that support
                 it.
               type: boolean
-            pagerdutySecret:
+            pagerDutySecret:
               description: "PagerDutySecret is the name of a secret in the installation
                 namespace containing PagerDuty account details. The secret must contain
                 the following fields: \n serviceKey"

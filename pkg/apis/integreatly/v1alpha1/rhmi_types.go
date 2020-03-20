@@ -128,7 +128,7 @@ type RHMISpec struct {
 	// details. The secret must contain the following fields:
 	//
 	// serviceKey
-	PagerDutySecret string `json:"pagerdutySecret,omitempty"`
+	PagerDutySecret string `json:"pagerDutySecret,omitempty"`
 
 	// DeadMansSnitchSecret is the name of a secret in the
 	// installation namespace containing connection details

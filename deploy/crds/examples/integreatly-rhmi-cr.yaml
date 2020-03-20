@@ -10,4 +10,4 @@ spec:
   operatorsInProductNamespace: OPERATORS_IN_PRODUCT_NAMESPACE
   smtpSecret: INSTALLATION_PREFIX-smtp
   deadMansSnitchSecret: INSTALLATION_PREFIX-deadmanssnitch
-  pagerdutySecret: INSTALLATION_PREFIX-pagerduty
+  pagerDutySecret: INSTALLATION_PREFIX-pagerduty
