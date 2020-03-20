@@ -42,7 +42,7 @@ const (
 	defaultName               = "solution-explorer"
 	defaultSubNameAndPkg      = "rhmi-solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.1"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.2"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
