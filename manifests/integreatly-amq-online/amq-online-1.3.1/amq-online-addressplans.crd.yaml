@@ -48,9 +48,9 @@ spec:
               type: object
               properties:
                 router:
-                  type: string
+                  type: number
                 broker:
-                  type: string
+                  type: number
         displayName:
           type: string
         displayOrder:
@@ -68,8 +68,8 @@ spec:
           items:
             type: object
             required:
-            - name
-            - credit
+              - name
+              - credit
             properties:
               name:
                 type: string

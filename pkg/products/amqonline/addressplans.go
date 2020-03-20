@@ -1,7 +1,7 @@
 package amqonline
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
+	"github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,8 +19,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a topic on a broker.",
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
-					Broker: "0.0",
-					Router: "0.0",
+					Broker: 0.0,
+					Router: 0.0,
 				},
 			},
 		},
@@ -36,8 +36,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a queue on a broker.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Broker: "0.0",
-					Router: "0.0",
+					Broker: 0.0,
+					Router: 0.0,
 				},
 			},
 		},
@@ -53,8 +53,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large anycast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "0.0",
+					Router: 0.1,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -70,8 +70,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large multicast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "0.0",
+					Router: 0.1,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -87,8 +87,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large queue backed by a dedicated broker.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "1.0",
+					Router: 0.1,
+					Broker: 1.0,
 				},
 			},
 		},
@@ -104,8 +104,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large HA queue sharing underlying brokers with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "1.0",
+					Router: 0.1,
+					Broker: 1.0,
 				},
 				Partitions: 3,
 			},
@@ -122,8 +122,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large durable subscription on a topic, which is then accessed as a distinct address.",
 				AddressType:      "subscription",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "1.0",
+					Router: 0.1,
+					Broker: 1.0,
 				},
 			},
 		},
@@ -139,8 +139,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a large topic backed by a dedicated broker.",
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.1",
-					Broker: "1.0",
+					Router: 0.1,
+					Broker: 1.0,
 				},
 			},
 		},
@@ -156,8 +156,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium anycast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.01",
-					Broker: "0.0",
+					Router: 0.01,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -173,8 +173,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium multicast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.01",
-					Broker: "0.0",
+					Router: 0.01,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -190,8 +190,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium sized queue sharing underlying broker with other queues.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.01",
-					Broker: "0.1",
+					Router: 0.01,
+					Broker: 0.1,
 				},
 			},
 		},
@@ -207,8 +207,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium sized HA queue sharing underlying broker with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.01",
-					Broker: "0.1",
+					Router: 0.01,
+					Broker: 0.1,
 				},
 				Partitions: 3,
 			},
@@ -225,8 +225,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium durable subscription on a topic, which is then accessed as a distinct address.",
 				AddressType:      "subscription",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.01",
-					Broker: "0.1",
+					Router: 0.01,
+					Broker: 0.1,
 				},
 			},
 		},
@@ -242,8 +242,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a medium sized topic sharing underlying broker with other topics.",
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.1",
+					Router: 0.001,
+					Broker: 0.1,
 				},
 			},
 		},
@@ -259,8 +259,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small anycast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "anycast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.0",
+					Router: 0.001,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -276,8 +276,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small multicast address where messages go via a router that does not take ownership of the messages.",
 				AddressType:      "multicast",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.0",
+					Router: 0.001,
+					Broker: 0.0,
 				},
 			},
 		},
@@ -293,8 +293,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small queue sharing underlying broker with other queues.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.01",
+					Router: 0.001,
+					Broker: 0.01,
 				},
 			},
 		},
@@ -310,8 +310,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small HA queue sharing underlying broker with other queues. The queue is sharded accross multiple brokers for HA and improved performance. A sharded queue no longer guarantees message ordering.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.01",
+					Router: 0.001,
+					Broker: 0.01,
 				},
 				Partitions: 3,
 			},
@@ -328,8 +328,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small durable subscription on a topic, which is then accessed as a distinct address.",
 				AddressType:      "subscription",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.01",
+					Router: 0.001,
+					Broker: 0.01,
 				},
 			},
 		},
@@ -345,8 +345,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates a small topic sharing underlying broker with other topics.",
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.001",
-					Broker: "0.01",
+					Router: 0.001,
+					Broker: 0.01,
 				},
 			},
 		},
@@ -362,8 +362,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates an extra large queue backed by 2 brokers.",
 				AddressType:      "queue",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.2",
-					Broker: "2.0",
+					Router: 0.2,
+					Broker: 2.0,
 				},
 			},
 		},
@@ -379,8 +379,8 @@ func GetDefaultAddressPlans(ns string) []*v1beta2.AddressPlan {
 				LongDescription:  "Creates an extra large topic backed by 2 brokers.",
 				AddressType:      "topic",
 				Resources: v1beta2.AddressPlanResources{
-					Router: "0.2",
-					Broker: "2.0",
+					Router: 0.2,
+					Broker: 2.0,
 				},
 			},
 		},
