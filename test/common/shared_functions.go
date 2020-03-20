@@ -21,7 +21,7 @@ const (
 	defaultTestUsersPassword = "Password1"
 )
 
-func ExecToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
+func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
 	req := ctx.KubeClient.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
@@ -61,7 +61,7 @@ func ExecToPod(command string, podName string, namespace string, container strin
 }
 
 // difference one-way diff that return strings in sliceSource that are not in sliceTarget
-func Difference(sliceSource, sliceTarget []string) []string {
+func difference(sliceSource, sliceTarget []string) []string {
 	// create an empty lookup map with keys from sliceTarget
 	diffSourceLookupMap := make(map[string]struct{}, len(sliceTarget))
 	for _, item := range sliceTarget {
@@ -79,7 +79,7 @@ func Difference(sliceSource, sliceTarget []string) []string {
 }
 
 // Is the cluster using on cluster or external storage
-func IsClusterStorage(ctx *TestingContext) (bool, error) {
+func isClusterStorage(ctx *TestingContext) (bool, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
 	// get the RHMI custom resource to check what storage type is being used
 	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
@@ -94,7 +94,7 @@ func IsClusterStorage(ctx *TestingContext) (bool, error) {
 }
 
 // returns rhmi
-func GetRHMI(ctx *TestingContext) (*integreatlyv1alpha1.RHMI, error) {
+func getRHMI(ctx *TestingContext) (*integreatlyv1alpha1.RHMI, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
 	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
@@ -103,12 +103,12 @@ func GetRHMI(ctx *TestingContext) (*integreatlyv1alpha1.RHMI, error) {
 }
 
 // checks to see if testing client is created
-func hasTestingIDP(ctx *TestingContext) (bool, error) {
+func hasTestingIDP(ctx *TestingContext) bool {
 	testingClient := &keycloakv1.KeycloakClient{}
 	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "testing-idp-client", Namespace: "redhat-rhmi-rhsso"}, testingClient); err != nil {
-		return false, fmt.Errorf("error occurred retrieving testing idp client : %w", err)
+		return false
 	}
-	return true, nil
+	return true
 }
 
 // calls testing idp script

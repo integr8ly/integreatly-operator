@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
@@ -10,20 +11,41 @@ import (
 	"testing"
 )
 
+var productNamespaces = []string{
+	"3scale",
+	"3scale-operator",
+	"amq-online",
+	"amq-online-operator",
+	"apicurito",
+	"apicurito-operator",
+	"cloud-resources-operator",
+	"codeready-workspaces",
+	"codeready-workspaces-operator",
+	"fuse",
+	"fuse-operator",
+	"middleware-monitoring",
+	"middleware-monitoring-operator",
+	"operator",
+	"rhsso",
+	"rhsso-operator",
+	"solution-explorer",
+	"solution-explorer-operator",
+	"ups",
+	"ups-operator",
+	"user-sso",
+	"user-sso-operator",
+}
+
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	// ensure testing idp exists
-	hasIDP, err := hasTestingIDP(ctx)
-	if err != nil {
-		t.Fatalf("error checking testing idp: %v", err)
-	}
-	if !hasIDP {
+	if !hasTestingIDP(ctx) {
 		if err := setupTestingIDP(); err != nil {
 			t.Fatalf("error setting up testing idp: %v", err)
 		}
 	}
 
 	// get console master url
-	rhmi, err := GetRHMI(ctx)
+	rhmi, err := getRHMI(ctx)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -50,6 +72,24 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	// check if projects are as expected for rhmi developer
 	if result := verifyDedicatedAdminProjectPermissions(dedicatedAdminFoundProjects.Items); !result {
 		t.Fatal("test-failed - projects missing for dedicated-admins")
+	}
+
+	// build array of rhmi namespaces
+	var rhmiNamespaces []string
+	for _, product := range productNamespaces {
+		rhmiNamespaces = append(rhmiNamespaces, fmt.Sprintf("%s%s", NamespacePrefix, product))
+	}
+
+	// check to ensure dedicated admin is forbidden from rhmi namespace secrets
+	for _, namespace := range rhmiNamespaces {
+		path := fmt.Sprintf("/api/kubernetes/api/v1/namespaces/%s/secrets", namespace)
+		resp, err := resources.DoOpenshiftGetRequest(masterURL, path, dedicatedAdminToken)
+		if err != nil {
+			t.Fatalf("error occurred while executing oc get request: %v", err)
+		}
+		if resp.StatusCode != 403 {
+			t.Fatalf("test-failed - status code found : %d expected status code : 403 RHMI dedicated admin should be forbidden from %s secrets", resp.StatusCode, namespace)
+		}
 	}
 }
 
