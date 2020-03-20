@@ -272,7 +272,6 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 
 	for _, namespace := range statefulSets {
 		for _, product := range namespace.Products {
-
 			statefulSet, err := ctx.KubeClient.AppsV1().StatefulSets(namespace.Name).Get(product.Name, v1.GetOptions{})
 			if err != nil {
 				t.Errorf("Failed to get StatefulSet %s in namespace %s with error: %s", product.Name, namespace.Name, err)

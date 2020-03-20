@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/3scale/3scale-operator v0.4.0
+	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/coreos/prometheus-operator v0.35.0
