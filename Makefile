@@ -151,7 +151,7 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/functional
-test/functional: setup/testing_idp
+test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test ./test/functional
 
