@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	expectedRhmiDeveloperNamespace    = "redhat-rhmi-fuse"
 	expectedRhmiDeveloperProjectCount = 1
 	expectedFusePodCount              = 6
 )
@@ -24,6 +23,17 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
+	// ensure testing idp exists
+	hasIDP, err := hasTestingIDP(ctx)
+	if err != nil {
+		t.Fatalf("error checking testing idp: %v", err)
+	}
+	if !hasIDP {
+		if err := setupTestingIDP(); err != nil {
+			t.Fatalf("error setting up testing idp: %v", err)
+		}
+	}
+
 	// get console master url
 	rhmi, err := GetRHMI(ctx)
 	if err != nil {
@@ -38,7 +48,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user01", "Password1")
+	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user01", defaultTestUsersPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
@@ -50,17 +60,17 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// check if projects are as expected for rhmi developer
-	for projectCount, p := range rhmiDevfoundProjects.Items {
-		if projectCount >= expectedRhmiDeveloperProjectCount {
-			t.Fatalf("test failed - found rhmi developer project count : %s expected rhmi-developer project count : %s", projectCount, expectedRhmiDeveloperProjectCount)
-		}
-		if p.Name != expectedRhmiDeveloperNamespace {
-			t.Fatalf("test failed - found rhmi developer project: %s expected rhmi developer project : %s", p.Name, expectedRhmiDeveloperNamespace)
-		}
+	if len(rhmiDevfoundProjects.Items) != expectedRhmiDeveloperProjectCount {
+		t.Fatalf("test failed - found rhmi developer project count : %d expected rhmi-developer project count : %d", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount)
+	}
+
+	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
+	foundNamespace := rhmiDevfoundProjects.Items[0].Name
+	if foundNamespace != fuseNamespace {
+		t.Fatalf("test failed - found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
 	}
 
 	// get fuse pods for rhmi developer
-	fuseNamespace := fmt.Sprintf("%s-fuse", NamespacePrefix)
 	podlist, err := resources.DoOpenshiftGetPodsForNamespacePods(masterURL, fuseNamespace, rhmiDevUserToken)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)

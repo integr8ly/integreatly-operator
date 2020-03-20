@@ -11,6 +11,17 @@ import (
 )
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
+	// ensure testing idp exists
+	hasIDP, err := hasTestingIDP(ctx)
+	if err != nil {
+		t.Fatalf("error checking testing idp: %v", err)
+	}
+	if !hasIDP {
+		if err := setupTestingIDP(); err != nil {
+			t.Fatalf("error setting up testing idp: %v", err)
+		}
+	}
+
 	// get console master url
 	rhmi, err := GetRHMI(ctx)
 	if err != nil {
@@ -25,7 +36,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get dedicated admin token
-	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin01", "Password1")
+	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin01", defaultTestUsersPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
