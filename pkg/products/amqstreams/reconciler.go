@@ -218,7 +218,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 	}
 
 	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
+	if len(pods.Items) < 7 {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

@@ -945,11 +945,6 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
-		// 3scale does not allow users without emails and there are pre-existing
-		// users on a pds cluster that do not have email set.
-		if kcUser.Email == "" {
-			kcUser.Email = fmt.Sprintf("%v@example.com", kcUser.UserName)
-		}
 		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
 			return integreatlyv1alpha1.PhaseInProgress, err
