@@ -30,7 +30,7 @@ spec:
           type: object
           required:
             - addressSpaceType
-            - resourceLimits 
+            - resourceLimits
             - addressPlans
             - infraConfigRef
           properties:
@@ -50,11 +50,11 @@ spec:
               type: object
               properties:
                 aggregate:
-                  type: string
+                  type: number
                 router:
-                  type: string
+                  type: number
                 broker:
-                  type: string
+                  type: number
             addressPlans:
               type: array
               items:
@@ -76,8 +76,8 @@ spec:
           items:
             type: object
             required:
-            - name
-            - max
+              - name
+              - max
             properties:
               name:
                 type: string

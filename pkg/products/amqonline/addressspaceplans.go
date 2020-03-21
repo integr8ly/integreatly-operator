@@ -1,7 +1,7 @@
 package amqonline
 
 import (
-	"github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/v1beta2"
+	"github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -20,7 +20,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				LongDescription:  "Single Broker plan where you can create an infinite number of queues until the system falls over.",
 				AddressSpaceType: "brokered",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
-					Broker: "1.9",
+					Broker: 1.9,
 				},
 				AddressPlans: []string{
 					"brokered-queue",
@@ -41,9 +41,9 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				LongDescription:  "Messaging infrastructure based on Apache Qpid Dispatch Router and Apache ActiveMQ Artemis. This plan allows up to 3 routers and 3 broker in total, and is suitable for applications using small address plans and few addresses.",
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
-					Broker:    "3.0",
-					Router:    "3.0",
-					Aggregate: "6.0",
+					Broker:    3.0,
+					Router:    3.0,
+					Aggregate: 6.0,
 				},
 				AddressPlans: []string{
 					"standard-small-anycast",
@@ -82,9 +82,9 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				LongDescription:  "Messaging infrastructure based on Apache Qpid Dispatch Router and Apache ActiveMQ Artemis. This plan allows up to 1 router and 1 broker in total, and is suitable for small applications using small address plans and few addresses.",
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
-					Broker:    "1.0",
-					Router:    "1.0",
-					Aggregate: "2.0",
+					Broker:    1.0,
+					Router:    1.0,
+					Aggregate: 2.0,
 				},
 				AddressPlans: []string{
 					"standard-small-anycast",
@@ -118,9 +118,9 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				LongDescription:  "Messaging infrastructure based on Apache Qpid Dispatch Router and Apache ActiveMQ Artemis and MQTT support. This plan allows an unlimited number of routers (minimum 2) and brokers, and is suitable for applications where you do not want to impose any restrictions.",
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
-					Broker:    "10000.0",
-					Router:    "10000.0",
-					Aggregate: "10000.0",
+					Broker:    10000.0,
+					Router:    1000.0,
+					Aggregate: 10000.0,
 				},
 				AddressPlans: []string{
 					"standard-small-anycast",
@@ -159,9 +159,9 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				LongDescription:  "Messaging infrastructure based on Apache Qpid Dispatch Router and Apache ActiveMQ Artemis. This plan allows an unlimited number of routers and brokers, and is suitable for applications where you do not want to impose any restrictions.",
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
-					Broker:    "10000.0",
-					Router:    "10000.0",
-					Aggregate: "10000.0",
+					Broker:    10000.0,
+					Router:    1000.0,
+					Aggregate: 10000.0,
 				},
 				AddressPlans: []string{
 					"standard-small-anycast",

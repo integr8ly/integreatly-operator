@@ -6,8 +6,7 @@
 package v1beta1
 
 import (
-	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis/enmasse/enmasse/v1beta1"
-
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/enmasse/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,6 +58,7 @@ type AuthenticationServiceSpecStandard struct {
 	Resources          *corev1.ResourceRequirements                 `json:"resources,omitempty"`
 	Storage            *AuthenticationServiceSpecStandardStorage    `json:"storage,omitempty"`
 	Datasource         *AuthenticationServiceSpecStandardDatasource `json:"datasource,omitempty"`
+	SecurityContext    *corev1.PodSecurityContext                   `json:"securityContext,omitempty"`
 }
 
 type StorageType string
@@ -100,11 +100,21 @@ type AuthenticationServiceSpecExternal struct {
 	AllowOverride    bool                    `json:"allowOverride,omitempty"`
 }
 
+type AuthenticationServicePhase string
+
+const (
+	AuthenticationServicePending     AuthenticationServicePhase = "Pending"
+	AuthenticationServiceConfiguring AuthenticationServicePhase = "Configuring"
+	AuthenticationServiceActive      AuthenticationServicePhase = "Active"
+)
+
 type AuthenticationServiceStatus struct {
-	Host             string                  `json:"host,omitempty"`
-	Port             int                     `json:"port,omitempty"`
-	CaCertSecret     *corev1.SecretReference `json:"caCertSecret,omitempty"`
-	ClientCertSecret *corev1.SecretReference `json:"clientCertSecret,omitempty"`
+	Phase            AuthenticationServicePhase `json:"phase,omitempty"`
+	Message          string                     `json:"message,omitempty"`
+	Host             string                     `json:"host,omitempty"`
+	Port             int                        `json:"port,omitempty"`
+	CaCertSecret     *corev1.SecretReference    `json:"caCertSecret,omitempty"`
+	ClientCertSecret *corev1.SecretReference    `json:"clientCertSecret,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -129,13 +139,33 @@ type ConsoleService struct {
 }
 
 type ConsoleServiceSpec struct {
-	DiscoveryMetadataURL *string                 `json:"discoveryMetadataURL,omitempty"`
-	Scope                *string                 `json:"scope,omitempty"`
-	OauthClientSecret    *corev1.SecretReference `json:"oauthClientSecret,omitempty"`
-	CertificateSecret    *corev1.SecretReference `json:"certificateSecret,omitempty"`
-	SsoCookieSecret      *corev1.SecretReference `json:"ssoCookieSecret,omitempty"`
-	SsoCookieDomain      *string                 `json:"ssoCookieDomain,omitempty"`
-	Host                 *string                 `json:"host,omitempty"`
+	Replicas             *int32                           `json:"replicas,omitempty"`
+	DiscoveryMetadataURL *string                          `json:"discoveryMetadataURL,omitempty"`
+	Scope                *string                          `json:"scope,omitempty"`
+	OauthClientSecret    *corev1.SecretReference          `json:"oauthClientSecret,omitempty"`
+	CertificateSecret    *corev1.SecretReference          `json:"certificateSecret,omitempty"`
+	SsoCookieSecret      *corev1.SecretReference          `json:"ssoCookieSecret,omitempty"`
+	SsoCookieDomain      *string                          `json:"ssoCookieDomain,omitempty"`
+	Host                 *string                          `json:"host,omitempty"`
+	OauthProxy           *ConsoleServiceOauthProxySpec    `json:"oauthProxy,omitempty"`
+	ConsoleServer        *ConsoleServiceConsoleServerSpec `json:"consoleServer,omitempty"`
+}
+
+type ConsoleServiceOauthProxySpec struct {
+	ExtraArgs []string                     `json:"extraArgs,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+type ConsoleServiceConsoleServerSpec struct {
+	Resources      *corev1.ResourceRequirements            `json:"resources,omitempty"`
+	Session        *ConsoleServiceConsoleServerSessionSpec `json:"session,omitempty"`
+	LivenessProbe  *corev1.Probe                           `json:"livenessProbe,omitempty"`
+	ReadinessProbe *corev1.Probe                           `json:"readinessProbe,omitempty"`
+}
+
+type ConsoleServiceConsoleServerSessionSpec struct {
+	Lifetime    *string `json:"lifetime,omitempty"`
+	IdleTimeout *string `json:"idleTimeout,omitempty"`
 }
 
 type ConsoleServiceStatus struct {
