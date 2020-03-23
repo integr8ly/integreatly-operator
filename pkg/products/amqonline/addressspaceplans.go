@@ -119,7 +119,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
 					Broker:    10000.0,
-					Router:    1000.0,
+					Router:    10000.0,
 					Aggregate: 10000.0,
 				},
 				AddressPlans: []string{
@@ -160,7 +160,7 @@ func GetDefaultAddressSpacePlans(ns string) []*v1beta2.AddressSpacePlan {
 				AddressSpaceType: "standard",
 				ResourceLimits: v1beta2.AddressSpacePlanResourceLimits{
 					Broker:    10000.0,
-					Router:    1000.0,
+					Router:    10000.0,
 					Aggregate: 10000.0,
 				},
 				AddressPlans: []string{
