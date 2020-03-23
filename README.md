@@ -234,10 +234,11 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 - Update `tag` and `previoustag` in makefile
 - Run `make gen/csv`
 - - Perform any manual tidying up of the generated CSV as required.
+- Run `make gen/namespaces` against a fully installed cluster. 
 - Make a PR against this repo
 - Get a review on PR and see e2e test pass
 - Wait for merge
-- run `make image/build/push REPO=integreatly`
+- Run `make image/build/push REPO=integreatly`
 - Run `make push/csv REPO=integreatly` (doesn’t affect managed-tenants)
 - Make <release-number> tag on `release-<release-number>` branch and push it to integr8ly/integreatly-operator repo
 - Make a release in github UI
