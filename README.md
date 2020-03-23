@@ -242,5 +242,6 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 - Run `make push/csv REPO=integreatly` (doesn’t affect managed-tenants)
 - Make <release-number> tag on `release-<release-number>` branch and push it to integr8ly/integreatly-operator repo
 - Make a release in github UI
+- Make a release of [test harness image](https://github.com/integr8ly/integreatly-operator/tree/master/test#build-functional-test-image), using the same release tag
 - Tell QE, so they can update pipelines to new release-number
 - Take CSV files from deploy/olm-catalog and make a PR to managed-tenants, make any changes as required beforehand.
