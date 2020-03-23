@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -33,34 +32,21 @@ func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	}
 
 	// check if any alerts other than DeadMansSwitch are firing or pending
-	var firingAlerts []string
-	var pendingAlerts []string
 	for _, alert := range alertsResult.Alerts {
 		alertName := alert.Labels["alertname"]
 
 		// dead mans switch is not firing, so fail the test
 		if alertName == deadMansSwitch && alert.State != prometheusv1.AlertStateFiring {
-			t.Fatalf("Alert: %s is not firing", deadMansSwitch)
+			t.Errorf("Alert: %s is not firing", deadMansSwitch)
 		}
 		// check for pending or firing alerts
 		if alertName != deadMansSwitch {
 			if alert.State == prometheusv1.AlertStateFiring {
-				firingAlerts = append(firingAlerts, string(alertName))
+				t.Errorf("The following alert was fired: %s", alertName)
 			}
 			if alert.State == prometheusv1.AlertStatePending {
-				pendingAlerts = append(pendingAlerts, string(alertName))
+				t.Errorf("The following alert was pending: %s", alertName)
 			}
 		}
-	}
-
-	// report the firing or pending alerts and fail the test
-	if len(firingAlerts) > 0 {
-		t.Logf("The following alerts were fired: %s", strings.Join(firingAlerts, ", "))
-	}
-	if len(pendingAlerts) > 0 {
-		t.Logf("The following alerts were pending: %s", strings.Join(pendingAlerts, ", "))
-	}
-	if len(firingAlerts) > 0 || len(pendingAlerts) > 0 {
-		t.Fatal("Found pending or firing alerts")
 	}
 }
