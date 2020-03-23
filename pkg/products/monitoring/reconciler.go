@@ -296,7 +296,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 }
 
 func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
+	// Iterate over template_list
 	for _, template := range r.Config.GetTemplateList() {
 		// create it
 		_, err := r.createResource(ctx, template, serverClient)

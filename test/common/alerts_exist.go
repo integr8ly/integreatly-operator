@@ -134,12 +134,6 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
-		File: "redhat-rhmi-rhsso-ksm-rhsso-alerts.yaml",
-		Rules: []string{
-			"RHSSOPodHighMemory",
-		},
-	},
-	{
 		File: "redhat-rhmi-codeready-workspaces-ksm-codeready-alerts.yaml",
 		Rules: []string{
 			"CodeReadyPodCount",

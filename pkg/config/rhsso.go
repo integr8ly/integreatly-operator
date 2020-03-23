@@ -94,13 +94,6 @@ func (r *RHSSO) GetLabelSelector() string {
 	return "middleware"
 }
 
-func (r *RHSSO) GetTemplateList() []string {
-	templateList := []string{
-		"kube_state_metrics_rhsso_alerts.yaml",
-	}
-	return templateList
-}
-
 func (r *RHSSO) GetProductName() integreatlyv1alpha1.ProductName {
 	return integreatlyv1alpha1.ProductRHSSO
 }
