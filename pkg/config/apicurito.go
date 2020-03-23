@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
+	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,10 +20,10 @@ func NewApicurito(config ProductConfig) *Apicurito {
 //GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
 func (r *Apicurito) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&apicurito.Apicurito{
+		&apicuritov1alpha1.Apicurito{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Apicurito",
-				APIVersion: apicurito.SchemeGroupVersion.String(),
+				APIVersion: apicuritov1alpha1.SchemeGroupVersion.String(),
 			},
 		},
 	}

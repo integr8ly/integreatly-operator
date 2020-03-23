@@ -7,7 +7,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 
-	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
+	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -176,7 +176,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	r.logger.Info("Reconciling Apicurito components")
-	apicuritoCR := &apicurito.Apicurito{
+	apicuritoCR := &apicuritov1alpha1.Apicurito{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apicuritoName,
 			Namespace: r.Config.GetNamespace(),
