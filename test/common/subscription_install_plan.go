@@ -63,14 +63,39 @@ var (
 
 func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
 	for _, subscription := range subscriptionsToCheck {
+		// Check subscription install plan approval strategy
 		sub := &coreosv1alpha1.Subscription{}
 		err := ctx.Client.Get(context.TODO(), k8sclient.ObjectKey{Name: subscription.Name, Namespace: subscription.Namespace}, sub)
 		if err != nil {
 			t.Errorf("Error getting subscription %s in ns %s: %s", subscription.Name, subscription.Namespace, err)
+			continue
 		}
 
-		if err == nil && sub.Spec.InstallPlanApproval != expectedApprovalStrategy {
-			t.Errorf("Expected %s approval but got %s", sub.Spec.InstallPlanApproval, expectedApprovalStrategy)
+		if sub.Spec.InstallPlanApproval != expectedApprovalStrategy {
+			t.Errorf("Expected %s approval for %s subscription but got %s", expectedApprovalStrategy, subscription, sub.Spec.InstallPlanApproval)
+			continue
+		}
+
+		// Check all install plan approvals in namespace
+		installPlans := &coreosv1alpha1.InstallPlanList{}
+		err = ctx.Client.List(context.TODO(), installPlans, &k8sclient.ListOptions{
+			Namespace: subscription.Namespace,
+		})
+
+		if err != nil {
+			t.Errorf("Error getting install plans for %s namespace: %s", subscription.Namespace, err)
+			continue
+		}
+
+		if len(installPlans.Items) == 0 {
+			t.Errorf("Expected at least 1 install plan in %s namespace but got 0", subscription.Namespace)
+			continue
+		}
+
+		for _, installPlan := range installPlans.Items {
+			if installPlan.Spec.Approval != expectedApprovalStrategy {
+				t.Errorf("Expected %s approval for install plan in %s namespace but got %s", expectedApprovalStrategy, subscription.Namespace, installPlan.Spec.Approval)
+			}
 		}
 	}
 }
