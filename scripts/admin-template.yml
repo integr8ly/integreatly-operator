@@ -1,0 +1,53 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rhmi-deploy
+objects:
+  - apiVersion: keycloak.org/v1alpha1
+    kind: KeycloakUser
+    metadata:
+      name: ${REALM}-${USERNAME}
+      namespace: ${NAMESPACE}
+    spec:
+      realmSelector:
+        matchLabels:
+          sso: ${REALM}
+      user:
+        clientRoles:
+          account:
+            - manage-account
+            - view-profile
+          broker:
+            - read-token
+          realm-management:
+            - view-realm
+            - manage-users
+        email: ${USERNAME}@example.com
+        emailVerified: true
+        enabled: true
+        firstName: ${FIRSTNAME}
+        lastName: ${LASTNAME}
+        username: ${USERNAME}
+        credentials:
+          - type: "password"
+            value: ${PASSWORD}
+parameters:
+  - description: The namespace to deploy into
+    name: NAMESPACE
+    value: redhat-rhmi-rhsso
+  - description: Realm name
+    name: REALM
+    value: testing-idp
+  - description: Password for the user
+    name: PASSWORD
+    generate: expression
+    from: "[a-zA-Z0-9]{8}"
+  - description: Username of the user
+    name: USERNAME
+    value: customer-admin
+  - description: First name of the user
+    name: FIRSTNAME
+    value: Customer
+  - description: Last name of the user
+    name: LASTNAME
+    value: Admin
