@@ -21,5 +21,7 @@ var (
 		{"Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
 		{"Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 		{"Verify all products routes are created", TestIntegreatlyRoutesExist},
+		{"Verify Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
+		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 	}
 )

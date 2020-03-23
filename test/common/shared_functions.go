@@ -3,16 +3,19 @@ package common
 import (
 	"bytes"
 	goctx "context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"golang.org/x/net/publicsuffix"
 	"io/ioutil"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"net/http"
+	"net/http/cookiejar"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
@@ -179,4 +182,19 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
 	}
+}
+
+func buildHTTPClientFromContext(ctx *TestingContext) (*http.Client, error) {
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cookie jar for http client: %w", err)
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: ctx.SelfSignedCerts,
+			},
+		},
+		Jar: jar,
+	}, nil
 }

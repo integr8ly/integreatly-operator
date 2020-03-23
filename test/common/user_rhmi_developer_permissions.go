@@ -65,7 +65,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	if err := resources.DoAuthOpenshiftUser(masterURL, "test-user-1", DefaultPassword, httpClient); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, httpClient); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
