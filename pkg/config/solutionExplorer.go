@@ -3,8 +3,8 @@ package config
 import (
 	"errors"
 
-	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -19,10 +19,10 @@ func NewSolutionExplorer(config ProductConfig) *SolutionExplorer {
 }
 func (s *SolutionExplorer) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&webapp.WebApp{
-			TypeMeta: v1.TypeMeta{
+		&solutionExplorerv1alpha1.WebApp{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       "WebApp",
-				APIVersion: webapp.SchemeGroupVersion.String(),
+				APIVersion: solutionExplorerv1alpha1.SchemeGroupVersion.String(),
 			},
 		},
 	}
