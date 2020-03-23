@@ -59,7 +59,8 @@ func porxyOAuth(host string, username string, password string) (*http.Client, er
 	}
 
 	client := &http.Client{
-		Jar:           j,
+		Jar: j,
+		// Handle all redirects (301 Response)
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
 	}
 
