@@ -115,7 +115,7 @@ func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string,
 
 // Function to get a custom resource json without needing to depend on operator-sdk
 func getCustomResourceJson(ctx *TestingContext, resource string, resourceName string) ([]byte, error) {
-	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNameSpace).RequestURI(requestUrl).Do()
+	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNamespace).RequestURI(requestUrl).Do()
 	requestBody, err := request.Raw()
 
 	if err != nil {

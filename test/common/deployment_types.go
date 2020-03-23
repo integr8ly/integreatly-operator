@@ -65,7 +65,7 @@ var (
 			},
 		},
 		Namespace{
-			Name: RHMIOperatorNameSpace,
+			Name: RHMIOperatorNamespace,
 			Products: []Product{
 				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
 			},

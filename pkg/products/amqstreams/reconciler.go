@@ -3,7 +3,7 @@ package amqstreams
 import (
 	"context"
 	"fmt"
-
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"

@@ -95,7 +95,7 @@ func difference(sliceSource, sliceTarget []string) []string {
 func isClusterStorage(ctx *TestingContext) (bool, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
 	// get the RHMI custom resource to check what storage type is being used
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNameSpace}, rhmi)
+	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
 	if err != nil {
 		return true, fmt.Errorf("error getting RHMI CR: %v", err)
 	}
