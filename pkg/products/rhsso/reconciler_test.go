@@ -5,8 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"testing"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	"github.com/sirupsen/logrus"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -16,8 +17,8 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -111,7 +112,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

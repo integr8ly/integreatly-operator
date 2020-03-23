@@ -23,9 +23,9 @@ import (
 	enmasse "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	solutionExplorer "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
@@ -56,7 +56,7 @@ func init() {
 		authv1.AddToScheme,
 		marketplacev1.SchemeBuilder.AddToScheme,
 		marketplacev2.SchemeBuilder.AddToScheme,
-		kafkav1.SchemeBuilder.AddToScheme,
+		kafkav1alpha1.SchemeBuilder.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1alpha1.SchemeBuilder.AddToScheme,
