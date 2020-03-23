@@ -277,6 +277,14 @@ push/csv:
 .PHONY: gen/push/csv
 gen/push/csv: gen/csv push/csv
 
+# Generate namespace names to be used in docs
+.PHONY: gen/namespaces
+gen/namespaces:
+	echo '// Generated file. Do not edit' > namespaces.asciidoc
+	oc get namespace | \
+	grep redhat-rhmi | \
+	awk -S '{print"- "$$1}' >> namespaces.asciidoc
+
 .PHONY: vendor/check
 vendor/check: vendor/fix
 	git diff --exit-code vendor/
