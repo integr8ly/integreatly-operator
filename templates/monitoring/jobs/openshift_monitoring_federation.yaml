@@ -9,8 +9,8 @@
   metrics_path: /federate
   params:
     match[]:
-    - 'kubelet_volume_stats_used_bytes{endpoint="https-metrics",namespace=~"openshift-.*"}'
-    - 'kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"openshift-.*"}'
+    - 'kubelet_volume_stats_used_bytes{endpoint="https-metrics",namespace=~"redhat-rhmi-.*"}'
+    - 'kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"redhat-rhmi-.*"}'
     - '{{ "{" }} service="kube-state-metrics" {{ "}" }}'
     - '{{ "{" }} service="node-exporter" {{ "}" }}'
     - '{{ "{" }} __name__=~"namespace_pod_name_container_name:.*" {{ "}" }}'
