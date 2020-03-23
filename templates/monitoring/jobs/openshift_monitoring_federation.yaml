@@ -13,7 +13,6 @@
     - 'kubelet_volume_stats_available_bytes{endpoint="https-metrics",namespace=~"redhat-rhmi-.*"}'
     - '{{ "{" }} service="kube-state-metrics" {{ "}" }}'
     - '{{ "{" }} service="node-exporter" {{ "}" }}'
-    - '{{ "{" }} __name__=~"namespace_pod_name_container_name:.*" {{ "}" }}'
     - '{{ "{" }} __name__=~"node_namespace_pod_container:.*" {{ "}" }}'
     - '{{ "{" }} __name__=~"node:.*" {{ "}" }}'
     - '{{ "{" }} __name__=~"instance:.*" {{ "}" }}'
