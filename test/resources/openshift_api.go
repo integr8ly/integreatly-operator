@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -99,5 +101,106 @@ func (oc *OpenshiftClient) GetRequest(path string) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
 	}
+	return resp, nil
+}
+
+func DoOpenshiftCreateProject(apiURL string, token string, projectCR *projectv1.ProjectRequest) error {
+
+	projectJson, err := json.Marshal(projectCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal projectCR: %w", err)
+	}
+
+	response, err := DoOpenshiftPostRequest(apiURL, PathProjectRequests, token, projectJson)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", PathProjectRequests, response.StatusCode)
+	}
+
+	return nil
+}
+
+func DoOpenshiftCreateServiceInANamespace(openshiftAPIURL string, token string, namespace string, serviceCR *corev1.Service) error {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/services", namespace)
+	serviceJSON, err := json.Marshal(serviceCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal serviceCR: %w", err)
+	}
+
+	response, err := DoOpenshiftPostRequest(openshiftAPIURL, path, token, serviceJSON)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", path, response.StatusCode)
+	}
+
+	return nil
+}
+
+func DoOpenshiftCreatePodInANamespace(apiURL string, token string, namespace string, podCR *corev1.Pod) error {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods", namespace)
+	podJSON, err := json.Marshal(podCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal serviceCR: %w", err)
+	}
+
+	response, err := DoOpenshiftPostRequest(apiURL, path, token, podJSON)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", path, response.StatusCode)
+	}
+	return nil
+}
+
+// makes a get request, expects master url, a path and a token
+func (oc *OpenshiftClient) DoOpenshiftGetRequest(masterUrl string, path string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", masterUrl, path), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
+	}
+	resp, err := oc.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
+	}
+	return resp, nil
+}
+
+// makes a post request, expects openshift api url, a path and a token
+func DoOpenshiftPostRequest(openshiftAPIURL string, path string, token string, data []byte) (*http.Response, error) {
+
+	// openshift api url required for POST requests
+	apiURL := fmt.Sprintf("https://%s%s", openshiftAPIURL, path)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		apiURL,
+		bytes.NewBuffer(data),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading response: %w", err)
+	}
+
 	return resp, nil
 }

@@ -21,6 +21,10 @@ import (
 const (
 	OpenshiftAuthenticationNamespace = "openshift-authentication"
 	OpenshiftOAuthRouteName          = "oauth-openshift"
+
+	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
+	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
+	PathFusePods        = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
 )
 
 // User used to create url user query
