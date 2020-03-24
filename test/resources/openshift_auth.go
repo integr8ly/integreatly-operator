@@ -138,10 +138,14 @@ func getOpenshiftState(client *http.Client, stateUrl string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error occured parsing query: %w", err)
 	}
+
 	// return state query
+	if parsedQuery == nil {
+		return "", errors.New(fmt.Sprintf("parsed query is nil from response host : %s", resp.Request.URL.Host))
+	}
 	state := parsedQuery["state"][0]
 	if state == "" {
-		return "", errors.New("failed to find state during parse")
+		return "", errors.New(fmt.Sprintf("expected to find 'state' value in : %s", resp.Request.URL.RawQuery))
 	}
 	return state, nil
 }

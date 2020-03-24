@@ -37,13 +37,6 @@ var productNamespaces = []string{
 }
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
-	// ensure testing idp exists
-	if !hasTestingIDP(ctx) {
-		if err := setupTestingIDP(); err != nil {
-			t.Fatalf("error setting up testing idp: %v", err)
-		}
-	}
-
 	// get console master url
 	rhmi, err := getRHMI(ctx)
 	if err != nil {
@@ -58,7 +51,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get dedicated admin token
-	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin01", defaultTestUsersPassword)
+	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin-0", DefaultPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}

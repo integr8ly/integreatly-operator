@@ -4,21 +4,14 @@ import (
 	"bytes"
 	goctx "context"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
-)
-
-const (
-	defaultTestUsersPassword = "Password1"
 )
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
@@ -100,26 +93,4 @@ func getRHMI(ctx *TestingContext) (*integreatlyv1alpha1.RHMI, error) {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil
-}
-
-// checks to see if testing client is created
-func hasTestingIDP(ctx *TestingContext) bool {
-	testingClient := &keycloakv1.KeycloakClient{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "testing-idp-client", Namespace: "redhat-rhmi-rhsso"}, testingClient); err != nil {
-		return false
-	}
-	return true
-}
-
-// calls testing idp script
-func setupTestingIDP() error {
-	// setup default password
-	if err := os.Setenv("PASSWORD", defaultTestUsersPassword); err != nil {
-		return fmt.Errorf("error occurred setting password environment variable: %w", err)
-	}
-	// execute testing idp script
-	if _, err := exec.Command("/bin/sh", "-c", "../../scripts/setup-sso-idp.sh").CombinedOutput(); err != nil {
-		return fmt.Errorf("error occurred executing testing idp script: %w", err)
-	}
-	return nil
 }

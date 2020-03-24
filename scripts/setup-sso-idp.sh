@@ -45,7 +45,7 @@ if [[ ${CLUSTER_ID} ]]; then
   for username in "${dedicated_admins[@]}"
   do
     if [[ $(ocm get "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/groups/dedicated-admins/users" | jq ".items[] | select( .id == \"$username\")") ]]; then
-      echo "$username is already in dedicated-admins group" 
+      echo "$username is already in dedicated-admins group"
     else
       echo '{"id":"'$username'"}' | ocm post /api/clusters_mgmt/v1/clusters/$CLUSTER_ID/groups/dedicated-admins/users
       echo "$username added to dedicated-admins group"
