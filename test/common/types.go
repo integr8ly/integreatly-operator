@@ -26,7 +26,11 @@ type TestingContext struct {
 
 type TestCase struct {
 	Description string
-	Test        func(t *testing.T, ctx *TestingContext)
+	Executor    TestExecutor
+}
+
+type TestExecutor interface {
+	RunTest(t *testing.T, ctx *TestingContext)
 }
 
 type prometheusAPIResponse struct {

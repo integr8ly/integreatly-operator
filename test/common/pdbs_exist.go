@@ -6,8 +6,12 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	namespaces = []Namespace{
+type podDisruptionBudgetTestExecutor struct {
+	namespaces []Namespace
+}
+
+var PodDisruptionBudgetTest = podDisruptionBudgetTestExecutor{
+	namespaces: []Namespace{
 		{
 			Name: "redhat-rhmi-rhsso",
 			PodDisruptionBudgetNames: []string{
@@ -34,11 +38,11 @@ var (
 		// 		"zync-que",
 		// 	},
 		// },
-	}
-)
+	},
+}
 
-func TestIntegreatlyPodDisruptionBudgetsExist(t *testing.T, ctx *TestingContext) {
-	for _, namespace := range namespaces {
+func (e *podDisruptionBudgetTestExecutor) RunTest(t *testing.T, ctx *TestingContext) {
+	for _, namespace := range e.namespaces {
 		for _, podDisruptionBudgetName := range namespace.PodDisruptionBudgetNames {
 			_, err := ctx.KubeClient.PolicyV1beta1().PodDisruptionBudgets(namespace.Name).Get(podDisruptionBudgetName, v1.GetOptions{})
 			if err != nil {

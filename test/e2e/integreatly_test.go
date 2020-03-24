@@ -87,7 +87,7 @@ func TestIntegreatly(t *testing.T) {
 	t.Run("integreatly", func(t *testing.T) {
 		for _, test := range common.ALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
-				test.Test(t, testingContext)
+				test.Executor.RunTest(t, testingContext)
 			})
 		}
 
@@ -97,7 +97,7 @@ func TestIntegreatly(t *testing.T) {
 
 		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
-				test.Test(t, testingContext)
+				test.Executor.RunTest(t, testingContext)
 			})
 		}
 	})
