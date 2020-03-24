@@ -62,8 +62,6 @@ const (
 
 	systemSeedSecretName          = "system-seed"
 	systemMasterApiCastSecretName = "system-master-apicast"
-
-	DefaultOriginPullSecretName      = "samples-registry-credentials"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -168,10 +166,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	err = resources.CopyDefaultPullSecretToNameSpace(ctx, r.Config.GetNamespace(), DefaultOriginPullSecretName, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	err = resources.CopyDefaultPullSecretToNameSpace(ctx, r.Config.GetNamespace(), resources.DefaultOriginPullSecretName, serverClient)
+	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile pull secret", err)
-		return phase, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: packageName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)

@@ -128,9 +128,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	err = resources.CopyDefaultPullSecretToNameSpace(ctx, r.Config.GetNamespace(), defaultFusePullSecret, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultFusePullSecret), err)
-		return phase, err
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	phase, err = r.reconcileViewFusePerms(ctx, serverClient)
