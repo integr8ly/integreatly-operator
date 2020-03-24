@@ -24,13 +24,9 @@ type TestingContext struct {
 	ExtensionClient *clientset.Clientset
 }
 
-type TestCase struct {
-	Description string
-	Executor    TestExecutor
-}
-
-type TestExecutor interface {
-	RunTest(t *testing.T, ctx *TestingContext)
+type TestCase interface {
+	Description() string
+	Test(t *testing.T, ctx *TestingContext)
 }
 
 type prometheusAPIResponse struct {

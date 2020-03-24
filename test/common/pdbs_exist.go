@@ -10,7 +10,7 @@ type podDisruptionBudgetTestExecutor struct {
 	namespaces []Namespace
 }
 
-var PodDisruptionBudgetTest = podDisruptionBudgetTestExecutor{
+var PodDisruptionBudgetTest TestCase = podDisruptionBudgetTestExecutor{
 	namespaces: []Namespace{
 		{
 			Name: "redhat-rhmi-rhsso",
@@ -41,8 +41,12 @@ var PodDisruptionBudgetTest = podDisruptionBudgetTestExecutor{
 	},
 }
 
-func (e *podDisruptionBudgetTestExecutor) RunTest(t *testing.T, ctx *TestingContext) {
-	for _, namespace := range e.namespaces {
+func (tc podDisruptionBudgetTestExecutor) Description() string {
+	return "Verify PodDisruptionBudgets exist"
+}
+
+func (tc podDisruptionBudgetTestExecutor) Test(t *testing.T, ctx *TestingContext) {
+	for _, namespace := range tc.namespaces {
 		for _, podDisruptionBudgetName := range namespace.PodDisruptionBudgetNames {
 			_, err := ctx.KubeClient.PolicyV1beta1().PodDisruptionBudgets(namespace.Name).Get(podDisruptionBudgetName, v1.GetOptions{})
 			if err != nil {
