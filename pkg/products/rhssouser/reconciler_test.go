@@ -1100,12 +1100,12 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 	context.AuthenticationFlowsExecutions["browser"] = exInfo
 
 	return &keycloakCommon.KeycloakClientFactoryMock{AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
-		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) error {
-			return nil
+		return &keycloakCommon.KeycloakInterfaceMock{CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) (string, error) {
+			return "", nil
 		}, GetIdentityProviderFunc: func(alias string, realmName string) (provider *keycloak.KeycloakIdentityProvider, err error) {
 			return nil, nil
-		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) error {
-			return nil
+		}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) (string, error) {
+			return "", nil
 		},
 			ListRealmsFunc:                           keycloakInterfaceMock.ListRealms,
 			FindGroupByNameFunc:                      keycloakInterfaceMock.FindGroupByName,
@@ -1350,15 +1350,15 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return context.DefaultGroups, nil
 	}
 
-	createGroupClientRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, clientID, groupID string) error {
+	createGroupClientRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, clientID, groupID string) (string, error) {
 		groupClientRoles, ok := context.ClientRoles[groupID]
 
 		if !ok {
-			return fmt.Errorf("Referenced group not found")
+			return "", fmt.Errorf("Referenced group not found")
 		}
 
 		context.ClientRoles[groupID] = append(groupClientRoles, role)
-		return nil
+		return "dummy-group-client-role-id", nil
 	}
 
 	listGroupClientRolesFunc := func(realmName, clientID, groupID string) ([]*keycloak.KeycloakUserRole, error) {
@@ -1433,15 +1433,15 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		return availableGroupRealmRoles, nil
 	}
 
-	createGroupRealmRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, groupID string) error {
+	createGroupRealmRoleFunc := func(role *keycloak.KeycloakUserRole, realmName, groupID string) (string, error) {
 		groupRealmRoles, ok := context.RealmRoles[groupID]
 
 		if !ok {
-			return fmt.Errorf("Referenced group not found")
+			return "", fmt.Errorf("Referenced group not found")
 		}
 
 		context.RealmRoles[groupID] = append(groupRealmRoles, role)
-		return nil
+		return "dummy-group-realm-role-id", nil
 	}
 
 	listClientsFunc := func(realmName string) ([]*keycloak.KeycloakAPIClient, error) {

@@ -84,37 +84,37 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 //             AddUserToGroupFunc: func(realmName string, userID string, groupID string) error {
 // 	               panic("mock out the AddUserToGroup method")
 //             },
-//             CreateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) error {
+//             CreateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error) {
 // 	               panic("mock out the CreateAuthenticatorConfig method")
 //             },
-//             CreateClientFunc: func(client *v1alpha1.KeycloakAPIClient, realmName string) error {
+//             CreateClientFunc: func(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
 // 	               panic("mock out the CreateClient method")
 //             },
-//             CreateFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) error {
+//             CreateFederatedIdentityFunc: func(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error) {
 // 	               panic("mock out the CreateFederatedIdentity method")
 //             },
 //             CreateGroupFunc: func(group string, realmName string) (string, error) {
 // 	               panic("mock out the CreateGroup method")
 //             },
-//             CreateGroupClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) error {
+//             CreateGroupClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) (string, error) {
 // 	               panic("mock out the CreateGroupClientRole method")
 //             },
-//             CreateGroupRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) error {
+//             CreateGroupRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) (string, error) {
 // 	               panic("mock out the CreateGroupRealmRole method")
 //             },
-//             CreateIdentityProviderFunc: func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+//             CreateIdentityProviderFunc: func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error) {
 // 	               panic("mock out the CreateIdentityProvider method")
 //             },
-//             CreateRealmFunc: func(realm *v1alpha1.KeycloakRealm) error {
+//             CreateRealmFunc: func(realm *v1alpha1.KeycloakRealm) (string, error) {
 // 	               panic("mock out the CreateRealm method")
 //             },
-//             CreateUserFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string) error {
+//             CreateUserFunc: func(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
 // 	               panic("mock out the CreateUser method")
 //             },
-//             CreateUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) error {
+//             CreateUserClientRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) (string, error) {
 // 	               panic("mock out the CreateUserClientRole method")
 //             },
-//             CreateUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) error {
+//             CreateUserRealmRoleFunc: func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) (string, error) {
 // 	               panic("mock out the CreateUserRealmRole method")
 //             },
 //             DeleteAuthenticatorConfigFunc: func(configID string, realmName string) error {
@@ -272,37 +272,37 @@ type KeycloakInterfaceMock struct {
 	AddUserToGroupFunc func(realmName string, userID string, groupID string) error
 
 	// CreateAuthenticatorConfigFunc mocks the CreateAuthenticatorConfig method.
-	CreateAuthenticatorConfigFunc func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) error
+	CreateAuthenticatorConfigFunc func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error)
 
 	// CreateClientFunc mocks the CreateClient method.
-	CreateClientFunc func(client *v1alpha1.KeycloakAPIClient, realmName string) error
+	CreateClientFunc func(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error)
 
 	// CreateFederatedIdentityFunc mocks the CreateFederatedIdentity method.
-	CreateFederatedIdentityFunc func(fid v1alpha1.FederatedIdentity, userID string, realmName string) error
+	CreateFederatedIdentityFunc func(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error)
 
 	// CreateGroupFunc mocks the CreateGroup method.
 	CreateGroupFunc func(group string, realmName string) (string, error)
 
 	// CreateGroupClientRoleFunc mocks the CreateGroupClientRole method.
-	CreateGroupClientRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) error
+	CreateGroupClientRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) (string, error)
 
 	// CreateGroupRealmRoleFunc mocks the CreateGroupRealmRole method.
-	CreateGroupRealmRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) error
+	CreateGroupRealmRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) (string, error)
 
 	// CreateIdentityProviderFunc mocks the CreateIdentityProvider method.
-	CreateIdentityProviderFunc func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error
+	CreateIdentityProviderFunc func(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error)
 
 	// CreateRealmFunc mocks the CreateRealm method.
-	CreateRealmFunc func(realm *v1alpha1.KeycloakRealm) error
+	CreateRealmFunc func(realm *v1alpha1.KeycloakRealm) (string, error)
 
 	// CreateUserFunc mocks the CreateUser method.
-	CreateUserFunc func(user *v1alpha1.KeycloakAPIUser, realmName string) error
+	CreateUserFunc func(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error)
 
 	// CreateUserClientRoleFunc mocks the CreateUserClientRole method.
-	CreateUserClientRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) error
+	CreateUserClientRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) (string, error)
 
 	// CreateUserRealmRoleFunc mocks the CreateUserRealmRole method.
-	CreateUserRealmRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) error
+	CreateUserRealmRoleFunc func(role *v1alpha1.KeycloakUserRole, realmName string, userID string) (string, error)
 
 	// DeleteAuthenticatorConfigFunc mocks the DeleteAuthenticatorConfig method.
 	DeleteAuthenticatorConfigFunc func(configID string, realmName string) error
@@ -941,7 +941,7 @@ func (mock *KeycloakInterfaceMock) AddUserToGroupCalls() []struct {
 }
 
 // CreateAuthenticatorConfig calls CreateAuthenticatorConfigFunc.
-func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) error {
+func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfig(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error) {
 	if mock.CreateAuthenticatorConfigFunc == nil {
 		panic("KeycloakInterfaceMock.CreateAuthenticatorConfigFunc: method is nil but KeycloakInterface.CreateAuthenticatorConfig was just called")
 	}
@@ -980,7 +980,7 @@ func (mock *KeycloakInterfaceMock) CreateAuthenticatorConfigCalls() []struct {
 }
 
 // CreateClient calls CreateClientFunc.
-func (mock *KeycloakInterfaceMock) CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) error {
+func (mock *KeycloakInterfaceMock) CreateClient(client *v1alpha1.KeycloakAPIClient, realmName string) (string, error) {
 	if mock.CreateClientFunc == nil {
 		panic("KeycloakInterfaceMock.CreateClientFunc: method is nil but KeycloakInterface.CreateClient was just called")
 	}
@@ -1015,7 +1015,7 @@ func (mock *KeycloakInterfaceMock) CreateClientCalls() []struct {
 }
 
 // CreateFederatedIdentity calls CreateFederatedIdentityFunc.
-func (mock *KeycloakInterfaceMock) CreateFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) error {
+func (mock *KeycloakInterfaceMock) CreateFederatedIdentity(fid v1alpha1.FederatedIdentity, userID string, realmName string) (string, error) {
 	if mock.CreateFederatedIdentityFunc == nil {
 		panic("KeycloakInterfaceMock.CreateFederatedIdentityFunc: method is nil but KeycloakInterface.CreateFederatedIdentity was just called")
 	}
@@ -1089,7 +1089,7 @@ func (mock *KeycloakInterfaceMock) CreateGroupCalls() []struct {
 }
 
 // CreateGroupClientRole calls CreateGroupClientRoleFunc.
-func (mock *KeycloakInterfaceMock) CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) error {
+func (mock *KeycloakInterfaceMock) CreateGroupClientRole(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, groupID string) (string, error) {
 	if mock.CreateGroupClientRoleFunc == nil {
 		panic("KeycloakInterfaceMock.CreateGroupClientRoleFunc: method is nil but KeycloakInterface.CreateGroupClientRole was just called")
 	}
@@ -1132,7 +1132,7 @@ func (mock *KeycloakInterfaceMock) CreateGroupClientRoleCalls() []struct {
 }
 
 // CreateGroupRealmRole calls CreateGroupRealmRoleFunc.
-func (mock *KeycloakInterfaceMock) CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) error {
+func (mock *KeycloakInterfaceMock) CreateGroupRealmRole(role *v1alpha1.KeycloakUserRole, realmName string, groupID string) (string, error) {
 	if mock.CreateGroupRealmRoleFunc == nil {
 		panic("KeycloakInterfaceMock.CreateGroupRealmRoleFunc: method is nil but KeycloakInterface.CreateGroupRealmRole was just called")
 	}
@@ -1171,7 +1171,7 @@ func (mock *KeycloakInterfaceMock) CreateGroupRealmRoleCalls() []struct {
 }
 
 // CreateIdentityProvider calls CreateIdentityProviderFunc.
-func (mock *KeycloakInterfaceMock) CreateIdentityProvider(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+func (mock *KeycloakInterfaceMock) CreateIdentityProvider(identityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) (string, error) {
 	if mock.CreateIdentityProviderFunc == nil {
 		panic("KeycloakInterfaceMock.CreateIdentityProviderFunc: method is nil but KeycloakInterface.CreateIdentityProvider was just called")
 	}
@@ -1206,7 +1206,7 @@ func (mock *KeycloakInterfaceMock) CreateIdentityProviderCalls() []struct {
 }
 
 // CreateRealm calls CreateRealmFunc.
-func (mock *KeycloakInterfaceMock) CreateRealm(realm *v1alpha1.KeycloakRealm) error {
+func (mock *KeycloakInterfaceMock) CreateRealm(realm *v1alpha1.KeycloakRealm) (string, error) {
 	if mock.CreateRealmFunc == nil {
 		panic("KeycloakInterfaceMock.CreateRealmFunc: method is nil but KeycloakInterface.CreateRealm was just called")
 	}
@@ -1237,7 +1237,7 @@ func (mock *KeycloakInterfaceMock) CreateRealmCalls() []struct {
 }
 
 // CreateUser calls CreateUserFunc.
-func (mock *KeycloakInterfaceMock) CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) error {
+func (mock *KeycloakInterfaceMock) CreateUser(user *v1alpha1.KeycloakAPIUser, realmName string) (string, error) {
 	if mock.CreateUserFunc == nil {
 		panic("KeycloakInterfaceMock.CreateUserFunc: method is nil but KeycloakInterface.CreateUser was just called")
 	}
@@ -1272,7 +1272,7 @@ func (mock *KeycloakInterfaceMock) CreateUserCalls() []struct {
 }
 
 // CreateUserClientRole calls CreateUserClientRoleFunc.
-func (mock *KeycloakInterfaceMock) CreateUserClientRole(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) error {
+func (mock *KeycloakInterfaceMock) CreateUserClientRole(role *v1alpha1.KeycloakUserRole, realmName string, clientID string, userID string) (string, error) {
 	if mock.CreateUserClientRoleFunc == nil {
 		panic("KeycloakInterfaceMock.CreateUserClientRoleFunc: method is nil but KeycloakInterface.CreateUserClientRole was just called")
 	}
@@ -1315,7 +1315,7 @@ func (mock *KeycloakInterfaceMock) CreateUserClientRoleCalls() []struct {
 }
 
 // CreateUserRealmRole calls CreateUserRealmRoleFunc.
-func (mock *KeycloakInterfaceMock) CreateUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName string, userID string) error {
+func (mock *KeycloakInterfaceMock) CreateUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName string, userID string) (string, error) {
 	if mock.CreateUserRealmRoleFunc == nil {
 		panic("KeycloakInterfaceMock.CreateUserRealmRoleFunc: method is nil but KeycloakInterface.CreateUserRealmRole was just called")
 	}

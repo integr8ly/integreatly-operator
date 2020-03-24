@@ -331,7 +331,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error attempting to get existing idp on user sso, master realm: %w", err)
 	} else if !exists {
-		err = kcClient.CreateIdentityProvider(masterKcr.Spec.Realm.IdentityProviders[0], masterKcr.Spec.Realm.Realm)
+		_, err = kcClient.CreateIdentityProvider(masterKcr.Spec.Realm.IdentityProviders[0], masterKcr.Spec.Realm.Realm)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating idp on master realm, user sso: %w", err)
 		}
@@ -1130,7 +1130,7 @@ func (r *Reconciler) reconcileBrowserAuthFlow(ctx context.Context, kc *keycloak.
 	}
 
 	config := keycloak.AuthenticatorConfig{Config: map[string]string{"defaultProvider": "openshift-v4"}, Alias: "openshift-v4"}
-	err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
+	_, err = kcClient.CreateAuthenticatorConfig(&config, masterRealmName, executionID)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create Authenticator Config: %w", err)
 	}
@@ -1373,7 +1373,8 @@ func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, 
 			return kcClient.ListAvailableGroupClientRoles(realmName, clientID, groupID)
 		},
 		func(role *keycloak.KeycloakUserRole) error {
-			return kcClient.CreateGroupClientRole(role, realmName, clientID, groupID)
+			_, err := kcClient.CreateGroupClientRole(role, realmName, clientID, groupID)
+			return err
 		},
 	)
 }
@@ -1387,7 +1388,8 @@ func mapRealmRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, g
 			return kcClient.ListAvailableGroupRealmRoles(realmName, groupID)
 		},
 		func(role *keycloak.KeycloakUserRole) error {
-			return kcClient.CreateGroupRealmRole(role, realmName, groupID)
+			_, err := kcClient.CreateGroupRealmRole(role, realmName, groupID)
+			return err
 		},
 	)
 }
