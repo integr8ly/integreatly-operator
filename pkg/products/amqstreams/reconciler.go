@@ -214,12 +214,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
 	}
 
-	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	//and they should all be ready
+	//checking pods are all ready
 checkPodStatus:
 	for _, pod := range pods.Items {
 		for _, cnd := range pod.Status.Conditions {
