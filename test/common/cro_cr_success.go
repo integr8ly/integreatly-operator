@@ -3,11 +3,17 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
+	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
+	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
+	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
+	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"testing"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 )
 
 const (
@@ -18,21 +24,21 @@ const (
 
 var (
 	postgresToCheck = []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, InstallationName),
+		fmt.Sprintf("%s%s", codeready.PostgresPrefix, InstallationName),
+		fmt.Sprintf("%s%s", threescale.PostgresPrefix, InstallationName),
+		fmt.Sprintf("%s%s", rhsso.PostgresPrefix, InstallationName),
+		fmt.Sprintf("%s%s", rhssouser.PostgresPrefix, InstallationName),
+		fmt.Sprintf("%s%s", ups.PostgresPrefix, InstallationName),
 		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
-		constants.AMQAuthServicePostgres,
+		amqonline.AuthServicePostgres,
 	}
 	redisToCheck = []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, InstallationName),
+		fmt.Sprintf("%s%s", threescale.BackendRedisPrefix, InstallationName),
+		fmt.Sprintf("%s%s", threescale.SystemRedisPrefix, InstallationName),
 	}
 	blobStorageToCheck = []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, InstallationName),
+		fmt.Sprintf("%s%s", cloudresources.BackupsBlobStoragePrefix, InstallationName),
+		fmt.Sprintf("%s%s", threescale.BlobStoragePrefix, InstallationName),
 	}
 )
 
@@ -42,7 +48,7 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 	for _, postgresName := range postgresToCheck {
 		// AMQAuthService postgres is always in cluster
 		strategy := originalStrategy
-		if postgresName == constants.AMQAuthServicePostgres {
+		if postgresName == amqonline.AuthServicePostgres {
 			strategy = openShiftProvider
 		}
 

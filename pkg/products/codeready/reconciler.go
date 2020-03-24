@@ -25,7 +25,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -40,8 +39,10 @@ const (
 	defaultInstallationNamespace = "codeready-workspaces"
 	defaultClientName            = "che-client"
 	defaultCheClusterName        = "rhmi-cluster"
+	DefaultSubscriptionName      = "rhmi-codeready-workspaces"
 	manifestPackage              = "integreatly-codeready-workspaces"
 	tier                         = "production"
+	PostgresPrefix               = "codeready-postgres-"
 )
 
 type Reconciler struct {
@@ -130,9 +131,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.CodeReadySubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: DefaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CodeReadySubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", DefaultSubscriptionName), err)
 		return phase, err
 	}
 
@@ -187,7 +188,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	ns := r.installation.Namespace
 
 	// setup postgres custom resource
-	postgresName := fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, r.installation.Name)
+	postgresName := fmt.Sprintf("%s%s", PostgresPrefix, r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil

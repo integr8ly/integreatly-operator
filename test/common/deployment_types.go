@@ -2,9 +2,14 @@ package common
 
 import (
 	goctx "context"
+	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
+	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
+	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
+	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,16 +110,16 @@ var (
 	}
 	clusterStorageDeployments = []Namespace{
 		{
-			Name: "redhat-rhmi-operator",
+			Name: RHMIOperatorNameSpace,
 			Products: []Product{
-				Product{Name: constants.CodeReadyPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScalePostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleSystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.UPSPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOUserProstgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.AMQAuthServicePostgres, ExpectedReplicas: 1},
+				Product{Name: codeready.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: threescale.BackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: threescale.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: threescale.SystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: ups.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: rhsso.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: rhssouser.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: amqonline.AuthServicePostgres, ExpectedReplicas: 1},
 			},
 		},
 	}

@@ -27,7 +27,6 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,9 +37,11 @@ import (
 const (
 	defaultInstallationNamespace = "ups"
 	defaultUpsName               = "ups"
+	DefaultSubscriptionName      = "rhmi-unifiedpush"
 	defaultRoutename             = defaultUpsName + "-unifiedpush-proxy"
 	manifestPackage              = "integreatly-unifiedpush"
 	tier                         = "production"
+	PostgresPrefix               = "ups-postgres-"
 )
 
 type Reconciler struct {
@@ -133,9 +134,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.UPSSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: DefaultSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.UPSSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", DefaultSubscriptionName), err)
 
 		return phase, err
 	}
@@ -173,7 +174,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// setup postgres custom resource
 	// this will be used by the cloud resources operator to provision a postgres instance
-	postgresName := fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installation.Name)
+	postgresName := fmt.Sprintf("%s%s", PostgresPrefix, installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, client, defaultInstallationNamespace, installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil

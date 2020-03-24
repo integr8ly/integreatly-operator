@@ -30,7 +30,6 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,6 +42,7 @@ import (
 var (
 	defaultRhssoNamespace     = "user-sso"
 	keycloakName              = "rhssouser"
+	DefaultSubscriptionName   = "rhmi-rhsso"
 	idpAlias                  = "openshift-v4"
 	manifestPackage           = "integreatly-rhsso"
 	masterRealmName           = "master"
@@ -62,6 +62,7 @@ const (
 	masterRealmClientName       = "master-realm"
 	firstBrokerLoginFlowAlias   = "first broker login"
 	reviewProfileExecutionAlias = "review profile config"
+	PostgresPrefix              = "rhssouser-postgres-"
 )
 
 var realmManagersClientRoles = []string{
@@ -204,9 +205,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOUserSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: DefaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOUserSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", DefaultSubscriptionName), err)
 		return phase, err
 	}
 
@@ -251,7 +252,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak external database instance")
-	postgresName := fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installation.Name)
+	postgresName := fmt.Sprintf("%s%s", PostgresPrefix, installation.Name)
 	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultRhssoNamespace)
 
 	if err != nil {

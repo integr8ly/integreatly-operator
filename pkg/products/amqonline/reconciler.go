@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-
 	"github.com/sirupsen/logrus"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -41,9 +39,11 @@ import (
 
 const (
 	defaultInstallationNamespace = "amq-online"
+	DefaultSubscriptionName      = "rhmi-amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
 	postgresTier                 = "production"
+	AuthServicePostgres          = "standard-authservice-postgresql"
 )
 
 type Reconciler struct {
@@ -133,9 +133,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.AMQOnlineSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: DefaultSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQOnlineSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", DefaultSubscriptionName), err)
 		return phase, err
 	}
 
@@ -275,8 +275,6 @@ func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, ser
 func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling standard AuthenticationService")
 
-	const postgresqlName string = constants.AMQAuthServicePostgres
-
 	// Get CRO to create a Postgresql in the integreatly operator namespace. The
 	// CRO operator SA only has permissions to create the secret in the intly
 	// operator namespace, so it will be first created there, then copied into
@@ -287,9 +285,9 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		defaultInstallationNamespace,
 		"workshop", // workshop here so that it creates in-cluster postgresql
 		postgresTier,
-		postgresqlName,
+		AuthServicePostgres,
 		r.inst.Namespace,
-		postgresqlName,
+		AuthServicePostgres,
 		r.inst.Namespace,
 		func(cr metav1.Object) error {
 			owner.AddIntegreatlyOwnerAnnotations(cr, r.inst)
@@ -309,7 +307,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	croSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.inst.Namespace,
-			Name:      postgresqlName,
+			Name:      AuthServicePostgres,
 		},
 	}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: croSecret.Name, Namespace: croSecret.Namespace}, croSecret)
@@ -324,7 +322,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	keycloakSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
-			Name:      postgresqlName,
+			Name:      AuthServicePostgres,
 		},
 	}
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, keycloakSecret, func() error {

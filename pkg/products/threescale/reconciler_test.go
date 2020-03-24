@@ -2,7 +2,6 @@ package threescale
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"net/http"
 	"testing"
 
@@ -171,11 +170,11 @@ func TestThreeScale(t *testing.T) {
 
 			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder)
 			if err != nil {
-				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
+				t.Fatalf("Error creating new reconciler %s: %v", PackageName, err)
 			}
 			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient)
 			if err != nil {
-				t.Fatalf("Error reconciling %s: %v", constants.ThreeScaleSubscriptionName, err)
+				t.Fatalf("Error reconciling %s: %v", PackageName, err)
 			}
 
 			if status != scenario.ExpectedStatus {

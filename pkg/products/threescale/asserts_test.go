@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -51,9 +49,9 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: constants.ThreeScaleSubscriptionName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: PackageName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
 	if k8serr.IsNotFound(err) {
-		return fmt.Errorf("%s operator subscription was not created", constants.ThreeScaleSubscriptionName)
+		return fmt.Errorf("%s operator subscription was not created", PackageName)
 	}
 
 	// The main s3credentials should have been copied into the 3scale ns.
