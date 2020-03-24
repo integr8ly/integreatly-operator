@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
 	"net/http"
