@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/google/go-querystring/query"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"testing"
+	"time"
 )
 
 const (
@@ -23,13 +26,6 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	// ensure testing idp exists
-	if !hasTestingIDP(ctx) {
-		if err := setupTestingIDP(); err != nil {
-			t.Fatalf("error setting up testing idp: %v", err)
-		}
-	}
-
 	// get console master url
 	rhmi, err := getRHMI(ctx)
 	if err != nil {
@@ -44,26 +40,15 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user01", defaultTestUsersPassword)
+	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user-0", DefaultPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	// get projects for rhmi developer
-	rhmiDevfoundProjects, err := resources.DoOpenshiftGetProjects(masterURL, rhmiDevUserToken)
-	if err != nil {
-		t.Fatalf("error occured while getting user projects : %v", err)
-	}
-
-	// check if projects are as expected for rhmi developer
-	if len(rhmiDevfoundProjects.Items) != expectedRhmiDeveloperProjectCount {
-		t.Fatalf("test failed - found rhmi developer project count : %d expected rhmi-developer project count : %d", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount)
-	}
-
+	// test rhmi developer projects are as expected
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
-	foundNamespace := rhmiDevfoundProjects.Items[0].Name
-	if foundNamespace != fuseNamespace {
-		t.Fatalf("test failed - found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
+	if err := testRHMIDeveloperProjects(masterURL, rhmiDevUserToken, fuseNamespace); err != nil {
+		t.Fatalf("test failed - %v", err)
 	}
 
 	// get fuse pods for rhmi developer
@@ -101,4 +86,31 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 			}
 		}
 	}
+}
+
+func testRHMIDeveloperProjects(masterURL, rhmiDevUserToken, fuseNamespace string) error {
+	var rhmiDevfoundProjects *projectv1.ProjectList
+	err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (done bool, err error) {
+		// get projects for rhmi developer
+		rhmiDevfoundProjects, err = resources.DoOpenshiftGetProjects(masterURL, rhmiDevUserToken)
+		if err != nil {
+			return false, fmt.Errorf("error occured while getting user projects : %w", err)
+		}
+
+		// check if projects are as expected for rhmi developer
+		if len(rhmiDevfoundProjects.Items) != expectedRhmiDeveloperProjectCount {
+			return false, fmt.Errorf("found rhmi developer project count : %d expected rhmi-developer project count : %d", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount)
+		}
+
+		foundNamespace := rhmiDevfoundProjects.Items[0].Name
+		if foundNamespace != fuseNamespace {
+			return true, fmt.Errorf("found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("rhmi developer projects failure - %w", err)
+	}
+	return nil
 }

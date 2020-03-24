@@ -93,6 +93,12 @@ func TestIntegreatly(t *testing.T) {
 			IntegreatlyCluster(t, f, ctx)
 		})
 
+		for _, test := range common.AFTER_INSTALL_PREREQUISITES {
+			t.Run(test.Description, func(t *testing.T) {
+				test.Test(t, testingContext)
+			})
+		}
+
 		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
 				test.Test(t, testingContext)
