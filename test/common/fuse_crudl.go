@@ -13,18 +13,8 @@ const (
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
-	// ensure testing idp exists
-	hasIDP, err := hasTestingIDP(ctx)
-	if err != nil {
-		t.Fatalf("error checking testing idp: %v", err)
-	}
-	if !hasIDP {
-		if err := setupTestingIDP(); err != nil {
-			t.Fatalf("error setting up testing idp: %v", err)
-		}
-	}
 
-	rhmi, err := GetRHMI(ctx)
+	rhmi, err := getRHMI(ctx)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -33,7 +23,7 @@ func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	fuseHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.ProductFuse].Host
 
 	// Get a client that authenticated to fuse via oauth
-	authenticatedFuseClient, err := resources.ProxyOAuth(fuseHost, fuseLoginUser, defaultTestUsersPassword)
+	authenticatedFuseClient, err := resources.ProxyOAuth(fuseHost, fuseLoginUser, DefaultPassword)
 	if err != nil {
 		t.Fatalf("error authenticating with fuse: %v", err)
 	}

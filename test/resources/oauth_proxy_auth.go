@@ -3,6 +3,7 @@ package resources
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io"
@@ -126,7 +127,7 @@ func ProxyOAuth(host string, username string, password string) (*http.Client, er
 
 	// On first login the user is presented with an approval form. We have to submit
 	// the form along with the scopes that we want to grant.
-	approvePermissions(form, client, response)
+	_, err = approvePermissions(form, client, response)
 	if err != nil {
 		return nil, err
 	}
@@ -134,18 +135,27 @@ func ProxyOAuth(host string, username string, password string) (*http.Client, er
 	return client, nil
 }
 
+func verifyRedirect(redirectUrl, host string) error {
+	if redirectUrl != host {
+		return errors.New(fmt.Sprintf("redirect host does not match product host: %v / %v",
+			redirectUrl,
+			host))
+	}
+	return nil
+}
+
 // Submit permission approval form
-func approvePermissions(form *goquery.Selection, client *http.Client, response *http.Response) error {
+func approvePermissions(form *goquery.Selection, client *http.Client, response *http.Response) (string, error) {
 	// retrieve the action of the form
 	action, err := getAttribute(form, "action")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// form submit url
 	formUrl, err := resolveRelativeURL(response, action)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	then, _ := form.Find("input[name='then']").Attr("value")
@@ -163,7 +173,7 @@ func approvePermissions(form *goquery.Selection, client *http.Client, response *
 		"scope":        []string{"user:info", "user:check-access"},
 		"approve":      []string{"Allow+selected+permissions"},
 	})
-	return err
+	return redirectUrl, err
 }
 
 func dumpResponse(r *http.Response) string {
