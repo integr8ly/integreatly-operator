@@ -110,7 +110,7 @@ var expectedRules = []alertsTestRule{
 		File: "redhat-rhmi-amq-online-ksm-amqonline-alerts.yaml",
 		Rules: []string{
 			"AMQOnlinePodCount",
-			"AMQOnlinePodHighMemory",
+			"AMQOnlineContainerHighMemory",
 		},
 	},
 	{
@@ -150,8 +150,8 @@ var expectedRules = []alertsTestRule{
 			"ThreeScaleAdminUIBBT",
 			"ThreeScaleDeveloperUIBBT",
 			"ThreeScaleSystemAdminUIBBT",
-			"ThreeScalePodHighMemory",
-			"ThreeScalePodHighCPU",
+			"ThreeScaleContainerHighMemory",
+			"ThreeScaleContainerHighCPU",
 			"ThreeScaleZyncPodAvailability",
 			"ThreeScaleZyncDatabasePodAvailability",
 		},
