@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -11,10 +10,14 @@ import (
 	"net/http"
 )
 
+type OpenshiftClient struct {
+	HTTPClient *http.Client
+}
+
 // returns all pods in a namesapce
-func DoOpenshiftGetPodsForNamespacePods(masterUrl, namespace, token string) (*corev1.PodList, error) {
+func (oc *OpenshiftClient) DoOpenshiftGetPodsForNamespacePods(masterUrl, namespace string) (*corev1.PodList, error) {
 	path := fmt.Sprintf("/api/kubernetes/api/v1/namespaces/%s/pods", namespace)
-	resp, err := DoOpenshiftGetRequest(masterUrl, path, token)
+	resp, err := oc.DoOpenshiftGetRequest(masterUrl, path)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred performing oc get request : %w", err)
 	}
@@ -30,8 +33,8 @@ func DoOpenshiftGetPodsForNamespacePods(masterUrl, namespace, token string) (*co
 }
 
 // returns all projects
-func DoOpenshiftGetProjects(masterUrl, token string) (*projectv1.ProjectList, error) {
-	resp, err := DoOpenshiftGetRequest(masterUrl, PathProjects, token)
+func (oc *OpenshiftClient) DoOpenshiftGetProjects(masterUrl string) (*projectv1.ProjectList, error) {
+	resp, err := oc.DoOpenshiftGetRequest(masterUrl, PathProjects)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred performing oc get request : %w", err)
 	}
@@ -47,21 +50,14 @@ func DoOpenshiftGetProjects(masterUrl, token string) (*projectv1.ProjectList, er
 }
 
 // makes a get request, expects master url, a path and a token
-func DoOpenshiftGetRequest(masterUrl string, path string, token string) (*http.Response, error) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
+func (oc *OpenshiftClient) DoOpenshiftGetRequest(masterUrl string, path string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", masterUrl, path), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
 	}
-	req.Header.Set("Cookie", fmt.Sprintf("%s=%s", OpenshiftTokenName, token))
-
-	resp, err := client.Do(req)
+	resp, err := oc.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
 	}
-
 	return resp, nil
 }

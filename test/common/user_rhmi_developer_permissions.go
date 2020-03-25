@@ -9,6 +9,7 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -26,6 +27,10 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
+	if err := createTestingIDP(ctx, http.DefaultClient); err != nil {
+		t.Fatalf("error while creating testing idp: %w", err)
+	}
+
 	// get console master url
 	rhmi, err := getRHMI(ctx)
 	if err != nil {
@@ -40,19 +45,21 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	rhmiDevUserToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "test-user-0", DefaultPassword)
+	openshiftHTTPClient, err := resources.DoAuthOpenshiftUser(masterURL, "test-user-0", DefaultPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
+	openshiftClient := &resources.OpenshiftClient{HTTPClient:openshiftHTTPClient}
+
 	// test rhmi developer projects are as expected
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
-	if err := testRHMIDeveloperProjects(masterURL, rhmiDevUserToken, fuseNamespace); err != nil {
+	if err := testRHMIDeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
 		t.Fatalf("test failed - %v", err)
 	}
 
 	// get fuse pods for rhmi developer
-	podlist, err := resources.DoOpenshiftGetPodsForNamespacePods(masterURL, fuseNamespace, rhmiDevUserToken)
+	podlist, err := openshiftClient.DoOpenshiftGetPodsForNamespacePods(masterURL, fuseNamespace)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
 	}
@@ -77,7 +84,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 				t.Fatal(err)
 			}
 			// verify an rhmi developer can access the pods logs
-			resp, err := resources.DoOpenshiftGetRequest(fmt.Sprintf("%s/%s/%s/log?%s", masterURL, resources.PathFusePods, p.Name, lv.Encode()), "", rhmiDevUserToken)
+			resp, err := openshiftClient.DoOpenshiftGetRequest(fmt.Sprintf("%s/%s/%s/log?%s", masterURL, resources.PathFusePods, p.Name, lv.Encode()), "")
 			if err != nil {
 				t.Fatalf("error occurred making oc get request: %v", err)
 			}
@@ -88,11 +95,11 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func testRHMIDeveloperProjects(masterURL, rhmiDevUserToken, fuseNamespace string) error {
+func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
 	err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (done bool, err error) {
 		// get projects for rhmi developer
-		rhmiDevfoundProjects, err = resources.DoOpenshiftGetProjects(masterURL, rhmiDevUserToken)
+		rhmiDevfoundProjects, err = openshiftClient.DoOpenshiftGetProjects(masterURL)
 		if err != nil {
 			return false, fmt.Errorf("error occured while getting user projects : %w", err)
 		}

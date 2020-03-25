@@ -2,6 +2,8 @@ package common
 
 import (
 	goctx "context"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -14,8 +16,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"testing"
 	"time"
 )
 
@@ -35,15 +37,23 @@ type TestUser struct {
 	LastName  string
 }
 
-// sets up testing idp
-func SetupTestingIDP(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(ctx); err != nil {
-		t.Fatalf("error occurred while setting up testing idp on cluster: %v", err)
-	}
-}
-
 // creates testing idp
-func createTestingIDP(ctx *TestingContext) error {
+func createTestingIDP(ctx *TestingContext, httpClient *http.Client) error {
+	rhmiCR, err := getRHMI(ctx)
+	if err != nil {
+		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
+	}
+
+	hasSelfSignedCerts := false
+	masterURL := rhmiCR.Spec.MasterURL
+	_, err = httpClient.Get(fmt.Sprintf("https://%s", masterURL))
+	if err != nil {
+		if _, ok := errors.Unwrap(err).(x509.UnknownAuthorityError); !ok {
+			return fmt.Errorf("error while performing self-signed certs test request: %w", err)
+		}
+		hasSelfSignedCerts = true
+	}
+
 	// create dedicated admins group is it doesnt exist
 	if !hasDedicatedAdminGroup(ctx) {
 		if err := setupDedicatedAdminGroup(ctx); err != nil {
@@ -79,16 +89,10 @@ func createTestingIDP(ctx *TestingContext) error {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
-	// setup idp config is cluster has self signed certs
-	hasSelfSignedCerts, err := hasSelfSignedCerts(ctx)
-	if err != nil {
-		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
-	}
 	if hasSelfSignedCerts {
 		if err := setupIDPConfig(ctx); err != nil {
 			return fmt.Errorf("error occurred while updating openshift config: %w", err)
 		}
-
 	}
 
 	// create idp in cluster oauth
@@ -104,6 +108,14 @@ func createTestingIDP(ctx *TestingContext) error {
 	// ensure oauth has redeployed
 	if err := waitForOauthDeployment(ctx); err != nil {
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
+	}
+
+	// ensure the IDP is available in OpenShift
+	err = wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
+		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to check for openshift idp: %w", err)
 	}
 
 	return nil

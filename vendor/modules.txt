@@ -49,6 +49,8 @@ github.com/Microsoft/hcsshim/internal/schema2
 github.com/Microsoft/hcsshim/internal/timeout
 github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/osversion
+# github.com/PuerkitoBio/goquery v1.5.1
+github.com/PuerkitoBio/goquery
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -57,6 +59,8 @@ github.com/PuerkitoBio/urlesc
 github.com/RHsyseng/operator-utils/pkg/olm
 # github.com/aerogear/unifiedpush-operator v0.5.0
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
+# github.com/andybalholm/cascadia v1.1.0
+github.com/andybalholm/cascadia
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v1.0.1
@@ -283,6 +287,12 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
+# github.com/headzoo/surf v1.0.0
+github.com/headzoo/surf/agent
+github.com/headzoo/surf/browser
+github.com/headzoo/surf/errors
+github.com/headzoo/surf/jar
+github.com/headzoo/surf/util
 # github.com/helm/helm-2to3 v0.2.0
 github.com/helm/helm-2to3/pkg/v3
 # github.com/huandu/xstrings v1.2.0
@@ -721,6 +731,8 @@ google.golang.org/grpc/tap
 gopkg.in/fsnotify.v1
 # gopkg.in/gorp.v1 v1.7.2
 gopkg.in/gorp.v1
+# gopkg.in/headzoo/surf.v1 v1.0.0
+gopkg.in/headzoo/surf.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.4

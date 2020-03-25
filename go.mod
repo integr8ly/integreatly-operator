@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/3scale/3scale-operator v0.4.0
+	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
 	github.com/coreos/prometheus-operator v0.35.0
@@ -12,6 +13,8 @@ require (
 	github.com/go-openapi/spec v0.19.5-0.20191022081736-744796356cda
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-querystring v1.0.0
+	github.com/headzoo/surf v1.0.0
+	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.11.0
 	github.com/integr8ly/grafana-operator v1.3.1
@@ -33,6 +36,7 @@ require (
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/tools v0.0.0-20200207224406-61798d64f025 // indirect
+	gopkg.in/headzoo/surf.v1 v1.0.0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.17.0

@@ -7,11 +7,6 @@ var (
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
 	}
 
-	AFTER_INSTALL_PREREQUISITES = []TestCase{
-		// Prerequisite checks, to be executed before tests
-		{"Setup Testing IDP", SetupTestingIDP},
-	}
-
 	AFTER_INSTALL_TESTS = []TestCase{
 		// Test to be execute after RHMI has been installed
 		{"Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},

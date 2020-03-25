@@ -7,6 +7,7 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -37,6 +38,10 @@ var productNamespaces = []string{
 }
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
+	if err := createTestingIDP(ctx, http.DefaultClient); err != nil {
+		t.Fatalf("error while creating testing idp: %w", err)
+	}
+
 	// get console master url
 	rhmi, err := getRHMI(ctx)
 	if err != nil {
@@ -51,13 +56,15 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get dedicated admin token
-	dedicatedAdminToken, err := resources.DoAuthOpenshiftUser(oauthRoute.Spec.Host, masterURL, resources.DefaultIDP, "customer-admin-0", DefaultPassword)
+	openshiftHTTPClient, err := resources.DoAuthOpenshiftUser(masterURL, "customer-admin-0", DefaultPassword)
 	if err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
+	openshiftClient := &resources.OpenshiftClient{HTTPClient:openshiftHTTPClient}
+
 	// get projects for dedicated admin
-	dedicatedAdminFoundProjects, err := resources.DoOpenshiftGetProjects(masterURL, dedicatedAdminToken)
+	dedicatedAdminFoundProjects, err := openshiftClient.DoOpenshiftGetProjects(masterURL)
 	if err != nil {
 		t.Fatalf("error occured while getting user projects : %v", err)
 	}
@@ -76,7 +83,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	// check to ensure dedicated admin is forbidden from rhmi namespace secrets
 	for _, namespace := range rhmiNamespaces {
 		path := fmt.Sprintf("/api/kubernetes/api/v1/namespaces/%s/secrets", namespace)
-		resp, err := resources.DoOpenshiftGetRequest(masterURL, path, dedicatedAdminToken)
+		resp, err := openshiftClient.DoOpenshiftGetRequest(masterURL, path)
 		if err != nil {
 			t.Fatalf("error occurred while executing oc get request: %v", err)
 		}
