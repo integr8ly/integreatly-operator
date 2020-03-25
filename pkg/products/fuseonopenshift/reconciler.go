@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"path/filepath"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
-
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	"github.com/sirupsen/logrus"
 
@@ -150,13 +149,11 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 		},
 	}
 
-	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
-	if err != nil && !k8errors.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get config map %s from %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
-	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cfgMap, func() error {
 
-	// Create configmap if not found
-	if k8errors.IsNotFound(err) {
+		cfgMap.Name = templatesConfigMapName
+		cfgMap.Namespace = r.ConfigManager.GetOperatorNamespace()
+
 		configMapData := make(map[string]string)
 		fileNames := []string{
 			imageStreamFileName,
@@ -171,13 +168,13 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 			fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
 			content, err := r.getFileContentFromURL(fileURL)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", fn, err)
+				return fmt.Errorf("failed to get file contents of %s: %w", fn, err)
 			}
 			defer content.Close()
 
 			data, err := ioutil.ReadAll(content)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read contents of %s: %w", fn, err)
+				return fmt.Errorf("failed to read contents of %s: %w", fn, err)
 			}
 
 			// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
@@ -188,10 +185,12 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 		}
 
 		cfgMap.Data = configMapData
-		ownerutil.EnsureOwner(cfgMap, r.installation)
-		if err := serverClient.Create(ctx, cfgMap); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create configmap %s in %s namespace: %w", cfgMap.Name, cfgMap.Namespace, err)
-		}
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -376,32 +375,30 @@ func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient k8s
 		},
 	}
 
-	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterSampleCR.Name}, clusterSampleCR); err != nil {
-		// If cluster sample cr is not found, the cluster sample operator is not installed so no need to update it
-		if k8errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, clusterSampleCR, func() error {
+		clusterSampleCR.Name = "cluster"
 
-	if key == "SkippedImagestreams" {
-		for _, v := range value {
-			if !r.contains(clusterSampleCR.Spec.SkippedImagestreams, v) {
-				clusterSampleCR.Spec.SkippedImagestreams = append(clusterSampleCR.Spec.SkippedImagestreams, v)
+		if key == "SkippedImagestreams" {
+			for _, v := range value {
+				if !r.contains(clusterSampleCR.Spec.SkippedImagestreams, v) {
+					clusterSampleCR.Spec.SkippedImagestreams = append(clusterSampleCR.Spec.SkippedImagestreams, v)
+				}
 			}
 		}
-	}
 
-	if key == "SkippedTemplates" {
-		for _, v := range value {
-			if !r.contains(clusterSampleCR.Spec.SkippedTemplates, v) {
-				clusterSampleCR.Spec.SkippedTemplates = append(clusterSampleCR.Spec.SkippedTemplates, v)
+		if key == "SkippedTemplates" {
+			for _, v := range value {
+				if !r.contains(clusterSampleCR.Spec.SkippedTemplates, v) {
+					clusterSampleCR.Spec.SkippedTemplates = append(clusterSampleCR.Spec.SkippedTemplates, v)
+				}
 			}
 		}
-	}
 
-	if err := serverClient.Update(ctx, clusterSampleCR); err != nil {
-		return err
+		return nil
+	})
+
+	if err != nil {
+		logrus.Errorf("Error updating cluster Sample CR")
 	}
 
 	return nil

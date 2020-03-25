@@ -244,7 +244,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 	}{
 		{
 			Name:           "test phase in progress when che cluster is missing",
-			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,

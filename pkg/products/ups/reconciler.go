@@ -29,7 +29,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "k8s.io/api/apps/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -240,18 +239,17 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		},
 	}
 
-	err = client.Get(ctx, k8sclient.ObjectKey{Name: cr.Name, Namespace: cr.Namespace}, cr)
-	if err != nil {
-		// If the error is not an isNotFound error
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		// Otherwise create the cr
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+		cr.ObjectMeta.Name = defaultUpsName
+		cr.ObjectMeta.Namespace = r.Config.GetNamespace()
+		cr.Spec.ExternalDB = true
+		cr.Spec.DatabaseSecret = postgres.Status.SecretRef.Name
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
-		if err := client.Create(ctx, cr); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create unifiedpush server custom resource during reconcile: %w", err)
-		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/maintain unifiedpush server custom resource during reconcile: %w", err)
 	}
 
 	// Wait till the ups cr status is complete

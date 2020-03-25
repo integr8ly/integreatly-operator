@@ -262,47 +262,15 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve: %+v: %w", key, err)
 	}
 
-	cheCluster := &chev1.CheCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      defaultCheClusterName,
-			Namespace: r.Config.GetNamespace(),
-		},
+	cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, serverClient)
+
+	// che cluster hasn't reconciled yet
+	if cheCluster == nil {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
-	owner.AddIntegreatlyOwnerAnnotations(cheCluster, r.installation)
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultCheClusterName, Namespace: r.Config.GetNamespace()}, cheCluster)
+
 	if err != nil {
-		if !k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve checluster custom resource in namespace: %s: %w", r.Config.GetNamespace(), err)
-		}
-		cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create checluster custom resource in namespace: %s: %w", r.Config.GetNamespace(), err)
-		}
-		// che cluster hasn't reconciled yet
-		if cheCluster == nil {
-			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-		}
-		return integreatlyv1alpha1.PhaseInProgress, err
-	}
-
-	// check cr values
-	if cheCluster.Spec.Auth.ExternalIdentityProvider &&
-		!cheCluster.Spec.Auth.OpenShiftoAuth &&
-		cheCluster.Spec.Auth.IdentityProviderURL == kcConfig.GetHost() &&
-		cheCluster.Spec.Auth.IdentityProviderRealm == kcConfig.GetRealm() &&
-		cheCluster.Spec.Auth.IdentityProviderClientId == defaultClientName {
-		logrus.Debug("skipping checluster custom resource update as all values are correct")
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	// update cr values
-	cheCluster.Spec.Auth.ExternalIdentityProvider = true
-	cheCluster.Spec.Auth.OpenShiftoAuth = false
-	cheCluster.Spec.Auth.IdentityProviderURL = kcConfig.GetHost()
-	cheCluster.Spec.Auth.IdentityProviderRealm = kcRealm.Name
-	cheCluster.Spec.Auth.IdentityProviderClientId = defaultClientName
-	if err = serverClient.Update(ctx, cheCluster); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update checluster custom resource in namespace: %s: %w", r.Config.GetNamespace(), err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -479,47 +447,44 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 			Name:      defaultCheClusterName,
 			Namespace: r.Config.GetNamespace(),
 		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: fmt.Sprintf(
-				"%s/%s",
-				chev1.SchemeGroupVersion.Group,
-				chev1.SchemeGroupVersion.Version,
-			),
-			Kind: "CheCluster",
-		},
-		Spec: chev1.CheClusterSpec{
-			Server: chev1.CheClusterSpecServer{
-				CheFlavor:      "codeready",
-				TlsSupport:     true,
-				SelfSignedCert: selfSignedCerts,
-			},
-			Database: chev1.CheClusterSpecDB{
-				ExternalDb:          true,
-				ChePostgresDb:       string(croSec.Data["database"]),
-				ChePostgresPassword: string(croSec.Data["password"]),
-				ChePostgresPort:     string(croSec.Data["port"]),
-				ChePostgresUser:     string(croSec.Data["username"]),
-				ChePostgresHostName: string(croSec.Data["host"]),
-			},
-			Auth: chev1.CheClusterSpecAuth{
-				OpenShiftoAuth:           false,
-				ExternalIdentityProvider: true,
-				IdentityProviderURL:      kcCfg.GetHost(),
-				IdentityProviderRealm:    kr.Name,
-				IdentityProviderClientId: defaultClientName,
-			},
-			Storage: chev1.CheClusterSpecStorage{
-				PvcStrategy:       "per-workspace",
-				PvcClaimSize:      "1Gi",
-				PreCreateSubPaths: true,
-			},
-		},
 	}
 
-	owner.AddIntegreatlyOwnerAnnotations(cheCluster, r.installation)
-	if err := serverClient.Create(ctx, cheCluster); err != nil {
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, cheCluster, func() error {
+		cheCluster.Name = defaultCheClusterName
+		cheCluster.Namespace = r.Config.GetNamespace()
+		cheCluster.APIVersion = fmt.Sprintf(
+			"%s/%s",
+			chev1.SchemeGroupVersion.Group,
+			chev1.SchemeGroupVersion.Version,
+		)
+		cheCluster.Kind = "CheCluster"
+		cheCluster.Spec.Server.CheFlavor = "codeready"
+		cheCluster.Spec.Server.TlsSupport = true
+		cheCluster.Spec.Server.SelfSignedCert = selfSignedCerts
+		cheCluster.Spec.Database.ExternalDb = true
+		cheCluster.Spec.Database.ChePostgresDb = string(croSec.Data["database"])
+		cheCluster.Spec.Database.ChePostgresPassword = string(croSec.Data["password"])
+		cheCluster.Spec.Database.ChePostgresPort = string(croSec.Data["port"])
+		cheCluster.Spec.Database.ChePostgresUser = string(croSec.Data["username"])
+		cheCluster.Spec.Database.ChePostgresHostName = string(croSec.Data["host"])
+		cheCluster.Spec.Auth.OpenShiftoAuth = false
+		cheCluster.Spec.Auth.ExternalIdentityProvider = true
+		cheCluster.Spec.Auth.IdentityProviderURL = kcCfg.GetHost()
+		cheCluster.Spec.Auth.IdentityProviderRealm = kr.Name
+		cheCluster.Spec.Auth.IdentityProviderClientId = defaultClientName
+		cheCluster.Spec.Storage.PvcStrategy = "per-workspace"
+		cheCluster.Spec.Storage.PvcClaimSize = "1Gi"
+		cheCluster.Spec.Storage.PreCreateSubPaths = true
+
+		owner.AddIntegreatlyOwnerAnnotations(cheCluster, r.installation)
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, fmt.Errorf("failed to create che cluster resource: %w", err)
 	}
+
 	return cheCluster, nil
 }
 
