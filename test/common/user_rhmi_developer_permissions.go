@@ -27,12 +27,12 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(ctx, http.DefaultClient); err != nil {
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, http.DefaultClient); err != nil {
 		t.Fatalf("error while creating testing idp: %w", err)
 	}
 
 	// get console master url
-	rhmi, err := getRHMI(ctx)
+	rhmi, err := getRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := &resources.OpenshiftClient{HTTPClient:openshiftHTTPClient}
+	openshiftClient := &resources.OpenshiftClient{HTTPClient: openshiftHTTPClient}
 
 	// test rhmi developer projects are as expected
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)

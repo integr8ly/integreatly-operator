@@ -4,6 +4,7 @@ import (
 	"bytes"
 	goctx "context"
 	"fmt"
+	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -87,9 +88,9 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 }
 
 // returns rhmi
-func getRHMI(ctx *TestingContext) (*integreatlyv1alpha1.RHMI, error) {
+func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil

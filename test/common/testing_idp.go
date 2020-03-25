@@ -1,7 +1,6 @@
 package common
 
 import (
-	goctx "context"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -17,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
+	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 )
@@ -38,8 +38,8 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(ctx *TestingContext, httpClient *http.Client) error {
-	rhmiCR, err := getRHMI(ctx)
+func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client) error {
+	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
 	}
@@ -55,58 +55,58 @@ func createTestingIDP(ctx *TestingContext, httpClient *http.Client) error {
 	}
 
 	// create dedicated admins group is it doesnt exist
-	if !hasDedicatedAdminGroup(ctx) {
-		if err := setupDedicatedAdminGroup(ctx); err != nil {
+	if !hasDedicatedAdminGroup(ctx, client) {
+		if err := setupDedicatedAdminGroup(client); err != nil {
 			return fmt.Errorf("error occurred while creating dedicated admin group: %w", err)
 		}
 	}
 
 	// get oauth route
 	oauthRoute := &v1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Openshift Oauth Route: %w ", err)
 	}
 
 	// create keycloak client secret
-	if err := createClientSecret(ctx, []byte(defaultSecret)); err != nil {
+	if err := createClientSecret(client, []byte(defaultSecret)); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
 	}
 
 	// create keycloak realm
-	if err := createKeycloakRealm(ctx); err != nil {
+	if err := createKeycloakRealm(client); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
 
 	// create keycloak client
 	keycloakClientName := fmt.Sprintf("%s-client", testingIDPRealm)
 	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
-	if err := createKeycloakClient(ctx, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
+	if err := createKeycloakClient(client, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
 	// create keycloak rhmi developer users
-	if err := createKeycloakUsers(ctx, keycloakClientName, keycloakClientNamespace); err != nil {
+	if err := createKeycloakUsers(ctx, client, keycloakClientName, keycloakClientNamespace); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
 	if hasSelfSignedCerts {
-		if err := setupIDPConfig(ctx); err != nil {
+		if err := setupIDPConfig(ctx, client); err != nil {
 			return fmt.Errorf("error occurred while updating openshift config: %w", err)
 		}
 	}
 
 	// create idp in cluster oauth
-	if err := addIDPToOauth(ctx, hasSelfSignedCerts); err != nil {
+	if err := addIDPToOauth(ctx, client, hasSelfSignedCerts); err != nil {
 		return fmt.Errorf("error occurred while adding testing idp to cluster config: %w", err)
 	}
 
 	// add users to dedicated admin users
-	if err := addDedicatedAdminUsers(ctx, defaultNumberOfDedicatedAdmins); err != nil {
+	if err := addDedicatedAdminUsers(ctx, client, defaultNumberOfDedicatedAdmins); err != nil {
 		return fmt.Errorf("error occurred while adding users to dedicated admin group: %w", err)
 	}
 
 	// ensure oauth has redeployed
-	if err := waitForOauthDeployment(ctx); err != nil {
+	if err := waitForOauthDeployment(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
 
@@ -121,10 +121,10 @@ func createTestingIDP(ctx *TestingContext, httpClient *http.Client) error {
 	return nil
 }
 
-func waitForOauthDeployment(ctx *TestingContext) error {
+func waitForOauthDeployment(ctx context.Context, client dynclient.Client) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		oauthDeployment := &appsv1.Deployment{}
-		if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "oauth-openshift", Namespace: "openshift-authentication"}, oauthDeployment); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: "oauth-openshift", Namespace: "openshift-authentication"}, oauthDeployment); err != nil {
 			return true, fmt.Errorf("error occurred while getting dedicated admin group")
 		}
 		if oauthDeployment.Status.UnavailableReplicas == 0 {
@@ -139,9 +139,9 @@ func waitForOauthDeployment(ctx *TestingContext) error {
 }
 
 // add users to dedicated admin users
-func addDedicatedAdminUsers(ctx *TestingContext, numberOfAdmins int) error {
+func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, numberOfAdmins int) error {
 	dedicatedAdminGroup := &userv1.Group{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
 		return fmt.Errorf("error occurred while getting dedicated admin group")
 	}
 
@@ -155,7 +155,7 @@ func addDedicatedAdminUsers(ctx *TestingContext, numberOfAdmins int) error {
 	}
 
 	// add admin users to group
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, dedicatedAdminGroup, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, dedicatedAdminGroup, func() error {
 		for _, user := range adminUsers {
 			if !contains(dedicatedAdminGroup.Users, user) {
 				dedicatedAdminGroup.Users = append(dedicatedAdminGroup.Users, user)
@@ -169,9 +169,9 @@ func addDedicatedAdminUsers(ctx *TestingContext, numberOfAdmins int) error {
 }
 
 // create idp config with self signed cert
-func setupIDPConfig(ctx *TestingContext) error {
+func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 	routerSecret := &corev1.Secret{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "router-ca", Namespace: "openshift-ingress-operator"}, routerSecret); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "router-ca", Namespace: "openshift-ingress-operator"}, routerSecret); err != nil {
 		return fmt.Errorf("error occurred while getting router ca: %w", err)
 	}
 	tlsCrt := routerSecret.Data["tls.crt"]
@@ -182,8 +182,8 @@ func setupIDPConfig(ctx *TestingContext) error {
 			Namespace: "openshift-config",
 		},
 	}
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, idpConfigMap, func() error {
-		if idpConfigMap == nil {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, idpConfigMap, func() error {
+		if idpConfigMap.Data == nil {
 			idpConfigMap.Data = map[string]string{}
 		}
 		idpConfigMap.Data["ca.crt"] = string(tlsCrt)
@@ -195,7 +195,7 @@ func setupIDPConfig(ctx *TestingContext) error {
 }
 
 // add idp to cluster oauth
-func addIDPToOauth(ctx *TestingContext, hasSelfSignedCerts bool) error {
+func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCerts bool) error {
 	// setup identity provider ca name
 	identityProviderCA := ""
 	if hasSelfSignedCerts {
@@ -203,12 +203,12 @@ func addIDPToOauth(ctx *TestingContext, hasSelfSignedCerts bool) error {
 	}
 
 	clusterOauth := &configv1.OAuth{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
 		return fmt.Errorf("error occurred while getting cluster oauth: %w", err)
 	}
 
 	keycloakRoute := &v1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "keycloak-edge", Namespace: fmt.Sprintf("%srhsso", NamespacePrefix)}, keycloakRoute); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "keycloak-edge", Namespace: fmt.Sprintf("%srhsso", NamespacePrefix)}, keycloakRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Keycloak Edge Route: %w ", err)
 	}
 	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/testing-idp", keycloakRoute.Spec.Host)
@@ -253,7 +253,7 @@ func addIDPToOauth(ctx *TestingContext, hasSelfSignedCerts bool) error {
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, clusterOauth, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, clusterOauth, func() error {
 		if clusterOauth.Spec.IdentityProviders == nil {
 			clusterOauth.Spec.IdentityProviders = []configv1.IdentityProvider{}
 		}
@@ -266,7 +266,7 @@ func addIDPToOauth(ctx *TestingContext, hasSelfSignedCerts bool) error {
 }
 
 // creates secret to be used by keycloak client
-func createClientSecret(ctx *TestingContext, clientSecret []byte) error {
+func createClientSecret(client dynclient.Client, clientSecret []byte) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("idp-%s", testingIDPRealm),
@@ -274,7 +274,7 @@ func createClientSecret(ctx *TestingContext, clientSecret []byte) error {
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, secret, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = map[string][]byte{}
 		}
@@ -287,8 +287,8 @@ func createClientSecret(ctx *TestingContext, clientSecret []byte) error {
 }
 
 // create rhmi developer keycloak users
-func createKeycloakUsers(ctx *TestingContext, keycloakClientName, keycloakClientNamespace string) error {
-	if err := ensureKeycloakClientIsReady(ctx, keycloakClientName, keycloakClientNamespace); err != nil {
+func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakClientName, keycloakClientNamespace string) error {
+	if err := ensureKeycloakClientIsReady(ctx, client, keycloakClientName, keycloakClientNamespace); err != nil {
 		return fmt.Errorf("error occurred while waiting on keycloak client: %w", err)
 	}
 
@@ -325,7 +325,7 @@ func createKeycloakUsers(ctx *TestingContext, keycloakClientName, keycloakClient
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
 		}
-		if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakUser, func() error {
+		if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakUser, func() error {
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -365,11 +365,11 @@ func createKeycloakUsers(ctx *TestingContext, keycloakClientName, keycloakClient
 }
 
 // polls the keycloak client until it is ready
-func ensureKeycloakClientIsReady(ctx *TestingContext, keycloakClientName, keycloakClientNamespace string) error {
+func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client, keycloakClientName, keycloakClientNamespace string) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		keycloakClient := &v1alpha1.KeycloakClient{}
 
-		if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClient); err != nil {
+		if err := client.Get(ctx, types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClient); err != nil {
 			return true, fmt.Errorf("error occurred while getting keycloak client")
 		}
 		if keycloakClient.Status.Ready {
@@ -384,7 +384,7 @@ func ensureKeycloakClientIsReady(ctx *TestingContext, keycloakClientName, keyclo
 }
 
 // creates keycloak client
-func createKeycloakClient(ctx *TestingContext, oauthURL, clientName, clientNamespace string) error {
+func createKeycloakClient(client dynclient.Client, oauthURL, clientName, clientNamespace string) error {
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientName,
@@ -507,7 +507,7 @@ func createKeycloakClient(ctx *TestingContext, oauthURL, clientName, clientNames
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakClient, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakClient, func() error {
 		keycloakClient.Spec = keycloakSpec
 		return nil
 	}); err != nil {
@@ -517,7 +517,7 @@ func createKeycloakClient(ctx *TestingContext, oauthURL, clientName, clientNames
 }
 
 // create keycloak realm
-func createKeycloakRealm(ctx *TestingContext) error {
+func createKeycloakRealm(client dynclient.Client) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testingIDPRealm,
@@ -542,7 +542,7 @@ func createKeycloakRealm(ctx *TestingContext) error {
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, keycloakRealm, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakRealm, func() error {
 		keycloakRealm.Spec = keycloakRealmSpec
 		return nil
 	}); err != nil {
@@ -552,13 +552,13 @@ func createKeycloakRealm(ctx *TestingContext) error {
 }
 
 // creates dedicated admin group
-func setupDedicatedAdminGroup(ctx *TestingContext) error {
+func setupDedicatedAdminGroup(client dynclient.Client) error {
 	dedicatedAdminGroup := &userv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "dedicated-admins",
 		},
 	}
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), ctx.Client, dedicatedAdminGroup, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, dedicatedAdminGroup, func() error {
 		return nil
 	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating dedicated admins group : %w", err)
@@ -567,22 +567,12 @@ func setupDedicatedAdminGroup(ctx *TestingContext) error {
 }
 
 // checks to see if a dedicated admin group exists
-func hasDedicatedAdminGroup(ctx *TestingContext) bool {
+func hasDedicatedAdminGroup(ctx context.Context, client dynclient.Client) bool {
 	dedicatedAdminGroup := &userv1.Group{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
 		return false
 	}
 	return true
-}
-
-// checks if cluster has self signed certs based on rhmi cr
-func hasSelfSignedCerts(ctx *TestingContext) (bool, error) {
-	rhmi, err := getRHMI(ctx)
-	if err != nil {
-		return false, fmt.Errorf("error occurred while getting rhmi cr: %w", err)
-	}
-
-	return rhmi.Spec.SelfSignedCerts, nil
 }
 
 func contains(s []string, e string) bool {

@@ -68,7 +68,7 @@ func OpenshiftIDPCheck(url string, client *http.Client) (bool, error) {
 	browser := surf.NewBrowser()
 	browser.SetTransport(client.Transport)
 	if err := browser.Open(url); err != nil {
-		return false, fmt.Errorf("failed to open browser url: %w")
+		return false, fmt.Errorf("failed to open browser url: %w", err)
 	}
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
