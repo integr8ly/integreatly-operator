@@ -39,7 +39,7 @@ var productNamespaces = []string{
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	if err := createTestingIDP(goctx.TODO(), ctx.Client, http.DefaultClient); err != nil {
-		t.Fatalf("error while creating testing idp: %w", err)
+		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
 	// get console master url

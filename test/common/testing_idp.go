@@ -56,7 +56,7 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 
 	// create dedicated admins group is it doesnt exist
 	if !hasDedicatedAdminGroup(ctx, client) {
-		if err := setupDedicatedAdminGroup(client); err != nil {
+		if err := setupDedicatedAdminGroup(ctx, client); err != nil {
 			return fmt.Errorf("error occurred while creating dedicated admin group: %w", err)
 		}
 	}
@@ -68,19 +68,19 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	}
 
 	// create keycloak client secret
-	if err := createClientSecret(client, []byte(defaultSecret)); err != nil {
+	if err := createClientSecret(ctx, client, []byte(defaultSecret)); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
 	}
 
 	// create keycloak realm
-	if err := createKeycloakRealm(client); err != nil {
+	if err := createKeycloakRealm(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
 
 	// create keycloak client
 	keycloakClientName := fmt.Sprintf("%s-client", testingIDPRealm)
 	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
-	if err := createKeycloakClient(client, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
+	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
@@ -155,7 +155,7 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 	}
 
 	// add admin users to group
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, dedicatedAdminGroup, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, dedicatedAdminGroup, func() error {
 		for _, user := range adminUsers {
 			if !contains(dedicatedAdminGroup.Users, user) {
 				dedicatedAdminGroup.Users = append(dedicatedAdminGroup.Users, user)
@@ -182,7 +182,7 @@ func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 			Namespace: "openshift-config",
 		},
 	}
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, idpConfigMap, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, idpConfigMap, func() error {
 		if idpConfigMap.Data == nil {
 			idpConfigMap.Data = map[string]string{}
 		}
@@ -253,7 +253,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, clusterOauth, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, clusterOauth, func() error {
 		if clusterOauth.Spec.IdentityProviders == nil {
 			clusterOauth.Spec.IdentityProviders = []configv1.IdentityProvider{}
 		}
@@ -266,7 +266,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 }
 
 // creates secret to be used by keycloak client
-func createClientSecret(client dynclient.Client, clientSecret []byte) error {
+func createClientSecret(ctx context.Context, client dynclient.Client, clientSecret []byte) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("idp-%s", testingIDPRealm),
@@ -274,7 +274,7 @@ func createClientSecret(client dynclient.Client, clientSecret []byte) error {
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, secret, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
 		if secret.Data == nil {
 			secret.Data = map[string][]byte{}
 		}
@@ -325,7 +325,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
 		}
-		if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakUser, func() error {
+		if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -384,7 +384,7 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client, k
 }
 
 // creates keycloak client
-func createKeycloakClient(client dynclient.Client, oauthURL, clientName, clientNamespace string) error {
+func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL, clientName, clientNamespace string) error {
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientName,
@@ -507,7 +507,7 @@ func createKeycloakClient(client dynclient.Client, oauthURL, clientName, clientN
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakClient, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakClient, func() error {
 		keycloakClient.Spec = keycloakSpec
 		return nil
 	}); err != nil {
@@ -517,7 +517,7 @@ func createKeycloakClient(client dynclient.Client, oauthURL, clientName, clientN
 }
 
 // create keycloak realm
-func createKeycloakRealm(client dynclient.Client) error {
+func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testingIDPRealm,
@@ -542,7 +542,7 @@ func createKeycloakRealm(client dynclient.Client) error {
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, keycloakRealm, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakRealm, func() error {
 		keycloakRealm.Spec = keycloakRealmSpec
 		return nil
 	}); err != nil {
@@ -552,13 +552,13 @@ func createKeycloakRealm(client dynclient.Client) error {
 }
 
 // creates dedicated admin group
-func setupDedicatedAdminGroup(client dynclient.Client) error {
+func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) error {
 	dedicatedAdminGroup := &userv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "dedicated-admins",
 		},
 	}
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), client, dedicatedAdminGroup, func() error {
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, dedicatedAdminGroup, func() error {
 		return nil
 	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating dedicated admins group : %w", err)

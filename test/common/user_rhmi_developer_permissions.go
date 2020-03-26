@@ -28,7 +28,7 @@ type LogOptions struct {
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	if err := createTestingIDP(goctx.TODO(), ctx.Client, http.DefaultClient); err != nil {
-		t.Fatalf("error while creating testing idp: %w", err)
+		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
 	// get console master url
@@ -97,7 +97,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 
 func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
-	err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (done bool, err error) {
+	err := wait.PollImmediate(time.Second*5, time.Minute*2, func() (done bool, err error) {
 		// get projects for rhmi developer
 		rhmiDevfoundProjects, err = openshiftClient.DoOpenshiftGetProjects(masterURL)
 		if err != nil {

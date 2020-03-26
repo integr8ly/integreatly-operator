@@ -142,7 +142,7 @@ test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=200m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/functional
 test/functional:
