@@ -5,7 +5,6 @@ var (
 		// Add all the tests that should be executed in both e2e and osd suites here.
 		// It is an array so the tests will be executed in the same order as they defined here.
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
-		{"Verify User Permissions are Correct", TestIntegreatlyUserPermissions},
 	}
 
 	AFTER_INSTALL_TESTS = []TestCase{
@@ -28,5 +27,6 @@ var (
 		{"Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"Verify Create project customer admin", TestNetworkPolicyAccessNSToSVC},
+		{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 	}
 )
