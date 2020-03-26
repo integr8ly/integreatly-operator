@@ -221,14 +221,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
-	logrus.Infof("Phase %s reconcileAlertManagerConfigSecret", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
-		logrus.Errorf("failed to reconcile alert manager config secret: %v", err)
-		return phase, err
-	}
-
 	phase, err = r.populateParams(ctx, serverClient)
 	logrus.Infof("Phase: %s populateParams", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
