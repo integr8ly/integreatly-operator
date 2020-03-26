@@ -7,7 +7,6 @@ var (
 	ALL_TESTS = []TestCase{
 		// Add all tests that can be executed prior to a completed installation here
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
-		{"Verify User Permissions are Correct", TestIntegreatlyUserPermissions},
 	}
 
 	HAPPY_PATH_TESTS = []TestCase{
@@ -34,7 +33,7 @@ var (
 		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
-		{"Verify Create project customer admin", TestNetworkPolicyAccessNSToSVC},
+		{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{

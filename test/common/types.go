@@ -38,11 +38,6 @@ const (
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
 )
 
-const (
-	namespacePrefix  = "redhat-rhmi-"
-	installationName = "example-rhmi"
-)
-
 type TestingContext struct {
 	Client          dynclient.Client
 	KubeConfig      *rest.Config

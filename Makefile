@@ -14,7 +14,6 @@ OPERATOR_SDK_VERSION=0.15.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
-IDP_PASSWORD=Password1
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -68,11 +67,6 @@ setup/service_account:
 .PHONY: setup/git/hooks
 setup/git/hooks:
 	git config core.hooksPath .githooks
-
-
-.PHONY: setup/testing_idp
-setup/testing_idp:
-	PASSWORD=$(IDP_PASSWORD) ./scripts/setup-sso-idp.sh
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
@@ -147,8 +141,13 @@ test/e2e/prow: test/e2e
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
+.PHONY: test/e2e/local
+test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --up-local
+
+
 .PHONY: test/functional
-test/functional: setup/testing_idp
+test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
 
