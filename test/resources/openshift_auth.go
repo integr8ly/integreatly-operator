@@ -43,6 +43,33 @@ type CallbackOptions struct {
 	State    string `url:"state"`
 }
 
+func DoAuthOpenshiftUserClient(client *http.Client, oauthUrl string, masterURL string, idp string, username string, password string) (string, error) {
+	// get state
+	state, err := getOpenshiftState(client, fmt.Sprintf("https://%s/auth/login", masterURL))
+	if err != nil {
+		return "", fmt.Errorf("error occured while getting state, %w", err)
+	}
+
+	// get auth url
+	authURL, err := getOpenshiftAuthUrl(client, oauthUrl, masterURL, idp, state)
+	if err != nil {
+		return "", fmt.Errorf("error occured while getting auth url, %w", err)
+	}
+
+	user := User{
+		Username: username,
+		Password: password,
+	}
+
+	// get openshift token
+	openshiftToken, err := getOpenshiftToken(client, user, authURL)
+	if err != nil {
+		return "", fmt.Errorf("error occured while trying to get openshift token, %w", err)
+	}
+
+	return openshiftToken, nil
+}
+
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
 func DoAuthOpenshiftUser(oauthUrl string, masterURL string, idp string, username string, password string) (string, error) {
 	// declare transport

@@ -1,8 +1,11 @@
 package common
 
 import (
+	goctx "context"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
+	v1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"testing"
 )
 
@@ -18,12 +21,20 @@ func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
+	masterURL := rhmi.Spec.MasterURL
+
+	// get oauth route
+	oauthRoute := &v1.Route{}
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
+		t.Fatal("error getting Openshift Oauth Route: ", err)
+	}
+
 
 	// Get the fuse host url from the rhmi status
-	fuseHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.ProductFuse].Host
+	fuseHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.ProductCodeReadyWorkspaces].Host
 
 	// Get a client that authenticated to fuse via oauth
-	authenticatedFuseClient, err := resources.ProxyOAuth(fuseHost, fuseLoginUser, DefaultPassword)
+	authenticatedFuseClient, err := resources.AuthChe(oauthRoute.Spec.Host, masterURL, fuseHost, fuseLoginUser, DefaultPassword)
 	if err != nil {
 		t.Fatalf("error authenticating with fuse: %v", err)
 	}
