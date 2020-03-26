@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/remotecommand"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 const (
@@ -52,7 +53,6 @@ const (
 
 func TestIntegreatly(t *testing.T) {
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, &integreatlyv1alpha1.RHMIList{})
-
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
@@ -63,6 +63,11 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
 	t.Log("Initialized cluster resources")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := runtimeConfig.GetConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,6 +90,10 @@ func TestIntegreatly(t *testing.T) {
 	t.Run("integreatly", func(t *testing.T) {
 		for _, test := range common.ALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
+				testingContext, err = common.NewTestingContext(config)
+				if err != nil {
+					t.Fatal("failed to create testing context", err)
+				}
 				test.Test(t, testingContext)
 			})
 		}
@@ -95,6 +104,10 @@ func TestIntegreatly(t *testing.T) {
 
 		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
+				testingContext, err = common.NewTestingContext(config)
+				if err != nil {
+					t.Fatal("failed to create testing context", err)
+				}
 				test.Test(t, testingContext)
 			})
 		}

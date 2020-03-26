@@ -4,6 +4,10 @@ import (
 	"bytes"
 	goctx "context"
 	"fmt"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
@@ -13,6 +17,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
+
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
+	cached "k8s.io/client-go/discovery/cached"
+	cgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
@@ -94,4 +104,42 @@ func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil
+}
+
+func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
+	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the kubeclient: %v", err)
+	}
+
+	apiextensions, err := clientset.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the apiextension client: %v", err)
+	}
+
+	scheme := runtime.NewScheme()
+	if err := cgoscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add cgo scheme to runtime scheme: (%v)", err)
+	}
+	if err := extscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add api extensions scheme to runtime scheme: (%v)", err)
+	}
+	if err := apis.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add integreatly scheme to runtime scheme: (%v)", err)
+	}
+
+	cachedDiscoveryClient := cached.NewMemCacheClient(kubeclient.Discovery())
+	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
+	restMapper.Reset()
+
+	dynClient, err := dynclient.New(kubeConfig, dynclient.Options{Scheme: scheme, Mapper: restMapper})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the dynamic client: %v", err)
+	}
+	return &TestingContext{
+		Client:          dynClient,
+		KubeConfig:      kubeConfig,
+		KubeClient:      kubeclient,
+		ExtensionClient: apiextensions,
+	}, nil
 }
