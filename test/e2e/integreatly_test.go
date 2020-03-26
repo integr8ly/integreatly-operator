@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/remotecommand"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 const (
@@ -66,11 +65,6 @@ func TestIntegreatly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	config, err := runtimeConfig.GetConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
 	// get global framework variables
 	f := framework.Global
 
@@ -90,7 +84,7 @@ func TestIntegreatly(t *testing.T) {
 	t.Run("integreatly", func(t *testing.T) {
 		for _, test := range common.ALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
-				testingContext, err = common.NewTestingContext(config)
+				testingContext, err = common.NewTestingContext(f.KubeConfig)
 				if err != nil {
 					t.Fatal("failed to create testing context", err)
 				}
@@ -104,7 +98,7 @@ func TestIntegreatly(t *testing.T) {
 
 		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
-				testingContext, err = common.NewTestingContext(config)
+				testingContext, err = common.NewTestingContext(f.KubeConfig)
 				if err != nil {
 					t.Fatal("failed to create testing context", err)
 				}

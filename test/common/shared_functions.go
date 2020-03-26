@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
 
-
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	cached "k8s.io/client-go/discovery/cached"
