@@ -94,7 +94,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			err := CopyDefaultPullSecretToNameSpace(context.TODO(), testDestinationNameSpace, testDestinationSecretName, scenario.Installation, scenario.FakeClient)
+			err := CopyDefaultPullSecretToNameSpace(context.TODO(), testDestinationNameSpace, testDestinationSecretName, scenario.FakeClient)
 			scenario.Verify(scenario.FakeClient, err, t)
 		})
 	}
