@@ -22,6 +22,7 @@ type TestingContext struct {
 	KubeConfig      *rest.Config
 	KubeClient      kubernetes.Interface
 	ExtensionClient *clientset.Clientset
+	SelfSignedCerts bool
 }
 
 type TestCase struct {

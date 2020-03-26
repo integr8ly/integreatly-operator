@@ -1,14 +1,11 @@
 package resources
 
 import (
-	"crypto/tls"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf/errors"
-	"golang.org/x/net/publicsuffix"
 	"gopkg.in/headzoo/surf.v1"
 	"net/http"
-	"net/http/cookiejar"
 	"strings"
 )
 
@@ -40,28 +37,11 @@ type CallbackOptions struct {
 }
 
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
-func DoAuthOpenshiftUser(masterURL string, username string, password string) (*http.Client, error) {
-	// declare transport
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func DoAuthOpenshiftUser(masterURL string, username string, password string, httpClient *http.Client) error {
+	if err := openshiftClientSetup(fmt.Sprintf("https://%s/auth/login", masterURL), username, password, httpClient); err != nil {
+		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
-
-	// declare new cookie jar om nom nom
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		return nil, fmt.Errorf("error occurred creating a new cookie jar: %w", err)
-	}
-
-	// declare http client
-	client := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
-	if err = openshiftClientSetup(fmt.Sprintf("https://%s/auth/login", masterURL), username, password, client); err != nil {
-		return nil, fmt.Errorf("error occurred during oauth login: %w", err)
-	}
-	return client, nil
+	return nil
 }
 
 func OpenshiftIDPCheck(url string, client *http.Client) (bool, error) {

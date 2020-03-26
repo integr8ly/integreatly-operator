@@ -1,8 +1,6 @@
 package common
 
 import (
-	"crypto/x509"
-	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -38,21 +36,12 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client) error {
+func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
 	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
 	}
-
-	hasSelfSignedCerts := false
 	masterURL := rhmiCR.Spec.MasterURL
-	_, err = httpClient.Get(fmt.Sprintf("https://%s", masterURL))
-	if err != nil {
-		if _, ok := errors.Unwrap(err).(x509.UnknownAuthorityError); !ok {
-			return fmt.Errorf("error while performing self-signed certs test request: %w", err)
-		}
-		hasSelfSignedCerts = true
-	}
 
 	// create dedicated admins group is it doesnt exist
 	if !hasDedicatedAdminGroup(ctx, client) {

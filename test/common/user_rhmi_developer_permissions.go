@@ -2,14 +2,17 @@ package common
 
 import (
 	goctx "context"
+	"crypto/tls"
 	"fmt"
 	"github.com/google/go-querystring/query"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
+	"golang.org/x/net/publicsuffix"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
+	"net/http/cookiejar"
 	"testing"
 	"time"
 )
@@ -27,7 +30,24 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, http.DefaultClient); err != nil {
+	// declare transport
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
+	}
+
+	// declare new cookie jar om nom nom
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		t.Fatal("error occurred creating a new cookie jar", err)
+	}
+
+	// declare http client
+	httpClient := &http.Client{
+		Transport: tr,
+		Jar:       jar,
+	}
+
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -45,12 +65,11 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	openshiftHTTPClient, err := resources.DoAuthOpenshiftUser(masterURL, "test-user-0", DefaultPassword)
-	if err != nil {
+	if err := resources.DoAuthOpenshiftUser(masterURL, "test-user-1", DefaultPassword, httpClient); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := &resources.OpenshiftClient{HTTPClient: openshiftHTTPClient}
+	openshiftClient := &resources.OpenshiftClient{HTTPClient: httpClient}
 
 	// test rhmi developer projects are as expected
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)

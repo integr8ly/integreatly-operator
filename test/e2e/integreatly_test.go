@@ -6,6 +6,7 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -73,11 +74,17 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	selfSignedCerts, err := common.HasSelfSignedCerts(f.Client.Client, http.DefaultClient)
+	if err != nil {
+		t.Fatal("failed to determine self signed cert status", err)
+	}
+
 	testingContext := &common.TestingContext{
 		Client:          f.Client.Client,
 		KubeConfig:      f.KubeConfig,
 		KubeClient:      f.KubeClient,
 		ExtensionClient: apiextensions,
+		SelfSignedCerts: selfSignedCerts,
 	}
 
 	// run subtests

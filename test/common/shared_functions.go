@@ -3,11 +3,14 @@ package common
 import (
 	"bytes"
 	goctx "context"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"net/http"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
@@ -135,10 +138,34 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to build the dynamic client: %v", err)
 	}
+
+	selfSignedCerts, err := HasSelfSignedCerts(dynClient, http.DefaultClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
+	}
+
 	return &TestingContext{
 		Client:          dynClient,
 		KubeConfig:      kubeConfig,
 		KubeClient:      kubeclient,
 		ExtensionClient: apiextensions,
+		SelfSignedCerts: selfSignedCerts,
 	}, nil
+}
+
+func HasSelfSignedCerts(client dynclient.Client, httpClient *http.Client) (bool, error) {
+	rhmiCR, err := getRHMI(client)
+	if err != nil {
+		return false, fmt.Errorf("error occurred while getting rhmi cr: %w", err)
+	}
+
+	masterURL := rhmiCR.Spec.MasterURL
+	_, err = httpClient.Get(fmt.Sprintf("https://%s", masterURL))
+	if err != nil {
+		if _, ok := errors.Unwrap(err).(x509.UnknownAuthorityError); !ok {
+			return false, fmt.Errorf("error while performing self-signed certs test request: %w", err)
+		}
+		return true, nil
+	}
+	return false, nil
 }
