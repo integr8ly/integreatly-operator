@@ -23,12 +23,10 @@ var (
 			Name: "redhat-rhmi-amq-online",
 			Products: []Product{
 				Product{Name: "address-space-controller", ExpectedReplicas: 1},
-				Product{Name: "api-server", ExpectedReplicas: 1},
 				Product{Name: "console", ExpectedReplicas: 1},
 				Product{Name: "enmasse-operator", ExpectedReplicas: 1},
 				Product{Name: "none-authservice", ExpectedReplicas: 1},
 				Product{Name: "standard-authservice", ExpectedReplicas: 1},
-				Product{Name: "user-api-server", ExpectedReplicas: 1},
 			},
 		},
 		{

@@ -613,7 +613,7 @@ func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclie
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": fmt.Sprintf("AMQ-SLO-1.1: AMQ Online console is not available in namespace '%s'", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='console',namespace='%s'}==1)", r.Config.GetNamespace())),
+			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='console',namespace='%s'}==2)", r.Config.GetNamespace())),
 			For:    "300s",
 			Labels: map[string]string{"severity": "critical"},
 		},
