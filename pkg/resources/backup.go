@@ -289,8 +289,8 @@ func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, 
 				"message": "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} does not exist",
 			},
 			Expr:   intstr.FromString("absent(kube_cronjob_info{cronjob=\"" + component.Name + "\", namespace=\"" + config.Namespace + "\"})"),
-			For:    "60s",
-			Labels: map[string]string{"severity": "critical"},
+			For:    "5m",
+			Labels: map[string]string{"severity": "warning"},
 		})
 	}
 
