@@ -530,6 +530,8 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
 		credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
 		credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+		credSec.Data["AWS_BUCKET"] = blobStorageSec.Data["bucketName"]
+		credSec.Data["AWS_REGION"] = blobStorageSec.Data["bucketRegion"]
 		return nil
 	})
 	if err != nil {
@@ -538,9 +540,7 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	// return the file storage spec
 	return &threescalev1.SystemFileStorageSpec{
 		S3: &threescalev1.SystemS3Spec{
-			AWSBucket: string(blobStorageSec.Data["bucketName"]),
-			AWSRegion: string(blobStorageSec.Data["bucketRegion"]),
-			AWSCredentials: corev1.LocalObjectReference{
+			ConfigurationSecretRef: corev1.LocalObjectReference{
 				Name: s3CredentialsSecretName,
 			},
 		},

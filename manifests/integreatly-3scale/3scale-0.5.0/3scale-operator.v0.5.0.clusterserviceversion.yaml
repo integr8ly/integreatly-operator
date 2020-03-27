@@ -80,7 +80,7 @@ spec:
         path: deployments
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podStatuses
-      version: v1alpha1
+#      version: v1alpha1
     - description: API
       displayName: API
       kind: API
