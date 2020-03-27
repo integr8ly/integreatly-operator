@@ -37,6 +37,7 @@ var (
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
+		{"Verify CRs will reset required fields but not added fields", TestResetCRs}, // These test can take ~5 minutes
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
