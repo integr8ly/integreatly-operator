@@ -57,11 +57,11 @@ var (
 			Namespace: RHSSOOperatorNamespace,
 		},
 		{
-			Name:      solutionexplorer.DefaultSubNameAndPkg,
+			Name:      solutionexplorer.DefaultSubscriptionName,
 			Namespace: SolutionExplorerOperatorNamespace,
 		},
 		{
-			Name:      threescale.PackageName,
+			Name:      threescale.DefaultSubscriptionName,
 			Namespace: ThreeScaleOperatorNamespace,
 		},
 		{

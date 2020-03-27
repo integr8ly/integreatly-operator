@@ -102,7 +102,7 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 // returns rhmi
 func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNameSpace}, rhmi); err != nil {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil

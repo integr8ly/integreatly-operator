@@ -49,9 +49,9 @@ func assertInstallationSuccessfull(scenario ThreeScaleTestScenario, configManage
 
 	// A subscription to the product operator should have been created.
 	sub := &coreosv1alpha1.Subscription{}
-	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: PackageName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
+	err = fakeSigsClient.Get(ctx, k8sclient.ObjectKey{Name: DefaultSubscriptionName, Namespace: tsConfig.GetOperatorNamespace()}, sub)
 	if k8serr.IsNotFound(err) {
-		return fmt.Errorf("%s operator subscription was not created", PackageName)
+		return fmt.Errorf("%s operator subscription was not created", DefaultSubscriptionName)
 	}
 
 	// The main s3credentials should have been copied into the 3scale ns.

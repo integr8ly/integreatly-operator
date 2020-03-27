@@ -8,6 +8,7 @@ COPY make ./make
 COPY pkg ./pkg
 COPY vendor ./vendor
 COPY test ./test
+COPY version ./version
 COPY Makefile ./
 RUN make test/compile/functional
 

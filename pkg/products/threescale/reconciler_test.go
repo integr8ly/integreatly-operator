@@ -170,11 +170,11 @@ func TestThreeScale(t *testing.T) {
 
 			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder)
 			if err != nil {
-				t.Fatalf("Error creating new reconciler %s: %v", PackageName, err)
+				t.Fatalf("Error creating new reconciler %s: %v", DefaultSubscriptionName, err)
 			}
 			status, err := tsReconciler.Reconcile(ctx, scenario.Installation, scenario.Product, scenario.FakeSigsClient)
 			if err != nil {
-				t.Fatalf("Error reconciling %s: %v", PackageName, err)
+				t.Fatalf("Error reconciling %s: %v", DefaultSubscriptionName, err)
 			}
 
 			if status != scenario.ExpectedStatus {
