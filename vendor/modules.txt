@@ -387,6 +387,7 @@ github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 github.com/openshift/api/apps/v1
+github.com/openshift/api/authorization/v1
 github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/image/docker10

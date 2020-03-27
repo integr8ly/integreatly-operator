@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	v12 "github.com/openshift/api/authorization/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	v1 "github.com/openshift/api/route/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -299,7 +300,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 	for postfix < defaultNumberOfDedicatedAdmins {
 		user := TestUser{
 			UserName:  fmt.Sprintf("%s-%d", defaultDedicatedAdminName, postfix),
-			FirstName: "Test",
+			FirstName: defaultDedicatedAdminName,
 			LastName:  fmt.Sprintf("User %d", postfix),
 		}
 		testUsers = append(testUsers, user)
@@ -552,6 +553,20 @@ func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) erro
 	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating dedicated admins group : %w", err)
 	}
+
+	// create cluster role
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, dedicatedAdminClusterRole(), func() error {
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error occurred while creating or updating dedicated admin cluster role: %w", err)
+	}
+
+	// create cluster role binding
+	if _, err := controllerutil.CreateOrUpdate(ctx, client, dedicatedAdminClusterRoleBindingCluster(), func() error {
+		return nil
+	}); err != nil {
+		return fmt.Errorf("error occurred while creating or updating dedicated admin cluster role binding: %w", err)
+	}
 	return nil
 }
 
@@ -562,6 +577,74 @@ func hasDedicatedAdminGroup(ctx context.Context, client dynclient.Client) bool {
 		return false
 	}
 	return true
+}
+
+func dedicatedAdminClusterRoleBindingCluster() *v12.ClusterRoleBinding {
+	return &v12.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "admin-dedicated-cluster",
+			Namespace: "dedicated-admin",
+		},
+		Subjects: []corev1.ObjectReference{
+			{
+				Kind:       "Group",
+				APIVersion: "rbac.authorization.k8s.io/v1",
+				Name:       "dedicated-admins",
+			},
+		},
+		RoleRef: corev1.ObjectReference{
+			Kind:       "ClusterRole",
+			Name:       "dedicated-admin-cluster",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+	}
+}
+
+func dedicatedAdminClusterRole() *v12.ClusterRole {
+	return &v12.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dedicated-admin-cluster",
+		},
+		Rules: []v12.PolicyRule{
+			{
+				Verbs: []string{
+					"create",
+				},
+				APIGroups: []string{
+					"",
+					"project.openshift.io",
+				},
+				Resources: []string{
+					"projectrequests",
+				},
+			},
+			{
+				Verbs: []string{
+					"get",
+				},
+				APIGroups: []string{
+					"project.openshift.io",
+				},
+				Resources: []string{
+					"project",
+				},
+			},
+			{
+				Verbs: []string{
+					"get",
+					"list",
+					"update",
+					"patch",
+				},
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"namespaces",
+				},
+			},
+		},
+	}
 }
 
 func contains(s []string, e string) bool {
