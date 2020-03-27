@@ -13,7 +13,7 @@ var (
 		{"Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
-		{"Verify Stateful Set resources have the expected repliaces", TestStatefulSetsExpectedReplicas},
+		{"Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
 		{"Verify alerts exist", TestIntegreatlyAlertsExist},
 		{"Verify dashboards exist", TestIntegreatlyDashboardsExist},
 		{"Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
@@ -23,5 +23,6 @@ var (
 		{"Verify all products routes are created", TestIntegreatlyRoutesExist},
 		{"Verify Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
+		{"Verify CRs will be reset if changed", TestRestCRs}, // These test can take ~5 minutes
 	}
 )
