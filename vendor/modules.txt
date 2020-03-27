@@ -2,6 +2,7 @@
 cloud.google.com/go/compute/metadata
 # github.com/3scale/3scale-operator v0.2.1-0.20200327122530-d376df6cc71f
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
+github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
 github.com/3scale/3scale-operator/version
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
