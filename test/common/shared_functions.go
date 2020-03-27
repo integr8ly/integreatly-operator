@@ -139,7 +139,7 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		return nil, fmt.Errorf("failed to build the dynamic client: %v", err)
 	}
 
-	selfSignedCerts, err := HasSelfSignedCerts(dynClient, http.DefaultClient)
+	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, http.DefaultClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
@@ -153,15 +153,8 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 	}, nil
 }
 
-func HasSelfSignedCerts(client dynclient.Client, httpClient *http.Client) (bool, error) {
-	rhmiCR, err := getRHMI(client)
-	if err != nil {
-		return false, fmt.Errorf("error occurred while getting rhmi cr: %w", err)
-	}
-
-	masterURL := rhmiCR.Spec.MasterURL
-	_, err = httpClient.Get(fmt.Sprintf("https://%s", masterURL))
-	if err != nil {
+func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
+	if _, err := httpClient.Get(url); err != nil {
 		if _, ok := errors.Unwrap(err).(x509.UnknownAuthorityError); !ok {
 			return false, fmt.Errorf("error while performing self-signed certs test request: %w", err)
 		}

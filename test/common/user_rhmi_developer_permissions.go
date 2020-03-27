@@ -116,7 +116,8 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 
 func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
-	err := wait.PollImmediate(time.Second*5, time.Minute*2, func() (done bool, err error) {
+	// five minute time out needed to ensure users have been reconciled by RHMI operator
+	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		// get projects for rhmi developer
 		rhmiDevfoundProjects, err = openshiftClient.DoOpenshiftGetProjects(masterURL)
 		if err != nil {
@@ -125,18 +126,19 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 
 		// check if projects are as expected for rhmi developer
 		if len(rhmiDevfoundProjects.Items) != expectedRhmiDeveloperProjectCount {
-			return false, fmt.Errorf("found rhmi developer project count : %d expected rhmi-developer project count : %d", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount)
-		}
-
-		foundNamespace := rhmiDevfoundProjects.Items[0].Name
-		if foundNamespace != fuseNamespace {
-			return true, fmt.Errorf("found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
+			return false, nil
 		}
 
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("rhmi developer projects failure - %w", err)
+		return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount, err)
 	}
+
+	foundNamespace := rhmiDevfoundProjects.Items[0].Name
+	if foundNamespace != fuseNamespace {
+		return fmt.Errorf("found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
+	}
+
 	return nil
 }

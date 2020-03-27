@@ -74,7 +74,7 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	selfSignedCerts, err := common.HasSelfSignedCerts(f.Client.Client, http.DefaultClient)
+	selfSignedCerts, err := common.HasSelfSignedCerts(f.KubeConfig.Host, http.DefaultClient)
 	if err != nil {
 		t.Fatal("failed to determine self signed cert status", err)
 	}
