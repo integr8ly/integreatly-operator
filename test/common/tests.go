@@ -8,6 +8,9 @@ var (
 	}
 
 	AFTER_INSTALL_TESTS = []TestCase{
+		// Test to be execute after RHMI has been installed
+		{"Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
+		{"Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 		{"Verify Stateful Set resources have the expected repliaces", TestStatefulSetsExpectedReplicas},

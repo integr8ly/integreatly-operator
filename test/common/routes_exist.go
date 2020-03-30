@@ -177,7 +177,7 @@ func getRoute(t *testing.T, ctx *TestingContext, product string, expectedRoute E
 // to expectedRoute.Name
 func getRouteByName(t *testing.T, ctx *TestingContext, product string, expectedRoute ExpectedRoute) (*routev1.Route, error) {
 	route := &routev1.Route{}
-	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: expectedRoute.Name, Namespace: namespacePrefix + product}, route)
+	err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: expectedRoute.Name, Namespace: NamespacePrefix + product}, route)
 
 	if err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func getRouteByGeneratedName(t *testing.T, ctx *TestingContext, product string, 
 
 	// Get the routes for the product
 	err := ctx.Client.List(goctx.TODO(), routes, &k8sclient.ListOptions{
-		Namespace: namespacePrefix + product,
+		Namespace: NamespacePrefix + product,
 	})
 
 	if err != nil {

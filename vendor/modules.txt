@@ -49,6 +49,8 @@ github.com/Microsoft/hcsshim/internal/schema2
 github.com/Microsoft/hcsshim/internal/timeout
 github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/osversion
+# github.com/PuerkitoBio/goquery v1.5.1
+github.com/PuerkitoBio/goquery
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -57,6 +59,8 @@ github.com/PuerkitoBio/urlesc
 github.com/RHsyseng/operator-utils/pkg/olm
 # github.com/aerogear/unifiedpush-operator v0.5.0
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
+# github.com/andybalholm/cascadia v1.1.0
+github.com/andybalholm/cascadia
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
 # github.com/beorn7/perks v1.0.1
@@ -234,12 +238,14 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/btree v1.0.0
 github.com/google/btree
-# github.com/google/go-cmp v0.3.1
+# github.com/google/go-cmp v0.4.0
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
+# github.com/google/go-querystring v1.0.0
+github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.0.0
 github.com/google/gofuzz
 # github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
@@ -281,6 +287,12 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
+# github.com/headzoo/surf v1.0.0
+github.com/headzoo/surf/agent
+github.com/headzoo/surf/browser
+github.com/headzoo/surf/errors
+github.com/headzoo/surf/jar
+github.com/headzoo/surf/util
 # github.com/helm/helm-2to3 v0.2.0
 github.com/helm/helm-2to3/pkg/v3
 # github.com/huandu/xstrings v1.2.0
@@ -375,6 +387,7 @@ github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 github.com/openshift/api/apps/v1
+github.com/openshift/api/authorization/v1
 github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/image/docker10
@@ -589,7 +602,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
+# golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
@@ -604,7 +617,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271
+# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -616,6 +629,7 @@ golang.org/x/net/idna
 golang.org/x/net/internal/socks
 golang.org/x/net/internal/timeseries
 golang.org/x/net/proxy
+golang.org/x/net/publicsuffix
 golang.org/x/net/trace
 # golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 golang.org/x/oauth2
@@ -662,7 +676,7 @@ golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/module
 golang.org/x/tools/internal/packagesinternal
 golang.org/x/tools/internal/semver
-# golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898
+# golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
 # gomodules.xyz/jsonpatch/v2 v2.0.1
@@ -718,6 +732,8 @@ google.golang.org/grpc/tap
 gopkg.in/fsnotify.v1
 # gopkg.in/gorp.v1 v1.7.2
 gopkg.in/gorp.v1
+# gopkg.in/headzoo/surf.v1 v1.0.0
+gopkg.in/headzoo/surf.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.4
