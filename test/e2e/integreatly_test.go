@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -49,6 +50,7 @@ const (
 	authenticationStageTimeout   = time.Minute * 30
 	productsStageTimout          = time.Minute * 30
 	solutionExplorerStageTimeout = time.Minute * 10
+	artifactsDirEnv              = "ARTIFACT_DIR"
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -57,7 +59,6 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
 	ctx := framework.NewTestCtx(t)
-	defer ctx.Cleanup()
 	err = ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
@@ -114,6 +115,19 @@ func TestIntegreatly(t *testing.T) {
 		}
 	})
 
+	artifactsDir := os.Getenv(artifactsDirEnv)
+	if t.Failed() && artifactsDir != "" {
+		if _, err := os.Stat(artifactsDir); !os.IsNotExist(err) {
+			out := path.Join(artifactsDir, "rhmi.yaml")
+			t.Logf("Writing rhmi.yaml file to %s", out)
+			err = common.WriteRHMICRToFile(f.Client.Client, out)
+			if err != nil {
+				t.Error("Failed to write RHMI cr due to error", err)
+			}
+		}
+	} else {
+		ctx.Cleanup()
+	}
 }
 
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
