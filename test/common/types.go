@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	namespacePrefix       = "redhat-rhmi-"
-	rhmiOperatorNamespace = namespacePrefix + "operator"
+	NamespacePrefix       = "redhat-rhmi-"
+	RHMIOperatorNamespace = NamespacePrefix + "operator"
 	InstallationName      = "rhmi"
 )
 
@@ -22,6 +22,7 @@ type TestingContext struct {
 	KubeConfig      *rest.Config
 	KubeClient      kubernetes.Interface
 	ExtensionClient *clientset.Clientset
+	SelfSignedCerts bool
 }
 
 type TestCase struct {

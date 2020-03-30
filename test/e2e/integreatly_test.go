@@ -6,6 +6,7 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -52,7 +53,6 @@ const (
 
 func TestIntegreatly(t *testing.T) {
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, &integreatlyv1alpha1.RHMIList{})
-
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
@@ -74,17 +74,27 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	selfSignedCerts, err := common.HasSelfSignedCerts(f.KubeConfig.Host, http.DefaultClient)
+	if err != nil {
+		t.Fatal("failed to determine self signed cert status", err)
+	}
+
 	testingContext := &common.TestingContext{
 		Client:          f.Client.Client,
 		KubeConfig:      f.KubeConfig,
 		KubeClient:      f.KubeClient,
 		ExtensionClient: apiextensions,
+		SelfSignedCerts: selfSignedCerts,
 	}
 
 	// run subtests
 	t.Run("integreatly", func(t *testing.T) {
 		for _, test := range common.ALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
+				testingContext, err = common.NewTestingContext(f.KubeConfig)
+				if err != nil {
+					t.Fatal("failed to create testing context", err)
+				}
 				test.Test(t, testingContext)
 			})
 		}
@@ -95,6 +105,10 @@ func TestIntegreatly(t *testing.T) {
 
 		for _, test := range common.AFTER_INSTALL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
+				testingContext, err = common.NewTestingContext(f.KubeConfig)
+				if err != nil {
+					t.Fatal("failed to create testing context", err)
+				}
 				test.Test(t, testingContext)
 			})
 		}

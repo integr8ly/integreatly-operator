@@ -3,7 +3,15 @@ package common
 import (
 	"bytes"
 	goctx "context"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"net/http"
+	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -12,6 +20,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
+	cached "k8s.io/client-go/discovery/cached"
+	cgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
@@ -74,14 +87,77 @@ func difference(sliceSource, sliceTarget []string) []string {
 // Is the cluster using on cluster or external storage
 func isClusterStorage(ctx *TestingContext) (bool, error) {
 	rhmi := &integreatlyv1alpha1.RHMI{}
-
 	// get the RHMI custom resource to check what storage type is being used
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: rhmiOperatorNamespace}, rhmi)
+	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
 	if err != nil {
 		return true, fmt.Errorf("error getting RHMI CR: %v", err)
 	}
 
 	if rhmi.Spec.UseClusterStorage == "true" {
+		return true, nil
+	}
+	return false, nil
+}
+
+// returns rhmi
+func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
+	rhmi := &integreatlyv1alpha1.RHMI{}
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
+		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
+	}
+	return rhmi, nil
+}
+
+func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
+	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the kubeclient: %v", err)
+	}
+
+	apiextensions, err := clientset.NewForConfig(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the apiextension client: %v", err)
+	}
+
+	scheme := runtime.NewScheme()
+	if err := cgoscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add cgo scheme to runtime scheme: (%v)", err)
+	}
+	if err := extscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add api extensions scheme to runtime scheme: (%v)", err)
+	}
+	if err := apis.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to add integreatly scheme to runtime scheme: (%v)", err)
+	}
+
+	cachedDiscoveryClient := cached.NewMemCacheClient(kubeclient.Discovery())
+	restMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
+	restMapper.Reset()
+
+	dynClient, err := dynclient.New(kubeConfig, dynclient.Options{Scheme: scheme, Mapper: restMapper})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the dynamic client: %v", err)
+	}
+
+	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, http.DefaultClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
+	}
+
+	return &TestingContext{
+		Client:          dynClient,
+		KubeConfig:      kubeConfig,
+		KubeClient:      kubeclient,
+		ExtensionClient: apiextensions,
+		SelfSignedCerts: selfSignedCerts,
+	}, nil
+}
+
+func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
+	if _, err := httpClient.Get(url); err != nil {
+		if _, ok := errors.Unwrap(err).(x509.UnknownAuthorityError); !ok {
+			return false, fmt.Errorf("error while performing self-signed certs test request: %w", err)
+		}
 		return true, nil
 	}
 	return false, nil
