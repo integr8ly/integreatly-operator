@@ -2,6 +2,9 @@ package common
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	v12 "github.com/openshift/api/authorization/v1"
@@ -14,19 +17,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"net/http"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 )
 
 const (
-	testingIDPRealm                = "testing-idp"
-	defaultTestUserName            = "test-user"
+	TestingIDPRealm                = "testing-idp"
 	defaultDedicatedAdminName      = "customer-admin"
 	defaultNumberOfTestUsers       = 2
 	defaultNumberOfDedicatedAdmins = 2
 	defaultSecret                  = "rhmiForeva"
+	DefaultTestUserName            = "test-user"
 	DefaultPassword                = "Password1"
 )
 
@@ -68,7 +69,7 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	}
 
 	// create keycloak client
-	keycloakClientName := fmt.Sprintf("%s-client", testingIDPRealm)
+	keycloakClientName := fmt.Sprintf("%s-client", TestingIDPRealm)
 	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
 	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
@@ -102,7 +103,7 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 
 	// ensure the IDP is available in OpenShift
 	err = wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
-		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient)
+		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to check for openshift idp: %w", err)
@@ -168,7 +169,7 @@ func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 
 	idpConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("idp-ca-%s", testingIDPRealm),
+			Name:      fmt.Sprintf("idp-ca-%s", TestingIDPRealm),
 			Namespace: "openshift-config",
 		},
 	}
@@ -189,7 +190,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	// setup identity provider ca name
 	identityProviderCA := ""
 	if hasSelfSignedCerts {
-		identityProviderCA = fmt.Sprintf("idp-ca-%s", testingIDPRealm)
+		identityProviderCA = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
 	}
 
 	clusterOauth := &configv1.OAuth{}
@@ -201,13 +202,13 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	if err := client.Get(ctx, types.NamespacedName{Name: "keycloak-edge", Namespace: fmt.Sprintf("%srhsso", NamespacePrefix)}, keycloakRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Keycloak Edge Route: %w ", err)
 	}
-	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/testing-idp", keycloakRoute.Spec.Host)
+	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/%s", keycloakRoute.Spec.Host, TestingIDPRealm)
 
 	// check if identity providers is nil or contains testing IDP
 	identityProviders := clusterOauth.Spec.IdentityProviders
 	if identityProviders != nil {
 		for _, providers := range identityProviders {
-			if providers.Name == testingIDPRealm {
+			if providers.Name == TestingIDPRealm {
 				return nil
 			}
 		}
@@ -215,14 +216,14 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 
 	// create identity provider
 	testingIdentityProvider := &configv1.IdentityProvider{
-		Name:          testingIDPRealm,
+		Name:          TestingIDPRealm,
 		MappingMethod: "claim",
 		IdentityProviderConfig: configv1.IdentityProviderConfig{
 			Type: configv1.IdentityProviderTypeOpenID,
 			OpenID: &configv1.OpenIDIdentityProvider{
 				ClientID: "openshift",
 				ClientSecret: configv1.SecretNameReference{
-					Name: fmt.Sprintf("idp-%s", testingIDPRealm),
+					Name: fmt.Sprintf("idp-%s", TestingIDPRealm),
 				},
 				CA: configv1.ConfigMapNameReference{
 					Name: identityProviderCA,
@@ -259,7 +260,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 func createClientSecret(ctx context.Context, client dynclient.Client, clientSecret []byte) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("idp-%s", testingIDPRealm),
+			Name:      fmt.Sprintf("idp-%s", TestingIDPRealm),
 			Namespace: "openshift-config",
 		},
 	}
@@ -288,7 +289,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 	// build rhmi developer users
 	for postfix < defaultNumberOfTestUsers {
 		user := TestUser{
-			UserName:  fmt.Sprintf("%s-%d", defaultTestUserName, postfix),
+			UserName:  fmt.Sprintf("%s-%d", DefaultTestUserName, postfix),
 			FirstName: "Test",
 			LastName:  fmt.Sprintf("User %d", postfix),
 		}
@@ -311,7 +312,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 	for _, user := range testUsers {
 		keycloakUser := &v1alpha1.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%s", testingIDPRealm, user.UserName),
+				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, user.UserName),
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
 		}
@@ -319,7 +320,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						"sso": testingIDPRealm,
+						"sso": TestingIDPRealm,
 					},
 				},
 				User: v1alpha1.KeycloakAPIUser{
@@ -385,7 +386,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 	keycloakSpec := v1alpha1.KeycloakClientSpec{
 		RealmSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"sso": testingIDPRealm,
+				"sso": TestingIDPRealm,
 			},
 		},
 		Client: &v1alpha1.KeycloakAPIClient{
@@ -396,7 +397,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 			Secret:                  defaultSecret,
 			RootURL:                 fmt.Sprintf("https://%s", oauthURL),
 			RedirectUris: []string{
-				fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, testingIDPRealm),
+				fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, TestingIDPRealm),
 			},
 			WebOrigins: []string{
 				fmt.Sprintf("https://%s", oauthURL),
@@ -510,10 +511,10 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      testingIDPRealm,
+			Name:      TestingIDPRealm,
 			Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			Labels: map[string]string{
-				"sso": testingIDPRealm,
+				"sso": TestingIDPRealm,
 			},
 		},
 	}
@@ -525,8 +526,8 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
 			},
 		},
 		Realm: &v1alpha1.KeycloakAPIRealm{
-			ID:          testingIDPRealm,
-			Realm:       testingIDPRealm,
+			ID:          TestingIDPRealm,
+			Realm:       TestingIDPRealm,
 			Enabled:     true,
 			DisplayName: "Testing IDP",
 		},

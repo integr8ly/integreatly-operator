@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -23,6 +24,7 @@ type TestingContext struct {
 	KubeConfig      *rest.Config
 	KubeClient      kubernetes.Interface
 	ExtensionClient *clientset.Clientset
+	HttpClient      *http.Client
 	SelfSignedCerts bool
 }
 

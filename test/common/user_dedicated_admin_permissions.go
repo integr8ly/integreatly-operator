@@ -2,17 +2,14 @@ package common
 
 import (
 	goctx "context"
-	"crypto/tls"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
-	"golang.org/x/net/publicsuffix"
 	"k8s.io/apimachinery/pkg/types"
-	"net/http"
-	"net/http/cookiejar"
-	"strings"
-	"testing"
 )
 
 var productNamespaces = []string{
@@ -41,24 +38,7 @@ var productNamespaces = []string{
 }
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
-	// declare transport
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
-	}
-
-	// declare new cookie jar om nom nom
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		t.Fatal("error occurred creating a new cookie jar", err)
-	}
-
-	// declare http client
-	httpClient := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -76,14 +56,14 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get dedicated admin token
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, httpClient); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := &resources.OpenshiftClient{HTTPClient: httpClient}
+	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// get projects for dedicated admin
-	dedicatedAdminFoundProjects, err := openshiftClient.DoOpenshiftGetProjects(masterURL)
+	dedicatedAdminFoundProjects, err := openshiftClient.ListProjects()
 	if err != nil {
 		t.Fatalf("error occured while getting user projects : %v", err)
 	}
@@ -101,8 +81,8 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// check to ensure dedicated admin is forbidden from rhmi namespace secrets
 	for _, namespace := range rhmiNamespaces {
-		path := fmt.Sprintf("/api/kubernetes/api/v1/namespaces/%s/secrets", namespace)
-		resp, err := openshiftClient.DoOpenshiftGetRequest(masterURL, path)
+		path := fmt.Sprintf(resources.OpenshiftPathGetSecret, namespace)
+		resp, err := openshiftClient.GetRequest(path)
 		if err != nil {
 			t.Fatalf("error occurred while executing oc get request: %v", err)
 		}

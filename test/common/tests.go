@@ -24,5 +24,6 @@ var (
 		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"Verify Alerts exist", TestIntegreatlyAlertsExist},
 		{"Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+		{"Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 	}
 )

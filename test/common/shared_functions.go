@@ -7,17 +7,19 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/cookiejar"
+	"strings"
+
 	"github.com/ghodss/yaml"
 	"golang.org/x/net/publicsuffix"
-	"io/ioutil"
+
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"net/http"
-	"net/http/cookiejar"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -149,11 +151,28 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
 
+	// Create the http client with a cookie jar
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new cookie jar: %v", err)
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: selfSignedCerts},
+	}
+
+	httpClient := &http.Client{
+		Jar:           jar,
+		Transport:     transport,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
+	}
+
 	return &TestingContext{
 		Client:          dynClient,
 		KubeConfig:      kubeConfig,
 		KubeClient:      kubeclient,
 		ExtensionClient: apiextensions,
+		HttpClient:      httpClient,
 		SelfSignedCerts: selfSignedCerts,
 	}, nil
 }
@@ -182,19 +201,4 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
 	}
-}
-
-func buildHTTPClientFromContext(ctx *TestingContext) (*http.Client, error) {
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cookie jar for http client: %w", err)
-	}
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: ctx.SelfSignedCerts,
-			},
-		},
-		Jar: jar,
-	}, nil
 }
