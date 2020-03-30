@@ -73,7 +73,7 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 }
 
 // CreateRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
-// of a Redis cacheu
+// of a Redis cache
 func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")

@@ -562,15 +562,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile backend redis request: %w", err)
 	}
 
-	// create the prometheus availability rule
-	if _, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
-	}
-	// create backend connectivity alert
-	if _, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
-	}
-
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
@@ -581,17 +572,6 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile system redis request: %w", err)
-	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
-	}
-	// create system redis connectivity alert
-	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// setup postgres cr for the cloud resource operator
@@ -606,20 +586,18 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
-	}
-	// create postgres connectivity alert
-	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
-	}
-
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create the prometheus availability rule
+	if _, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
+	}
+	// create backend connectivity alert
+	if _, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// get the secret created by the cloud resources operator
@@ -654,6 +632,17 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
 	}
 
+	// create the prometheus availability rule
+	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
+	}
+	// create system redis connectivity alert
+	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
+	}
+
 	// get the secret created by the cloud resources operator
 	// containing system redis connection details
 	systemCredSec := &corev1.Secret{}
@@ -685,6 +674,17 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// wait for the postgres cr to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
+	}
+	// create postgres connectivity alert
+	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// get the secret containing redis credentials
