@@ -3,10 +3,6 @@ package common
 import (
 	goctx "context"
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
-	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
-	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"testing"
 
@@ -112,13 +108,13 @@ var (
 		{
 			Name: RHMIOperatorNameSpace,
 			Products: []Product{
-				Product{Name: codeready.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: threescale.BackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: threescale.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: threescale.SystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: codeready.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: threescale.BackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: threescale.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: threescale.SystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
 				Product{Name: ups.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: rhsso.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: rhssouser.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: rhsso.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				//Product{Name: rhssouser.PostgresPrefix + InstallationName, ExpectedReplicas: 1},
 				Product{Name: amqonline.AuthServicePostgres, ExpectedReplicas: 1},
 			},
 		},

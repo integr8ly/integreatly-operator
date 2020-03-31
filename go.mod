@@ -77,3 +77,5 @@ replace (
 replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
+
+replace github.com/integr8ly/cloud-resource-operator => github.com/KevFan/cloud-resource-operator v0.0.0-20200331162345-c1e0a11c0b32

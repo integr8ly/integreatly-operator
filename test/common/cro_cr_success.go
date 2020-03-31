@@ -4,11 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
-	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
-	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"testing"
 
@@ -24,21 +19,21 @@ const (
 
 var (
 	postgresToCheck = []string{
-		fmt.Sprintf("%s%s", codeready.PostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", threescale.PostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", rhsso.PostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", rhssouser.PostgresPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", codeready.PostgresPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", threescale.PostgresPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", rhsso.PostgresPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", rhssouser.PostgresPrefix, InstallationName),
 		fmt.Sprintf("%s%s", ups.PostgresPrefix, InstallationName),
 		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
 		amqonline.AuthServicePostgres,
 	}
 	redisToCheck = []string{
-		fmt.Sprintf("%s%s", threescale.BackendRedisPrefix, InstallationName),
-		fmt.Sprintf("%s%s", threescale.SystemRedisPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", threescale.BackendRedisPrefix, InstallationName),
+		//fmt.Sprintf("%s%s", threescale.SystemRedisPrefix, InstallationName),
 	}
 	blobStorageToCheck = []string{
-		fmt.Sprintf("%s%s", cloudresources.BackupsBlobStoragePrefix, InstallationName),
-		fmt.Sprintf("%s%s", threescale.BlobStoragePrefix, InstallationName),
+		//fmt.Sprintf("%s%s", cloudresources.BackupsBlobStoragePrefix, InstallationName),
+		//fmt.Sprintf("%s%s", threescale.BlobStoragePrefix, InstallationName),
 	}
 )
 

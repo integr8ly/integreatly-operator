@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
@@ -49,7 +48,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 	}
 	// create secret using the default name which the keycloak operator expects
 	keycloakSec := &corev1.Secret{
-		ObjectMeta: controllerruntime.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      databaseSecretName,
 			Namespace: ns,
 		},

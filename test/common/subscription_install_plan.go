@@ -5,13 +5,9 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
 	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
-	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
-	"github.com/integr8ly/integreatly-operator/pkg/products/threescale"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,10 +32,10 @@ var (
 			Name:      cloudresources.DefaultSubscriptionName,
 			Namespace: CloudResourceOperatorNamespace,
 		},
-		{
-			Name:      codeready.DefaultSubscriptionName,
-			Namespace: CodeReadyOperatorNamespace,
-		},
+		//{
+		//	Name:      codeready.DefaultSubscriptionName,
+		//	Namespace: CodeReadyOperatorNamespace,
+		//},
 		{
 			Name:      fuse.DefaultSubscriptionName,
 			Namespace: FuseOperatorNamespace,
@@ -48,22 +44,22 @@ var (
 			Name:      monitoring.DefaultSubscriptionName,
 			Namespace: MonitoringOperatorNamespace,
 		},
-		{
-			Name:      rhssouser.DefaultSubscriptionName,
-			Namespace: RHSSOUserOperatorNamespace,
-		},
-		{
-			Name:      rhsso.DefaultSubscriptionName,
-			Namespace: RHSSOOperatorNamespace,
-		},
+		//{
+		//	Name:      rhssouser.DefaultSubscriptionName,
+		//	Namespace: RHSSOUserOperatorNamespace,
+		//},
+		//{
+		//	Name:      rhsso.DefaultSubscriptionName,
+		//	Namespace: RHSSOOperatorNamespace,
+		//},
 		{
 			Name:      solutionexplorer.DefaultSubscriptionName,
 			Namespace: SolutionExplorerOperatorNamespace,
 		},
-		{
-			Name:      threescale.DefaultSubscriptionName,
-			Namespace: ThreeScaleOperatorNamespace,
-		},
+		//{
+		//	Name:      threescale.DefaultSubscriptionName,
+		//	Namespace: ThreeScaleOperatorNamespace,
+		//},
 		{
 			Name:      ups.DefaultSubscriptionName,
 			Namespace: UPSOperatorNamespace,

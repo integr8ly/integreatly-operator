@@ -13,7 +13,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -42,17 +41,18 @@ func (r *ReconcileResourceProvider) ReconcileResultSecret(ctx context.Context, o
 		secNs = rts.SecretRef.Namespace
 	}
 	sec := &v1.Secret{
-		ObjectMeta: controllerruntime.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      rts.SecretRef.Name,
 			Namespace: secNs,
 		},
 	}
-	_, err := controllerruntime.CreateOrUpdate(ctx, r.Client, sec, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, sec, func() error {
 		if ownerRefErr := controllerutil.SetControllerReference(obj, sec, r.Scheme); ownerRefErr != nil {
 			if updateErr := UpdatePhase(ctx, r.Client, o, croType.PhaseFailed, "setting secret data"); updateErr != nil {
 				return updateErr
 			}
-			return errors.Wrapf(ownerRefErr, "failed to set owner on secret %s", sec.Name)
+			return errors.Wrapf(ownerRefErr, "failed " +
+				"to set owner on secret %s", sec.Name)
 		}
 		sec.Data = d
 		sec.Type = v1.SecretTypeOpaque

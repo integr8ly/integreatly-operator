@@ -4,25 +4,24 @@ import (
 	"context"
 	"reflect"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	errorUtil "github.com/pkg/errors"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func HasFinalizer(om *controllerruntime.ObjectMeta, finalizer string) bool {
+func HasFinalizer(om *metav1.ObjectMeta, finalizer string) bool {
 	return Contains(om.GetFinalizers(), finalizer)
 }
 
-func addFinalizer(om *controllerruntime.ObjectMeta, finalizer string) {
+func addFinalizer(om *metav1.ObjectMeta, finalizer string) {
 	if !HasFinalizer(om, finalizer) {
 		om.SetFinalizers([]string{finalizer})
 	}
 }
 
-func RemoveFinalizer(om *controllerruntime.ObjectMeta, finalizer string) {
+func RemoveFinalizer(om *metav1.ObjectMeta, finalizer string) {
 	om.SetFinalizers(remove(om.GetFinalizers(), finalizer))
 }
 
@@ -46,7 +45,7 @@ func remove(list []string, s string) []string {
 }
 
 func CreateFinalizer(ctx context.Context, c client.Client, inst runtime.Object, df string) error {
-	dt := &v1.ObjectMeta{}
+	dt := &metav1.ObjectMeta{}
 	if err := runtime.Field(reflect.ValueOf(inst).Elem(), "ObjectMeta", dt); err != nil {
 		return errorUtil.Wrap(err, "failed to retrieve timestamp")
 	}
