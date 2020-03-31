@@ -31,11 +31,7 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 		t.Fatal("failed to get grafana route", err)
 	}
 	//perform a request that we expect to be forbidden initially
-	forbiddenReq, err := http.NewRequest(http.MethodGet, grafanaRootHostname, nil)
-	if err != nil {
-		t.Fatal("failed to build request for grafana", err)
-	}
-	forbiddenResp, err := http.DefaultClient.Do(forbiddenReq)
+	forbiddenResp, err := httpClient.Get(grafanaRootHostname)
 	if err != nil {
 		t.Fatal("failed to perform expected forbidden request", err)
 	}
@@ -82,6 +78,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("failed to perform test request to grafana", err)
 	}
 	defer dashboardResp.Body.Close()
+	//there is an existing dashboard check, so confirm a valid response structure
 	if dashboardResp.StatusCode != http.StatusOK {
 		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
 	}
