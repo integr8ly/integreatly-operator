@@ -38,6 +38,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/tools v0.0.0-20200207224406-61798d64f025 // indirect
 	gopkg.in/headzoo/surf.v1 v1.0.0
 	gopkg.in/yaml.v2 v2.2.4

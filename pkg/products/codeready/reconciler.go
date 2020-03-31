@@ -6,6 +6,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -130,7 +131,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.CodeReadySubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	preUpgradeBackupsExecutor := r.preUpgradeBackupExecutor()
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.CodeReadySubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackupsExecutor, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CodeReadySubscriptionName), err)
 		return phase, err
@@ -485,6 +487,26 @@ func (r *Reconciler) createCheCluster(ctx context.Context, kcCfg *config.RHSSO, 
 	}
 
 	return cheCluster, nil
+}
+
+func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
+	pvBackup := backup.NewCronJobBackupExecutor(
+		"codeready-pv-backup",
+		r.Config.GetNamespace(),
+		"codeready-preupgrade-pv-backup",
+	)
+
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return pvBackup
+	}
+
+	return backup.NewConcurrentBackupExecutor(
+		pvBackup,
+		backup.NewAWSBackupExecutor(
+			"codeready-postgres-rhmi",
+			backup.PostgresSnapshotType,
+		),
+	)
 }
 
 func getKeycloakClientSpec(cheURL string) keycloak.KeycloakClientSpec {

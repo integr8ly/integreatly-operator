@@ -3,8 +3,10 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"strings"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -177,7 +179,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	preUpgradeBackupsExecutor := r.preUpgradeBackupsExecutor()
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackupsExecutor, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
 		return phase, err
@@ -734,6 +737,17 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	installation.Status.GitHubOAuthEnabled = true
 
 	return nil
+}
+
+func (r *Reconciler) preUpgradeBackupsExecutor() backup.BackupExecutor {
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+
+	return backup.NewAWSBackupExecutor(
+		"rhsso-postgres-rhmi",
+		backup.PostgresSnapshotType,
+	)
 }
 
 func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
