@@ -3,6 +3,10 @@ package resources
 import (
 	"context"
 	"fmt"
+
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -14,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+const alertFor = "5m"
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
@@ -37,7 +43,7 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	}
 
 	// create the rule
-	pr, err := croResources.ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +71,7 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	}
 
 	// create the rule
-	pr, err := croResources.ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +100,7 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	}
 
 	// create the rule
-	pr, err := croResources.ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +128,53 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	}
 
 	// create the rule
-	pr, err := croResources.ReconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
 	return pr, nil
+}
+
+// reconcilePrometheusRule will create a PrometheusRule object
+func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
+	alertGroupName := alertName + "Group"
+	groups := []prometheusv1.RuleGroup{
+		{
+			Name: alertGroupName,
+			Rules: []prometheusv1.Rule{
+				{
+					Alert:  alertName,
+					Expr:   alertExp,
+					For:    alertFor,
+					Labels: labels,
+					Annotations: map[string]string{
+						"description": desc,
+					},
+				},
+			},
+		},
+	}
+
+	rule := &prometheusv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ruleName,
+			Namespace: ns,
+			Labels: map[string]string{
+				"monitoring-key": "middleware",
+			},
+		},
+		Spec: prometheusv1.PrometheusRuleSpec{
+			Groups: groups,
+		},
+	}
+
+	// create or update the resource
+	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to reconcile prometheus rule request for %s", ruleName)
+	}
+
+	return rule, nil
 }
