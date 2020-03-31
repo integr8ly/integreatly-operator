@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -245,14 +245,13 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclien
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling fuse custom resource")
 
-	cr := &syndesisv1alpha1.Syndesis{
+	cr := &syndesisv1beta1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
 	}
 
-	intLimit := 0
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		threescaleHost := ""
 		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
@@ -260,24 +259,17 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		if err == nil {
 			threescaleHost = threescaleConfig.GetHost()
 		}
-		cr.Spec = syndesisv1alpha1.SyndesisSpec{
-			Integration: syndesisv1alpha1.IntegrationSpec{
-				Limit: &intLimit,
-			},
-			Components: syndesisv1alpha1.ComponentsSpec{
-				Server: syndesisv1alpha1.ServerConfiguration{
-					Features: syndesisv1alpha1.ServerFeatures{
+		cr.Spec = syndesisv1beta1.SyndesisSpec{
+			Components: syndesisv1beta1.ComponentsSpec{
+				Server: syndesisv1beta1.ServerConfiguration{
+					Features: syndesisv1beta1.ServerFeatures{
 						ManagementUrlFor3scale: threescaleHost,
 					},
 				},
 			},
-			Addons: syndesisv1alpha1.AddonsSpec{
-				"ops": syndesisv1alpha1.Parameters{
-					"enabled": "true",
-				},
-				"todo": syndesisv1alpha1.Parameters{
-					"enabled": "false",
-				},
+			Addons: syndesisv1beta1.AddonsSpec{
+				Ops:  syndesisv1beta1.AddonSpec{Enabled: true},
+				Todo: syndesisv1beta1.AddonSpec{Enabled: false},
 			},
 		}
 		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
@@ -286,11 +278,11 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update a Syndesis(Fuse) custom resource: %w", err)
 	}
 
-	if cr.Status.Phase == syndesisv1alpha1.SyndesisPhaseStartupFailed {
+	if cr.Status.Phase == syndesisv1beta1.SyndesisPhaseStartupFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
 	}
 
-	if cr.Status.Phase != syndesisv1alpha1.SyndesisPhaseInstalled {
+	if cr.Status.Phase != syndesisv1beta1.SyndesisPhaseInstalled {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

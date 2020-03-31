@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -20,10 +20,10 @@ type Fuse struct {
 
 func (f *Fuse) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&syndesisv1alpha1.Syndesis{
+		&syndesisv1beta1.Syndesis{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Syndesis",
-				APIVersion: syndesisv1alpha1.SchemeGroupVersion.String(),
+				APIVersion: syndesisv1beta1.SchemeGroupVersion.String(),
 			},
 		},
 	}
