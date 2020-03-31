@@ -569,7 +569,7 @@ github.com/spf13/viper
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/syndesisio/syndesis/install/operator v0.0.0-20200220070021-6c29bfbc6769
-github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1
+github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1
 # github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
 github.com/xeipuuv/gojsonpointer
 # github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
