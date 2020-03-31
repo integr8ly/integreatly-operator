@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2019 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package v1alpha1
 
 import (
@@ -164,19 +180,19 @@ type AddonsSpec map[string]Parameters
 
 type Parameters map[string]string
 
-// =============================================================================
-
 type SyndesisPhase string
 
 const (
 	SyndesisPhaseMissing               SyndesisPhase = ""
 	SyndesisPhaseInstalling            SyndesisPhase = "Installing"
-	SyndesisPhaseUpgradingLegacy       SyndesisPhase = "UpgradingLegacy"
 	SyndesisPhaseStarting              SyndesisPhase = "Starting"
 	SyndesisPhaseStartupFailed         SyndesisPhase = "StartupFailed"
 	SyndesisPhaseInstalled             SyndesisPhase = "Installed"
+	SyndesisPhaseMigrated              SyndesisPhase = "Migrated"
 	SyndesisPhaseNotInstalled          SyndesisPhase = "NotInstalled"
 	SyndesisPhaseUpgrading             SyndesisPhase = "Upgrading"
+	SyndesisPhasePostUpgradeRun        SyndesisPhase = "PostUpgradeRun"
+	SyndesisPhasePostUpgradeRunSucceed SyndesisPhase = "PostUpgradeRunSucceed"
 	SyndesisPhaseUpgradeFailureBackoff SyndesisPhase = "UpgradeFailureBackoff"
 	SyndesisPhaseUpgradeFailed         SyndesisPhase = "UpgradeFailed"
 )
@@ -185,19 +201,19 @@ type SyndesisStatusReason string
 
 const (
 	SyndesisStatusReasonMissing                SyndesisStatusReason = ""
+	SyndesisStatusReasonMigrated               SyndesisStatusReason = "MigratedToV1beta1"
 	SyndesisStatusReasonDuplicate              SyndesisStatusReason = "Duplicate"
 	SyndesisStatusReasonDeploymentNotReady     SyndesisStatusReason = "DeploymentNotReady"
-	SyndesisStatusReasonUpgradePodFailed       SyndesisStatusReason = "UpgradePodFailed"
+	SyndesisStatusReasonUpgradeFailed          SyndesisStatusReason = "UpgradeFailed"
 	SyndesisStatusReasonTooManyUpgradeAttempts SyndesisStatusReason = "TooManyUpgradeAttempts"
+	SyndesisStatusReasonPostUpgradeRun         SyndesisStatusReason = "PostUpgradeRun"
 )
-
-// =============================================================================
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Syndesis is the Schema for the syndeses API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Syndesis struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -208,7 +224,7 @@ type Syndesis struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
+// +kubebuilder:object:root=true
 // SyndesisList contains a list of Syndesis
 type SyndesisList struct {
 	metav1.TypeMeta `json:",inline"`

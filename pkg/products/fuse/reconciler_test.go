@@ -7,7 +7,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -70,7 +70,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = syndesisv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err = syndesisv1beta1.SchemeBuilder.AddToScheme(scheme)
 	err = routev1.AddToScheme(scheme)
 	err = usersv1.AddToScheme(scheme)
 	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
@@ -225,7 +225,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseStartupFailed)),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseStartupFailed)),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
@@ -239,7 +239,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), route, secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalled), route, secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
@@ -252,7 +252,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalling), secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalling), secret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
@@ -422,7 +422,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -486,30 +486,26 @@ func TestReconciler_fullReconcile(t *testing.T) {
 }
 
 // Return a fuse custom resource in a specific phase
-func getFuseCr(phase syndesisv1alpha1.SyndesisPhase) *syndesisv1alpha1.Syndesis {
-	intLimit := -1
-	return &syndesisv1alpha1.Syndesis{
+func getFuseCr(phase syndesisv1beta1.SyndesisPhase) *syndesisv1beta1.Syndesis {
+	return &syndesisv1beta1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,
 			Name:      "integreatly",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Syndesis",
-			APIVersion: syndesisv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: syndesisv1beta1.SchemeGroupVersion.String(),
 		},
-		Spec: syndesisv1alpha1.SyndesisSpec{
-			Integration: syndesisv1alpha1.IntegrationSpec{
-				Limit: &intLimit,
-			},
-			Components: syndesisv1alpha1.ComponentsSpec{
-				Server: syndesisv1alpha1.ServerConfiguration{
-					Features: syndesisv1alpha1.ServerFeatures{
+		Spec: syndesisv1beta1.SyndesisSpec{
+			Components: syndesisv1beta1.ComponentsSpec{
+				Server: syndesisv1beta1.ServerConfiguration{
+					Features: syndesisv1beta1.ServerFeatures{
 						ManagementUrlFor3scale: "https://3scale-admin.dummmy",
 					},
 				},
 			},
 		},
-		Status: syndesisv1alpha1.SyndesisStatus{
+		Status: syndesisv1beta1.SyndesisStatus{
 			Phase: phase,
 		},
 	}
