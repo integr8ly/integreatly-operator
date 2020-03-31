@@ -166,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	err = resources.CopyDefaultPullSecretToNameSpace(ctx, r.Config.GetNamespace(), resources.DefaultOriginPullSecretName, serverClient)
+	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), r.Config.GetNamespace(), integreatlyv1alpha1.DefaultOriginPullSecretName, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile pull secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err

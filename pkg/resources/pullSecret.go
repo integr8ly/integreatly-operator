@@ -16,17 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	DefaultOriginPullSecretName      = "samples-registry-credentials"
-	DefaultOriginPullSecretNamespace = "openshift"
-)
-
-// CopyDefaultPullSecretToNamespace copies the default pull secret to a target namespace
-func CopyDefaultPullSecretToNameSpace(context context.Context, destNamespace, destName string, client k8sclient.Client) error {
-	srcPullSecretName := DefaultOriginPullSecretName
-	srcPullSecretNamespace := DefaultOriginPullSecretNamespace
-
-	return CopySecret(context, client, srcPullSecretName, srcPullSecretNamespace, destName, destNamespace)
+// CopyPullSecretToNamespace copies the default pull secret to a target namespace
+func CopyPullSecretToNameSpace(context context.Context, secretSpec *integreatlyv1alpha1.PullSecretSpec, destNamespace, destName string, client k8sclient.Client) error {
+	return CopySecret(context, client, secretSpec.Name, secretSpec.Namespace, destName, destNamespace)
 }
 
 //CopySecret will copy or update the destination secret from the source secret
