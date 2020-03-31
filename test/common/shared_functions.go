@@ -6,6 +6,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/ghodss/yaml"
+	"io/ioutil"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -161,4 +163,20 @@ func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func writeObjToYAMLFile(obj interface{}, out string) error {
+	data, err := yaml.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(out, data, 0644)
+}
+
+func WriteRHMICRToFile(client dynclient.Client, file string) error {
+	if rhmi, err := getRHMI(client); err != nil {
+		return err
+	} else {
+		return writeObjToYAMLFile(rhmi, file)
+	}
 }
