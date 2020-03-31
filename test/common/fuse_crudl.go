@@ -2,12 +2,8 @@ package common
 
 import (
 	goctx "context"
-	"crypto/tls"
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	"golang.org/x/net/publicsuffix"
-	"net/http"
-	"net/http/cookiejar"
 	"testing"
 )
 
@@ -18,24 +14,7 @@ const (
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
-	// declare transport
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
-	}
-
-	// declare new cookie jar om nom nom
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		t.Fatal("error occurred creating a new cookie jar", err)
-	}
-
-	// declare http client
-	httpClient := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -49,7 +28,7 @@ func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	fuseHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.ProductFuse].Host
 
 	// Get a client that authenticated to fuse via oauth
-	authenticatedFuseClient, err := resources.ProxyOAuth(httpClient, fuseHost, fuseLoginUser, DefaultPassword)
+	authenticatedFuseClient, err := resources.ProxyOAuth(ctx.HttpClient, fuseHost, fuseLoginUser, DefaultPassword)
 	if err != nil {
 		t.Fatalf("error authenticating with fuse: %v", err)
 	}

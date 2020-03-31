@@ -2,7 +2,6 @@ package resources
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,96 +9,96 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/cookiejar"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 )
 
-func AuthProductClient(masterUrl, redirectUrl, keycloakHost, clientId, username, password string) (*http.Client, string, error) {
-	// Create the http client with a cookie jar
-	j, err := cookiejar.New(nil)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to initalize the cookie jar: %s", err)
-	}
-
-	transport := http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-
-	client := &http.Client{
-		Jar:           j,
-		Transport:     &transport,
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
-	}
-
-	err = DoAuthOpenshiftUser(masterUrl, username, password, client)
-	if err != nil {
-		return nil, "", err
-	}
-
+func Auth3Scale(client *http.Client, redirectUrl, keycloakHost, clientId, secret string) (string, error) {
 	// Start the authentication
 	u := fmt.Sprintf("%v/auth/realms/openshift/protocol/openid-connect/auth?client_id=%v&redirect_uri=%v&response_type=code&scope=openid", keycloakHost, clientId, redirectUrl)
 	response, err := client.Get(u)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to open %s: %s", u, err)
+		return "", fmt.Errorf("failed to open %s: %s", u, err)
 	}
 	if response.StatusCode != 200 {
-		return nil, "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
+		return "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
 	}
 
 	// Select the testing IDP
-	document, err := parseResponse(response)
+	document, err := ParseHtmlResponse(response)
 	if err != nil {
-		return nil, "", errorWithResponseDump(response, err)
+		return "", errorWithResponseDump(response, err)
 	}
 
 	// find the link to the testing IDP
 	link, err := findElement(document, fmt.Sprintf("a:contains('%s')", testingIDP))
 	if err != nil {
-		return nil, "", errorWithResponseDump(response, err)
+		return "", errorWithResponseDump(response, err)
 	}
 
-	// get the url from the
+	// get the url from the link
 	href, err := getAttribute(link, "href")
 	if err != nil {
-		return nil, "", errorWithResponseDump(response, err)
+		return "", errorWithResponseDump(response, err)
 	}
 
 	u, err = resolveRelativeURL(response, href)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	response, err = client.Get(u)
 
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to request %s: %s", u, err)
+		return "", fmt.Errorf("failed to request %s: %s", u, err)
 	}
 	if response.StatusCode != 200 {
-		return nil, "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
+		return "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
+	}
+
+	document, err = ParseHtmlResponse(response)
+	if err != nil {
+		return "", errorWithResponseDump(response, err)
+	}
+
+	// 3scale auth page, select the keycloak auth option
+	link, err = findElement(document, "a.authorizeLink")
+	if err != nil {
+		return "", errorWithResponseDump(response, err)
+	}
+	href, err = getAttribute(link, "href")
+	if err != nil {
+		return "", errorWithResponseDump(response, err)
+	}
+
+	response, err = client.Get(href)
+	if err != nil {
+		return "", fmt.Errorf("failed to open %s: %s", u, err)
+	}
+	if response.StatusCode != 200 {
+		return "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
 	}
 
 	code := strings.Split(response.Request.URL.RawQuery, "&")[1]
 	tokenUrl := fmt.Sprintf("%v/auth/realms/openshift/protocol/openid-connect/token", keycloakHost)
-
 	formValues := url.Values{
-		"grant_type":   []string{"authorization_code"},
-		"code":         []string{strings.Split(code, "=")[1]},
-		"client_id":    []string{"che-client"},
-		"redirect_uri": []string{redirectUrl},
+		"grant_type":    []string{"authorization_code"},
+		"code":          []string{strings.Split(code, "=")[1]},
+		"client_id":     []string{"3scale"},
+		"redirect_uri":  []string{redirectUrl},
+		"client_secret": []string{secret},
 	}
 
 	response, err = client.PostForm(tokenUrl, formValues)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to request %s: %s", u, err)
+		return "", fmt.Errorf("failed to request %s: %s", u, err)
 	}
 
+	// extract the token
 	postBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	tokenResponse := struct {
@@ -107,7 +106,7 @@ func AuthProductClient(masterUrl, redirectUrl, keycloakHost, clientId, username,
 	}{}
 
 	json.Unmarshal(postBody, &tokenResponse)
-	return client, tokenResponse.AccessToken, nil
+	return tokenResponse.AccessToken, nil
 }
 
 // Login a user through the oauth proxy
@@ -124,7 +123,7 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 	}
 
 	// Select the testing IDP
-	document, err := parseResponse(response)
+	document, err := ParseHtmlResponse(response)
 	if err != nil {
 		return nil, errorWithResponseDump(response, err)
 	}
@@ -155,7 +154,7 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 	}
 
 	// Submit the username and password
-	document, err = parseResponse(response)
+	document, err = ParseHtmlResponse(response)
 	if err != nil {
 		return nil, errorWithResponseDump(response, err)
 	}
@@ -187,7 +186,7 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 		return nil, errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
 	}
 
-	document, err = parseResponse(response)
+	document, err = ParseHtmlResponse(response)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +280,7 @@ func errorWithResponseDump(r *http.Response, err error) error {
 	return fmt.Errorf("%s\n\n%s", err, dumpResponse(r))
 }
 
-func parseResponse(r *http.Response) (*goquery.Document, error) {
+func ParseHtmlResponse(r *http.Response) (*goquery.Document, error) {
 	// Clone the body while reading it so that in case of errors
 	// we can dump the response with the body
 	var clone bytes.Buffer
