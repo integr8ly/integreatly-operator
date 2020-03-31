@@ -44,7 +44,7 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 		return fmt.Errorf("failed to parse url %s: %w", authPageURL, err)
 	}
 	if parsedURL.Scheme == "" {
-		authPageURL = fmt.Sprintf("https://%s")
+		authPageURL = fmt.Sprintf("https://%s", authPageURL)
 	}
 	if err := openshiftClientSetup(authPageURL, username, password, httpClient); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
