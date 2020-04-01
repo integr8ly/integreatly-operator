@@ -1,0 +1,10 @@
+registry-proxy.engineering.redhat.com/rh-osbs/rhscl-postgresql-96-rhel7:latest quay.io/integreatly/delorean:rhscl-postgresql-96-rhel7_latest
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-online-operator:1.6 quay.io/integreatly/delorean:fuse7-fuse-online-operator_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-tech-preview-fuse-dv-rhel7:1.6 quay.io/integreatly/delorean:fuse7-tech-preview-fuse-dv-rhel7_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-ignite-ui:1.6 quay.io/integreatly/delorean:fuse7-fuse-ignite-ui_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-ignite-s2i:1.6 quay.io/integreatly/delorean:fuse7-fuse-ignite-s2i_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/openshift3-prometheus:v3.9 quay.io/integreatly/delorean:openshift3-prometheus_v3.9
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-ignite-upgrade:1.6 quay.io/integreatly/delorean:fuse7-fuse-ignite-upgrade_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-ignite-meta:1.6 quay.io/integreatly/delorean:fuse7-fuse-ignite-meta_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-tech-preview-fuse-postgres-exporter:1.6 quay.io/integreatly/delorean:fuse7-tech-preview-fuse-postgres-exporter_1.6
+registry-proxy.engineering.redhat.com/rh-osbs/fuse7-fuse-ignite-server:1.6 quay.io/integreatly/delorean:fuse7-fuse-ignite-server_1.6
