@@ -69,7 +69,7 @@ var expectedDashboards = []dashboardsTestRule{
 func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(NamespacePrefix + "middleware-monitoring-operator"),
+		k8sclient.InNamespace(MonitoringOperatorNamespace),
 		k8sclient.MatchingLabels{"app": "grafana"},
 	}
 
@@ -84,7 +84,7 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 
 	output, err := execToPod("curl localhost:3000/api/search",
 		pods.Items[0].ObjectMeta.Name,
-		NamespacePrefix+"middleware-monitoring-operator",
+		MonitoringOperatorNamespace,
 		"grafana", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)
