@@ -38,23 +38,30 @@ func (e *alertsFiringError) Error() string {
 	if len(e.alertsPending) != 0 {
 		str.WriteString("\nThe following alerts were pending:")
 		for _, alert := range e.alertsPending {
-			str.WriteString(fmt.Sprintf("\n\talert: %s, for pod: %s, in namespace: %s", alert.alertName, alert.podName, alert.namespace))
+			str.WriteString(fmt.Sprintf("\n\talert: %s", alert.alertName))
+			if alert.podName != "" {
+				str.WriteString(fmt.Sprintf(", for pod: %s, in namespace: %s", alert.podName, alert.namespace))
+			}
 		}
 	}
 	if len(e.alertsFiring) != 0 {
 		str.WriteString("\nThe following alerts were fired:")
 		for _, alert := range e.alertsFiring {
-			str.WriteString(fmt.Sprintf("\n\talert: %s, for pod: %s, in namespace: %s", alert.alertName, alert.podName, alert.namespace))
+			str.WriteString(fmt.Sprintf("\n\talert: %s", alert.alertName))
+			if alert.podName != "" {
+				str.WriteString(fmt.Sprintf(", for pod: %s, in namespace: %s", alert.podName, alert.namespace))
+			}
 		}
 	}
 	return str.String()
 }
 
 // isNotEmpty checks whether or not the error contains firing or pending alerts
-func (e *alertsFiringError) isNotEmpty() bool {
-	return !e.deadMansSwitchFiring || len(e.alertsPending) != 0 || len(e.alertsPending) != 0
+func (e *alertsFiringError) isValid() bool {
+	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
 }
 
+// TestIntegreatlyAlertsFiring reports any firing or pending alerts
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
@@ -65,9 +72,10 @@ func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 		if newErr := getFiringOrPendingAlerts(ctx); newErr != nil {
 			lastError = newErr
 			if _, ok := newErr.(*alertsFiringError); ok {
+				t.Log("Waiting 1 minute for alerts to normalise before retrying")
 				return false, nil
 			}
-			return false, err
+			return false, newErr
 		}
 		return true, nil
 	})
@@ -128,7 +136,7 @@ func getFiringOrPendingAlerts(ctx *TestingContext) error {
 			}
 		}
 	}
-	if alertsError.isNotEmpty() {
+	if alertsError.isValid() {
 		return alertsError
 	}
 	return nil
