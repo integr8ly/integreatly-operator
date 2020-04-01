@@ -76,7 +76,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get dedicated admin token
-	if err := resources.DoAuthOpenshiftUser(masterURL, "customer-admin-1", DefaultPassword, httpClient); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, httpClient); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 

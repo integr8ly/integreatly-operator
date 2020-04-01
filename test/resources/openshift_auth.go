@@ -6,6 +6,7 @@ import (
 	"github.com/headzoo/surf/errors"
 	"gopkg.in/headzoo/surf.v1"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -37,8 +38,15 @@ type CallbackOptions struct {
 }
 
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
-func DoAuthOpenshiftUser(masterURL string, username string, password string, httpClient *http.Client) error {
-	if err := openshiftClientSetup(fmt.Sprintf("https://%s/auth/login", masterURL), username, password, httpClient); err != nil {
+func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client) error {
+	parsedURL, err := url.Parse(authPageURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse url %s: %w", authPageURL, err)
+	}
+	if parsedURL.Scheme == "" {
+		authPageURL = fmt.Sprintf("https://%s", authPageURL)
+	}
+	if err := openshiftClientSetup(authPageURL, username, password, httpClient); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
 	return nil
