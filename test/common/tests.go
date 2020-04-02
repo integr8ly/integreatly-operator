@@ -12,6 +12,7 @@ var (
 
 	AFTER_INSTALL_TESTS = []TestCase{
 		// Test to be execute after RHMI has been installed
+<<<<<<< HEAD
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
@@ -23,6 +24,19 @@ var (
 		{"A12 - Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
 		{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 		{"A08 - Verify all products routes are created", TestIntegreatlyRoutesExist},
+=======
+		{"Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
+		{"Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
+		{"Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
+		{"Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
+		{"Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
+		{"Verify dashboards exist", TestIntegreatlyDashboardsExist},
+		{"Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
+		{"Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
+		{"Verify CRO BlobStorage CRs Successful", TestCROBlobStorageSuccessfulState},
+		{"Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
+		{"Verify all products routes are created", TestIntegreatlyRoutesExist},
+>>>>>>> add elasticacheExist test
 		{"Verify Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},

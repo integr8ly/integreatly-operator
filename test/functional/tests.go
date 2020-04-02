@@ -4,6 +4,7 @@ import "github.com/integr8ly/integreatly-operator/test/common"
 
 var (
 	FUNCTIONAL_TESTS = []common.TestCase{
-		{"Verify AWS Resources exist and are in expected state", AWSRDSResourcesExistTest},
+		{Description: "Verify AWS rds resources exist and are in expected state", Test: AWSRDSResourcesExistTest},
+		{Description: "Verify AWS elasticache resources exist and are in expected state", Test: AWSElasticacheResourcesExistTest},
 	}
 )

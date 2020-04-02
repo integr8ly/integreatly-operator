@@ -53,7 +53,6 @@ func AWSRDSResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro postgres exists failed with the following errors : %s", testErrors)
 	}
-
 	sess, err := resources.CreateAWSSession(goContext, ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to create aws session: %v", err)

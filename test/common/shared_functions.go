@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"strings"
 
 	"github.com/ghodss/yaml"
 	"golang.org/x/net/publicsuffix"
@@ -35,8 +34,6 @@ import (
 	cached "k8s.io/client-go/discovery/cached"
 	cgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
-
-const tagKeyClusterId = "integreatly.org/clusterID"
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
 	req := ctx.KubeClient.CoreV1().RESTClient().Post().
@@ -205,26 +202,4 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
 	}
-}
-
-func buildHTTPClientFromContext(ctx *TestingContext) (*http.Client, error) {
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create cookie jar for http client: %w", err)
-	}
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: ctx.SelfSignedCerts,
-			},
-		},
-		Jar: jar,
-	}, nil
-}
-
-func EqualResourceBool(a, b []bool) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	return true
 }
