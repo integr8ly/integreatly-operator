@@ -62,6 +62,8 @@ const (
 
 	systemSeedSecretName          = "system-seed"
 	systemMasterApiCastSecretName = "system-master-apicast"
+
+	registrySecretName            = "threescale-registry-auth"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -166,7 +168,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), r.Config.GetNamespace(), integreatlyv1alpha1.DefaultOriginPullSecretName, serverClient)
+	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), r.Config.GetNamespace(), registrySecretName, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile pull secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
