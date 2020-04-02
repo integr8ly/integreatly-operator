@@ -14,8 +14,8 @@ import (
 	types2 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -115,7 +115,7 @@ func buildScheme() *runtime.Scheme {
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	operatorsv1alpha1.AddToScheme(scheme)
 	marketplacev1.SchemeBuilder.AddToScheme(scheme)
-	kafkav1.SchemeBuilder.AddToScheme(scheme)
+	kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
 	rbacv1.SchemeBuilder.AddToScheme(scheme)
 	batchv1beta1.SchemeBuilder.AddToScheme(scheme)

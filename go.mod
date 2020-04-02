@@ -7,6 +7,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
+	// No tags on the apicurio repo so needed to use a commit hash
+	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -41,7 +43,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	sigs.k8s.io/controller-runtime v0.4.0

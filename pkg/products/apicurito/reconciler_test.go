@@ -2,8 +2,10 @@ package apicurito
 
 import (
 	"context"
+	"testing"
+
+	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -25,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 var (
@@ -308,9 +309,9 @@ func getRoute() *routev1.Route {
 	}
 }
 
-func getApicuritoCr() *apicurito.Apicurito {
+func getApicuritoCr() *apicuritov1alpha1.Apicurito {
 
-	apicuritoCR := &apicurito.Apicurito{
+	apicuritoCR := &apicuritov1alpha1.Apicurito{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apicuritoName,
 			Namespace: defaultOperandNamespace,
@@ -400,7 +401,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = apicurito.SchemeBuilder.AddToScheme(scheme)
+	err = apicuritov1alpha1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}

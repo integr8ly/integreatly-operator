@@ -1,8 +1,8 @@
 package config
 
 import (
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -16,10 +16,10 @@ func NewAMQStreams(config ProductConfig) *AMQStreams {
 }
 func (a *AMQStreams) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&kafkav1.Kafka{
+		&kafkav1alpha1.Kafka{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: kafkav1.SchemeGroupVersion.String(),
-				Kind:       kafkav1.KafkaKind,
+				APIVersion: kafkav1alpha1.SchemeGroupVersion.String(),
+				Kind:       kafkav1alpha1.KafkaKind,
 			},
 		},
 	}
