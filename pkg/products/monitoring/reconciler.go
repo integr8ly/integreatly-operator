@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	v1 "github.com/openshift/api/route/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"strings"
 
+	v1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -414,6 +415,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	}
 
 	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
+	r.extraParams["namespace-prefix"] = r.installation.Spec.NamespacePrefix
 	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
