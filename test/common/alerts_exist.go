@@ -221,6 +221,10 @@ var expectedRules = []alertsTestRule{
 			"UnifiedPushOperatorDown",
 		},
 	},
+	{
+		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
+		Rules: []string{},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
@@ -355,8 +359,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		for _, promRule := range group.Rules {
 			switch v := promRule.(type) {
 			case prometheusv1.RecordingRule:
-				recRule := promRule.(prometheusv1.RecordingRule)
-				rule.Rules = append(rule.Rules, recRule.Name)
+				fmt.Print("got a recording rule")
 			case prometheusv1.AlertingRule:
 				alertRule := promRule.(prometheusv1.AlertingRule)
 				rule.Rules = append(rule.Rules, alertRule.Name)
