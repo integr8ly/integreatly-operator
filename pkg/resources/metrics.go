@@ -85,9 +85,10 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
 	}
-
 	productName := cr.Labels["productName"]
-	alertName := productName + "RedisCacheUnavailable"
+	// remove hyphen as prometheus rules have difficulty with them
+	redisCRName := strings.Replace(cr.Name, "-", "", -1)
+	alertName := redisCRName + "RedisCacheUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -115,7 +116,9 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	alertName := productName + "RedisCacheConnectionFailed"
+	// remove hyphen as prometheus rules have difficulty with them
+	redisCRName := strings.Replace(cr.Name, "-", "", -1)
+	alertName := redisCRName + "RedisCacheConnectionFailed"
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
