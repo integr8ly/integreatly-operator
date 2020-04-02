@@ -307,6 +307,7 @@ func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.Bac
 	}
 
 	return backup.NewAWSBackupExecutor(
+		installation.Namespace,
 		"ups-postgres-rhmi",
 		backup.PostgresSnapshotType,
 	)

@@ -24,16 +24,17 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		return
 	}
 
+	namespace := "redhat-rhmi-operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
-	executor := NewAWSBackupExecutor(resourceName, PostgresSnapshotType)
+	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
 		var postgresSnapshot *v1alpha1.PostgresSnapshot
 		for {
 			existingSnapshots := &v1alpha1.PostgresSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace("redhat-rhmi-operator"))
+			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -71,16 +72,17 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		return
 	}
 
+	namespace := "redhat-rhmi-operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
-	executor := NewAWSBackupExecutor(resourceName, RedisSnapshotType)
+	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
 		var redisSnapshot *v1alpha1.RedisSnapshot
 		for {
 			existingSnapshots := &v1alpha1.RedisSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace("redhat-rhmi-operator"))
+			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -118,16 +120,17 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		return
 	}
 
+	namespace := "redhat-rhmi-operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
-	executor := NewAWSBackupExecutor(resourceName, PostgresSnapshotType)
+	executor := NewAWSBackupExecutor(namespace, resourceName, PostgresSnapshotType)
 
 	go func() {
 		var postgresSnapshot *v1alpha1.PostgresSnapshot
 		for {
 			existingSnapshots := &v1alpha1.PostgresSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace("redhat-rhmi-operator"))
+			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {
@@ -173,16 +176,17 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		return
 	}
 
+	namespace := "redhat-rhmi-operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
-	executor := NewAWSBackupExecutor(resourceName, RedisSnapshotType)
+	executor := NewAWSBackupExecutor(namespace, resourceName, RedisSnapshotType)
 
 	go func() {
 		var redisSnapshot *v1alpha1.RedisSnapshot
 		for {
 			existingSnapshots := &v1alpha1.RedisSnapshotList{}
-			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace("redhat-rhmi-operator"))
+			client.List(context.TODO(), existingSnapshots, k8sclient.InNamespace(namespace))
 
 			for _, existingSnapshot := range existingSnapshots.Items {
 				if !strings.HasPrefix(existingSnapshot.Name, fmt.Sprintf("%s-preupgrade-snapshot", resourceName)) {

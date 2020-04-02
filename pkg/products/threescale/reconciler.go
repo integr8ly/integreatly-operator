@@ -854,14 +854,17 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 
 	return backup.NewConcurrentBackupExecutor(
 		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
 			"threescale-postgres-rhmi",
 			backup.PostgresSnapshotType,
 		),
 		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
 			"threescale-backend-redis-rhmi",
 			backup.RedisSnapshotType,
 		),
 		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
 			"threescale-redis-rhmi",
 			backup.RedisSnapshotType,
 		),

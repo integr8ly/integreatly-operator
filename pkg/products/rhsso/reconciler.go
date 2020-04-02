@@ -745,6 +745,7 @@ func (r *Reconciler) preUpgradeBackupsExecutor() backup.BackupExecutor {
 	}
 
 	return backup.NewAWSBackupExecutor(
+		r.installation.Namespace,
 		"rhsso-postgres-rhmi",
 		backup.PostgresSnapshotType,
 	)

@@ -333,6 +333,7 @@ func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.Bac
 	// }
 
 	// return backup.NewAWSBackupExecutor(
+	// 	installation.Namespace,
 	// 	"fuse-online-postgres-rhmi",
 	// 	backup.PostgresSnapshotType,
 	// )

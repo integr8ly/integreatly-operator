@@ -17,14 +17,16 @@ import (
 // AWSBackupExecutor knows how to perform backups by creating snapshot CRs
 // and waiting for their completion
 type AWSBackupExecutor struct {
-	ResourceName string          // AWS Resource name
-	SnapshotType AWSSnapshotType // Type of snapshot CR to create
+	SnapshotNamespace string          // Namespace where the snapshot CR is created
+	ResourceName      string          // AWS Resource name
+	SnapshotType      AWSSnapshotType // Type of snapshot CR to create
 }
 
-func NewAWSBackupExecutor(resourceName string, snapshotType AWSSnapshotType) BackupExecutor {
+func NewAWSBackupExecutor(snapshotNamespace, resourceName string, snapshotType AWSSnapshotType) BackupExecutor {
 	return &AWSBackupExecutor{
-		ResourceName: resourceName,
-		SnapshotType: snapshotType,
+		SnapshotNamespace: snapshotNamespace,
+		ResourceName:      resourceName,
+		SnapshotType:      snapshotType,
 	}
 }
 
@@ -48,7 +50,7 @@ func (e *AWSBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.
 	// Initialize the snapshot CR based on the snapshot type
 	var snapshotCR runtime.Object
 	commonObjectMeta := v1.ObjectMeta{
-		Namespace: "redhat-rhmi-operator",
+		Namespace: e.SnapshotNamespace,
 		Name:      snapshotName,
 	}
 
@@ -99,7 +101,7 @@ func (e *AWSBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.
 		// Get the CR
 		err = client.Get(context.TODO(), types.NamespacedName{
 			Name:      snapshotName,
-			Namespace: "redhat-rhmi-operator",
+			Namespace: e.SnapshotNamespace,
 		}, queryCR)
 		if err != nil {
 			return fmt.Errorf("Error occurred querying snapshot for backup %s", e.ResourceName)

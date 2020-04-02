@@ -503,6 +503,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	return backup.NewConcurrentBackupExecutor(
 		pvBackup,
 		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
 			"codeready-postgres-rhmi",
 			backup.PostgresSnapshotType,
 		),
