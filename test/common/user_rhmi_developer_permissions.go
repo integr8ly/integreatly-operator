@@ -2,19 +2,16 @@ package common
 
 import (
 	goctx "context"
-	"crypto/tls"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/google/go-querystring/query"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
-	"golang.org/x/net/publicsuffix"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"net/http"
-	"net/http/cookiejar"
-	"testing"
-	"time"
 )
 
 const (
@@ -30,24 +27,7 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	// declare transport
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
-	}
-
-	// declare new cookie jar om nom nom
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		t.Fatal("error occurred creating a new cookie jar", err)
-	}
-
-	// declare http client
-	httpClient := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -65,11 +45,11 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get rhmi developer user tokens
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, httpClient); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := &resources.OpenshiftClient{HTTPClient: httpClient}
+	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// test rhmi developer projects are as expected
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
@@ -78,7 +58,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get fuse pods for rhmi developer
-	podlist, err := openshiftClient.DoOpenshiftGetPodsForNamespacePods(masterURL, fuseNamespace)
+	podlist, err := openshiftClient.ListPods(fuseNamespace)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
 	}
@@ -103,7 +83,8 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 				t.Fatal(err)
 			}
 			// verify an rhmi developer can access the pods logs
-			resp, err := openshiftClient.DoOpenshiftGetRequest(fmt.Sprintf("%s/%s/%s/log?%s", masterURL, resources.PathFusePods, p.Name, lv.Encode()), "")
+			podPath := fmt.Sprintf(resources.OpenshiftPathListPods, p.Namespace)
+			resp, err := openshiftClient.GetRequest(fmt.Sprintf("%s/%s/log?%s", podPath, p.Name, lv.Encode()))
 			if err != nil {
 				t.Fatalf("error occurred making oc get request: %v", err)
 			}
@@ -118,8 +99,7 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 	var rhmiDevfoundProjects *projectv1.ProjectList
 	// five minute time out needed to ensure users have been reconciled by RHMI operator
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		// get projects for rhmi developer
-		rhmiDevfoundProjects, err = openshiftClient.DoOpenshiftGetProjects(masterURL)
+		rhmiDevfoundProjects, err = openshiftClient.ListProjects()
 		if err != nil {
 			return false, fmt.Errorf("error occured while getting user projects : %w", err)
 		}

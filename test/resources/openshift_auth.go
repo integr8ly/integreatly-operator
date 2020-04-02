@@ -1,21 +1,26 @@
 package resources
 
 import (
+	goctx "context"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/headzoo/surf/errors"
-	"gopkg.in/headzoo/surf.v1"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/headzoo/surf/errors"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"gopkg.in/headzoo/surf.v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
+	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	OpenshiftAuthenticationNamespace = "openshift-authentication"
 	OpenshiftOAuthRouteName          = "oauth-openshift"
-
-	PathProjects = "/api/kubernetes/apis/project.openshift.io/v1/projects"
-	PathFusePods = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
 )
 
 // User used to create url user query
@@ -38,7 +43,7 @@ type CallbackOptions struct {
 }
 
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
-func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client) error {
+func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client, idp string) error {
 	parsedURL, err := url.Parse(authPageURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse url %s: %w", authPageURL, err)
@@ -46,13 +51,13 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 	if parsedURL.Scheme == "" {
 		authPageURL = fmt.Sprintf("https://%s", authPageURL)
 	}
-	if err := openshiftClientSetup(authPageURL, username, password, httpClient); err != nil {
+	if err := openshiftClientSetup(authPageURL, username, password, httpClient, idp); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
 	return nil
 }
 
-func OpenshiftIDPCheck(url string, client *http.Client) (bool, error) {
+func OpenshiftIDPCheck(url string, client *http.Client, idp string) (bool, error) {
 	browser := surf.NewBrowser()
 	browser.SetTransport(client.Transport)
 	if err := browser.Open(url); err != nil {
@@ -61,7 +66,7 @@ func OpenshiftIDPCheck(url string, client *http.Client) (bool, error) {
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
-	if err := browser.Click("a:contains('testing-idp')"); err != nil {
+	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		if _, ok := err.(errors.ElementNotFound); ok {
 			return false, nil
 		}
@@ -70,8 +75,47 @@ func OpenshiftIDPCheck(url string, client *http.Client) (bool, error) {
 	return true, nil
 }
 
+/*
+Checks if openshift user has been reconciled to the openshift realm in keycloak
+*/
+func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dynclient.Client, namespacePrefix, username string) error {
+	userSyncRetryInterval := time.Second * 30
+	userSyncTimeout := time.Minute * 5
+
+	return wait.Poll(userSyncRetryInterval, userSyncTimeout, func() (done bool, err error) {
+
+		fuseNamespace := fmt.Sprintf("%v%v", namespacePrefix, integreatlyv1alpha1.ProductFuse)
+		// ensure the fuse project can be seen by the user
+		if _, err := openshiftClient.GetProject(fuseNamespace); err != nil {
+			// fuse project not available to the user yet
+			if strings.Contains(err.Error(), "forbidden") {
+				return false, nil
+			}
+			return false, fmt.Errorf("failed to get fuse project: %v", err)
+		}
+
+		// ensure that a generated keycloak user cr has been created for the user
+		generatedKeycloakUsers := &keycloak.KeycloakUserList{}
+		labelSelector, err := labels.Parse("sso=integreatly")
+		if err != nil {
+			return false, fmt.Errorf("failed to parse label selector: %v", err)
+		}
+		rhssoNamespace := fmt.Sprintf("%s%s", namespacePrefix, "rhsso")
+		if err := k8sclient.List(goctx.TODO(), generatedKeycloakUsers, &dynclient.ListOptions{LabelSelector: labelSelector, Namespace: rhssoNamespace}); err != nil {
+			return false, fmt.Errorf("failed to list keycloak users: %v", err)
+		}
+
+		for _, user := range generatedKeycloakUsers.Items {
+			if user.Spec.User.UserName == username {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 //openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
-func openshiftClientSetup(url, username, password string, client *http.Client) error {
+func openshiftClientSetup(url, username, password string, client *http.Client, idp string) error {
 	//oauth proxy-specific constants
 	const (
 		openshiftOauthSubdomain = "oauth-openshift."
@@ -86,7 +130,7 @@ func openshiftClientSetup(url, username, password string, client *http.Client) e
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
-	if err := browser.Click("a:contains('testing-idp')"); err != nil {
+	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
 	loginForm, err := browser.Form("#kc-form-login")
