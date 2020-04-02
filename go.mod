@@ -22,7 +22,7 @@ require (
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
-	github.com/integr8ly/cloud-resource-operator v0.11.0
+	github.com/integr8ly/cloud-resource-operator v0.14.0
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.1.1
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
