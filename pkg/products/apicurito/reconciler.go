@@ -185,8 +185,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicuritoCR, func() error {
 		// Specify 2 pods to provide HA
-		apicuritoCR.Spec.Size = 2
-		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
+		apicuritoCR.Spec.Size = 3
+		//apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
+		// Ideally the operator would set the Image field but it currently (operator v1.6) does not - review on upgrades
+		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.6"
 		return nil
 	})
 	if err != nil {
@@ -269,7 +271,7 @@ func (r *Reconciler) createDeployConfigForGenerator(ctx context.Context, client 
 		dc.Spec.Template = &corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{{
-					Image: "registry.redhat.io/fuse7/fuse-apicurito-generator:1.5",
+					Image: "registry.redhat.io/fuse7/fuse-apicurito-generator:1.6",
 					Name:  "fuse-apicurito-generator",
 				},
 				},
