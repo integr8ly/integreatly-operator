@@ -135,11 +135,6 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile %s pull secret", inst.Spec.PullSecret.Name)
 		}
-
-		err = LinkSecretToServiceAccounts(ctx, client, namespace, inst.Spec.PullSecret.Name)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to link %s pull secret with serviceAccounts", inst.Spec.PullSecret.Name)
-		}
 	}
 
 	PrepareObject(ns, inst)
