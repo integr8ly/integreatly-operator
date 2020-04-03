@@ -86,8 +86,7 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	// remove hyphen as prometheus rules have difficulty with them
-	redisCRName := strings.Replace(cr.Name, "-", "", -1)
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -116,8 +115,7 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	// remove hyphen as prometheus rules have difficulty with them
-	redisCRName := strings.Replace(cr.Name, "-", "", -1)
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheConnectionFailed"
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -173,6 +171,24 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 
 	// create or update the resource
 	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+		rule.Name = ruleName
+		rule.Namespace = ns
+		rule.Spec.Groups = []prometheusv1.RuleGroup{
+			{
+				Name: alertGroupName,
+				Rules: []prometheusv1.Rule{
+					{
+						Alert:  alertName,
+						Expr:   alertExp,
+						For:    alertFor,
+						Labels: labels,
+						Annotations: map[string]string{
+							"description": desc,
+						},
+					},
+				},
+			},
+		}
 		return nil
 	})
 	if err != nil {
