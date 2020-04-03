@@ -14,13 +14,13 @@ import (
 var (
 	deployments = []Namespace{
 		{
-			Name: "redhat-rhmi-3scale-operator",
+			Name: ThreeScaleOperatorNamespace,
 			Products: []Product{
 				Product{Name: "3scale-operator", ExpectedReplicas: 1},
 			},
 		},
 		{
-			Name: "redhat-rhmi-amq-online",
+			Name: AMQOnlineOperatorNamespace,
 			Products: []Product{
 				Product{Name: "address-space-controller", ExpectedReplicas: 1},
 				Product{Name: "console", ExpectedReplicas: 1},
@@ -30,13 +30,13 @@ var (
 			},
 		},
 		{
-			Name: "redhat-rhmi-cloud-resources-operator",
+			Name: CloudResourceOperatorNamespace,
 			Products: []Product{
 				Product{Name: "cloud-resource-operator", ExpectedReplicas: 1},
 			},
 		},
 		{
-			Name: "redhat-rhmi-codeready-workspaces-operator",
+			Name: CodeReadyOperatorNamespace,
 			Products: []Product{
 				Product{Name: "codeready-operator", ExpectedReplicas: 1},
 			},
@@ -50,13 +50,13 @@ var (
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-fuse-operator",
+			Name: FuseOperatorNamespace,
 			Products: []Product{
 				Product{Name: "syndesis-operator", ExpectedReplicas: 1},
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-middleware-monitoring-operator",
+			Name: MonitoringOperatorNamespace,
 			Products: []Product{
 				Product{Name: "application-monitoring-operator", ExpectedReplicas: 1},
 				Product{Name: "grafana-deployment", ExpectedReplicas: 1},
@@ -65,25 +65,25 @@ var (
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-operator",
+			Name: RHMIOperatorNamespace,
 			Products: []Product{
 				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-rhsso-operator",
+			Name: RHSSOOperatorNamespace,
 			Products: []Product{
 				Product{Name: "keycloak-operator", ExpectedReplicas: 1},
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-solution-explorer-operator",
+			Name: SolutionExplorerOperatorNamespace,
 			Products: []Product{
 				Product{Name: "tutorial-web-app-operator", ExpectedReplicas: 1},
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-ups-operator",
+			Name: UPSOperatorNamespace,
 			Products: []Product{
 				Product{Name: "unifiedpush-operator", ExpectedReplicas: 1},
 			},
@@ -95,7 +95,7 @@ var (
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-user-sso-operator",
+			Name: RHSSOUserOperatorNamespace,
 			Products: []Product{
 				Product{Name: "keycloak-operator", ExpectedReplicas: 1},
 			},
@@ -155,7 +155,7 @@ var (
 	}
 	statefulSets = []Namespace{
 		{
-			Name: "redhat-rhmi-middleware-monitoring-operator",
+			Name: MonitoringOperatorNamespace,
 			Products: []Product{
 				Product{Name: "alertmanager-application-monitoring", ExpectedReplicas: 1},
 				Product{Name: "prometheus-application-monitoring", ExpectedReplicas: 1},

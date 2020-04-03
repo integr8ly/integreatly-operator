@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	requestNameSpace  = "redhat-rhmi-operator"
 	requestUrl        = "/apis/integreatly.org/v1alpha1"
 	openShiftProvider = "openshift"
 	externalProvider  = "aws"
@@ -38,7 +37,6 @@ var (
 )
 
 func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
-	var testErrors []string
 	originalStrategy := getResourceStrategy(t, ctx)
 
 	for _, postgresName := range postgresToCheck {
@@ -49,67 +47,66 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 		}
 
 		postgres := &crov1.Postgres{}
-		err := getResourceAndUnMarshalJsonToResource(ctx, "postgres", postgresName, postgres, testErrors)
+		err := getResourceAndUnMarshalJsonToResource(ctx, "postgres", postgresName, postgres)
 
-		if err == nil && postgres.Status.Phase != croTypes.PhaseComplete && postgres.Status.Strategy != strategy {
-			testErrors = append(testErrors, fmt.Sprintf("\n%s Postgres not ready with phase: %s, message: %s, provider, %s", postgresName, postgres.Status.Phase, postgres.Status.Message, postgres.Status.Provider))
+		if err != nil {
+			t.Errorf("Failed to retrieve postgres custom resource: %s", err)
+			continue
 		}
-	}
 
-	if len(testErrors) != 0 {
-		t.Fatalf("Test CRO Postgress Succesful failed with the following errors: %s", testErrors)
+		if postgres.Status.Phase != croTypes.PhaseComplete && postgres.Status.Strategy != strategy {
+			t.Errorf("%s Postgres not ready with phase: %s, message: %s, provider, %s", postgresName, postgres.Status.Phase, postgres.Status.Message, postgres.Status.Provider)
+		}
 	}
 }
 
 func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
-	var testErrors []string
 	strategy := getResourceStrategy(t, ctx)
 
 	for _, redisName := range redisToCheck {
 		redis := &crov1.Redis{}
-		err := getResourceAndUnMarshalJsonToResource(ctx, "redis", redisName, redis, testErrors)
+		err := getResourceAndUnMarshalJsonToResource(ctx, "redis", redisName, redis)
 
-		if err == nil && redis.Status.Phase != croTypes.PhaseComplete && redis.Status.Strategy != strategy {
-			testErrors = append(testErrors, fmt.Sprintf("\n%s redis not ready with phase: %s, message: %s, provider, %s", redisName, redis.Status.Phase, redis.Status.Message, redis.Status.Provider))
+		if err != nil {
+			t.Errorf("Failed to retrieve redis custom resource: %s", err)
+			continue
 		}
-	}
 
-	if len(testErrors) != 0 {
-		t.Fatalf("Test CRO Redis Succesful failed with the following errors: %s", testErrors)
+		if redis.Status.Phase != croTypes.PhaseComplete && redis.Status.Strategy != strategy {
+			t.Errorf("%s redis not ready with phase: %s, message: %s, provider, %s", redisName, redis.Status.Phase, redis.Status.Message, redis.Status.Provider)
+		}
 	}
 }
 
 func TestCROBlobStorageSuccessfulState(t *testing.T, ctx *TestingContext) {
-	var testErrors []string
 	strategy := getResourceStrategy(t, ctx)
 
 	for _, blobStorageName := range blobStorageToCheck {
 		blobStorage := &crov1.BlobStorage{}
-		err := getResourceAndUnMarshalJsonToResource(ctx, "blobstorages", blobStorageName, blobStorage, testErrors)
+		err := getResourceAndUnMarshalJsonToResource(ctx, "blobstorages", blobStorageName, blobStorage)
 
-		if err == nil && blobStorage.Status.Phase != croTypes.PhaseComplete && blobStorage.Status.Strategy != strategy {
-			testErrors = append(testErrors, fmt.Sprintf("\n%s blob storage not ready with phase: %s, message: %s, provider, %s", blobStorageName, blobStorage.Status.Phase, blobStorage.Status.Message, blobStorage.Status.Provider))
+		if err != nil {
+			t.Errorf("Failed to retrieve blobstorage custom resource: %s", err)
+			continue
 		}
-	}
 
-	if len(testErrors) != 0 {
-		t.Fatalf("Test CRO BlobStorage Succesful failed with the following errors: %s", testErrors)
+		if blobStorage.Status.Phase != croTypes.PhaseComplete && blobStorage.Status.Strategy != strategy {
+			t.Errorf("%s blob storage not ready with phase: %s, message: %s, provider, %s", blobStorageName, blobStorage.Status.Phase, blobStorage.Status.Message, blobStorage.Status.Provider)
+		}
 	}
 }
 
 // Function to get a custom resource and unmarshal the json to a resource type
-func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string, resourceName string, resourceType interface{}, testErrors []string) error {
+func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string, resourceName string, resourceType interface{}) error {
 	requestBody, err := getCustomResourceJson(ctx, resource, resourceName)
 
 	if err != nil {
-		testErrors = append(testErrors, fmt.Sprintf("\nFailed to get custom resource: %s", err))
 		return err
 	}
 
 	err = json.Unmarshal(requestBody, resourceType)
 
 	if err != nil {
-		testErrors = append(testErrors, fmt.Sprintf("\nFailed to unmarshall json: %s", err))
 		return err
 	}
 
@@ -118,7 +115,7 @@ func getResourceAndUnMarshalJsonToResource(ctx *TestingContext, resource string,
 
 // Function to get a custom resource json without needing to depend on operator-sdk
 func getCustomResourceJson(ctx *TestingContext, resource string, resourceName string) ([]byte, error) {
-	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(requestNameSpace).RequestURI(requestUrl).Do()
+	request := ctx.ExtensionClient.RESTClient().Get().Resource(resource).Name(resourceName).Namespace(RHMIOperatorNamespace).RequestURI(requestUrl).Do()
 	requestBody, err := request.Raw()
 
 	if err != nil {
