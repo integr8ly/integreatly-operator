@@ -84,7 +84,7 @@ spec:
           message: PVC storage metrics are not available
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc
         expr: |
-          absent(kubelet_volume_stats_available_bytes) == 1
+          absent(kubelet_volume_stats_available_bytes) == 1 or absent(kubelet_volume_stats_capacity_bytes) == 1 or absent(kubelet_volume_stats_used_bytes) == 1 or absent(kube_persistentvolumeclaim_resource_requests_storage_bytes) == 1
         for: 15m
         labels:
           severity: warning
