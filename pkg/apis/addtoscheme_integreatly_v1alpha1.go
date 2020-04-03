@@ -14,6 +14,7 @@ import (
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
 
+	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
 
@@ -22,10 +23,9 @@ import (
 	enmasse "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/enmasse/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
-	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
-	solutionExplorer "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
+	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	authv1 "github.com/openshift/api/authorization/v1"
@@ -56,7 +56,7 @@ func init() {
 		authv1.AddToScheme,
 		marketplacev1.SchemeBuilder.AddToScheme,
 		marketplacev2.SchemeBuilder.AddToScheme,
-		kafkav1.SchemeBuilder.AddToScheme,
+		kafkav1alpha1.SchemeBuilder.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
 		syndesisv1alpha1.SchemeBuilder.AddToScheme,
@@ -65,7 +65,7 @@ func init() {
 		enmassev1beta1.SchemeBuilder.AddToScheme,
 		enmasseAdmin.SchemeBuilder.AddToScheme,
 		threescalev1.SchemeBuilder.AddToScheme,
-		solutionExplorer.SchemeBuilder.AddToScheme,
+		solutionExplorerv1alpha1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
 		apicurito.SchemeBuilder.AddToScheme,

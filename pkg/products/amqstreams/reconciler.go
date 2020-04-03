@@ -3,6 +3,7 @@ package amqstreams
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -10,8 +11,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -26,7 +27,6 @@ import (
 
 var (
 	defaultInstallationNamespace = "amq-streams"
-	defaultSubscriptionName      = "rhmi-amq-streams"
 	clusterName                  = "rhmi-cluster"
 	manifestPackage              = "integreatly-amq-streams"
 )
@@ -116,9 +116,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: defaultSubscriptionName, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: constants.AMQStreamsSubscriptionName, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQStreamsSubscriptionName), err)
 		return phase, err
 	}
 
@@ -146,7 +146,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Debug("reconciling amq streams custom resource")
 
-	kafka := &kafkav1.Kafka{
+	kafka := &kafkav1alpha1.Kafka{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: r.Config.GetNamespace(),
@@ -155,15 +155,15 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 
 	// attempt to create or update the custom resource
 	_, err := controllerutil.CreateOrUpdate(ctx, client, kafka, func() error {
-		kafka.APIVersion = fmt.Sprintf("%s/%s", kafkav1.SchemeGroupVersion.Group, kafkav1.SchemeGroupVersion.Version)
-		kafka.Kind = kafkav1.KafkaKind
+		kafka.APIVersion = fmt.Sprintf("%s/%s", kafkav1alpha1.SchemeGroupVersion.Group, kafkav1alpha1.SchemeGroupVersion.Version)
+		kafka.Kind = kafkav1alpha1.KafkaKind
 
 		kafka.Name = clusterName
 		kafka.Namespace = r.Config.GetNamespace()
 
 		kafka.Spec.Kafka.Version = "2.1.1"
 		kafka.Spec.Kafka.Replicas = 3
-		kafka.Spec.Kafka.Listeners = map[string]kafkav1.KafkaListener{
+		kafka.Spec.Kafka.Listeners = map[string]kafkav1alpha1.KafkaListener{
 			"plain": {},
 			"tls":   {},
 		}
@@ -180,8 +180,8 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
 		kafka.Spec.Zookeeper.Storage.DeleteClaim = false
 
-		kafka.Spec.EntityOperator.TopicOperator = kafkav1.KafkaTopicOperator{}
-		kafka.Spec.EntityOperator.UserOperator = kafkav1.KafkaUserOperator{}
+		kafka.Spec.EntityOperator.TopicOperator = kafkav1alpha1.KafkaTopicOperator{}
+		kafka.Spec.EntityOperator.UserOperator = kafkav1alpha1.KafkaUserOperator{}
 
 		owner.AddIntegreatlyOwnerAnnotations(kafka, installation)
 		return nil

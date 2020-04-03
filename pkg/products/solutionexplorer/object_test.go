@@ -1,7 +1,7 @@
 package solutionexplorer
 
 import (
-	webappv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
@@ -12,12 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var webappCR = &webappv1alpha1.WebApp{
+var webappCR = &solutionExplorerv1alpha1.WebApp{
 	ObjectMeta: metav1.ObjectMeta{
 		Namespace: "solution-explorer",
 		Name:      "solution-explorer",
 	},
-	Status: webappv1alpha1.WebAppStatus{
+	Status: solutionExplorerv1alpha1.WebAppStatus{
 		Message: "OK",
 	},
 }

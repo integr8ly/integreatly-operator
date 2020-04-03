@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/version"
@@ -18,7 +19,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	webapp "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/tutorial-web-app-operator/pkg/apis/v1alpha1"
+	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -40,7 +41,6 @@ import (
 
 const (
 	defaultName               = "solution-explorer"
-	defaultSubNameAndPkg      = "rhmi-solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
 	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.2"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
@@ -177,9 +177,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubNameAndPkg, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.SolutionExplorerSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubNameAndPkg), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.SolutionExplorerSubscriptionName), err)
 		return phase, err
 	}
 
@@ -349,7 +349,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	seCR := &webapp.WebApp{
+	seCR := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      defaultName,
