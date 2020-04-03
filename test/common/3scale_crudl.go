@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	threescaleLoginUser = "customer-admin01"
+	threescaleLoginUser = "customer-admin-0"
 )
 
 func lookup3ScaleClientSecret(client dynclient.Client, clientId string) (string, error) {

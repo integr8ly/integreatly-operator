@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	fuseLoginUser = "test-user01"
+	fuseLoginUser = "test-user-0"
 )
 
 // Tests that a user in group rhmi-developers can log into fuse and
