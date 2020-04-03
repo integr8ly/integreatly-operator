@@ -130,6 +130,13 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
+	if inst.Spec.PullSecret.Name != "" {
+		_, err := r.ReconcilePullSecret(ctx, namespace, inst.Spec.PullSecret.Name, inst, client)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile %s pull secret", inst.Spec.PullSecret.Name)
+		}
+	}
+
 	PrepareObject(ns, inst)
 	if err := client.Update(ctx, ns); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
@@ -179,15 +186,10 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	pullSecretName := DefaultOriginPullSecretName
-	if secretName != "" {
-		pullSecretName = secretName
-	}
-
-	err := CopyDefaultPullSecretToNameSpace(ctx, namespace, pullSecretName, inst, client)
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, destSecretNamespace, destSecretName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	err := CopySecret(ctx, client, inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace, destSecretName, destSecretNamespace)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", pullSecretName, namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", destSecretName, destSecretNamespace, err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
