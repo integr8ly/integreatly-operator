@@ -418,40 +418,72 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			Name:      apiManagerName,
 			Namespace: r.Config.GetNamespace(),
 		},
-	}
-
-	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
-
-		apim.Spec = threescalev1.APIManagerSpec{
-			HighAvailability: &threescalev1.HighAvailabilitySpec{
-				Enabled: true,
-			},
+		Spec: threescalev1.APIManagerSpec{
+			HighAvailability: &threescalev1.HighAvailabilitySpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
-				WildcardDomain:              r.installation.Spec.RoutingSubdomain,
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
 			System: &threescalev1.SystemSpec{
 				DatabaseSpec: &threescalev1.SystemDatabaseSpec{
 					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
 				},
-				FileStorageSpec: fss,
-				AppSpec:         &threescalev1.SystemAppSpec{Replicas: &[]int64{numberOfReplicas}[0]},
-				SidekiqSpec:     &threescalev1.SystemSidekiqSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				FileStorageSpec: &threescalev1.SystemFileStorageSpec{
+					S3: &threescalev1.SystemS3Spec{},
+				},
+				AppSpec:     &threescalev1.SystemAppSpec{Replicas: &[]int64{0}[0]},
+				SidekiqSpec: &threescalev1.SystemSidekiqSpec{Replicas: &[]int64{0}[0]},
 			},
 			Apicast: &threescalev1.ApicastSpec{
-				ProductionSpec: &threescalev1.ApicastProductionSpec{Replicas: &[]int64{numberOfReplicas}[0]},
-				StagingSpec:    &threescalev1.ApicastStagingSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				ProductionSpec: &threescalev1.ApicastProductionSpec{Replicas: &[]int64{0}[0]},
+				StagingSpec:    &threescalev1.ApicastStagingSpec{Replicas: &[]int64{0}[0]},
 			},
 			Backend: &threescalev1.BackendSpec{
-				ListenerSpec: &threescalev1.BackendListenerSpec{Replicas: &[]int64{numberOfReplicas}[0]},
-				WorkerSpec:   &threescalev1.BackendWorkerSpec{Replicas: &[]int64{numberOfReplicas}[0]},
-				CronSpec:     &threescalev1.BackendCronSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				ListenerSpec: &threescalev1.BackendListenerSpec{Replicas: &[]int64{0}[0]},
+				WorkerSpec:   &threescalev1.BackendWorkerSpec{Replicas: &[]int64{0}[0]},
+				CronSpec:     &threescalev1.BackendCronSpec{Replicas: &[]int64{0}[0]},
 			},
 			Zync: &threescalev1.ZyncSpec{
-				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{numberOfReplicas}[0]},
-				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{numberOfReplicas}[0]},
+				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{0}[0]},
+				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{0}[0]},
 			},
+		},
+	}
+
+	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
+
+		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
+		apim.Spec.APIManagerCommonSpec.ResourceRequirementsEnabled = &resourceRequirements
+		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
+		apim.Spec.System.FileStorageSpec = fss
+
+		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
+			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas
 		}
+		if *apim.Spec.System.SidekiqSpec.Replicas < numberOfReplicas {
+			*apim.Spec.System.SidekiqSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Apicast.ProductionSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Apicast.ProductionSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Apicast.StagingSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Apicast.StagingSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Backend.ListenerSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Backend.ListenerSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Backend.WorkerSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Backend.WorkerSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Backend.CronSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Backend.CronSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Zync.AppSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Zync.AppSpec.Replicas = numberOfReplicas
+		}
+		if *apim.Spec.Zync.QueSpec.Replicas < numberOfReplicas {
+			*apim.Spec.Zync.QueSpec.Replicas = numberOfReplicas
+		}
+
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
 		return nil
