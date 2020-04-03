@@ -8,6 +8,7 @@ This is a collection of best practices to write high quality tests. These best p
 - [Independent](#independent)
 - [Secrets](#secrets)
 - [Logging](#logging)
+- [Don't fail immediately](#dont-fail-immediately)
 
 ## Coding Style
 
@@ -45,3 +46,7 @@ Ensure secret or sensitive data is not included in commits or log output.
 Do not be afraid of logging, if the test pass we will ignore the logs but if the test fail logs will help understand why the test has failed, especially if the tests fail during an unexpected step.
 
 Use the [`t.Log`](https://golang.org/pkg/testing/#B.Log) to print to the console instead of `fmt.Print`.
+
+## Don't fail immediately
+
+When verifying multiple resources or performing steps that do not depend on each other, try to not fail on the first error mark the test as failed and log the error using the [`t.Error`](https://golang.org/pkg/testing/#B.Error) method and proceed with the test execution to test as much as possible.
