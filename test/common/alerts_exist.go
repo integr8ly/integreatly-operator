@@ -221,6 +221,10 @@ var expectedRules = []alertsTestRule{
 			"UnifiedPushOperatorDown",
 		},
 	},
+	{
+		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
+		Rules: []string{},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
@@ -327,7 +331,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	// exec into the prometheus pod
 	output, err := execToPod("curl localhost:9090/api/v1/rules",
 		"prometheus-application-monitoring-0",
-		NamespacePrefix+"middleware-monitoring-operator",
+		MonitoringOperatorNamespace,
 		"prometheus", ctx)
 	if err != nil {
 		t.Fatal("failed to exec to pod:", err)
@@ -337,12 +341,12 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	var promApiCallOutput prometheusAPIResponse
 	err = json.Unmarshal([]byte(output), &promApiCallOutput)
 	if err != nil {
-		t.Fatal("Failed to unmarshal json:", err)
+		t.Fatal("failed to unmarshal json:", err)
 	}
 	var rulesResult prometheusv1.RulesResult
 	err = json.Unmarshal([]byte(promApiCallOutput.Data), &rulesResult)
 	if err != nil {
-		t.Fatal("Failed to unmarshal json:", err)
+		t.Fatal("failed to unmarshal json:", err)
 	}
 
 	// convert prometheus rule to PrometheusRule type
@@ -355,8 +359,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		for _, promRule := range group.Rules {
 			switch v := promRule.(type) {
 			case prometheusv1.RecordingRule:
-				recRule := promRule.(prometheusv1.RecordingRule)
-				rule.Rules = append(rule.Rules, recRule.Name)
+				fmt.Print("got a recording rule")
 			case prometheusv1.AlertingRule:
 				alertRule := promRule.(prometheusv1.AlertingRule)
 				rule.Rules = append(rule.Rules, alertRule.Name)

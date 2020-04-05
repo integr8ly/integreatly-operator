@@ -4,18 +4,16 @@ import (
 	"bytes"
 	"context"
 	goctx "context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-
-	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -41,7 +39,6 @@ const (
 	deploymentTimeout            = time.Minute * 20
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
-	intlyNamespacePrefix         = "redhat-rhmi-"
 	namespaceLabel               = "integreatly"
 	bootStrapStageTimeout        = time.Minute * 5
 	cloudResourcesStageTimeout   = time.Minute * 10
@@ -49,6 +46,7 @@ const (
 	authenticationStageTimeout   = time.Minute * 30
 	productsStageTimout          = time.Minute * 30
 	solutionExplorerStageTimeout = time.Minute * 10
+	artifactsDirEnv              = "ARTIFACT_DIR"
 )
 
 func TestIntegreatly(t *testing.T) {
@@ -57,7 +55,6 @@ func TestIntegreatly(t *testing.T) {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
 	ctx := framework.NewTestCtx(t)
-	defer ctx.Cleanup()
 	err = ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
@@ -114,14 +111,27 @@ func TestIntegreatly(t *testing.T) {
 		}
 	})
 
+	artifactsDir := os.Getenv(artifactsDirEnv)
+	if t.Failed() && artifactsDir != "" {
+		if _, err := os.Stat(artifactsDir); !os.IsNotExist(err) {
+			out := path.Join(artifactsDir, "rhmi.yaml")
+			t.Logf("Writing rhmi.yaml file to %s", out)
+			err = common.WriteRHMICRToFile(f.Client.Client, out)
+			if err != nil {
+				t.Error("Failed to write RHMI cr due to error", err)
+			}
+		}
+	} else {
+		ctx.Cleanup()
+	}
 }
 
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
 	namespace := ""
 	if deploymentName != "enmasse-operator" {
-		namespace = intlyNamespacePrefix + product + "-operator"
+		namespace = common.NamespacePrefix + product + "-operator"
 	} else {
-		namespace = intlyNamespacePrefix + product
+		namespace = common.NamespacePrefix + product
 	}
 	t.Logf("Checking %s:%s", namespace, deploymentName)
 
@@ -135,156 +145,6 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	elapsed := end.Sub(start)
 
 	t.Logf("%s:%s up, waited %d", namespace, deploymentName, elapsed)
-	return nil
-}
-
-func integreatlyMonitoringTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
-	type apiResponse struct {
-		Status    string                 `json:"status"`
-		Data      json.RawMessage        `json:"data"`
-		ErrorType prometheusv1.ErrorType `json:"errorType"`
-		Error     string                 `json:"error"`
-		Warnings  []string               `json:"warnings,omitempty"`
-	}
-
-	// Get active alerts
-	output, err := execToPod("curl localhost:9090/api/v1/alerts",
-		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring-operator",
-		"prometheus", f)
-	if err != nil {
-		return fmt.Errorf("failed to exec to pod: %s", err)
-	}
-
-	var promApiCallOutput apiResponse
-	err = json.Unmarshal([]byte(output), &promApiCallOutput)
-	if err != nil {
-		t.Logf("Failed to unmarshall json: %s", err)
-	}
-	var alertsResult prometheusv1.AlertsResult
-	err = json.Unmarshal(promApiCallOutput.Data, &alertsResult)
-	if err != nil {
-		t.Logf("Failed to unmarshall json: %s", err)
-	}
-
-	// Check if any alerts other than DeadMansSwitch are firing or pending
-	var firingalerts []string
-	var pendingalerts []string
-	var deadmanswitchfiring = false
-	for _, alert := range alertsResult.Alerts {
-		if alert.Labels["alertname"] == "DeadMansSwitch" && alert.State == "firing" {
-			deadmanswitchfiring = true
-		}
-		if alert.Labels["alertname"] != "DeadMansSwitch" {
-			if alert.State == "firing" {
-				firingalerts = append(firingalerts, string(alert.Labels["alertname"]))
-			}
-			if alert.State == "pending" {
-				pendingalerts = append(pendingalerts, string(alert.Labels["alertname"]))
-			}
-		}
-	}
-
-	// Get all rules
-	output, err = execToPod("curl localhost:9090/api/v1/rules",
-		"prometheus-application-monitoring-0",
-		intlyNamespacePrefix+"middleware-monitoring-operator",
-		"prometheus", f)
-	if err != nil {
-		return fmt.Errorf("failed to exec to pod: %s", err)
-	}
-
-	err = json.Unmarshal([]byte(output), &promApiCallOutput)
-	if err != nil {
-		t.Logf("Failed to unmarshall json: %s", err)
-	}
-	var rulesResult prometheusv1.RulesResult
-	err = json.Unmarshal([]byte(promApiCallOutput.Data), &rulesResult)
-	if err != nil {
-		t.Logf("Failed to unmarshall json: %s", err)
-	}
-
-	// Check that at least one integreatly alert is present
-	var intlyalertpresent = false
-	for _, group := range rulesResult.Groups {
-		for _, rule := range group.Rules {
-			switch v := rule.(type) {
-			case prometheusv1.RecordingRule:
-				fmt.Print("got a recording rule")
-			case prometheusv1.AlertingRule:
-				if rule.(prometheusv1.AlertingRule).Name == "KubePodCrashLooping" {
-					intlyalertpresent = true
-				}
-			default:
-				fmt.Printf("unknown rule type %s", v)
-			}
-		}
-	}
-
-	var status []string
-	if len(firingalerts) > 0 {
-		falert := fmt.Sprint(string(len(firingalerts))+"Firing alerts: ", firingalerts)
-		status = append(status, falert)
-	}
-	if len(pendingalerts) > 0 {
-		palert := fmt.Sprint(string(len(pendingalerts))+"Pending alerts: ", pendingalerts)
-		status = append(status, palert)
-	}
-	if deadmanswitchfiring == false {
-		dms := fmt.Sprint("DeadMansSwitch is not firing")
-		status = append(status, dms)
-	}
-	if intlyalertpresent == false {
-		ialert := fmt.Sprint("KubePodCrashLooping is not present")
-		status = append(status, ialert)
-	}
-
-	if len(status) > 0 {
-		return fmt.Errorf("alert tests failed: %s", status)
-	}
-
-	t.Logf("No unexpected alerts found")
-	return nil
-}
-
-func integreatlyGrafanaTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
-	pods := &corev1.PodList{}
-	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(intlyNamespacePrefix + "middleware-monitoring-operator"),
-		k8sclient.MatchingLabels{"app": "grafana"},
-	}
-	err := f.Client.List(goctx.TODO(), pods, opts...)
-	if err != nil {
-		return fmt.Errorf("failed to list pods: %s", err)
-	}
-	if len(pods.Items) != 1 {
-		return fmt.Errorf("grafana pod not found")
-	}
-
-	type Dashboard struct {
-		Title string `json:"title"`
-	}
-
-	type Output []Dashboard
-
-	output, err := execToPod("curl localhost:3000/api/search",
-		pods.Items[0].ObjectMeta.Name,
-		intlyNamespacePrefix+"middleware-monitoring-operator",
-		"grafana", f)
-	if err != nil {
-		return fmt.Errorf("failed to exec to pod: %s", err)
-	}
-
-	var apiCallOutput Output
-	err = json.Unmarshal([]byte(output), &apiCallOutput)
-	if err != nil {
-		t.Logf("Failed to unmarshall json: %s", err)
-	}
-
-	if len(apiCallOutput) == 0 {
-		return fmt.Errorf("grafana dashboard not found : %v", apiCallOutput)
-	}
-	t.Logf("Grafana dashboard found: %v", apiCallOutput)
 	return nil
 }
 
@@ -556,7 +416,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
 	for _, namespaceName := range namespaces {
 		namespace := &corev1.Namespace{}
-		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: intlyNamespacePrefix + namespaceName}, namespace)
+		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: common.NamespacePrefix + namespaceName}, namespace)
 		if err != nil {
 			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
 		}
@@ -607,7 +467,7 @@ func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string
 func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
 	for _, pvcNamespace := range pvcNamespaces {
 		pvcs := &corev1.PersistentVolumeClaimList{}
-		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: intlyNamespacePrefix + pvcNamespace})
+		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: common.NamespacePrefix + pvcNamespace})
 		if err != nil {
 			return fmt.Errorf("Error getting PVCs for namespace: %v. %w", pvcNamespace, err)
 		}
@@ -713,24 +573,6 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	//TODO: split them into their own test cases
 	// check that all of the operators deploy and all of the installation phases complete
 	if err = integreatlyManagedTest(t, f, ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	monitoringTimeout := 15 * time.Minute
-	monitoringRetryInterval := 1 * time.Minute
-	err = wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		if err = integreatlyMonitoringTest(t, f, ctx); err != nil {
-			t.Log("Waiting 1 minute for alerts to normalise before retrying integreatlyMonitoringTest")
-			return false, nil
-		}
-
-		return true, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err = integreatlyGrafanaTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
 }

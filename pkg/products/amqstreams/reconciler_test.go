@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"testing"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	kafkav1 "github.com/integr8ly/integreatly-operator/pkg/apis/kafka.strimzi.io/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -51,7 +52,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = kafkav1.SchemeBuilder.AddToScheme(scheme)
+	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
@@ -159,7 +160,7 @@ func TestReconciler_config(t *testing.T) {
 
 func TestReconciler_reconcileCustomResource(t *testing.T) {
 	scheme := runtime.NewScheme()
-	kafkav1.SchemeBuilder.AddToScheme(scheme)
+	kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	cases := []struct {
 		Name           string
@@ -239,7 +240,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	kafka := &kafkav1.Kafka{
+	kafka := &kafkav1alpha1.Kafka{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "integreatly-cluster",
 			Namespace: defaultInstallationNamespace,
@@ -250,7 +251,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		unreadyPods = append(unreadyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -268,7 +269,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		readyPods = append(readyPods, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{
@@ -408,7 +409,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", defaultSubscriptionName, i),
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
 				Namespace: defaultInstallationNamespace,
 			},
 			Status: corev1.PodStatus{

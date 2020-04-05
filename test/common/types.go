@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -12,9 +13,20 @@ import (
 )
 
 const (
-	NamespacePrefix       = "redhat-rhmi-"
-	RHMIOperatorNamespace = NamespacePrefix + "operator"
-	InstallationName      = "rhmi"
+	InstallationName                  = "rhmi"
+	NamespacePrefix                   = "redhat-rhmi-"
+	RHMIOperatorNamespace             = NamespacePrefix + "operator"
+	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
+	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
+	ApicuritoOperatorNamespace        = NamespacePrefix + "apicurito-operator"
+	CloudResourceOperatorNamespace    = NamespacePrefix + "cloud-resources-operator"
+	CodeReadyOperatorNamespace        = NamespacePrefix + "codeready-workspaces-operator"
+	FuseOperatorNamespace             = NamespacePrefix + "fuse-operator"
+	RHSSOUserOperatorNamespace        = NamespacePrefix + "user-sso-operator"
+	RHSSOOperatorNamespace            = NamespacePrefix + "rhsso-operator"
+	SolutionExplorerOperatorNamespace = NamespacePrefix + "solution-explorer-operator"
+	ThreeScaleOperatorNamespace       = NamespacePrefix + "3scale-operator"
+	UPSOperatorNamespace              = NamespacePrefix + "ups-operator"
 )
 
 type TestingContext struct {
@@ -22,6 +34,7 @@ type TestingContext struct {
 	KubeConfig      *rest.Config
 	KubeClient      kubernetes.Interface
 	ExtensionClient *clientset.Clientset
+	HttpClient      *http.Client
 	SelfSignedCerts bool
 }
 
@@ -63,4 +76,9 @@ type ExpectedRoute struct {
 	ServiceName string
 
 	IsGeneratedName bool
+}
+
+type SubscriptionCheck struct {
+	Name      string
+	Namespace string
 }

@@ -3,11 +3,12 @@ package apicurito
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"strings"
 
 	v1 "k8s.io/api/apps/v1"
 
-	apicurito "github.com/integr8ly/integreatly-operator/pkg/apis/apicur/v1alpha1"
+	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -31,7 +32,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "apicurito"
-	defaultSubscriptionName      = "rhmi-apicurito"
 	manifestPackage              = "integreatly-apicurito"
 	apicuritoName                = "apicurito"
 	defaultApicuritoPullSecret   = "apicurito-pull-secret"
@@ -145,9 +145,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ApicuritoSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ApicuritoSubscriptionName), err)
 		return phase, err
 	}
 
@@ -176,7 +176,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	r.logger.Info("Reconciling Apicurito components")
-	apicuritoCR := &apicurito.Apicurito{
+	apicuritoCR := &apicuritov1alpha1.Apicurito{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apicuritoName,
 			Namespace: r.Config.GetNamespace(),

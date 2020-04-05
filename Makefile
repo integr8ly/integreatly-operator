@@ -38,6 +38,7 @@ export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
+export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -70,25 +71,15 @@ code/run/service_account: setup/service_account
 	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE})
 	$(MAKE) code/run
 
+.PHONY: code/run/delorean
+code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/integreatly-rhmi-cr.yml code/run/service_account
+
 .PHONY: code/compile
 code/compile: code/gen
 	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o=$(COMPILE_TARGET) ./cmd/manager
 
 deploy/crds/integreatly.org_rhmis_crd.yaml: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	$(OPERATOR_SDK) generate crds
-	- rm -f deploy/crds/apicur.io_apicuritoes_crd.yaml
-	- rm -f deploy/crds/enmasse.io_addresses_crd.yaml
-	- rm -f deploy/crds/enmasse.io_addressplans_crd.yaml
-	- rm -f deploy/crds/enmasse.io_addressspaces_crd.yaml
-	- rm -f deploy/crds/integreatly.org_webapps_crd.yaml
-	- rm -f deploy/crds/kafka.strimzi.io_kafkas_crd.yaml
-	- rm -f deploy/crds/enmasse.io_addressspaceplans_crd.yaml
-	- rm -f deploy/crds/admin.enmasse.io_consoleservices_crd.yaml
-	- rm -f deploy/crds/admin.enmasse.io_brokeredinfraconfigs_crd.yaml
-	- rm -f deploy/crds/admin.enmasse.io_standardinfraconfigs_crd.yaml
-	- rm -f deploy/crds/admin.enmasse.io_authenticationservices_crd.yaml
-	- rm -f deploy/crds/applicationmonitoring.integreatly.org_blackboxtargets_crd.yaml
-	- rm -f deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
 
 pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go: pkg/apis/integreatly/v1alpha1/rhmi_types.go
 	$(OPENAPI_GEN) --logtostderr=true -o "" \
@@ -147,7 +138,7 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 .PHONY: test/functional
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test ./test/functional
+	go clean -testcache && go test -v ./test/functional
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
@@ -165,7 +156,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -186,7 +177,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/*_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
@@ -222,6 +213,15 @@ cluster/prepare/dms:
 	@-oc create secret generic $(INSTALLATION_PREFIX)-deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
 
+.PHONY: cluster/prepare/delorean
+cluster/prepare/delorean:
+ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
+	@echo Detected a delorean ews branch. The integreatly-delorean-secret.yml is required.
+	@echo Please contact the delorean team to get this if you do not already have it.
+	@echo Add it to the root dir of this repo and rerun the desired target if the target fails on it not existing
+	@ oc apply -f integreatly-delorean-secret.yml --namespace=$(NAMESPACE)
+endif
+
 .PHONY: cluster/cleanup
 cluster/cleanup:
 	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
@@ -254,6 +254,15 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
+ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
+	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE/$(NAMESPACE)/g" deploy/integreatly-rhmi-cr.yml
+	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME/$(DELOREAN_PULL_SECRET_NAME)/g" deploy/integreatly-rhmi-cr.yml
+	rm deploy/integreatly-rhmi-cr.yml.bak
+else
+	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE//g" deploy/integreatly-rhmi-cr.yml
+	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME//g" deploy/integreatly-rhmi-cr.yml
+	rm deploy/integreatly-rhmi-cr.yml.bak
+endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
 .PHONY: gen/csv

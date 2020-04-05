@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	v1 "github.com/openshift/api/route/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"strings"
 
+	v1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -34,7 +36,6 @@ import (
 
 const (
 	defaultInstallationNamespace = "middleware-monitoring"
-	defaultSubscriptionName      = "rhmi-monitoring"
 	defaultMonitoringName        = "middleware-monitoring"
 	packageName                  = "monitoring"
 	openshiftMonitoringNamespace = "openshift-monitoring"
@@ -184,10 +185,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: defaultSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackagae}, []string{r.Config.GetOperatorNamespace()}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.MonitoringSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackagae}, []string{r.Config.GetOperatorNamespace()}, serverClient)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", defaultSubscriptionName), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.MonitoringSubscriptionName), err)
 		return phase, err
 	}
 
@@ -202,7 +203,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase %s reconcileAlertManagerConfigSecret", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alert manager config secret", err)
-		logrus.Errorf("failed to reconcile alert manager config secret: %w", err)
+		logrus.Errorf("failed to reconcile alert manager config secret: %v", err)
 		return phase, err
 	}
 
@@ -414,6 +415,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 	}
 
 	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
+	r.extraParams["namespace-prefix"] = r.installation.Spec.NamespacePrefix
 	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword

@@ -11,3 +11,6 @@ spec:
   smtpSecret: INSTALLATION_PREFIX-smtp
   deadMansSnitchSecret: INSTALLATION_PREFIX-deadmanssnitch
   pagerDutySecret: INSTALLATION_PREFIX-pagerduty
+  pullSecret:
+    name: 'DELOREAN_PULL_SECRET_NAME'
+    namespace: 'DELOREAN_PULL_SECRET_NAMESPACE'

@@ -3,16 +3,23 @@ package common
 import (
 	"bytes"
 	goctx "context"
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/cookiejar"
+	"strings"
+
+	"github.com/ghodss/yaml"
+	"golang.org/x/net/publicsuffix"
+
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"net/http"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -144,11 +151,28 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
 
+	// Create the http client with a cookie jar
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new cookie jar: %v", err)
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: selfSignedCerts},
+	}
+
+	httpClient := &http.Client{
+		Jar:           jar,
+		Transport:     transport,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
+	}
+
 	return &TestingContext{
 		Client:          dynClient,
 		KubeConfig:      kubeConfig,
 		KubeClient:      kubeclient,
 		ExtensionClient: apiextensions,
+		HttpClient:      httpClient,
 		SelfSignedCerts: selfSignedCerts,
 	}, nil
 }
@@ -161,4 +185,20 @@ func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func writeObjToYAMLFile(obj interface{}, out string) error {
+	data, err := yaml.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(out, data, 0644)
+}
+
+func WriteRHMICRToFile(client dynclient.Client, file string) error {
+	if rhmi, err := getRHMI(client); err != nil {
+		return err
+	} else {
+		return writeObjToYAMLFile(rhmi, file)
+	}
 }
