@@ -10,8 +10,8 @@ import (
 	"testing"
 )
 
-const (
-	threescaleLoginUser = "customer-admin-0"
+var (
+	threescaleLoginUser = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
 )
 
 func lookup3ScaleClientSecret(client dynclient.Client, clientId string) (string, error) {

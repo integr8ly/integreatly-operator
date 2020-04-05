@@ -59,7 +59,7 @@ func requestCRSFToken(c *http.Client, formUrl string) (string, error) {
 
 	selector := doc.Find("meta[name='csrf-token']")
 	if selector.Length() == 0 {
-		return "", errors.New("no csrf token found")
+		return "", errors.New(fmt.Sprintf("no csrf token found in: %v", doc.Text()))
 	}
 
 	// Get the csrf token from the form to use it in the post
