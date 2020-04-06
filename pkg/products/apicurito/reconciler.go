@@ -185,8 +185,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicuritoCR, func() error {
 		// Specify 2 pods to provide HA
-		apicuritoCR.Spec.Size = 3
-		//apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
+		apicuritoCR.Spec.Size = 2
 		// Ideally the operator would set the Image field but it currently (operator v1.6) does not - review on upgrades
 		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.6"
 		return nil
