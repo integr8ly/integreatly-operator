@@ -30,7 +30,8 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	}
 
 	productName := cr.Labels["productName"]
-	alertName := productName + "PostgresInstanceUnavailable"
+	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	alertName := postgresCRName + "PostgresInstanceUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -58,7 +59,8 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	alertName := productName + "PostgresConnectionFailed"
+	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	alertName := postgresCRName + "PostgresConnectionFailed"
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
