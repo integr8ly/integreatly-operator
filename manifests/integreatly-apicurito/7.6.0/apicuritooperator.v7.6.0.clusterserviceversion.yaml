@@ -41,6 +41,7 @@ spec:
   keywords: ['api', 'apicurio', 'apicurito']
   version: 7.6.0
   maturity: alpha
+  replaces: apicuritooperator.v7.5.0
   maintainers:
     - name: Jon Anstey
       email: janstey@redhat.com
