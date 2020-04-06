@@ -2,7 +2,6 @@ package functional
 
 import (
 	goctx "context"
-	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/elasticache"
@@ -70,12 +69,15 @@ func AWSElasticacheResourcesExistTest(t *testing.T, ctx *common.TestingContext) 
 			testErrors = append(testErrors, fmt.Sprintf("failed to get %s elasticache replicationgroups with error : %v", resourceID, err))
 			continue
 		}
-
+		if len(foundElasticacheReplicationGroups.ReplicationGroups[0].NodeGroups) > 1 {
+			testErrors = append(testErrors, fmt.Sprintf("insufficient number of nodes in elasticache group"))
+			continue
+		}
 		replicationGroup := foundElasticacheReplicationGroups.ReplicationGroups[0]
 		nodeGroup := replicationGroup.NodeGroups[0]
 
 		// perform checks to verify state is as expected
-		if err := verifyMultiAZ(nodeGroup.NodeGroupMembers); err != nil {
+		if !verifyMultiAZ(nodeGroup.NodeGroupMembers) {
 			testErrors = append(testErrors, fmt.Sprintf("elasticache resource %s multiAZ failure %v", resourceID, err))
 		}
 		if !aws.BoolValue(replicationGroup.AtRestEncryptionEnabled) {
@@ -87,18 +89,15 @@ func AWSElasticacheResourcesExistTest(t *testing.T, ctx *common.TestingContext) 
 	}
 
 	if len(testErrors) != 0 {
-		t.Fatalf("test elasticache exists failed with the following errors : %s", testErrors)
+		t.Fatalf("test elasticache instances exists failed with the following errors : %s", testErrors)
 	}
 
 }
 
 // helper method for verifying nodes are in different availability zones
-func verifyMultiAZ(member []*elasticache.NodeGroupMember) error {
-	if len(member) < 1 {
-		return errors.New("insufficient number of nodes in elasticache group")
-	}
+func verifyMultiAZ(member []*elasticache.NodeGroupMember) bool {
 	if member[0].PreferredAvailabilityZone == member[1].PreferredAvailabilityZone {
-		return errors.New("replication group is not multiAZ")
+		return false
 	}
-	return nil
+	return true
 }

@@ -66,12 +66,12 @@ func AWSRDSResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
 			DBInstanceIdentifier: aws.String(resourceIdentifier),
 		})
 		if err != nil {
-			testErrors = append(testErrors, fmt.Sprintf("failed to get %s rds instances with error : %v", resourceIdentifier, err))
+			testErrors = append(testErrors, fmt.Sprintf("failed to get rds instance :%s with error : %v", resourceIdentifier, err))
 			continue
 		}
 		// verify the rds instance is as expected
 		if !verifyRDSInstanceConfig(*foundRDSInstances.DBInstances[0]) {
-			testErrors = append(testErrors, fmt.Sprintf("failed as rds %s resources is not as expected", resourceIdentifier))
+			testErrors = append(testErrors, fmt.Sprintf("failed as rds %s resource is not as expected", resourceIdentifier))
 		}
 	}
 

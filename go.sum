@@ -613,8 +613,8 @@ github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NH
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/integr8ly/application-monitoring-operator v1.1.1 h1:qd/ctydmBZpaUhPqtXWlLfOxGP0aOep7C+OhCvS+fzk=
 github.com/integr8ly/application-monitoring-operator v1.1.1/go.mod h1:oG6qQ2kOQr2XOZZ2Clo0Bh7wgiHTg3ZwE3AF6If9pXU=
-github.com/integr8ly/cloud-resource-operator v0.14.0 h1:0EvcddQ1ghluxt/cn3TFd7Vy6AoMHlBOgonhE6O3UWU=
-github.com/integr8ly/cloud-resource-operator v0.14.0/go.mod h1:msU3lhYqs7wdJ4h+V9avZDZtd/by1zjuZdCLWXQtijM=
+github.com/integr8ly/cloud-resource-operator v0.11.0 h1:edqMkb6PsSnL/vb7VawRvxkA3OUy3WWzhHMyAI5guKc=
+github.com/integr8ly/cloud-resource-operator v0.11.0/go.mod h1:msU3lhYqs7wdJ4h+V9avZDZtd/by1zjuZdCLWXQtijM=
 github.com/integr8ly/grafana-operator v1.3.1 h1:3fknUP3pI9/H0/HTxOOR5hzJVo1wPs5HMfBUlMYpzWk=
 github.com/integr8ly/grafana-operator v1.3.1/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
 github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4 h1://E7j42AwTNj3oPVr7/yS0Ztbm7iunOppSs9VJ3nGMc=
