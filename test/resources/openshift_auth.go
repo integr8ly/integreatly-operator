@@ -150,7 +150,8 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 	if strings.Contains(browser.Url().Host, openshiftOauthSubdomain) {
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
-			return fmt.Errorf("failed to get permissions form: %w", err)
+			// Permissions were already approved
+			return nil
 		}
 		if err = permissionsForm.Submit(); err != nil {
 			return fmt.Errorf("failed to submit acceptance button for permissions: %w", err)
