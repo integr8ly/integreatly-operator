@@ -40,15 +40,15 @@ var configManagerConfigMap = &corev1.ConfigMap{
 
 var OpenshiftDockerSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      resources.DefaultOriginPullSecretName,
-		Namespace: resources.DefaultOriginPullSecretNamespace,
+		Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+		Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 	},
 }
 
 var ComponentDockerSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      resources.DefaultOriginPullSecretName,
-		Namespace: resources.DefaultOriginPullSecretNamespace,
+		Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+		Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 	},
 }
 

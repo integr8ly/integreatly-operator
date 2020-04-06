@@ -368,8 +368,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	pullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      resources.DefaultOriginPullSecretName,
-			Namespace: resources.DefaultOriginPullSecretNamespace,
+			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 		},
 		Data: map[string][]byte{
 			"test": {'t', 'e', 's', 't'},
