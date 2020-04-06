@@ -63,7 +63,7 @@ const (
 	systemSeedSecretName          = "system-seed"
 	systemMasterApiCastSecretName = "system-master-apicast"
 
-	registrySecretName            = "threescale-registry-auth"
+	registrySecretName = "threescale-registry-auth"
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
