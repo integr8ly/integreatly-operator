@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -204,7 +205,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOUserSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	preUpgradeBackupsExecutor := r.preUpgradeBackupsExecutor()
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOUserSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackupsExecutor, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOUserSubscriptionName), err)
 		return phase, err
@@ -481,6 +483,18 @@ func (r *Reconciler) createOrUpdateKeycloakAdmin(user keycloak.KeycloakAPIUser, 
 
 		return nil
 	})
+}
+
+func (r *Reconciler) preUpgradeBackupsExecutor() backup.BackupExecutor {
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+
+	return backup.NewAWSBackupExecutor(
+		r.installation.Namespace,
+		"rhssouser-postgres-rhmi",
+		backup.PostgresSnapshotType,
+	)
 }
 
 func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns string) ([]keycloak.KeycloakAPIUser, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -133,7 +134,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.AMQOnlineSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.AMQOnlineSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, r.preUpgradeBackupExecutor(), serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQOnlineSubscriptionName), err)
 		return phase, err
@@ -237,6 +238,21 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	}
 
 	return resource, nil
+}
+
+func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
+	return backup.NewConcurrentBackupExecutor(
+		backup.NewCronJobBackupExecutor(
+			"enmasse-postgres-backup",
+			r.Config.GetNamespace(),
+			"enmasse-preupgrade-postgres-backup",
+		),
+		backup.NewCronJobBackupExecutor(
+			"enmasse-pv-backup",
+			r.Config.GetNamespace(),
+			"enmasse-preupgrade-pv-backup",
+		),
+	)
 }
 
 func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

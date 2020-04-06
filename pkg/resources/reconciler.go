@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -193,7 +194,7 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretN
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS []string, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, marketplace.IntegreatlyChannel, target.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, owner, target, operandNS, operatorsv1alpha1.ApprovalManual)
 
@@ -214,7 +215,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	}
 
 	for _, ip := range ips.Items {
-		err = upgradeApproval(ctx, client, &ip)
+		err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, &ip)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.Pkg, err)
 		}

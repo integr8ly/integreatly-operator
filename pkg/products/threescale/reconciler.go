@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -171,7 +172,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ThreeScaleSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	preUpgradeBackups := r.preUpgradeBackupExecutor()
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ThreeScaleSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackups, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
 		return phase, err
@@ -843,6 +845,30 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+
+	return backup.NewConcurrentBackupExecutor(
+		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
+			"threescale-postgres-rhmi",
+			backup.PostgresSnapshotType,
+		),
+		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
+			"threescale-backend-redis-rhmi",
+			backup.RedisSnapshotType,
+		),
+		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
+			"threescale-redis-rhmi",
+			backup.RedisSnapshotType,
+		),
+	)
 }
 
 func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers *Users, systemAdminUsername string, isWorkshop bool, tsClient ThreeScaleInterface, accessToken string) error {
