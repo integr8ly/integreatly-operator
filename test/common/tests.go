@@ -29,6 +29,6 @@ var (
 		{"C01 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
-		{"Verify users with no email get default email", TestDefaultUserEmail},
+		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 	}
 )
