@@ -222,6 +222,10 @@ ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	@ oc apply -f integreatly-delorean-secret.yml --namespace=$(NAMESPACE)
 endif
 
+.PHONY: cluster/prepare/delorean/pullsecret
+cluster/prepare/delorean/pullsecret:
+	@./scripts/setup-delorean-pullsecret.sh
+
 .PHONY: cluster/cleanup
 cluster/cleanup:
 	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
