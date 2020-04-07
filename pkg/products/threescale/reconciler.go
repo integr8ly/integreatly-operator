@@ -893,14 +893,13 @@ func syncOpenshiftAdminMembership(openshiftAdminGroup *usersv1.Group, newTsUsers
 }
 
 func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cm := &corev1.ConfigMap{}
-	// if this errors it can be ignored
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "system-environment", Namespace: r.Config.GetNamespace()}, cm)
-	if err == nil && string(r.Config.GetProductVersion()) != cm.Data["AMP_RELEASE"] {
-		r.Config.SetProductVersion(cm.Data["AMP_RELEASE"])
+
+	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.Version3Scale) {
+		r.Config.SetProductVersion(string(integreatlyv1alpha1.Version3Scale))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
-	if err == nil && string(r.Config.GetOperatorVersion()) != string(integreatlyv1alpha1.OperatorVersion3Scale) {
+
+	if string(r.Config.GetOperatorVersion()) != string(integreatlyv1alpha1.OperatorVersion3Scale) {
 		r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersion3Scale))
 		r.ConfigManager.WriteConfig(r.Config)
 	}
