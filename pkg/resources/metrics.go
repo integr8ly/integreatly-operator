@@ -30,7 +30,8 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	}
 
 	productName := cr.Labels["productName"]
-	alertName := productName + "PostgresInstanceUnavailable"
+	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	alertName := postgresCRName + "PostgresInstanceUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -58,7 +59,8 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	alertName := productName + "PostgresConnectionFailed"
+	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	alertName := postgresCRName + "PostgresConnectionFailed"
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -85,9 +87,9 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
 	}
-
 	productName := cr.Labels["productName"]
-	alertName := productName + "RedisCacheUnavailable"
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	alertName := redisCRName + "RedisCacheUnavailable"
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -115,7 +117,8 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, nil
 	}
 	productName := cr.Labels["productName"]
-	alertName := productName + "RedisCacheConnectionFailed"
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	alertName := redisCRName + "RedisCacheConnectionFailed"
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -170,6 +173,24 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 
 	// create or update the resource
 	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+		rule.Name = ruleName
+		rule.Namespace = ns
+		rule.Spec.Groups = []prometheusv1.RuleGroup{
+			{
+				Name: alertGroupName,
+				Rules: []prometheusv1.Rule{
+					{
+						Alert:  alertName,
+						Expr:   alertExp,
+						For:    alertFor,
+						Labels: labels,
+						Annotations: map[string]string{
+							"description": desc,
+						},
+					},
+				},
+			},
+		}
 		return nil
 	})
 	if err != nil {
