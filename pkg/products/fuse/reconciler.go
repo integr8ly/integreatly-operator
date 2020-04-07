@@ -3,8 +3,10 @@ package fuse
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -145,7 +147,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.FuseSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, serverClient)
+	preUpgradeBackups := preUpgradeBackupExecutor(installation)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.FuseSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackups, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.FuseSubscriptionName), err)
 		return phase, err
@@ -318,4 +321,20 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 
 	// if there are no errors, the phase is complete
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.BackupExecutor {
+	return backup.NewNoopBackupExecutor()
+
+	// Holding off until Fuse 7.6 GA, that allows for external databases:
+	//
+	// if installation.Spec.UseClusterStorage != "false" {
+	// 	return backup.NewNoopBackupExecutor()
+	// }
+
+	// return backup.NewAWSBackupExecutor(
+	// 	installation.Namespace,
+	// 	"fuse-online-postgres-rhmi",
+	// 	backup.PostgresSnapshotType,
+	// )
 }

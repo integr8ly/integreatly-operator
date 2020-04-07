@@ -8,6 +8,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -133,7 +134,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.UPSSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, serverClient)
+	preUpgradeBackups := preUpgradeBackupExecutor(installation)
+	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.UPSSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, preUpgradeBackups, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.UPSSubscriptionName), err)
 
@@ -297,4 +299,16 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.BackupExecutor {
+	if installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+
+	return backup.NewAWSBackupExecutor(
+		installation.Namespace,
+		"ups-postgres-rhmi",
+		backup.PostgresSnapshotType,
+	)
 }

@@ -10,6 +10,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -151,7 +152,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				tc.FakeMPM,
 			)
 
-			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{"test-ns"}, tc.client)
+			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{"test-ns"}, backup.NewNoopBackupExecutor(), tc.client)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}
