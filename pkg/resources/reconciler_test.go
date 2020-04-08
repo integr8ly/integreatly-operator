@@ -178,8 +178,8 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 
 	defPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      DefaultOriginPullSecretName,
-			Namespace: DefaultOriginPullSecretNamespace,
+			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 		},
 		Data: map[string][]byte{
 			"test": {'t', 'e', 's', 't'},
@@ -215,7 +215,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 			Config: basicConfigMock(),
 			Validate: func(c k8sclient.Client) error {
 				s := &corev1.Secret{}
-				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}, s)
+				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: integreatlyv1alpha1.DefaultOriginPullSecretName, Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace}, s)
 				if err != nil {
 					return err
 				}
