@@ -4,6 +4,7 @@ set -o pipefail
 
 PASSWORD="${PASSWORD:-$(openssl rand -base64 12)}"
 REALM="${REALM:-testing-idp}"
+REALM_DISPLAY_NAME="${REALM_DISPLAY_NAME:-Testing IDP}"
 INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o json | jq -r .items[0].spec.namespacePrefix)}"
 INSTALLATION_PREFIX=${INSTALLATION_PREFIX%-} # remove trailing dash
 ADMIN_USERNAME="${ADMIN_USERNAME:-customer-admin}"
@@ -91,7 +92,7 @@ if [[ ${CLUSTER_ID} ]]; then
     echo "To delete IDP execute: ocm delete \"/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers/$IDP_ID\""
   else
 
-    oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
+    oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
 
     sed "s|REALM|$REALM|g; s|KEYCLOAK_URL|$KEYCLOAK_URL|g; s|CLIENT_SECRET|$CLIENT_SECRET|g" "${BASH_SOURCE%/*}/ocm-idp-template.json" | ocm post "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers"
     echo "$REALM IDP added into OCM configuration"
@@ -115,7 +116,7 @@ else
   fi
 
   # apply KeycloakRealm and KeycloakClient from a template
-  oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
+  oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
   # create KeycloakUsers
   create_users
 
