@@ -89,6 +89,9 @@ var (
 	EventProcessingError       string = "ProcessingError"
 	EventInstallationCompleted string = "InstallationCompleted"
 	EventPreflightCheckPassed  string = "PreflightCheckPassed"
+
+	DefaultOriginPullSecretName      = "samples-registry-credentials"
+	DefaultOriginPullSecretNamespace = "openshift"
 )
 
 // RHMISpec defines the desired state of Installation
@@ -197,6 +200,14 @@ func (i *RHMI) GetProductStatusObject(product ProductName) *RHMIProductStatus {
 	}
 	return &RHMIProductStatus{
 		Name: product,
+	}
+}
+
+func (i *RHMI) GetPullSecretSpec() *PullSecretSpec {
+	if i.Spec.PullSecret.Name != "" && i.Spec.PullSecret.Namespace != "" {
+		return &(i.Spec.PullSecret)
+	} else {
+		return &PullSecretSpec{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}
 	}
 }
 

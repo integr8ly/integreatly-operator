@@ -33,8 +33,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 	defPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      DefaultOriginPullSecretName,
-			Namespace: DefaultOriginPullSecretNamespace,
+			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 		},
 		Data: map[string][]byte{
 			"test": {'t', 'e', 's', 't'},
@@ -94,7 +94,7 @@ func TestCopyDefaultPullSecretToNameSpace(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			err := CopyDefaultPullSecretToNameSpace(context.TODO(), testDestinationNameSpace, testDestinationSecretName, scenario.Installation, scenario.FakeClient)
+			err := CopyPullSecretToNameSpace(context.TODO(), scenario.Installation.GetPullSecretSpec(), testDestinationNameSpace, testDestinationSecretName, scenario.FakeClient)
 			scenario.Verify(scenario.FakeClient, err, t)
 		})
 	}
@@ -104,8 +104,8 @@ func TestCopySecret(t *testing.T) {
 
 	sourceSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      DefaultOriginPullSecretName,
-			Namespace: DefaultOriginPullSecretNamespace,
+			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 		},
 		Data: map[string][]byte{
 			"test": {'t', 'e', 's', 't'},
