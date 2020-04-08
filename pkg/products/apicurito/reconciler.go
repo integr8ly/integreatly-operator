@@ -58,8 +58,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-		apicuritoConfig.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionApicurito))
-		apicuritoConfig.SetProductVersion(string(integreatlyv1alpha1.VersionApicurito))
 	}
 
 	return &Reconciler{
