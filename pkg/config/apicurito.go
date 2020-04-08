@@ -50,19 +50,11 @@ func (r *Apicurito) GetProductName() integreatlyv1alpha1.ProductName {
 }
 
 func (r *Apicurito) GetProductVersion() integreatlyv1alpha1.ProductVersion {
-	return integreatlyv1alpha1.ProductVersion(r.Config["VERSION"])
+	return integreatlyv1alpha1.VersionApicurito
 }
 
 func (r *Apicurito) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionApicurito
-}
-
-func (r *Apicurito) SetProductVersion(version string) {
-	r.Config["VERSION"] = version
-}
-
-func (r *Apicurito) SetOperatorVersion(operator string) {
-	r.Config["OPERATOR"] = operator
 }
 
 func (c *Apicurito) GetHost() string {
