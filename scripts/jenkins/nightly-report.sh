@@ -64,7 +64,12 @@ do
       buildUrl=$(cat build.json | jq -r .url)
       getDateString
       buildResult=$(cat build.json | jq -r .result)
-      echo -e "\t#$buildNumber\t$buildDate\tResult: $buildResult\tUrl: $buildUrl\n" >> report.txt
+      echo -e "\n\t#$buildNumber\t$buildDate\tResult: $buildResult\tUrl: $buildUrl" >> report.txt
+
+      description=$(cat build.json | jq -r .description)
+      if [[ $description != "null" ]] ; then
+        echo -e "\t\tNote: $description" >> report.txt
+      fi
     fi
   done
 done
