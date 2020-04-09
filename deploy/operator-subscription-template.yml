@@ -21,7 +21,7 @@ objects:
       installPlanApproval: Automatic
       name: integreatly
       source: ${CATALOG_SOURCE_CONFIG_NAME}
-      sourceNamespace: ${NAMESPACE}
+      sourceNamespace: ${CATALOG_SOURCE_CONFIG_NAMESPACE}
 
 parameters:
   - description: The namespace to deploy into
