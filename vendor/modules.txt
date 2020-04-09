@@ -27,9 +27,9 @@ github.com/MakeNowJust/heredoc
 github.com/Masterminds/goutils
 # github.com/Masterminds/semver v1.5.0
 github.com/Masterminds/semver
-# github.com/Masterminds/semver/v3 v3.0.1
+# github.com/Masterminds/semver/v3 v3.0.3
 github.com/Masterminds/semver/v3
-# github.com/Masterminds/sprig/v3 v3.0.0
+# github.com/Masterminds/sprig/v3 v3.0.2
 github.com/Masterminds/sprig/v3
 # github.com/Microsoft/go-winio v0.4.12
 github.com/Microsoft/go-winio
@@ -60,13 +60,18 @@ github.com/PuerkitoBio/urlesc
 github.com/RHsyseng/operator-utils/pkg/olm
 # github.com/aerogear/unifiedpush-operator v0.5.0
 github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1
+# github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
+github.com/alecthomas/template
+github.com/alecthomas/template/parse
+# github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4
+github.com/alecthomas/units
 # github.com/andybalholm/cascadia v1.1.0
 github.com/andybalholm/cascadia
 # github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
-# github.com/aws/aws-sdk-go v1.23.17
+# github.com/aws/aws-sdk-go v1.25.50
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
@@ -123,7 +128,7 @@ github.com/containerd/containerd/remotes/docker
 github.com/containerd/containerd/remotes/docker/schema1
 github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
-# github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
+# github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
 github.com/containerd/continuity/pathdriver
 # github.com/coreos/go-semver v0.3.0
 github.com/coreos/go-semver/semver
@@ -237,7 +242,7 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/loads
 # github.com/go-openapi/runtime v0.19.0
 github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.19.5-0.20191022081736-744796356cda
+# github.com/go-openapi/spec v0.19.5
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.19.0
 github.com/go-openapi/strfmt
@@ -391,7 +396,7 @@ github.com/matryer/moq
 github.com/matryer/moq/pkg/moq
 # github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 github.com/mattbaird/jsonpatch
-# github.com/mattn/go-isatty v0.0.8
+# github.com/mattn/go-isatty v0.0.9
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.4
 github.com/mattn/go-runewidth
@@ -483,7 +488,7 @@ github.com/operator-framework/operator-registry/pkg/lib/bundle
 github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/sqlite
 github.com/operator-framework/operator-registry/pkg/sqlite/migrations
-# github.com/operator-framework/operator-sdk v0.15.1
+# github.com/operator-framework/operator-sdk v0.16.0
 github.com/operator-framework/operator-sdk/cmd/operator-sdk
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/add
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/alpha
@@ -544,8 +549,6 @@ github.com/operator-framework/operator-sdk/pkg/ansible/runner
 github.com/operator-framework/operator-sdk/pkg/ansible/runner/eventapi
 github.com/operator-framework/operator-sdk/pkg/ansible/runner/internal/inputdir
 github.com/operator-framework/operator-sdk/pkg/ansible/watches
-github.com/operator-framework/operator-sdk/pkg/apis/scorecard
-github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha1
 github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha2
 github.com/operator-framework/operator-sdk/pkg/handler
 github.com/operator-framework/operator-sdk/pkg/helm
@@ -568,11 +571,11 @@ github.com/operator-framework/operator-sdk/pkg/test/e2eutil
 github.com/operator-framework/operator-sdk/version
 # github.com/pborman/uuid v1.2.0
 github.com/pborman/uuid
-# github.com/pelletier/go-toml v1.3.0
+# github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -587,6 +590,7 @@ github.com/prometheus/client_model/go
 # github.com/prometheus/common v0.7.0
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+github.com/prometheus/common/log
 github.com/prometheus/common/model
 # github.com/prometheus/procfs v0.0.8
 github.com/prometheus/procfs
@@ -610,7 +614,7 @@ github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.3.0
 github.com/spf13/cast
-# github.com/spf13/cobra v0.0.5
+# github.com/spf13/cobra v0.0.7
 github.com/spf13/cobra
 # github.com/spf13/jwalterweatherman v1.1.0
 github.com/spf13/jwalterweatherman
@@ -621,8 +625,8 @@ github.com/spf13/viper
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
-github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1
+# github.com/syndesisio/syndesis/install/operator v0.0.0-20200408072613-2f570ffc32a0
+github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1
 # github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
 github.com/xeipuuv/gojsonpointer
 # github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
@@ -683,6 +687,8 @@ golang.org/x/sync/semaphore
 # golang.org/x/sys v0.0.0-20200113162924-86b910548bc1
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+golang.org/x/sys/windows/svc/eventlog
 # golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
@@ -768,6 +774,8 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# gopkg.in/alecthomas/kingpin.v2 v2.2.6
+gopkg.in/alecthomas/kingpin.v2
 # gopkg.in/fsnotify.v1 v1.4.7
 gopkg.in/fsnotify.v1
 # gopkg.in/gorp.v1 v1.7.2
@@ -776,9 +784,9 @@ gopkg.in/gorp.v1
 gopkg.in/headzoo/surf.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.4
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# helm.sh/helm/v3 v3.0.1
+# helm.sh/helm/v3 v3.0.2
 helm.sh/helm/v3/internal/experimental/registry
 helm.sh/helm/v3/internal/ignore
 helm.sh/helm/v3/internal/resolver
@@ -838,7 +846,7 @@ honnef.co/go/tools/staticcheck/vrp
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# k8s.io/api v0.17.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
+# k8s.io/api v0.18.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -898,7 +906,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextension
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/features
-# k8s.io/apimachinery v0.17.0 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
+# k8s.io/apimachinery v0.17.2 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -1072,7 +1080,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.0.0 => k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
+# k8s.io/code-generator v0.18.0 => k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
 k8s.io/code-generator/cmd/deepcopy-gen/args
 # k8s.io/component-base v0.0.0 => k8s.io/component-base v0.0.0-20191016111319-039242c015a9
 k8s.io/component-base/featuregate
