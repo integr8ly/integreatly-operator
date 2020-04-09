@@ -137,13 +137,12 @@ var (
 		{
 			Name: "redhat-rhmi-fuse",
 			Products: []Product{
-				Product{Name: "broker-amq", ExpectedReplicas: 0},
-				Product{Name: "syndesis-db", ExpectedReplicas: 1},
 				Product{Name: "syndesis-meta", ExpectedReplicas: 1},
 				Product{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
 				Product{Name: "syndesis-prometheus", ExpectedReplicas: 1},
 				Product{Name: "syndesis-server", ExpectedReplicas: 1},
 				Product{Name: "syndesis-ui", ExpectedReplicas: 1},
+				{Name: "broker-amq", ExpectedReplicas: 1},
 			},
 		},
 		{
