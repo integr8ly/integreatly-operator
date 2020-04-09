@@ -40,7 +40,14 @@ const (
 )
 
 var (
-	quickstartTemplates = []string{
+	// See installation reference below for current install version 7.6
+	// https://access.redhat.com/documentation/en-us/red_hat_fuse/7.6/html-single/fuse_on_openshift_guide/index#install-fuse-on-openshift4
+
+	corePrefix         = integreatlyv1alpha1.TagFuseOnOpenShiftCore + "/"
+	springBoot2Prefix  = integreatlyv1alpha1.TagFuseOnOpenShiftSpringBoot2 + "/"
+	quickStartLocation = "quickstarts/"
+
+	quickstartCoreTemplates = []string{
 		"eap-camel-amq-template.json",
 		"eap-camel-cdi-template.json",
 		"eap-camel-cxf-jaxrs-template.json",
@@ -56,16 +63,32 @@ var (
 		"spring-boot-camel-infinispan-template.json",
 		"spring-boot-camel-rest-3scale-template.json",
 		"spring-boot-camel-rest-sql-template.json",
-		"spring-boot-camel-teiid-template.json",
 		"spring-boot-camel-template.json",
 		"spring-boot-camel-xa-template.json",
 		"spring-boot-camel-xml-template.json",
 		"spring-boot-cxf-jaxrs-template.json",
 		"spring-boot-cxf-jaxws-template.json",
 	}
+	quickstartSpringBoot2Templates = []string{
+		"spring-boot-2-camel-amq-template.json",
+		"spring-boot-2-camel-config-template.json",
+		"spring-boot-2-camel-drools-template.json",
+		"spring-boot-2-camel-infinispan-template.json",
+		"spring-boot-2-camel-rest-3scale-template.json",
+		"spring-boot-2-camel-rest-sql-template.json",
+		"spring-boot-2-camel-template.json",
+		"spring-boot-2-camel-xa-template.json",
+		"spring-boot-2-camel-xml-template.json",
+		"spring-boot-2-cxf-jaxrs-template.json",
+		"spring-boot-2-cxf-jaxrs-xml-template.json",
+		"spring-boot-2-cxf-jaxws-template.json",
+		"spring-boot-2-cxf-jaxws-xml-template.json",
+	}
 	consoleTemplates = []string{
-		"fuse-console-cluster-os4.json",
 		"fuse-console-namespace-os4.json",
+		"fis-console-namespace-template.json",
+		"fuse-console-cluster-os4.json",
+		"fis-console-cluster-template.json",
 		"fuse-apicurito.yml",
 	}
 )
@@ -156,16 +179,25 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 
 		configMapData := make(map[string]string)
 		fileNames := []string{
-			imageStreamFileName,
+			corePrefix + imageStreamFileName,
 		}
-		fileNames = append(fileNames, consoleTemplates...)
 
-		for _, qn := range quickstartTemplates {
-			fileNames = append(fileNames, "quickstarts/"+qn)
+		for _, qn := range consoleTemplates {
+			fileNames = append(fileNames, corePrefix+qn)
+		}
+
+		for _, qn := range quickstartCoreTemplates {
+			fileNames = append(fileNames, corePrefix+quickStartLocation+qn)
+		}
+
+		for _, qn := range quickstartSpringBoot2Templates {
+			fileNames = append(fileNames, springBoot2Prefix+quickStartLocation+qn)
 		}
 
 		for _, fn := range fileNames {
-			fileURL := TemplatesBaseURL + string(r.Config.GetProductVersion()) + "/" + fn
+
+			fileURL := TemplatesBaseURL + fn
+
 			content, err := r.getFileContentFromURL(fileURL)
 			if err != nil {
 				return fmt.Errorf("failed to get file contents of %s: %w", fn, err)
@@ -177,8 +209,10 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 				return fmt.Errorf("failed to read contents of %s: %w", fn, err)
 			}
 
-			// Removes 'quickstarts/' from the key prefix as this is not a valid configmap data key
-			key := strings.TrimPrefix(fn, "quickstarts/")
+			// Remove the possible prefixes from the key as this is not a valid configmap data key
+			key := strings.TrimPrefix(fn, corePrefix)
+			key = strings.TrimPrefix(key, springBoot2Prefix)
+			key = strings.TrimPrefix(key, quickStartLocation)
 
 			// Write content of file to configmap
 			configMapData[key] = string(data)
@@ -257,7 +291,8 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 	templates := make(map[string]runtime.Object)
 
 	templateFiles = append(templateFiles, consoleTemplates...)
-	templateFiles = append(templateFiles, quickstartTemplates...)
+	templateFiles = append(templateFiles, quickstartCoreTemplates...)
+	templateFiles = append(templateFiles, quickstartSpringBoot2Templates...)
 
 	for _, fileName := range templateFiles {
 		cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)

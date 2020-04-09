@@ -57,7 +57,7 @@ var (
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
-	VersionFuseOnOpenshift     ProductVersion = "master"
+	VersionFuseOnOpenshift     ProductVersion = "7.6"
 	VersionMonitoring          ProductVersion = "1.1.4"
 	Version3Scale              ProductVersion = "2.7"
 	VersionUps                 ProductVersion = "2.3.2"
@@ -66,6 +66,13 @@ var (
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.3"
 	VersionRHSSOUser           ProductVersion = "7.3"
+
+	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
+	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
+	// The need for the below tag references is due to the nature of installing which is documented here: (for 7.6)
+	// https://access.redhat.com/documentation/en-us/red_hat_fuse/7.6/html-single/fuse_on_openshift_guide/index#install-fuse-on-openshift4
+	TagFuseOnOpenShiftCore        string = "application-templates-2.1.0.fuse-760043-redhat-00001"
+	TagFuseOnOpenShiftSpringBoot2 string = "application-templates-2.1.0.fuse-sb2-760039-redhat-00001"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
