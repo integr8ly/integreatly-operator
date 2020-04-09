@@ -2,7 +2,6 @@ package common
 
 import (
 	goctx "context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -134,33 +133,50 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 			t.Fatalf("failed to get APIManager : %v", err)
 		}
 		if *apim.Spec.System.AppSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.System.AppSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.System.AppSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.System.AppSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.System.AppSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.System.SidekiqSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.System.SidekiqSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.System.SidekiqSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.System.SidekiqSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.System.SidekiqSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Apicast.ProductionSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Apicast.ProductionSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.ProductionSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Apicast.ProductionSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.ProductionSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Apicast.StagingSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Apicast.StagingSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.StagingSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Apicast.StagingSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.StagingSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Backend.ListenerSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Backend.ListenerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.ListenerSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Backend.ListenerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.ListenerSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Backend.WorkerSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Backend.WorkerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.WorkerSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Backend.WorkerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.WorkerSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Backend.CronSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.CronSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Backend.CronSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.CronSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Zync.AppSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Zync.AppSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Zync.AppSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Zync.AppSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Zync.AppSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
 		if *apim.Spec.Zync.QueSpec.Replicas != numberOfRequiredReplicas {
-			return false, fmt.Errorf("Number of replicas for apim.Spec.Zync.QueSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Zync.QueSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("Number of replicas for apim.Spec.Zync.QueSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Zync.QueSpec.Replicas, numberOfRequiredReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
 		}
-
 		return true, nil
 	})
 }
