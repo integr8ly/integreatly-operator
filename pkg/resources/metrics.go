@@ -42,7 +42,7 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_instance_unavailable.asciidoc "
+	sopUrl := alertPostgresInstanceUnavailable
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
 	if err != nil {
@@ -71,7 +71,7 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_connection_failed.asciidoc"
+	sopUrl := alertPostgresConnectionFailed
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
 	if err != nil {
@@ -100,7 +100,7 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_cache_unavailable.asciidoc"
+	sopUrl := alertRedisCacheUnavailable
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
 	if err != nil {
@@ -129,7 +129,7 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_connection_failed.asciidoc"
+	sopUrl := alertRedisConnectionFailed
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
 	if err != nil {
