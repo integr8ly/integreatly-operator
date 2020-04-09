@@ -42,7 +42,47 @@ import (
 
 //go:generate moq -out Reconciler_moq.go . Interface
 type Interface interface {
+	//Reconcile is the primary entry point of your reconciler, on each reconcile loop of the integreatly-operator,
+	//all the logic in here should be written with the assumption that resources may or may not exist, and can
+	//be created or updated based on their current state.
+	//
+	//## Parameters
+	//There are several parameters passed into this function:
+	//
+	//### ctx
+	// This must be used in all network requests performed by the reconciler, as the integreatly-operator maintains this context
+	// and may kill it if an uninstall is detected.
+	//
+	//### installation
+	//This is the CR we are basing the install from, it has values that are occasionally required by reconcilers, for example
+	//the namespace prefix.
+	//
+	//### product
+	//This is a pointer to the this reconciler's product in the status block of the CR, it can be used to set values
+	//such as version, host and operator version.
+	//### serverClient
+	//This is the client to the cluster, and is used for getting, creating, updating and deleting resources in the cluster.
+	//
+	//## Return Values
+	//The return values from this method are `state` and `err`:
+	//
+	//### State
+	//This is communicated back to the user via the status block of the RHMI CR, this is usually either in progress
+	//or complete. It can go to `fail` if something has broken, but this will not prevent the installation_controller
+	//from calling the Reconcile function in the future, which may allow the reconciler to fix whatever issue had
+	//occurred (i.e. the service had not come up yet, so there were network errors accessing it's API).
+	//
+	//### Err
+	//This is how we can communicate to the user via the status block of the RHMI CR what is causing a product to
+	//enter a failed state, and is written into the `status.lastError` of the CR along with any other errors from
+	//other reconcilers.
 	Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (newPhase integreatlyv1alpha1.StatusPhase, err error)
+
+	//GetPreflightObjects informs the operator of what object it should look for, to check if the product is already installed. The
+	//namespace argument is the namespace currently being scanned for existing installations.
+	//
+	//For example, codeready looks for a deployment in the scanned namespace with the name "codeready", if found this
+	//installation will stall until that product is removed.
 	GetPreflightObject(ns string) runtime.Object
 }
 

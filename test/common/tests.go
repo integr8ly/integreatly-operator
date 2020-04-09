@@ -5,13 +5,12 @@ package common
 // 2. https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases
 var (
 	ALL_TESTS = []TestCase{
-		// Add all the tests that should be executed in both e2e and osd suites here.
-		// It is an array so the tests will be executed in the same order as they defined here.
+		// Add all tests that can be executed prior to a completed installation here
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
 	}
 
 	AFTER_INSTALL_TESTS = []TestCase{
-		// Test to be execute after RHMI has been installed
+		// Add all tests to be executed after RHMI installation is completed here
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},

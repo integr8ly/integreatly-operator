@@ -60,12 +60,27 @@ type ConfigReadWriter interface {
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
 type ConfigReadable interface {
+	//Read is used by the configManager to convert your config to yaml and store it in the configmap.
 	Read() ProductConfig
+
+	//GetProductName returns the value of the globally defined ProductName
 	GetProductName() integreatlyv1alpha1.ProductName
+
+	//GetProductVersion returns the value of the globally defined ProductVersion
 	GetProductVersion() integreatlyv1alpha1.ProductVersion
+
+	//GetOperatorVersion returns the value of the globally defined OperatorVersion
 	GetOperatorVersion() integreatlyv1alpha1.OperatorVersion
+
+	//GetHost returns a URL that can be used to access the product, either an API, or console, or blank if not applicable.
 	GetHost() string
+
+	//GetWatchableCRDs should return an array of CRDs that should be watched by the integreatly-operator, if a change of one of these CRDs
+	//in any namespace is detected, it will trigger a full reconcile of the integreatly-operator. This usually returns all of
+	//the CRDs the new products operator watches.
 	GetWatchableCRDs() []runtime.Object
+
+	//GetNamespace should return the namespace that the product will be installed into.
 	GetNamespace() string
 }
 

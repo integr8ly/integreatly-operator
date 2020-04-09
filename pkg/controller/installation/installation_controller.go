@@ -3,10 +3,11 @@ package installation
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"os"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	usersv1 "github.com/openshift/api/user/v1"
 
@@ -644,6 +645,7 @@ func (mer *multiErr) Error() string {
 	return "product installation errors : " + strings.Join(mer.errors, ":")
 }
 
+//Add an error to the collection
 func (mer *multiErr) Add(err error) {
 	if mer.errors == nil {
 		mer.errors = []string{}
