@@ -3,11 +3,16 @@ package fuse
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -22,6 +27,8 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 
 	projectv1 "github.com/openshift/api/project/v1"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -63,20 +70,52 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err = operatorsv1alpha1.AddToScheme(scheme)
-	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
-	err = corev1.SchemeBuilder.AddToScheme(scheme)
-	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
-	err = syndesisv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err = routev1.AddToScheme(scheme)
-	err = usersv1.AddToScheme(scheme)
-	err = rbacv1.SchemeBuilder.AddToScheme(scheme)
-	err = projectv1.AddToScheme(scheme)
-	err = appsv1.AddToScheme(scheme)
-	return scheme, err
+	if err := threescalev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := keycloak.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := coreosv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := syndesisv1beta1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := routev1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := usersv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := rbacv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := projectv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := appsv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := crov1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := monitoringv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	return scheme, nil
 }
 
 func setupRecorder() record.EventRecorder {
@@ -200,6 +239,15 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 	}
 
+	testRHMINamespace := "test"
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.FusePostgresPrefix,
+			Namespace: testRHMINamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
 	cases := []struct {
 		Name           string
 		FakeClient     k8sclient.Client
@@ -212,12 +260,15 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	}{
 		{
 			Name:       "Test reconcile custom resource returns in progress when successful created",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, secret, croPostgresSecret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRHMINamespace,
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
@@ -225,12 +276,15 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns failed when cr status is failed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseStartupFailed)),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseStartupFailed), croPostgresSecret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRHMINamespace,
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
@@ -239,12 +293,15 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase complete when cr status is installed",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), route, secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalled), route, secret, croPostgresSecret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRHMINamespace,
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
@@ -252,12 +309,15 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 		},
 		{
 			Name:       "Test reconcile custom resource returns phase in progress when cr status is installing",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalling), secret),
+			FakeClient: fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalling), secret, croPostgresSecret),
 			FakeConfig: basicConfigMock(),
 			Installation: &integreatlyv1alpha1.RHMI{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRHMINamespace,
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
@@ -278,6 +338,9 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				TypeMeta: metav1.TypeMeta{
 					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
 					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testRHMINamespace,
 				},
 			},
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
@@ -315,7 +378,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "installation",
@@ -406,6 +468,31 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			},
 		},
 	}
+	//completed postgres that points at the secret croPostgresSecret
+	postgresName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installation.Name)
+	croPostgres := &crov1alpha1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      postgresName,
+			Namespace: installation.Namespace,
+		},
+		Status: crov1alpha1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      postgresName,
+				Namespace: installation.Namespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      postgresName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
 
 	cases := []struct {
 		Name           string
@@ -422,11 +509,10 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1alpha1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme, getFuseCr(syndesisv1beta1.SyndesisPhaseInstalled), ns, operatorNS, route, secret, test1User, rhmiDevelopersGroup, pullSecret, installation, operatorDeployment, croPostgres, croPostgresSecret),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
-
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
@@ -486,30 +572,28 @@ func TestReconciler_fullReconcile(t *testing.T) {
 }
 
 // Return a fuse custom resource in a specific phase
-func getFuseCr(phase syndesisv1alpha1.SyndesisPhase) *syndesisv1alpha1.Syndesis {
+func getFuseCr(phase syndesisv1beta1.SyndesisPhase) *syndesisv1beta1.Syndesis {
 	intLimit := -1
-	return &syndesisv1alpha1.Syndesis{
+	return &syndesisv1beta1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: defaultInstallationNamespace,
 			Name:      "integreatly",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Syndesis",
-			APIVersion: syndesisv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: syndesisv1beta1.SchemeGroupVersion.String(),
 		},
-		Spec: syndesisv1alpha1.SyndesisSpec{
-			Integration: syndesisv1alpha1.IntegrationSpec{
-				Limit: &intLimit,
-			},
-			Components: syndesisv1alpha1.ComponentsSpec{
-				Server: syndesisv1alpha1.ServerConfiguration{
-					Features: syndesisv1alpha1.ServerFeatures{
+		Spec: syndesisv1beta1.SyndesisSpec{
+			Components: syndesisv1beta1.ComponentsSpec{
+				Server: syndesisv1beta1.ServerConfiguration{
+					Features: syndesisv1beta1.ServerFeatures{
+						IntegrationLimit:       intLimit,
 						ManagementUrlFor3scale: "https://3scale-admin.dummmy",
 					},
 				},
 			},
 		},
-		Status: syndesisv1alpha1.SyndesisStatus{
+		Status: syndesisv1beta1.SyndesisStatus{
 			Phase: phase,
 		},
 	}
