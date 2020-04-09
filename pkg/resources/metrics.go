@@ -42,9 +42,8 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := alertPostgresInstanceUnavailable
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresInstanceUnavailable, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +70,8 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := alertPostgresConnectionFailed
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresConnectionFailed, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +98,8 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := alertRedisCacheUnavailable
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisCacheUnavailable, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +126,8 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-	sopUrl := alertRedisConnectionFailed
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrl, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisConnectionFailed, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
