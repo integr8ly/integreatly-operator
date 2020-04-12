@@ -162,7 +162,20 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 	// find the form for the login
 	form, err := findElement(document, "#kc-form-login")
 	if err != nil {
-		return nil, errorWithResponseDump(response, err)
+		// maybe wer are already logged in (previous openshift login)
+		// find the form for the approval
+		form = document.Find("form")
+		if form.Length() == 0 {
+			// Nope
+			return nil, errorWithResponseDump(response, err)
+		}
+
+		_, err = approvePermissions(form, client, response)
+		if err != nil {
+			return nil, errorWithResponseDump(response, err)
+		}
+
+		return client, nil
 	}
 
 	// retrieve the action of the form
