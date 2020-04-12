@@ -44,7 +44,7 @@ import (
 const (
 	defaultName               = "solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.2"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.3"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
@@ -54,7 +54,7 @@ const (
 	paramIntegreatlyVersion   = "INTEGREATLY_VERSION"
 	paramClusterType          = "CLUSTER_TYPE"
 	paramWalkthroughLocations = "WALKTHROUGH_LOCATIONS"
-	defaultRouteName          = "tutorial-web-app"
+	defaultRouteName          = "solution-explorer"
 	manifestPackage           = "integreatly-solution-explorer"
 )
 
