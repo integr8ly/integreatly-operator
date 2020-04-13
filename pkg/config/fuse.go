@@ -64,6 +64,18 @@ func (f *Fuse) GetLabelSelector() string {
 func (r *Fuse) GetTemplateList() []string {
 	templateList := []string{
 		"kube_state_metrics_fuse_online_alerts.yaml",
+		"fuseonline/addon-ops-api-dashboard.yml",
+		"fuseonline/addon-ops-home-dashboard.yml",
+		"fuseonline/addon-ops-integrations-alerting-rules.yml",
+		"fuseonline/addon-ops-integrations-camel-dashboard.yml",
+		"fuseonline/addon-ops-integrations-home-dashboard.yml",
+		"fuseonline/addon-ops-integrations-jvm-dashboard.yml",
+		"fuseonline/addon-ops-integrations-service.yml",
+		"fuseonline/addon-ops-integrations-servicemonitor.yml",
+		"fuseonline/addon-ops-jvm-dashboard.yml",
+		"fuseonline/addon-ops-meta-alerting-rules.yml",
+		"fuseonline/addon-ops-server-alerting-rules.yml",
+		"fuseonline/addon-ops-servicemonitor.yml",
 	}
 	return templateList
 }

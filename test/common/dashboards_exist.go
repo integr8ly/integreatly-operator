@@ -41,9 +41,6 @@ var expectedDashboards = []dashboardsTestRule{
 		Title: "Syndesis - Infra - API",
 	},
 	{
-		Title: "Syndesis - Infra - DB",
-	},
-	{
 		Title: "Syndesis - Infra - Home",
 	},
 	{

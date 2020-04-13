@@ -142,7 +142,7 @@ var (
 				Product{Name: "syndesis-prometheus", ExpectedReplicas: 1},
 				Product{Name: "syndesis-server", ExpectedReplicas: 1},
 				Product{Name: "syndesis-ui", ExpectedReplicas: 1},
-				{Name: "broker-amq", ExpectedReplicas: 1},
+				Product{Name: "broker-amq", ExpectedReplicas: 1},
 			},
 		},
 		{

@@ -346,9 +346,6 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 					OperatorOnly: true,
 					ClientOnly:   true,
 				},
-				Ops: syndesisv1beta1.AddonSpec{
-					Enabled: true,
-				},
 				Todo: syndesisv1beta1.AddonSpec{
 					Enabled: false,
 				},
