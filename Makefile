@@ -1,12 +1,12 @@
 include ./make/*.mk
 
-ORG=integreatly
+ORG ?= integreatly
 NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-PREVIOUS_TAG=1.19.0
-TAG=2.0.0
+PREVIOUS_TAG ?=1.19.0
+TAG ?= 2.0.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -30,6 +30,13 @@ ifeq ($(shell operator-sdk version 2> /dev/null | sed -e 's/", .*/"/' -e 's/.* /
 	OPERATOR_SDK ?= operator-sdk
 else
 	OPERATOR_SDK ?= go run github.com/operator-framework/operator-sdk/cmd/operator-sdk
+endif
+
+# Set sed -i as it's different for mac vs gnu
+ifeq ($(shell uname -s | tr A-Z a-z), darwin)
+	SED_INLINE ?= sed -i ''
+else
+ 	SED_INLINE ?= sed -i
 endif
 
 export SELF_SIGNED_CERTS   ?= true
@@ -269,14 +276,14 @@ endif
 gen/csv:
 	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
 	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i '' 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
+	@$(SED_INLINE) 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
 	$(OPERATOR_SDK) generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
 	@echo Updating package file
-	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
-	@sed -i '' 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
+	@$(SED_INLINE) 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
+	@$(SED_INLINE) 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
 	@mv deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG)
 	@mv deploy/olm-catalog/integreatly-operator/$(TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@sed -i '' 's/integreatly-operator:v$(PREVIOUS_TAG)/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
+	@$(SED_INLINE) 's/integreatly-operator:v$(PREVIOUS_TAG).*/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
 
 .PHONY: push/csv
 push/csv:
