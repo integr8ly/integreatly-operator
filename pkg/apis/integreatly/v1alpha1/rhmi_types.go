@@ -191,6 +191,7 @@ type RHMIProductStatus struct {
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=rhmis,scope=Namespaced
+// +operator-sdk:gen-csv:customresourcedefinitions.displayName="RHMI Installation"
 type RHMI struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
