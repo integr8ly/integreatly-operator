@@ -42,9 +42,8 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresInstanceUnavailable, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +70,8 @@ func CreatePostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresConnectionFailed, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -100,9 +98,8 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisCacheUnavailable, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +126,8 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
 	}
-
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisConnectionFailed, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +135,7 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
-func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
+func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleName, ns, alertName, desc string, sopUrl string, alertExp intstr.IntOrString, labels map[string]string) (*prometheusv1.PrometheusRule, error) {
 	alertGroupName := alertName + "Group"
 	groups := []prometheusv1.RuleGroup{
 		{
@@ -152,6 +148,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 					Labels: labels,
 					Annotations: map[string]string{
 						"description": desc,
+						"sop_url":     sopUrl,
 					},
 				},
 			},
@@ -186,6 +183,7 @@ func reconcilePrometheusRule(ctx context.Context, client k8sclient.Client, ruleN
 						Labels: labels,
 						Annotations: map[string]string{
 							"description": desc,
+							"sop_url":     sopUrl,
 						},
 					},
 				},
