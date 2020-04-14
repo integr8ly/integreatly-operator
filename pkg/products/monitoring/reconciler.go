@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	v12 "k8s.io/api/rbac/v1"
 	"os"
 	"strings"
 
@@ -54,7 +56,10 @@ const (
 	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"
 
 	// cluster monitorint federation
-	federationServiceMonitorName = "rhmi-alerts-federate"
+	federationServiceMonitorName              = "rhmi-alerts-federate"
+	federationRoleBindingName                 = "federation-view"
+	clusterMonitoringPrometheusServiceAccount = "prometheus-k8s"
+	clusterMonitoringNamespace                = "openshift-monitoring"
 )
 
 type Reconciler struct {
@@ -343,7 +348,37 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	r.Logger.Infof("operation result of reconcileFederation was %v", or)
+	r.Logger.Infof("operation result of %v was %v", federationServiceMonitorName, or)
+
+	roleBinding := &v12.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      federationRoleBindingName,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
+		roleBinding.Subjects = []v12.Subject{
+			{
+				Kind:      v12.ServiceAccountKind,
+				Name:      clusterMonitoringPrometheusServiceAccount,
+				Namespace: clusterMonitoringNamespace,
+			},
+		}
+		roleBinding.RoleRef = v12.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     bundle.ClusterRoleKind,
+			Name:     "view",
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	r.Logger.Infof("operation result of %v was %v", federationRoleBindingName, or)
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
