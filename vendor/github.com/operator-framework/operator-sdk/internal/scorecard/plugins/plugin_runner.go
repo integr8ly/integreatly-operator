@@ -33,7 +33,7 @@ import (
 	schelpers "github.com/operator-framework/operator-sdk/internal/scorecard/helpers"
 	k8sInternal "github.com/operator-framework/operator-sdk/internal/util/k8sutil"
 	"github.com/operator-framework/operator-sdk/internal/util/yamlutil"
-	scapiv1alpha2 "github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha2"
+	scapiv1alpha1 "github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha1"
 
 	"github.com/ghodss/yaml"
 	olmapiv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -41,7 +41,6 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -76,8 +75,7 @@ const (
 
 var log *logrus.Logger
 
-func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
-	logFile io.Writer) (scapiv1alpha2.ScorecardOutput, error) {
+func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig, logFile io.Writer) (scapiv1alpha1.ScorecardOutput, error) {
 
 	// use stderr for logging not related to a single suite
 	log = logrus.New()
@@ -85,7 +83,7 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 	log.SetOutput(logFile)
 
 	if err := validateScorecardPluginFlags(config, pluginType); err != nil {
-		return scapiv1alpha2.ScorecardOutput{}, err
+		return scapiv1alpha1.ScorecardOutput{}, err
 	}
 	defer func() {
 		if err := cleanupScorecard(); err != nil {
@@ -98,7 +96,7 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 	var err error
 	kubeconfig, tmpNamespaceVar, err = k8sInternal.GetKubeconfigAndNamespace(config.Kubeconfig)
 	if err != nil {
-		return scapiv1alpha2.ScorecardOutput{}, fmt.Errorf("failed to build the kubeconfig: %v", err)
+		return scapiv1alpha1.ScorecardOutput{}, fmt.Errorf("failed to build the kubeconfig: %v", err)
 	}
 
 	if config.Namespace == "" {
@@ -106,14 +104,14 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 	}
 
 	if err := setupRuntimeClient(); err != nil {
-		return scapiv1alpha2.ScorecardOutput{}, err
+		return scapiv1alpha1.ScorecardOutput{}, err
 	}
 
 	csv := &olmapiv1alpha1.ClusterServiceVersion{}
 	if pluginType == OLMIntegration || config.OLMDeployed {
 		err := getCSV(config.CSVManifest, csv)
 		if err != nil {
-			return scapiv1alpha2.ScorecardOutput{}, err
+			return scapiv1alpha1.ScorecardOutput{}, err
 		}
 	}
 
@@ -123,18 +121,17 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 		var err error
 		deploymentName, err = getDeploymentName(csv.Spec.InstallStrategy)
 		if err != nil {
-			return scapiv1alpha2.ScorecardOutput{}, err
+			return scapiv1alpha1.ScorecardOutput{}, err
 		}
 		// Get the proxy pod, which should have been created with the CSV.
 		proxyPodGlobal, err = getPodFromDeployment(deploymentName, config.Namespace)
 		if err != nil {
-			return scapiv1alpha2.ScorecardOutput{}, err
+			return scapiv1alpha1.ScorecardOutput{}, err
 		}
 
-		config.CRManifest, err = getCRFromCSV(config.CRManifest, csv.ObjectMeta.Annotations["alm-examples"],
-			csv.GetName())
+		config.CRManifest, err = getCRFromCSV(config.CRManifest, csv.ObjectMeta.Annotations["alm-examples"], csv.GetName())
 		if err != nil {
-			return scapiv1alpha2.ScorecardOutput{}, err
+			return scapiv1alpha1.ScorecardOutput{}, err
 		}
 
 	} else {
@@ -143,7 +140,7 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 		if config.NamespacedManifest == "" {
 			file, err := yamlutil.GenerateCombinedNamespacedManifest(scaffold.DeployDir)
 			if err != nil {
-				return scapiv1alpha2.ScorecardOutput{}, err
+				return scapiv1alpha1.ScorecardOutput{}, err
 			}
 			config.NamespacedManifest = file.Name()
 			defer func() {
@@ -161,7 +158,7 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 			}
 			gMan, err := yamlutil.GenerateCombinedGlobalManifest(config.CRDsDir)
 			if err != nil {
-				return scapiv1alpha2.ScorecardOutput{}, err
+				return scapiv1alpha1.ScorecardOutput{}, err
 			}
 			config.GlobalManifest = gMan.Name()
 			defer func() {
@@ -176,66 +173,70 @@ func RunInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig,
 
 	err = duplicateCRCheck(config.CRManifest)
 	if err != nil {
-		return scapiv1alpha2.ScorecardOutput{}, err
+		return scapiv1alpha1.ScorecardOutput{}, err
 	}
 
-	testResults := make([]schelpers.TestResult, 0)
+	var suites []schelpers.TestSuite
 	for _, cr := range config.CRManifest {
-		crTestResults, _, err := runTests(csv, pluginType, config, cr, logFile)
+		crSuites, err := runTests(csv, pluginType, config, cr, logFile)
 		if err != nil {
-			return scapiv1alpha2.ScorecardOutput{}, err
+			return scapiv1alpha1.ScorecardOutput{}, err
 		}
-		testResults = append(testResults, crTestResults...)
+		suites = append(suites, crSuites...)
 	}
 
-	output := scapiv1alpha2.NewScorecardOutput()
-	output.Log = ""
-
-	for _, tr := range testResults {
-		output.Results = append(output.Results, testResultToScorecardTestResult(tr))
+	suites, err = schelpers.MergeSuites(suites)
+	if err != nil {
+		return scapiv1alpha1.ScorecardOutput{}, fmt.Errorf("failed to merge test suite results: %v", err)
 	}
-
-	return *output, nil
+	output := schelpers.TestSuitesToScorecardOutput(suites, "")
+	for idx, suite := range output.Results {
+		output.Results[idx] = schelpers.UpdateSuiteStates(suite)
+	}
+	return output, nil
 }
 
-func ListInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig) (scapiv1alpha2.ScorecardOutput, error) {
-	testResults := make([]schelpers.TestResult, 0)
-	tests := make([]schelpers.Test, 0)
+func ListInternalPlugin(pluginType PluginType, config BasicAndOLMPluginConfig) (scapiv1alpha1.ScorecardOutput, error) {
+	var suites []schelpers.TestSuite
 
 	switch pluginType {
 	case BasicOperator:
 		conf := BasicTestConfig{}
-		tests = append(tests, NewCheckSpecTest(conf))
-		tests = append(tests, NewCheckStatusTest(conf))
-		tests = append(tests, NewWritingIntoCRsHasEffectTest(conf))
+		basicTests := NewBasicTestSuite(conf)
+
+		basicTests.ApplySelector(config.Selector)
+
+		basicTests.TestResults = make([]schelpers.TestResult, 0)
+		for i := 0; i < len(basicTests.Tests); i++ {
+			result := schelpers.TestResult{}
+			result.Test = basicTests.Tests[i]
+			result.Suggestions = make([]string, 0)
+			result.Errors = make([]error, 0)
+			basicTests.TestResults = append(basicTests.TestResults, result)
+		}
+		suites = append(suites, *basicTests)
 	case OLMIntegration:
 		conf := OLMTestConfig{}
-		tests = append(tests, NewBundleValidationTest(conf))
-		tests = append(tests, NewCRDsHaveValidationTest(conf))
-		tests = append(tests, NewCRDsHaveResourcesTest(conf))
-		tests = append(tests, NewSpecDescriptorsTest(conf))
-		tests = append(tests, NewStatusDescriptorsTest(conf))
+		olmTests := NewOLMTestSuite(conf)
+
+		olmTests.ApplySelector(config.Selector)
+
+		olmTests.TestResults = make([]schelpers.TestResult, 0)
+		for i := 0; i < len(olmTests.Tests); i++ {
+			result := schelpers.TestResult{}
+			result.Test = olmTests.Tests[i]
+			result.Suggestions = make([]string, 0)
+			result.Errors = make([]error, 0)
+			olmTests.TestResults = append(olmTests.TestResults, result)
+		}
+		suites = append(suites, *olmTests)
 	}
-
-	tests = applySelector(tests, config.Selector)
-
-	for i := 0; i < len(tests); i++ {
-		result := schelpers.TestResult{}
-		result.State = scapiv1alpha2.PassState
-		result.Test = tests[i]
-		result.Suggestions = make([]string, 0)
-		result.Errors = make([]error, 0)
-		testResults = append(testResults, result)
+	suites, err := schelpers.MergeSuites(suites)
+	if err != nil {
+		return scapiv1alpha1.ScorecardOutput{}, fmt.Errorf("failed to merge test suite results: %v", err)
 	}
-
-	output := scapiv1alpha2.NewScorecardOutput()
-	output.Log = ""
-
-	for _, tr := range testResults {
-		output.Results = append(output.Results, testResultToScorecardTestResult(tr))
-	}
-
-	return *output, nil
+	output := schelpers.TestSuitesToScorecardOutput(suites, "")
+	return output, nil
 }
 
 func getStructShortName(obj interface{}) string {
@@ -318,12 +319,10 @@ func getCRFromCSV(currentCRMans []string, crJSONStr string, csvName string) ([]s
 		if crJSONStr != "" {
 			var crs []interface{}
 			if err := json.Unmarshal([]byte(crJSONStr), &crs); err != nil {
-				return finalCR, fmt.Errorf("metadata.annotations['alm-examples'] in CSV %s"+
-					"incorrectly formatted: %v", csvName, err)
+				return finalCR, fmt.Errorf("metadata.annotations['alm-examples'] in CSV %s incorrectly formatted: %v", csvName, err)
 			}
 			if len(crs) == 0 {
-				return finalCR, fmt.Errorf("no CRs found in metadata.annotations['alm-examples']"+
-					" in CSV %s and cr-manifest config option not set", csvName)
+				return finalCR, fmt.Errorf("no CRs found in metadata.annotations['alm-examples'] in CSV %s and cr-manifest config option not set", csvName)
 			}
 			// TODO: run scorecard against all CR's in CSV.
 			cr := crs[0]
@@ -352,8 +351,7 @@ func getCRFromCSV(currentCRMans []string, crJSONStr string, csvName string) ([]s
 				}
 			}()
 		} else {
-			return finalCR, errors.New(
-				"cr-manifest config option must be set if CSV has no metadata.annotations['alm-examples']")
+			return finalCR, errors.New("cr-manifest config option must be set if CSV has no metadata.annotations['alm-examples']")
 		}
 	} else {
 		// TODO: run scorecard against all CR's in CSV.
@@ -362,8 +360,7 @@ func getCRFromCSV(currentCRMans []string, crJSONStr string, csvName string) ([]s
 	}
 	// Let users know that only the first CR is being tested.
 	if logCRMsg {
-		log.Infof("The scorecard does not support testing multiple CR's at once when run with --olm-deployed."+
-			" Testing the first CR %s", finalCR[0])
+		log.Infof("The scorecard does not support testing multiple CR's at once when run with --olm-deployed. Testing the first CR %s", finalCR[0])
 	}
 	return finalCR, nil
 }
@@ -392,37 +389,34 @@ func duplicateCRCheck(crs []string) error {
 	return nil
 }
 
-func runTests(csv *olmapiv1alpha1.ClusterServiceVersion, pluginType PluginType, cfg BasicAndOLMPluginConfig,
-	cr string, logFile io.Writer) ([]schelpers.TestResult, string, error) {
-	testResults := make([]schelpers.TestResult, 0)
+func runTests(csv *olmapiv1alpha1.ClusterServiceVersion, pluginType PluginType, config BasicAndOLMPluginConfig, cr string, logFile io.Writer) ([]schelpers.TestSuite, error) {
+	suites := make([]schelpers.TestSuite, 0)
 
 	logReadWriter := &bytes.Buffer{}
 	log.SetOutput(logReadWriter)
 	log.Printf("Running for cr: %s", cr)
 
-	if !cfg.OLMDeployed {
-		if err := createFromYAMLFile(cfg, cfg.GlobalManifest); err != nil {
-			return testResults, "", fmt.Errorf("failed to create global resources: %v", err)
+	if !config.OLMDeployed {
+		if err := createFromYAMLFile(config.Namespace, config.GlobalManifest, config.ProxyImage, config.ProxyPullPolicy); err != nil {
+			return suites, fmt.Errorf("failed to create global resources: %v", err)
 		}
-		if err := createFromYAMLFile(cfg, cfg.NamespacedManifest); err != nil {
-			return testResults, "", fmt.Errorf("failed to create namespaced resources: %v", err)
+		if err := createFromYAMLFile(config.Namespace, config.NamespacedManifest, config.ProxyImage, config.ProxyPullPolicy); err != nil {
+			return suites, fmt.Errorf("failed to create namespaced resources: %v", err)
 		}
 	}
 
-	if err := createFromYAMLFile(cfg, cr); err != nil {
-		return testResults, "", fmt.Errorf("failed to create cr resource: %v", err)
+	if err := createFromYAMLFile(config.Namespace, cr, config.ProxyImage, config.ProxyPullPolicy); err != nil {
+		return suites, fmt.Errorf("failed to create cr resource: %v", err)
 	}
 
-	obj, err := yamlToUnstructured(cfg.Namespace, cr)
+	obj, err := yamlToUnstructured(config.Namespace, cr)
 	if err != nil {
-		return testResults, "", fmt.Errorf("failed to decode custom resource manifest into object: %s", err)
+		return suites, fmt.Errorf("failed to decode custom resource manifest into object: %s", err)
 	}
 
-	if err := waitUntilCRStatusExists(time.Second*time.Duration(cfg.InitTimeout), obj); err != nil {
-		return testResults, "", fmt.Errorf("failed waiting to check if CR status exists: %v", err)
+	if err := waitUntilCRStatusExists(time.Second*time.Duration(config.InitTimeout), obj); err != nil {
+		return suites, fmt.Errorf("failed waiting to check if CR status exists: %v", err)
 	}
-
-	tests := make([]schelpers.Test, 0)
 
 	switch pluginType {
 	case BasicOperator:
@@ -431,41 +425,37 @@ func runTests(csv *olmapiv1alpha1.ClusterServiceVersion, pluginType PluginType, 
 			CR:       obj,
 			ProxyPod: proxyPodGlobal,
 		}
+		basicTests := NewBasicTestSuite(conf)
+		basicTests.ApplySelector(config.Selector)
 
-		tests = append(tests, NewCheckSpecTest(conf))
-		tests = append(tests, NewCheckStatusTest(conf))
-		tests = append(tests, NewWritingIntoCRsHasEffectTest(conf))
-
+		basicTests.Run(context.TODO())
+		logs, err := ioutil.ReadAll(logReadWriter)
+		if err != nil {
+			basicTests.Log = fmt.Sprintf("failed to read log buffer: %v", err)
+		} else {
+			basicTests.Log = string(logs)
+		}
+		suites = append(suites, *basicTests)
 	case OLMIntegration:
 		conf := OLMTestConfig{
 			Client:   runtimeClient,
 			CR:       obj,
 			CSV:      csv,
-			CRDsDir:  cfg.CRDsDir,
+			CRDsDir:  config.CRDsDir,
 			ProxyPod: proxyPodGlobal,
-			Bundle:   cfg.Bundle,
+			Bundle:   config.Bundle,
 		}
+		olmTests := NewOLMTestSuite(conf)
+		olmTests.ApplySelector(config.Selector)
 
-		tests = append(tests, NewBundleValidationTest(conf))
-		tests = append(tests, NewCRDsHaveValidationTest(conf))
-		tests = append(tests, NewCRDsHaveResourcesTest(conf))
-		tests = append(tests, NewSpecDescriptorsTest(conf))
-		tests = append(tests, NewStatusDescriptorsTest(conf))
-
-	}
-
-	tests = applySelector(tests, cfg.Selector)
-
-	for _, test := range tests {
-		testResults = append(testResults, *test.Run(context.TODO()))
-	}
-
-	var testResultsLog string
-	logs, err := ioutil.ReadAll(logReadWriter)
-	if err != nil {
-		testResultsLog = fmt.Sprintf("failed to read log buffer: %v", err)
-	} else {
-		testResultsLog = string(logs)
+		olmTests.Run(context.TODO())
+		logs, err := ioutil.ReadAll(logReadWriter)
+		if err != nil {
+			olmTests.Log = fmt.Sprintf("failed to read log buffer: %v", err)
+		} else {
+			olmTests.Log = string(logs)
+		}
+		suites = append(suites, *olmTests)
 	}
 
 	// change logging back to main log
@@ -479,40 +469,5 @@ func runTests(csv *olmapiv1alpha1.ClusterServiceVersion, pluginType PluginType, 
 	// clear name of operator deployment
 	deploymentName = ""
 
-	return testResults, testResultsLog, nil
-}
-
-// applySelector apply label selectors removing tests that do not match
-func applySelector(tests []schelpers.Test, selector labels.Selector) []schelpers.Test {
-	for i := 0; i < len(tests); i++ {
-		t := tests[i]
-		if !selector.Matches(labels.Set(t.GetLabels())) {
-			// Remove the test
-			tests = append(tests[:i], tests[i+1:]...)
-			i--
-		}
-	}
-	return tests
-}
-
-// testResultToScorecardTestResult is a helper function for converting from the TestResult type
-// to the ScorecardTestResult type
-func testResultToScorecardTestResult(tr schelpers.TestResult) scapiv1alpha2.ScorecardTestResult {
-	sctr := scapiv1alpha2.ScorecardTestResult{}
-	sctr.State = tr.State
-	sctr.Name = tr.Test.GetName()
-	sctr.Description = tr.Test.GetDescription()
-	sctr.Log = tr.Log
-	sctr.CRName = tr.CRName
-	sctr.Suggestions = tr.Suggestions
-	if sctr.Suggestions == nil {
-		sctr.Suggestions = []string{}
-	}
-	stringErrors := []string{}
-	for _, err := range tr.Errors {
-		stringErrors = append(stringErrors, err.Error())
-	}
-	sctr.Errors = stringErrors
-	sctr.Labels = tr.Test.GetLabels()
-	return sctr
+	return suites, nil
 }

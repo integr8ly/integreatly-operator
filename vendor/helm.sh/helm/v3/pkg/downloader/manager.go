@@ -163,7 +163,7 @@ func (m *Manager) Update() error {
 	}
 
 	// Finally, we need to write the lockfile.
-	return writeLock(m.ChartPath, lock, c.Metadata.APIVersion == chart.APIVersionV1)
+	return writeLock(m.ChartPath, lock)
 }
 
 func (m *Manager) loadChartDir() (*chart.Chart, error) {
@@ -634,16 +634,12 @@ func (m *Manager) loadChartRepositories() (map[string]*repo.ChartRepository, err
 }
 
 // writeLock writes a lockfile to disk
-func writeLock(chartpath string, lock *chart.Lock, legacyLockfile bool) error {
+func writeLock(chartpath string, lock *chart.Lock) error {
 	data, err := yaml.Marshal(lock)
 	if err != nil {
 		return err
 	}
-	lockfileName := "Chart.lock"
-	if legacyLockfile {
-		lockfileName = "requirements.lock"
-	}
-	dest := filepath.Join(chartpath, lockfileName)
+	dest := filepath.Join(chartpath, "Chart.lock")
 	return ioutil.WriteFile(dest, data, 0644)
 }
 

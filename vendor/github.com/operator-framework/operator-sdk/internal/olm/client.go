@@ -74,8 +74,7 @@ func (c Client) InstallVersion(ctx context.Context, version string) (*olmresourc
 	status := c.GetObjectsStatus(ctx, objs...)
 	installed, err := status.HasInstalledResources()
 	if installed {
-		return nil, errors.New(
-			"detected existing OLM resources: OLM must be completely uninstalled before installation")
+		return nil, errors.New("detected existing OLM resources: OLM must be completely uninstalled before installation")
 	} else if err != nil {
 		return nil, errors.New("detected errored OLM resources, see resource statuses for more details")
 	}
@@ -112,8 +111,7 @@ func (c Client) InstallVersion(ctx context.Context, version string) (*olmresourc
 		}
 		log.Printf("Waiting for clusterserviceversion/%s to reach 'Succeeded' phase", csvKey.Name)
 		if err := c.DoCSVWait(ctx, csvKey); err != nil {
-			return nil, fmt.Errorf("clusterserviceversion/%s failed to reach 'Succeeded' phase",
-				csvKey.Name)
+			return nil, fmt.Errorf("clusterserviceversion/%s failed to reach 'Succeeded' phase: %v", csvKey.Name, err)
 		}
 	}
 
@@ -257,8 +255,7 @@ func decodeResources(rds ...io.Reader) (objs []unstructured.Unstructured, err er
 	return objs, nil
 }
 
-func filterResources(resources []unstructured.Unstructured, filter func(unstructured.
-	Unstructured) bool) (filtered []unstructured.Unstructured) {
+func filterResources(resources []unstructured.Unstructured, filter func(unstructured.Unstructured) bool) (filtered []unstructured.Unstructured) {
 	for _, r := range resources {
 		if filter(r) {
 			filtered = append(filtered, r)

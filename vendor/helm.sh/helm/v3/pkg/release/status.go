@@ -19,7 +19,6 @@ package release
 type Status string
 
 // Describe the status of a release
-// NOTE: Make sure to update cmd/helm/status.go when adding or modifying any of these statuses.
 const (
 	// StatusUnknown indicates that a release is in an uncertain state.
 	StatusUnknown Status = "unknown"
