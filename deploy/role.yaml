@@ -314,7 +314,19 @@ rules:
       - create
       - update
       - delete
-      
+
+  # Adding a rolebinding to the monitoring federation namespace
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+
   # END Permissions needed for our namespaces, but not given by "admin" role
 
   # Permission to fetch identity to get email for created Keycloak users in openshift realm
