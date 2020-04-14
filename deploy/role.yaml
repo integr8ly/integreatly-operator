@@ -51,7 +51,7 @@ rules:
     verbs:
       - update
   # END For monitoring functions by operator-sdk
-      
+
   # Our own Subscription needs to be switched into Manual mode after initial installation
   - apiGroups:
       - operators.coreos.com
@@ -88,6 +88,17 @@ rules:
       - update
       - delete
 
+  # Allow operator to approve its own install plan
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - installplans
+    verbs:
+      - get
+      - update
+      - list
+      - watch
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -113,13 +124,13 @@ rules:
       - delete
   # We are using ProjectRequests API to create namespaces where we automatically become admins
   - apiGroups:
-      - ''
+      - ""
       - project.openshift.io
     resources:
       - projectrequests
     verbs:
       - create
-  
+
   # Preflights check for existing installations of products
   - apiGroups:
       - ""
@@ -152,7 +163,7 @@ rules:
       - route.openshift.io
     resources:
       - routes
-    resourceNames: 
+    resourceNames:
       - console
     verbs:
       - get
@@ -177,13 +188,13 @@ rules:
       - delete
       - update
   # END Reconciling Fuse templates and image streams
-  
+
   # Registry pull secret needs to be read to be then copied into some RHMI namespaces
   - apiGroups:
       - ""
     resources:
       - secrets
-    resourceNames: 
+    resourceNames:
       - samples-registry-credentials
     verbs:
       - get
@@ -193,12 +204,12 @@ rules:
       - ""
     resources:
       - secrets
-    resourceNames: 
+    resourceNames:
       - grafana-datasources
     verbs:
       - get
 
-  # OAuthClients are used for login into products with OpenShift User identity 
+  # OAuthClients are used for login into products with OpenShift User identity
   - apiGroups:
       - oauth.openshift.io
     resources:
@@ -230,7 +241,7 @@ rules:
       - user.openshift.io
     resources:
       - groups
-    resourceNames: 
+    resourceNames:
       - rhmi-developers
     verbs:
       - update
@@ -250,7 +261,7 @@ rules:
       - samples.operator.openshift.io
     resources:
       - configs
-    resourceNames: 
+    resourceNames:
       - cluster
     verbs:
       - get

@@ -2,6 +2,7 @@ package installation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 
 	"github.com/sirupsen/logrus"
+
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -193,6 +196,11 @@ type ReconcileInstallation struct {
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	retryRequeue := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
+
 	installInProgress := false
 	installation := &integreatlyv1alpha1.RHMI{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, installation)
@@ -203,15 +211,42 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	retryRequeue := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: 10 * time.Second,
-	}
-
 	//context is cancelled on delete of an installation, so if context is cancelled but there is no deletion timestamp
 	//the installation must be created after one was deleted, so recreate a context to use for the new installation.
 	if r.context.Err() == context.Canceled && installation.DeletionTimestamp == nil {
 		r.context, r.cancel = context.WithCancel(context.Background())
+	}
+
+	rhmiSubscription, err := r.getIntegreatlyOperatorSubscription(request.NamespacedName.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if r.isRHMIUpgradeAvailable(rhmiSubscription) {
+		//TODO expose event since RHMI operator will be redeployed and logs will likely get lost
+		//TODO Setup secondary watch on subscription resources in the rhmi operator namespace
+		logrus.Infof("RHMI upgrade available")
+
+		latestRHMIInstallPlan, err := r.getIntegreatlyOperatorInstallPlan(rhmiSubscription)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		latestRHMICSV, err := r.getIntegreatlyOperatorCSV(latestRHMIInstallPlan)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if !r.isRHMIUpgradeServiceAffecting(latestRHMICSV) {
+			err = r.approveRHMIUpgrade(latestRHMIInstallPlan)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			// Requeue the reconciler until the RHMI subscription upgrade is complete
+			return retryRequeue, nil
+		}
+		logrus.Infof("Not automatically upgrading - Service Affecting Release")
 	}
 
 	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
@@ -634,6 +669,88 @@ func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace 
 	}
 
 	logrus.Infof("Cache synced. A %s watch in %s namespace successfully initialized.", gvk, namespace)
+	return nil
+}
+
+func (r *ReconcileInstallation) getIntegreatlyOperatorSubscription(namespace string) (*olmv1alpha1.Subscription, error) {
+	subscriptions := olmv1alpha1.SubscriptionList{}
+	opts := k8sclient.ListOptions{
+		Namespace: namespace,
+	}
+	err := r.client.List(r.context, &subscriptions, &opts)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, subscription := range subscriptions.Items {
+		if strings.Contains(subscription.Name, "rhmi") || strings.Contains(subscription.Name, "integreatly") {
+			return &subscription, nil
+		}
+	}
+
+	// Don't fail the reconciler if no subsciption is found, it will default to not approve the install plan
+	logrus.Infof("No RHMI subscription found containing the text rhmi or integreatly")
+	return &olmv1alpha1.Subscription{}, nil
+}
+
+func (r *ReconcileInstallation) isRHMIUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
+	// How to tell an upgrade is available - https://operator-framework.github.io/olm-book/docs/subscriptions.html#how-do-i-know-when-an-update-is-available-for-an-operator
+	return subscription.Status.CurrentCSV != subscription.Status.InstalledCSV
+}
+
+func (r *ReconcileInstallation) getIntegreatlyOperatorInstallPlan(subscription *olmv1alpha1.Subscription) (*olmv1alpha1.InstallPlan, error) {
+	rhmiLatestInstallPlan := &olmv1alpha1.InstallPlan{}
+	// Get the latest installPlan associated with the currentCSV (newest known to OLM)
+	installPlanName := subscription.Status.InstallPlanRef.Name
+	installPlanNamespace := subscription.Status.InstallPlanRef.Namespace
+	err := r.client.Get(r.context, k8sclient.ObjectKey{Name: installPlanName, Namespace: installPlanNamespace}, rhmiLatestInstallPlan)
+	if err != nil {
+		logrus.Infof("Error getting installPlan %s in ns: %s", installPlanName, installPlanNamespace)
+		return nil, err
+	}
+
+	return rhmiLatestInstallPlan, nil
+}
+
+func (r *ReconcileInstallation) getIntegreatlyOperatorCSV(rhmiInstallPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
+	rhmiCSV := &olmv1alpha1.ClusterServiceVersion{}
+
+	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
+	for _, installPlanResources := range rhmiInstallPlan.Status.Plan {
+		if installPlanResources.Resource.Kind == olmv1alpha1.ClusterServiceVersionKind {
+			err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &rhmiCSV)
+			if err != nil {
+				return rhmiCSV, fmt.Errorf("failed to unmarshal json: %w", err)
+			}
+		}
+	}
+
+	return rhmiCSV, nil
+}
+
+func (r *ReconcileInstallation) isRHMIUpgradeServiceAffecting(rhmiCSV *olmv1alpha1.ClusterServiceVersion) bool {
+	// Always default to the release being service affecting and requiring manual upgrade approval
+	serviceAffectingUpgrade := true
+	if val, ok := rhmiCSV.ObjectMeta.Annotations["serviceAffecting"]; ok && val == "false" {
+		serviceAffectingUpgrade = false
+	}
+	return serviceAffectingUpgrade
+}
+
+func (r *ReconcileInstallation) approveRHMIUpgrade(rhmilatestInstallPlan *olmv1alpha1.InstallPlan) error {
+	if rhmilatestInstallPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
+		logrus.Infof("RHMI Upgrade in progress.")
+		return nil
+	}
+
+	logrus.Infof("Approving %s install plan: %s", rhmilatestInstallPlan.Name, rhmilatestInstallPlan.Spec.ClusterServiceVersionNames[0])
+
+	rhmilatestInstallPlan.Spec.Approved = true
+	err := r.client.Update(r.context, rhmilatestInstallPlan)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
