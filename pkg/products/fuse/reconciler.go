@@ -3,7 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	v1 "k8s.io/api/core/v1"
 
@@ -267,7 +267,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 	}
 
 	// postgres provisioning is still in progress
-	if postgres.Status.Phase != types.PhaseComplete {
+	if postgres.Status.Phase != croTypes.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 	}
 
