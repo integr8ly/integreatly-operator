@@ -6,6 +6,16 @@ metadata:
       [
         {
           "apiVersion": "integreatly.org/v1alpha1",
+          "kind": "PostgresSnapshot",
+          "metadata": {
+            "name": "example-postgressnapshot"
+          },
+          "spec": {
+            "resourceName": "REPLACE_ME"
+          }
+        },
+        {
+          "apiVersion": "integreatly.org/v1alpha1",
           "kind": "Redis",
           "metadata": {
             "labels": {
@@ -29,23 +39,6 @@ metadata:
           },
           "spec": {
             "resourceName": "REPLACE_ME"
-          }
-        },
-        {
-          "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "SMTPCredentialSet",
-          "metadata": {
-            "labels": {
-              "productName": "productName"
-            },
-            "name": "example-smtpcredentialset"
-          },
-          "spec": {
-            "secretRef": {
-              "name": "example-smtpcredentialset-sec"
-            },
-            "tier": "development",
-            "type": "REPLACE_ME"
           }
         },
         {
@@ -81,26 +74,16 @@ metadata:
             "tier": "development",
             "type": "REPLACE_ME"
           }
-        },
-        {
-          "apiVersion": "integreatly.org/v1alpha1",
-          "kind": "PostgresSnapshot",
-          "metadata": {
-            "name": "example-postgressnapshot"
-          },
-          "spec": {
-            "resourceName": "REPLACE_ME"
-          }
         }
       ]
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:v0.13.3
+    containerImage: quay.io/integreatly/cloud-resource-operator:v0.14.0
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
-  name: cloud-resources.v0.13.3
+  name: cloud-resources.v0.14.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -178,24 +161,6 @@ spec:
         displayName: ResourceName
         path: resourceName
       version: v1alpha1
-    - description: Represents an instance of SMTP credentials in a provider
-      displayName: SMTP Credentials
-      kind: SMTPCredentialSet
-      name: smtpcredentialsets.integreatly.org
-      specDescriptors:
-      - description: The type of the resource to deploy. Defaults are 'managed' and
-          'workshop'.
-        displayName: Tier
-        path: tier
-      - description: The tier of the resource to deploy. Defaults are 'production'
-          and 'development'.
-        displayName: Type
-        path: type
-      - description: The secret which the resource information should be outputted
-          to
-        displayName: Secret Reference
-        path: secretRef
-      version: v1alpha1
   description: Provision and manage in-cluster and cloud provider resources (Blob
     Storage, Postgres, Redis, SMTP Details)
   displayName: Cloud Resource Operator
@@ -257,7 +222,7 @@ spec:
                   value: cloud-resource-operator
                 - name: TAG_KEY_PREFIX
                   value: integreatly.org/
-                image: quay.io/integreatly/cloud-resource-operator:v0.13.3
+                image: quay.io/integreatly/cloud-resource-operator:v0.14.0
                 imagePullPolicy: Always
                 name: cloud-resource-operator
                 resources: {}
@@ -376,4 +341,4 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  version: 0.13.3
+  version: 0.14.0
