@@ -109,7 +109,7 @@ var expectedRoutes = map[string][]ExpectedRoute{
 
 	"solution-explorer": []ExpectedRoute{
 		ExpectedRoute{
-			Name:  "tutorial-web-app",
+			Name:  "solution-explorer",
 			isTLS: true,
 		},
 	},
