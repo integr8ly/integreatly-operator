@@ -43,6 +43,14 @@ func (m *Monitoring) SetNamespace(newNamespace string) {
 	m.Config["NAMESPACE"] = newNamespace
 }
 
+func (m *Monitoring) GetFederationNamespace() string {
+	return m.Config["FEDERATION_NAMESPACE"]
+}
+
+func (m *Monitoring) SetFederationNamespace(newNamespace string) {
+	m.Config["FEDERATION_NAMESPACE"] = newNamespace
+}
+
 func (m *Monitoring) GetOperatorNamespace() string {
 	return m.Config["OPERATOR_NAMESPACE"]
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"os"
 	"strings"
 
@@ -51,6 +52,9 @@ const (
 	alertManagerConfigSecretFileName = "alertmanager.yaml"
 	alertmanagerAlertAddressEnv      = "ALERTING_EMAIL_ADDRESS"
 	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"
+
+	// cluster monitorint federation
+	federationServiceMonitorName = "rhmi-alerts-federate"
 )
 
 type Reconciler struct {
@@ -81,12 +85,17 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if config.GetNamespace() == "" {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
+
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
 			config.SetOperatorNamespace(config.GetNamespace())
 		} else {
 			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
 		}
+	}
+
+	if config.GetFederationNamespace() == "" {
+		config.SetFederationNamespace(config.GetNamespace() + "-federate")
 	}
 
 	return &Reconciler{
@@ -180,6 +189,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcileNamespace(ctx, r.Config.GetFederationNamespace(), installation, serverClient)
+	logrus.Infof("Phase: %s ReconcileFederationNamespace", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		return phase, err
+	}
+
 	namespace, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetOperatorNamespace()), err)
@@ -229,6 +245,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.labelFederationNamespace(ctx, serverClient)
+	logrus.Infof("Phase: %s labelFederationNamespace", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to label federation namespace", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileFederation(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileFederation", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile federation", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -241,6 +271,79 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.MonitoringStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", packageName)
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// make the federation namespace discoverable by cluster monitoring
+func (r *Reconciler) labelFederationNamespace(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	namespace := &corev1.Namespace{}
+	selector := types.NamespacedName{
+		Name: r.Config.GetFederationNamespace(),
+	}
+
+	err := serverClient.Get(ctx, selector, namespace)
+	if err != nil {
+		// The namespace might not exist yet as its created by a project request
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	namespace.Labels["openshift.io/cluster-monitoring"] = "true"
+	err = serverClient.Update(ctx, namespace)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// Creates a service monitor that federates metrics about alerts to the cluster
+// monitoring stack
+func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	serviceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      federationServiceMonitorName,
+			Namespace: r.Config.GetFederationNamespace(),
+		},
+	}
+
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, serviceMonitor, func() error {
+		serviceMonitor.Labels = map[string]string{
+			"k8s-app": federationServiceMonitorName,
+			"name":    federationServiceMonitorName,
+		}
+		serviceMonitor.Spec = prometheus.ServiceMonitorSpec{
+			Endpoints: []prometheus.Endpoint{
+				{
+					Port:   "upstream",
+					Path:   "/federate",
+					Scheme: "http",
+					Params: map[string][]string{
+						"match[]": []string{"{__name__=\"ALERTS\"}"},
+					},
+					Interval:      "30s",
+					ScrapeTimeout: "30s",
+					HonorLabels:   true,
+				},
+			},
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"application-monitoring": "true",
+				},
+			},
+			NamespaceSelector: prometheus.NamespaceSelector{
+				MatchNames: []string{r.Config.GetOperatorNamespace()},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	r.Logger.Infof("operation result of reconcileFederation was %v", or)
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
