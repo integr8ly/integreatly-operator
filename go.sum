@@ -30,8 +30,8 @@ dmitri.shuralyov.com/service/change v0.0.0-20181023043359-a85b471d5412/go.mod h1
 dmitri.shuralyov.com/state v0.0.0-20180228185332-28bcc343414c/go.mod h1:0PRwlb0D6DFvNNtx+9ybjezNCa8XF0xaYcETyp6rHWU=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
-github.com/3scale/3scale-operator v0.4.0 h1:M7F8gEFc64Tj2oU6cUychrnfO0rf+CRSiyAqdUiG9e8=
-github.com/3scale/3scale-operator v0.4.0/go.mod h1:4BLigIGlvmZ+3RYq4YGwtK+0oorrDTwl6wIr1DaK66E=
+github.com/3scale/3scale-operator v0.5.0 h1:HpTDmqaYnUjdWok/bRSAV88MWDlQ7eN/WnEDSiQUdA8=
+github.com/3scale/3scale-operator v0.5.0/go.mod h1:4BLigIGlvmZ+3RYq4YGwtK+0oorrDTwl6wIr1DaK66E=
 github.com/3scale/3scale-porta-go-client v0.0.3/go.mod h1:eXz9JDFNrbJRqJkDs39bMxO+m/L5pz51JMof3A8jQ1k=
 github.com/Azure/azure-sdk-for-go v21.4.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/azure-sdk-for-go v32.5.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
