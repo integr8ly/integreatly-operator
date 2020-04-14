@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
 
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
@@ -54,7 +54,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 
 	if err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
-			PrepareObject(client, inst)
+			PrepareObject(client, inst, true)
 			if err := apiClient.Create(ctx, client); err != nil {
 				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create oauth client: %s. %w", client.Name, err)
 			}
@@ -63,7 +63,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth client: %s. %w", client.Name, err)
 	}
 
-	PrepareObject(client, inst)
+	PrepareObject(client, inst, true)
 	client.RedirectURIs = redirectUris
 	client.GrantMethod = grantMethod
 	client.Secret = secret
@@ -89,7 +89,7 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	return ns, err
 }
 
-func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (*v1.Namespace, error) {
+func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, addMonitoringLabels bool) (*v1.Namespace, error) {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
@@ -106,7 +106,7 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 		return nil, fmt.Errorf("could not retrieve %s namespace: %v", ns.Name, err)
 	}
 
-	PrepareObject(ns, inst)
+	PrepareObject(ns, inst, addMonitoringLabels)
 	if err := client.Update(ctx, ns); err != nil {
 		return nil, fmt.Errorf("failed to update the %s namespace definition: %v", ns.Name, err)
 	}
@@ -123,7 +123,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", namespace, err)
 		}
 
-		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst)
+		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}
@@ -138,7 +138,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		}
 	}
 
-	PrepareObject(ns, inst)
+	PrepareObject(ns, inst, true)
 	if err := client.Update(ctx, ns); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
 	}
@@ -235,16 +235,20 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI) {
+func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI, addMonitoringLabels bool) {
 	labels := ns.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
+	if addMonitoringLabels {
+		labels["monitoring-key"] = "middleware"
+		monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
+		labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
+	} else {
+		delete(labels, "monitoring-key")
+	}
 	labels["integreatly"] = "true"
-	labels["monitoring-key"] = "middleware"
 	labels[OwnerLabelKey] = string(install.GetUID())
-	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
-	labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
 	ns.SetLabels(labels)
 }
 

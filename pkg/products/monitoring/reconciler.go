@@ -7,7 +7,7 @@ import (
 	"fmt"
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
-	v12 "k8s.io/api/rbac/v1"
+	rbac "k8s.io/api/rbac/v1"
 	"os"
 	"strings"
 
@@ -194,13 +194,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetFederationNamespace(), installation, serverClient)
-	logrus.Infof("Phase: %s ReconcileFederationNamespace", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
-		return phase, err
-	}
-
 	namespace, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetOperatorNamespace()), err)
@@ -250,7 +243,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.labelFederationNamespace(ctx, serverClient)
+	phase, err = r.createFederationNamespace(ctx, serverClient, installation)
 	logrus.Infof("Phase: %s labelFederationNamespace", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to label federation namespace", err)
@@ -280,26 +273,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 // make the federation namespace discoverable by cluster monitoring
-func (r *Reconciler) labelFederationNamespace(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	namespace := &corev1.Namespace{}
-	selector := types.NamespacedName{
-		Name: r.Config.GetFederationNamespace(),
-	}
-
-	err := serverClient.Get(ctx, selector, namespace)
+func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	namespace, err := resources.GetNS(ctx, r.Config.GetFederationNamespace(), serverClient)
 	if err != nil {
-		// The namespace might not exist yet as its created by a project request
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseInProgress, nil
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		return integreatlyv1alpha1.PhaseFailed, err
+
+		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetFederationNamespace(), serverClient, installation, false)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	namespace.Labels["openshift.io/cluster-monitoring"] = "true"
+	resources.PrepareObject(namespace, installation, false)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -325,7 +319,7 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 					Path:   "/federate",
 					Scheme: "http",
 					Params: map[string][]string{
-						"match[]": []string{"{__name__=\"ALERTS\"}"},
+						"match[]": []string{"{__name__=\"ALERTS\",alertstate=\"firing\"}"},
 					},
 					Interval:      "30s",
 					ScrapeTimeout: "30s",
@@ -350,7 +344,7 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 
 	r.Logger.Infof("operation result of %v was %v", federationServiceMonitorName, or)
 
-	roleBinding := &v12.RoleBinding{
+	roleBinding := &rbac.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      federationRoleBindingName,
 			Namespace: r.Config.GetOperatorNamespace(),
@@ -358,14 +352,14 @@ func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8scl
 	}
 
 	or, err = controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
-		roleBinding.Subjects = []v12.Subject{
+		roleBinding.Subjects = []rbac.Subject{
 			{
-				Kind:      v12.ServiceAccountKind,
+				Kind:      rbac.ServiceAccountKind,
 				Name:      clusterMonitoringPrometheusServiceAccount,
 				Namespace: clusterMonitoringNamespace,
 			},
 		}
-		roleBinding.RoleRef = v12.RoleRef{
+		roleBinding.RoleRef = rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     bundle.ClusterRoleKind,
 			Name:     "view",
