@@ -64,6 +64,9 @@ var expectedDashboards = []dashboardsTestRule{
 	{
 		Title: "UnifiedPush Server",
 	},
+	{
+		Title: "Critical SLO summary",
+	},
 }
 
 func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {

@@ -126,6 +126,7 @@ func (m *Monitoring) GetTemplateList() []string {
 		"resources-by-pod.yaml",
 		"cluster-resources.yaml",
 		"backup-monitoring-alerts.yaml",
+		"critical_slo_alerts.yaml",
 	}
 	return templateList
 }
