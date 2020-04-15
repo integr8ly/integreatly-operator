@@ -28,6 +28,7 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,6 +102,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := rbac.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, nil
@@ -284,6 +288,18 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			"prometheus.yaml": []byte("{\"datasources\":[{\"basicAuthUser\":\"testuser\",\"basicAuthPassword\":\"testpass\"}]}"),
 		},
 	}
+	federationNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-federate",
+			Labels: map[string]string{
+				resources.OwnerLabelKey:           string(basicInstallation().GetUID()),
+				"openshift.io/cluster-monitoring": "true",
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
 
 	installation := basicInstallation()
 
@@ -348,7 +364,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
@@ -452,6 +468,19 @@ func TestReconciler_testPhases(t *testing.T) {
 		},
 	}
 
+	federationNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-federate",
+			Labels: map[string]string{
+				resources.OwnerLabelKey:           string(basicInstallation().GetUID()),
+				"openshift.io/cluster-monitoring": "true",
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -473,7 +502,7 @@ func TestReconciler_testPhases(t *testing.T) {
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,
 				},
-			}, operatorNS, basicInstallation()),
+			}, operatorNS, federationNs, basicInstallation()),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -490,7 +519,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test subscription creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
@@ -507,7 +536,7 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test components creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
 				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
