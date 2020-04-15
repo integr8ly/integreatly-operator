@@ -50,3 +50,5 @@ spec:
               value: "rhmi-operator"
             - name: USE_CLUSTER_STORAGE
               value: "true"
+            - name: INSTALLATION_TYPE
+              value: "self-managed"
