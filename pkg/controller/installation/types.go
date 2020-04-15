@@ -110,6 +110,45 @@ var (
 			},
 		},
 	}
+	allSelfManagedStages = []Stage{
+		{
+			Name: integreatlyv1alpha1.BootstrapStage,
+		},
+		{
+			Name: integreatlyv1alpha1.CloudResourcesStage,
+			Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+				integreatlyv1alpha1.ProductCloudResources: {
+					Name: integreatlyv1alpha1.ProductCloudResources,
+				},
+			},
+		},
+		{
+			Name: integreatlyv1alpha1.MonitoringStage,
+			Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+				integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
+			},
+		},
+		{
+			Name: integreatlyv1alpha1.AuthenticationStage,
+			Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+				integreatlyv1alpha1.ProductRHSSO: {
+					Name: integreatlyv1alpha1.ProductRHSSO,
+				},
+			},
+		},
+		{
+			Name: integreatlyv1alpha1.ProductsStage,
+			Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+				integreatlyv1alpha1.ProductAMQStreams: {Name: integreatlyv1alpha1.ProductAMQStreams},
+			},
+		},
+		{
+			Name: integreatlyv1alpha1.SolutionExplorerStage,
+			Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+				integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
+			},
+		},
+	}
 )
 
 type Type struct {
@@ -133,6 +172,8 @@ func TypeFactory(installationType string, products []string) (*Type, error) {
 		return newWorkshopType(products), nil
 	case string(integreatlyv1alpha1.InstallationTypeManaged):
 		return newManagedType(products), nil
+	case string(integreatlyv1alpha1.InstallationTypeSelfManaged):
+		return newSelfManagedType(products), nil
 	default:
 		return nil, errors.New("unknown installation type: " + installationType)
 	}
@@ -154,6 +195,15 @@ func newManagedType(products []string) *Type {
 		Stages: []Stage{},
 	}
 	buildProducts(t, products, integreatlyv1alpha1.InstallationTypeManaged)
+	return t
+}
+
+func newSelfManagedType(products []string) *Type {
+	logrus.Info("Reconciling self-managed products ", products)
+	t := &Type{
+		Stages: []Stage{},
+	}
+	buildProducts(t, products, integreatlyv1alpha1.InstallationTypeSelfManaged)
 	return t
 }
 
@@ -183,6 +233,8 @@ func buildProducts(t *Type, products []string, installType integreatlyv1alpha1.I
 				t.Stages = allManagedStages
 			} else if installType == integreatlyv1alpha1.InstallationTypeWorkshop {
 				t.Stages = allWorkshopStages
+			} else if installType == integreatlyv1alpha1.InstallationTypeSelfManaged {
+				t.Stages = allSelfManagedStages
 			}
 			break
 		}
