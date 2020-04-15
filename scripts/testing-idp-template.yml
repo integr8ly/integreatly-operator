@@ -15,7 +15,7 @@ objects:
         matchLabels:
           sso: integreatly
       realm:
-        displayName: Testing IDP
+        displayName: ${REALM_DISPLAY_NAME}
         enabled: true
         id: ${REALM}
         realm: ${REALM}
@@ -124,6 +124,9 @@ parameters:
   - description: Realm name
     name: REALM
     value: testing-idp
+  - description: Realm display name
+    name: REALM_DISPLAY_NAME
+    value: Testing IDP
   - description: IDP client client
     name: CLIENT_SECRET
     generate: expression
