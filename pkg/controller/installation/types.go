@@ -190,6 +190,66 @@ var (
 			},
 		},
 	}
+	allSelfManagedStages = &Type{
+		[]Stage{
+			{
+				Name: integreatlyv1alpha1.BootstrapStage,
+			},
+			{
+				Name: integreatlyv1alpha1.CloudResourcesStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductCloudResources: {
+						Name: integreatlyv1alpha1.ProductCloudResources,
+					},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.MonitoringStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.AuthenticationStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductRHSSO: {
+						Name: integreatlyv1alpha1.ProductRHSSO,
+					},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.ProductsStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductAMQStreams: {Name: integreatlyv1alpha1.ProductAMQStreams},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.SolutionExplorerStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
+				},
+			},
+		},
+		[]Stage{
+			{
+				Name: integreatlyv1alpha1.UninstallProductsStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductCloudResources:      {Name: integreatlyv1alpha1.ProductCloudResources},
+					integreatlyv1alpha1.ProductRHSSO:               {Name: integreatlyv1alpha1.ProductRHSSO},
+					integreatlyv1alpha1.ProductAMQStreams:          {Name: integreatlyv1alpha1.ProductAMQStreams},
+					integreatlyv1alpha1.ProductSolutionExplorer:    {Name: integreatlyv1alpha1.ProductSolutionExplorer},
+				},
+			},
+			{
+				Name: integreatlyv1alpha1.UninstallMonitoringStage,
+				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+				},
+			},
+		},
+	}
 )
 
 type Type struct {
@@ -218,6 +278,8 @@ func TypeFactory(installationType string) (*Type, error) {
 		return newWorkshopType(), nil
 	case string(integreatlyv1alpha1.InstallationTypeManaged):
 		return newManagedType(), nil
+	case string(integreatlyv1alpha1.InstallationTypeSelfManaged):
+		return newSelfManagedType(), nil
 	default:
 		return nil, errors.New("unknown installation type: " + installationType)
 	}
@@ -229,4 +291,8 @@ func newWorkshopType() *Type {
 
 func newManagedType() *Type {
 	return allManagedStages
+}
+
+func newSelfManagedType() *Type {
+	return allSelfManagedStages
 }
