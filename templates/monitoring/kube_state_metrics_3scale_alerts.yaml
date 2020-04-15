@@ -53,7 +53,7 @@ spec:
           message: >-
             3Scale system-app has no pods in a ready state.
         expr: |
-          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-listener",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-app",namespace="redhat-rhmi-3scale"}) < 1
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-app",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-app",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
