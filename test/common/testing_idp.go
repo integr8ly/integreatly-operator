@@ -324,6 +324,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 					},
 				},
 				User: v1alpha1.KeycloakAPIUser{
+					ID:        keycloakUser.Spec.User.ID,
 					FirstName: user.FirstName,
 					LastName:  user.LastName,
 					UserName:  user.UserName,
@@ -499,6 +500,9 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakClient, func() error {
+		if keycloakClient.Spec.Client != nil && keycloakClient.Spec.Client.Secret != "" {
+			keycloakSpec.Client.Secret = keycloakClient.Spec.Client.Secret
+		}
 		keycloakClient.Spec = keycloakSpec
 		return nil
 	}); err != nil {
