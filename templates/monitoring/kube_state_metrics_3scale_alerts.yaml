@@ -13,7 +13,7 @@ spec:
           message: >-
             3Scale apicast-staging has no pods in a ready state.
         expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"apicast-staging.*"})
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="apicast-staging",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="apicast-staging",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
@@ -23,7 +23,7 @@ spec:
           message: >-
             3Scale apicast-production has no pods in a ready state.
         expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"apicast-production.*"})
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="apicast-production",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="apicast-production",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
@@ -33,7 +33,7 @@ spec:
           message: >-
             3Scale backend-worker has no pods in a ready state.
         expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"backend-worker.*"})
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="backend-worker",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="backend-worker",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
@@ -43,7 +43,7 @@ spec:
           message: >-
             3Scale backend-listener has no pods in a ready state.
         expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"backend-listener.*"})
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="backend-listener",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="backend-listener",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
@@ -53,7 +53,7 @@ spec:
           message: >-
             3Scale system-app has no pods in a ready state.
         expr: |
-          absent(kube_pod_status_ready{namespace="{{ index .Params "Namespace" }}", condition="true", pod=~"system-app-.*"})
+          (1 - absent(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-listener",namespace="redhat-rhmi-3scale"})) or count(kube_pod_status_ready{condition="true",namespace="redhat-rhmi-3scale"} * on(pod, namespace) kube_pod_labels{label_deploymentconfig="system-app",namespace="redhat-rhmi-3scale"}) < 1
         for: 5m
         labels:
           severity: critical
