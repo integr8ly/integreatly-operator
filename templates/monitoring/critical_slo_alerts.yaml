@@ -480,8 +480,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-3scale|Threescale",
-              "value": "redhat-rhmi-3scale|Threescale"
+              "text": "redhat-rhmi-3scale|ThreeScale",
+              "value": "redhat-rhmi-3scale|ThreeScale"
             }
           },
           "title": "$product",
@@ -544,8 +544,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-3scale|Threescale",
-              "value": "redhat-rhmi-3scale|Threescale"
+              "text": "redhat-rhmi-3scale|ThreeScale",
+              "value": "redhat-rhmi-3scale|ThreeScale"
             }
           },
           "sparkline": {
@@ -635,8 +635,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-3scale|Threescale",
-              "value": "redhat-rhmi-3scale|Threescale"
+              "text": "redhat-rhmi-3scale|ThreeScale",
+              "value": "redhat-rhmi-3scale|ThreeScale"
             }
           },
           "sparkline": {
@@ -705,8 +705,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-3scale|Threescale",
-              "value": "redhat-rhmi-3scale|Threescale"
+              "text": "redhat-rhmi-3scale|ThreeScale",
+              "value": "redhat-rhmi-3scale|ThreeScale"
             }
           },
           "seriesOverrides": [],
@@ -821,8 +821,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-3scale|Threescale",
-              "value": "redhat-rhmi-3scale|Threescale"
+              "text": "redhat-rhmi-3scale|ThreeScale",
+              "value": "redhat-rhmi-3scale|ThreeScale"
             }
           },
           "sparkline": {
@@ -3692,8 +3692,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-ups|UPS",
-              "value": "redhat-rhmi-ups|UPS"
+              "text": "redhat-rhmi-ups|UnifiedPush",
+              "value": "redhat-rhmi-ups|UnifiedPush"
             }
           },
           "title": "$product",
@@ -3759,8 +3759,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-ups|UPS",
-              "value": "redhat-rhmi-ups|UPS"
+              "text": "redhat-rhmi-ups|UnifiedPush",
+              "value": "redhat-rhmi-ups|UnifiedPush"
             }
           },
           "sparkline": {
@@ -3853,8 +3853,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-ups|UPS",
-              "value": "redhat-rhmi-ups|UPS"
+              "text": "redhat-rhmi-ups|UnifiedPush",
+              "value": "redhat-rhmi-ups|UnifiedPush"
             }
           },
           "sparkline": {
@@ -3926,8 +3926,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-ups|UPS",
-              "value": "redhat-rhmi-ups|UPS"
+              "text": "redhat-rhmi-ups|UnifiedPush",
+              "value": "redhat-rhmi-ups|UnifiedPush"
             }
           },
           "seriesOverrides": [],
@@ -4045,8 +4045,8 @@ spec:
           "scopedVars": {
             "product": {
               "selected": false,
-              "text": "redhat-rhmi-ups|UPS",
-              "value": "redhat-rhmi-ups|UPS"
+              "text": "redhat-rhmi-ups|UnifiedPush",
+              "value": "redhat-rhmi-ups|UnifiedPush"
             }
           },
           "sparkline": {
@@ -4400,8 +4400,8 @@ spec:
               },
               {
                 "selected": false,
-                "text": "redhat-rhmi-3scale|Threescale",
-                "value": "redhat-rhmi-3scale|Threescale"
+                "text": "redhat-rhmi-3scale|ThreeScale",
+                "value": "redhat-rhmi-3scale|ThreeScale"
               },
               {
                 "selected": false,
@@ -4440,8 +4440,8 @@ spec:
               },
               {
                 "selected": false,
-                "text": "redhat-rhmi-ups|UPS",
-                "value": "redhat-rhmi-ups|UPS"
+                "text": "redhat-rhmi-ups|UnifiedPush",
+                "value": "redhat-rhmi-ups|UnifiedPush"
               }
             ],
             "query": "redhat-rhmi-3scale|ThreeScale, redhat-rhmi-amq-online|AMQ, redhat-rhmi-fuse|Fuse, redhat-rhmi-rhsso|Keycloak, redhat-rhmi-user-rhsso|Keycloak, redhat-rhmi-codeready-workspaces|CodeReady, redhat-rhmi-solution-explorer|Solution, redhat-rhmi-apicurito|Apicurito, redhat-rhmi-ups|UnifiedPush",
