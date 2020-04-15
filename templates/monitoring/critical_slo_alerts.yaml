@@ -4444,7 +4444,7 @@ spec:
                 "value": "redhat-rhmi-ups|UPS"
               }
             ],
-            "query": "redhat-rhmi-3scale|Threescale, redhat-rhmi-amq-online|AMQ, redhat-rhmi-fuse|Fuse, redhat-rhmi-rhsso|Keycloak, redhat-rhmi-user-rhsso|Keycloak, redhat-rhmi-codeready-workspaces|CodeReady, redhat-rhmi-solution-explorer|Solution, redhat-rhmi-apicurito|Apicurito, redhat-rhmi-ups|UPS",
+            "query": "redhat-rhmi-3scale|ThreeScale, redhat-rhmi-amq-online|AMQ, redhat-rhmi-fuse|Fuse, redhat-rhmi-rhsso|Keycloak, redhat-rhmi-user-rhsso|Keycloak, redhat-rhmi-codeready-workspaces|CodeReady, redhat-rhmi-solution-explorer|Solution, redhat-rhmi-apicurito|Apicurito, redhat-rhmi-ups|UnifiedPush",
             "skipUrlSync": false,
             "type": "custom"
           }
