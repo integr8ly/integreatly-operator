@@ -3,6 +3,9 @@ package fuse
 import (
 	"context"
 	"fmt"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
@@ -12,7 +15,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -154,6 +157,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileCloudResources(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile custom resource", err)
@@ -244,18 +253,71 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclien
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	r.logger.Info("Reconciling cloud resources for Fuse")
+
+	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
+	ns := rhmi.Namespace
+	postgres, err := croResources.ReconcilePostgres(ctx, client, defaultInstallationNamespace, rhmi.Spec.Type, "production", pgName, ns, pgName, ns, func(cr metav1.Object) error {
+		owner.AddIntegreatlyOwnerAnnotations(cr, rhmi)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres instance for fuse: %w", err)
+	}
+
+	// postgres provisioning is still in progress
+	if postgres.Status.Phase != croTypes.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
+	}
+
+	// create the prometheus availability rule
+	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, client, rhmi, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
+	}
+
+	// create the prometheus connectivity rule
+	if _, err = resources.CreatePostgresConnectivityAlert(ctx, client, rhmi, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for rhsso : %s", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
 // reconcileCustomResource ensures that the fuse custom resource exists
-func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling fuse custom resource")
 
-	cr := &syndesisv1alpha1.Syndesis{
+	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
+	// get the credential secret
+	postgresSec := &v1.Secret{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{Name: pgName, Namespace: rhmi.Namespace}, postgresSec); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret for fuse: %w", err)
+	}
+
+	// create the syndesis external database secret
+	synExternalDatabaseSec := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-global-config",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, client, synExternalDatabaseSec, func() error {
+		if synExternalDatabaseSec.Data == nil {
+			synExternalDatabaseSec.Data = map[string][]byte{}
+		}
+		synExternalDatabaseSec.Data["POSTGRESQL_PASSWORD"] = postgresSec.Data["password"]
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile fuse external database secret: %w", err)
+	}
+
+	cr := &syndesisv1beta1.Syndesis{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
 			Name:      "integreatly",
 		},
 	}
-
-	intLimit := 0
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		threescaleHost := ""
 		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
@@ -263,37 +325,43 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		if err == nil {
 			threescaleHost = threescaleConfig.GetHost()
 		}
-		cr.Spec = syndesisv1alpha1.SyndesisSpec{
-			Integration: syndesisv1alpha1.IntegrationSpec{
-				Limit: &intLimit,
-			},
-			Components: syndesisv1alpha1.ComponentsSpec{
-				Server: syndesisv1alpha1.ServerConfiguration{
-					Features: syndesisv1alpha1.ServerFeatures{
+		cr.Spec = syndesisv1beta1.SyndesisSpec{
+			Components: syndesisv1beta1.ComponentsSpec{
+				Database: syndesisv1beta1.DatabaseConfiguration{
+					User:          string(postgresSec.Data["username"]),
+					Name:          string(postgresSec.Data["database"]),
+					ExternalDbURL: fmt.Sprintf("postgresql://%s:%s", string(postgresSec.Data["host"]), string(postgresSec.Data["port"])),
+				},
+				Server: syndesisv1beta1.ServerConfiguration{
+					Features: syndesisv1beta1.ServerFeatures{
 						ManagementUrlFor3scale: threescaleHost,
+						IntegrationLimit:       0,
 					},
 				},
 			},
-			Addons: syndesisv1alpha1.AddonsSpec{
-				"ops": syndesisv1alpha1.Parameters{
-					"enabled": "true",
+			Addons: syndesisv1beta1.AddonsSpec{
+				Jaeger: syndesisv1beta1.JaegerConfiguration{
+					// enabled being false still creates some resources
+					Enabled:      false,
+					OperatorOnly: true,
+					ClientOnly:   true,
 				},
-				"todo": syndesisv1alpha1.Parameters{
-					"enabled": "false",
+				Todo: syndesisv1beta1.AddonSpec{
+					Enabled: false,
 				},
 			},
 		}
-		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
+		owner.AddIntegreatlyOwnerAnnotations(cr, rhmi)
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update a Syndesis(Fuse) custom resource: %w", err)
 	}
 
-	if cr.Status.Phase == syndesisv1alpha1.SyndesisPhaseStartupFailed {
+	if cr.Status.Phase == syndesisv1beta1.SyndesisPhaseStartupFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to install fuse custom resource: %s", cr.Status.Reason)
 	}
 
-	if cr.Status.Phase != syndesisv1alpha1.SyndesisPhaseInstalled {
+	if cr.Status.Phase != syndesisv1beta1.SyndesisPhaseInstalled {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -323,18 +391,15 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.BackupExecutor {
-	return backup.NewNoopBackupExecutor()
+func preUpgradeBackupExecutor(rhmi *integreatlyv1alpha1.RHMI) backup.BackupExecutor {
+	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
+	if rhmi.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
 
-	// Holding off until Fuse 7.6 GA, that allows for external databases:
-	//
-	// if installation.Spec.UseClusterStorage != "false" {
-	// 	return backup.NewNoopBackupExecutor()
-	// }
-
-	// return backup.NewAWSBackupExecutor(
-	// 	installation.Namespace,
-	// 	"fuse-online-postgres-rhmi",
-	// 	backup.PostgresSnapshotType,
-	// )
+	return backup.NewAWSBackupExecutor(
+		rhmi.Namespace,
+		pgName,
+		backup.PostgresSnapshotType,
+	)
 }

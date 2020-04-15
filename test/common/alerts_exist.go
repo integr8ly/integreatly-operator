@@ -177,13 +177,6 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
-		File: "redhat-rhmi-fuse-syndesis-infra-db-alerting-rules.yaml",
-		Rules: []string{
-			"FuseOnlineDatabaseInstanceDown",
-			"FuseOnlinePostgresExporterDown",
-		},
-	},
-	{
 		File: "redhat-rhmi-fuse-syndesis-infra-meta-alerting-rules.yaml",
 		Rules: []string{
 			"FuseOnlineRestApiHighEndpointErrorRate",

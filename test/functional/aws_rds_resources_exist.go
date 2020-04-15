@@ -21,7 +21,7 @@ var (
 		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, common.InstallationName),
 		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, common.InstallationName),
 		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, common.InstallationName),
-		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
+		fmt.Sprintf("%s%s", constants.FusePostgresPrefix, common.InstallationName),
 	}
 )
 
