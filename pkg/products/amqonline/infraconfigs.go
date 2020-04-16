@@ -78,13 +78,15 @@ func GetDefaultStandardInfraConfigs(ns string) []*v1beta1.StandardInfraConfig {
 						Storage: "2Gi",
 					},
 					AddressFullPolicy: "FAIL",
+					MaxUnavailable:    1,
 				},
 				Router: v1beta1.InfraConfigRouter{
 					MinReplicas: 2,
 					Resources: v1beta1.InfraConfigResources{
 						Memory: "512Mi",
 					},
-					LinkCapacity: 250,
+					LinkCapacity:   250,
+					MaxUnavailable: 1,
 				},
 			},
 		},
@@ -104,13 +106,15 @@ func GetDefaultStandardInfraConfigs(ns string) []*v1beta1.StandardInfraConfig {
 						Storage: "2Gi",
 					},
 					AddressFullPolicy: "FAIL",
+					MaxUnavailable:    1,
 				},
 				Router: v1beta1.InfraConfigRouter{
 					MinReplicas: 2,
 					Resources: v1beta1.InfraConfigResources{
 						Memory: "512Mi",
 					},
-					LinkCapacity: 250,
+					LinkCapacity:   250,
+					MaxUnavailable: 1,
 				},
 			},
 		},
