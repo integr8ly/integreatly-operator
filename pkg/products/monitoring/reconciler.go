@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 	rbac "k8s.io/api/rbac/v1"
-	"os"
-	"strings"
 
 	v1 "github.com/openshift/api/route/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -286,7 +287,7 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetFederationNamespace(), serverClient, installation, false)
+		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetFederationNamespace(), serverClient, installation, false, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -294,7 +295,7 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	resources.PrepareObject(namespace, installation, false)
+	resources.PrepareObject(namespace, installation, false, true)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
