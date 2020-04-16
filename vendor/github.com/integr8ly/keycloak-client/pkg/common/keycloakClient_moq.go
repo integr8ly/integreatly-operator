@@ -4,12 +4,15 @@
 package common
 
 import (
-	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"sync"
+
+	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 )
 
 var (
+	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow      sync.RWMutex
 	lockKeycloakInterfaceMockAddUserToGroup                       sync.RWMutex
+	lockKeycloakInterfaceMockCreateAuthenticationFlow             sync.RWMutex
 	lockKeycloakInterfaceMockCreateAuthenticatorConfig            sync.RWMutex
 	lockKeycloakInterfaceMockCreateClient                         sync.RWMutex
 	lockKeycloakInterfaceMockCreateFederatedIdentity              sync.RWMutex
@@ -30,6 +33,7 @@ var (
 	lockKeycloakInterfaceMockDeleteUserFromGroup                  sync.RWMutex
 	lockKeycloakInterfaceMockDeleteUserRealmRole                  sync.RWMutex
 	lockKeycloakInterfaceMockFindAuthenticationExecutionForFlow   sync.RWMutex
+	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias        sync.RWMutex
 	lockKeycloakInterfaceMockFindAvailableGroupClientRole         sync.RWMutex
 	lockKeycloakInterfaceMockFindGroupByName                      sync.RWMutex
 	lockKeycloakInterfaceMockFindGroupClientRole                  sync.RWMutex
@@ -44,6 +48,7 @@ var (
 	lockKeycloakInterfaceMockGetUser                              sync.RWMutex
 	lockKeycloakInterfaceMockGetUserFederatedIdentities           sync.RWMutex
 	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow  sync.RWMutex
+	lockKeycloakInterfaceMockListAuthenticationFlows              sync.RWMutex
 	lockKeycloakInterfaceMockListAvailableGroupClientRoles        sync.RWMutex
 	lockKeycloakInterfaceMockListAvailableGroupRealmRoles         sync.RWMutex
 	lockKeycloakInterfaceMockListAvailableUserClientRoles         sync.RWMutex
@@ -81,8 +86,14 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 //
 //         // make and configure a mocked KeycloakInterface
 //         mockedKeycloakInterface := &KeycloakInterfaceMock{
+//             AddExecutionToAuthenticatonFlowFunc: func(flowAlias string, realmName string, providerID string, requirement Requirement) error {
+// 	               panic("mock out the AddExecutionToAuthenticatonFlow method")
+//             },
 //             AddUserToGroupFunc: func(realmName string, userID string, groupID string) error {
 // 	               panic("mock out the AddUserToGroup method")
+//             },
+//             CreateAuthenticationFlowFunc: func(authFlow AuthenticationFlow, realmName string) (string, error) {
+// 	               panic("mock out the CreateAuthenticationFlow method")
 //             },
 //             CreateAuthenticatorConfigFunc: func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error) {
 // 	               panic("mock out the CreateAuthenticatorConfig method")
@@ -144,6 +155,9 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 //             FindAuthenticationExecutionForFlowFunc: func(flowAlias string, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error) {
 // 	               panic("mock out the FindAuthenticationExecutionForFlow method")
 //             },
+//             FindAuthenticationFlowByAliasFunc: func(flowAlias string, realmName string) (*AuthenticationFlow, error) {
+// 	               panic("mock out the FindAuthenticationFlowByAlias method")
+//             },
 //             FindAvailableGroupClientRoleFunc: func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
 // 	               panic("mock out the FindAvailableGroupClientRole method")
 //             },
@@ -185,6 +199,9 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 //             },
 //             ListAuthenticationExecutionsForFlowFunc: func(flowAlias string, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error) {
 // 	               panic("mock out the ListAuthenticationExecutionsForFlow method")
+//             },
+//             ListAuthenticationFlowsFunc: func(realmName string) ([]*AuthenticationFlow, error) {
+// 	               panic("mock out the ListAuthenticationFlows method")
 //             },
 //             ListAvailableGroupClientRolesFunc: func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error) {
 // 	               panic("mock out the ListAvailableGroupClientRoles method")
@@ -268,8 +285,14 @@ var _ KeycloakInterface = &KeycloakInterfaceMock{}
 //
 //     }
 type KeycloakInterfaceMock struct {
+	// AddExecutionToAuthenticatonFlowFunc mocks the AddExecutionToAuthenticatonFlow method.
+	AddExecutionToAuthenticatonFlowFunc func(flowAlias string, realmName string, providerID string, requirement Requirement) error
+
 	// AddUserToGroupFunc mocks the AddUserToGroup method.
 	AddUserToGroupFunc func(realmName string, userID string, groupID string) error
+
+	// CreateAuthenticationFlowFunc mocks the CreateAuthenticationFlow method.
+	CreateAuthenticationFlowFunc func(authFlow AuthenticationFlow, realmName string) (string, error)
 
 	// CreateAuthenticatorConfigFunc mocks the CreateAuthenticatorConfig method.
 	CreateAuthenticatorConfigFunc func(authenticatorConfig *v1alpha1.AuthenticatorConfig, realmName string, executionID string) (string, error)
@@ -331,6 +354,9 @@ type KeycloakInterfaceMock struct {
 	// FindAuthenticationExecutionForFlowFunc mocks the FindAuthenticationExecutionForFlow method.
 	FindAuthenticationExecutionForFlowFunc func(flowAlias string, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error)
 
+	// FindAuthenticationFlowByAliasFunc mocks the FindAuthenticationFlowByAlias method.
+	FindAuthenticationFlowByAliasFunc func(flowAlias string, realmName string) (*AuthenticationFlow, error)
+
 	// FindAvailableGroupClientRoleFunc mocks the FindAvailableGroupClientRole method.
 	FindAvailableGroupClientRoleFunc func(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error)
 
@@ -372,6 +398,9 @@ type KeycloakInterfaceMock struct {
 
 	// ListAuthenticationExecutionsForFlowFunc mocks the ListAuthenticationExecutionsForFlow method.
 	ListAuthenticationExecutionsForFlowFunc func(flowAlias string, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error)
+
+	// ListAuthenticationFlowsFunc mocks the ListAuthenticationFlows method.
+	ListAuthenticationFlowsFunc func(realmName string) ([]*AuthenticationFlow, error)
 
 	// ListAvailableGroupClientRolesFunc mocks the ListAvailableGroupClientRoles method.
 	ListAvailableGroupClientRolesFunc func(realmName string, clientID string, groupID string) ([]*v1alpha1.KeycloakUserRole, error)
@@ -450,6 +479,17 @@ type KeycloakInterfaceMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// AddExecutionToAuthenticatonFlow holds details about calls to the AddExecutionToAuthenticatonFlow method.
+		AddExecutionToAuthenticatonFlow []struct {
+			// FlowAlias is the flowAlias argument value.
+			FlowAlias string
+			// RealmName is the realmName argument value.
+			RealmName string
+			// ProviderID is the providerID argument value.
+			ProviderID string
+			// Requirement is the requirement argument value.
+			Requirement Requirement
+		}
 		// AddUserToGroup holds details about calls to the AddUserToGroup method.
 		AddUserToGroup []struct {
 			// RealmName is the realmName argument value.
@@ -458,6 +498,13 @@ type KeycloakInterfaceMock struct {
 			UserID string
 			// GroupID is the groupID argument value.
 			GroupID string
+		}
+		// CreateAuthenticationFlow holds details about calls to the CreateAuthenticationFlow method.
+		CreateAuthenticationFlow []struct {
+			// AuthFlow is the authFlow argument value.
+			AuthFlow AuthenticationFlow
+			// RealmName is the realmName argument value.
+			RealmName string
 		}
 		// CreateAuthenticatorConfig holds details about calls to the CreateAuthenticatorConfig method.
 		CreateAuthenticatorConfig []struct {
@@ -621,6 +668,13 @@ type KeycloakInterfaceMock struct {
 			// Predicate is the predicate argument value.
 			Predicate func(*v1alpha1.AuthenticationExecutionInfo) bool
 		}
+		// FindAuthenticationFlowByAlias holds details about calls to the FindAuthenticationFlowByAlias method.
+		FindAuthenticationFlowByAlias []struct {
+			// FlowAlias is the flowAlias argument value.
+			FlowAlias string
+			// RealmName is the realmName argument value.
+			RealmName string
+		}
 		// FindAvailableGroupClientRole holds details about calls to the FindAvailableGroupClientRole method.
 		FindAvailableGroupClientRole []struct {
 			// RealmName is the realmName argument value.
@@ -722,6 +776,11 @@ type KeycloakInterfaceMock struct {
 		ListAuthenticationExecutionsForFlow []struct {
 			// FlowAlias is the flowAlias argument value.
 			FlowAlias string
+			// RealmName is the realmName argument value.
+			RealmName string
+		}
+		// ListAuthenticationFlows holds details about calls to the ListAuthenticationFlows method.
+		ListAuthenticationFlows []struct {
 			// RealmName is the realmName argument value.
 			RealmName string
 		}
@@ -901,6 +960,49 @@ type KeycloakInterfaceMock struct {
 	}
 }
 
+// AddExecutionToAuthenticatonFlow calls AddExecutionToAuthenticatonFlowFunc.
+func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlow(flowAlias string, realmName string, providerID string, requirement Requirement) error {
+	if mock.AddExecutionToAuthenticatonFlowFunc == nil {
+		panic("KeycloakInterfaceMock.AddExecutionToAuthenticatonFlowFunc: method is nil but KeycloakInterface.AddExecutionToAuthenticatonFlow was just called")
+	}
+	callInfo := struct {
+		FlowAlias   string
+		RealmName   string
+		ProviderID  string
+		Requirement Requirement
+	}{
+		FlowAlias:   flowAlias,
+		RealmName:   realmName,
+		ProviderID:  providerID,
+		Requirement: requirement,
+	}
+	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.Lock()
+	mock.calls.AddExecutionToAuthenticatonFlow = append(mock.calls.AddExecutionToAuthenticatonFlow, callInfo)
+	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.Unlock()
+	return mock.AddExecutionToAuthenticatonFlowFunc(flowAlias, realmName, providerID, requirement)
+}
+
+// AddExecutionToAuthenticatonFlowCalls gets all the calls that were made to AddExecutionToAuthenticatonFlow.
+// Check the length with:
+//     len(mockedKeycloakInterface.AddExecutionToAuthenticatonFlowCalls())
+func (mock *KeycloakInterfaceMock) AddExecutionToAuthenticatonFlowCalls() []struct {
+	FlowAlias   string
+	RealmName   string
+	ProviderID  string
+	Requirement Requirement
+} {
+	var calls []struct {
+		FlowAlias   string
+		RealmName   string
+		ProviderID  string
+		Requirement Requirement
+	}
+	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.RLock()
+	calls = mock.calls.AddExecutionToAuthenticatonFlow
+	lockKeycloakInterfaceMockAddExecutionToAuthenticatonFlow.RUnlock()
+	return calls
+}
+
 // AddUserToGroup calls AddUserToGroupFunc.
 func (mock *KeycloakInterfaceMock) AddUserToGroup(realmName string, userID string, groupID string) error {
 	if mock.AddUserToGroupFunc == nil {
@@ -937,6 +1039,41 @@ func (mock *KeycloakInterfaceMock) AddUserToGroupCalls() []struct {
 	lockKeycloakInterfaceMockAddUserToGroup.RLock()
 	calls = mock.calls.AddUserToGroup
 	lockKeycloakInterfaceMockAddUserToGroup.RUnlock()
+	return calls
+}
+
+// CreateAuthenticationFlow calls CreateAuthenticationFlowFunc.
+func (mock *KeycloakInterfaceMock) CreateAuthenticationFlow(authFlow AuthenticationFlow, realmName string) (string, error) {
+	if mock.CreateAuthenticationFlowFunc == nil {
+		panic("KeycloakInterfaceMock.CreateAuthenticationFlowFunc: method is nil but KeycloakInterface.CreateAuthenticationFlow was just called")
+	}
+	callInfo := struct {
+		AuthFlow  AuthenticationFlow
+		RealmName string
+	}{
+		AuthFlow:  authFlow,
+		RealmName: realmName,
+	}
+	lockKeycloakInterfaceMockCreateAuthenticationFlow.Lock()
+	mock.calls.CreateAuthenticationFlow = append(mock.calls.CreateAuthenticationFlow, callInfo)
+	lockKeycloakInterfaceMockCreateAuthenticationFlow.Unlock()
+	return mock.CreateAuthenticationFlowFunc(authFlow, realmName)
+}
+
+// CreateAuthenticationFlowCalls gets all the calls that were made to CreateAuthenticationFlow.
+// Check the length with:
+//     len(mockedKeycloakInterface.CreateAuthenticationFlowCalls())
+func (mock *KeycloakInterfaceMock) CreateAuthenticationFlowCalls() []struct {
+	AuthFlow  AuthenticationFlow
+	RealmName string
+} {
+	var calls []struct {
+		AuthFlow  AuthenticationFlow
+		RealmName string
+	}
+	lockKeycloakInterfaceMockCreateAuthenticationFlow.RLock()
+	calls = mock.calls.CreateAuthenticationFlow
+	lockKeycloakInterfaceMockCreateAuthenticationFlow.RUnlock()
 	return calls
 }
 
@@ -1684,6 +1821,41 @@ func (mock *KeycloakInterfaceMock) FindAuthenticationExecutionForFlowCalls() []s
 	return calls
 }
 
+// FindAuthenticationFlowByAlias calls FindAuthenticationFlowByAliasFunc.
+func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAlias(flowAlias string, realmName string) (*AuthenticationFlow, error) {
+	if mock.FindAuthenticationFlowByAliasFunc == nil {
+		panic("KeycloakInterfaceMock.FindAuthenticationFlowByAliasFunc: method is nil but KeycloakInterface.FindAuthenticationFlowByAlias was just called")
+	}
+	callInfo := struct {
+		FlowAlias string
+		RealmName string
+	}{
+		FlowAlias: flowAlias,
+		RealmName: realmName,
+	}
+	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.Lock()
+	mock.calls.FindAuthenticationFlowByAlias = append(mock.calls.FindAuthenticationFlowByAlias, callInfo)
+	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.Unlock()
+	return mock.FindAuthenticationFlowByAliasFunc(flowAlias, realmName)
+}
+
+// FindAuthenticationFlowByAliasCalls gets all the calls that were made to FindAuthenticationFlowByAlias.
+// Check the length with:
+//     len(mockedKeycloakInterface.FindAuthenticationFlowByAliasCalls())
+func (mock *KeycloakInterfaceMock) FindAuthenticationFlowByAliasCalls() []struct {
+	FlowAlias string
+	RealmName string
+} {
+	var calls []struct {
+		FlowAlias string
+		RealmName string
+	}
+	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.RLock()
+	calls = mock.calls.FindAuthenticationFlowByAlias
+	lockKeycloakInterfaceMockFindAuthenticationFlowByAlias.RUnlock()
+	return calls
+}
+
 // FindAvailableGroupClientRole calls FindAvailableGroupClientRoleFunc.
 func (mock *KeycloakInterfaceMock) FindAvailableGroupClientRole(realmName string, clientID string, groupID string, predicate func(*v1alpha1.KeycloakUserRole) bool) (*v1alpha1.KeycloakUserRole, error) {
 	if mock.FindAvailableGroupClientRoleFunc == nil {
@@ -2183,6 +2355,37 @@ func (mock *KeycloakInterfaceMock) ListAuthenticationExecutionsForFlowCalls() []
 	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.RLock()
 	calls = mock.calls.ListAuthenticationExecutionsForFlow
 	lockKeycloakInterfaceMockListAuthenticationExecutionsForFlow.RUnlock()
+	return calls
+}
+
+// ListAuthenticationFlows calls ListAuthenticationFlowsFunc.
+func (mock *KeycloakInterfaceMock) ListAuthenticationFlows(realmName string) ([]*AuthenticationFlow, error) {
+	if mock.ListAuthenticationFlowsFunc == nil {
+		panic("KeycloakInterfaceMock.ListAuthenticationFlowsFunc: method is nil but KeycloakInterface.ListAuthenticationFlows was just called")
+	}
+	callInfo := struct {
+		RealmName string
+	}{
+		RealmName: realmName,
+	}
+	lockKeycloakInterfaceMockListAuthenticationFlows.Lock()
+	mock.calls.ListAuthenticationFlows = append(mock.calls.ListAuthenticationFlows, callInfo)
+	lockKeycloakInterfaceMockListAuthenticationFlows.Unlock()
+	return mock.ListAuthenticationFlowsFunc(realmName)
+}
+
+// ListAuthenticationFlowsCalls gets all the calls that were made to ListAuthenticationFlows.
+// Check the length with:
+//     len(mockedKeycloakInterface.ListAuthenticationFlowsCalls())
+func (mock *KeycloakInterfaceMock) ListAuthenticationFlowsCalls() []struct {
+	RealmName string
+} {
+	var calls []struct {
+		RealmName string
+	}
+	lockKeycloakInterfaceMockListAuthenticationFlows.RLock()
+	calls = mock.calls.ListAuthenticationFlows
+	lockKeycloakInterfaceMockListAuthenticationFlows.RUnlock()
 	return calls
 }
 

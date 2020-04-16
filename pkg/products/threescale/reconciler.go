@@ -16,6 +16,7 @@ import (
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -861,6 +862,33 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 			if err != nil || res.StatusCode != http.StatusOK {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
+		}
+	}
+
+	// update KeycloakUser attribute after user is created in 3scale
+	userCreated3ScaleName := "3scale_user_created"
+	for _, user := range kcu {
+		if user.Attributes == nil {
+			user.Attributes = map[string]string{
+				userCreated3ScaleName: "true",
+			}
+		}
+
+		kcUser := &keycloak.KeycloakUser{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      userHelper.GetValidGeneratedUserName(user),
+				Namespace: rhssoConfig.GetNamespace(),
+			},
+		}
+
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
+			user.Attributes[userCreated3ScaleName] = "true"
+			kcUser.Spec.User = user
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseInProgress,
+				fmt.Errorf("failed to update KeycloakUser CR with %s attribute: %w", userCreated3ScaleName, err)
 		}
 	}
 

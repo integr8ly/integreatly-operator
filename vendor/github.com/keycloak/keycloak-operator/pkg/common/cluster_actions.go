@@ -36,6 +36,8 @@ type ActionRunner interface {
 	RemoveRealmRole(obj *v1alpha1.KeycloakUserRole, userID, realm string) error
 	AssignClientRole(obj *v1alpha1.KeycloakUserRole, clientID, userID, realm string) error
 	RemoveClientRole(obj *v1alpha1.KeycloakUserRole, clientID, userID, realm string) error
+	AssignFederatedIdentity(obj v1alpha1.FederatedIdentity, userID, realm string) error
+	RemoveFederatedIdentity(obj v1alpha1.FederatedIdentity, userID, realm string) error
 	ApplyOverrides(obj *v1alpha1.KeycloakRealm) error
 	Ping() error
 }
@@ -114,14 +116,18 @@ func (i *ClusterActionRunner) CreateRealm(obj *v1alpha1.KeycloakRealm) error {
 	if i.keycloakClient == nil {
 		return errors.New("cannot perform realm create when client is nil")
 	}
-	return i.keycloakClient.CreateRealm(obj)
+
+	_, err := i.keycloakClient.CreateRealm(obj)
+	return err
 }
 
 func (i *ClusterActionRunner) CreateClient(obj *v1alpha1.KeycloakClient, realm string) error {
 	if i.keycloakClient == nil {
 		return errors.New("cannot perform client create when client is nil")
 	}
-	return i.keycloakClient.CreateClient(obj.Spec.Client, realm)
+
+	_, err := i.keycloakClient.CreateClient(obj.Spec.Client, realm)
+	return err
 }
 
 func (i *ClusterActionRunner) UpdateClient(obj *v1alpha1.KeycloakClient, realm string) error {
@@ -152,7 +158,14 @@ func (i *ClusterActionRunner) CreateUser(obj *v1alpha1.KeycloakUser, realm strin
 	}
 
 	// Create the user
-	return i.keycloakClient.CreateUser(&obj.Spec.User, realm)
+	uid, err := i.keycloakClient.CreateUser(&obj.Spec.User, realm)
+	if err != nil {
+		return err
+	}
+
+	// Update newly created user with its uid
+	obj.Spec.User.ID = uid
+	return i.client.Update(i.context, obj)
 }
 
 func (i *ClusterActionRunner) UpdateUser(obj *v1alpha1.KeycloakUser, realm string) error {
@@ -187,12 +200,14 @@ func (i *ClusterActionRunner) AssignRealmRole(obj *v1alpha1.KeycloakUserRole, us
 	if i.keycloakClient == nil {
 		return errors.New("cannot perform role assign when client is nil")
 	}
-	return i.keycloakClient.CreateUserRealmRole(obj, realm, userID)
+
+	_, err := i.keycloakClient.CreateUserRealmRole(obj, realm, userID)
+	return err
 }
 
 func (i *ClusterActionRunner) RemoveRealmRole(obj *v1alpha1.KeycloakUserRole, userID, realm string) error {
 	if i.keycloakClient == nil {
-		return errors.New("cannot perform role assign when client is nil")
+		return errors.New("cannot perform role remove when client is nil")
 	}
 	return i.keycloakClient.DeleteUserRealmRole(obj, realm, userID)
 }
@@ -201,14 +216,31 @@ func (i *ClusterActionRunner) AssignClientRole(obj *v1alpha1.KeycloakUserRole, c
 	if i.keycloakClient == nil {
 		return errors.New("cannot perform role assign when client is nil")
 	}
-	return i.keycloakClient.CreateUserClientRole(obj, realm, clientID, userID)
+
+	_, err := i.keycloakClient.CreateUserClientRole(obj, realm, clientID, userID)
+	return err
 }
 
 func (i *ClusterActionRunner) RemoveClientRole(obj *v1alpha1.KeycloakUserRole, clientID, userID, realm string) error {
 	if i.keycloakClient == nil {
-		return errors.New("cannot perform role assign when client is nil")
+		return errors.New("cannot perform role remove when client is nil")
 	}
 	return i.keycloakClient.DeleteUserClientRole(obj, realm, clientID, userID)
+}
+
+func (i *ClusterActionRunner) AssignFederatedIdentity(obj v1alpha1.FederatedIdentity, userID, realm string) error {
+	if i.keycloakClient == nil {
+		return errors.New("cannot perform identity provider assign when client is nil")
+	}
+	_, err := i.keycloakClient.CreateFederatedIdentity(obj, userID, realm)
+	return err
+}
+
+func (i *ClusterActionRunner) RemoveFederatedIdentity(obj v1alpha1.FederatedIdentity, userID, realm string) error {
+	if i.keycloakClient == nil {
+		return errors.New("cannot perform identity provider remove when client is nil")
+	}
+	return i.keycloakClient.RemoveFederatedIdentity(obj, userID, realm)
 }
 
 // Delete a realm using the keycloak api
@@ -259,7 +291,11 @@ func (i *ClusterActionRunner) configureBrowserRedirector(provider, flow string, 
 			Alias:  authenticationConfigAlias,
 			Config: map[string]string{"defaultProvider": provider},
 		}
-		return i.keycloakClient.CreateAuthenticatorConfig(config, realmName, redirectorExecutionID)
+
+		if _, err := i.keycloakClient.CreateAuthenticatorConfig(config, realmName, redirectorExecutionID); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return nil
@@ -364,6 +400,20 @@ type RemoveClientRoleAction struct {
 	Msg      string
 }
 
+type AssignFederatedIdentity struct {
+	UserID string
+	Ref    v1alpha1.FederatedIdentity
+	Realm  string
+	Msg    string
+}
+
+type RemoveFederatedIdentity struct {
+	UserID string
+	Ref    v1alpha1.FederatedIdentity
+	Realm  string
+	Msg    string
+}
+
 func (i GenericCreateAction) Run(runner ActionRunner) (string, error) {
 	return i.Msg, runner.Create(i.Ref)
 }
@@ -426,4 +476,12 @@ func (i AssignClientRoleAction) Run(runner ActionRunner) (string, error) {
 
 func (i RemoveClientRoleAction) Run(runner ActionRunner) (string, error) {
 	return i.Msg, runner.RemoveClientRole(i.Ref, i.ClientID, i.UserID, i.Realm)
+}
+
+func (i AssignFederatedIdentity) Run(runner ActionRunner) (string, error) {
+	return i.Msg, runner.AssignFederatedIdentity(i.Ref, i.UserID, i.Realm)
+}
+
+func (i RemoveFederatedIdentity) Run(runner ActionRunner) (string, error) {
+	return i.Msg, runner.RemoveFederatedIdentity(i.Ref, i.UserID, i.Realm)
 }

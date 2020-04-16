@@ -13,7 +13,7 @@ require (
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/go-openapi/spec v0.19.5
+	github.com/go-openapi/spec v0.19.6
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-querystring v1.0.0
 	github.com/headzoo/surf v1.0.0 // indirect
@@ -39,9 +39,8 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200406175937-7e2945a5ee43
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
-	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/tools v0.0.0-20200207224406-61798d64f025 // indirect
 	gopkg.in/headzoo/surf.v1 v1.0.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.0
@@ -83,3 +82,7 @@ replace (
 replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
+
+replace github.com/integr8ly/keycloak-client => github.com/jjaferson/keycloak-client v0.1.2-0.20200416152927-079b20402f08
+
+replace github.com/keycloak/keycloak-operator => github.com/jjaferson/keycloak-operator v0.0.0-20200417120137-b63d22db7fe7
