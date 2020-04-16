@@ -145,7 +145,7 @@ test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/c
 .PHONY: test/functional
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/functional
+	go clean -testcache && go test -v ./test/functional -timeout=80m
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
