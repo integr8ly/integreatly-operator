@@ -29,8 +29,6 @@ spec:
           properties:
             app_label:
               type: string
-            routingSubdomain:
-              type: string
             template:
               type: object
               properties:
