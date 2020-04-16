@@ -29,5 +29,7 @@ var (
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
+		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
+		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 	}
 )

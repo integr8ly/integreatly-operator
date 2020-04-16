@@ -29,9 +29,12 @@ import (
 )
 
 var (
-	defaultInstallationNamespace = "amq-streams"
-	clusterName                  = "rhmi-cluster"
-	manifestPackage              = "integreatly-amq-streams"
+	defaultInstallationNamespace         = "amq-streams"
+	clusterName                          = "rhmi-cluster"
+	manifestPackage                      = "integreatly-amq-streams"
+	replicas                             = 3
+	offsetsTopicReplicationFactor        = "3"
+	transactionStateLogReplicationFactor = "3"
 )
 
 type Reconciler struct {
@@ -165,20 +168,24 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Namespace = r.Config.GetNamespace()
 
 		kafka.Spec.Kafka.Version = "2.1.1"
-		kafka.Spec.Kafka.Replicas = 3
+		if kafka.Spec.Kafka.Replicas < replicas {
+			kafka.Spec.Kafka.Replicas = replicas
+		}
 		kafka.Spec.Kafka.Listeners = map[string]kafkav1alpha1.KafkaListener{
 			"plain": {},
 			"tls":   {},
 		}
-		kafka.Spec.Kafka.Config.OffsetsTopicReplicationFactor = "3"
-		kafka.Spec.Kafka.Config.TransactionStateLogReplicationFactor = "3"
+		kafka.Spec.Kafka.Config.OffsetsTopicReplicationFactor = offsetsTopicReplicationFactor
+		kafka.Spec.Kafka.Config.TransactionStateLogReplicationFactor = transactionStateLogReplicationFactor
 		kafka.Spec.Kafka.Config.TransactionStateLogMinIsr = "2"
 		kafka.Spec.Kafka.Config.LogMessageFormatVersion = "2.1"
 		kafka.Spec.Kafka.Storage.Type = "persistent-claim"
 		kafka.Spec.Kafka.Storage.Size = "10Gi"
 		kafka.Spec.Kafka.Storage.DeleteClaim = false
 
-		kafka.Spec.Zookeeper.Replicas = 3
+		if kafka.Spec.Zookeeper.Replicas < replicas {
+			kafka.Spec.Zookeeper.Replicas = replicas
+		}
 		kafka.Spec.Zookeeper.Storage.Type = "persistent-claim"
 		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
 		kafka.Spec.Zookeeper.Storage.DeleteClaim = false

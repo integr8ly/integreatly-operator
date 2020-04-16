@@ -37,6 +37,7 @@ const (
 	manifestPackage              = "integreatly-apicurito"
 	apicuritoName                = "apicurito"
 	defaultApicuritoPullSecret   = "apicurito-pull-secret"
+	size                         = 2
 )
 
 type Reconciler struct {
@@ -184,10 +185,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicuritoCR, func() error {
-		// Specify 2 pods to provide HA
-		apicuritoCR.Spec.Size = 2
 		// Ideally the operator would set the Image field but it currently (operator v1.6) does not - review on upgrades
 		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.6"
+		// Specify a minimum of 2 pods to provide HA
+		if apicuritoCR.Spec.Size < size {
+			apicuritoCR.Spec.Size = size
+		}
+
 		return nil
 	})
 	if err != nil {
