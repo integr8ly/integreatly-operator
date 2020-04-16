@@ -1,4 +1,4 @@
 packageName: rhmi-amq-streams
 channels:
   - name: rhmi
-    currentCSV: amqstreams.v1.1.0
+    currentCSV: amqstreams.v1.4.0

@@ -32,9 +32,9 @@ var (
 	defaultInstallationNamespace         = "amq-streams"
 	clusterName                          = "rhmi-cluster"
 	manifestPackage                      = "integreatly-amq-streams"
-	replicas                             = 3
-	offsetsTopicReplicationFactor        = "3"
-	transactionStateLogReplicationFactor = "3"
+	replicas                             = 2
+	offsetsTopicReplicationFactor        = "2"
+	transactionStateLogReplicationFactor = "2"
 )
 
 type Reconciler struct {
@@ -167,7 +167,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Name = clusterName
 		kafka.Namespace = r.Config.GetNamespace()
 
-		kafka.Spec.Kafka.Version = "2.1.1"
+		kafka.Spec.Kafka.Version = "2.4.0"
 		if kafka.Spec.Kafka.Replicas < replicas {
 			kafka.Spec.Kafka.Replicas = replicas
 		}
@@ -180,14 +180,14 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Spec.Kafka.Config.TransactionStateLogMinIsr = "2"
 		kafka.Spec.Kafka.Config.LogMessageFormatVersion = "2.1"
 		kafka.Spec.Kafka.Storage.Type = "persistent-claim"
-		kafka.Spec.Kafka.Storage.Size = "10Gi"
+		kafka.Spec.Kafka.Storage.Size = "5Gi"
 		kafka.Spec.Kafka.Storage.DeleteClaim = false
 
 		if kafka.Spec.Zookeeper.Replicas < replicas {
 			kafka.Spec.Zookeeper.Replicas = replicas
 		}
 		kafka.Spec.Zookeeper.Storage.Type = "persistent-claim"
-		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
+		kafka.Spec.Zookeeper.Storage.Size = "5Gi"
 		kafka.Spec.Zookeeper.Storage.DeleteClaim = false
 
 		kafka.Spec.EntityOperator.TopicOperator = kafkav1alpha1.KafkaTopicOperator{}
@@ -218,7 +218,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 	}
 
 	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
+	if len(pods.Items) < 4 {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
