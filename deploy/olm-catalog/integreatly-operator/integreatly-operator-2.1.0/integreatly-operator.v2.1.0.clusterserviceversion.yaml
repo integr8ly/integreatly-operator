@@ -15,6 +15,10 @@ metadata:
             "namespacePrefix": "INSTALLATION_PREFIX-",
             "operatorsInProductNamespace": "OPERATORS_IN_PRODUCT_NAMESPACE",
             "pagerDutySecret": "INSTALLATION_PREFIX-pagerduty",
+            "pullSecret": {
+              "name": "DELOREAN_PULL_SECRET_NAME",
+              "namespace": "DELOREAN_PULL_SECRET_NAMESPACE"
+            },
             "selfSignedCerts": "SELF_SIGNED_CERTS",
             "smtpSecret": "INSTALLATION_PREFIX-smtp",
             "type": "INSTALLATION_TYPE",
@@ -41,21 +45,21 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.0.0-rc1
+    containerImage: quay.io/integreatly/integreatly-operator:v2.1.0
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     support: RHMI
-  name: integreatly-operator.v2.0.0
+  name: integreatly-operator.v2.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
     - description: RHMI is the Schema for the RHMI API
+      displayName: RHMI Installation
       kind: RHMI
       name: rhmis.integreatly.org
       version: v1alpha1
-      displayName: RHMI Installation
   description: RHMI installation and reconciliation operator
   displayName: RHMI
   icon:
@@ -234,12 +238,29 @@ spec:
           - monitoring.coreos.com
           resources:
           - prometheusrules
+          - servicemonitors
           verbs:
           - get
           - list
           - create
           - update
           - delete
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          verbs:
+          - get
+          - list
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - identities
+          verbs:
+          - get
         serviceAccountName: rhmi-operator
       deployments:
       - name: rhmi-operator
@@ -270,7 +291,7 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v2.0.0-rc1
+                image: quay.io/integreatly/integreatly-operator:v2.1.0-er1
                 imagePullPolicy: Always
                 name: rhmi-operator
                 resources: {}
@@ -380,4 +401,4 @@ spec:
     matchLabels:
       alm-owner-rhmi: rhmi-operator
       operated-by: rhmi-operator
-  version: 2.0.0
+  version: 2.1.0-er1
