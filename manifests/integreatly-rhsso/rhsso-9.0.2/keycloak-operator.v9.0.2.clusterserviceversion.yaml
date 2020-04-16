@@ -5,8 +5,8 @@ metadata:
     capabilities: Basic Install
     categories: security
     certified: 'False'
-    containerImage: 'quay.io/integreatly/keycloak-operator-rhmi:all-rhmi-branches'
-    createdAt: 2019-11-08 00:00:00
+    containerImage: 'quay.io/integreatly/keycloak-operator-rhmi:all-rhmi-branches-with-cve'
+    createdAt: 2020-04-01 00:00:01
     description: 'An Operator for installing and managing Keycloak'
     repository: 'https://github.com/keycloak/keycloak-operator'
     support: Red Hat
@@ -56,6 +56,13 @@ metadata:
           "kind": "KeycloakBackup",
           "metadata": {
             "name": "example-keycloakbackup"
+          },
+          "spec": {
+            "instanceSelector": {
+              "matchLabels": {
+                "app": "sso"
+              }
+            }
           }
         },
         {
@@ -76,8 +83,7 @@ metadata:
             "client": {
               "clientId": "client-secret",
               "secret": "client-secret",
-              "clientAuthenticatorType": "client-secret",
-              "protocol": "openid-connect"
+              "clientAuthenticatorType": "client-secret"
             }
           }
         },
@@ -107,7 +113,7 @@ metadata:
           }
         }
       ]
-  name: keycloak-operator.v8.0.1
+  name: keycloak-operator.v9.0.2
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -185,138 +191,149 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/integreatly/keycloak-operator-rhmi:all-rhmi-branches
+                    image: quay.io/integreatly/keycloak-operator-rhmi:all-rhmi-branches-with-cve
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
                 serviceAccountName: keycloak-operator
       permissions:
         - rules:
-            - apiGroups:
-                - policy
-              resources:
-                - poddisruptionbudgets
-              verbs:
-                - get
-                - list
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - ""
-              resources:
-                - pods
-                - services
-                - services/finalizers
-                - endpoints
-                - persistentvolumeclaims
-                - events
-                - configmaps
-                - secrets
-              verbs:
-                - delete              
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - apps
-              resources:
-                - deployments
-                - daemonsets
-                - replicasets
-                - statefulsets
-              verbs:
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - batch
-              resources:
-                - cronjobs
-                - jobs
-              verbs:
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - route.openshift.io
-              resources:
-                - routes
-              verbs:
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - extensions
-              resources:
-                - ingresses
-              verbs:
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - monitoring.coreos.com
-              resources:
-                - servicemonitors
-                - prometheusrules
-                - podmonitors
-              verbs:
-                - list
-                - get
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - integreatly.org
-              resources:
-                - grafanadashboards
-              verbs:
-                - get
-                - list
-                - create
-                - update
-                - watch
-            - apiGroups:
-                - apps
-              resourceNames:
-                - keycloak-operator
-              resources:
-                - deployments/finalizers
-              verbs:
-                - update
-            - apiGroups:
-                - keycloak.org
-              resources:
-                - keycloaks
-                - keycloaks/status
-                - keycloaks/finalizers
-                - keycloakrealms
-                - keycloakrealms/status
-                - keycloakrealms/finalizers
-                - keycloakclients
-                - keycloakclients/status
-                - keycloakclients/finalizers
-                - keycloakbackups
-                - keycloakbackups/status
-                - keycloakbackups/finalizers
-                - keycloakusers
-                - keycloakusers/status
-                - keycloakusers/finalizers
-              verbs:
-                - get
-                - list
-                - update
-                - watch
+          - apiGroups:
+              - policy
+            resources:
+              - poddisruptionbudgets
+            verbs:
+              - get
+              - list
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - ""
+            resources:
+              - pods
+              - services
+              - services/finalizers
+              - endpoints
+              - persistentvolumeclaims
+              - events
+              - configmaps
+              - secrets
+            verbs:
+              - list
+              - get
+              - create
+              - patch
+              - update
+              - watch
+              - delete
+          - apiGroups:
+              - apps
+            resources:
+              - deployments
+              - daemonsets
+              - replicasets
+              - statefulsets
+            verbs:
+              - list
+              - get
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - batch
+            resources:
+              - cronjobs
+              - jobs
+            verbs:
+              - list
+              - get
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - route.openshift.io
+            resources:
+              - routes
+            verbs:
+              - list
+              - get
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - extensions
+            resources:
+              - ingresses
+            verbs:
+              - list
+              - get
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - monitoring.coreos.com
+            resources:
+              - servicemonitors
+              - prometheusrules
+              - podmonitors
+            verbs:
+              - list
+              - get
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - integreatly.org
+            resources:
+              - grafanadashboards
+            verbs:
+              - get
+              - list
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - apps
+            resourceNames:
+              - keycloak-operator
+            resources:
+              - deployments/finalizers
+            verbs:
+              - update
+          - apiGroups:
+              - policy
+            resources:
+              - poddisruptionbudgets
+            verbs:
+              - get
+              - list
+              - create
+              - update
+              - watch
+          - apiGroups:
+              - keycloak.org
+            resources:
+              - keycloaks
+              - keycloaks/status
+              - keycloaks/finalizers
+              - keycloakrealms
+              - keycloakrealms/status
+              - keycloakrealms/finalizers
+              - keycloakclients
+              - keycloakclients/status
+              - keycloakclients/finalizers
+              - keycloakbackups
+              - keycloakbackups/status
+              - keycloakbackups/finalizers
+              - keycloakusers
+              - keycloakusers/status
+              - keycloakusers/finalizers
+            verbs:
+              - get
+              - list
+              - update
+              - watch
           serviceAccountName: keycloak-operator
     strategy: deployment
   installModes:
@@ -331,4 +348,6 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  version: 8.0.1
+  version: 9.0.2
+  skips:
+    - keycloak-operator.9.0.0
