@@ -112,7 +112,12 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount, err)
+		if rhmiDevfoundProjects != nil {
+			return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount, err)
+		} else {
+			return fmt.Errorf("unexpected error occurred when retrieving projects list - %w", err)
+		}
+
 	}
 
 	foundNamespace := rhmiDevfoundProjects.Items[0].Name
