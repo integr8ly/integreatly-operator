@@ -419,7 +419,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			Namespace: r.Config.GetNamespace(),
 		},
 		Spec: threescalev1.APIManagerSpec{
-			HighAvailability: &threescalev1.HighAvailabilitySpec{},
+			HighAvailability:    &threescalev1.HighAvailabilitySpec{},
+			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
@@ -455,6 +456,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.APIManagerCommonSpec.ResourceRequirementsEnabled = &resourceRequirements
 		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
 		apim.Spec.System.FileStorageSpec = fss
+		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
 
 		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
 			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas
