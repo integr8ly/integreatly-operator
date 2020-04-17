@@ -140,7 +140,7 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	if err != nil {
 		end := time.Now()
 		elapsed := end.Sub(start)
-		t.Logf("%s:%s down , Timed out after %d :",namespace,deploymentName ,elapsed)
+		t.Logf("%s:%s down , Timed out after %d :", namespace, deploymentName, elapsed)
 		return err
 	}
 
