@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sirupsen/logrus"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -58,6 +59,7 @@ func (c *CodereadyLoginClient) OpenshiftLogin(namespacePrefix string) error {
 // Log user into codeready. Returns an access token to be used for codeready API calls
 func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) (string, error) {
 	u := fmt.Sprintf(codereadySSOAuthEndpoint, keycloakHost, clientId, redirectUrl)
+	logrus.Debugf("SSO Auth endpoint url: %s", u)
 	response, err := c.HttpClient.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("failed to get %v: %v", u, err)
@@ -88,7 +90,7 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 	if err != nil {
 		return "", err
 	}
-
+	logrus.Debugf("Resolved relative url: %s", u)
 	response, err = c.HttpClient.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("failed to get %v: %v", u, err)
@@ -96,9 +98,11 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 	if response.StatusCode != http.StatusOK {
 		return "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
 	}
-
+	logrus.Infof("Response: raw query = %s", response.Request.URL.RawQuery)
 	code := strings.Split(response.Request.URL.RawQuery, "&")[1]
 	tokenUrl := fmt.Sprintf(codereadySSOTokenEndpoint, keycloakHost)
+	logrus.Infof("Received code: %s", code)
+	logrus.Infof("Token url: %s", tokenUrl)
 
 	formValues := url.Values{
 		"grant_type":   []string{"authorization_code"},
@@ -109,7 +113,7 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 
 	response, err = c.HttpClient.PostForm(tokenUrl, formValues)
 	if err != nil {
-		return "", fmt.Errorf("failed to request %s: %s", u, err)
+		return "", fmt.Errorf("failed to request %s: %s", tokenUrl, err)
 	}
 
 	postBody, err := ioutil.ReadAll(response.Body)
