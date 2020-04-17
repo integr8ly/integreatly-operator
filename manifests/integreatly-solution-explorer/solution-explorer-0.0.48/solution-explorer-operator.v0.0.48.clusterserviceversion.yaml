@@ -41,7 +41,7 @@ spec:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
                       - name: OPERATOR_NAME
                         value: tutorial-web-app-operator
-                    image: quay.io/dimitra/tutorial-web-app-operator:v0.0.48
+                    image: quay.io/integreatly/tutorial-web-app-operator:v0.0.48
                     imagePullPolicy: Always
                     name: tutorial-web-app-operator
                     ports:
