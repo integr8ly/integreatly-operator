@@ -305,6 +305,18 @@ var expectedAWSRules = []alertsTestRule{
 			"Rhsso-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
+	{
+		File: RHMIOperatorNamespace + "-connectivity-rule-fuse-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresConnectionFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "-availability-rule-fuse-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresInstanceUnavailable",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
@@ -352,7 +364,6 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		for _, promRule := range group.Rules {
 			switch v := promRule.(type) {
 			case prometheusv1.RecordingRule:
-				fmt.Print("got a recording rule")
 			case prometheusv1.AlertingRule:
 				alertRule := promRule.(prometheusv1.AlertingRule)
 				rule.Rules = append(rule.Rules, alertRule.Name)
