@@ -9,8 +9,8 @@ var (
 		{"Verify CRD Exists", TestIntegreatlyCRDExists},
 	}
 
-	AFTER_INSTALL_TESTS = []TestCase{
-		// Add all tests to be executed after RHMI installation is completed here
+	HAPPY_PATH_TESTS = []TestCase{
+		// Add all happy path tests to be executed after RHMI installation is completed here
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
@@ -32,5 +32,10 @@ var (
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
+	}
+
+	DESTRUCTIVE_TESTS = []TestCase{
+		// Add all destructive tests here that should not be executed as part of the happy path tests
+		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
 	}
 )
