@@ -48,6 +48,7 @@ var (
 	manifestPackage           = "integreatly-rhsso"
 	masterRealmName           = "master"
 	adminCredentialSecretName = "credential-" + keycloakName
+	numberOfReplicas          = 2
 )
 
 const (
@@ -291,7 +292,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()
-		kc.Spec.Instances = 2
+		if kc.Spec.Instances < numberOfReplicas {
+			kc.Spec.Instances = numberOfReplicas
+		}
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
