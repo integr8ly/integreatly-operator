@@ -1,9 +1,6 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- mikenairn
-- pmccarthy
-- tremes
-- maleck13
-- philbrookes
-- grdryn
+- jeremyary
+- akoserwal
+- akieling
