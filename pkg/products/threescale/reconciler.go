@@ -376,26 +376,27 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
 	}
-	smtpCfgMap := &corev1.ConfigMap{
+	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "smtp",
+			Name:      "system-smtp",
 			Namespace: r.Config.GetNamespace(),
 		},
+		Data: map[string][]byte{},
 	}
 
 	// reconcile the smtp configmap for 3scale
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, smtpCfgMap, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(smtpCfgMap, r.installation)
-		if smtpCfgMap.Data == nil {
-			smtpCfgMap.Data = map[string]string{}
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, smtpConfigSecret, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(smtpConfigSecret, r.installation)
+		if smtpConfigSecret.Data == nil {
+			smtpConfigSecret.Data = map[string][]byte{}
 		}
-		smtpCfgMap.Data["address"] = string(credSec.Data["host"])
-		smtpCfgMap.Data["authentication"] = "login"
-		smtpCfgMap.Data["domain"] = fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain)
-		smtpCfgMap.Data["openssl.verify.mode"] = ""
-		smtpCfgMap.Data["password"] = string(credSec.Data["password"])
-		smtpCfgMap.Data["port"] = string(credSec.Data["port"])
-		smtpCfgMap.Data["username"] = string(credSec.Data["username"])
+		smtpConfigSecret.Data["address"] = credSec.Data["host"]
+		smtpConfigSecret.Data["authentication"] = []byte("login")
+		smtpConfigSecret.Data["domain"] = []byte(fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
+		smtpConfigSecret.Data["openssl.verify.mode"] = []byte("")
+		smtpConfigSecret.Data["password"] = credSec.Data["password"]
+		smtpConfigSecret.Data["port"] = credSec.Data["port"]
+		smtpConfigSecret.Data["username"] = credSec.Data["username"]
 		return nil
 	})
 	if err != nil {
