@@ -583,6 +583,11 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 				Type:     "enmasse_pv",
 				Schedule: r.Config.GetBackupSchedule(),
 			},
+			{
+				Name:     "resources-backup",
+				Type:     "amq_online_resources",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
 		},
 	}
 

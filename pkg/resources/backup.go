@@ -129,6 +129,16 @@ func reconcileRole(ctx context.Context, serverClient k8sclient.Client, config Ba
 				APIGroups: []string{""},
 				Resources: []string{"pods", "secrets"},
 				Verbs:     []string{"get", "list"},
+			}, {
+				APIGroups: []string{"admin.enmasse.io"},
+				Resources: []string{
+					"addressplans",
+					"addressspaceplans",
+					"authenticationservices",
+					"brokeredinfraconfigs",
+					"standardinfraconfigs",
+				},
+				Verbs: []string{"get", "list"},
 			},
 			{
 				APIGroups: []string{""},
@@ -218,7 +228,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 							Containers: []corev1.Container{
 								{
 									Name:            "backup-cronjob",
-									Image:           "quay.io/integreatly/backup-container:1.0.13",
+									Image:           "quay.io/integreatly/backup-container:1.0.14",
 									ImagePullPolicy: "Always",
 									Command: []string{
 										"/opt/intly/tools/entrypoint.sh",

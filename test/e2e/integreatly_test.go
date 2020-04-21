@@ -518,6 +518,9 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 		}
 
 		t.Logf("Waiting for completion of %s\n", phase)
+		if installation.Status.LastError != "" {
+			t.Logf("Last Error: %s\n", installation.Status.LastError)
+		}
 		return false, nil
 	})
 	if err != nil {
