@@ -210,7 +210,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:   config.Name,
-							Labels: map[string]string{"integreatly": "yes", "cronjob-name": component.Name},
+							Labels: map[string]string{"integreatly": "yes", "cronjob-name": component.Name,"monitoring_key": "middleware"},
 						},
 						Spec: corev1.PodSpec{
 							ServiceAccountName: BackupServiceAccountName,

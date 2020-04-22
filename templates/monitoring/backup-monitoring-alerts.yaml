@@ -38,13 +38,13 @@ spec:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
           message: CronJob {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.label_cronjob_name {{ "}}" }} has not started a Job in 25 hours
         expr: |
-          (time() - (max( kube_job_status_start_time * ON(job) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"} ) BY (job, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"} ) BY (label_cronjob_name))) > 60*60*25
+          (time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"} ) BY (label_cronjob_name))) > 60*60*25
       - alert: CronJobsFailed
         annotations:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
           message: 'Job {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.job {{ "}}" }} has failed'
         expr: >
-          clamp_max(max(kube_job_status_start_time * ON(job) GROUP_RIGHT() kube_job_labels{label_cronjob_name!=""} ) BY (job, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job) GROUP_RIGHT() kube_job_labels{label_cronjob_name!=""}) BY (label_cronjob_name), 1) * ON(job) GROUP_LEFT() kube_job_status_failed > 0
+          clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key="middleware"}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0
         for: 5m
         labels:
           severity: critical
