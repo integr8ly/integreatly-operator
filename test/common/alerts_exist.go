@@ -124,7 +124,6 @@ var expectedRules = []alertsTestRule{
 		Rules: []string{
 			"FuseOnlineSyndesisServerInstanceDown",
 			"FuseOnlineSyndesisUIInstanceDown",
-			"FuseOnlinePodCount",
 		},
 	},
 	{

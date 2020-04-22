@@ -32,5 +32,6 @@ var (
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F07 - Verify Replicas Scale correctly in AMQ Streams", TestReplicasInAmqstreams},
+		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 	}
 )

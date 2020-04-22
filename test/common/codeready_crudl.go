@@ -120,7 +120,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// login to codeready
-	token, err := loginClient.CodereadyLogin(keycloakHost, redirectUrl)
+	token, err := loginClient.CodereadyLogin(keycloakHost, redirectUrl, t)
 	if err != nil {
 		t.Fatalf("failed to login to codeready: %v", err)
 	}

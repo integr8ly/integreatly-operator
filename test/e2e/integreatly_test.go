@@ -36,7 +36,7 @@ const (
 	retryInterval                = time.Second * 5
 	timeout                      = time.Second * 75
 	deploymentRetryInterval      = time.Second * 30
-	deploymentTimeout            = time.Minute * 20
+	deploymentTimeout            = time.Minute * 25
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
 	namespaceLabel               = "integreatly"
@@ -138,6 +138,9 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	start := time.Now()
 	err := e2eutil.WaitForDeployment(t, f.KubeClient, namespace, deploymentName, 1, deploymentRetryInterval, deploymentTimeout)
 	if err != nil {
+		end := time.Now()
+		elapsed := end.Sub(start)
+		t.Logf("%s:%s down , Timed out after %d :", namespace, deploymentName, elapsed)
 		return err
 	}
 
