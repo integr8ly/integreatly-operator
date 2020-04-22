@@ -102,7 +102,7 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	}
 
 	// ensure the IDP is available in OpenShift
-	err = wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
+	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
 		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
 	})
 	if err != nil {
