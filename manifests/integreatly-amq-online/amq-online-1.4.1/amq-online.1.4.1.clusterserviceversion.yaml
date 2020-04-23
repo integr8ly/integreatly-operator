@@ -12,7 +12,7 @@ metadata:
     certified: "false"
     description: Red Hat Integration - AMQ Online provides messaging as a managed
       service on OpenShift
-    containerImage: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
+    containerImage: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4-40
     createdAt: 2019-02-19T00:00:00Z
     capabilities: Seamless Upgrades
     repository: ""
@@ -340,59 +340,59 @@ spec:
     supported: true
   relatedImages:
   - name: address-space-controller
-    image: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4
+    image: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4-57.1587495481
   - name: standard-controller
-    image: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4
+    image: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4-54.1587495424
   - name: router
-    image: registry.redhat.io/amq7/amq-interconnect:1.7
+    image: registry.redhat.io/amq7/amq-interconnect:1.7-4
   - name: broker
-    image: registry.redhat.io/amq7/amq-broker:7.6
+    image: registry.redhat.io/amq7/amq-broker:7.6-5
   - name: broker-plugin
-    image: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4
+    image: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4-56.1587495474
   - name: topic-forwarder
-    image: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4
+    image: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4-57.1587495421
   - name: agent
-    image: registry.redhat.io/amq7/amq-online-1-agent:1.4
+    image: registry.redhat.io/amq7/amq-online-1-agent:1.4-57
   - name: none-authservice
-    image: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4
+    image: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4-56.1587495432
   - name: keycloak
     image: registry.redhat.io/redhat-sso-7/sso73-openshift:latest
   - name: keycloak-plugin
-    image: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4
+    image: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4-55.1587495477
   - name: mqtt-gateway
-    image: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4
+    image: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4-56.1587495439
   - name: mqtt-lwt
-    image: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4
+    image: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4-57.1587495436
   - name: console-init
-    image: registry.redhat.io/amq7/amq-online-1-console-init:1.4
+    image: registry.redhat.io/amq7/amq-online-1-console-init:1.4-57
   - name: console-proxy-openshift
     image: registry.redhat.io/openshift3/oauth-proxy:latest
   - name: console-proxy-kubernetes
     image: quay.io/pusher/oauth2_proxy:latest
   - name: console-server
-    image: registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4
+    image: registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4-28
   - name: controller-manager
-    image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
+    image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4-40
   - name: iot-proxy-configurator
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4-57
   - name: iot-auth-service
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4-57.1587495470
   - name: iot-device-registry-file
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4-56.1587495462
   - name: iot-device-registry-infinispan
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4-58.1587495466
   - name: iot-http-adapter
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4-57.1587495458
   - name: iot-mqtt-adapter
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4-58.1587495450
   - name: iot-lorawan-adapter
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4-57.1587495454
   - name: iot-sigfox-adapter
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4-59.1587495447
   - name: iot-tenant-service
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4-58.1587495443
   - name: iot-tenant-cleaner
-    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4
+    image: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4-41
   install:
     strategy: deployment
     spec:
@@ -596,7 +596,7 @@ spec:
               serviceAccountName: enmasse-operator
               containers:
               - name: controller
-                image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
+                image: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4-40
                 imagePullPolicy: Always
                 env:
                 - name: POD_NAME
@@ -630,57 +630,57 @@ spec:
                 - name: ADDRESS_SPACE_CONTROLLER_MEMORY_LIMIT
                   value: "1Gi"
                 - name: ADDRESS_SPACE_CONTROLLER_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-address-space-controller:1.4-57.1587495481
                 - name: CONTROLLER_MANAGER_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-controller-manager-rhel7-operator:1.4-40
                 - name: IOT_AUTH_SERVICE_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-auth-service:1.4-57.1587495470
                 - name: IOT_DEVICE_REGISTRY_FILE_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-file:1.4-56.1587495462
                 - name: IOT_DEVICE_REGISTRY_INFINISPAN_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-device-registry-datagrid:1.4-58.1587495466
                 - name: IOT_HTTP_ADAPTER_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-http-adapter:1.4-57.1587495458
                 - name: IOT_MQTT_ADAPTER_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-mqtt-adapter:1.4-58.1587495450
                 - name: IOT_LORAWAN_ADAPTER_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-lorawan-adapter-rhel7:1.4-57.1587495454
                 - name: IOT_SIGFOX_ADAPTER_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-sigfox-adapter-rhel7:1.4-59.1587495447
                 - name: IOT_TENANT_CLEANER_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-cleaner-rhel7:1.4-41
                 - name: IOT_TENANT_SERVICE_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-tenant-service:1.4-58.1587495443
                 - name: IOT_PROXY_CONFIGURATOR_IMAGE
-                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4
+                  value: registry.redhat.io/amq7-tech-preview/amq-online-1-iot-proxy-configurator:1.4-57
                 - name: ROUTER_IMAGE
-                  value: registry.redhat.io/amq7/amq-interconnect:1.7
+                  value: registry.redhat.io/amq7/amq-interconnect:1.7-4
                 - name: STANDARD_CONTROLLER_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-standard-controller:1.4-54.1587495424
                 - name: AGENT_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-agent:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-agent:1.4-57
                 - name: BROKER_IMAGE
-                  value: registry.redhat.io/amq7/amq-broker:7.6
+                  value: registry.redhat.io/amq7/amq-broker:7.6-5
                 - name: BROKER_PLUGIN_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-broker-plugin:1.4-56.1587495474
                 - name: TOPIC_FORWARDER_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-topic-forwarder:1.4-57.1587495421
                 - name: MQTT_GATEWAY_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-mqtt-gateway:1.4-56.1587495439
                 - name: MQTT_LWT_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-mqtt-lwt:1.4-57.1587495436
                 - name: NONE_AUTHSERVICE_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-none-auth-service:1.4-56.1587495432
                 - name: KEYCLOAK_IMAGE
                   value: registry.redhat.io/redhat-sso-7/sso73-openshift:latest
                 - name: KEYCLOAK_PLUGIN_IMAGE
-                  value: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4
+                  value: registry.redhat.io/amq7/amq-online-1-auth-plugin:1.4-55.1587495477
                 - name: CONTROLLER_ENABLE_CONSOLE_SERVICE
                   value: "true"
                 - name: CONSOLE_INIT_IMAGE
-                  value: "registry.redhat.io/amq7/amq-online-1-console-init:1.4"
+                  value: "registry.redhat.io/amq7/amq-online-1-console-init:1.4-57"
                 - name: CONSOLE_SERVER_IMAGE
-                  value: "registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4"
+                  value: "registry.redhat.io/amq7/amq-online-1-console-server-rhel7:1.4-28"
                 - name: CONSOLE_PROXY_OPENSHIFT_IMAGE
                   value: "registry.redhat.io/openshift3/oauth-proxy:latest"
                 - name: CONSOLE_PROXY_KUBERNETES_IMAGE
@@ -688,7 +688,7 @@ spec:
                 - name: "FS_GROUP_FALLBACK_MAP"
                   value: "{}"
                 - name: ENABLE_MONITORING
-                  value: "true"
+                  value: "false"
                 - name: CONSOLE_LINK_SECTION_NAME
                   value: "Red Hat Integration"
                 - name: CONSOLE_LINK_NAME
