@@ -18,14 +18,8 @@ set_images() {
   sed -i "s/containerImage:.*/containerImage: quay\.io\/integreatly\/integreatly-operator:v$SEMVER/g" deploy/olm-catalog/integreatly-operator/${VERSION}/integreatly-operator.v${VERSION}.clusterserviceversion.yaml
 }
 
-print_usage() {
-  echo "-s SEMVER [1.0.0-rc1]"
-  exit 1
-}
-
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
- print_usage
  exit 1
 fi
 

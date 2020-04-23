@@ -6,7 +6,6 @@ PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
 TAG ?= 2.1.0
-SEMVER ?= 2.1.0-rc1
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -131,7 +130,7 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
-	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
+	./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export component := integreatly-operator
@@ -278,7 +277,7 @@ endif
 
 .PHONY: gen/csv
 gen/csv:
-	@SEMVER=$(SEMVER) ./scripts/prepare-release.sh
+	@./scripts/prepare-release.sh
 
 .PHONY: push/csv
 push/csv:
