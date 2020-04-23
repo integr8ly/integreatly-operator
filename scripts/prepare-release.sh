@@ -25,23 +25,24 @@ print_usage() {
 
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
+ print_usage
  exit 1
 fi
 
-VERSION=$(echo $SEMVER | awk -F - '{print $1}')
-TAG=$(echo $SEMVER | awk -F - '{print $2}')
 
-if [[ -z "${TAG}" && -z "${VERSION}" ]]; then
-  print_usage
+if [[ $SEMVER =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$ ]]; then
+  echo "Valid version string: ${SEMVER}"
+else
+  echo "Error: Invalid version string: ${SEMVER}"
+  exit 1
 fi
+
+VERSION=$(echo $SEMVER | awk -F - '{print $1}')
 
 # We have a new version so generate the csv
 if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   create_new_csv
   set_version
-  set_images
 fi
 
-if [[ -n "${TAG}" ]]; then
-  set_images
-fi
+set_images
