@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -61,9 +62,10 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 	return nil
 }
 
-func OpenshiftIDPCheck(url string, client *http.Client, idp string) (bool, error) {
+func OpenshiftIDPCheck(t *testing.T, url string, client *http.Client, idp string) (bool, error) {
 	browser := surf.NewBrowser()
 	browser.SetTransport(client.Transport)
+	t.Logf("Attempting to open browser with url: %s", url)
 	if err := browser.Open(url); err != nil {
 		return false, fmt.Errorf("failed to open browser url: %w", err)
 	}

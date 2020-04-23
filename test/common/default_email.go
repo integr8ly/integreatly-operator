@@ -43,7 +43,7 @@ func TestDefaultUserEmail(t *testing.T, ctx *TestingContext) {
 		Jar:       jar,
 	}
 
-	err = createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts)
+	err = createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts, nil)
 	if err != nil {
 		t.Fatalf("Error occurred creating testing IDP: %v", err)
 	}

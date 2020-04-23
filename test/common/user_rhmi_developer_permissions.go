@@ -27,7 +27,7 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts, nil); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -54,6 +54,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// test rhmi developer projects are as expected
+	t.Log("testing rhmi developer projects")
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
 	if err := testRHMIDeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
 		t.Fatalf("test failed - %v", err)
