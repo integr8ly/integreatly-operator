@@ -130,7 +130,7 @@ image/build/test:
 
 .PHONY: test/unit
 test/unit:
-	./scripts/ci/unit_test.sh
+	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export component := integreatly-operator
