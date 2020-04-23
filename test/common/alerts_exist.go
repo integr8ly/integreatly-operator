@@ -213,10 +213,6 @@ var expectedRules = []alertsTestRule{
 			"UnifiedPushOperatorDown",
 		},
 	},
-	{
-		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
-		Rules: []string{},
-	},
 }
 
 var expectedAWSRules = []alertsTestRule{
