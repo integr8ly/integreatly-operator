@@ -275,8 +275,8 @@ else
 endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
-.PHONY: gen/csv
-gen/csv:
+.PHONY: release/prepare
+release/prepare:
 	@./scripts/prepare-release.sh
 
 .PHONY: push/csv
@@ -285,7 +285,7 @@ push/csv:
 	-operator-courier push deploy/olm-catalog/integreatly-operator/ $(REPO) integreatly $(TAG) "$(AUTH_TOKEN)"
 
 .PHONY: gen/push/csv
-gen/push/csv: gen/csv push/csv
+gen/push/csv: release/prepare push/csv
 
 # Generate namespace names to be used in docs
 .PHONY: gen/namespaces

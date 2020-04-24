@@ -231,7 +231,7 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 ## Release
 
 - Create `release-<release-number>` branch
-- Run `make gen/csv SEMVER=<SEMVER>`
+- Run `make release/prepare SEMVER=<SEMVER>`
     - Perform any manual tidying up of the generated CSV as required.
 - Run `make gen/namespaces` against a fully installed cluster. 
 - Make a PR against this repo
