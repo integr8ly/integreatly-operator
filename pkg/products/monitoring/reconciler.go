@@ -264,14 +264,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 	
-	phase, err = r.reconcilePrometheusRule(ctx, serverClient)
+	phase, err = r.reconcileBackupMonitoringAlerts(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcilePrometheusRule", phase, err)
 	
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheusrules", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile backup monitroing alerts", err)
 		return phase, err
 	}
 
+	phase, err = r.reconcileKubeStateMetricsAlerts(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", phase, err)
+	
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMetricsAlerts", err)
+		return phase, err
+	}
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()

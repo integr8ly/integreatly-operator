@@ -125,7 +125,6 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 
 func (m *Monitoring) GetTemplateList() []string {
 	templateList := []string{
-		"kube_state_metrics_alerts.yaml",
 		"kube_state_metrics_monitoring_alerts.yaml",
 		"endpointsdetailed.yaml",
 		"endpointsreport.yaml",
