@@ -35,7 +35,7 @@ const (
 
 type TestUser struct {
 	UserName  string
-	FirstName stringq
+	FirstName string
 	LastName  string
 }
 
