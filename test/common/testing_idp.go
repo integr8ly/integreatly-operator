@@ -35,7 +35,7 @@ const (
 
 type TestUser struct {
 	UserName  string
-	FirstName string
+	FirstName stringq
 	LastName  string
 }
 
@@ -49,7 +49,6 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 
 	// create dedicated admins group is it doesnt exist
 	if !hasDedicatedAdminGroup(ctx, client) {
-		t.Log("creating dedicatedAdminGroup")
 		if err := setupDedicatedAdminGroup(ctx, client); err != nil {
 			return fmt.Errorf("error occurred while creating dedicated admin group: %w", err)
 		}

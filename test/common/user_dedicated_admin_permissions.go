@@ -38,7 +38,7 @@ var productNamespaces = []string{
 }
 
 func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(nil, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
