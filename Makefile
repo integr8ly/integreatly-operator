@@ -1,6 +1,7 @@
 include ./make/*.mk
 
-ORG ?= integreatly
+#ORG ?= integreatly
+ORG ?= bgallagher
 NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
@@ -259,6 +260,7 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
+	@-oc delete crd rhmiconfigs.integreatly.org
 
 .PHONY: deploy/integreatly-rhmi-cr.yml
 deploy/integreatly-rhmi-cr.yml:
