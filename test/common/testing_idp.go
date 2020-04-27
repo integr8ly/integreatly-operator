@@ -40,7 +40,7 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool, t *testing.T) error {
+func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
 	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)

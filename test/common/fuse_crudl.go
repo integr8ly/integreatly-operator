@@ -30,7 +30,7 @@ func loginOpenshift(ctx *TestingContext, masterUrl, username, password, namespac
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 

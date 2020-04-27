@@ -97,7 +97,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	t.Log("Test codeready workspace creation")
 
 	// Ensure testing-idp is available
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts, nil); err != nil {
+	if err := createTestingIDP(nil, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("failed to create testing idp: %v", err)
 	}
 

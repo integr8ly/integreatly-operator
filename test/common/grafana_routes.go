@@ -20,7 +20,7 @@ const (
 
 func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	//reconcile idp setup
-	if err := createTestingIDP(context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts, nil); err != nil {
+	if err := createTestingIDP(nil, context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatal("failed to reconcile testing idp", err)
 	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
@@ -64,7 +64,7 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	//reconcile idp setup
-	if err := createTestingIDP(context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts, nil); err != nil {
+	if err := createTestingIDP(nil, context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatal("failed to reconcile testing idp", err)
 	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
