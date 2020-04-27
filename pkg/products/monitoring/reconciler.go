@@ -263,6 +263,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile federation", err)
 		return phase, err
 	}
+	
+	phase, err = r.reconcilePrometheusRule(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcilePrometheusRule", phase, err)
+	
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheusrules", err)
+		return phase, err
+	}
+
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
