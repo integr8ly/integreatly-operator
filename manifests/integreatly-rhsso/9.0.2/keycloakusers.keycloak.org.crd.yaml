@@ -60,8 +60,8 @@ spec:
                           type: string
                         type: array
                     required:
-                    - key
-                    - operator
+                      - key
+                      - operator
                     type: object
                   type: array
                 matchLabels:
@@ -77,11 +77,6 @@ spec:
             user:
               description: Keycloak User REST object.
               properties:
-                attributes:
-                  additionalProperties:
-                    type: string
-                  description: A set of Attributes.
-                  type: object
                 clientRoles:
                   additionalProperties:
                     items:
@@ -157,7 +152,7 @@ spec:
                   type: string
               type: object
           required:
-          - user
+            - user
           type: object
         status:
           description: KeycloakUserStatus defines the observed state of KeycloakUser
@@ -170,12 +165,12 @@ spec:
               description: Current phase of the operator.
               type: string
           required:
-          - message
-          - phase
+            - message
+            - phase
           type: object
       type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true

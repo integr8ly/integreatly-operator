@@ -279,9 +279,17 @@ func (in *KeycloakAPIUser) DeepCopyInto(out *KeycloakAPIUser) {
 	}
 	if in.Attributes != nil {
 		in, out := &in.Attributes, &out.Attributes
-		*out = make(map[string]string, len(*in))
+		*out = make(map[string][]string, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal []string
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = make([]string, len(*in))
+				copy(*out, *in)
+			}
+			(*out)[key] = outVal
 		}
 	}
 	return

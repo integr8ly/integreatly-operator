@@ -5,7 +5,7 @@ metadata:
     capabilities: Basic Install
     categories: security
     certified: 'False'
-    containerImage: 'quay.io/jjaferson/keycloak-operator-rhmi:all-rhmi-branches-userattr'
+    containerImage: 'quay.io/integreatly/keycloak-operator-rhmi:9.0.3'
     createdAt: 2020-04-01 00:00:01
     description: 'An Operator for installing and managing Keycloak'
     repository: 'https://github.com/keycloak/keycloak-operator'
@@ -116,6 +116,7 @@ metadata:
   name: keycloak-operator.v9.0.3
   namespace: placeholder
 spec:
+  replaces: keycloak-operator.v9.0.2
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -191,7 +192,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/jjaferson/keycloak-operator-rhmi:all-rhmi-branches-userattr
+                    image: quay.io/integreatly/keycloak-operator-rhmi:9.0.3
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}

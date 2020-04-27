@@ -4,9 +4,8 @@
 package common
 
 import (
-	"sync"
-
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	"sync"
 )
 
 var (

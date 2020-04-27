@@ -168,7 +168,7 @@ spec:
                     type: string
                   type: array
               required:
-              - clientId
+                - clientId
               type: object
             realmSelector:
               description: Selector for looking up KeycloakRealm Custom Resources.
@@ -199,8 +199,8 @@ spec:
                           type: string
                         type: array
                     required:
-                    - key
-                    - operator
+                      - key
+                      - operator
                     type: object
                   type: array
                 matchLabels:
@@ -214,8 +214,8 @@ spec:
                   type: object
               type: object
           required:
-          - client
-          - realmSelector
+            - client
+            - realmSelector
           type: object
         status:
           description: KeycloakClientStatus defines the observed state of KeycloakClient
@@ -241,13 +241,13 @@ spec:
                 ]'
               type: object
           required:
-          - message
-          - phase
-          - ready
+            - message
+            - phase
+            - ready
           type: object
       type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true

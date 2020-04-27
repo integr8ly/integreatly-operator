@@ -2,9 +2,10 @@ package threescale
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"net/http"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
 

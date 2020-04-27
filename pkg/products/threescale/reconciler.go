@@ -869,8 +869,8 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	userCreated3ScaleName := "3scale_user_created"
 	for _, user := range kcu {
 		if user.Attributes == nil {
-			user.Attributes = map[string]string{
-				userCreated3ScaleName: "true",
+			user.Attributes = map[string][]string{
+				userCreated3ScaleName: {"true"},
 			}
 		}
 
@@ -882,7 +882,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 		}
 
 		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcUser, func() error {
-			user.Attributes[userCreated3ScaleName] = "true"
+			user.Attributes[userCreated3ScaleName] = []string{"true"}
 			kcUser.Spec.User = user
 			return nil
 		})

@@ -79,7 +79,9 @@ spec:
               properties:
                 attributes:
                   additionalProperties:
-                    type: string
+                    items:
+                      type: string
+                    type: array
                   description: A set of Attributes.
                   type: object
                 clientRoles:

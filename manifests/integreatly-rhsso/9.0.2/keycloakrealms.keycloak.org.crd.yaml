@@ -60,8 +60,8 @@ spec:
                           type: string
                         type: array
                     required:
-                    - key
-                    - operator
+                      - key
+                      - operator
                     type: object
                   type: array
                 matchLabels:
@@ -223,7 +223,7 @@ spec:
                           type: string
                         type: array
                     required:
-                    - clientId
+                      - clientId
                     type: object
                   type: array
                 displayName:
@@ -295,11 +295,6 @@ spec:
                   description: A set of Keycloak Users.
                   items:
                     properties:
-                      attributes:
-                        additionalProperties:
-                          type: string
-                        description: A set of Attributes.
-                        type: object
                       clientRoles:
                         additionalProperties:
                           items:
@@ -376,7 +371,7 @@ spec:
                     type: object
                   type: array
               required:
-              - realm
+                - realm
               type: object
             realmOverrides:
               description: A list of overrides to the default Realm behavior.
@@ -391,7 +386,7 @@ spec:
                 type: object
               type: array
           required:
-          - realm
+            - realm
           type: object
         status:
           description: KeycloakRealmStatus defines the observed state of KeycloakRealm
@@ -420,14 +415,14 @@ spec:
                 ]'
               type: object
           required:
-          - loginURL
-          - message
-          - phase
-          - ready
+            - loginURL
+            - message
+            - phase
+            - ready
           type: object
       type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true

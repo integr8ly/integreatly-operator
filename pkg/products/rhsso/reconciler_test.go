@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	"github.com/sirupsen/logrus"
@@ -42,6 +43,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -331,6 +333,33 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				},
 			},
 			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+		},
+		{
+			Name: "Test reconcile custom resource returns failed on unsuccessful create",
+			FakeClient: &moqclient.SigsClientInterfaceMock{
+				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
+					return errors.New("failed to create keycloak custom resource")
+				},
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return k8serr.NewNotFound(schema.GroupResource{}, "keycloak")
+				},
+			},
+			FakeConfig: basicConfigMock(),
+			Installation: &integreatlyv1alpha1.RHMI{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: controllerruntime.ObjectMeta{
+					Namespace: defaultOperatorNamespace,
+				},
+			},
+			ExpectError:           true,
+			ExpectedError:         "failed to create/update keycloak custom resource: failed to create keycloak custom resource",
+			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			Recorder:              setupRecorder(),
 			ApiUrl:                "https://serverurl",
 			KeycloakClientFactory: getMoqKeycloakClientFactory(),
@@ -885,7 +914,6 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 
 	return &keycloakCommon.KeycloakClientFactoryMock{
 		AuthenticatedClientFunc: func(kc keycloak.Keycloak) (keycloakInterface keycloakCommon.KeycloakInterface, err error) {
-			logrus.Info("vaaa")
 			return &keycloakCommon.KeycloakInterfaceMock{
 				CreateIdentityProviderFunc: func(identityProvider *keycloak.KeycloakIdentityProvider, realmName string) (string, error) {
 					return "", nil
@@ -907,14 +935,6 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 			}, nil
 		}}
 }
-
-// CreateAuthenticationFlowFunc:             createAuthenticationFlowFunc,
-// FindAuthenticationFlowByAliasFunc:        findAuthenticationFlowByAliasFunc,
-// ListAuthenticationExecutionsForFlowFunc:  listAuthenticationExecutionsForFlowFunc,
-// AddExecutionToAuthenticatonFlowFunc:      addExecutionToAuthenticatonFlowFunc,
-// FindAuthenticationExecutionForFlowFunc:   findAuthenticationExecutionForFlowFunc,
-// UpdateAuthenticationExecutionForFlowFunc: updateAuthenticationExecutionForFlowFunc,
-// ListAuthenticationFlowsFunc:         keycloakInterface.ListAuthenticationFlows,
 
 func createKeycloakClientFactoryMock() (keycloakCommon.KeycloakClientFactory, *mockClientContext) {
 	keycloakInterfaceMock, ctx := createKeycloakInterfaceMock()
@@ -964,6 +984,12 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 	createAuthenticationFlowFunc := func(authFlow keycloakCommon.AuthenticationFlow, realmName string) (string, error) {
 		if len(context.AuthenticationFlow) <= 0 {
 			context.AuthenticationFlow = make(map[string][]*keycloakCommon.AuthenticationFlow)
+		}
+
+		for _, af := range context.AuthenticationFlow[realmName] {
+			if af.ID == authFlow.ID {
+				return "", errors.New("Authentication flow already exist")
+			}
 		}
 
 		context.AuthenticationFlow[realmName] = append(context.AuthenticationFlow[realmName], &authFlow)

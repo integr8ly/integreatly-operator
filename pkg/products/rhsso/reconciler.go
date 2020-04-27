@@ -437,7 +437,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
-			"http://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.0/authdelay.jar",
+			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
 		if kc.Spec.Instances < numberOfReplicas {
@@ -951,10 +951,10 @@ func createAuthDelayAuthenticationFlow(authenticated keycloakCommon.KeycloakInte
 	}
 	if authFlow == nil {
 		authFlow := keycloakCommon.AuthenticationFlow{
-			Alias:      "authdelay",
+			Alias:      authFlowAlias,
 			ProviderID: "basic-flow", // providerId is "client-flow" for client and "basic-flow" for generic in Top Level Flow Type
 			TopLevel:   true,
-			BuiltIn:    false, //
+			BuiltIn:    false,
 		}
 		_, err := authenticated.CreateAuthenticationFlow(authFlow, keycloakRealmName)
 		if err != nil {

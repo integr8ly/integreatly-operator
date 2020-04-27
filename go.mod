@@ -16,12 +16,12 @@ require (
 	github.com/go-openapi/spec v0.19.6
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-querystring v1.0.0
-	github.com/headzoo/surf v1.0.0 // indirect
+	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.11.0
 	github.com/integr8ly/grafana-operator v1.3.1
-	github.com/integr8ly/keycloak-client v0.1.1
+	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54
@@ -41,7 +41,6 @@ require (
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	gopkg.in/headzoo/surf.v1 v1.0.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.0
 	k8s.io/apiextensions-apiserver v0.17.0
@@ -83,6 +82,5 @@ replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.2019090414
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 
-replace github.com/integr8ly/keycloak-client => github.com/jjaferson/keycloak-client v0.1.2-0.20200416152927-079b20402f08
-
-replace github.com/keycloak/keycloak-operator => github.com/jjaferson/keycloak-operator v0.0.0-20200417120137-b63d22db7fe7
+// Remove when PR https://github.com/keycloak/keycloak-operator/pull/171 is merged
+replace github.com/keycloak/keycloak-operator => github.com/integr8ly/keycloak-operator-rhmi v0.0.0-20200505143708-9f0afbb299cd
