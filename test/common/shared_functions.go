@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/ghodss/yaml"
 	"golang.org/x/net/publicsuffix"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"

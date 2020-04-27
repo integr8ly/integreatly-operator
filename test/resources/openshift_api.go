@@ -1,10 +1,14 @@
 package resources
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -95,6 +99,126 @@ func (oc *OpenshiftClient) GetRequest(path string) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
 	}
+	resp, err := oc.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
+	}
+	return resp, nil
+}
+
+func (oc *OpenshiftClient) DoOpenshiftCreateProject(apiURL string, projectCR *projectv1.ProjectRequest) error {
+
+	projectJson, err := json.Marshal(projectCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal projectCR: %w", err)
+	}
+
+	response, err := oc.DoOpenshiftPostRequest(apiURL, PathProjectRequests, projectJson)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", PathProjectRequests, response.StatusCode)
+	}
+
+	return nil
+}
+
+func (oc *OpenshiftClient) DoOpenshiftCreateServiceInANamespace(openshiftAPIURL string, namespace string, serviceCR *corev1.Service) error {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/services", namespace)
+	serviceJSON, err := json.Marshal(serviceCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal serviceCR: %w", err)
+	}
+
+	response, err := oc.DoOpenshiftPostRequest(openshiftAPIURL, path, serviceJSON)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", path, response.StatusCode)
+	}
+
+	return nil
+}
+
+func (oc *OpenshiftClient) DoOpenshiftCreatePodInANamespace(apiURL string, namespace string, podCR *corev1.Pod) error {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods", namespace)
+	podJSON, err := json.Marshal(podCR)
+	if err != nil {
+		return fmt.Errorf("failed to marshal serviceCR: %w", err)
+	}
+
+	response, err := oc.DoOpenshiftPostRequest(apiURL, path, podJSON)
+	if err != nil {
+		return fmt.Errorf("error occured durning oc request : %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		return fmt.Errorf("request to %s failed with code %d", path, response.StatusCode)
+	}
+	return nil
+}
+
+// makes a get request, expects master url, a path and a token
+func (oc *OpenshiftClient) DoOpenshiftGetRequest(masterUrl string, path string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", masterUrl, path), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
+	}
+	resp, err := oc.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
+	}
+	return resp, nil
+}
+
+// get Oauth token from cookie
+func getOauthTokenFromCookie(masterURL string, client *http.Client) (string, error) {
+	clusterURL, err := url.Parse(fmt.Sprintf("https://%s/api/", masterURL))
+	if err != nil {
+		return "", fmt.Errorf("unable to parse the url: %w", err)
+	}
+
+	var token string = ""
+	for _, cookie := range client.Jar.Cookies(clusterURL) {
+		if cookie.Name == "openshift-session-token" {
+			token = cookie.Value
+			break
+		}
+	}
+
+	if token == "" {
+		return "", fmt.Errorf("token not found: %w", err)
+	}
+
+	return token, nil
+}
+
+// makes a post request, expects master url, a path and the body
+func (oc *OpenshiftClient) DoOpenshiftPostRequest(masterURL string, path string, data []byte) (*http.Response, error) {
+	openshiftAPIURL := strings.Replace(masterURL, "console-openshift-console.apps.", "api.", 1) + ":6443"
+
+	// openshift api url required for POST requests
+	url := fmt.Sprintf("https://%s%s", openshiftAPIURL, path)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("Error reading request: %w", err)
+	}
+
+	token, err := getOauthTokenFromCookie(masterURL, oc.HTTPClient)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting the oauth token client: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
 	resp, err := oc.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
