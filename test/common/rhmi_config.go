@@ -24,12 +24,6 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 			Name:      RHMIConfigCRName,
 			Namespace: OperatorNamespace,
 		},
-		Spec: v1alpha1.RHMIConfigSpec{
-			//Upgrade: v1alpha1.Upgrade{
-			//	//Contacts: "asdasd",
-			//	//ApplyOn:  "asdasd",
-			//},
-		},
 	}
 
 	if err := ctx.Client.Create(goctx.TODO(), rhmiConfig); err != nil {
@@ -45,13 +39,13 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 	t.Log("Verify rhmi config cr creation")
 
 	rhmiConfig := &v1alpha1.RHMIConfig{}
-	// get the RHMI custom resource to check what storage type is being used
+
 	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: RHMIConfigCRName, Namespace: OperatorNamespace}, rhmiConfig)
 	if err != nil {
 		t.Fatalf("Failed to verify RHMI Config resource %v", err)
 	}
 
-	// The CR we created had no values set so the upgrade fields should default to false.
+	// The upgrade fields should default to false
 	if rhmiConfig.Spec.Upgrade.AlwaysImmediately != false {
 		t.Errorf("AlwaysImmediately should be false by default")
 	}

@@ -1,7 +1,6 @@
 include ./make/*.mk
 
-#ORG ?= integreatly
-ORG ?= bgallagher
+ORG ?= integreatly
 NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
@@ -186,7 +185,8 @@ cluster/prepare/osrc:
 
 .PHONY: cluster/prepare/crd
 cluster/prepare/crd:
-	- oc create -f deploy/crds/*_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmis_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
