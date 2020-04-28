@@ -30,6 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	RHMICustomerConfigNamespace = "redhat-rhmi-operator"
+)
+
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -65,6 +69,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcilerGithubOauthSecret(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile github oauth secrets", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilerRHMIConfigCR(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config", err)
 		return phase, err
 	}
 
@@ -107,6 +117,24 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-config",
+			Namespace: RHMICustomerConfigNamespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiConfig, func() error {
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling the Customer Config CR: %w", err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	RHMIConfigCRName  = "rhmi-config"
+	RHMIConfigCRName  = "rhmi-config-test"
 	OperatorNamespace = "redhat-rhmi-operator"
 )
 
