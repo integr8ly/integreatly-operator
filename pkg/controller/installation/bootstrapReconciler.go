@@ -30,10 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	RHMICustomerConfigNamespace = "redhat-rhmi-operator"
-)
-
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -125,7 +121,7 @@ func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi-config",
-			Namespace: RHMICustomerConfigNamespace,
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
 		},
 	}
 
