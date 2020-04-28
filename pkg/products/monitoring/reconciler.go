@@ -263,20 +263,27 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile federation", err)
 		return phase, err
 	}
-	
+
 	phase, err = r.reconcileBackupMonitoringAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcilePrometheusRule", phase, err)
-	
+	logrus.Infof("Phase: %s reconcilePrometheusRule", phase)
+
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile backup monitroing alerts", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileKubeStateMetricsAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", phase, err)
-	
+	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", err)
+
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMetricsAlerts", err)
+		return phase, err
+	}
+	phase, err = r.reconcileKubeStateMetricsMonitoringAlerts(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileKubeStateMonitoringMetricsAlerts", err)
+
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMonitoringMetricsAlerts", err)
 		return phase, err
 	}
 
