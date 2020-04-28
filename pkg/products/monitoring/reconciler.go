@@ -273,14 +273,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	phase, err = r.reconcileKubeStateMetricsAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", err)
+	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", phase)
 
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMetricsAlerts", err)
 		return phase, err
 	}
 	phase, err = r.reconcileKubeStateMetricsMonitoringAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileKubeStateMonitoringMetricsAlerts", err)
+	logrus.Infof("Phase: %s reconcileKubeStateMonitoringMetricsAlerts", phase)
 
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMonitoringMetricsAlerts", err)

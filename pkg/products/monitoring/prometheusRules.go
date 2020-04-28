@@ -141,6 +141,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"message": fmt.Sprintf(" Pod {{ $labels.namespace  }} / {{  $labels.pod  }} has been unable to start due to a bad configuration for longer than 5 minutes"),
 				},	
 			Expr: intstr.FromString(fmt.Sprintf("(kube_pod_container_status_waiting_reason{reason='CreateContainerConfigError'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0")),
+			For: "5m",
 			Labels: map[string]string{"severity": "critical"},	
 		},
 		{
