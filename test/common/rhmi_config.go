@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	RHMIConfigCRName  = "rhmi-config-test"
-	OperatorNamespace = "redhat-rhmi-operator"
+	RHMIConfigCRName = "rhmi-config-test"
 )
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created
@@ -22,15 +21,12 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 		TypeMeta: v1.TypeMeta{},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      RHMIConfigCRName,
-			Namespace: OperatorNamespace,
+			Namespace: RHMIOperatorNamespace,
 		},
 	}
 
 	if err := ctx.Client.Create(goctx.TODO(), rhmiConfig); err != nil {
-		if err != nil {
-			t.Fatalf("Failed to create RHMI Config resource %v", err)
-			return
-		}
+		t.Fatalf("Failed to create RHMI Config resource %v", err)
 	}
 	verifyCr(t, ctx)
 }
@@ -40,7 +36,7 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 
 	rhmiConfig := &v1alpha1.RHMIConfig{}
 
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: RHMIConfigCRName, Namespace: OperatorNamespace}, rhmiConfig)
+	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace}, rhmiConfig)
 	if err != nil {
 		t.Fatalf("Failed to verify RHMI Config resource %v", err)
 	}
@@ -51,5 +47,9 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 	}
 	if rhmiConfig.Spec.Upgrade.DuringNextMaintenance != false {
 		t.Errorf("DuringNextMaintenance should be set to false")
+	}
+
+	if err := ctx.Client.Delete(goctx.TODO(), rhmiConfig); err != nil {
+		t.Errorf("Failed to delete the rhmi config")
 	}
 }
