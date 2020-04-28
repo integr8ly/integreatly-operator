@@ -244,3 +244,5 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 - Make a release in github UI
 - Tell QE, so they can update pipelines to new release-number
 - Take CSV files from deploy/olm-catalog and make a PR to managed-tenants, make any changes as required beforehand.
+
+TEST DO NOT MERGE
