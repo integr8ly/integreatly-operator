@@ -171,7 +171,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/service cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -191,6 +191,10 @@ cluster/prepare/osrc:
 cluster/prepare/crd:
 	- oc create -f deploy/crds/integreatly.org_rhmis_crd.yaml
 	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
+
+.PHONY: cluster/prepare/service
+cluster/prepare/service:
+	- oc create -f deploy/webhook-service.yaml
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
