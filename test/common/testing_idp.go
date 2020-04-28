@@ -2,7 +2,9 @@ package common
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -38,7 +40,7 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
+func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
 	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
@@ -57,7 +59,6 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := client.Get(ctx, types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Openshift Oauth Route: %w ", err)
 	}
-
 	// create keycloak client secret
 	if err := createClientSecret(ctx, client, []byte(defaultSecret)); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
@@ -67,7 +68,6 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := createKeycloakRealm(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
-
 	// create keycloak client
 	keycloakClientName := fmt.Sprintf("%s-client", TestingIDPRealm)
 	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
@@ -100,10 +100,15 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := waitForOauthDeployment(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
-
 	// ensure the IDP is available in OpenShift
-	err = wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
-		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
+
+	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+		if err == io.EOF {
+			t.Logf("attempted to check OpenshiftIDP, got error: %s, ignoring and retrying", io.EOF)
+			return done, nil
+		}
+		return resources.OpenshiftIDPCheck(t, fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
+
 	})
 	if err != nil {
 		return fmt.Errorf("failed to check for openshift idp: %w", err)

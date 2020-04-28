@@ -27,7 +27,7 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -37,21 +37,24 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	masterURL := rhmi.Spec.MasterURL
+	t.Logf("retrieved console master URL %v", masterURL)
 
 	// get oauth route
 	oauthRoute := &v1.Route{}
 	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		t.Fatal("error getting Openshift Oauth Route: ", err)
 	}
+	t.Log("retrieved openshift-Oauth route")
 
 	// get rhmi developer user tokens
 	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
-
+	t.Log("retrieved rhmi developer user tokens")
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// test rhmi developer projects are as expected
+	t.Log("testing rhmi developer projects")
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
 	if err := testRHMIDeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
 		t.Fatalf("test failed - %v", err)

@@ -50,7 +50,7 @@ func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
 		Jar:       jar,
 	}
 
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
