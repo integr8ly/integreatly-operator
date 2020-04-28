@@ -30,8 +30,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 				"message": fmt.Sprintf(" Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 300 seconds"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("time() - (max(kube_job_status_active * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name) * ON(job_name) GROUP_RIGHT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name, namespace, label_cronjob_name) > 0) > 300 ")),
-			For:    "5m",
-			Labels: map[string]string{"severity": "critical"},
+			Labels: map[string]string{"severity": "warning"},
 		},
 		{
 			Alert: fmt.Sprintf("JobRunningTimeExceeded"),
@@ -47,9 +46,9 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Alert: fmt.Sprintf("CronJobSuspended"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf(" CronJob {{ $labels.namespace  }}/{{ $labels.cronjob }} is suspended"),
+				"message": fmt.Sprintf(" CronJob {{ $labels.namespace  }} / {{ $labels.cronjob }} is suspended"),
 				},	
-			Expr: intstr.FromString(fmt.Sprintf("kube_cronjob_labels{ label_monitoring_key='middleware' } * ON (cronjob) GROUP_RIGHT() kube_cronjob_spec_suspend >0 ")),
+			Expr: intstr.FromString(fmt.Sprintf("kube_cronjob_labels{ label_monitoring_key='middleware' } * ON (cronjob) GROUP_RIGHT() kube_cronjob_spec_suspend > 0 ")),
 			For:    "60s",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -57,7 +56,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Alert: fmt.Sprintf("CronJobNotRunInThreshold"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf(" CronJob {{ $labels.namespace }}/{{ $labels.label_cronjob_name }} has not started a Job in 25 hours"),
+				"message": fmt.Sprintf(" CronJob {{ $labels.namespace }} / {{ $labels.label_cronjob_name }} has not started a Job in 25 hours"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25")),
 			Labels: map[string]string{"severity": "critical"},
@@ -66,7 +65,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Alert: fmt.Sprintf("CronJobsFailed"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("Job {{ $labels.namespace  }}/{{  $labels.job  }} has failed"),
+				"message": fmt.Sprintf("Job {{ $labels.namespace  }} / {{  $labels.job  }} has failed"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0")),
 			For:    "5m",
@@ -121,7 +120,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": fmt.Sprintf("Pod {{ $labels.namespace }} / {{ $labels.pod }}  has been in a non-ready state for longer than 15 minutes."),
 				},	
-			Expr: intstr.FromString(fmt.Sprintf(" sum by(pod, namespace) (kube_pod_status_phase{phase=~'Pending|Unknown'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0")),
+			Expr: intstr.FromString(fmt.Sprintf("sum by(pod, namespace) (kube_pod_status_phase{phase=~'Pending|Unknown'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0")),
 			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -139,9 +138,9 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Alert: fmt.Sprintf("KubePodBadConfig"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf(" CronJob {{ $labels.namespace }} / {{ $labels.label_cronjob_name }} has not started a Job in 25 hours"),
+				"message": fmt.Sprintf(" Pod {{ $labels.namespace  }} / {{  $labels.pod  }} has been unable to start due to a bad configuration for longer than 5 minutes"),
 				},	
-			Expr: intstr.FromString(fmt.Sprintf("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25")),
+			Expr: intstr.FromString(fmt.Sprintf("(kube_pod_container_status_waiting_reason{reason='CreateContainerConfigError'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0")),
 			Labels: map[string]string{"severity": "critical"},	
 		},
 		{
@@ -160,9 +159,9 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
 				"message": fmt.Sprintf("The cluster has {{   $value  }} percent of memory requested and unavailable for scheduling for longer than 15 minutes"),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0")),
-			For:    "5m",
-			Labels: map[string]string{"severity": "critical"},
+			Expr:   intstr.FromString(fmt.Sprintf(" ((sum(sum by(node) (sum by(pod, node) (kube_pod_container_resource_requests_memory_bytes * on(node) group_left() (sum by(node) (kube_node_labels{label_node_role_kubernetes_io_compute='true'} == 1))) * on(pod) group_left() (sum by(pod) (kube_pod_status_phase{phase='Running'}) == 1)))) / ((sum((kube_node_labels{label_node_role_kubernetes_io_compute='true'} == 1) * on(node) group_left() (sum by(node) (kube_node_status_allocatable_memory_bytes)))))) * 100 > 85")),
+			For:    "15m",
+			Labels: map[string]string{"severity": "warning"},
 		},
 		{
 			Alert: fmt.Sprintf("ClusterSchedulableCPULow"),
@@ -191,8 +190,8 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"message": fmt.Sprintf("PVC storage metrics are not available"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("absent(kubelet_volume_stats_available_bytes) == 1 or absent(kubelet_volume_stats_capacity_bytes) == 1 or absent(kubelet_volume_stats_used_bytes) == 1 or absent(kube_persistentvolumeclaim_resource_requests_storage_bytes) == 1")),
-			For:    "5m",
-			Labels: map[string]string{"severity": "critical"},
+			For:    "15m",
+			Labels: map[string]string{"severity": "warning"},
 		},
 		{
 			Alert: fmt.Sprintf("PVCStorageWillFillIn4Days"),
@@ -201,8 +200,8 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"message": fmt.Sprintf("The {{  $labels.persistentvolumeclaim  }} PVC will run of disk space in the next 4 days"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("(predict_linear(kubelet_volume_stats_available_bytes{job='kubelet'}[6h], 4 * 24 * 3600) <= 0 AND kubelet_volume_stats_available_bytes{job='kubelet'} / kubelet_volume_stats_capacity_bytes{job='kubelet'} < 0.25 )* on(namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}")),
-			For:    "5m",
-			Labels: map[string]string{"severity": "critical"},
+			For:    "15m",
+			Labels: map[string]string{"severity": "warning"},
 		},
 		{
 			Alert: fmt.Sprintf("PVCStorageWillFillIn4Hours"),
@@ -211,7 +210,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"message": fmt.Sprintf("The {{  $labels.persistentvolumeclaim  }} PVC will run of disk space in the next 4 hours"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("( predict_linear(kubelet_volume_stats_available_bytes{job='kubelet'}[1h], 4 * 3600) <= 0 AND kubelet_volume_stats_available_bytes{job='kubelet'} / kubelet_volume_stats_capacity_bytes{job='kubelet'} < 0.25)* on(namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}")),
-			For:    "5m",
+			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 
@@ -222,7 +221,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"message": fmt.Sprintf("The PVC {{  $labels.persistentvolumeclaim  }} is in status {{  $labels.phase  }} in namespace {{  $labels.namespace }} "),
 				},	
 			Expr: intstr.FromString(fmt.Sprintf("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0")),
-			For: "5m",
+			For: "15m",
 			Labels: map[string]string{"severity": "critical"},	
 		
 		}}
@@ -261,7 +260,7 @@ func (r *Reconciler) reconcileKubeStateMetricsMonitoringAlerts(ctx context.Conte
 			Alert: fmt.Sprintf("MiddlewareMonitoringPodCount"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("Pod count for namespace {{ $labels.namespace}} is {{ printf %s $value }}. Expected exactly 7 pods.", "%.0f"),
+				"message": fmt.Sprintf("Pod count for namespace {{ $labels.namespace}} is {{  $value }}. Expected exactly 7 pods"),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'}) != 7")),
 			For:    "5m",
