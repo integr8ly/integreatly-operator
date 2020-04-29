@@ -24,7 +24,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: fmt.Sprintf("JobRunningTimeExceeded"),
+			Alert: "JobRunningTimeExceeded",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 300 seconds",
@@ -33,16 +33,16 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("JobRunningTimeExceeded"),
+			Alert: "JobRunningTimeExceeded",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf(" Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 600 seconds"),
+				"message": " Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 600 seconds",
 			},
 			Expr:   intstr.FromString("time() - (max(kube_job_status_active * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name) * ON(job_name) GROUP_RIGHT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name, namespace, label_cronjob_name) > 0) > 600 "),
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("CronJobSuspended"),
+			Alert: "CronJobSuspended",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " CronJob {{ $labels.namespace  }} / {{ $labels.cronjob }} is suspended",
@@ -52,7 +52,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("CronJobNotRunInThreshold"),
+			Alert: "CronJobNotRunInThreshold",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " CronJob {{ $labels.namespace }} / {{ $labels.label_cronjob_name }} has not started a Job in 25 hours",
@@ -60,7 +60,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Expr: intstr.FromString("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25"),
 		},
 		{
-			Alert: fmt.Sprintf("CronJobsFailed"),
+			Alert: "CronJobsFailed",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Job {{ $labels.namespace  }} / {{  $labels.job  }} has failed",
@@ -101,7 +101,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: fmt.Sprintf("KubePodCrashLooping"),
+			Alert: "KubePodCrashLooping",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{  $labels.namespace  }} / {{  $labels.pod  }} ({{  $labels.container  }}) is restarting {{  $value  }} times every 5 minutes; for the last 15 minutes",
@@ -111,7 +111,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("KubePodNotReady"),
+			Alert: "KubePodNotReady",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{ $labels.namespace }} / {{ $labels.pod }}  has been in a non-ready state for longer than 15 minutes.",
@@ -121,17 +121,17 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("KubePodImagePullBackOff"),
+			Alert: "KubePodImagePullBackOff",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been unable to pull it's image for longer than 5 minutes.",
+				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been unable to pull its image for longer than 5 minutes.",
 			},
 			Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ImagePullBackOff'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("KubePodBadConfig"),
+			Alert: "KubePodBadConfig",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " Pod {{ $labels.namespace  }} / {{  $labels.pod  }} has been unable to start due to a bad configuration for longer than 5 minutes",
@@ -141,7 +141,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("KubePodStuckCreating"),
+			Alert: "KubePodStuckCreating",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{  $labels.namespace }} / {{  $labels.pod  }} has been trying to start for longer than 15 minutes - this could indicate a configuration error.",
@@ -151,7 +151,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: fmt.Sprintf("ClusterSchedulableMemoryLow"),
+			Alert: "ClusterSchedulableMemoryLow",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
 				"message": "The cluster has {{  $value }} percent of memory requested and unavailable for scheduling for longer than 15 minutes.",
@@ -161,7 +161,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("ClusterSchedulableCPULow"),
+			Alert: "ClusterSchedulableCPULow",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
 				"message": "The cluster has {{ $value }} percent of CPU cores requested and unavailable for scheduling for longer than 15 minutes.",
@@ -171,7 +171,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("PVCStorageAvailable"),
+			Alert: "PVCStorageAvailable",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
 				"message": "The {{  $labels.persistentvolumeclaim  }} PVC has has been {{ $value }} percent full for longer than 15 minutes.",
@@ -181,7 +181,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("PVCStorageMetricsAvailable"),
+			Alert: "PVCStorageMetricsAvailable",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
 				"message": "PVC storage metrics are not available",
@@ -191,7 +191,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("PVCStorageWillFillIn4Days"),
+			Alert: "PVCStorageWillFillIn4Days",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours",
 				"message": "The {{  $labels.persistentvolumeclaim  }} PVC will run of disk space in the next 4 days",
@@ -201,7 +201,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
-			Alert: fmt.Sprintf("PVCStorageWillFillIn4Hours"),
+			Alert: "PVCStorageWillFillIn4Hours",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#pvcstoragewillfillin4hours",
 				"message": "The {{  $labels.persistentvolumeclaim  }} PVC will run of disk space in the next 4 hours",
@@ -212,7 +212,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 		},
 
 		{
-			Alert: fmt.Sprintf("PersistentVolumeErrors"),
+			Alert: "PersistentVolumeErrors",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#persistentvolumeerrors",
 				"message": "The PVC {{  $labels.persistentvolumeclaim  }} is in status {{  $labels.phase  }} in namespace {{  $labels.namespace }} ",
@@ -253,7 +253,7 @@ func (r *Reconciler) reconcileKubeStateMetricsMonitoringAlerts(ctx context.Conte
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: fmt.Sprintf("MiddlewareMonitoringPodCount"),
+			Alert: "MiddlewareMonitoringPodCount",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly 7 pods.",
