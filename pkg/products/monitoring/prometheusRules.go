@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	"github.com/sirupsen/logrus"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -46,8 +46,8 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " CronJob {{ $labels.namespace  }} / {{ $labels.cronjob }} is suspended",
-				},	
-			Expr: intstr.FromString("kube_cronjob_labels{ label_monitoring_key='middleware' } * ON (cronjob) GROUP_RIGHT() kube_cronjob_spec_suspend > 0 "),
+			},
+			Expr:   intstr.FromString("kube_cronjob_labels{ label_monitoring_key='middleware' } * ON (cronjob) GROUP_RIGHT() kube_cronjob_spec_suspend > 0 "),
 			For:    "60s",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -57,7 +57,7 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " CronJob {{ $labels.namespace }} / {{ $labels.label_cronjob_name }} has not started a Job in 25 hours",
 			},
-			Expr:   intstr.FromString("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25"),
+			Expr: intstr.FromString("(time() - (max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name) == ON(label_cronjob_name) GROUP_LEFT() max( kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (label_cronjob_name))) > 60*60*25"),
 		},
 		{
 			Alert: fmt.Sprintf("CronJobsFailed"),
@@ -90,8 +90,6 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-
-
 func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
 	rule := &monitoringv1.PrometheusRule{
@@ -107,9 +105,9 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{  $labels.namespace  }} / {{  $labels.pod  }} ({{  $labels.container  }}) is restarting {{  $value  }} times every 5 minutes; for the last 15 minutes",
-				},	
-			Expr: intstr.FromString("rate(kube_pod_container_status_restarts_total{job='kube-state-metrics'}[15m]) * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'} * 60 * 5 > 0"),
-			For: "15m",
+			},
+			Expr:   intstr.FromString("rate(kube_pod_container_status_restarts_total{job='kube-state-metrics'}[15m]) * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'} * 60 * 5 > 0"),
+			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
@@ -117,18 +115,18 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{ $labels.namespace }} / {{ $labels.pod }}  has been in a non-ready state for longer than 15 minutes.",
-				},	
-			Expr: intstr.FromString("sum by(pod, namespace) (kube_pod_status_phase{phase=~'Pending|Unknown'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
-			For: "15m",
+			},
+			Expr:   intstr.FromString("sum by(pod, namespace) (kube_pod_status_phase{phase=~'Pending|Unknown'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
+			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: fmt.Sprintf("KubePodImagePullBackOff"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message":"Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been unable to pull it's image for longer than 5 minutes.",
-				},	
-			Expr: intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ImagePullBackOff'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
+				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been unable to pull it's image for longer than 5 minutes.",
+			},
+			Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ImagePullBackOff'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -137,20 +135,20 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": " Pod {{ $labels.namespace  }} / {{  $labels.pod  }} has been unable to start due to a bad configuration for longer than 5 minutes",
-				},	
-			Expr: intstr.FromString("(kube_pod_container_status_waiting_reason{reason='CreateContainerConfigError'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
-			For: "5m",
-			Labels: map[string]string{"severity": "critical"},	
+			},
+			Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='CreateContainerConfigError'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
+			For:    "5m",
+			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: fmt.Sprintf("KubePodStuckCreating"),
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{  $labels.namespace }} / {{  $labels.pod  }} has been trying to start for longer than 15 minutes - this could indicate a configuration error.",
-				},	
-			Expr: intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ContainerCreating'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
-			For: "15m",
-			Labels: map[string]string{"severity": "critical"},	
+			},
+			Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ContainerCreating'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
+			For:    "15m",
+			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: fmt.Sprintf("ClusterSchedulableMemoryLow"),
@@ -218,14 +216,13 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/pvc_storage.asciidoc#persistentvolumeerrors",
 				"message": "The PVC {{  $labels.persistentvolumeclaim  }} is in status {{  $labels.phase  }} in namespace {{  $labels.namespace }} ",
-				},	
-			Expr: intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
-			For: "15m",
-			Labels: map[string]string{"severity": "critical"},	
-		
+			},
+			Expr:   intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
+			For:    "15m",
+			Labels: map[string]string{"severity": "critical"},
 		}}
 
-		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
