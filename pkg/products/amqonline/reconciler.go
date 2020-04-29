@@ -568,8 +568,8 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 		Namespace: r.Config.GetNamespace(),
 		Name:      string(r.Config.GetProductName()),
 		BackendSecret: resources.BackupSecretLocation{
-			Name: r.Config.GetBackupsSecretName(),
-			NamespINTLY - 6726 - cust - config - CRDace: r.Config.GetNamespace(),
+			Name:      r.Config.GetBackupsSecretName(),
+			Namespace: r.Config.GetNamespace(),
 		},
 		Components: []resources.BackupComponent{
 			{
