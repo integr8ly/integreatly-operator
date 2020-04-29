@@ -188,7 +188,8 @@ cluster/prepare/osrc:
 
 .PHONY: cluster/prepare/crd
 cluster/prepare/crd:
-	- oc create -f deploy/crds/*_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmis_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -262,6 +263,7 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
+	@-oc delete crd rhmiconfigs.integreatly.org
 
 .PHONY: deploy/integreatly-rhmi-cr.yml
 deploy/integreatly-rhmi-cr.yml:
