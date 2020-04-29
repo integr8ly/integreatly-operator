@@ -124,7 +124,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 func openshiftClientSetup(url, username, password string, client *http.Client, idp string) error {
 	//oauth proxy-specific constants
 	const (
-		openshiftConsoleSubdomain = "console-openshift-console.apps."
+		approvalPromptURLElement = "approval_prompt"
 	)
 	//follow the oauth proxy flow
 	browser := surf.NewBrowser()
@@ -153,8 +153,7 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 		return fmt.Errorf("failed to submit login form on oauth proxy screen: %w", err)
 	}
 	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
-	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
-	if !strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
+	if strings.Contains(browser.Url().Host, approvalPromptURLElement) {
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
 			return fmt.Errorf("failed to get permissions form: %w", err)
