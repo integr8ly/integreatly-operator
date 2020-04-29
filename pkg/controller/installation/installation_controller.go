@@ -734,6 +734,11 @@ func (r *ReconcileInstallation) getIntegreatlyOperatorCSV(rhmiInstallPlan *olmv1
 	return rhmiCSV, nil
 }
 
+func (r *ReconcileInstallation) canUpgradeNow() bool {
+
+	return false
+}
+
 func (r *ReconcileInstallation) isRHMIUpgradeServiceAffecting(rhmiCSV *olmv1alpha1.ClusterServiceVersion) bool {
 	// Always default to the release being service affecting and requiring manual upgrade approval
 	serviceAffectingUpgrade := true
