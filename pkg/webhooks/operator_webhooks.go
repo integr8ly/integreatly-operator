@@ -2,10 +2,8 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -124,82 +121,17 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 
 	// Reconcile the webhooks
 	for _, webhook := range webhookConfig.Webhooks {
-		err := webhookConfig.reconcileValidationWebhook(ctx, client, caBundle, webhook)
+		reconciler, err := webhook.Register.GetReconciler(webhookConfig.scheme)
 		if err != nil {
 			return err
 		}
-	}
 
-	return nil
-}
+		reconciler.SetName(webhook.Name)
+		reconciler.SetRule(webhook.Rule)
 
-func (webhookConfig *IntegreatlyWebhookConfig) reconcileValidationWebhook(ctx context.Context, client k8sclient.Client, caBundle []byte, webhook IntegreatlyWebhook) error {
-	// We need to declare some parameters of the CR before as it expects pointers
-	var (
-		sideEffects    = v1beta1.SideEffectClassNone
-		port           = int32(servicePort)
-		matchPolicy    = v1beta1.Exact
-		failurePolicy  = v1beta1.Fail
-		timeoutSeconds = int32(30)
-		path, err      = webhook.Register.GetPath(webhookConfig.scheme)
-	)
-
-	if err != nil {
-		return err
-	}
-
-	// Get the ConfigMap where the CA certificate is injected
-	caConfigMap := &corev1.ConfigMap{}
-	if err := client.Get(ctx,
-		k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: "redhat-rhmi-operator"},
-		caConfigMap,
-	); err != nil {
-		return err
-	}
-
-	// Create ValidatingWebhookConfiguration CR pointing to the webhook server
-	cr := &v1beta1.ValidatingWebhookConfiguration{
-		ObjectMeta: v1.ObjectMeta{
-			Name: fmt.Sprintf("%s.integreatly.org", webhook.Name),
-		},
-	}
-
-	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
-		cr.Webhooks = []v1beta1.ValidatingWebhook{
-			{
-				Name:        fmt.Sprintf("%s-validating-config.integreatly.org", webhook.Name),
-				SideEffects: &sideEffects,
-				ClientConfig: v1beta1.WebhookClientConfig{
-					CABundle: caBundle,
-					Service: &v1beta1.ServiceReference{
-						Namespace: "redhat-rhmi-operator",
-						Name:      operatorPodServiceName,
-						Path:      &path,
-						Port:      &port,
-					},
-				},
-				Rules: []v1beta1.RuleWithOperations{
-					{
-						Operations: webhook.Rule.Operations,
-						Rule: v1beta1.Rule{
-							APIGroups:   webhook.Rule.APIGroups,
-							APIVersions: webhook.Rule.APIVersions,
-							Resources:   webhook.Rule.Resources,
-							Scope:       &webhook.Rule.Scope,
-						},
-					},
-				},
-				MatchPolicy:             &matchPolicy,
-				AdmissionReviewVersions: []string{"v1beta1"},
-				FailurePolicy:           &failurePolicy,
-				TimeoutSeconds:          &timeoutSeconds,
-			},
+		if err := reconciler.Reconcile(ctx, client, caBundle); err != nil {
+			return err
 		}
-
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 
 	return nil
