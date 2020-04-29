@@ -2,7 +2,10 @@ package common
 
 import (
 	goctx "context"
+	"encoding/json"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -90,6 +93,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 			t.Fatalf("test-failed - status code found : %d expected status code : 403 RHMI dedicated admin should be forbidden from %s secrets", resp.StatusCode, namespace)
 		}
 	}
+
+	// Verify Dedicated admin permissions around RHMI Config
+	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient, masterURL)
 }
 
 // verifies that there is at least 1 project with a prefix `openshift` , `redhat` and `kube`
@@ -107,4 +113,68 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 		}
 	}
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
+}
+
+func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, masterURL string) {
+	// Dedicated admin can LIST RHMI Config CR
+	resp, err := openshiftClient.DoOpenshiftGetRequest(masterURL, resources.PathListRHMIConfig)
+
+	if err != nil {
+		t.Errorf("failed to perform LIST request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from LIST request for rhmi config : %v", resp)
+	}
+
+	// Dedicated admin can GET RHMI Config CR
+	path := fmt.Sprintf(resources.PathGetRHMIConfig, "rhmi-config")
+
+	resp, err = openshiftClient.DoOpenshiftGetRequest(masterURL, path)
+
+	if err != nil {
+		t.Errorf("failed to perform GET request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from GET request for rhmi config : %v", resp)
+	}
+
+	// Dedicated admin can UPDATE RHMI Config CR
+	bodyBytes, err := ioutil.ReadAll(resp.Body) // Use response from GET
+
+	resp, err = openshiftClient.DoOpenshiftPutRequest(masterURL, path, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform UPDATE request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from UPDATE request for rhmi config : %v", resp)
+	}
+
+	// Dedicate admin can not CREATE new RHMI config
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
+	bodyBytes, err = json.Marshal(rhmiConfig)
+
+	resp, err = openshiftClient.DoOpenshiftPostRequest(masterURL, path, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform CREATE request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 403 {
+		t.Errorf("unexpected response from CREATE request for rhmi config : %v", resp)
+	}
+
+	// Dedicate admin can not DELETE RHMI config
+	resp, err = openshiftClient.DoOpenshiftDeleteRequest(masterURL, path)
+
+	if err != nil {
+		t.Errorf("failed to perform DELETE request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 403 {
+		t.Errorf("unexpected response from DELETE request for rhmi config : %v", resp)
+	}
 }

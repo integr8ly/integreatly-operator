@@ -32,15 +32,15 @@ func TestIntegreatly(t *testing.T) {
 				test.Test(t, testingContext)
 			})
 		}
-		for _, test := range FUNCTIONAL_TESTS {
-			t.Run(test.Description, func(t *testing.T) {
-				testingContext, err := common.NewTestingContext(config)
-				if err != nil {
-					t.Fatal("failed to create testing context", err)
-				}
-				test.Test(t, testingContext)
-			})
-		}
+		//for _, test := range FUNCTIONAL_TESTS {
+		//	t.Run(test.Description, func(t *testing.T) {
+		//		testingContext, err := common.NewTestingContext(config)
+		//		if err != nil {
+		//			t.Fatal("failed to create testing context", err)
+		//		}
+		//		test.Test(t, testingContext)
+		//	})
+		//}
 	})
 
 	// Do not execute these tests unless DESTRUCTIVE is set to true
