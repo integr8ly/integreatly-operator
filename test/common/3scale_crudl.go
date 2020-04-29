@@ -33,7 +33,7 @@ func lookup3ScaleClientSecret(client dynclient.Client, clientId string) (string,
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -54,7 +54,7 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
 
-	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, ctx.HttpClient, ctx.Client)
+	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, ctx.HttpClient, ctx.Client, t)
 
 	// First login to OpenShift
 	err = tsClient.LoginOpenshift(masterURL, threescaleLoginUser, DefaultPassword, rhmi.Spec.NamespacePrefix)

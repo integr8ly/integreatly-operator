@@ -152,6 +152,27 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
 
+	httpClient, err := NewTestingHTTPClient(kubeConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create testing http client: %v", err)
+	}
+
+	return &TestingContext{
+		Client:          dynClient,
+		KubeConfig:      kubeConfig,
+		KubeClient:      kubeclient,
+		ExtensionClient: apiextensions,
+		HttpClient:      httpClient,
+		SelfSignedCerts: selfSignedCerts,
+	}, nil
+}
+
+func NewTestingHTTPClient(kubeConfig *rest.Config) (*http.Client, error) {
+	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, http.DefaultClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
+	}
+
 	// Create the http client with a cookie jar
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
@@ -168,14 +189,7 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return nil },
 	}
 
-	return &TestingContext{
-		Client:          dynClient,
-		KubeConfig:      kubeConfig,
-		KubeClient:      kubeclient,
-		ExtensionClient: apiextensions,
-		HttpClient:      httpClient,
-		SelfSignedCerts: selfSignedCerts,
-	}, nil
+	return httpClient, nil
 }
 
 func HasSelfSignedCerts(url string, httpClient *http.Client) (bool, error) {

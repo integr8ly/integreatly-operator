@@ -13,10 +13,10 @@ var (
 	fuseLoginPassword = DefaultPassword
 )
 
-func loginOpenshift(ctx *TestingContext, masterUrl, username, password, namespacePrefix string) error {
+func loginOpenshift(t *testing.T, ctx *TestingContext, masterUrl, username, password, namespacePrefix string) error {
 	authUrl := fmt.Sprintf("%s/auth/login", masterUrl)
 
-	if err := resources.DoAuthOpenshiftUser(authUrl, username, password, ctx.HttpClient, "testing-idp"); err != nil {
+	if err := resources.DoAuthOpenshiftUser(authUrl, username, password, ctx.HttpClient, "testing-idp", t); err != nil {
 		return err
 	}
 
@@ -30,7 +30,7 @@ func loginOpenshift(ctx *TestingContext, masterUrl, username, password, namespac
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -44,7 +44,7 @@ func TestFuseCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	// Get the fuse host url from the rhmi status
 	fuseHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.ProductFuse].Host
 
-	err = loginOpenshift(ctx, masterURL, fuseLoginUser, fuseLoginPassword, rhmi.Spec.NamespacePrefix)
+	err = loginOpenshift(t, ctx, masterURL, fuseLoginUser, fuseLoginPassword, rhmi.Spec.NamespacePrefix)
 	if err != nil {
 		t.Fatalf("error logging into openshift: %v", err)
 	}

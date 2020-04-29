@@ -31,15 +31,17 @@ type ThreeScaleAPIClientImpl struct {
 	token        string
 	keycloakHost string
 	redirectUrl  string
+	logger       SimpleLogger
 }
 
-func NewThreeScaleAPIClient(host, keycloakHost, redirectUrl string, client *http.Client, kubeClient k8sclient.Client) ThreeScaleAPIClient {
+func NewThreeScaleAPIClient(host, keycloakHost, redirectUrl string, client *http.Client, kubeClient k8sclient.Client, logger SimpleLogger) ThreeScaleAPIClient {
 	return &ThreeScaleAPIClientImpl{
 		host:         host,
 		client:       client,
 		kubeClient:   kubeClient,
 		keycloakHost: keycloakHost,
 		redirectUrl:  redirectUrl,
+		logger:       logger,
 	}
 }
 
@@ -79,7 +81,7 @@ func (r *ThreeScaleAPIClientImpl) Login3Scale(clientSecret string) error {
 
 func (r *ThreeScaleAPIClientImpl) LoginOpenshift(masterUrl, username, password, namespacePrefix string) error {
 	authUrl := fmt.Sprintf("%s/auth/login", masterUrl)
-	if err := DoAuthOpenshiftUser(authUrl, username, password, r.client, "testing-idp"); err != nil {
+	if err := DoAuthOpenshiftUser(authUrl, username, password, r.client, "testing-idp", r.logger); err != nil {
 		return err
 	}
 

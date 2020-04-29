@@ -20,7 +20,7 @@ const (
 
 func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	//reconcile idp setup
-	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatal("failed to reconcile testing idp", err)
 	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
@@ -37,7 +37,7 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	}
 	//retrieve an openshift oauth proxy cookie
 	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err := resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
+	if err := resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
 		t.Fatal("failed to login through openshift oauth proxy", err)
 	}
 
@@ -57,14 +57,13 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 		dumpResp, _ := httputil.DumpResponse(successResp, true)
 		t.Logf("dumpResp: %q", dumpResp)
 
-		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-6738")
-		//t.Fatalf("unexpected status code on success request, got=%+v", successResp)
+		t.Fatalf("unexpected status code on success request, got=%+v", successResp)
 	}
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	//reconcile idp setup
-	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatal("failed to reconcile testing idp", err)
 	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
@@ -73,9 +72,8 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	}
 	//retrieve an openshift oauth proxy cookie
 	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
-		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-7267", err)
-		// t.Fatal("failed to login through openshift oauth proxy", err)
+	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
+		t.Fatal("failed to login through openshift oauth proxy", err)
 	}
 	//get dashboards for grafana from the external route
 	grafanaDashboardsUrl := fmt.Sprintf("%s/api/search", grafanaRootHostname)
