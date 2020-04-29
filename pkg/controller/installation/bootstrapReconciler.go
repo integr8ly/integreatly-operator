@@ -74,6 +74,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileRHMIConfigPermissions(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config dedicated admin permissions", err)
+		return phase, err
+	}
+
 	phase, err = r.retrieveConsoleURLAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
@@ -295,6 +301,54 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 
+}
+
+func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	configRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmiconfig-dedicated-admins-role",
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRole, func() error {
+		configRole.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups:     []string{"integreatly.org"},
+				Resources:     []string{"rhmiconfigs"},
+				Verbs:         []string{"update", "get", "list"},
+			},
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role: %w", err)
+	}
+
+	configRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmiconfig-dedicated-admins-role-binding",
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRoleBinding, func() error {
+		configRoleBinding.RoleRef = rbacv1.RoleRef{
+			Name: configRole.GetName(),
+			Kind: "Role",
+		}
+		configRoleBinding.Subjects = []rbacv1.Subject{
+			{
+				Name: "dedicated-admins",
+				Kind: "Group",
+			},
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role binding: %w", err)
+	}
+	logrus.Info("Created RHMI config dedicated admin Role and Role Binding successfully reconciled")
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func generateSecret(length int) string {
