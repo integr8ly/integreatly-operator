@@ -36,7 +36,9 @@ func TestReconcile(t *testing.T) {
 					ForCreate().
 					ForUpdate().
 					NamespacedScope(),
-				Validator: &mockValidator{},
+				Register: ObjectWebhookRegister{
+					&mockValidator{},
+				},
 			},
 		},
 	}

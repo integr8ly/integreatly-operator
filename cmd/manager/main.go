@@ -206,9 +206,11 @@ func setupWebhooks(mgr manager.Manager) error {
 	// As reference for adding webhooks. This must be called before `SetupServer`.
 	// It can also be called from the `init()` function of any package
 	//
-	// webhooks.Settings.AddWebhook(webhooks.IntegreatlyWebhook{
-	// 	Name:      "rhmi",
-	// 	Validator: &integreatlyv1alpha1.RHMI{},
+	// webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+	// 	Name: "rhmi",
+	// 	Register: webhooks.ObjectWebhookRegister{
+	// 		Object: &integreatlyv1alpha1.RHMI{},
+	// 	},
 	// 	Rule: webhooks.NewRule().
 	// 		OneResource("integreatly.org", "v1alpha1", "rhmis").
 	// 		ForCreate().

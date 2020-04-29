@@ -3,7 +3,6 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"k8s.io/api/admissionregistration/v1beta1"
@@ -14,10 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // IntegreatlyWebhookConfig contains the data and logic to setup the webhooks
@@ -44,8 +41,8 @@ type IntegreatlyWebhook struct {
 	// Rule for the webhook to be triggered
 	Rule RuleWithOperations
 
-	// Implementation of the `Validator` interface that performs the validation
-	Validator admission.Validator
+	// Register for the webhook into the server
+	Register WebhookRegister
 }
 
 const (
@@ -87,7 +84,8 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 	bldr := builder.WebhookManagedBy(mgr)
 
 	for _, webhook := range webhookConfig.Webhooks {
-		bldr = bldr.For(webhook.Validator)
+		bldr = webhook.Register.RegisterToBuilder(bldr)
+		webhook.Register.RegisterToServer(webhookConfig.scheme, webhookServer)
 	}
 
 	bldr.Complete()
@@ -143,7 +141,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) reconcileValidationWebhook(ctx co
 		matchPolicy    = v1beta1.Exact
 		failurePolicy  = v1beta1.Fail
 		timeoutSeconds = int32(30)
-		path, err      = webhookConfig.getPath(webhook)
+		path, err      = webhook.Register.GetPath(webhookConfig.scheme)
 	)
 
 	if err != nil {
@@ -240,17 +238,4 @@ func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.
 // starting the server as it registers the endpoints for the validation
 func (webhookConfig *IntegreatlyWebhookConfig) AddWebhook(webhook IntegreatlyWebhook) {
 	webhookConfig.Webhooks = append(webhookConfig.Webhooks, webhook)
-}
-
-// Copied from unexported implementation on controller-runtime/pkg/builder/webhook.go
-func (webhookConfig *IntegreatlyWebhookConfig) getPath(webhook IntegreatlyWebhook) (string, error) {
-	gvk, err := apiutil.GVKForObject(webhook.Validator, webhookConfig.scheme)
-	if err != nil {
-		return "", err
-	}
-
-	path := "/validate-" + strings.Replace(gvk.Group, ".", "-", -1) + "-" +
-		gvk.Version + "-" + strings.ToLower(gvk.Kind)
-
-	return path, nil
 }
