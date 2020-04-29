@@ -15,7 +15,7 @@ import (
 )
 
 // IntegreatlyWebhookConfig contains the data and logic to setup the webhooks
-// server of a given Manager implementation, and to reconcile ValidatingWebhookConfiguration
+// server of a given Manager implementation, and to reconcile webhook configuration
 // CRs pointing to the server.
 type IntegreatlyWebhookConfig struct {
 	scheme *runtime.Scheme

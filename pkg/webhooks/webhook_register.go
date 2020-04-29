@@ -146,7 +146,7 @@ func (awr AdmissionWebhookRegister) RegisterToServer(scheme *runtime.Scheme, srv
 }
 
 // GetReconciler creates a reconciler for awr's given Path and Type
-func (awr AdmissionWebhookRegister) GetReconciler() (WebhookReconciler, error) {
+func (awr AdmissionWebhookRegister) GetReconciler(_ *runtime.Scheme) (WebhookReconciler, error) {
 	switch awr.Type {
 	case ValidatingType:
 		return &ValidatingWebhookReconciler{

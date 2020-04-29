@@ -203,20 +203,20 @@ func serveCRMetrics(cfg *rest.Config) error {
 }
 
 func setupWebhooks(mgr manager.Manager) error {
-	// As reference for adding webhooks. This must be called before `SetupServer`.
-	// It can also be called from the `init()` function of any package
-	//
-	// webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
-	// 	Name: "rhmi",
-	// 	Register: webhooks.ObjectWebhookRegister{
-	// 		Object: &integreatlyv1alpha1.RHMI{},
-	// 	},
-	// 	Rule: webhooks.NewRule().
-	// 		OneResource("integreatly.org", "v1alpha1", "rhmis").
-	// 		ForCreate().
-	// 		ForUpdate().
-	// 		NamespacedScope(),
-	// })
+	rhmiConfigRegister, err := webhooks.WebhookRegisterFor(&integreatlyv1alpha1.RHMIConfig{})
+	if err != nil {
+		return err
+	}
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name:     "rhmiconfig",
+		Register: rhmiConfigRegister,
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForCreate().
+			ForUpdate().
+			NamespacedScope(),
+	})
 
 	if err := webhooks.Config.SetupServer(mgr); err != nil {
 		return err
