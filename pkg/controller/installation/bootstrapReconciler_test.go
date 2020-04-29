@@ -21,7 +21,7 @@ func TestReconciler_reconcileRHMIConfigPermissions(t *testing.T) {
 	_ = rbacv1.SchemeBuilder.AddToScheme(scheme)
 
 	tests := []struct {
-		Name    string
+		Name           string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
 		FakeConfig     *config.ConfigReadWriterMock
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
@@ -36,11 +36,11 @@ func TestReconciler_reconcileRHMIConfigPermissions(t *testing.T) {
 					return "test-namespace"
 				},
 			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.RHMI{},
-			Recorder: record.NewFakeRecorder(50),
+			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
+			Recorder:       record.NewFakeRecorder(50),
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
+			FakeClient:     fakeclient.NewFakeClientWithScheme(scheme),
 		},
 		{
 			Name: "Test - error in creating role and role binding",
@@ -49,9 +49,9 @@ func TestReconciler_reconcileRHMIConfigPermissions(t *testing.T) {
 					return "test-namespace"
 				},
 			},
-			FakeMPM: &marketplace.MarketplaceInterfaceMock{},
-			Installation: &integreatlyv1alpha1.RHMI{},
-			Recorder: record.NewFakeRecorder(50),
+			FakeMPM:        &marketplace.MarketplaceInterfaceMock{},
+			Installation:   &integreatlyv1alpha1.RHMI{},
+			Recorder:       record.NewFakeRecorder(50),
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
 				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {

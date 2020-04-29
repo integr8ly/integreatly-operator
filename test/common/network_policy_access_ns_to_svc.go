@@ -2,17 +2,13 @@ package common
 
 import (
 	goctx "context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
-	"net/http/cookiejar"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
-	"golang.org/x/net/publicsuffix"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -33,23 +29,6 @@ const (
 )
 
 func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
-	// declare transport
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
-	}
-
-	// declare new cookie jar om nom nom
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		t.Fatal("error occurred creating a new cookie jar", err)
-	}
-
-	// declare http client
-	httpClient := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
@@ -63,26 +42,26 @@ func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
 	masterURL := rhmi.Spec.MasterURL
 
 	// get dedicated admin token
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, httpClient, TestingIDPRealm, t); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 
-	openshiftClient := &resources.OpenshiftClient{HTTPClient: httpClient}
+	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// creating a project as dedicated-admin
-	_, err = createProject(ctx, masterURL, openshiftClient)
+	_, err = createProject(ctx, openshiftClient)
 	if err != nil {
 		t.Fatalf("error occured while creating a project: %v", err)
 	}
 
 	// creating service as dedicated-admin
-	serviceCR, err := createService(ctx, masterURL, openshiftClient)
+	serviceCR, err := createService(ctx, openshiftClient)
 	if err != nil {
 		t.Fatalf("error occured while creating a service: %v", err)
 	}
 
 	// creating pod as dedicated-admin
-	podCR, err := createPodWithAnEndpoint(ctx, masterURL, openshiftClient)
+	podCR, err := createPodWithAnEndpoint(ctx, openshiftClient)
 	if err != nil {
 		t.Fatalf("error occured while creating a pod: %v", err)
 	}
@@ -121,7 +100,7 @@ func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
 }
 
 // creating project as dedicated admin
-func createProject(ctx *TestingContext, openshiftAPIURL string, openshiftClient *resources.OpenshiftClient) (*projectv1.ProjectRequest, error) {
+func createProject(ctx *TestingContext, openshiftClient *resources.OpenshiftClient) (*projectv1.ProjectRequest, error) {
 	projectCR := &projectv1.ProjectRequest{
 		ObjectMeta: v1.ObjectMeta{
 			Name: projectName,
@@ -133,7 +112,7 @@ func createProject(ctx *TestingContext, openshiftAPIURL string, openshiftClient 
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, fmt.Errorf("error occured while retrieving a project: %v", err)
 	} else if k8serr.IsNotFound(err) {
-		if err := openshiftClient.DoOpenshiftCreateProject(openshiftAPIURL, projectCR); err != nil {
+		if err := openshiftClient.DoOpenshiftCreateProject(projectCR); err != nil {
 			return nil, fmt.Errorf("error occured while making request to create a project: %v", err)
 		}
 	}
@@ -142,7 +121,7 @@ func createProject(ctx *TestingContext, openshiftAPIURL string, openshiftClient 
 }
 
 // creates service as dedicated-admin
-func createService(ctx *TestingContext, openshiftAPIURL string, openshiftClient *resources.OpenshiftClient) (*corev1.Service, error) {
+func createService(ctx *TestingContext, openshiftClient *resources.OpenshiftClient) (*corev1.Service, error) {
 	serviceCR := &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      serviceName,
@@ -166,7 +145,7 @@ func createService(ctx *TestingContext, openshiftAPIURL string, openshiftClient 
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, fmt.Errorf("error occured while retrieving service %s : %v", serviceCR.GetName(), err)
 	} else if k8serr.IsNotFound(err) {
-		err = openshiftClient.DoOpenshiftCreateServiceInANamespace(openshiftAPIURL, projectName, serviceCR)
+		err = openshiftClient.DoOpenshiftCreateServiceInANamespace(projectName, serviceCR)
 		if err != nil {
 			return nil, fmt.Errorf("error occured while making request to create service %s : %v", serviceCR.GetName(), err)
 		}
@@ -175,7 +154,7 @@ func createService(ctx *TestingContext, openshiftAPIURL string, openshiftClient 
 	return serviceCR, nil
 }
 
-func createPodWithAnEndpoint(ctx *TestingContext, openshiftAPIURL string, openshiftClient *resources.OpenshiftClient) (*corev1.Pod, error) {
+func createPodWithAnEndpoint(ctx *TestingContext, openshiftClient *resources.OpenshiftClient) (*corev1.Pod, error) {
 
 	podCR := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -211,7 +190,7 @@ func createPodWithAnEndpoint(ctx *TestingContext, openshiftAPIURL string, opensh
 	if err != nil && !k8serr.IsNotFound(err) {
 		return nil, fmt.Errorf("error occured while retrieving pod %s : %v", podCR.GetName(), err)
 	} else if k8serr.IsNotFound(err) {
-		err = openshiftClient.DoOpenshiftCreatePodInANamespace(openshiftAPIURL, projectName, podCR)
+		err = openshiftClient.DoOpenshiftCreatePodInANamespace(projectName, podCR)
 		if err != nil {
 			return nil, fmt.Errorf("error occured while making request to create pod %s : %v", podCR.GetName(), err)
 		}

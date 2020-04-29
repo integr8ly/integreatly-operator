@@ -95,7 +95,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// Verify Dedicated admin permissions around RHMI Config
-	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient, masterURL)
+	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 }
 
 // verifies that there is at least 1 project with a prefix `openshift` , `redhat` and `kube`
@@ -115,9 +115,9 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
 }
 
-func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, masterURL string) {
+func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	// Dedicated admin can LIST RHMI Config CR
-	resp, err := openshiftClient.DoOpenshiftGetRequest(masterURL, resources.PathListRHMIConfig)
+	resp, err := openshiftClient.DoOpenshiftGetRequest(resources.PathListRHMIConfig)
 
 	if err != nil {
 		t.Errorf("failed to perform LIST request for rhmi config with error : %s", err)
@@ -130,7 +130,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	// Dedicated admin can GET RHMI Config CR
 	path := fmt.Sprintf(resources.PathGetRHMIConfig, "rhmi-config")
 
-	resp, err = openshiftClient.DoOpenshiftGetRequest(masterURL, path)
+	resp, err = openshiftClient.DoOpenshiftGetRequest(path)
 
 	if err != nil {
 		t.Errorf("failed to perform GET request for rhmi config with error : %s", err)
@@ -143,7 +143,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	// Dedicated admin can UPDATE RHMI Config CR
 	bodyBytes, err := ioutil.ReadAll(resp.Body) // Use response from GET
 
-	resp, err = openshiftClient.DoOpenshiftPutRequest(masterURL, path, bodyBytes)
+	resp, err = openshiftClient.DoOpenshiftPutRequest(path, bodyBytes)
 
 	if err != nil {
 		t.Errorf("failed to perform UPDATE request for rhmi config with error : %s", err)
@@ -157,7 +157,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
 	bodyBytes, err = json.Marshal(rhmiConfig)
 
-	resp, err = openshiftClient.DoOpenshiftPostRequest(masterURL, path, bodyBytes)
+	resp, err = openshiftClient.DoOpenshiftPostRequest(path, bodyBytes)
 
 	if err != nil {
 		t.Errorf("failed to perform CREATE request for rhmi config with error : %s", err)
@@ -168,7 +168,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	}
 
 	// Dedicate admin can not DELETE RHMI config
-	resp, err = openshiftClient.DoOpenshiftDeleteRequest(masterURL, path)
+	resp, err = openshiftClient.DoOpenshiftDeleteRequest(path)
 
 	if err != nil {
 		t.Errorf("failed to perform DELETE request for rhmi config with error : %s", err)

@@ -314,14 +314,14 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRole, func() error {
 		configRole.Rules = []rbacv1.PolicyRule{
 			{
-				APIGroups:     []string{"integreatly.org"},
-				Resources:     []string{"rhmiconfigs"},
-				Verbs:         []string{"update", "get", "list"},
+				APIGroups: []string{"integreatly.org"},
+				Resources: []string{"rhmiconfigs"},
+				Verbs:     []string{"update", "get", "list"},
 			},
 		}
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error creating Github OAuth secrets role: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role: %w", err)
 	}
 
 	configRoleBinding := &rbacv1.RoleBinding{
