@@ -688,7 +688,7 @@ spec:
                 - name: "FS_GROUP_FALLBACK_MAP"
                   value: "{}"
                 - name: ENABLE_MONITORING
-                  value: "false"
+                  value: "true"
                 - name: CONSOLE_LINK_SECTION_NAME
                   value: "Red Hat Integration"
                 - name: CONSOLE_LINK_NAME
