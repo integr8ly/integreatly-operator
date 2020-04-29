@@ -96,7 +96,6 @@ var (
 				integreatlyv1alpha1.ProductCodeReadyWorkspaces: {Name: integreatlyv1alpha1.ProductCodeReadyWorkspaces},
 				integreatlyv1alpha1.ProductAMQOnline:           {Name: integreatlyv1alpha1.ProductAMQOnline},
 				integreatlyv1alpha1.Product3Scale:              {Name: integreatlyv1alpha1.Product3Scale},
-				integreatlyv1alpha1.ProductAMQStreams:          {Name: integreatlyv1alpha1.ProductAMQStreams},
 				integreatlyv1alpha1.ProductRHSSOUser:           {Name: integreatlyv1alpha1.ProductRHSSOUser},
 				integreatlyv1alpha1.ProductUps:                 {Name: integreatlyv1alpha1.ProductUps},
 				integreatlyv1alpha1.ProductApicurito:           {Name: integreatlyv1alpha1.ProductApicurito},
