@@ -13,6 +13,8 @@ spec:
     listKind: AddressSpacePlanList
     singular: addressspaceplan
     plural: addressspaceplans
+    categories:
+    - enmasse
   versions:
     - name: v1beta2
       served: true
@@ -23,14 +25,39 @@ spec:
     - name: v1alpha1
       served: true
       storage: false
+  additionalPrinterColumns:
+  - name: Phase
+    type: string
+    priority: 0
+    description: The phase of the address space plan
+    JSONPath: .status.phase
+  - name: Status
+    type: string
+    priority: 1
+    description: The status of the address space plan
+    JSONPath: .status.message
+  - name: Age
+    priority: 0
+    type: date
+    JSONPath: .metadata.creationTimestamp
   validation:
     openAPIV3Schema:
+      type: object
+      description: AddressSpacePlan describes the allowed resource usage of an address space. This resource is created by the service administrator.
       properties:
+        status:
+          properties:
+            phase:
+              type: string
+              description: "Phase of the address space plan."
+            message:
+              type: string
+              description: "Status and error messages for the address space plan."
         spec:
           type: object
           required:
             - addressSpaceType
-            - resourceLimits
+            - resourceLimits 
             - addressPlans
             - infraConfigRef
           properties:
@@ -76,8 +103,8 @@ spec:
           items:
             type: object
             required:
-              - name
-              - max
+            - name
+            - max
             properties:
               name:
                 type: string

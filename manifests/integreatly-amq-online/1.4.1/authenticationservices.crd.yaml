@@ -13,8 +13,27 @@ spec:
     listKind: AuthenticationServiceList
     singular: authenticationservice
     plural: authenticationservices
+    categories:
+    - enmasse
+  additionalPrinterColumns:
+  - name: Phase
+    type: string
+    priority: 0
+    description: The phase of the authentication service
+    JSONPath: .status.phase
+  - name: Status
+    type: string
+    priority: 1
+    description: The status of the authentication service
+    JSONPath: .status.message
+  - name: Age
+    priority: 0
+    type: date
+    JSONPath: .metadata.creationTimestamp
   validation:
     openAPIV3Schema:
+      type: object
+      description: AuthenticationService describes a service that can be used for authenticating messaging clients for one or more address spaces. This resource is created by the service administrator.
       properties:
         spec:
           type: object
@@ -155,6 +174,8 @@ spec:
                           type: string
                         namespace:
                           type: string
+                securityContext:
+                  type: object
             external:
               type: object
               required:
@@ -184,6 +205,12 @@ spec:
         status:
           type: object
           properties:
+            phase:
+              type: string
+              description: "Phase of the authentication service."
+            message:
+              type: string
+              description: "Status and error messages for the authentication service."
             host:
               type: string
             port:
