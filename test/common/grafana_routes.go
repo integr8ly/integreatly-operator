@@ -3,14 +3,16 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httputil"
-	"testing"
-
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"net/http"
+	"net/http/httputil"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"testing"
+	"time"
 )
 
 const (
@@ -50,16 +52,36 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
 	}
+
+	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+		if err != nil {
+			t.Logf("attempted to check for 200 status, got %s, retrying", err)
+			return done, nil
+		}
+		return checkHTTPResponseForOKStatus(successResp)
+	})
 	defer successResp.Body.Close()
-	if successResp.StatusCode != http.StatusOK {
+	if err != nil {
+		t.Fatalf("failed to get status 200 from HTTP response")
 		dumpReq, _ := httputil.DumpRequest(req, true)
 		t.Logf("dumpReq: %q", dumpReq)
 		dumpResp, _ := httputil.DumpResponse(successResp, true)
 		t.Logf("dumpResp: %q", dumpResp)
 
-		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-6738")
-		//t.Fatalf("unexpected status code on success request, got=%+v", successResp)
+		//t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-6738")
+		t.Fatalf("unexpected status code on success request, got=%+v", successResp)
 	}
+
+}
+
+func checkHTTPResponseForOKStatus(res *http.Response) (done bool, err error) {
+	if res.StatusCode != http.StatusOK {
+		return false, nil
+	}
+	if res.StatusCode == http.StatusNotFound {
+		return true, errors.New(string(res.StatusCode))
+	}
+	return true, nil
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
