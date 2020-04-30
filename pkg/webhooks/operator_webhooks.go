@@ -2,8 +2,10 @@ package webhooks
 
 import (
 	"context"
+	"os"
 	"time"
 
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,6 +74,10 @@ var Config *IntegreatlyWebhookConfig = &IntegreatlyWebhookConfig{
 // webhookConfig. It sets the port and cert dir based on the settings and
 // registers the Validator implementations from each webhook from webhookConfig.Webhooks
 func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) error {
+	if !enabled() {
+		return nil
+	}
+
 	webhookServer := mgr.GetWebhookServer()
 	webhookServer.Port = webhookConfig.Port
 	webhookServer.CertDir = webhookConfig.CertDir
@@ -96,6 +102,10 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 // It assumes the injection of the CA that signs the TLS certificates into a ConfigMap
 // to be stored in the `ValidationWebhookConfiguration`
 func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, client k8sclient.Client) error {
+	if !enabled() {
+		return nil
+	}
+
 	// Create (if it doesn't exist) the config map where the CA certificate is
 	// injected
 	caConfigMap := &corev1.ConfigMap{
@@ -170,4 +180,11 @@ func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.
 // starting the server as it registers the endpoints for the validation
 func (webhookConfig *IntegreatlyWebhookConfig) AddWebhook(webhook IntegreatlyWebhook) {
 	webhookConfig.Webhooks = append(webhookConfig.Webhooks, webhook)
+}
+
+func enabled() bool {
+	// The webhooks feature can't work when the operator runs locally, as it
+	// needs to be accessible by kubernetes and depends on the TLS certificates
+	// being mounted
+	return os.Getenv(k8sutil.ForceRunModeEnv) != string(k8sutil.LocalRunMode)
 }
