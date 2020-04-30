@@ -68,7 +68,8 @@ func (r *Reconciler) reconcileBackupMonitoringAlerts(ctx context.Context, server
 			Expr:   intstr.FromString("clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0"),
 			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
-		}}
+		},
+	}
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
@@ -220,7 +221,8 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Expr:   intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
-		}}
+		},
+	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
@@ -261,7 +263,8 @@ func (r *Reconciler) reconcileKubeStateMetricsMonitoringAlerts(ctx context.Conte
 			Expr:   intstr.FromString("(1 - absent(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'}) != 7"),
 			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
-		}}
+		},
+	}
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
