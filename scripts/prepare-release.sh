@@ -39,4 +39,9 @@ if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   set_version
 fi
 
+# Include the webhook service in the bundle (temporal solution as OLM will soon
+# support webhooks as part of the CSV:
+# https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/contributors/design-proposals/webhooks.md
+cp deploy/webhook-service.yaml deploy/olm-catalog/integreatly-operator/$VERSION/webhook-service.yaml
+
 set_images

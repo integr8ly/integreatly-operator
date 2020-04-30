@@ -141,7 +141,7 @@ test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
-test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd cluster/prepare/service deploy/integreatly-rhmi-cr.yml
 	 export SURF_DEBUG_HEADERS=1
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
@@ -171,7 +171,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/service cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
@@ -197,7 +197,7 @@ cluster/prepare/service:
 	- oc create -f deploy/webhook-service.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/service cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml
