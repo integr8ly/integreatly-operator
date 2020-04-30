@@ -6,11 +6,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/headzoo/surf/errors"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"gopkg.in/headzoo/surf.v1"
@@ -48,7 +46,7 @@ type CallbackOptions struct {
 }
 
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
-func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client, idp string) error {
+func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client, idp string, l SimpleLogger) error {
 	parsedURL, err := url.Parse(authPageURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse url %s: %w", authPageURL, err)
@@ -56,29 +54,11 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 	if parsedURL.Scheme == "" {
 		authPageURL = fmt.Sprintf("https://%s", authPageURL)
 	}
-	if err := openshiftClientSetup(authPageURL, username, password, httpClient, idp); err != nil {
+	l.Log("Performing OpenShift HTTP client setup with URL", authPageURL)
+	if err := openshiftClientSetup(authPageURL, username, password, httpClient, idp, l); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
 	return nil
-}
-
-func OpenshiftIDPCheck(t *testing.T, url string, client *http.Client, idp string) (bool, error) {
-	browser := surf.NewBrowser()
-	browser.SetTransport(client.Transport)
-	t.Logf("Attempting to open browser with url: %s", url)
-	if err := browser.Open(url); err != nil {
-		return false, fmt.Errorf("failed to open browser url: %w", err)
-	}
-	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
-		selection.SetHtml(selection.Text())
-	})
-	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		if _, ok := err.(errors.ElementNotFound); ok {
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to get idp anchor tag element: %w", err)
-	}
-	return true, nil
 }
 
 /*
@@ -121,10 +101,10 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 }
 
 //openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
-func openshiftClientSetup(url, username, password string, client *http.Client, idp string) error {
+func openshiftClientSetup(url, username, password string, client *http.Client, idp string, l SimpleLogger) error {
 	//oauth proxy-specific constants
 	const (
-		openshiftConsoleSubdomain = "console-openshift-console.apps."
+		openshiftConsoleSubdomain = "oauth-openshift."
 	)
 	//follow the oauth proxy flow
 	browser := surf.NewBrowser()
@@ -136,9 +116,11 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
+	l.Log("Clicking IDP link on page", browser.Url().Host, browser.Body())
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
+	l.Log("Filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {
 		return fmt.Errorf("failed to get login form from oauth proxy screen: %w", err)
@@ -154,7 +136,8 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 	}
 	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
 	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
-	if !strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
+	if strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
+		l.Log("Looking for permissions form on page", browser.Url().Host, browser.Body())
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
 			return fmt.Errorf("failed to get permissions form: %w", err)

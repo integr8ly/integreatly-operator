@@ -97,7 +97,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	t.Log("Test codeready workspace creation")
 
 	// Ensure testing-idp is available
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("failed to create testing idp: %v", err)
 	}
 
@@ -114,7 +114,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	redirectUrl := fmt.Sprintf("%v/dashboard/", cheHost)
 
 	// login to openshift
-	loginClient := resources.NewCodereadyLoginClient(ctx.HttpClient, ctx.Client, masterURL, TestingIDPRealm, username, password)
+	loginClient := resources.NewCodereadyLoginClient(ctx.HttpClient, ctx.Client, masterURL, TestingIDPRealm, username, password, t)
 	if err := loginClient.OpenshiftLogin(rhmi.Spec.NamespacePrefix); err != nil {
 		t.Fatalf("failed to login to openshift: %v", err)
 	}

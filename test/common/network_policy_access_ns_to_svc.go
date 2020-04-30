@@ -50,7 +50,7 @@ func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
 		Jar:       jar,
 	}
 
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -63,7 +63,7 @@ func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {
 	masterURL := rhmi.Spec.MasterURL
 
 	// get dedicated admin token
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, httpClient, TestingIDPRealm); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, httpClient, TestingIDPRealm, t); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
 

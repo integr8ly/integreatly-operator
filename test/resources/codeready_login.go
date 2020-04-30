@@ -28,9 +28,10 @@ type CodereadyLoginClient struct {
 	IdpName    string
 	Username   string
 	Password   string
+	Logger     SimpleLogger
 }
 
-func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, masterUrl, idp, username, password string) *CodereadyLoginClient {
+func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, masterUrl, idp, username, password string, logger SimpleLogger) *CodereadyLoginClient {
 	return &CodereadyLoginClient{
 		HttpClient: httpClient,
 		Client:     client,
@@ -38,13 +39,14 @@ func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, m
 		IdpName:    idp,
 		Username:   username,
 		Password:   password,
+		Logger:     logger,
 	}
 }
 
 // Login user to openshift and wait for the user to be reconciled to the openshift realm in keycloak
 func (c *CodereadyLoginClient) OpenshiftLogin(namespacePrefix string) error {
 	authUrl := fmt.Sprintf("%s/auth/login", c.MasterUrl)
-	if err := DoAuthOpenshiftUser(authUrl, c.Username, c.Password, c.HttpClient, c.IdpName); err != nil {
+	if err := DoAuthOpenshiftUser(authUrl, c.Username, c.Password, c.HttpClient, c.IdpName, c.Logger); err != nil {
 		return err
 	}
 

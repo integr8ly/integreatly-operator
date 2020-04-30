@@ -2,8 +2,7 @@ package common
 
 import (
 	"fmt"
-	"io"
-	"net/http"
+	"k8s.io/client-go/rest"
 	"testing"
 	"time"
 
@@ -40,7 +39,7 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
+func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
 	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
@@ -101,19 +100,25 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
 	// ensure the IDP is available in OpenShift
-
 	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
-		if err == io.EOF {
-			t.Logf("attempted to check OpenshiftIDP, got error: %s, ignoring and retrying", io.EOF)
-			return done, nil
+		// Use a temporary HTTP client to avoid polluting testing client
+		tempHTTPClient, err := NewTestingHTTPClient(kubeConfig)
+		if err != nil {
+			return false, fmt.Errorf("failed to create temporary client for idp setup: %w", err)
 		}
-		return resources.OpenshiftIDPCheck(t, fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
 
+		dedicatedAdminUsername := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins-1)
+		fmt.Println(fmt.Sprintf("https://%s/auth/login", masterURL))
+		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
+		if authErr != nil {
+			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
+			return false, nil
+		}
+		return true, nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to check for openshift idp: %w", err)
 	}
-
 	return nil
 }
 
