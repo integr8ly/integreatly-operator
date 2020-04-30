@@ -13,6 +13,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func TestReconcile(t *testing.T) {
@@ -38,6 +39,23 @@ func TestReconcile(t *testing.T) {
 					NamespacedScope(),
 				Register: ObjectWebhookRegister{
 					&mockValidator{},
+				},
+			},
+			{
+				Name: "test-manual",
+				Rule: NewRule().
+					OneResource("example.org", "v1", "mockvalidator").
+					ForCreate().
+					ForUpdate().
+					NamespacedScope(),
+				Register: AdmissionWebhookRegister{
+					Type: MutatingType,
+					Path: "/mutate-me",
+					Hook: &admission.Webhook{
+						Handler: admission.HandlerFunc(func(ctx context.Context, req admission.Request) admission.Response {
+							return admission.Patched("Updated")
+						}),
+					},
 				},
 			},
 		},
@@ -86,6 +104,60 @@ func TestReconcile(t *testing.T) {
 	if rule.Resources[0] != "mockvalidator" {
 		t.Errorf("Expected rule.Resources to be [\"mockvalidator\"], got %s", rule.Resources[0])
 	}
+
+	mwc, err := findMutatingWebhookConfig(client, "test")
+	if err != nil {
+		t.Fatalf("Error finding MutatingWebhookConfig 'test'")
+	}
+
+	if len(mwc.Webhooks) != 1 {
+		t.Fatalf("Expected one webhook to be registered, found %d", len(mwc.Webhooks))
+	}
+
+	mutatingWebhook := mwc.Webhooks[0]
+
+	if string(mutatingWebhook.ClientConfig.CABundle) != "TEST" {
+		t.Errorf("Expected CABundle field to be obtained from ConfigMap, but got %s", string(webhook.ClientConfig.CABundle))
+	}
+
+	rule = mutatingWebhook.Rules[0]
+
+	if rule.APIGroups[0] != "example.org" {
+		t.Errorf("Expected rule.APIGroups to be [\"example.org\"], got %s", rule.APIGroups[0])
+	}
+	if rule.APIVersions[0] != "v1" {
+		t.Errorf("Expected rule.APIVersions to be [\"v1\"], got %s", rule.APIVersions[0])
+	}
+	if rule.Resources[0] != "mockvalidator" {
+		t.Errorf("Expected rule.Resources to be [\"mockvalidator\"], got %s", rule.Resources[0])
+	}
+
+	mwc, err = findMutatingWebhookConfig(client, "test-manual")
+	if err != nil {
+		t.Fatalf("Error finding MutatingWebhookConfig 'test-manual'")
+	}
+
+	if len(mwc.Webhooks) != 1 {
+		t.Fatalf("Expected one webhook to be registered, found %d", len(mwc.Webhooks))
+	}
+
+	mutatingWebhook = mwc.Webhooks[0]
+
+	if string(mutatingWebhook.ClientConfig.CABundle) != "TEST" {
+		t.Errorf("Expected CABundle field to be obtained from ConfigMap, but got %s", string(webhook.ClientConfig.CABundle))
+	}
+
+	rule = mutatingWebhook.Rules[0]
+
+	if rule.APIGroups[0] != "example.org" {
+		t.Errorf("Expected rule.APIGroups to be [\"example.org\"], got %s", rule.APIGroups[0])
+	}
+	if rule.APIVersions[0] != "v1" {
+		t.Errorf("Expected rule.APIVersions to be [\"v1\"], got %s", rule.APIVersions[0])
+	}
+	if rule.Resources[0] != "mockvalidator" {
+		t.Errorf("Expected rule.Resources to be [\"mockvalidator\"], got %s", rule.Resources[0])
+	}
 }
 
 type mockValidator struct {
@@ -119,6 +191,9 @@ func (m *mockValidator) DeepCopyObject() runtime.Object {
 	return &mockValidator{
 		Value: m.Value,
 	}
+}
+
+func (m *mockValidator) Default() {
 }
 
 var schemeBuilder = &scheme.Builder{
@@ -176,4 +251,18 @@ func findValidatingWebhookConfig(client k8sclient.Client) (*v1beta1.ValidatingWe
 	}
 
 	return vwc, nil
+}
+
+func findMutatingWebhookConfig(client k8sclient.Client, name string) (*v1beta1.MutatingWebhookConfiguration, error) {
+	mwc := &v1beta1.MutatingWebhookConfiguration{}
+	err := client.Get(
+		context.TODO(),
+		k8sclient.ObjectKey{Name: fmt.Sprintf("%s.integreatly.org", name)},
+		mwc,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return mwc, nil
 }
