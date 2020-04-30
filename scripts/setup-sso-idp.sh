@@ -148,7 +148,7 @@ else
 fi
 
 echo "Waiting for new configuration to propagate to OpenShift OAuth pods."
-sleep 10 # give the oauth-openshift deployment a chance to start rollout of new pods
+sleep 10 # give the oauth-openshift deployment a chance to start rollout of new pods
 until ! oc get deployment oauth-openshift -n openshift-authentication -o yaml | grep -q -e unavailableReplicas; do
   echo "\"oauth-openshift\" deployment is still updating, trying again in 10s"
   sleep 10s

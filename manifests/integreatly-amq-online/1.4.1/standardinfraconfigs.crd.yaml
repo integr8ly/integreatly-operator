@@ -13,6 +13,8 @@ spec:
     listKind: StandardInfraConfigList
     singular: standardinfraconfig
     plural: standardinfraconfigs
+    categories:
+    - enmasse
   versions:
     - name: v1beta1
       served: true
@@ -22,6 +24,8 @@ spec:
       storage: false
   validation:
     openAPIV3Schema:
+      type: object
+      description: StandardInfraConfig defines configuration applied to routers and brokers for an instance of the standard address space type. This resource is created by the service administrator.
       properties:
         spec:
           type: object
@@ -62,6 +66,8 @@ spec:
                             type: object
                         priorityClassName:
                           type: string
+                        securityContext:
+                          type: object
                         containers:
                           type: array
                           items:
@@ -72,6 +78,14 @@ spec:
             broker:
               type: object
               properties:
+                minAvailable:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                maxUnavailable:
+                  anyOf:
+                  - type: integer
+                  - type: string
                 podTemplate:
                   type: object
                   properties:
@@ -89,6 +103,8 @@ spec:
                           type: array
                         priorityClassName:
                           type: string
+                        securityContext:
+                          type: object
                         resources:
                           type: object
                 resources:
@@ -98,6 +114,8 @@ spec:
                       type: string
                     storage:
                       type: string
+                javaOpts:
+                  type: string
                 addressFullPolicy:
                   type: string
                   enum:
@@ -105,6 +123,10 @@ spec:
                   - BLOCK
                   - FAIL
                   - DROP
+                globalMaxSize:
+                  pattern: "^(?i)\\d+\\s*[kmg]?b?$"
+                  type: string
+                  description: Sets a global limit to the amount of memory the broker can use before it applies the rules determined by addressFullPolicy. Value in bytes or use a byte suffix ("B", "K", "MB", "GB")
                 storageClassName:
                   type: string
                 updatePersistentVolumeClaim:
@@ -133,6 +155,8 @@ spec:
                           type: array
                         priorityClassName:
                           type: string
+                        securityContext:
+                          type: object
                         resources:
                           type: object
                 resources:
@@ -142,6 +166,14 @@ spec:
                       type: string
                 minReplicas:
                   type: integer
+                minAvailable:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                maxUnavailable:
+                  anyOf:
+                  - type: integer
+                  - type: string
                 linkCapacity:
                   type: integer
                 idleTimeout:

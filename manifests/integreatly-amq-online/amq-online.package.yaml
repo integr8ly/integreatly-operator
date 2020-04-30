@@ -1,4 +1,4 @@
 packageName: rhmi-amq-online
 channels:
 - name: rhmi
-  currentCSV: amq-online.1.4.0
+  currentCSV: amq-online.1.4.1

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -21,6 +22,10 @@ import (
 const (
 	OpenshiftAuthenticationNamespace = "openshift-authentication"
 	OpenshiftOAuthRouteName          = "oauth-openshift"
+
+	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
+	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
+	PathFusePods        = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
 )
 
 // User used to create url user query
@@ -57,9 +62,10 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 	return nil
 }
 
-func OpenshiftIDPCheck(url string, client *http.Client, idp string) (bool, error) {
+func OpenshiftIDPCheck(t *testing.T, url string, client *http.Client, idp string) (bool, error) {
 	browser := surf.NewBrowser()
 	browser.SetTransport(client.Transport)
+	t.Logf("Attempting to open browser with url: %s", url)
 	if err := browser.Open(url); err != nil {
 		return false, fmt.Errorf("failed to open browser url: %w", err)
 	}
@@ -118,7 +124,7 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 func openshiftClientSetup(url, username, password string, client *http.Client, idp string) error {
 	//oauth proxy-specific constants
 	const (
-		openshiftOauthSubdomain = "oauth-openshift."
+		openshiftConsoleSubdomain = "console-openshift-console.apps."
 	)
 	//follow the oauth proxy flow
 	browser := surf.NewBrowser()
@@ -147,7 +153,8 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 		return fmt.Errorf("failed to submit login form on oauth proxy screen: %w", err)
 	}
 	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
-	if strings.Contains(browser.Url().Host, openshiftOauthSubdomain) {
+	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
+	if !strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
 			return fmt.Errorf("failed to get permissions form: %w", err)

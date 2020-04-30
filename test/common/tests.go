@@ -6,11 +6,13 @@ package common
 var (
 	ALL_TESTS = []TestCase{
 		// Add all tests that can be executed prior to a completed installation here
-		{"Verify CRD Exists", TestIntegreatlyCRDExists},
+		{"Verify RHMI CRD Exists", TestIntegreatlyCRDExists},
+		{"Verify RHMI Config CRD Exists", TestRHMIConfigCRDExists},
 	}
 
-	AFTER_INSTALL_TESTS = []TestCase{
-		// Add all tests to be executed after RHMI installation is completed here
+	HAPPY_PATH_TESTS = []TestCase{
+		// Add all happy path tests to be executed after RHMI installation is completed here
+		{"Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
@@ -26,11 +28,18 @@ var (
 		{"Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 		{"C01 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
-		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
+		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
+		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
+		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
+		{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
+	}
+
+	DESTRUCTIVE_TESTS = []TestCase{
+		// Add all destructive tests here that should not be executed as part of the happy path tests
+		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
 	}
 )

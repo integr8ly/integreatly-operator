@@ -5,7 +5,6 @@ NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-PREVIOUS_TAG ?=2.0.0
 TAG ?= 2.1.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
@@ -134,13 +133,21 @@ test/unit:
 	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
+test/e2e/prow: export SURF_DEBUG_HEADERS=1
 test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
-test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+test/e2e:  export SURF_DEBUG_HEADERS=1
+test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+	 export SURF_DEBUG_HEADERS=1
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+
+.PHONY: test/e2e/local
+test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --up-local
+
 
 .PHONY: test/functional
 test/functional:
@@ -181,7 +188,8 @@ cluster/prepare/osrc:
 
 .PHONY: cluster/prepare/crd
 cluster/prepare/crd:
-	- oc create -f deploy/crds/*_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmis_crd.yaml
+	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -255,6 +263,7 @@ cluster/cleanup/crds:
 	@-oc delete crd grafanas.integreatly.org
 	@-oc delete crd rhmis.integreatly.org
 	@-oc delete crd webapps.integreatly.org
+	@-oc delete crd rhmiconfigs.integreatly.org
 
 .PHONY: deploy/integreatly-rhmi-cr.yml
 deploy/integreatly-rhmi-cr.yml:
@@ -276,18 +285,9 @@ else
 endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
-.PHONY: gen/csv
-gen/csv:
-	@mv deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG)
-	@rm -rf deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@$(SED_INLINE) 's/image:.*/image: quay\.io\/integreatly\/integreatly-operator:v$(TAG)/g' deploy/operator.yaml
-	$(OPERATOR_SDK) generate csv --csv-version $(TAG) --default-channel --csv-channel=rhmi --update-crds --from-version $(PREVIOUS_TAG)
-	@echo Updating package file
-	@$(SED_INLINE) 's/$(PREVIOUS_TAG)/$(TAG)/g' version/version.go
-	@$(SED_INLINE) 's/$(PREVIOUS_TAG)/$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml
-	@mv deploy/olm-catalog/integreatly-operator/$(PREVIOUS_TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(PREVIOUS_TAG)
-	@mv deploy/olm-catalog/integreatly-operator/$(TAG) deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)
-	@$(SED_INLINE) 's/integreatly-operator:v$(PREVIOUS_TAG).*/integreatly-operator:v$(TAG)/g' deploy/olm-catalog/integreatly-operator/integreatly-operator-$(TAG)/integreatly-operator.v${TAG}.clusterserviceversion.yaml
+.PHONY: release/prepare
+release/prepare:
+	@./scripts/prepare-release.sh
 
 .PHONY: push/csv
 push/csv:
@@ -295,7 +295,7 @@ push/csv:
 	-operator-courier push deploy/olm-catalog/integreatly-operator/ $(REPO) integreatly $(TAG) "$(AUTH_TOKEN)"
 
 .PHONY: gen/push/csv
-gen/push/csv: gen/csv push/csv
+gen/push/csv: release/prepare push/csv
 
 # Generate namespace names to be used in docs
 .PHONY: gen/namespaces

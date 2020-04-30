@@ -291,7 +291,7 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v2.1.0-er1
+                image: quay.io/integreatly/integreatly-operator:v2.1.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 resources: {}
@@ -401,4 +401,4 @@ spec:
     matchLabels:
       alm-owner-rhmi: rhmi-operator
       operated-by: rhmi-operator
-  version: 2.1.0-er1
+  version: 2.1.0

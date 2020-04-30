@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"testing"
@@ -134,32 +133,6 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string, 
 	return tokenResponse.AccessToken, nil
 }
 
-func dumpResponse(r *http.Response) string {
-	msg := "> Request\n"
-	bytes, err := httputil.DumpRequestOut(r.Request, false)
-	if err != nil {
-		msg += fmt.Sprintf("failed to dump the request: %s", err)
-	} else {
-		msg += string(bytes)
-	}
-	msg += "\n"
-
-	msg += "< Response\n"
-	bytes, err = httputil.DumpResponse(r, true)
-	if err != nil {
-		msg += fmt.Sprintf("failed to dump the response: %s", err)
-	} else {
-		msg += string(bytes)
-	}
-	msg += "\n"
-
-	return msg
-}
-
-func errorWithResponseDump(r *http.Response, err error) error {
-	return fmt.Errorf("%s\n\n%s", err, dumpResponse(r))
-}
-
 func parseResponse(r *http.Response) (*goquery.Document, error) {
 	// Clone the body while reading it so that in case of errors
 	// we can dump the response with the body
@@ -179,40 +152,4 @@ func parseResponse(r *http.Response) (*goquery.Document, error) {
 	})
 
 	return d, nil
-}
-
-func resolveRelativeURL(r *http.Response, relativeURL string) (string, error) {
-	u, err := url.Parse(relativeURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse the url %s: %s", relativeURL, err)
-	}
-
-	u = r.Request.URL.ResolveReference(u)
-
-	return u.String(), nil
-}
-
-func findElement(d *goquery.Document, selector string) (*goquery.Selection, error) {
-	e := d.Find(selector)
-	if e.Length() == 0 {
-		return nil, fmt.Errorf("failed to find an element matching the selector %s", selector)
-	}
-	if e.Length() > 1 {
-		return nil, fmt.Errorf("multiple element founded matching the selector %s", selector)
-	}
-
-	return e, nil
-}
-
-func getAttribute(element *goquery.Selection, name string) (string, error) {
-	v, ok := element.Attr(name)
-	if !ok {
-		e, err := element.Html()
-		if err != nil {
-			e = fmt.Sprintf("failed to get the html content: %s", err)
-		}
-
-		return "", fmt.Errorf("the element '%s' doesn't have the %s attribute", e, name)
-	}
-	return v, nil
 }

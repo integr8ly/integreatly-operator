@@ -231,9 +231,8 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 ## Release
 
 - Create `release-<release-number>` branch
-- Update `tag` and `previoustag` in makefile
-- Run `make gen/csv`
-- - Perform any manual tidying up of the generated CSV as required.
+- Run `make release/prepare SEMVER=<SEMVER>`
+    - Perform any manual tidying up of the generated CSV as required.
 - Run `make gen/namespaces` against a fully installed cluster. 
 - Make a PR against this repo
 - Get a review on PR and see e2e test pass
@@ -244,3 +243,4 @@ Run `make ocm/install/rhmi-addon` to trigger the installation. Once the installa
 - Make a release in github UI
 - Tell QE, so they can update pipelines to new release-number
 - Take CSV files from deploy/olm-catalog and make a PR to managed-tenants, make any changes as required beforehand.
+- Build the [test harness image](https://github.com/integr8ly/integreatly-operator/tree/master/test#build-functional-test-image), using the same release tag + the tag `latest-staging` and push it to quay.io

@@ -68,6 +68,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcilerRHMIConfigCR(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config", err)
+		return phase, err
+	}
+
 	phase, err = r.retrieveConsoleURLAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
@@ -107,6 +113,24 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-config",
+			Namespace: r.ConfigManager.GetOperatorNamespace(),
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiConfig, func() error {
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling the Customer Config CR: %w", err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

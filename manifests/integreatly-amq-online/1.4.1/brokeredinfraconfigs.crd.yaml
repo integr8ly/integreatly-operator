@@ -13,6 +13,8 @@ spec:
     listKind: BrokeredInfraConfigList
     singular: brokeredinfraconfig
     plural: brokeredinfraconfigs
+    categories:
+    - enmasse
   versions:
     - name: v1beta1
       served: true
@@ -22,6 +24,8 @@ spec:
       storage: false
   validation:
     openAPIV3Schema:
+      type: object
+      description: BrokeredInfraConfig defines configuration applied to brokers for an instance of the brokered address space type. This resource is created by the service administrator.
       properties:
         spec:
           type: object
@@ -57,6 +61,8 @@ spec:
                             type: object
                         priorityClassName:
                           type: string
+                        securityContext:
+                          type: object
                         containers:
                           type: array
                           items:
@@ -89,6 +95,8 @@ spec:
                           type: array
                         priorityClassName:
                           type: string
+                        securityContext:
+                          type: object
                         resources:
                           type: object
                 resources:
@@ -98,6 +106,8 @@ spec:
                       type: string
                     storage:
                       type: string
+                javaOpts:
+                  type: string
                 addressFullPolicy:
                   type: string
                   enum:
@@ -105,6 +115,10 @@ spec:
                   - BLOCK
                   - FAIL
                   - DROP
+                globalMaxSize:
+                  pattern: "^(?i)\\d+\\s*[kmg]?b?$"
+                  type: string
+                  description: Sets a global limit to the amount of memory the broker can use before it applies the rules determined by addressFullPolicy. Value in bytes or use a byte suffix ("B", "K", "MB", "GB")
                 storageClassName:
                   type: string
                 updatePersistentVolumeClaim:

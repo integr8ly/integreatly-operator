@@ -53,6 +53,7 @@ var expectedRules = []alertsTestRule{
 		Rules: []string{
 			"CronJobExists_redhat-rhmi-amq-online_enmasse-pv-backup",
 			"CronJobExists_redhat-rhmi-amq-online_enmasse-postgres-backup",
+			"CronJobExists_redhat-rhmi-amq-online_resources-backup",
 		},
 	},
 	{
@@ -212,10 +213,6 @@ var expectedRules = []alertsTestRule{
 		Rules: []string{
 			"UnifiedPushOperatorDown",
 		},
-	},
-	{
-		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
-		Rules: []string{},
 	},
 }
 
