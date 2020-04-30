@@ -18,10 +18,8 @@ NOTE: Red Hat VPN is required to access.
 In order to create patch releases, we need to make sure a release branch is created first and it is configured properly. Run the following command:
    
 ```
-delorean release openshift-ci-release --version 2.1.1-er1
+TAG=2.1.1 make prepare-patch-release
 ```
-
-Go to the [Delorean repo](https://github.com/integr8ly/delorean) to see the details of how to install and run it.
 
 The above command will create the release branch if it doesn't exist, and also update the [openshift/release](https://github.com/openshift/release) repo to update build configurations for the release branch if it's new.
 
