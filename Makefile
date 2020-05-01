@@ -14,6 +14,7 @@ OPERATOR_SDK_VERSION=0.15.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+CONTAINER_ENGINE ?= docker
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -284,6 +285,11 @@ else
 	rm deploy/integreatly-rhmi-cr.yml.bak
 endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
+
+.PHONY: prepare-patch-release
+prepare-patch-release:
+	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v "${HOME}/.delorean.yaml:/.delorean.yaml" quay.io/integreatly/delorean-cli:master delorean release openshift-ci-release --config /.delorean.yaml --version $(TAG)
 
 .PHONY: release/prepare
 release/prepare:
