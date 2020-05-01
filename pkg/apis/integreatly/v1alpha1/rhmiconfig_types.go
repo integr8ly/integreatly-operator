@@ -38,20 +38,44 @@ type RHMIConfigStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
+	//
+	// status block reflects the current configuration of the cr
+	//
+	//	status:
+	//		maintenance:
+	//			apply-from: 16-05-2020 23:00
+	//			duration: "6hrs"
+	//		upgrade:
+	//			window: "3 Jan 1980 - 17 Jan 1980"
+
 }
 
 type Upgrade struct {
-	Contacts              string `json:"contacts,omitempty"`
-	AlwaysImmediately     bool   `json:"alwaysImmediately"`
-	DuringNextMaintenance bool   `json:"duringNextMaintenance"`
-	ApplyOn               string `json:"applyOn,omitempty"`
+	// contacts: list of contacts which are comma separated
+	// "user1@example.com,user2@example.com"
+	Contacts string `json:"contacts,omitempty"`
+	// always-immediately: boolean value, if set to true an upgrade will be applied as soon as it is available,
+	// whether service affecting or not.
+	// This takes precedences over all other options
+	AlwaysImmediately bool `json:"alwaysImmediately"`
+	// during-next-maintenance: boolean value, if set to true an upgrade will be applied within the next maintenance window.
+	// Takes precedence over apply-on
+	DuringNextMaintenance bool `json:"duringNextMaintenance"`
+	// apply-on: string date value. If 'always-immediately' or 'during-next-maintenance' is not set the customer is
+	// required to pick a time for the upgrade. Time value will be validated by a webhook and reset to blank after
+	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". Timezone local to cluster.
+	ApplyOn string `json:"applyOn,omitempty"`
 }
 
 type Maintenance struct {
+	// apply-from: string, day time. Currently this is a 6 hour window.
+	// Format: "DDD hh:mm" > "sun 23:00". Timezone local to cluster.
 	ApplyFrom string `json:"applyFrom,omitempty"`
 }
 
 type Backup struct {
+	// apply-on: string, day time.
+	// Format: "DDD hh:mm" > "wed 20:00". Timezone local to cluster.
 	ApplyOn string `json:"applyOn,omitempty"`
 }
 
