@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+	"fmt"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -50,6 +54,8 @@ type RHMIConfigStatus struct {
 	//			window: "3 Jan 1980 - 17 Jan 1980"
 
 }
+
+const DateFormat = "2 Jan 2006 15:04"
 
 type Upgrade struct {
 	// contacts: list of contacts which are comma separated
@@ -107,6 +113,23 @@ func (c *RHMIConfig) ValidateCreate() error {
 }
 
 func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
+	if c.Spec.Upgrade.ApplyOn == "" {
+		return nil
+	}
+
+	if c.Spec.Upgrade.AlwaysImmediately || c.Spec.Upgrade.DuringNextMaintenance {
+		return errors.New("spec.Upgrade.ApplyOn shouldn't be set when spec.Upgrade.AlwaysImmediatly or spec.Upgrade.DuringNextMaintenance are true")
+	}
+
+	applyOn, err := time.Parse(DateFormat, c.Spec.Upgrade.ApplyOn)
+	if err != nil {
+		return fmt.Errorf("Invalid value for spec.Upgrade.ApplyOn, must be a date with the format %s", DateFormat)
+	}
+
+	if !applyOn.UTC().After(time.Now().UTC()) {
+		return fmt.Errorf("Invalid value for spec.Upgrade.ApplyOn: %s. It must be a future date", applyOn.Format(DateFormat))
+	}
+
 	return nil
 }
 
