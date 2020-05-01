@@ -24,13 +24,14 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -196,57 +197,25 @@ type ReconcileInstallation struct {
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	retryRequeue := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: 10 * time.Second,
-	}
-
 	installInProgress := false
 	installation := &integreatlyv1alpha1.RHMI{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, installation)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8serr.IsNotFound(err) {
 			return reconcile.Result{}, nil
 		}
 		return reconcile.Result{}, err
+	}
+
+	retryRequeue := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
 	}
 
 	//context is cancelled on delete of an installation, so if context is cancelled but there is no deletion timestamp
 	//the installation must be created after one was deleted, so recreate a context to use for the new installation.
 	if r.context.Err() == context.Canceled && installation.DeletionTimestamp == nil {
 		r.context, r.cancel = context.WithCancel(context.Background())
-	}
-
-	rhmiSubscription, err := r.getIntegreatlyOperatorSubscription(request.NamespacedName.Namespace)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if r.isRHMIUpgradeAvailable(rhmiSubscription) {
-		//TODO expose event since RHMI operator will be redeployed and logs will likely get lost
-		//TODO Setup secondary watch on subscription resources in the rhmi operator namespace
-		logrus.Infof("RHMI upgrade available")
-
-		latestRHMIInstallPlan, err := r.getIntegreatlyOperatorInstallPlan(rhmiSubscription)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		latestRHMICSV, err := r.getIntegreatlyOperatorCSV(latestRHMIInstallPlan)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		if !r.isRHMIUpgradeServiceAffecting(latestRHMICSV) {
-			err = r.approveRHMIUpgrade(latestRHMIInstallPlan)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
-			// Requeue the reconciler until the RHMI subscription upgrade is complete
-			return retryRequeue, nil
-		}
-		logrus.Infof("Not automatically upgrading - Service Affecting Release")
 	}
 
 	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
@@ -366,6 +335,37 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			installInProgress = true
 			break
 		}
+	}
+
+	rhmiSubscription, err := r.getIntegreatlyOperatorSubscription(request.NamespacedName.Namespace)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return reconcile.Result{}, err
+	}
+
+	if !installInProgress && r.isRHMIUpgradeAvailable(rhmiSubscription) {
+		logrus.Infof("RHMI upgrade available")
+
+		latestRHMIInstallPlan, err := r.getIntegreatlyOperatorInstallPlan(rhmiSubscription)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		latestRHMICSV, err := r.getIntegreatlyOperatorCSV(latestRHMIInstallPlan)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		if !r.isRHMIUpgradeServiceAffecting(latestRHMICSV) {
+			eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
+			err = r.approveRHMIUpgrade(latestRHMIInstallPlan, eventRecorder)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			// Requeue the reconciler until the RHMI subscription upgrade is complete
+			return retryRequeue, nil
+		}
+		logrus.Infof("Not automatically upgrading - Service Affecting Release")
 	}
 
 	// UPDATE STATUS
@@ -688,12 +688,18 @@ func (r *ReconcileInstallation) getIntegreatlyOperatorSubscription(namespace str
 		}
 	}
 
-	// Don't fail the reconciler if no subsciption is found, it will default to not approve the install plan
 	logrus.Infof("No RHMI subscription found containing the text rhmi or integreatly")
-	return &olmv1alpha1.Subscription{}, nil
+
+	// Return a not found error if no subsciption is found
+	err = k8serr.NewNotFound(schema.GroupResource{Group: olmv1alpha1.GroupName, Resource: olmv1alpha1.SubscriptionKind}, "rhmi or integreatly")
+	return nil, err
 }
 
 func (r *ReconcileInstallation) isRHMIUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
+	// If there is no subscription found, there will be no upgrade available
+	if subscription == nil {
+		return false
+	}
 	// How to tell an upgrade is available - https://operator-framework.github.io/olm-book/docs/subscriptions.html#how-do-i-know-when-an-update-is-available-for-an-operator
 	return subscription.Status.CurrentCSV != subscription.Status.InstalledCSV
 }
@@ -731,17 +737,24 @@ func (r *ReconcileInstallation) getIntegreatlyOperatorCSV(rhmiInstallPlan *olmv1
 func (r *ReconcileInstallation) isRHMIUpgradeServiceAffecting(rhmiCSV *olmv1alpha1.ClusterServiceVersion) bool {
 	// Always default to the release being service affecting and requiring manual upgrade approval
 	serviceAffectingUpgrade := true
+	if rhmiCSV == nil {
+		return serviceAffectingUpgrade
+	}
+
 	if val, ok := rhmiCSV.ObjectMeta.Annotations["serviceAffecting"]; ok && val == "false" {
 		serviceAffectingUpgrade = false
 	}
 	return serviceAffectingUpgrade
 }
 
-func (r *ReconcileInstallation) approveRHMIUpgrade(rhmilatestInstallPlan *olmv1alpha1.InstallPlan) error {
+func (r *ReconcileInstallation) approveRHMIUpgrade(rhmilatestInstallPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
 	if rhmilatestInstallPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		logrus.Infof("RHMI Upgrade in progress.")
 		return nil
 	}
+
+	eventRecorder.Eventf(rhmilatestInstallPlan, "Normal", integreatlyv1alpha1.EventUpgradeApproved,
+		"Approving %s install plan: %s", rhmilatestInstallPlan.Name, rhmilatestInstallPlan.Spec.ClusterServiceVersionNames[0])
 
 	logrus.Infof("Approving %s install plan: %s", rhmilatestInstallPlan.Name, rhmilatestInstallPlan.Spec.ClusterServiceVersionNames[0])
 
