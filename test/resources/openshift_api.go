@@ -19,17 +19,23 @@ const (
 	OpenshiftPathGetProject   = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"
 	OpenshiftPathListPods     = "/api/kubernetes/api/v1/namespaces/%v/pods"
 	OpenshiftPathGetSecret    = "/api/kubernetes/api/v1/namespaces/%s/secrets"
+	PathListRHMIConfig        = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs"
+	PathGetRHMIConfig         = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs/%s"
 )
 
 type OpenshiftClient struct {
 	HTTPClient *http.Client
 	MasterUrl  string
+	ApiUrl     string
 }
 
 func NewOpenshiftClient(httpClient *http.Client, masterUrl string) *OpenshiftClient {
+	openshiftAPIURL := strings.Replace(masterUrl, "console-openshift-console.apps.", "api.", 1) + ":6443"
+
 	return &OpenshiftClient{
 		MasterUrl:  masterUrl,
 		HTTPClient: httpClient,
+		ApiUrl:     openshiftAPIURL,
 	}
 }
 
@@ -106,14 +112,14 @@ func (oc *OpenshiftClient) GetRequest(path string) (*http.Response, error) {
 	return resp, nil
 }
 
-func (oc *OpenshiftClient) DoOpenshiftCreateProject(apiURL string, projectCR *projectv1.ProjectRequest) error {
+func (oc *OpenshiftClient) DoOpenshiftCreateProject(projectCR *projectv1.ProjectRequest) error {
 
 	projectJson, err := json.Marshal(projectCR)
 	if err != nil {
 		return fmt.Errorf("failed to marshal projectCR: %w", err)
 	}
 
-	response, err := oc.DoOpenshiftPostRequest(apiURL, PathProjectRequests, projectJson)
+	response, err := oc.DoOpenshiftPostRequest(PathProjectRequests, projectJson)
 	if err != nil {
 		return fmt.Errorf("error occured durning oc request : %w", err)
 	}
@@ -126,14 +132,14 @@ func (oc *OpenshiftClient) DoOpenshiftCreateProject(apiURL string, projectCR *pr
 	return nil
 }
 
-func (oc *OpenshiftClient) DoOpenshiftCreateServiceInANamespace(openshiftAPIURL string, namespace string, serviceCR *corev1.Service) error {
+func (oc *OpenshiftClient) DoOpenshiftCreateServiceInANamespace(namespace string, serviceCR *corev1.Service) error {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/services", namespace)
 	serviceJSON, err := json.Marshal(serviceCR)
 	if err != nil {
 		return fmt.Errorf("failed to marshal serviceCR: %w", err)
 	}
 
-	response, err := oc.DoOpenshiftPostRequest(openshiftAPIURL, path, serviceJSON)
+	response, err := oc.DoOpenshiftPostRequest(path, serviceJSON)
 	if err != nil {
 		return fmt.Errorf("error occured durning oc request : %w", err)
 	}
@@ -146,14 +152,14 @@ func (oc *OpenshiftClient) DoOpenshiftCreateServiceInANamespace(openshiftAPIURL 
 	return nil
 }
 
-func (oc *OpenshiftClient) DoOpenshiftCreatePodInANamespace(apiURL string, namespace string, podCR *corev1.Pod) error {
+func (oc *OpenshiftClient) DoOpenshiftCreatePodInANamespace(namespace string, podCR *corev1.Pod) error {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods", namespace)
 	podJSON, err := json.Marshal(podCR)
 	if err != nil {
 		return fmt.Errorf("failed to marshal serviceCR: %w", err)
 	}
 
-	response, err := oc.DoOpenshiftPostRequest(apiURL, path, podJSON)
+	response, err := oc.DoOpenshiftPostRequest(path, podJSON)
 	if err != nil {
 		return fmt.Errorf("error occured durning oc request : %w", err)
 	}
@@ -165,17 +171,14 @@ func (oc *OpenshiftClient) DoOpenshiftCreatePodInANamespace(apiURL string, names
 	return nil
 }
 
-// makes a get request, expects master url, a path and a token
-func (oc *OpenshiftClient) DoOpenshiftGetRequest(masterUrl string, path string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", masterUrl, path), nil)
+// makes a get request, expects a path
+func (oc *OpenshiftClient) DoOpenshiftGetRequest(path string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
 	}
-	resp, err := oc.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
-	}
-	return resp, nil
+
+	return oc.PerformRequest(req)
 }
 
 // get Oauth token from cookie
@@ -200,28 +203,54 @@ func getOauthTokenFromCookie(masterURL string, client *http.Client) (string, err
 	return token, nil
 }
 
-// makes a post request, expects master url, a path and the body
-func (oc *OpenshiftClient) DoOpenshiftPostRequest(masterURL string, path string, data []byte) (*http.Response, error) {
-	openshiftAPIURL := strings.Replace(masterURL, "console-openshift-console.apps.", "api.", 1) + ":6443"
-
-	// openshift api url required for POST requests
-	url := fmt.Sprintf("https://%s%s", openshiftAPIURL, path)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(data))
+// makes a post request, expects a path and the body
+func (oc *OpenshiftClient) DoOpenshiftPostRequest(path string, data []byte) (*http.Response, error) {
+	requestUrl := fmt.Sprintf("https://%s%s", oc.ApiUrl, path)
+	req, err := http.NewRequest(http.MethodPost, requestUrl, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, fmt.Errorf("Error reading request: %w", err)
 	}
 
-	token, err := getOauthTokenFromCookie(masterURL, oc.HTTPClient)
+	return oc.PerformRequest(req)
+}
+
+// makes a put request, expects a path and the body
+func (oc *OpenshiftClient) DoOpenshiftPutRequest(path string, data []byte) (*http.Response, error) {
+	requestUrl := fmt.Sprintf("https://%s%s", oc.ApiUrl, path)
+	req, err := http.NewRequest(http.MethodPut, requestUrl, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("Error getting the oauth token client: %w", err)
+		return nil, fmt.Errorf("error reading request: %w", err)
+	}
+
+	return oc.PerformRequest(req)
+}
+
+// make a delete request, expects a path
+func (oc *OpenshiftClient) DoOpenshiftDeleteRequest(path string) (*http.Response, error) {
+	req, err := http.NewRequest("Delete", fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
+	}
+
+	return oc.PerformRequest(req)
+}
+
+// Common function for setting auth headers on request and performing the request
+func (oc *OpenshiftClient) PerformRequest(req *http.Request) (*http.Response, error) {
+	// Set auth headers from current user session
+	token, err := getOauthTokenFromCookie(oc.MasterUrl, oc.HTTPClient)
+	if err != nil {
+		return nil, fmt.Errorf("error getting the oauth token client: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
+	// Perform http request
 	resp, err := oc.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while performing http request : %w", err)
 	}
+
 	return resp, nil
 }
