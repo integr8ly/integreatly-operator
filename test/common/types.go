@@ -36,6 +36,7 @@ const (
 	ThreeScaleOperatorNamespace       = ThreeScaleProductNamespace + "-operator"
 	UPSProductNamespace               = NamespacePrefix + "ups"
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
+	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
 )
 
 type TestingContext struct {

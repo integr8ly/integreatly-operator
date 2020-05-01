@@ -91,8 +91,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				//namespace is gone, return complete
 				return integreatlyv1alpha1.PhaseCompleted, nil
 			}
-			//TODO - Check for other resources clean-up - Rolebindings created in the other namespaces
-
 			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				logrus.Infof("Spec phase removal failure: %v", err)
@@ -123,7 +121,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	logrus.Infof("\n\n service monitors done!")
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -155,7 +152,8 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	resources.PrepareObject(namespace, installation, false, true) //TODO - Cluster monitoring flipped back to true
+	//TODO - Cluster monitoring flipped back to true
+	resources.PrepareObject(namespace, installation, false, false)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -218,8 +216,8 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
 			//Remove rolebindings
-			for _, nameSpace := range sm.Spec.NamespaceSelector.MatchNames {
-				err := r.removeRoleBinding(ctx, serverClient, nameSpace, roleBindingName)
+			for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
+				err := r.removeRoleBinding(ctx, serverClient, namespace, roleBindingName)
 				if err != nil {
 					return integreatlyv1alpha1.PhaseFailed, err
 				}
@@ -270,8 +268,8 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 		return err
 	}
 	//Create role binding for each of the namespace label selectors
-	for _, nameSpace := range sermon.Spec.NamespaceSelector.MatchNames {
-		err := r.reconcileRoleBindings(ctx, serverClient, nameSpace)
+	for _, namespace := range sermon.Spec.NamespaceSelector.MatchNames {
+		err := r.reconcileRoleBindings(ctx, serverClient, namespace)
 		if err != nil {
 			return err
 		}
@@ -280,12 +278,12 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 }
 
 func (r *Reconciler) reconcileRoleBindings(ctx context.Context,
-	serverClient k8sclient.Client, nameSpace string) (err error) {
+	serverClient k8sclient.Client, namespace string) (err error) {
 
 	roleBinding := &rbac.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleBindingName,
-			Namespace: nameSpace,
+			Namespace: namespace,
 		},
 	}
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, roleBinding, func() error {
@@ -308,10 +306,10 @@ func (r *Reconciler) reconcileRoleBindings(ctx context.Context,
 }
 
 func (r *Reconciler) removeServicemonitor(ctx context.Context,
-	serverClient k8sclient.Client, nameSpace, name string) (err error) {
+	serverClient k8sclient.Client, namespace, name string) (err error) {
 	//Get the service monitor
 	sm := &v1.ServiceMonitor{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: nameSpace}, sm)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: namespace}, sm)
 	if err != nil && k8serr.IsNotFound(err) {
 		return nil
 	}
@@ -328,12 +326,12 @@ func (r *Reconciler) removeServicemonitor(ctx context.Context,
 }
 
 func (r *Reconciler) removeRoleBinding(ctx context.Context,
-	serverClient k8sclient.Client, nameSpace, name string) (err error) {
+	serverClient k8sclient.Client, namespace, name string) (err error) {
 
 	// Check if the namespace has service monitors
 	// if so donot delete the rolebinding
 	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(nameSpace),
+		k8sclient.InNamespace(namespace),
 	}
 	serviceMonitors := &v1.ServiceMonitorList{}
 	err = serverClient.List(ctx, serviceMonitors, listOpts...)
@@ -346,7 +344,7 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 
 	//Get the rolebinding
 	rb := &rbac.RoleBinding{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: nameSpace}, rb)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: namespace}, rb)
 	if err != nil && k8serr.IsNotFound(err) {
 		return nil
 	}
@@ -364,11 +362,11 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 
 func (r *Reconciler) getServiceMonitors(ctx context.Context,
 	serverClient k8sclient.Client,
-	nameSpace string) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
+	namespace string) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
 	//Get list of service monitors in the namespace that has
 	//label "integreatly.org/cloned-servicemonitor" set to "true"
 	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(nameSpace),
+		k8sclient.InNamespace(namespace),
 		k8sclient.MatchingLabels(getClonedServiceMonitorLabel()),
 	}
 	serviceMonitors := &v1.ServiceMonitorList{}
