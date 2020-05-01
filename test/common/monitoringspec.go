@@ -105,7 +105,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 		for key := range monSermonMap {
 			staleMonitors = staleMonitors + key + ","
 		}
-		t.Fatal("stale service monitors present: %s", staleMonitors)
+		t.Fatal("stale service monitors present: ", staleMonitors)
 	}
 }
 
