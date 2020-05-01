@@ -57,7 +57,7 @@ const (
 	defaultRouteName          = "solution-explorer"
 	manifestPackage           = "integreatly-solution-explorer"
 	paramRoutingSubdomain     = "ROUTING_SUBDOMAIN"
-	paramInstallationType = "INSTALLATION TYPE"
+	paramInstallationType     = "INSTALLATION TYPE"
 )
 
 type Reconciler struct {
@@ -381,7 +381,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramIntegreatlyVersion:   version.IntegreatlyVersion,
 			paramWalkthroughLocations: defaultWalkthroughsLoc,
 			paramRoutingSubdomain:     installation.Spec.RoutingSubdomain,
-			paramInstallationType: installation.Spec.Type,
+			paramInstallationType:     installation.Spec.Type,
 		}
 		return nil
 	})
