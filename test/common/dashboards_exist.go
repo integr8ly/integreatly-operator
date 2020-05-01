@@ -64,6 +64,18 @@ var expectedDashboards = []dashboardsTestRule{
 	{
 		Title: "Critical SLO summary",
 	},
+	{
+		Title: "AMQ Online",
+	},
+	{
+		Title: "EnMasse Brokers",
+	},
+	{
+		Title: "EnMasse Console",
+	},
+	{
+		Title: "EnMasse Routers",
+	},
 }
 
 func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {

@@ -214,6 +214,30 @@ var expectedRules = []alertsTestRule{
 			"UnifiedPushOperatorDown",
 		},
 	},
+	{
+		File: "redhat-rhmi-amq-online-kube-metrics.yaml",
+		Rules: []string{
+			"TerminatingPods",
+			"RestartingPods",
+			"RestartingPods",
+			"PendingPods",
+		},
+	},
+	{
+		File: "redhat-rhmi-amq-online-enmasse.yaml",
+		Rules: []string{
+			"ComponentHealth",
+			"AuthenticationService",
+			"AddressSpaceHealth",
+			"AddressHealth",
+			"RouterMeshConnectivityHealth",
+			"RouterMeshUndeliveredHealth",
+		},
+	},
+	{
+		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
+		Rules: []string{},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
