@@ -2,9 +2,16 @@ package subscription
 
 import (
 	"context"
+	"time"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/rhmiConfigs"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
+	"github.com/sirupsen/logrus"
+
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,8 +35,8 @@ func Add(mgr manager.Manager, _ []string) error {
 }
 
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	operatorNs, _ := k8sutil.GetOperatorNamespace()
-	return &ReconcileSubscription{client: mgr.GetClient(), scheme: mgr.GetScheme(), operatorNamespace: operatorNs}
+	operatorNs := "redhat-rhmi-operator"
+	return &ReconcileSubscription{mgr: mgr, client: mgr.GetClient(), scheme: mgr.GetScheme(), operatorNamespace: operatorNs}
 }
 
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
@@ -38,7 +45,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &v1alpha1.Subscription{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &operatorsv1alpha1.Subscription{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -52,6 +59,7 @@ type ReconcileSubscription struct {
 	client            k8sclient.Client
 	scheme            *runtime.Scheme
 	operatorNamespace string
+	mgr               manager.Manager
 }
 
 // Reconcile will ensure that that Subscription object(s) have Manual approval for the upgrades
@@ -60,11 +68,12 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 	// skip any Subscriptions that are not integreatly operator
 	if request.Namespace != r.operatorNamespace ||
 		(request.Name != IntegreatlyPackage && request.Name != "addon-rhmi") {
+		logrus.Infof("not our subscription: %+v, %s", request, r.operatorNamespace)
 		return reconcile.Result{}, nil
 	}
 
-	instance := &v1alpha1.Subscription{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	subscription := &operatorsv1alpha1.Subscription{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, subscription)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request. Return and don't requeue
@@ -73,13 +82,74 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	if instance.Spec.InstallPlanApproval != v1alpha1.ApprovalManual {
-		instance.Spec.InstallPlanApproval = v1alpha1.ApprovalManual
-		err = r.client.Update(context.TODO(), instance)
+	if subscription.Spec.InstallPlanApproval != operatorsv1alpha1.ApprovalManual {
+		subscription.Spec.InstallPlanApproval = operatorsv1alpha1.ApprovalManual
+		err = r.client.Update(context.TODO(), subscription)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	return reconcile.Result{}, nil
+	result, err := r.HandleUpgrades(context.TODO(), subscription)
+
+	return result, err
+}
+
+func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription) (reconcile.Result, error) {
+	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
+		logrus.Infof("no upgrade available")
+		return reconcile.Result{}, nil
+	}
+
+	logrus.Infof("RHMI upgrade available")
+
+	latestRHMIInstallPlan, err := rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.client)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	latestRHMICSV, err := rhmiConfigs.GetCSV(latestRHMIInstallPlan)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	config := &integreatlyv1alpha1.RHMIConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-config",
+			Namespace: r.operatorNamespace,
+		},
+	}
+	err = r.client.Get(ctx, k8sclient.ObjectKey{Name: config.Name, Namespace: config.Namespace}, config)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	err = rhmiConfigs.UpdateStatus(ctx, r.client, config, latestRHMIInstallPlan)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if !rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV) || canUpgradeNow {
+		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, latestRHMIInstallPlan, eventRecorder)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		// Requeue the reconciler until the RHMI subscription upgrade is complete
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: 10 * time.Second,
+		}, nil
+	}
+	logrus.Infof("not automatically upgrading a Service Affecting Release")
+	return reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: time.Minute,
+	}, nil
 }

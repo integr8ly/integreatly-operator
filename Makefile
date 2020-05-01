@@ -73,6 +73,10 @@ setup/git/hooks:
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
 	@$(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
 
+.PHONY: code/rerun
+code/rerun:
+	@$(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
+
 .PHONY: code/run/service_account
 code/run/service_account: setup/service_account
 	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE})

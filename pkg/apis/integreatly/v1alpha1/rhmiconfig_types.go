@@ -25,9 +25,6 @@ import (
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
 type RHMIConfigSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
 	Upgrade     Upgrade     `json:"upgrade,omitempty"`
 	Maintenance Maintenance `json:"maintenance,omitempty"`
 	Backup      Backup      `json:"backup,omitempty"`
@@ -35,10 +32,6 @@ type RHMIConfigSpec struct {
 
 // RHMIConfigStatus defines the observed state of RHMIConfig
 type RHMIConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	//
 	// status block reflects the current configuration of the cr
 	//
 	//	status:
@@ -47,7 +40,17 @@ type RHMIConfigStatus struct {
 	//			duration: "6hrs"
 	//		upgrade:
 	//			window: "3 Jan 1980 - 17 Jan 1980"
+	Maintenance RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
+	Upgrade     RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
+}
 
+type RHMIConfigStatusMaintenance struct {
+	ApplyFrom string `json:"applyFrom,omitempty"`
+	Duration  string `json:"duration,omitempty"`
+}
+
+type RHMIConfigStatusUpgrade struct {
+	Window string `json:"window,omitempty"`
 }
 
 type Upgrade struct {

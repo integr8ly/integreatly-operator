@@ -42,10 +42,7 @@ spec:
                   type: string
               type: object
             upgrade:
-              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-                Important: Run "operator-sdk generate k8s" to regenerate code after
-                modifying this file Add custom validation using kubebuilder tags:
-                https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
+              description: 'configure when we will apply upgrades of RHMI to the cluster'
               properties:
                 alwaysImmediately:
                   type: boolean
@@ -56,10 +53,26 @@ spec:
                 duringNextMaintenance:
                   type: boolean
               required:
+              - alwaysImmediately
+              - duringNextMaintenance
               type: object
           type: object
         status:
           description: RHMIConfigStatus defines the observed state of RHMIConfig
+          properties:
+            maintenance:
+              description: 'configure when we will apply OSD maintenance to the cluster'
+              properties:
+                applyFrom:
+                  type: string
+                duration:
+                  type: string
+              type: object
+            upgrade:
+              properties:
+                window:
+                  type: string
+              type: object
           type: object
       type: object
   version: v1alpha1
