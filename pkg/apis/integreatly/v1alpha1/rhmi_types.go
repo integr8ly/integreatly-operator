@@ -96,6 +96,7 @@ var (
 	EventProcessingError       string = "ProcessingError"
 	EventInstallationCompleted string = "InstallationCompleted"
 	EventPreflightCheckPassed  string = "PreflightCheckPassed"
+	EventUpgradeApproved       string = "UpgradeApproved"
 
 	DefaultOriginPullSecretName      = "samples-registry-credentials"
 	DefaultOriginPullSecretNamespace = "openshift"
