@@ -2,7 +2,7 @@ include ./make/*.mk
 
 ORG=integreatly
 NAMESPACE=redhat-integration
-PROJECT=integreatly-operator
+PROJECT=rhi-operator
 REG=quay.io
 SHELL=/bin/bash
 TAG=2.0.0
