@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -216,6 +217,21 @@ func setupWebhooks(mgr manager.Manager) error {
 			ForCreate().
 			ForUpdate().
 			NamespacedScope(),
+	})
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name: "rhmiconfig-mutate",
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForUpdate().
+			NamespacedScope(),
+		Register: webhooks.AdmissionWebhookRegister{
+			Type: webhooks.MutatingType,
+			Path: "/mutate-rhmiconfig",
+			Hook: &admission.Webhook{
+				Handler: integreatlyv1alpha1.NewRHMIConfigMutatingHandler(),
+			},
+		},
 	})
 
 	if err := webhooks.Config.SetupServer(mgr); err != nil {
