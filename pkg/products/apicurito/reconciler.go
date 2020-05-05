@@ -3,6 +3,8 @@ package apicurito
 import (
 	"context"
 	"fmt"
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -62,6 +64,12 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
 	}
+	if apicuritoConfig.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace() + "-operator")
+		}
+	}
+	apicuritoConfig.SetBlackboxTargetPath("/oauth/healthz")
 
 	return &Reconciler{
 		Config:        apicuritoConfig,
@@ -202,6 +210,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	phase, err := r.reconcileHost(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile apicurito host"), err)
+		return phase, err
+	}
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile apicurito BlackboxTargets", err)
 		return phase, err
 	}
 
@@ -546,4 +559,22 @@ func (r *Reconciler) reconcilePodCountAlert(ctx context.Context, client k8sclien
 	}
 
 	return nil
+
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config : %w", err)
+	}
+
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-apicurito", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
+		Service: "apicurito-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating apicurito blackbox target: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
