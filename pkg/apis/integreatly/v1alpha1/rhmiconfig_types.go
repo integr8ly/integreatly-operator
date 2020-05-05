@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -99,6 +100,18 @@ type RHMIConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []RHMIConfig `json:"items"`
+}
+
+func (c *RHMIConfig) ValidateCreate() error {
+	return nil
+}
+
+func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
+	return nil
+}
+
+func (c *RHMIConfig) ValidateDelete() error {
+	return nil
 }
 
 func init() {

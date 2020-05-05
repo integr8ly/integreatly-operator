@@ -19,6 +19,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
 	integreatlymetrics "github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	corev1 "k8s.io/api/core/v1"
@@ -166,6 +167,11 @@ func main() {
 		}
 	}
 
+	// Start up the wehook server
+	if err := setupWebhooks(mgr); err != nil {
+		log.Error(err, "Error setting up webhook server")
+	}
+
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd
@@ -193,5 +199,28 @@ func serveCRMetrics(cfg *rest.Config) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func setupWebhooks(mgr manager.Manager) error {
+	rhmiConfigRegister, err := webhooks.WebhookRegisterFor(&integreatlyv1alpha1.RHMIConfig{})
+	if err != nil {
+		return err
+	}
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name:     "rhmiconfig",
+		Register: rhmiConfigRegister,
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForCreate().
+			ForUpdate().
+			NamespacedScope(),
+	})
+
+	if err := webhooks.Config.SetupServer(mgr); err != nil {
+		return err
+	}
+
 	return nil
 }

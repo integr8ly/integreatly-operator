@@ -22,6 +22,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -239,6 +240,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	if installation.Status.Stages == nil {
 		installation.Status.Stages = map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{}
+	}
+
+	// Reconcile the webhooks
+	if err := webhooks.Config.Reconcile(r.context, r.client); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// either not checked, or rechecking preflight checks

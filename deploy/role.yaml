@@ -348,3 +348,17 @@ rules:
     verbs:
       - get
   # END Permission to fetch identity to get email for created Keycloak users in openshift realm
+
+  # Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - watch
+      - list
+      - create
+      - update
+  # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
