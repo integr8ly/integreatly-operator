@@ -5,21 +5,19 @@ import (
 	"errors"
 	"testing"
 
-	v1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
-	monitoringv1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	applicationmonitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	projectv1 "github.com/openshift/api/project/v1"
 
-	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
@@ -61,14 +59,14 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 	}
 }
 
-func creatServicemonitor(name, namepsace string) *v1.ServiceMonitor {
-	return &v1.ServiceMonitor{
+func createServicemonitor(name, namespace string) *prometheusmonitoringv1.ServiceMonitor {
+	return &prometheusmonitoringv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namepsace,
+			Namespace: namespace,
 		},
-		Spec: v1.ServiceMonitorSpec{
-			Endpoints: []v1.Endpoint{
+		Spec: prometheusmonitoringv1.ServiceMonitorSpec{
+			Endpoints: []prometheusmonitoringv1.Endpoint{
 				{
 					Port:   "upstream",
 					Path:   "/name",
@@ -120,7 +118,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	if err := monitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+	if err := applicationmonitoringv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
@@ -135,7 +133,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := coreosv1.SchemeBuilder.AddToScheme(scheme); err != nil {
+	if err := operatorsv1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
@@ -144,7 +142,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := projectv1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := v1.AddToScheme(scheme); err != nil {
+	if err := prometheusmonitoringv1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := rbac.AddToScheme(scheme); err != nil {
@@ -249,7 +247,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 	//Service monitor inside fuse namespace
-	fusesm := creatServicemonitor("fuse-servicemon", "fuse")
+	fusesm := createServicemonitor("fuse-servicemon", "fuse")
 
 	installation := basicInstallation()
 
@@ -288,7 +286,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ApplicationMonitoring",
-								APIVersion: monitoringv1.SchemeGroupVersion.String(),
+								APIVersion: applicationmonitoringv1alpha1.SchemeGroupVersion.String(),
 							},
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
@@ -336,7 +334,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
 			//Verify that a new servicemonitor is created in the namespace
-			sermon := &v1.ServiceMonitor{}
+			sermon := &prometheusmonitoringv1.ServiceMonitor{}
 			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "fuse-fuse-servicemon", Namespace: defaultInstallationNamespace}, sermon)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
@@ -390,7 +388,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 		},
 	}
 	//Create a UPS servicemonitor in just monitoring namespace - stale one
-	upssm := creatServicemonitor("ups-servicemon", defaultInstallationNamespace)
+	upssm := createServicemonitor("ups-servicemon", defaultInstallationNamespace)
 
 	//Create a rolebinding in fuse namespace
 
@@ -437,7 +435,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 					return &operatorsv1alpha1.InstallPlanList{
 							TypeMeta: metav1.TypeMeta{
 								Kind:       "ApplicationMonitoring",
-								APIVersion: monitoringv1.SchemeGroupVersion.String(),
+								APIVersion: prometheusmonitoringv1.SchemeGroupVersion.String(),
 							},
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
@@ -475,7 +473,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			ctx := context.TODO()
 
 			//Verify that the sm exisits in monitoring namespace
-			sermon := &v1.ServiceMonitor{}
+			sermon := &prometheusmonitoringv1.ServiceMonitor{}
 			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: defaultInstallationNamespace}, sermon)
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
@@ -500,7 +498,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
 			//Verify that the stale servicemonitor is removed
-			sermon = &v1.ServiceMonitor{}
+			sermon = &prometheusmonitoringv1.ServiceMonitor{}
 			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: "ups-servicemon", Namespace: defaultInstallationNamespace}, sermon)
 			if err != nil && !k8serr.IsNotFound(err) {
 				t.Fatalf("expected no error but got one: %v", err)

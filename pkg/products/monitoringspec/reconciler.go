@@ -97,7 +97,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 			return integreatlyv1alpha1.PhaseInProgress, nil
-		})
+		},
+	)
 
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		logrus.Errorf("failed to reconcile finalizer: %v", err)
@@ -144,16 +145,16 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
+		//TODO - addClusterMonitoringLabel flipped back to true
 		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetNamespace(),
-			serverClient, installation, false, true)
+			serverClient, installation, false, false)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	//TODO - Cluster monitoring flipped back to true
-	resources.PrepareObject(namespace, installation, false, false)
+	resources.PrepareObject(namespace, installation, false, true)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -164,23 +165,21 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8sclient.Client,
 	installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 
+	//Get list of service monitors in the namespace that has
+	//label "integreatly.org/cloned-servicemonitor" set to "true"
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(r.Config.GetNamespace()),
+		k8sclient.MatchingLabels(getClonedServiceMonitorLabel()),
+	}
+
 	//Get list of service monitors in the monitoring namespace
-	monSermonMap, err := r.getServiceMonitors(ctx, serverClient, r.Config.GetNamespace())
+	monSermonMap, err := r.getServiceMonitors(ctx, serverClient, listOpts)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	ls, err := labels.Parse(labelSelector)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	opts := &k8sclient.ListOptions{
-		LabelSelector: ls,
-	}
-
-	//Get the list of namespaces with the given label selector
-	namespaces := &corev1.NamespaceList{}
-	err = serverClient.List(ctx, namespaces, opts)
+	//Get the list of namespaces with the given label selector "monitoring-key=middleware"
+	namespaces, err := r.getMWMonitoredNamespaces(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -190,17 +189,20 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 		listOpts := []k8sclient.ListOption{
 			k8sclient.InNamespace(ns.Name),
 		}
-		serviceMonitors := &v1.ServiceMonitorList{}
-		err := serverClient.List(ctx, serviceMonitors, listOpts...)
+		serviceMonitorsMap, err := r.getServiceMonitors(ctx, serverClient, listOpts)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		for _, sm := range serviceMonitors.Items {
+		for _, sm := range serviceMonitorsMap {
 			//Create a copy of service monitors in the monitoring namespace
 			//Create the corresponding rolebindings at each of the service namespace
 			key := sm.Namespace + `-` + sm.Name
 			delete(monSermonMap, key) // Servicemonitor exists, remove it from the local map
 			err := r.reconcileServiceMonitor(ctx, serverClient, sm)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
+			err = r.reconcileRoleBindingsForServiceMonitor(ctx, serverClient, key)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
@@ -211,7 +213,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 	if len(monSermonMap) > 0 {
 		for _, sm := range monSermonMap {
 			//Remove servicemonitor
-			err = r.removeServicemonitor(ctx, serverClient, sm.Namespace, sm.Name)
+			err = r.removeServiceMonitor(ctx, serverClient, sm.Namespace, sm.Name)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
@@ -259,17 +261,23 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	r.Logger.Infof("operation result of creating servicemonitor %v was %v", sm.Name, opRes)
+	if opRes != controllerutil.OperationResultNone {
+		r.Logger.Infof("operation result of creating servicemonitor %v was %v", sm.Name, opRes)
+	}
+	return err
+}
 
+func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
+	serverClient k8sclient.Client, serviceMonitorName string) (err error) {
 	//Get the service monitor - that was created/updated
 	sermon := &v1.ServiceMonitor{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: sm.Name, Namespace: r.Config.GetNamespace()}, sermon)
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: serviceMonitorName, Namespace: r.Config.GetNamespace()}, sermon)
 	if err != nil {
 		return err
 	}
 	//Create role binding for each of the namespace label selectors
 	for _, namespace := range sermon.Spec.NamespaceSelector.MatchNames {
-		err := r.reconcileRoleBindings(ctx, serverClient, namespace)
+		err := r.reconcileRoleBinding(ctx, serverClient, namespace)
 		if err != nil {
 			return err
 		}
@@ -277,7 +285,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 	return err
 }
 
-func (r *Reconciler) reconcileRoleBindings(ctx context.Context,
+func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 	serverClient k8sclient.Client, namespace string) (err error) {
 
 	roleBinding := &rbac.RoleBinding{
@@ -301,22 +309,20 @@ func (r *Reconciler) reconcileRoleBindings(ctx context.Context,
 		}
 		return nil
 	})
-	r.Logger.Infof("operation result of creating rolebinding: %v was %v", roleBindingName, opRes)
+	if opRes != controllerutil.OperationResultNone {
+		r.Logger.Infof("operation result of creating rolebinding: %v was %v", roleBindingName, opRes)
+	}
 	return err
 }
 
-func (r *Reconciler) removeServicemonitor(ctx context.Context,
+func (r *Reconciler) removeServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, namespace, name string) (err error) {
-	//Get the service monitor
-	sm := &v1.ServiceMonitor{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: namespace}, sm)
-	if err != nil && k8serr.IsNotFound(err) {
-		return nil
+	sm := &v1.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
-	if err != nil {
-		return err
-	}
-
 	//Delete the servicemonitor
 	err = serverClient.Delete(ctx, sm)
 	if err != nil && k8serr.IsNotFound(err) {
@@ -329,16 +335,16 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 	serverClient k8sclient.Client, namespace, name string) (err error) {
 
 	// Check if the namespace has service monitors
-	// if so donot delete the rolebinding
+	// if so do not delete the rolebinding
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(namespace),
 	}
-	serviceMonitors := &v1.ServiceMonitorList{}
-	err = serverClient.List(ctx, serviceMonitors, listOpts...)
+	serviceMonitorsMap, err := r.getServiceMonitors(ctx, serverClient, listOpts)
 	if err != nil {
 		return err
 	}
-	if len(serviceMonitors.Items) > 0 {
+
+	if len(serviceMonitorsMap) > 0 {
 		return nil
 	}
 
@@ -362,12 +368,10 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 
 func (r *Reconciler) getServiceMonitors(ctx context.Context,
 	serverClient k8sclient.Client,
-	namespace string) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
-	//Get list of service monitors in the namespace that has
-	//label "integreatly.org/cloned-servicemonitor" set to "true"
-	listOpts := []k8sclient.ListOption{
-		k8sclient.InNamespace(namespace),
-		k8sclient.MatchingLabels(getClonedServiceMonitorLabel()),
+	listOpts []k8sclient.ListOption) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
+
+	if len(listOpts) == 0 {
+		return serviceMonitorsMap, fmt.Errorf("List options is empty")
 	}
 	serviceMonitors := &v1.ServiceMonitorList{}
 	err = serverClient.List(ctx, serviceMonitors, listOpts...)
@@ -385,4 +389,19 @@ func getClonedServiceMonitorLabel() map[string]string {
 	return map[string]string{
 		clonedServiceMonitorLabelKey: clonedServiceMonitorLabelValue,
 	}
+}
+
+func (r *Reconciler) getMWMonitoredNamespaces(ctx context.Context,
+	serverClient k8sclient.Client) (namespaces *corev1.NamespaceList, err error) {
+	ls, err := labels.Parse(labelSelector)
+	if err != nil {
+		return namespaces, err
+	}
+	opts := &k8sclient.ListOptions{
+		LabelSelector: ls,
+	}
+	//Get the list of namespaces with the given label selector
+	namespaces = &corev1.NamespaceList{}
+	err = serverClient.List(ctx, namespaces, opts)
+	return namespaces, err
 }

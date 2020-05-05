@@ -4,7 +4,7 @@ import (
 	goctx "context"
 	"testing"
 
-	v1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,7 +39,7 @@ var expectedServicemonitors = []string{
 	"redhat-rhmi-user-sso-keycloak-service-monitor",
 }
 
-// TestServiceMonitorsCloneAndRolebindingsExist monitirng spec testcase
+// TestServiceMonitorsCloneAndRolebindingsExist monitoring spec testcase
 // Verifies the list of servicemonitors that are cloned in monitoring namespace
 // Verifies the rolebindings exist
 // Verifies if there are any stale service monitors in the monitoring namespace
@@ -47,7 +47,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 	//Get list of service monitors in the monitoring namespace
 	monSermonMap, err := getServiceMonitors(ctx, MonitoringSpecNamespace)
 	if err != nil {
-		t.Fatal("failed to list servicemonitors in monitoring namespace:", err, "length is empty")
+		t.Fatal("failed to list servicemonitors in monitoring namespace:", err)
 	}
 	if len(monSermonMap) == 0 {
 		t.Fatal("No servicemonitors present in monitoring namespace")
@@ -86,7 +86,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 		listOpts := []k8sclient.ListOption{
 			k8sclient.InNamespace(ns.Name),
 		}
-		serviceMonitors := &v1.ServiceMonitorList{}
+		serviceMonitors := &monitoringv1.ServiceMonitorList{}
 		err := ctx.Client.List(goctx.TODO(), serviceMonitors, listOpts...)
 		if err != nil {
 			t.Fatal("failed to list servicemonitors", err)
@@ -110,19 +110,19 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 }
 
 func getServiceMonitors(ctx *TestingContext,
-	nameSpace string) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
+	nameSpace string) (serviceMonitorsMap map[string]*monitoringv1.ServiceMonitor, err error) {
 	//Get list of service monitors in the namespace that has
 	//label "integreatly.org/cloned-servicemonitor" set to "true"
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(nameSpace),
 		k8sclient.MatchingLabels(getClonedServiceMonitorLabel()),
 	}
-	serviceMonitors := &v1.ServiceMonitorList{}
+	serviceMonitors := &monitoringv1.ServiceMonitorList{}
 	err = ctx.Client.List(goctx.TODO(), serviceMonitors, listOpts...)
 	if err != nil {
 		return serviceMonitorsMap, err
 	}
-	serviceMonitorsMap = make(map[string]*v1.ServiceMonitor)
+	serviceMonitorsMap = make(map[string]*monitoringv1.ServiceMonitor)
 	for _, sm := range serviceMonitors.Items {
 		serviceMonitorsMap[sm.Name] = sm
 	}
@@ -138,8 +138,5 @@ func getClonedServiceMonitorLabel() map[string]string {
 func checkRoleBindingExists(ctx *TestingContext, name, namespace string) (err error) {
 	rb := &rbac.RoleBinding{}
 	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, rb)
-	if err != nil {
-		return err
-	}
 	return err
 }
