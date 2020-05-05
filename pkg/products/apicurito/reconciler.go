@@ -54,22 +54,24 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	apicuritoConfig, err := configManager.ReadApicurito()
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not retrieve apicurito config : %w", err)
 	}
 
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+		configManager.WriteConfig(apicuritoConfig)
 	}
 	if apicuritoConfig.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
-			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace() + "-operator")
+			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace())
 		}
+		configManager.WriteConfig(apicuritoConfig)
 	}
 	apicuritoConfig.SetBlackboxTargetPath("/oauth/healthz")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		Config:        apicuritoConfig,
@@ -166,6 +168,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -210,11 +218,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	phase, err := r.reconcileHost(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile apicurito host"), err)
-		return phase, err
-	}
-	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile apicurito BlackboxTargets", err)
 		return phase, err
 	}
 
@@ -569,7 +572,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-apicurito", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost() + "/" + r.Config.GetBlackboxTargetPath(),
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
 		Service: "apicurito-ui",
 	}, cfg, installation, client)
 	if err != nil {
