@@ -70,19 +70,19 @@ type Upgrade struct {
 	DuringNextMaintenance bool `json:"duringNextMaintenance"`
 	// apply-on: string date value. If 'always-immediately' or 'during-next-maintenance' is not set the customer is
 	// required to pick a time for the upgrade. Time value will be validated by a webhook and reset to blank after
-	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". Timezone local to cluster.
+	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
 }
 
 type Maintenance struct {
 	// apply-from: string, day time. Currently this is a 6 hour window.
-	// Format: "DDD hh:mm" > "sun 23:00". Timezone local to cluster.
+	// Format: "DDD hh:mm" > "sun 23:00". UTC time
 	ApplyFrom string `json:"applyFrom,omitempty"`
 }
 
 type Backup struct {
 	// apply-on: string, day time.
-	// Format: "DDD hh:mm" > "wed 20:00". Timezone local to cluster.
+	// Format: "DDD hh:mm" > "wed 20:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
 }
 
