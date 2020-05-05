@@ -25,7 +25,7 @@ if [[ -z "$SEMVER" ]]; then
 fi
 
 
-if [[ $SEMVER =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$ ]]; then
+if [[ $SEMVER =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$ ]]; then
   echo "Valid version string: ${SEMVER}"
 else
   echo "Error: Invalid version string: ${SEMVER}"
@@ -50,6 +50,6 @@ fi
 # Include the webhook service in the bundle (temporal solution as OLM will soon
 # support webhooks as part of the CSV:
 # https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/contributors/design-proposals/webhooks.md
-cp deploy/webhook-service.yaml deploy/olm-catalog/integreatly-operator/$VERSION/webhook-service.yaml
+cp deploy/webhook-service.yaml "deploy/olm-catalog/integreatly-operator/$VERSION/webhook-service.yaml"
 
 set_images
