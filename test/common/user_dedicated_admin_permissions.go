@@ -119,7 +119,10 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
 
 	// Verify dedicated admin permissions around AddressSpacePlan
-	verifyDedicatedAddressSpacePlanPermissions(t, openshiftClient)
+	verifyDedicatedAdminAddressSpacePlanPermissions(t, openshiftClient)
+
+	// Verify dedicated admin permissions around AddressPlan
+	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -246,7 +249,7 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 }
 
 // Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
-func verifyDedicatedAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -272,6 +275,38 @@ func verifyDedicatedAddressSpacePlanPermissions(t *testing.T, openshiftClient *r
 					Router:    1,
 					Broker:    1,
 					Aggregate: 1,
+				},
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+// Verify Dedicated admin permissions for AddressPlan Resource - CRUDL
+func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 201,
+		ExpectedReadStatusCode:   200,
+		ExpectedUpdateStatusCode: 200,
+		ExpectedDeleteStatusCode: 200,
+		ExpectedListStatusCode:   200,
+		ListPath:                 fmt.Sprintf(resources.PathListAddressPlan, AMQOnlineOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetAddressPlan, AMQOnlineOperatorNamespace, "test-address-plan"),
+		ObjectToCreate: enmassev1beta2.AddressPlan{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-address-plan",
+				Namespace: AMQOnlineOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AddressPlan",
+				APIVersion: "admin.enmasse.io/v1beta2",
+			},
+			Spec: enmassev1beta2.AddressPlanSpec{
+				AddressType: "queue",
+				Resources: enmassev1beta2.AddressPlanResources{
+					Router: 0.01,
+					Broker: 0.001,
 				},
 			},
 		},
