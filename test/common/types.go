@@ -91,3 +91,8 @@ type SubscriptionCheck struct {
 	Name      string
 	Namespace string
 }
+
+type PersistentVolumeClaim struct {
+	Namespace                  string
+	PersistentVolumeClaimNames []string
+}
