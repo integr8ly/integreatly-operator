@@ -48,6 +48,7 @@ var (
 	ProductFuseOnOpenshift     ProductName = "fuse-on-openshift"
 	Product3Scale              ProductName = "3scale"
 	ProductUps                 ProductName = "ups"
+	ProductApicurioRegistry    ProductName = "apicurio-registry"
 	ProductApicurito           ProductName = "apicurito"
 	ProductMonitoring          ProductName = "middleware-monitoring"
 	ProductCloudResources      ProductName = "cloud-resources"
@@ -58,6 +59,7 @@ var (
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionAMQOnline           ProductVersion = "1.4"
+	VersionApicurioRegistry    ProductVersion = "1.2.2.Final"
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
@@ -96,6 +98,7 @@ var (
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.18.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
+	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.2"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 

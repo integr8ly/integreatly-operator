@@ -19,6 +19,8 @@ const (
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
+	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
+	ApicurioRegistryOperatorNamespace = ApicurioRegistryProductNamespace + "-operator"
 	ApicuritoProductNamespace         = NamespacePrefix + "apicurito"
 	ApicuritoOperatorNamespace        = ApicuritoProductNamespace + "-operator"
 	CloudResourceOperatorNamespace    = NamespacePrefix + "cloud-resources-operator"

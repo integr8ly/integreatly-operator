@@ -1,26 +1,23 @@
-package amqstreams
+package apicurioregistry
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-
-	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	projectv1 "github.com/openshift/api/project/v1"
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,6 +34,9 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 		ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
 			return config.NewAMQStreams(config.ProductConfig{}), nil
 		},
+		ReadApicurioRegistryFunc: func() (ready *config.ApicurioRegistry, e error) {
+			return config.NewApicurioRegistry(config.ProductConfig{}), nil
+		},
 		WriteConfigFunc: func(config config.ConfigReadable) error {
 			return nil
 		},
@@ -45,20 +45,31 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	err := threescalev1.SchemeBuilder.AddToScheme(scheme)
-	err = keycloak.SchemeBuilder.AddToScheme(scheme)
-	err = integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = operatorsv1alpha1.AddToScheme(scheme)
 	err = marketplacev1.SchemeBuilder.AddToScheme(scheme)
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err = apicurioregistry.SchemeBuilder.AddToScheme(scheme)
 	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
 
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
+}
+
+func newApicurioRegistry(replicaCount int32) *apicurioregistry.ApicurioRegistry {
+	return &apicurioregistry.ApicurioRegistry{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "apicurio-registry",
+			Namespace: defaultInstallationNamespace,
+		},
+		Status: apicurioregistry.ApicurioRegistryStatus{
+			ReplicaCount: replicaCount,
+		},
+	}
 }
 
 func TestReconciler_config(t *testing.T) {
@@ -93,12 +104,12 @@ func TestReconciler_config(t *testing.T) {
 			Name:           "test error on failed config",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
 			ExpectError:    true,
-			ExpectedError:  "could not read amq streams config: could not read amq streams config",
+			ExpectedError:  "could not read apicurio registry config: could not read apicurio registry config",
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeClient:     fakeclient.NewFakeClient(),
 			FakeConfig: &config.ConfigReadWriterMock{
-				ReadAMQStreamsFunc: func() (ready *config.AMQStreams, e error) {
-					return nil, errors.New("could not read amq streams config")
+				ReadApicurioRegistryFunc: func() (ready *config.ApicurioRegistry, e error) {
+					return nil, errors.New("could not read apicurio registry config")
 				},
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
@@ -110,7 +121,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:    true,
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return errors.New("dummy")
 				},
 			},
@@ -158,131 +169,12 @@ func TestReconciler_config(t *testing.T) {
 	}
 }
 
-func TestReconciler_reconcileCustomResource(t *testing.T) {
-	scheme := runtime.NewScheme()
-	kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
-
-	cases := []struct {
-		Name           string
-		FakeClient     k8sclient.Client
-		FakeConfig     *config.ConfigReadWriterMock
-		Installation   *integreatlyv1alpha1.RHMI
-		ExpectError    bool
-		ExpectedError  string
-		ExpectedStatus integreatlyv1alpha1.StatusPhase
-		FakeMPM        *marketplace.MarketplaceInterfaceMock
-		Recorder       record.EventRecorder
-	}{
-		{
-			Name:       "Test reconcile custom resource returns completed when successful created",
-			FakeClient: fakeclient.NewFakeClientWithScheme(scheme),
-			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.RHMI{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			Recorder:       setupRecorder(),
-		},
-		{
-			Name: "Test reconcile custom resource returns failed on unsuccessful create",
-			FakeClient: &moqclient.SigsClientInterfaceMock{
-				CreateFunc: func(ctx context.Context, obj runtime.Object, opts ...k8sclient.CreateOption) error {
-					return errors.New("dummy create error")
-				},
-				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-					return errors.New("dummy get error")
-				},
-			},
-			FakeConfig: basicConfigMock(),
-			Installation: &integreatlyv1alpha1.RHMI{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
-					APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
-				},
-			},
-			ExpectError:    true,
-			ExpectedError:  "failed to get or create a kafka custom resource",
-			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			Recorder:       setupRecorder(),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(
-				tc.FakeConfig,
-				tc.Installation,
-				tc.FakeMPM,
-				tc.Recorder,
-			)
-			if err != nil {
-				t.Fatal("unexpected err ", err)
-			}
-			phase, err := reconciler.handleCreatingComponents(context.TODO(), tc.FakeClient, tc.Installation)
-			if tc.ExpectError && err == nil {
-				t.Fatal("expected an error but got none")
-			}
-			if !tc.ExpectError && err != nil {
-				t.Fatal("expected no error but got one ", err)
-			}
-			if tc.ExpectedStatus != phase {
-				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
-			}
-		})
-	}
-}
-
 func TestReconciler_handleProgress(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	kafka := &kafkav1alpha1.Kafka{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "integreatly-cluster",
-			Namespace: defaultInstallationNamespace,
-		},
-	}
-
-	unreadyPods := []runtime.Object{}
-	for i := 0; i < 8; i++ {
-		unreadyPods = append(unreadyPods, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
-				Namespace: defaultInstallationNamespace,
-			},
-			Status: corev1.PodStatus{
-				Conditions: []corev1.PodCondition{
-					corev1.PodCondition{
-						Type:   corev1.ContainersReady,
-						Status: corev1.ConditionUnknown,
-					},
-				},
-			},
-		})
-	}
-
-	readyPods := []runtime.Object{}
-	for i := 0; i < 8; i++ {
-		readyPods = append(readyPods, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
-				Namespace: defaultInstallationNamespace,
-			},
-			Status: corev1.PodStatus{
-				Conditions: []corev1.PodCondition{
-					corev1.PodCondition{
-						Type:   corev1.ContainersReady,
-						Status: corev1.ConditionTrue,
-					},
-				},
-			},
-		})
-	}
-
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -295,13 +187,13 @@ func TestReconciler_handleProgress(t *testing.T) {
 		Recorder       record.EventRecorder
 	}{
 		{
-			Name:           "test failure to list pods",
+			Name:           "test failure to get ApicurioRegistry CR",
 			ExpectedStatus: integreatlyv1alpha1.PhaseFailed,
-			ExpectedError:  "failed to check amq streams installation",
+			ExpectedError:  "failed to get ApicurioRegistry CR: dummy get error",
 			ExpectError:    true,
 			FakeClient: &moqclient.SigsClientInterfaceMock{
-				ListFunc: func(ctx context.Context, list runtime.Object, opts ...k8sclient.ListOption) error {
-					return errors.New("dummy create error")
+				GetFunc: func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
+					return errors.New("dummy get error")
 				},
 			},
 			FakeConfig:   basicConfigMock(),
@@ -309,25 +201,17 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Recorder:     setupRecorder(),
 		},
 		{
-			Name:           "test incomplete amount of pods returns phase in progress",
+			Name:           "test less than expected number of replicas returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, newApicurioRegistry(replicas-1)),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			Recorder:       setupRecorder(),
 		},
 		{
-			Name:           "test unready pods returns phase in progress",
-			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
-			FakeConfig:     basicConfigMock(),
-			Installation:   &integreatlyv1alpha1.RHMI{},
-			Recorder:       setupRecorder(),
-		},
-		{
-			Name:           "test ready pods returns phase complete",
+			Name:           "test expected number of replicas returns phase complete",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, append(readyPods, kafka)...),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, newApicurioRegistry(replicas)),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			Recorder:       setupRecorder(),
@@ -349,7 +233,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
 
 			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			if err == nil && tc.ExpectError {
@@ -404,30 +288,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-cluster-kafka-bootstrap",
-			Namespace: defaultInstallationNamespace,
-		},
-	}
-	objs = append(objs, ns, operatorNS, installation, service)
+	cr := newApicurioRegistry(replicas)
 
-	for i := 0; i < 8; i++ {
-		objs = append(objs, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
-				Namespace: defaultInstallationNamespace,
-			},
-			Status: corev1.PodStatus{
-				Conditions: []corev1.PodCondition{
-					corev1.PodCondition{
-						Type:   corev1.ContainersReady,
-						Status: corev1.ConditionTrue,
-					},
-				},
-			},
-		})
-	}
+	objs = append(objs, ns, operatorNS, installation, cr)
 
 	cases := []struct {
 		Name           string
@@ -447,7 +310,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, objs...),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
@@ -455,7 +318,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
 									ObjectMeta: metav1.ObjectMeta{
-										Name: "amq-install-plan",
+										Name: "apicurio-registry-install-plan",
 									},
 									Status: operatorsv1alpha1.InstallPlanStatus{
 										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
@@ -465,7 +328,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 						}, &operatorsv1alpha1.Subscription{
 							Status: operatorsv1alpha1.SubscriptionStatus{
 								Install: &operatorsv1alpha1.InstallPlanReference{
-									Name: "amq-install-plan",
+									Name: "apicurio-registry-install-plan",
 								},
 							},
 						}, nil
