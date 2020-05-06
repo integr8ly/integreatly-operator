@@ -1,12 +1,12 @@
 include ./make/*.mk
 
-ORG=redhat-integration
-NAMESPACE=redhat-integration
+ORG ?=redhat-integration
+NAMESPACE=redhat-rhi-operator
 PROJECT=rhi-operator
 REG=quay.io
 SHELL=/bin/bash
-TAG=2.0.0
-PKG=github.com/integr8ly/integreatly-operator
+TAG ?= 2.0.0
+PKG=github.com/redhat-integration/rhi-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
