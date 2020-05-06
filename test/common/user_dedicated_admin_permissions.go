@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -123,6 +124,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify dedicated admin permissions around AddressPlan
 	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
+
+	// Verify dedicated admin permissions around AuthenticationService
+	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -174,6 +178,8 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 
 // Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
 func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 403,
 		ExpectedReadStatusCode:   200,
@@ -182,7 +188,16 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
 		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
-		ObjectToCreate:           &integreatlyv1alpha1.RHMIConfig{},
+		ObjectToCreate:           &integreatlyv1alpha1.RHMIConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-rhmi-config",
+				Namespace: RHMIOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1alpha1",
+				Kind:       "RHMIConfig",
+			},
+		},
 	}
 
 	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
@@ -190,6 +205,8 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 
 // Verify Dedicated admin permissions for StandardInfraConfig Resource - CRUDL
 func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for StandardInfraConfig Resource")
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -220,6 +237,8 @@ func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftC
 
 // Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
 func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for BrokeredInfraConfig Resource")
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -248,8 +267,10 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }
 
-// Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
+// Verify Dedicated admin permissions for AddressSpacePlan Resource - CRUDL
 func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for AddressSpacePlan Resource")
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -285,6 +306,8 @@ func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClie
 
 // Verify Dedicated admin permissions for AddressPlan Resource - CRUDL
 func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for AddressPlan Resource")
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -308,6 +331,36 @@ func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *r
 					Router: 0.01,
 					Broker: 0.001,
 				},
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+// Verify Dedicated admin permissions for AuthenticationService Resource - CRUDL
+func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for AuthenticationService Resource")
+
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 201,
+		ExpectedReadStatusCode:   200,
+		ExpectedUpdateStatusCode: 200,
+		ExpectedDeleteStatusCode: 200,
+		ExpectedListStatusCode:   200,
+		ListPath:                 fmt.Sprintf(resources.PathListAuthenticationService, AMQOnlineOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetAuthenticationService, AMQOnlineOperatorNamespace, "test-authentication-service"),
+		ObjectToCreate: enmasseadminv1beta1.AuthenticationService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-authentication-service",
+				Namespace: AMQOnlineOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AuthenticationService",
+				APIVersion: "admin.enmasse.io/v1beta1",
+			},
+			Spec: enmasseadminv1beta1.AuthenticationServiceSpec{
+				Type: "none",
 			},
 		},
 	}
