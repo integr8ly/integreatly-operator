@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	v1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
@@ -154,7 +154,7 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	resources.PrepareObject(namespace, installation, false, true)
+	resources.PrepareObject(namespace, installation, false, false)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -230,14 +230,14 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
-	serverClient k8sclient.Client, serviceMonitor *v1.ServiceMonitor) (err error) {
+	serverClient k8sclient.Client, serviceMonitor *monitoringv1.ServiceMonitor) (err error) {
 
 	if serviceMonitor.Spec.NamespaceSelector.Any {
 		logrus.Warnf("servicemonitor : %s cannot be copied to %s namespace. Namespace selector has been set to any",
 			serviceMonitor.Name, r.Config.GetNamespace())
 		return nil
 	}
-	sm := &v1.ServiceMonitor{
+	sm := &monitoringv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceMonitor.Namespace + `-` + serviceMonitor.Name,
 			Namespace: r.Config.GetNamespace(),
@@ -270,7 +270,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, serviceMonitorName string) (err error) {
 	//Get the service monitor - that was created/updated
-	sermon := &v1.ServiceMonitor{}
+	sermon := &monitoringv1.ServiceMonitor{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: serviceMonitorName, Namespace: r.Config.GetNamespace()}, sermon)
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 
 func (r *Reconciler) removeServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, namespace, name string) (err error) {
-	sm := &v1.ServiceMonitor{
+	sm := &monitoringv1.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -368,17 +368,17 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 
 func (r *Reconciler) getServiceMonitors(ctx context.Context,
 	serverClient k8sclient.Client,
-	listOpts []k8sclient.ListOption) (serviceMonitorsMap map[string]*v1.ServiceMonitor, err error) {
+	listOpts []k8sclient.ListOption) (serviceMonitorsMap map[string]*monitoringv1.ServiceMonitor, err error) {
 
 	if len(listOpts) == 0 {
 		return serviceMonitorsMap, fmt.Errorf("List options is empty")
 	}
-	serviceMonitors := &v1.ServiceMonitorList{}
+	serviceMonitors := &monitoringv1.ServiceMonitorList{}
 	err = serverClient.List(ctx, serviceMonitors, listOpts...)
 	if err != nil {
 		return serviceMonitorsMap, err
 	}
-	serviceMonitorsMap = make(map[string]*v1.ServiceMonitor)
+	serviceMonitorsMap = make(map[string]*monitoringv1.ServiceMonitor)
 	for _, sm := range serviceMonitors.Items {
 		serviceMonitorsMap[sm.Name] = sm
 	}

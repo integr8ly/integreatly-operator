@@ -10,17 +10,14 @@ import (
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
-	applicationmonitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	projectv1 "github.com/openshift/api/project/v1"
 
-	operatorsv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	corev1 "k8s.io/api/core/v1"
@@ -118,25 +115,7 @@ func basicConfigMock() *config.ConfigReadWriterMock {
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	if err := applicationmonitoringv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
 	if err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := operatorsv1alpha1.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := marketplacev1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := corev1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := operatorsv1.SchemeBuilder.AddToScheme(scheme); err != nil {
-		return nil, err
-	}
-	if err := prometheusmonitoringv1.SchemeBuilder.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	if err := projectv1.AddToScheme(scheme); err != nil {
@@ -284,10 +263,6 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{
-							TypeMeta: metav1.TypeMeta{
-								Kind:       "ApplicationMonitoring",
-								APIVersion: applicationmonitoringv1alpha1.SchemeGroupVersion.String(),
-							},
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
 									ObjectMeta: metav1.ObjectMeta{
@@ -433,10 +408,6 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
 					return &operatorsv1alpha1.InstallPlanList{
-							TypeMeta: metav1.TypeMeta{
-								Kind:       "ApplicationMonitoring",
-								APIVersion: prometheusmonitoringv1.SchemeGroupVersion.String(),
-							},
 							Items: []operatorsv1alpha1.InstallPlan{
 								{
 									ObjectMeta: metav1.ObjectMeta{
