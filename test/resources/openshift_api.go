@@ -26,6 +26,8 @@ const (
 	PathGetStandardInfraConfig  = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs/%s"
 	PathListBrokeredInfraConfig = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/brokeredinfraconfigs"
 	PathGetBrokeredInfraConfig  = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/brokeredinfraconfigs/%s"
+	PathListAddressSpacePlan    = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressspaceplans"
+	PathGetAddressSpacePlan     = "/apis/admin.enmasse.io/v1beta2/namespaces/%s/addressspaceplans/%s"
 )
 
 type OpenshiftClient struct {

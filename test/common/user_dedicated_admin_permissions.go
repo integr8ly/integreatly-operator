@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"fmt"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
+	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -116,6 +117,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify dedicated admin permissions around BrokeredInfraConfig
 	verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
+
+	// Verify dedicated admin permissions around AddressSpacePlan
+	verifyDedicatedAddressSpacePlanPermissions(t, openshiftClient)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -233,6 +237,41 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 			Spec: enmassev1beta1.BrokeredInfraConfigSpec{
 				Broker: enmassev1beta1.InfraConfigBroker{
 					AddressFullPolicy: "FAIL",
+				},
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+// Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
+func verifyDedicatedAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 201,
+		ExpectedReadStatusCode:   200,
+		ExpectedUpdateStatusCode: 200,
+		ExpectedDeleteStatusCode: 200,
+		ExpectedListStatusCode:   200,
+		ListPath:                 fmt.Sprintf(resources.PathListAddressSpacePlan, AMQOnlineOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetAddressSpacePlan, AMQOnlineOperatorNamespace, "test-address-plan-space"),
+		ObjectToCreate: enmassev1beta2.AddressSpacePlan{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-address-plan-space",
+				Namespace: AMQOnlineOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AddressSpacePlan",
+				APIVersion: "admin.enmasse.io/v1beta2",
+			},
+			Spec: enmassev1beta2.AddressSpacePlanSpec{
+				AddressPlans:     []string{"standard-small-queue"},
+				AddressSpaceType: "standard",
+				InfraConfigRef:   "default-minimal",
+				ResourceLimits: enmassev1beta2.AddressSpacePlanResourceLimits{
+					Router:    1,
+					Broker:    1,
+					Aggregate: 1,
 				},
 			},
 		},
