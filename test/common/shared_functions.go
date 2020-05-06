@@ -5,11 +5,14 @@ import (
 	goctx "context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"testing"
 
 	"golang.org/x/net/publicsuffix"
 	"gopkg.in/yaml.v2"
@@ -215,5 +218,67 @@ func WriteRHMICRToFile(client dynclient.Client, file string) error {
 		return err
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
+	}
+}
+
+// Common function to perform CRUDL and verifying their expected permissions
+func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, expectedPermission ExpectedPermissions) {
+	// Perform LIST Request
+	resp, err := openshiftClient.DoOpenshiftGetRequest(expectedPermission.ListPath)
+
+	if err != nil {
+		t.Errorf("failed to perform LIST request with error : %s", err)
+	}
+
+	if resp.StatusCode != expectedPermission.ExpectedListStatusCode {
+		t.Errorf("unexpected response from LIST request : %v", resp)
+	}
+
+	// Perform CREATE Request
+	bodyBytes, err := json.Marshal(expectedPermission.ObjectToCreate)
+
+	resp, err = openshiftClient.DoOpenshiftPostRequest(expectedPermission.ListPath, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform CREATE request with error : %s", err)
+	}
+
+	if resp.StatusCode != expectedPermission.ExpectedCreateStatusCode {
+		t.Errorf("unexpected response from CREATE request : %v", resp)
+	}
+
+	// Perform GET Request
+	resp, err = openshiftClient.DoOpenshiftGetRequest(expectedPermission.GetPath)
+
+	if err != nil {
+		t.Errorf("failed to perform GET request with error : %s", err)
+	}
+
+	if resp.StatusCode != expectedPermission.ExpectedReadStatusCode {
+		t.Errorf("unexpected response from GET request : %v", resp)
+	}
+
+	// Perform UPDATE Request
+	bodyBytes, err = ioutil.ReadAll(resp.Body) // Use response from GET
+
+	resp, err = openshiftClient.DoOpenshiftPutRequest(expectedPermission.GetPath, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform UPDATE request with error : %s", err)
+	}
+
+	if resp.StatusCode != expectedPermission.ExpectedUpdateStatusCode {
+		t.Errorf("unexpected response from UPDATE request : %v", resp)
+	}
+
+	// Perform DELETE Request
+	resp, err = openshiftClient.DoOpenshiftDeleteRequest(expectedPermission.GetPath)
+
+	if err != nil {
+		t.Errorf("failed to perform DELETE request with error : %s", err)
+	}
+
+	if resp.StatusCode != expectedPermission.ExpectedDeleteStatusCode {
+		t.Errorf("unexpected response from DELETE request  : %v", resp)
 	}
 }
