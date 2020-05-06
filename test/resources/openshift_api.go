@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	OpenshiftPathListProjects = "/api/kubernetes/apis/project.openshift.io/v1/projects"
-	OpenshiftPathGetProject   = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"
-	OpenshiftPathListPods     = "/api/kubernetes/api/v1/namespaces/%v/pods"
-	OpenshiftPathGetSecret    = "/api/kubernetes/api/v1/namespaces/%s/secrets"
-	PathListRHMIConfig        = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs"
-	PathGetRHMIConfig         = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs/%s"
+	OpenshiftPathListProjects   = "/api/kubernetes/apis/project.openshift.io/v1/projects"
+	OpenshiftPathGetProject     = "/api/kubernetes/apis/project.openshift.io/v1/projects/%v"
+	OpenshiftPathListPods       = "/api/kubernetes/api/v1/namespaces/%v/pods"
+	OpenshiftPathGetSecret      = "/api/kubernetes/api/v1/namespaces/%s/secrets"
+	PathListRHMIConfig          = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs"
+	PathGetRHMIConfig           = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs/%s"
 	PathGetRoute              = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
+	PathListStandardInfraConfig = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs/"
+	PathGetStandardInfraConfig  = "/apis/admin.enmasse.io/v1beta1/namespaces/%s/standardinfraconfigs/%s"
 )
 
 type OpenshiftClient struct {

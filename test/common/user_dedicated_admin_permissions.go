@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"testing"
-
+	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -100,6 +100,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
+
+	// Verify dedicated admin permissions around StandardInfraConfig
+	verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -215,5 +218,88 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 
 	if resp.StatusCode != 403 {
 		t.Errorf("unexpected response from DELETE request for rhmi config : %v", resp)
+	}
+}
+
+// Verify Dedicated admin permissions for StandardInfraConfig Resource - CRUDL
+func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	// Dedicated admin can LIST StandardInfraConfig CR
+	listPath := fmt.Sprintf(resources.PathListStandardInfraConfig, AMQOnlineOperatorNamespace)
+
+	resp, err := openshiftClient.DoOpenshiftGetRequest(listPath)
+
+	if err != nil {
+		t.Errorf("failed to perform LIST request for rhmi config with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from LIST request for rhmi config : %v", resp)
+	}
+
+	// Dedicate admin can not CREATE new StandardInfraConfig
+
+	standardInfraConfig := &enmassev1beta1.StandardInfraConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-standard-infra-config",
+			Namespace: AMQOnlineOperatorNamespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "StandardInfraConfig",
+			APIVersion: "admin.enmasse.io/v1beta1",
+		},
+		Spec: enmassev1beta1.StandardInfraConfigSpec{
+			Broker: enmassev1beta1.InfraConfigBroker{
+				AddressFullPolicy: "FAIL",
+			},
+		},
+	}
+	bodyBytes, err := json.Marshal(standardInfraConfig)
+
+	resp, err = openshiftClient.DoOpenshiftPostRequest(listPath, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform CREATE request for StandardInfraConfig with error : %s", err)
+	}
+
+	if resp.StatusCode != 201 {
+		t.Errorf("unexpected response from CREATE request for StandardInfraConfig : %v", resp)
+	}
+
+	// Dedicated admin can GET StandardInfraConfig
+
+	path := fmt.Sprintf(resources.PathGetStandardInfraConfig, AMQOnlineOperatorNamespace, standardInfraConfig.Name)
+
+	resp, err = openshiftClient.DoOpenshiftGetRequest(path)
+
+	if err != nil {
+		t.Errorf("failed to perform GET request for StandardInfraConfig with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from GET request for StandardInfraConfig : %v", resp)
+	}
+
+	// Dedicated admin can UPDATE StandardInfraConfig
+	bodyBytes, err = ioutil.ReadAll(resp.Body) // Use response from GET
+
+	resp, err = openshiftClient.DoOpenshiftPutRequest(path, bodyBytes)
+
+	if err != nil {
+		t.Errorf("failed to perform UPDATE request for StandardInfraConfig with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from UPDATE request for StandardInfraConfig : %v", resp)
+	}
+
+	// Dedicate admin can not DELETE StandardInfraConfig
+	resp, err = openshiftClient.DoOpenshiftDeleteRequest(path)
+
+	if err != nil {
+		t.Errorf("failed to perform DELETE request for StandardInfraConfig with error : %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected response from DELETE request for StandardInfraConfig : %v", resp)
 	}
 }
