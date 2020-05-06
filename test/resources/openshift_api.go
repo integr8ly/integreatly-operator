@@ -21,6 +21,7 @@ const (
 	OpenshiftPathGetSecret    = "/api/kubernetes/api/v1/namespaces/%s/secrets"
 	PathListRHMIConfig        = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs"
 	PathGetRHMIConfig         = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs/%s"
+	PathGetRoute              = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
 )
 
 type OpenshiftClient struct {
