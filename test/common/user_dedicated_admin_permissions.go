@@ -113,6 +113,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify dedicated admin permissions around StandardInfraConfig
 	verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
+
+	// Verify dedicated admin permissions around BrokeredInfraConfig
+	verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -198,6 +201,36 @@ func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftC
 				APIVersion: "admin.enmasse.io/v1beta1",
 			},
 			Spec: enmassev1beta1.StandardInfraConfigSpec{
+				Broker: enmassev1beta1.InfraConfigBroker{
+					AddressFullPolicy: "FAIL",
+				},
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+// Verify Dedicated admin permissions for BrokeredInfraConfig Resource - CRUDL
+func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 201,
+		ExpectedReadStatusCode:   200,
+		ExpectedUpdateStatusCode: 200,
+		ExpectedDeleteStatusCode: 200,
+		ExpectedListStatusCode:   200,
+		ListPath:                 fmt.Sprintf(resources.PathListBrokeredInfraConfig, AMQOnlineOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetBrokeredInfraConfig, AMQOnlineOperatorNamespace, "test-brokered-infra-config"),
+		ObjectToCreate: enmassev1beta1.BrokeredInfraConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-brokered-infra-config",
+				Namespace: AMQOnlineOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "BrokeredInfraConfig",
+				APIVersion: "admin.enmasse.io/v1beta1",
+			},
+			Spec: enmassev1beta1.BrokeredInfraConfigSpec{
 				Broker: enmassev1beta1.InfraConfigBroker{
 					AddressFullPolicy: "FAIL",
 				},
