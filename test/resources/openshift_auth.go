@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/headzoo/surf"
+	"github.com/headzoo/surf/browser"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	"gopkg.in/headzoo/surf.v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,7 +56,17 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 		authPageURL = fmt.Sprintf("https://%s", authPageURL)
 	}
 	l.Log("Performing OpenShift HTTP client setup with URL", authPageURL)
-	if err := openshiftClientSetup(authPageURL, username, password, httpClient, idp, l); err != nil {
+
+	//follow the oauth proxy flow
+	browser := surf.NewBrowser()
+	browser.SetCookieJar(httpClient.Jar)
+	browser.SetTransport(httpClient.Transport)
+
+	if err := browser.Open(authPageURL); err != nil {
+		return fmt.Errorf("failed to open browser url: %w", err)
+	}
+
+	if err := OpenshiftClientSubmitForm(browser, username, password, idp, l); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
 	return nil
@@ -101,18 +112,12 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 }
 
 //openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
-func openshiftClientSetup(url, username, password string, client *http.Client, idp string, l SimpleLogger) error {
+func OpenshiftClientSubmitForm(browser *browser.Browser, username, password string, idp string, l SimpleLogger) error {
 	//oauth proxy-specific constants
 	const (
 		openshiftConsoleSubdomain = "oauth-openshift."
 	)
-	//follow the oauth proxy flow
-	browser := surf.NewBrowser()
-	browser.SetCookieJar(client.Jar)
-	browser.SetTransport(client.Transport)
-	if err := browser.Open(url); err != nil {
-		return fmt.Errorf("failed to open browser url: %w", err)
-	}
+
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
@@ -120,6 +125,7 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
+
 	l.Log("Filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -46,6 +47,7 @@ var (
 	keycloakRealmName         = "openshift"
 	idpAlias                  = "openshift-v4"
 	githubIdpAlias            = "github"
+	authFlowAlias             = "authdelay"
 	manifestPackage           = "integreatly-rhsso"
 	adminCredentialSecretName = "credential-" + keycloakName
 	numberOfReplicas          = 2
@@ -67,10 +69,11 @@ type Reconciler struct {
 	oauthv1Client oauthClient.OauthV1Interface
 	APIURL        string
 	*resources.Reconciler
-	recorder record.EventRecorder
+	recorder              record.EventRecorder
+	keycloakClientFactory keycloakCommon.KeycloakClientFactory
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
 	if err != nil {
 		return nil, err
@@ -89,15 +92,16 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		Config:        config,
-		ConfigManager: configManager,
-		mpm:           mpm,
-		installation:  installation,
-		logger:        logger,
-		oauthv1Client: oauthv1Client,
-		Reconciler:    resources.NewReconciler(mpm),
-		recorder:      recorder,
-		APIURL:        APIURL,
+		Config:                config,
+		ConfigManager:         configManager,
+		mpm:                   mpm,
+		installation:          installation,
+		logger:                logger,
+		oauthv1Client:         oauthv1Client,
+		Reconciler:            resources.NewReconciler(mpm),
+		recorder:              recorder,
+		APIURL:                APIURL,
+		keycloakClientFactory: keycloakClientFactory,
 	}, nil
 }
 
@@ -433,6 +437,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
 			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
+			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
 		if kc.Spec.Instances < numberOfReplicas {
@@ -507,6 +512,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
 	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
+
+	// create keycloak authentication delay flow and adds to openshift idp
+	authenticated, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to authenticate client in keycloak api %w", err)
+	}
+
+	err = createAuthDelayAuthenticationFlow(authenticated)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create and add keycloak authentication flow: %w", err)
+	}
+	r.logger.Infof("Authentication flow added to %s IDP", idpAlias)
 
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
@@ -923,6 +940,55 @@ func GetKeycloakUsers(ctx context.Context, serverClient k8sclient.Client, ns str
 	}
 
 	return mappedUsers, nil
+}
+
+// creates keycloak authentication flow to delay login until user is reconciled in 3scale or other products
+func createAuthDelayAuthenticationFlow(authenticated keycloakCommon.KeycloakInterface) error {
+
+	authFlow, err := authenticated.FindAuthenticationFlowByAlias(authFlowAlias, keycloakRealmName)
+	if err != nil {
+		return fmt.Errorf("failed to find authentication flow by alias via keycloak api %w", err)
+	}
+	if authFlow == nil {
+		authFlow := keycloakCommon.AuthenticationFlow{
+			Alias:      authFlowAlias,
+			ProviderID: "basic-flow", // providerId is "client-flow" for client and "basic-flow" for generic in Top Level Flow Type
+			TopLevel:   true,
+			BuiltIn:    false,
+		}
+		_, err := authenticated.CreateAuthenticationFlow(authFlow, keycloakRealmName)
+		if err != nil {
+			return fmt.Errorf("failed to create authentication flow via keycloak api %w", err)
+		}
+	}
+
+	executionProviderID := "delay-authentication"
+	authExecution, err := authenticated.FindAuthenticationExecutionForFlow(authFlowAlias, keycloakRealmName, func(execution *keycloak.AuthenticationExecutionInfo) bool {
+		return execution.ProviderID == executionProviderID
+	})
+	if err != nil {
+		return fmt.Errorf("failed to find authentication execution flow via keycloak api %w", err)
+	}
+	if authExecution == nil {
+		err = authenticated.AddExecutionToAuthenticatonFlow(authFlowAlias, keycloakRealmName, executionProviderID, keycloakCommon.Required)
+		if err != nil {
+			return fmt.Errorf("failed to add execution to authentication flow via keycloak api %w", err)
+		}
+	}
+
+	idp, err := authenticated.GetIdentityProvider(idpAlias, keycloakRealmName)
+	if err != nil {
+		return fmt.Errorf("failed to get identity provider via keycloak api %w", err)
+	}
+	if idp.FirstBrokerLoginFlowAlias != authFlowAlias {
+		idp.FirstBrokerLoginFlowAlias = authFlowAlias
+		err = authenticated.UpdateIdentityProvider(idp, keycloakRealmName)
+		if err != nil {
+			return fmt.Errorf("failed to update identity provider via keycloak api %w", err)
+		}
+	}
+
+	return nil
 }
 
 func getKeycloakRoles() map[string][]string {

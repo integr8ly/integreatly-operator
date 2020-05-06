@@ -141,10 +141,6 @@ func waitForOauthDeployment(ctx context.Context, client dynclient.Client) error 
 
 // add users to dedicated admin users
 func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, numberOfAdmins int) error {
-	dedicatedAdminGroup := &userv1.Group{}
-	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
-		return fmt.Errorf("error occurred while getting dedicated admin group")
-	}
 
 	// populate admin users
 	var adminUsers []string
@@ -153,6 +149,20 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 		user := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, postfix)
 		adminUsers = append(adminUsers, user)
 		postfix++
+	}
+
+	err := createOrUpdateDedicatedAdminGroupCR(ctx, client, adminUsers)
+	if err != nil {
+		return fmt.Errorf("error occurred while creating or updating dedicated admin group: %w", err)
+	}
+
+	return nil
+}
+
+func createOrUpdateDedicatedAdminGroupCR(ctx context.Context, client dynclient.Client, adminUsers []string) error {
+	dedicatedAdminGroup := &userv1.Group{}
+	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
+		return fmt.Errorf("error occurred while getting dedicated admin group")
 	}
 
 	// add admin users to group
@@ -164,8 +174,9 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("error occurred while creating or updating dedicated admin group: %w", err)
+		return err
 	}
+
 	return nil
 }
 
@@ -318,6 +329,15 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 		postfix++
 	}
 
+	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers)
+	if err != nil {
+		return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
+	}
+
+	return nil
+}
+
+func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser) error {
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
 		keycloakUser := &v1alpha1.KeycloakUser{
@@ -326,7 +346,8 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
 		}
-		if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
+
+		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -359,8 +380,9 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 				},
 			}
 			return nil
-		}); err != nil {
-			return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
+		})
+		if err != nil {
+			return err
 		}
 	}
 	return nil

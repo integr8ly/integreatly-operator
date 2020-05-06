@@ -3,6 +3,8 @@ package functional
 import (
 	goctx "context"
 	"fmt"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/rds"
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -11,7 +13,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"k8s.io/apimachinery/pkg/types"
-	"testing"
 )
 
 var (

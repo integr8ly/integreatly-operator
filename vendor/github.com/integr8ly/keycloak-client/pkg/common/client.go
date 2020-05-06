@@ -669,6 +669,65 @@ func (c *Client) ListAvailableUserRealmRoles(realmName, userID string) ([]*v1alp
 	return objects.([]*v1alpha1.KeycloakUserRole), err
 }
 
+func (c *Client) CreateAuthenticationFlow(authFlow AuthenticationFlow, realmName string) (string, error) {
+	path := fmt.Sprintf("realms/%s/authentication/flows", realmName)
+	return c.create(authFlow, path, "AuthenticationFlow")
+}
+
+func (c *Client) ListAuthenticationFlows(realmName string) ([]*AuthenticationFlow, error) {
+	result, err := c.list(fmt.Sprintf("realms/%s/authentication/flows", realmName), "AuthenticationFlow", func(body []byte) (T, error) {
+		var authenticationFlows []*AuthenticationFlow
+		err := json.Unmarshal(body, &authenticationFlows)
+		return authenticationFlows, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.([]*AuthenticationFlow), err
+}
+
+func (c *Client) FindAuthenticationFlowByAlias(flowAlias string, realmName string) (*AuthenticationFlow, error) {
+	authFlows, err := c.ListAuthenticationFlows(realmName)
+	if err != nil {
+		return nil, err
+	}
+	for _, authFlow := range authFlows {
+		if authFlow.Alias == flowAlias {
+			return authFlow, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (c *Client) AddExecutionToAuthenticatonFlow(flowAlias string, realmName string, providerID string, requirement Requirement) error {
+	path := fmt.Sprintf("realms/%s/authentication/flows/%s/executions/execution", realmName, flowAlias)
+	provider := map[string]string{
+		"provider": providerID,
+	}
+	_, err := c.create(provider, path, "AuthenticationExecution")
+	if err != nil {
+		return errors.Wrapf(err, "error creating Authentication Execution %s", providerID)
+	}
+
+	// updates the execution requirement after its creation
+	if requirement != "" {
+		execution, err := c.FindAuthenticationExecutionForFlow(flowAlias, realmName, func(execution *v1alpha1.AuthenticationExecutionInfo) bool {
+			return execution.ProviderID == providerID
+		})
+		if err != nil {
+			return errors.Wrapf(err, "error finding Authentication Execution %s", providerID)
+		}
+		execution.Requirement = string(requirement)
+		err = c.UpdateAuthenticationExecutionForFlow(flowAlias, realmName, execution)
+		if err != nil {
+			return errors.Wrapf(err, "error updating Authentication Execution %s", providerID)
+		}
+	}
+
+	return nil
+}
+
 func (c *Client) ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error) {
 	result, err := c.list(fmt.Sprintf("realms/%s/authentication/flows/%s/executions", realmName, flowAlias), "AuthenticationExecution", func(body []byte) (T, error) {
 		var authenticationExecutions []*v1alpha1.AuthenticationExecutionInfo
@@ -1067,6 +1126,11 @@ type KeycloakInterface interface {
 	ListUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error)
 	ListAvailableUserRealmRoles(realmName, userID string) ([]*v1alpha1.KeycloakUserRole, error)
 	DeleteUserRealmRole(role *v1alpha1.KeycloakUserRole, realmName, userID string) error
+
+	CreateAuthenticationFlow(authFlow AuthenticationFlow, realmName string) (string, error)
+	ListAuthenticationFlows(realmName string) ([]*AuthenticationFlow, error)
+	FindAuthenticationFlowByAlias(flowAlias, realmName string) (*AuthenticationFlow, error)
+	AddExecutionToAuthenticatonFlow(flowAlias, realmName string, providerID string, requirement Requirement) error
 
 	ListAuthenticationExecutionsForFlow(flowAlias, realmName string) ([]*v1alpha1.AuthenticationExecutionInfo, error)
 	FindAuthenticationExecutionForFlow(flowAlias, realmName string, predicate func(*v1alpha1.AuthenticationExecutionInfo) bool) (*v1alpha1.AuthenticationExecutionInfo, error)
