@@ -98,6 +98,38 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
+
+	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
+}
+
+// Verify that a dedicated admin can edit routes in the 3scale namespace
+func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+	ns := "redhat-rhmi-3scale"
+	route := "backend"
+
+	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err := client.DoOpenshiftGetRequest(path)
+	if err != nil {
+		t.Errorf("Failed to get route : %s", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("Unable to get 3scale route as dedicated admin : %v", resp)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body) // Use response from GET
+	if err != nil {
+		t.Errorf("failed to read response body from get route request : %s", err)
+	}
+
+	path = fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err = client.DoOpenshiftPutRequest(path, bodyBytes)
+
+	if err != nil {
+		t.Errorf("Failed to update route : %s", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("Failed to update route as dedicated admin : %v", resp)
+	}
 }
 
 // verifies that there is at least 1 project with a prefix `openshift` , `redhat` and `kube`
