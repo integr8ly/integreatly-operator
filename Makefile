@@ -1,6 +1,6 @@
 include ./make/*.mk
 
-ORG=integreatly
+ORG=redhat-integration
 NAMESPACE=redhat-integration
 PROJECT=rhi-operator
 REG=quay.io
@@ -42,7 +42,7 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
-export INSTALLATION_PREFIX ?= redhat-rhmi
+export INSTALLATION_PREFIX ?= redhat-integration
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
