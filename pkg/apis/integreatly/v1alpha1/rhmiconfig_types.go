@@ -63,7 +63,7 @@ type Upgrade struct {
 	Contacts string `json:"contacts,omitempty"`
 	// always-immediately: boolean value, if set to true an upgrade will be applied as soon as it is available,
 	// whether service affecting or not.
-	// This takes precedences over all other options
+	// This takes precedence over all other options
 	AlwaysImmediately bool `json:"alwaysImmediately"`
 	// during-next-maintenance: boolean value, if set to true an upgrade will be applied within the next maintenance window.
 	// Takes precedence over apply-on
