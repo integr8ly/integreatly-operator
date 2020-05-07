@@ -120,13 +120,13 @@ func inWindow(windowStart time.Time, windowEnd time.Time) bool {
 //windowStartStr must be in format: sun 23:00
 func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
 	var shortDays = map[string]int{
-		"sun":  0,
-		"mon":  1,
-		"tue":  2,
-		"wed":  3,
-		"thur": 4,
-		"fri":  5,
-		"sat":  6,
+		"sun": 0,
+		"mon": 1,
+		"tue": 2,
+		"wed": 3,
+		"thu": 4,
+		"fri": 5,
+		"sat": 6,
 	}
 	now := time.Now().UTC()
 	windowSegments := strings.Split(windowStartStr, " ")
