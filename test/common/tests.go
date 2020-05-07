@@ -12,6 +12,7 @@ var (
 
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
+		{"A03 - Verify namespaces have been created with the correct name", TestNamespaceNamingConventions},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
