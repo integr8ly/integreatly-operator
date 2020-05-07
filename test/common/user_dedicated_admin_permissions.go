@@ -90,23 +90,8 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 		t.Fatal("test-failed - projects missing for dedicated-admins")
 	}
 
-	// build array of rhmi namespaces
-	var rhmiNamespaces []string
-	for _, product := range productNamespaces {
-		rhmiNamespaces = append(rhmiNamespaces, fmt.Sprintf("%s%s", NamespacePrefix, product))
-	}
-
-	// check to ensure dedicated admin is forbidden from rhmi namespace secrets
-	for _, namespace := range rhmiNamespaces {
-		path := fmt.Sprintf(resources.OpenshiftPathGetSecret, namespace)
-		resp, err := openshiftClient.GetRequest(path)
-		if err != nil {
-			t.Fatalf("error occurred while executing oc get request: %v", err)
-		}
-		if resp.StatusCode != 403 {
-			t.Fatalf("test-failed - status code found : %d expected status code : 403 RHMI dedicated admin should be forbidden from %s secrets", resp.StatusCode, namespace)
-		}
-	}
+	// Verify Dedicated admins permissions around secrets
+	verifyDedicatedAdminSecretPermissions(t, openshiftClient)
 
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
@@ -176,6 +161,39 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
 }
 
+func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying Dedicated admin permissions for Secrets Resource")
+
+	// build array of rhmi namespaces
+	var rhmiNamespaces []string
+	for _, product := range productNamespaces {
+		rhmiNamespaces = append(rhmiNamespaces, fmt.Sprintf("%s%s", NamespacePrefix, product))
+	}
+
+	// check to ensure dedicated admin is forbidden from rhmi namespace secrets
+	for _, namespace := range rhmiNamespaces {
+		path := fmt.Sprintf(resources.OpenshiftPathGetSecret, namespace)
+		resp, err := openshiftClient.GetRequest(path)
+		if err != nil {
+			t.Errorf("error occurred while executing oc get request: %v", err)
+			continue
+		}
+		if resp.StatusCode != 403 {
+			t.Errorf("test-failed - status code found : %d expected status code : 403 RHMI dedicated admin should be forbidden from %s secrets", resp.StatusCode, namespace)
+		}
+	}
+
+	// check dedicated admin can get github oauth secret
+	resp, err := openshiftClient.GetRequest(fmt.Sprintf(resources.OpenshiftPathGetSecret, RHMIOperatorNamespace) + "/github-oauth-secret")
+	if err != nil {
+		t.Errorf("error occurred while executing oc get request: %v", err)
+	}
+
+	if resp.StatusCode != 200 {
+		t.Errorf("test-failed - status code found : %d expected status code : 200 - RHMI dedicated admin should have access to github oauth secret in %s", resp.StatusCode, RHMIOperatorNamespace)
+	}
+}
+
 // Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
 func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
@@ -188,7 +206,7 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
 		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
-		ObjectToCreate:           &integreatlyv1alpha1.RHMIConfig{
+		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-rhmi-config",
 				Namespace: RHMIOperatorNamespace,
