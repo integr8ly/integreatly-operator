@@ -37,11 +37,8 @@ var (
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
-<<<<<<< HEAD
 		{"A06 - Verify PVC", TestPVClaims},
-=======
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
->>>>>>> Addition of common test which verifies servicemonitors are cloned in monitoring namespace
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
