@@ -227,7 +227,7 @@ func (oc *OpenshiftClient) DoOpenshiftPutRequest(path string, data []byte) (*htt
 
 // make a delete request, expects a path
 func (oc *OpenshiftClient) DoOpenshiftDeleteRequest(path string) (*http.Response, error) {
-	req, err := http.NewRequest("Delete", fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
 	}
