@@ -57,7 +57,7 @@ const (
 	defaultRouteName          = "solution-explorer"
 	manifestPackage           = "integreatly-solution-explorer"
 	paramRoutingSubdomain     = "ROUTING_SUBDOMAIN"
-	paramInstallationType     = "INSTALLATION TYPE"
+	paramInstallationType     = "INSTALLATION_TYPE"
 )
 
 type Reconciler struct {

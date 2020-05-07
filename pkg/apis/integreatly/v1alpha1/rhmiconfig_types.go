@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+	"fmt"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -54,6 +58,8 @@ type RHMIConfigStatusUpgrade struct {
 	Window string `json:"window,omitempty"`
 }
 
+const DateFormat = "2 Jan 2006 15:04"
+
 type Upgrade struct {
 	// contacts: list of contacts which are comma separated
 	// "user1@example.com,user2@example.com"
@@ -67,19 +73,19 @@ type Upgrade struct {
 	DuringNextMaintenance bool `json:"duringNextMaintenance"`
 	// apply-on: string date value. If 'always-immediately' or 'during-next-maintenance' is not set the customer is
 	// required to pick a time for the upgrade. Time value will be validated by a webhook and reset to blank after
-	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". Timezone local to cluster.
+	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
 }
 
 type Maintenance struct {
 	// apply-from: string, day time. Currently this is a 6 hour window.
-	// Format: "DDD hh:mm" > "sun 23:00". Timezone local to cluster.
+	// Format: "DDD hh:mm" > "sun 23:00". UTC time
 	ApplyFrom string `json:"applyFrom,omitempty"`
 }
 
 type Backup struct {
 	// apply-on: string, day time.
-	// Format: "DDD hh:mm" > "wed 20:00". Timezone local to cluster.
+	// Format: "DDD hh:mm" > "wed 20:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
 }
 
@@ -110,6 +116,23 @@ func (c *RHMIConfig) ValidateCreate() error {
 }
 
 func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
+	if c.Spec.Upgrade.ApplyOn == "" {
+		return nil
+	}
+
+	if c.Spec.Upgrade.AlwaysImmediately || c.Spec.Upgrade.DuringNextMaintenance {
+		return errors.New("spec.Upgrade.ApplyOn shouldn't be set when spec.Upgrade.AlwaysImmediatly or spec.Upgrade.DuringNextMaintenance are true")
+	}
+
+	applyOn, err := time.Parse(DateFormat, c.Spec.Upgrade.ApplyOn)
+	if err != nil {
+		return fmt.Errorf("Invalid value for spec.Upgrade.ApplyOn, must be a date with the format %s", DateFormat)
+	}
+
+	if !applyOn.UTC().After(time.Now().UTC()) {
+		return fmt.Errorf("Invalid value for spec.Upgrade.ApplyOn: %s. It must be a future date", applyOn.Format(DateFormat))
+	}
+
 	return nil
 }
 

@@ -564,10 +564,21 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 	}
 
 	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, credSec, func() error {
-		credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
-		credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
-		credSec.Data["AWS_BUCKET"] = blobStorageSec.Data["bucketName"]
-		credSec.Data["AWS_REGION"] = blobStorageSec.Data["bucketRegion"]
+		// Map known key names from CRO, and append any additional values that may be used for Minio
+		for key, value := range blobStorageSec.Data {
+			switch key {
+			case "credentialKeyID":
+				credSec.Data["AWS_ACCESS_KEY_ID"] = blobStorageSec.Data["credentialKeyID"]
+			case "credentialSecretKey":
+				credSec.Data["AWS_SECRET_ACCESS_KEY"] = blobStorageSec.Data["credentialSecretKey"]
+			case "bucketName":
+				credSec.Data["AWS_BUCKET"] = blobStorageSec.Data["bucketName"]
+			case "bucketRegion":
+				credSec.Data["AWS_REGION"] = blobStorageSec.Data["bucketRegion"]
+			default:
+				credSec.Data[key] = value
+			}
+		}
 		return nil
 	})
 	if err != nil {

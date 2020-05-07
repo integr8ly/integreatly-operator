@@ -12,7 +12,7 @@ var (
 
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
-		{"Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
+		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
