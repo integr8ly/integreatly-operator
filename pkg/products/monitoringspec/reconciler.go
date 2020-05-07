@@ -145,16 +145,15 @@ func (r *Reconciler) createNamespace(ctx context.Context, serverClient k8sclient
 		if !k8serr.IsNotFound(err) {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		//TODO - addClusterMonitoringLabel flipped back to true
 		_, err := resources.CreateNSWithProjectRequest(ctx, r.Config.GetNamespace(),
-			serverClient, installation, false, false)
+			serverClient, installation, false, true)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	resources.PrepareObject(namespace, installation, false, false)
+	resources.PrepareObject(namespace, installation, false, true)
 	err = serverClient.Update(ctx, namespace)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
