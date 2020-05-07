@@ -14,7 +14,7 @@ import (
 
 const (
 	InstallationName                  = "rhmi"
-	NamespacePrefix                   = "redhat-integration-"
+	NamespacePrefix                   = "redhat-rhmi-"
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"

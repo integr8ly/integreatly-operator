@@ -1,12 +1,12 @@
 include ./make/*.mk
 
-ORG ?=redhat-integration
-NAMESPACE=redhat-rhi-operator
-PROJECT=rhi-operator
+ORG ?= integreatly
+NAMESPACE=redhat-rhmi-operator
+PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-TAG ?= 2.0.0
-PKG=github.com/redhat-integration/rhi-operator
+TAG ?= 2.2.0
+PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
@@ -42,7 +42,7 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
-export INSTALLATION_PREFIX ?= redhat-integration
+export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
@@ -139,7 +139,7 @@ test/unit:
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export SURF_DEBUG_HEADERS=1
-test/e2e/prow: export component := rhi-operator
+test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 

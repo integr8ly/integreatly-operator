@@ -40,7 +40,7 @@ const (
 	deploymentTimeout            = time.Minute * 25
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
-	namespaceLabel               = "redhat-integration"
+	namespaceLabel               = "integreatly"
 	bootStrapStageTimeout        = time.Minute * 5
 	cloudResourcesStageTimeout   = time.Minute * 10
 	monitoringStageTimeout       = time.Minute * 10

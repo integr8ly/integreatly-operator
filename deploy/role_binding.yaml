@@ -6,7 +6,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: rhmi-operator
-  namespace: redhat-integration
+  namespace: redhat-rhmi-operator
 roleRef:
   kind: Role
   name: rhmi-operator
@@ -19,7 +19,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: rhmi-operator
-    namespace: redhat-integration
+    namespace: redhat-rhmi-operator
 roleRef:
   kind: ClusterRole
   name: rhmi-operator
