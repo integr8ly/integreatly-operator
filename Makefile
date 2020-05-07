@@ -139,7 +139,7 @@ test/unit:
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export SURF_DEBUG_HEADERS=1
-test/e2e/prow: export component := integreatly-operator
+test/e2e/prow: export component := rhi-operator
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
