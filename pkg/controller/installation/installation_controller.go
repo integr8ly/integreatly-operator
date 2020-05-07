@@ -3,6 +3,7 @@ package installation
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"os"
 	"strings"
 	"time"
@@ -19,8 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
-
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -237,11 +236,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installation.Status.Stages = map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{}
 	}
 
-	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(r.context, r.client); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	// either not checked, or rechecking preflight checks
 	if installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightInProgress ||
 		installation.Status.PreflightStatus == integreatlyv1alpha1.PreflightFail {
@@ -251,15 +245,15 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	// If the CR is being deleted, cancel the current context
 	// and attempt to clean up the products with finalizers
 	if installation.DeletionTimestamp != nil {
-
-		// Set metrics status to unavalible
-		metrics.RHMIStatusAvailable.Set(0)
-		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
-		_ = r.client.Status().Update(r.context, installation)
-
 		// Cancel this context to kill all ongoing requests to the API
 		// and use a new context to handle deletion logic
 		r.cancel()
+
+		// Set metrics status to unavailable
+		metrics.RHMIStatusAvailable.Set(0)
+		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
+		installation.Status.LastError = ""
+		_ = r.client.Status().Update(context.TODO(), installation)
 
 		// Clean up the products which have finalizers associated to them
 		merr := &multiErr{}
@@ -306,6 +300,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 
 		return retryRequeue, nil
+	}
+
+	// Reconcile the webhooks
+	if err := webhooks.Config.Reconcile(r.context, r.client); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	for _, stage := range installType.GetStages() {
