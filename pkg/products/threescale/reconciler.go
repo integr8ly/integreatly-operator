@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -234,7 +235,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	threescaleMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-master")
+	threescaleMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-master", nil)
 	if err != nil || threescaleMasterRoute == nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -501,7 +502,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
 
-		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider")
+		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider", func(r routev1.Route) bool {
+			return strings.HasPrefix(r.Spec.Host, "3scale-admin.")
+		})
 		if threescaleRoute != nil {
 			r.Config.SetHost("https://" + threescaleRoute.Spec.Host)
 			err = r.ConfigManager.WriteConfig(r.Config)
@@ -1030,7 +1033,9 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the developer console ui
-	route, err := r.getThreescaleRoute(ctx, client, "system-developer")
+	route, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+		return strings.HasPrefix(r.Spec.Host, "3scale.")
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
@@ -1043,7 +1048,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the master console ui
-	route, err = r.getThreescaleRoute(ctx, client, "system-master")
+	route, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
@@ -1058,7 +1063,12 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string) (*routev1.Route, error) {
+func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string, filterFn func(r routev1.Route) bool) (*routev1.Route, error) {
+	// Add backwards compatible filter function, first element will do
+	if filterFn == nil {
+		filterFn = func(r routev1.Route) bool { return true }
+	}
+
 	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
 	if err != nil {
 		return nil, err
@@ -1079,7 +1089,14 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 		return nil, nil
 	}
 
-	return &routes.Items[0], nil
+	var foundRoute *routev1.Route
+	for _, route := range routes.Items {
+		if filterFn(route) {
+			foundRoute = &route
+			break
+		}
+	}
+	return foundRoute, nil
 }
 
 func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient k8sclient.Client) (*string, *string, error) {
