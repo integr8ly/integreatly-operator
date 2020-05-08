@@ -223,18 +223,23 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 	}
 
 	//and they should all be ready
-checkPodStatus:
-	for _, pod := range pods.Items {
-		for _, cnd := range pod.Status.Conditions {
-			if cnd.Type == corev1.ContainersReady {
-				if cnd.Status != corev1.ConditionStatus("True") {
-					return integreatlyv1alpha1.PhaseInProgress, nil
-				}
-				break checkPodStatus
-			}
-		}
+	if !r.allPodsReady(pods) {
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	r.logger.Infof("all pods ready, returning complete")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) allPodsReady(pods *corev1.PodList) bool {
+	for _, pod := range pods.Items {
+		for _, cnd := range pod.Status.Conditions {
+			if cnd.Type == corev1.ContainersReady {
+				if cnd.Status != corev1.ConditionStatus("True") {
+					return false
+				}
+			}
+		}
+	}
+	return true
 }
