@@ -3,7 +3,9 @@ package config
 import (
 	"errors"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -16,7 +18,15 @@ func NewMonitoringSpec(config ProductConfig) *MonitoringSpec {
 }
 
 func (m *MonitoringSpec) GetWatchableCRDs() []runtime.Object {
-	return []runtime.Object{}
+
+	return []runtime.Object{
+		&monitoringv1.ServiceMonitor{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: monitoringv1.SchemeGroupVersion.String(),
+				Kind:       monitoringv1.ServiceMonitorsKind,
+			},
+		},
+	}
 }
 
 func (m *MonitoringSpec) GetNamespace() string {
