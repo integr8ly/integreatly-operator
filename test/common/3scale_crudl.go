@@ -36,7 +36,6 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
-
 	// get console master url
 	rhmi, err := getRHMI(ctx.Client)
 	if err != nil {

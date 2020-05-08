@@ -121,14 +121,14 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
-	l.Log("Clicking IDP link on page", browser.Url().Host, browser.Body())
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
+		l.Log("Error clicking IDP link", browser.Url().Host, browser.Body())
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
 
-	l.Log("Filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {
+		l.Log("Error filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
 		return fmt.Errorf("failed to get login form from oauth proxy screen: %w", err)
 	}
 	if err = loginForm.Input("username", username); err != nil {
@@ -143,9 +143,9 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
 	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
 	if strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
-		l.Log("Looking for permissions form on page", browser.Url().Host, browser.Body())
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
+			l.Log("Error looking for permissions form on page", browser.Url().Host, browser.Body())
 			return fmt.Errorf("failed to get permissions form: %w", err)
 		}
 		if err = permissionsForm.Submit(); err != nil {
