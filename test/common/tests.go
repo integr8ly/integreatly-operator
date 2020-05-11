@@ -38,6 +38,7 @@ var (
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 		{"A06 - Verify PVC", TestPVClaims},
+		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
