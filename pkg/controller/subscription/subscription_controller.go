@@ -67,7 +67,7 @@ type ReconcileSubscription struct {
 func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
 	if request.Namespace != r.operatorNamespace ||
-		(request.Name != IntegreatlyPackage && request.Name != "addon-rhmi") {
+		(request.Name != IntegreatlyPackage && request.Name != "addon-rhmi" && request.Name != "addon-rhmi-internal") {
 		logrus.Infof("not our subscription: %+v, %s", request, r.operatorNamespace)
 		return reconcile.Result{}, nil
 	}
