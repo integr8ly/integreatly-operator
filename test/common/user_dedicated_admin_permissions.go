@@ -7,8 +7,10 @@ import (
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"reflect"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"testing"
 
@@ -112,6 +114,9 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify dedicated admin permissions around AuthenticationService
 	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+
+	// Verify dedicated admin Role / Role binding for AMQ Online resources
+	verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -225,6 +230,8 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for StandardInfraConfig Resource")
 
+	resourceName := "test-standard-infra-config"
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -232,7 +239,7 @@ func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftC
 		ExpectedDeleteStatusCode: 200,
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListStandardInfraConfig, AMQOnlineOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetStandardInfraConfig, AMQOnlineOperatorNamespace, "test-standard-infra-config"),
+		GetPath:                  fmt.Sprintf(resources.PathGetStandardInfraConfig, AMQOnlineOperatorNamespace, resourceName),
 		ObjectToCreate: enmassev1beta1.StandardInfraConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-standard-infra-config",
@@ -257,6 +264,8 @@ func verifyDedicatedAdminStandardInfraConfigPermissions(t *testing.T, openshiftC
 func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for BrokeredInfraConfig Resource")
 
+	resourceName := "test-brokered-infra-config"
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -264,10 +273,10 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 		ExpectedDeleteStatusCode: 200,
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListBrokeredInfraConfig, AMQOnlineOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetBrokeredInfraConfig, AMQOnlineOperatorNamespace, "test-brokered-infra-config"),
+		GetPath:                  fmt.Sprintf(resources.PathGetBrokeredInfraConfig, AMQOnlineOperatorNamespace, resourceName),
 		ObjectToCreate: enmassev1beta1.BrokeredInfraConfig{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-brokered-infra-config",
+				Name:      resourceName,
 				Namespace: AMQOnlineOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
@@ -289,6 +298,8 @@ func verifyDedicatedAdminBrokeredInfraConfigPermissions(t *testing.T, openshiftC
 func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AddressSpacePlan Resource")
 
+	resourceName := "test-address-plan-space"
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -296,10 +307,10 @@ func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClie
 		ExpectedDeleteStatusCode: 200,
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListAddressSpacePlan, AMQOnlineOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetAddressSpacePlan, AMQOnlineOperatorNamespace, "test-address-plan-space"),
+		GetPath:                  fmt.Sprintf(resources.PathGetAddressSpacePlan, AMQOnlineOperatorNamespace, resourceName),
 		ObjectToCreate: enmassev1beta2.AddressSpacePlan{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-address-plan-space",
+				Name:      resourceName,
 				Namespace: AMQOnlineOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
@@ -326,6 +337,8 @@ func verifyDedicatedAdminAddressSpacePlanPermissions(t *testing.T, openshiftClie
 func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AddressPlan Resource")
 
+	resourceName := "test-address-plan"
+
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -333,10 +346,10 @@ func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *r
 		ExpectedDeleteStatusCode: 200,
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListAddressPlan, AMQOnlineOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetAddressPlan, AMQOnlineOperatorNamespace, "test-address-plan"),
+		GetPath:                  fmt.Sprintf(resources.PathGetAddressPlan, AMQOnlineOperatorNamespace, resourceName),
 		ObjectToCreate: enmassev1beta2.AddressPlan{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-address-plan",
+				Name:      resourceName,
 				Namespace: AMQOnlineOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
@@ -360,6 +373,7 @@ func verifyDedicatedAdminAddressPlanPermissions(t *testing.T, openshiftClient *r
 func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for AuthenticationService Resource")
 
+	resourceName := "test-authentication-service"
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 201,
 		ExpectedReadStatusCode:   200,
@@ -367,10 +381,10 @@ func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshif
 		ExpectedDeleteStatusCode: 200,
 		ExpectedListStatusCode:   200,
 		ListPath:                 fmt.Sprintf(resources.PathListAuthenticationService, AMQOnlineOperatorNamespace),
-		GetPath:                  fmt.Sprintf(resources.PathGetAuthenticationService, AMQOnlineOperatorNamespace, "test-authentication-service"),
+		GetPath:                  fmt.Sprintf(resources.PathGetAuthenticationService, AMQOnlineOperatorNamespace, resourceName),
 		ObjectToCreate: enmasseadminv1beta1.AuthenticationService{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-authentication-service",
+				Name:      resourceName,
 				Namespace: AMQOnlineOperatorNamespace,
 			},
 			TypeMeta: metav1.TypeMeta{
@@ -378,10 +392,56 @@ func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshif
 				APIVersion: "admin.enmasse.io/v1beta1",
 			},
 			Spec: enmasseadminv1beta1.AuthenticationServiceSpec{
-				Type: "none",
+				Type: enmasseadminv1beta1.None,
 			},
 		},
 	}
 
 	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
+}
+
+func verifyDedicatedAdminAMQOnlineRolePermissions(t *testing.T, ctx *TestingContext) {
+	t.Log("Verifying Dedicated admin AMQ Online resource role / role binding")
+
+	roleBinding := &rbacv1.RoleBinding{}
+	if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "dedicated-admins-service-admin", Namespace: AMQOnlineOperatorNamespace}, roleBinding); err != nil {
+		t.Fatalf("error getting dedicated-admins-service-admin role binding in %s namespace: %s", AMQOnlineOperatorNamespace, err)
+	}
+
+	// Verify dedicated admin group is in role binding
+	found := false
+	for _, subject := range roleBinding.Subjects {
+		if subject.Name == "dedicated-admins" && subject.Kind == "Group" {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Fatalf("Did not dedicated admin group in %s rolebinding in %s namespace", roleBinding.Name, roleBinding.Namespace)
+	}
+
+	// Verify permissions given by the role
+	role := &rbacv1.Role{}
+	if err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: roleBinding.RoleRef.Name, Namespace: AMQOnlineOperatorNamespace}, role); err != nil {
+		t.Fatalf("error %s role in %s namespace: %s", roleBinding.RoleRef.Name, AMQOnlineOperatorNamespace, err)
+	}
+
+	haveCorrectPermission := false
+	expectedRule := rbacv1.PolicyRule{
+		Verbs:     []string{"create", "get", "update", "delete", "list", "watch", "patch"},
+		APIGroups: []string{"admin.enmasse.io"},
+		Resources: []string{"addressplans", "addressspaceplans", "brokeredinfraconfigs", "standardinfraconfigs", "authenticationservices"},
+	}
+
+	for _, rule := range role.Rules {
+		if reflect.DeepEqual(rule, expectedRule) {
+			haveCorrectPermission = true
+			break
+		}
+	}
+
+	if !haveCorrectPermission {
+		t.Fatalf("Incorrect permissions found for %s role in %s namespace. Excpected %s as a policy rule ", role.Name, role.Namespace, expectedRule)
+	}
 }
