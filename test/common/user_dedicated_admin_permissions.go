@@ -4,14 +4,16 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -154,7 +156,12 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	}
 
 	// Dedicate admin can not CREATE new RHMI config
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1alpha1",
+			Kind:       "RHMIConfig",
+		},
+	}
 	bodyBytes, err = json.Marshal(rhmiConfig)
 
 	resp, err = openshiftClient.DoOpenshiftPostRequest(path, bodyBytes)
