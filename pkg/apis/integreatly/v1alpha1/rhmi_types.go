@@ -61,7 +61,7 @@ var (
 	VersionMonitoring          ProductVersion = "1.1.5"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.15.1"
+	VersionCloudResources      ProductVersion = "0.15.2"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.3"
@@ -88,7 +88,7 @@ var (
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
 	OperatorVersion3Scale              OperatorVersion = "0.5.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.15.1"
+	OperatorVersionCloudResources      OperatorVersion = "0.15.2"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 
