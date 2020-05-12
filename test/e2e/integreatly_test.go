@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	goctx "context"
 	"fmt"
@@ -25,11 +24,9 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/remotecommand"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -169,65 +166,6 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	return nil
 }
 
-func execToPod(command string, podname string, namespace string, container string, f *framework.Framework) (string, error) {
-	req := f.KubeClient.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(podname).
-		Namespace(namespace).
-		SubResource("exec").
-		Param("container", container)
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return "", fmt.Errorf("error adding to scheme: %v", err)
-	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
-	req.VersionedParams(&corev1.PodExecOptions{
-		Container: container,
-		Command:   strings.Fields(command),
-		Stdin:     false,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       false,
-	}, parameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(f.KubeConfig, "POST", req.URL())
-	if err != nil {
-		return "", fmt.Errorf("error while creating Executor: %v", err)
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  nil,
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Tty:    false,
-	})
-	if err != nil {
-		return "", fmt.Errorf("error in Stream: %v", err)
-	}
-
-	return stdout.String(), nil
-}
-
-func getConfigMap(name string, namespace string, f *framework.Framework) (map[string]string, error) {
-	configmap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	key := k8sclient.ObjectKey{
-		Name:      configmap.GetName(),
-		Namespace: configmap.GetNamespace(),
-	}
-	err := f.Client.Get(goctx.TODO(), key, configmap)
-	if err != nil {
-		return map[string]string{}, fmt.Errorf("could not get configmap: %configmapname", err)
-	}
-
-	return configmap.Data, nil
-}
-
 func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
@@ -337,48 +275,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check auth stage operator versions
-	authOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.OperatorVersionRHSSO),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperators)
-	if err != nil {
-		return err
-	}
-
-	// check cloud resources stage operator versions
-	resouceOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.OperatorVersionCloudResources),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperators)
-	if err != nil {
-		return err
-	}
-
-	// check monitoring stage operator versions
-	monitoringOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.OperatorVersionMonitoring),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperators)
-	if err != nil {
-		return err
-	}
-
-	// check products stage operator versions
-	productOperators := map[string]string{
-		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.OperatorVersion3Scale),
-		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.OperatorVersionAMQOnline),
-		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.OperatorVersionApicurito),
-		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
-		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.OperatorVersionFuse),
-		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.OperatorVersionUPS),
-		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperators)
-	if err != nil {
-		return err
-	}
-
 	// check authentication stage operand versions
 	authOperands := map[string]string{
 		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
@@ -446,24 +342,6 @@ func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, names
 			return fmt.Errorf("Incorrect %v label on integreatly namespace: %v. Expected: true. Got: %v", label, namespaceName, value)
 		}
 	}
-	return nil
-}
-
-func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operatorVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.RHMI{}
-
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
-	if err != nil {
-		return fmt.Errorf("Error getting installation CR from cluster when checking operator versions: %w", err)
-	}
-
-	for product, version := range operatorVersions {
-		clusterVersion := installation.Status.Stages[stage].Products[integreatlyv1alpha1.ProductName(product)].OperatorVersion
-		if clusterVersion != integreatlyv1alpha1.OperatorVersion(version) {
-			return fmt.Errorf("Error with version of %s operator deployed on cluster. Expected %s. Got %s", product, version, clusterVersion)
-		}
-	}
-
 	return nil
 }
 
