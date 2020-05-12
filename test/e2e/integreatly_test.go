@@ -249,32 +249,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check namespaces labelled correctly
-	expectedNamespaces := []string{
-		"3scale",
-		"3scale-operator",
-		"amq-online",
-		"apicurito",
-		"apicurito-operator",
-		"codeready-workspaces",
-		"codeready-workspaces-operator",
-		"fuse",
-		"fuse-operator",
-		"middleware-monitoring-operator",
-		"rhsso",
-		"rhsso-operator",
-		"solution-explorer",
-		"solution-explorer-operator",
-		"ups",
-		"ups-operator",
-		"user-sso",
-		"user-sso-operator",
-	}
-	err = checkIntegreatlyNamespaceLabels(t, f, expectedNamespaces, namespaceLabel)
-	if err != nil {
-		return err
-	}
-
 	// check authentication stage operand versions
 	authOperands := map[string]string{
 		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
@@ -328,21 +302,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 	err = checkPvcs(t, f, namespace, pvcNamespaces)
 	return err
-}
-
-func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
-	for _, namespaceName := range namespaces {
-		namespace := &corev1.Namespace{}
-		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: common.NamespacePrefix + namespaceName}, namespace)
-		if err != nil {
-			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
-		}
-		value, ok := namespace.Labels[label]
-		if !ok || value != "true" {
-			return fmt.Errorf("Incorrect %v label on integreatly namespace: %v. Expected: true. Got: %v", label, namespaceName, value)
-		}
-	}
-	return nil
 }
 
 func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
