@@ -58,7 +58,7 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
-	VersionMonitoring          ProductVersion = "1.1.5"
+	VersionMonitoring          ProductVersion = "1.1.6"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.15.2"
