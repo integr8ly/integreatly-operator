@@ -7,7 +7,7 @@ go:
 
 env:
   global:
-    - OPERATOR_NAME=integreatly-operator
+    - OPERATOR_NAME=rhi-operator
 
 stages:
   - test
@@ -16,7 +16,7 @@ jobs:
   include:
     - stage: test
       script:
-        - cd $HOME/gopath/src/github.com/integr8ly/$OPERATOR_NAME && make test/unit
+        - cd $HOME/gopath/src/github.com/redhat-integration/$OPERATOR_NAME && make test/unit
         - go get github.com/mattn/goveralls
         - go install github.com/mattn/goveralls
         - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken=$COVERALLS_TOKEN || echo "push to coveralls failed"
