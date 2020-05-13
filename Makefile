@@ -45,7 +45,6 @@ export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
-export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -239,17 +238,13 @@ cluster/prepare/dms:
 		--from-literal=url=https://dms.example.com
 
 .PHONY: cluster/prepare/delorean
-cluster/prepare/delorean:
-ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
-	@echo Detected a delorean ews branch. The integreatly-delorean-secret.yml is required.
-	@echo Please contact the delorean team to get this if you do not already have it.
-	@echo Add it to the root dir of this repo and rerun the desired target if the target fails on it not existing
-	@ oc apply -f integreatly-delorean-secret.yml --namespace=$(NAMESPACE)
-endif
+cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 
 .PHONY: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
+ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	@./scripts/setup-delorean-pullsecret.sh
+endif
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
@@ -284,15 +279,6 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
-ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE/$(NAMESPACE)/g" deploy/integreatly-rhmi-cr.yml
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME/$(DELOREAN_PULL_SECRET_NAME)/g" deploy/integreatly-rhmi-cr.yml
-	rm deploy/integreatly-rhmi-cr.yml.bak
-else
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE//g" deploy/integreatly-rhmi-cr.yml
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME//g" deploy/integreatly-rhmi-cr.yml
-	rm deploy/integreatly-rhmi-cr.yml.bak
-endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
 .PHONY: prepare-patch-release
