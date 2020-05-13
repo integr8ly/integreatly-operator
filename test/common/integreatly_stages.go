@@ -44,7 +44,7 @@ var (
 )
 
 func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
-	err := wait.PollImmediate(time.Second*15, time.Minute*5, func() (bool, error) {
+	err := wait.PollImmediateInfinite(time.Second*15, func() (bool, error) {
 		done := true
 
 		//get RHMI
