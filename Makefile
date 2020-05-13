@@ -45,7 +45,7 @@ export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
-export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
+export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-readonly-pull-secret
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -176,7 +176,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty delorean/cluster/prepare
 
 .PHONY: cluster/prepare/project
 cluster/prepare/project:
