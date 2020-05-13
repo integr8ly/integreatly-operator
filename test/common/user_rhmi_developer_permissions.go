@@ -76,7 +76,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 			runningCount++
 		}
 	}
-	if runningCount != expectedFusePodCount {
+	if runningCount < expectedFusePodCount {
 		t.Fatalf("test-failed - expected fuse pod count : %d found fuse pod count: %d", expectedFusePodCount, runningCount)
 	}
 
