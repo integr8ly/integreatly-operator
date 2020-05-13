@@ -12,6 +12,7 @@ var (
 
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
+		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
 		{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"A05 - Verify product operator version", TestProductOperatorVersions},
