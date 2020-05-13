@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+IMAGE_MAPPINGS?=$(shell sh -c "find manifests/ -name image_mirror_mapping")
 
 .PHONY: delorean/cluster/prepare
 delorean/cluster/prepare:
