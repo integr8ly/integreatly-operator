@@ -1,9 +1,12 @@
 package common
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
@@ -41,36 +44,59 @@ var (
 )
 
 func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
+	err := wait.PollImmediate(time.Second*15, time.Minute*5, func() (bool, error) {
+		done := true
 
-	//get RHMI
-	rhmi, err := getRHMI(ctx.Client)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
-	}
-
-	//iterate stages and check their status
-	for stageName, productNames := range expectedStageProducts {
-		stage, ok := rhmi.Status.Stages[v1alpha1.StageName(stageName)]
-		if !ok {
-			t.Errorf("Error checking stage %s. Not found", stageName)
-			continue
+		//get RHMI
+		rhmi, err := getRHMI(ctx.Client)
+		if err != nil {
+			return false, fmt.Errorf("error getting RHMI CR: %v", err)
 		}
 
-		if status := checkStageStatus(stage); status != "" {
-			t.Errorf("Error: Stage %v not completed. It's current status is %v", stage.Name, status)
-		}
-
-		for _, productName := range productNames {
-			product, ok := stage.Products[v1alpha1.ProductName(productName)]
+		//iterate stages and check their status
+		for stageName, productNames := range expectedStageProducts {
+			stage, ok := rhmi.Status.Stages[v1alpha1.StageName(stageName)]
 			if !ok {
-				t.Errorf("Product %s not found in stage %s", productName, stageName)
+				t.Errorf("Error checking stage %s. Not found", stageName)
+				done = true
 				continue
 			}
 
-			if status := checkProductStatus(product); status != "" {
-				t.Errorf("Error: Product %s status not completed. It's current status is %s", productName, status)
+			if status := checkStageStatus(stage); status != "" {
+				if retryStatus(status) {
+					t.Logf("Status for stage %s in progress. Retrying...", stageName)
+					done = false
+				} else {
+					t.Errorf("Error: Stage %v failed. It's current status is %v", stage.Name, status)
+					done = true
+				}
+			}
+
+			for _, productName := range productNames {
+				product, ok := stage.Products[v1alpha1.ProductName(productName)]
+				if !ok {
+					t.Errorf("Product %s not found in stage %s", productName, stageName)
+					done = true
+					continue
+				}
+
+				if status := checkProductStatus(product); status != "" {
+					if retryStatus(status) {
+						t.Logf("Status for product %s in stage %s in progress. Retrying...", productName, stageName)
+						done = false
+					} else {
+						t.Errorf("Error: Product %s status failed. It's current status is %s", productName, status)
+						done = true
+					}
+				}
 			}
 		}
+
+		return done, nil
+	})
+
+	if err != nil {
+		t.Error(err)
 	}
 }
 
@@ -91,4 +117,8 @@ func checkStatus(status v1alpha1.StatusPhase) string {
 	}
 
 	return string(status)
+}
+
+func retryStatus(status string) bool {
+	return status == "in progress"
 }
