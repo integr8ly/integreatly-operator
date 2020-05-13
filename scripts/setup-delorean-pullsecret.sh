@@ -8,11 +8,11 @@ DELOREAN_PULLSECRET="$(pwd)/integreatly-delorean-auth.json"
 STAGED_PULLSECRET="$(pwd)/staged-pullsecret"
 COMBINED_PULLSECRET="$(pwd)/combined-pullsecret"
 
-if [ ! -f ${DELOREAN_PULLSECRET} ]; then
-  echo "Error: integreatly-delorean-auth.json not found at ${DELOREAN_PULLSECRET}"
-  echo "Download the integreatly-delorean-auth.json file from https://quay.io/organization/integreatly?tab=robots Docker Configuration tab"
-  exit 1
-fi
+#if [ ! -f ${DELOREAN_PULLSECRET} ]; then
+#  echo "Error: integreatly-delorean-auth.json not found at ${DELOREAN_PULLSECRET}"
+#  echo "Download the integreatly-delorean-auth.json file from https://quay.io/organization/integreatly?tab=robots Docker Configuration tab"
+#  exit 1
+#fi
 
 setup_global() {
     oc get secret pull-secret -n openshift-config -o yaml > "$CONFIG_PULLSECRET"
