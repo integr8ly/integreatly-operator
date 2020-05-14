@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
@@ -73,13 +74,14 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
 
-	// Calculate the upgrade window
-	if installplan.Spec.Approved {
-		config.Status.Upgrade.Window = ""
-	} else {
-		upStart := installplan.ObjectMeta.CreationTimestamp.Time.Format("2 Jan 2006")
-		upEnd := installplan.ObjectMeta.CreationTimestamp.Time.Add(daysDuration(14)).Format("2 Jan 2006")
-		config.Status.Upgrade.Window = upStart + " - " + upEnd
+	if installplan != nil {
+		if installplan.Spec.Approved {
+			config.Status.Upgrade.Window = ""
+		} else {
+			upStart := installplan.ObjectMeta.CreationTimestamp.Time.Format("2 Jan 2006")
+			upEnd := installplan.ObjectMeta.CreationTimestamp.Time.Add(daysDuration(14)).Format("2 Jan 2006")
+			config.Status.Upgrade.Window = upStart + " - " + upEnd
+		}
 	}
 
 	// Calculate the upgrade schedule based on the spec:
@@ -217,6 +219,9 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 }
 
 func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, installation *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, eventRecorder record.EventRecorder) error {
+	if installPlan.Spec.Approved == true {
+		return nil
+	}
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
@@ -224,8 +229,10 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *o
 	eventRecorder.Eventf(installPlan, "Normal", integreatlyv1alpha1.EventUpgradeApproved,
 		"Approving %s install plan: %s", installPlan.Name, installPlan.Spec.ClusterServiceVersionNames[0])
 
-	installPlan.Spec.Approved = true
-	err := client.Update(ctx, installPlan)
+	_, err := controllerutil.CreateOrUpdate(ctx, client, installPlan, func() error {
+		installPlan.Spec.Approved = true
+		return nil
+	})
 	if err != nil {
 		return err
 	}

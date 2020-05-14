@@ -101,12 +101,15 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		return reconcile.Result{}, nil
 	}
 
-	logrus.Infof("RHMI upgrade available")
-
 	latestRHMIInstallPlan, err := rhmiConfigs.GetLatestInstallPlan(ctx, rhmiSubscription, r.client)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	if latestRHMIInstallPlan.Spec.Approved {
+		return reconcile.Result{}, nil
+	}
+	logrus.Infof("RHMI upgrade available")
 
 	latestRHMICSV, err := rhmiConfigs.GetCSV(latestRHMIInstallPlan)
 	if err != nil {

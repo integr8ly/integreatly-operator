@@ -19,10 +19,13 @@ package rhmiconfig
 import (
 	"context"
 	"fmt"
+	"time"
+
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/rhmiConfigs"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
@@ -146,6 +149,7 @@ func (r *ReconcileRHMIConfig) ReconcileCloudResourceStrategies(config *integreat
 	if err != nil {
 		return fmt.Errorf("failure validating backup and maintenance values : %v", err)
 	}
+	rhmiConfigs.UpdateStatus(context.TODO(), r.client, config, nil)
 
 	// build time config expected by CRO
 	timeConfig := &croUtil.StrategyTimeConfig{

@@ -38,7 +38,7 @@ func buildScheme() *runtime.Scheme {
 }
 
 func nowOffset(hours int) time.Time {
-	now := time.Now()
+	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
 }
 
