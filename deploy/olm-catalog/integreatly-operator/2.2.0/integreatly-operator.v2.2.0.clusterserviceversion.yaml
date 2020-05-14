@@ -311,13 +311,6 @@ spec:
                 name: rhmi-operator
                 ports:
                 - containerPort: 8090
-                resources:
-                  limits:
-                    cpu: 60m
-                    memory: 128Mi
-                  requests:
-                    cpu: 40m
-                    memory: 64Mi
                 volumeMounts:
                 - mountPath: /etc/ssl/certs/webhook
                   name: webhook-certs
