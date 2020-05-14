@@ -152,6 +152,26 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
+			Alert: "KubePodOutOfMemoryKilledWarning",
+			Annotations: map[string]string{
+				"sop_url": "TBA",
+				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been killed due to being Out Of Memory.",
+			},
+			Expr:   intstr.FromString("sum by(pod, namespace) (kube_pod_container_status_last_terminated_reason {reason='OOMKilled'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) = 1"),
+			For:    "5m", //TBD
+			Labels: map[string]string{"severity": "warning"},
+		},
+		{
+			Alert: "KubePodOutOfMemoryKilledCritical",
+			Annotations: map[string]string{
+				"sop_url": "TBA",
+				"message": "Multiple Pods in the {{ $labels.namespace }} are being killed of do to Out Of Memory ",
+			},
+			Expr:   intstr.FromString("sum by(pod, namespace) (kube_pod_container_status_last_terminated_reason {reason='OOMKilled'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 1"), //TODO discuss the threshold of the no. of pods that are considered critical with SRE
+			For:    "5m",                                                                                                                                                                                                                                          //TBD
+			Labels: map[string]string{"severity": "critical"},
+		},
+		{
 			Alert: "ClusterSchedulableMemoryLow",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts/Cluster_Schedulable_Resources_Low.asciidoc",
