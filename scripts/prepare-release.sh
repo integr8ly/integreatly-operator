@@ -8,6 +8,10 @@ create_new_csv() {
   operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name integreatly-operator --csv-channel=rhmi --update-crds --from-version "$PREVIOUS_VERSION"
 }
 
+update_csv() {
+  operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name integreatly-operator --csv-channel=rhmi --update-crds
+}
+
 set_version() {
   "${SED_INLINE[@]}" "s/$PREVIOUS_VERSION/$VERSION/g" Makefile
   "${SED_INLINE[@]}" "s/$PREVIOUS_VERSION/$VERSION/g" version/version.go
@@ -45,6 +49,8 @@ fi
 if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
   create_new_csv
   set_version
+else
+  update_csv
 fi
 
 # Include the webhook service in the bundle (temporal solution as OLM will soon
