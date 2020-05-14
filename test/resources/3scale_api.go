@@ -3,8 +3,10 @@ package resources
 import (
 	"errors"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	url2 "net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -26,6 +28,9 @@ type ThreeScaleAPIClient interface {
 	CreateProduct(name string) (string, error)
 	DeleteProduct(href string) error
 	SendUserInvitation(name string, t *testing.T) (string, error)
+	SetUserAsAdmin(username string, email string, userID string) error
+	GetUserId(username string) (string, error)
+	VerifyUserIsAdmin(userID string) (bool, error)
 }
 
 type ThreeScaleAPIClientImpl struct {
@@ -249,4 +254,119 @@ func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string, t *testing.T) 
 	}
 
 	return "Completed", nil
+}
+
+func (r *ThreeScaleAPIClientImpl) SetUserAsAdmin(username string, email string, userID string) error {
+
+	url := fmt.Sprintf("%v/p/admin/account/users/%v", r.host, userID)
+	formUrl := fmt.Sprintf("%v/p/admin/account/users/%v/edit", r.host, userID)
+
+	// First try to get the CRSF token by requesting the form
+	csrf, err := requestCRSFToken(r.client, formUrl)
+	if err != nil {
+		return err
+	}
+
+	formValues := url2.Values{
+		"user[username]":              []string{username},
+		"user[email]":                 []string{email},
+		"user[role]":                  []string{"admin"},
+		"user[password]":              []string{},
+		"user[password_confirmation]": []string{},
+		"commit":                      []string{"Update+User"},
+		"authenticity_token":          []string{csrf},
+		"_method":                     []string{"patch"},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(formValues.Encode()))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", r.token))
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+	}
+
+	return nil
+}
+
+func (r *ThreeScaleAPIClientImpl) GetUserId(username string) (string, error) {
+	url := fmt.Sprintf("%v/p/admin/account/users", r.host)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", r.token))
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+	}
+
+	doc, err := ParseHtmlResponse(resp)
+	if err != nil {
+		return "", err
+	}
+
+	links := doc.Find("a[title='Edit']")
+
+	link := ""
+	links.Each(func(index int, s *goquery.Selection) {
+		if s.Contents().Text() == username {
+			link, _ = s.Attr("href")
+			return
+		}
+	})
+
+	if link == "" {
+		return "", fmt.Errorf("Failed to retrieve link to edit user")
+	}
+
+	userId := ""
+	s := strings.Split(link, "/")
+	for _, val := range s {
+		if _, err := strconv.Atoi(val); err == nil {
+			userId = val
+			break
+		}
+	}
+
+	return userId, nil
+}
+
+func (r *ThreeScaleAPIClientImpl) VerifyUserIsAdmin(userID string) (bool, error) {
+
+	formUrl := fmt.Sprintf("%v/p/admin/account/users/%v/edit", r.host, userID)
+	resp, err := r.client.Get(formUrl)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	doc, err := ParseHtmlResponse(resp)
+	if err != nil {
+		return false, err
+	}
+
+	selector := doc.Find("input[id='user_role_admin']")
+	_, exists := selector.Attr("checked")
+	if exists {
+		return true, nil
+	}
+
+	return false, nil
 }
