@@ -45,7 +45,7 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.2.0-rc4
+    containerImage: quay.io/integreatly/integreatly-operator:v2.2.0
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     support: RHMI
@@ -306,18 +306,12 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v2.2.0-rc4
+                image: quay.io/integreatly/integreatly-operator:v2.2.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
                 - containerPort: 8090
-                resources:
-                  limits:
-                    cpu: 60m
-                    memory: 128Mi
-                  requests:
-                    cpu: 40m
-                    memory: 64Mi
+                resources: {}
                 volumeMounts:
                 - mountPath: /etc/ssl/certs/webhook
                   name: webhook-certs
