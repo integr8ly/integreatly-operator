@@ -157,7 +157,6 @@ test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/pre
 
 
 .PHONY: test/functional
-test/functional:  export SURF_DEBUG_HEADERS=1
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
