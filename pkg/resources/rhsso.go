@@ -13,7 +13,7 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )

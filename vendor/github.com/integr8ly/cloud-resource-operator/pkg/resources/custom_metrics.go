@@ -18,15 +18,20 @@ import (
 )
 
 const (
-	sleepytime                           = 3600
-	DefaultPostgresMaintenanceMetricName = "cro_postgres_service_maintenance"
-	DefaultPostgresInfoMetricName        = "cro_postgres_info"
-	DefaultPostgresAvailMetricName       = "cro_postgres_available"
-	DefaultPostgresConnectionMetricName  = "cro_postgres_connection"
-	DefaultRedisMaintenanceMetricName    = "cro_redis_service_maintenance"
-	DefaultRedisInfoMetricName           = "cro_redis_info"
-	DefaultRedisAvailMetricName          = "cro_redis_available"
-	DefaultRedisConnectionMetricName     = "cro_redis_connection"
+	sleepytime                              = 3600
+	DefaultPostgresMaintenanceMetricName    = "cro_postgres_service_maintenance"
+	DefaultPostgresInfoMetricName           = "cro_postgres_info"
+	DefaultPostgresAvailMetricName          = "cro_postgres_available"
+	DefaultPostgresConnectionMetricName     = "cro_postgres_connection"
+	DefaultPostgresStatusMetricName         = "cro_postgres_status_phase"
+	DefaultPostgresSnapshotStatusMetricName = "cro_postgres_snapshot_status_phase"
+	DefaultRedisMaintenanceMetricName       = "cro_redis_service_maintenance"
+	DefaultRedisInfoMetricName              = "cro_redis_info"
+	DefaultRedisAvailMetricName             = "cro_redis_available"
+	DefaultRedisConnectionMetricName        = "cro_redis_connection"
+	DefaultRedisStatusMetricName            = "cro_redis_status_phase"
+	DefaultRedisSnapshotStatusMetricName    = "cro_redis_snapshot_status_phase"
+	DefaultBlobStorageStatusMetricName      = "cro_blobstorage_status_phase"
 )
 
 var (

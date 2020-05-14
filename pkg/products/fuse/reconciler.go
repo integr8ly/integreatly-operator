@@ -5,7 +5,7 @@ import (
 	"fmt"
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
