@@ -231,11 +231,15 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedListStatusCode {
-		t.Errorf("unexpected response from LIST request : %v", resp)
+		t.Errorf("unexpected response from LIST request, expected %d status but got: %v", expectedPermission.ExpectedListStatusCode, resp)
 	}
 
 	// Perform CREATE Request
 	bodyBytes, err := json.Marshal(expectedPermission.ObjectToCreate)
+
+	if err != nil {
+		t.Errorf("failed to marshal object to json for create request: %s", err)
+	}
 
 	resp, err = openshiftClient.DoOpenshiftPostRequest(expectedPermission.ListPath, bodyBytes)
 
@@ -244,7 +248,7 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedCreateStatusCode {
-		t.Errorf("unexpected response from CREATE request : %v", resp)
+		t.Errorf("unexpected response from CREATE request, expected %d status but got: %v", expectedPermission.ExpectedCreateStatusCode, resp)
 	}
 
 	// Perform GET Request
@@ -255,11 +259,15 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedReadStatusCode {
-		t.Errorf("unexpected response from GET request : %v", resp)
+		t.Errorf("unexpected response from GET request, expected %d status but got: %v", expectedPermission.ExpectedReadStatusCode, resp)
 	}
 
 	// Perform UPDATE Request
 	bodyBytes, err = ioutil.ReadAll(resp.Body) // Use response from GET
+
+	if err != nil {
+		t.Errorf("failed to read response body for update request: %s", err)
+	}
 
 	resp, err = openshiftClient.DoOpenshiftPutRequest(expectedPermission.GetPath, bodyBytes)
 
@@ -268,7 +276,7 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedUpdateStatusCode {
-		t.Errorf("unexpected response from UPDATE request : %v", resp)
+		t.Errorf("unexpected response from UPDATE request, expected %d status but got: %v", expectedPermission.ExpectedUpdateStatusCode, resp)
 	}
 
 	// Perform DELETE Request
@@ -279,6 +287,12 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	if resp.StatusCode != expectedPermission.ExpectedDeleteStatusCode {
-		t.Errorf("unexpected response from DELETE request  : %v", resp)
+		t.Errorf("unexpected response from DELETE request, expected %d status but got: %v", expectedPermission.ExpectedDeleteStatusCode, resp)
+	}
+
+	// Close the response body
+	err = resp.Body.Close()
+	if err != nil {
+		t.Errorf("failed to close response body: %s", err)
 	}
 }

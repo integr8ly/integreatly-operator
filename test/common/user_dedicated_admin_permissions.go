@@ -7,6 +7,7 @@ import (
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"io/ioutil"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"reflect"
@@ -392,7 +393,7 @@ func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshif
 				APIVersion: "admin.enmasse.io/v1beta1",
 			},
 			Spec: enmasseadminv1beta1.AuthenticationServiceSpec{
-				Type: enmasseadminv1beta1.None,
+				Type: enmasseadminv1beta1.External,
 			},
 		},
 	}
@@ -418,7 +419,7 @@ func verifyDedicatedAdminAMQOnlineRolePermissions(t *testing.T, ctx *TestingCont
 	}
 
 	if !found {
-		t.Fatalf("Did not dedicated admin group in %s rolebinding in %s namespace", roleBinding.Name, roleBinding.Namespace)
+		t.Fatalf("Did not find dedicated admin group in %s rolebinding in %s namespace", roleBinding.Name, roleBinding.Namespace)
 	}
 
 	// Verify permissions given by the role
