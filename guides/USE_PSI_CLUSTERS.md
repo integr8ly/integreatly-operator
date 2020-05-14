@@ -19,17 +19,10 @@ In order to trigger the job, you need to request build permission to the instanc
 
 ## Request build permission
 
-You need to (The instruction is also available on the Jenkins job page):
+In order to be able to trigger build jobs, you need to be a memebr of the [aos-qe-jenkins-installer Rover group](https://rover.redhat.com/groups/group/aos-qe-jenkins-installer). 
 
-1. Go to this [Service Now Page](https://redhat.service-now.com/rh_ess/catalog.do?v=1&uri=com.glideapp.servicecatalog_cat_item_view.do%3Fv%3D1%26sysparm_id%3Defc26a27053142004c7104229f8248df%26sysparm_link_parent%3D34feb8be2b50c9004c71dc0e59da1553%26sysparm_catalog%3De0d08b13c3330100c8b837659bba8fb4&sysparm_document_key=sc_cat_item,efc26a27053142004c7104229f8248df) to create a SNOW ticket.
-   
-    1. Add your name to the `Requested for` field
-    2. In the `LDAP Group Details` section, enter `aos-qe-installer` to the `Available` field, select it and click on the `>` button to add it
-    3. For the `Provide details about why you need to be added to these groups`, enter `Create OCP4 clusters on PSI`. 
+To be added to the group, you need to send emails to the owners of the group (you can search owners from the above Rover group page) to request access.
 
-2. Submit the request and wait. It normally takes about 24-48 hours for the ticket to be resolved.
-
-Once the SNOW ticket is resolved, you will be able to trigger the Jenkins job. 
 
 ## Create a PSI OCP4 cluster
 
