@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"testing"
+
 	v1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
-	"os"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
@@ -40,9 +40,10 @@ import (
 )
 
 const (
-	mockSMTPSecretName      = "test-smtp"
-	mockPagerdutySecretName = "test-pd"
-	mockDMSSecretName       = "test-dms"
+	mockSMTPSecretName       = "test-smtp"
+	mockPagerdutySecretName  = "test-pd"
+	mockDMSSecretName        = "test-dms"
+	mockAlertingEmailAddress = "noreply-test@rhmi-redhat.com"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -62,6 +63,12 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			DeadMansSnitchSecret: mockDMSSecretName,
 		},
 	}
+}
+
+func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
+	installation := basicInstallation()
+	installation.Spec.AlertingEmailAddress = mockAlertingEmailAddress
+	return installation
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -804,10 +811,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			setup: func() error {
-				return os.Setenv(alertmanagerAlertAddressEnv, "test")
+				reconciler := basicReconciler
+				reconciler.installation = basicInstallationWithAlertEmailAddress()
+				return reconciler
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -823,7 +829,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPPassword":        string(smtpSecret.Data["password"]),
 					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-					"SMTPToAddress":       "test",
+					"SMTPToAddress":       mockAlertingEmailAddress,
 				})
 
 				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -839,12 +845,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.setup != nil {
-				err = tt.setup()
-				if err != nil {
-					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
-				}
-			}
+
 			reconciler := tt.reconciler()
 			serverClient := tt.serverClient()
 

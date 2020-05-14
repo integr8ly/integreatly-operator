@@ -3,10 +3,11 @@ package installation
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -139,6 +140,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	if len(installationList.Items) == 0 {
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
+		alertingEmailAddress, _ := os.LookupEnv("ALERTING_EMAIL_ADDRESS")
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
 
@@ -155,6 +157,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				DeadMansSnitchSecret:        DefaultInstallationPrefix + "deadmanssnitch",
 				PagerDutySecret:             DefaultInstallationPrefix + "pagerduty",
 				UseClusterStorage:           useClusterStorage,
+				AlertingEmailAddress:        alertingEmailAddress,
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
 			},
 		}
