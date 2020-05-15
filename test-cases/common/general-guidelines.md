@@ -73,8 +73,8 @@ and resolve this task with `Rejected`.
 ### Update the Test Case
 
 If the steps of the test case are obsolete or unclear, **please** help us maintaining them
-by contributing to the [integreatly-test-cases](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases) repo
-or by reporting an issue [here](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases/issues).
+by contributing to the [integreatly-test-cases](https://github.com/integr8ly/integreatly-operator/tree/master/test-cases) repo
+or by reporting an issue [here](https://github.com/integr8ly/integreatly-operator/issues).
 
 Check that the **estimate** time is set and accurate, otherwise it should be added or updated following [this guide](../README.md#how-to-estimate-a-test-case).
 

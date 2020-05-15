@@ -5,7 +5,7 @@ import * as path from "path";
 const TEST_DIR = "./tests";
 const TEST_FILTER = /^.*\.md$/;
 const REPO_URL =
-    "https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases/blob/master";
+    "https://github.com/integr8ly/integreatly-operator/tree/master/test-cases";
 
 interface Metadata {
     tags: string[];

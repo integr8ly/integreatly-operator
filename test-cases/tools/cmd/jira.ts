@@ -8,7 +8,7 @@ import { flat } from "../lib/utils";
 import { logger } from "../lib/winston";
 
 const GENERAL_GUIDELINES_URL =
-    "https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases/blob/master/common/general-guidelines.md";
+    "https://github.com/integr8ly/integreatly-operator/tree/master/test-cases/common/general-guidelines.md";
 
 function appendLinkToGeneralGuidelines(content: string): string {
     const guidelines = `## General guidelines for testing\n${GENERAL_GUIDELINES_URL}`;
