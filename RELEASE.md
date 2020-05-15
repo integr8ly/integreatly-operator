@@ -36,8 +36,9 @@ To perform a release, you should:
    4. Leave the rest as they are
 3. Click on the *Build* button to start the release. Switch to the blue ocean view to see the progress of the build.
 4. At some point, you will be prompted to review the PR. You should then open the PR link, review it (or make any additional changes if required), but you don't need to merge it.
-5. Once done, go back to the Jenkins blue ocean view to confirm and continue.
+5. Once done, you can click on the "Approve" link to continue the pipeline. If it doesn't work for you in Chrome, try Firefox or use the Blue Ocean view. 
 6. Wait for the build to finish, and at the end you should see a merge request link to the managed-tenant repo.
 7. Review the MR (and make any additional changes if required). Ping reviewers on the PR once it's ready. 
+8. When the final release is done, make sure close the merge blocker issue on Github to allow Prow to start merging PRs back to the release branch.
 
 If `updateManagedTenantsOnly` is checked, you only need to follow step 6-7.
