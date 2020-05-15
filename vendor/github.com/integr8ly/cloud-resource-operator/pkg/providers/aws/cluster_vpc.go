@@ -1,3 +1,22 @@
+// Cluster VPC and networking setup
+//
+// This file contains functions used to setup additional private sub-networks in an OpenShift cluster VPC
+// The reason this file is required is due to CRO provisioning multi-AZ resources for AWS, even though the cluster it's
+// provisioning resources for could be single AZ
+//
+// Problem statement:
+// - A single-AZ OpenShift cluster exists in a VPC, in a single AZ, which contains a public and a private sub-network
+// - A multi-AZ RDS instance for that OpenShift cluster exists in the same VPC, in at least 2 AZ's which must contain
+//   at least a private sub-network
+// - By default, if we try to provision a multi-AZ RDS instance in the cluster VPC it will fail as there is only one
+//   private sub-network available in one AZ
+//
+// To allow for this, we must create the missing private sub-networks in the AZ's that the cluster is not provisioned
+// in, so that RDS can successfully provision
+//
+// This file provides functions that help check if a private subnet already exists in an AZ, if it does not, it can
+// create one. If an OpenShift cluster is already multi-AZ, there will be enough sub-networks for RDS and no additional
+// private sub-networks should be created
 package aws
 
 import (
@@ -23,7 +42,12 @@ const (
 	defaultSecurityGroupPostfix   = "security-group"
 	defaultAWSPrivateSubnetTagKey = "kubernetes.io/role/internal-elb"
 	defaultSubnetGroupDesc        = "Subnet group created and managed by the Cloud Resource Operator"
-	// Default subnet mask is AWS's minimum possible value
+	// In AWS this must be between 16 and 28
+	// Note: The larger the mask, the less hosts available in the network
+	// We want to use the least host addresses possible, so that we can support clusters provisioned in VPCs with small
+	// CIDR masks
+	// 28 has too few hosts available to be future-proof for RHMI products, so use 27 to avoid a migration being
+	// required in the future
 	defaultSubnetMask = 27
 )
 
@@ -269,32 +293,44 @@ func tagPrivateSubnet(ctx context.Context, c client.Client, ec2Svc ec2iface.EC2A
 	return nil
 }
 
-// builds an array list of potential subnet addresses
+// Builds a list of valid subnet CIDR blocks
+// Valid meaning it:
+// - Exists within the cluster VPC CIDR block
+// - Supports the amount of hosts that CRO requires by default for all RHMI products
 func buildSubnetAddress(vpc *ec2.Vpc) ([]net.IPNet, error) {
 	logrus.Info(fmt.Sprintf("calculating subnet mask and address for vpc cidr %s", *vpc.CidrBlock))
 	if *vpc.CidrBlock == "" {
 		return nil, errorUtil.New("vpc cidr block can't be empty")
 	}
 
-	// Get details about the VPC CIDR block
+	// AWS stores it's CIDR block as a string, convert it
 	_, awsCIDR, err := net.ParseCIDR(*vpc.CidrBlock)
 	if err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to parse vpc cidr block %s", *vpc.CidrBlock)
 	}
+	// Get the cluster VPC mask size
+	// e.g. If the cluster VPC CIDR block is 10.0.0.0/8, the size is 8 (8 bits)
 	maskSize, _ := awsCIDR.Mask.Size()
 
-	// Return descriptive error if VPC CIDR block cannot contain subnet we want to generate
+	// If the VPC CIDR mask size is greater or equal to the size that CRO requires
+	// - If equal, CRO will not be able to subdivide the VPC CIDR into sub-networks
+	// - If greater, there will be fewer host addresses available in the sub-networks than CRO needs
+	// Note: The larger the mask size, the less hosts the network can support
 	if maskSize >= defaultSubnetMask {
 		return nil, errorUtil.New(fmt.Sprintf("vpc cidr block %s cannot contain generated subnet mask /%d", *vpc.CidrBlock, defaultSubnetMask))
 	}
 
+	// Create the smallest possible CIDR block that CRO can use
 	croCIDRStr := fmt.Sprintf("%s/%d", awsCIDR.IP.String(), defaultSubnetMask)
 	_, croCIDR, err := net.ParseCIDR(croCIDRStr)
 	if err != nil {
 		return nil, errorUtil.Wrapf(err, "failed to parse cro cidr block %s", croCIDRStr)
 	}
+
+	// Generate all possible valid sub-networks that can be used in the cluster VPC CIDR range
 	networks := generateAvailableSubnets(awsCIDR, croCIDR)
-	// Reverse the network list as the end networks are more likely to be unused
+
+	// Reverse the network list as the end networks are more likely to be unused, small optimisation
 	for i, j := 0, len(networks)-1; i < j; i, j = i+1, j-1 {
 		networks[i], networks[j] = networks[j], networks[i]
 	}
@@ -303,20 +339,32 @@ func buildSubnetAddress(vpc *ec2.Vpc) ([]net.IPNet, error) {
 
 func generateAvailableSubnets(fromCIDR, toCIDR *net.IPNet) []net.IPNet {
 	toIPv4 := toCIDR.IP.To4()
-
 	networks := []net.IPNet{
 		{
 			IP:   toIPv4,
 			Mask: toCIDR.Mask,
 		},
 	}
+	// The #Contains check here is done to ensure we don't bother generating subnet addresses outside of the scope of
+	// the fromCIDR
+	// e.g. If fromCIDR is 10.0.0.0/8, there's no reason to try to generate any ranges outside of 10.x.x.x as they
+	// won't be valid sub-network addresses of fromCIDR
 	for i := 0; fromCIDR.Contains(incrementIP(toIPv4, i)); i++ {
+		// Get the next IP address
 		nextFoundNetwork := incrementIP(toIPv4, i)
+		// Ensure the network is a valid sub-network in toCIDR
+		// We only want valid sub-network addresses between toCIDR and fromCIDR, we don't want to store host addresses
+		// We don't need duplicates
 		nextFoundNetworkMasked := nextFoundNetwork.Mask(toCIDR.Mask)
-		// Don't need duplicates
 		if containsNetwork(networks, nextFoundNetworkMasked) {
 			continue
 		}
+
+		// Ensure the network is added with the mask of toCIDR
+		// e.g.
+		// Cluster VPC (fromCIDR) is 10.0.0.0/8
+		// toCIDR is 10.0.0.0/24
+		// we want all possible /24 networks that are valid between fromCIDR and toCIDR
 		networks = append(networks, net.IPNet{
 			IP:   nextFoundNetworkMasked,
 			Mask: toCIDR.Mask,
@@ -334,15 +382,39 @@ func containsNetwork(networks []net.IPNet, toFind net.IP) bool {
 	return false
 }
 
+// Increment an IP address by a provided increment value
+// Makes cycling through IP addresses simple as we can keep incrememnting by 1 to iterate through a range of IPs
 func incrementIP(ip net.IP, inc int) net.IP {
+	// It's not guaranteed that a provided IP will be in IPv4 format, we need to be able to split it into bytes. So
+	// ensure it is formatted correctly first.
 	ipv4 := ip.To4()
-	v := uint(ipv4[0])<<24 + uint(ipv4[1])<<16 + uint(ipv4[2])<<8 + uint(ipv4[3])
-	v += uint(inc)
-	v3 := byte(v & 0xFF)
-	v2 := byte((v >> 8) & 0xFF)
-	v1 := byte((v >> 16) & 0xFF)
-	v0 := byte((v >> 24) & 0xFF)
-	return net.IPv4(v0, v1, v2, v3)
+	// Join the four separate bytes of the IP address into one int, this makes cycling through IP addresses easy as
+	// when we overflow on one byte, the byte will be reset to 00000000 for us and the next byte will be incremented
+	//
+	// The << operator is shifting the byte up the int, so the bits don't override one another
+	// e.g. uint8(byte(1)) << 4, would be 16, because the original byte (00000001) would be shifted by 4 bits (00010000)
+	//
+	// Use an unsigned integer so that we don't have a wasted bit on the integer
+	joinedBytes := uint(ipv4[0])<<24 + uint(ipv4[1])<<16 + uint(ipv4[2])<<8 + uint(ipv4[3])
+	// Add inc to the joined bytes
+	joinedBytes += uint(inc)
+	// Unshift the joined bytes integer back into the original 4 bytes of an IP address
+	//
+	// The >> operator is the reverse shifting direction to <<
+	// e.g. uint(byte(16)) >> 4 would be 1, because the original byte (00010000) would be shifted by 4 bits (00000001)
+	//
+	// The & operator is a bitwise AND operation, it's used to mask (keep) the last byte in the uint and ignore the
+	// rest. 0xFF is all 0's except the last 2 nibbles (8 bits, 1 byte)
+	// e.g. byte(17) & OxF would be 1, because the original byte (00010001) would be AND'd with (00001111), leaving
+	// (00000001)
+	//
+	// The final byte conversion just ensures we're only taking the last 8 bits of the shifted and AND'd uint
+	byte3 := byte(joinedBytes & 0xFF)
+	byte2 := byte((joinedBytes >> 8) & 0xFF)
+	byte1 := byte((joinedBytes >> 16) & 0xFF)
+	byte0 := byte((joinedBytes >> 24) & 0xFF)
+	// Convert the 4 bytes into an IP address
+	return net.IPv4(byte0, byte1, byte2, byte3)
 }
 
 // returns vpc id and cidr block for found vpc

@@ -555,7 +555,7 @@ func buildEndUserCredentialsNameFromBucket(b string) string {
 	return fmt.Sprintf("cro-aws-s3-%s-creds", b)
 }
 
-func buildBlobStorageStatusMetricLabels(cr *v1alpha1.BlobStorage, clusterID, bucketName string) map[string]string {
+func buildBlobStorageStatusMetricLabels(cr *v1alpha1.BlobStorage, clusterID, bucketName string, phase croType.StatusPhase) map[string]string {
 	labels := map[string]string{}
 	labels["clusterID"] = clusterID
 	labels["resourceID"] = cr.Name
@@ -563,11 +563,7 @@ func buildBlobStorageStatusMetricLabels(cr *v1alpha1.BlobStorage, clusterID, buc
 	labels["instanceID"] = bucketName
 	labels["productName"] = cr.Labels["productName"]
 	labels["strategy"] = blobstorageProviderName
-	if len(string(cr.Status.Phase)) != 0 {
-		labels["statusPhase"] = string(cr.Status.Phase)
-		return labels
-	}
-	labels["statusPhase"] = "nil"
+	labels["statusPhase"] = string(phase)
 	return labels
 }
 
@@ -586,13 +582,13 @@ func (p *BlobStorageProvider) exposeBlobStorageMetrics(ctx context.Context, cr *
 		return
 	}
 
-	// build status metric labels
-	statusLabels := buildBlobStorageStatusMetricLabels(cr, clusterID, bucketName)
-
-	// set status metric
-	if len(string(cr.Status.Phase)) == 0 || cr.Status.Phase != croType.PhaseComplete {
-		resources.SetMetric(resources.DefaultBlobStorageStatusMetricName, statusLabels, 0)
-		return
+	// set generic status metrics
+	// a single metric should be exposed for each possible phase
+	// the value of the metric should be 1.0 when the resource is in that phase
+	// the value of the metric should be 0.0 when the resource is not in that phase
+	// this follows the approach that pod status
+	for _, phase := range []croType.StatusPhase{croType.PhaseFailed, croType.PhaseDeleteInProgress, croType.PhasePaused, croType.PhaseComplete, croType.PhaseInProgress} {
+		labelsFailed := buildBlobStorageStatusMetricLabels(cr, clusterID, bucketName, phase)
+		resources.SetMetric(resources.DefaultBlobStorageStatusMetricName, labelsFailed, resources.Btof64(cr.Status.Phase == phase))
 	}
-	resources.SetMetric(resources.DefaultBlobStorageStatusMetricName, statusLabels, 1)
 }

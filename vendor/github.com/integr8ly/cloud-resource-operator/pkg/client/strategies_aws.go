@@ -266,6 +266,5 @@ func buildAWSWindows(timeConfig *StrategyTimeConfig) (string, string, error) {
 }
 
 func timeBlockOverlaps(startA, endA, startB, endB time.Time) bool {
-	return startA.Unix() <= endB.Unix()  && endA.Unix() >= startB.Unix()
+	return startA.Unix() <= endB.Unix() && endA.Unix() >= startB.Unix()
 }
-

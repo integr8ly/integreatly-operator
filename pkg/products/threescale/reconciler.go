@@ -645,6 +645,17 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
+	// redis cr returning a failed state
+	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create backend-redis resource on provider: %w", err)
+	}
+	// redis cr stuck in a pending state for greater that 5 min
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create backend-redis resource on provider stuck in a pending state: %w", err)
+	}
+
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
@@ -684,6 +695,17 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
+	}
+
+	// cr returning a failed state
+	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create system-redis resource on provider: %w", err)
+	}
+	// cr stuck in a pending state for greater that 5 min
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create system-redis resource on provider stuck in a pending state: %w", err)
 	}
 
 	// wait for the system redis cr to reconcile
@@ -728,6 +750,17 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalRedisSecretName, err)
+	}
+
+	// cr returning a failed state
+	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
+	}
+	// cr stuck in a pending state for greater that 5 min
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
 	}
 
 	// wait for the postgres cr to reconcile
