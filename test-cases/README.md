@@ -62,7 +62,7 @@ estimate: 2h
 
    **Test suites:**
 
-   - [Functional Test Suite](https://github.com/integr8ly/integreatly-operator/tree/master/test)
+   - [Functional Test Suite](https://github.com/integr8ly/integreatly-operator/tree/master/test/functional)
 
 2. The title of the automated test must contain the ID of the test case `ID - Title`.
 
