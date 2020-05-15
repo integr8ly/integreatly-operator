@@ -1,0 +1,8 @@
+# exclude everything
+*.*
+
+# apart from
+!*.ts
+!*.md
+!*.json
+!*.yml
