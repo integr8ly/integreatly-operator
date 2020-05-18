@@ -1,0 +1,4 @@
+packageName: rhmi-heimdall
+channels:
+  - currentCSV: heimdall-operator.v1.0.1
+    name: rhmi

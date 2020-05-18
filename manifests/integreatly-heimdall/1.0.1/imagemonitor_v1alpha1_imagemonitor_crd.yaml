@@ -1,0 +1,22 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: imagemonitors.imagemonitor.integreatly.org
+spec:
+  group: imagemonitor.integreatly.org
+  names:
+    kind: ImageMonitor
+    listKind: ImageMonitorList
+    plural: imagemonitors
+    singular: imagemonitor
+  scope: Namespaced
+  version: v1alpha1
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        excludePattern:
+          description: 'Regular expression that will decide whether to exclude certain resources from image monitoring. For example if the image is
+          built in cluster and comes from the internal registry.'
+          type: string

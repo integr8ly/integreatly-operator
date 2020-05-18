@@ -1,0 +1,122 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: integreatly-heimdall.v1.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: Placeholder description
+  displayName: Integreatly Heimdall
+  install:
+    spec:
+      deployments:
+      - name: heimdall
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: heimdall
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: heimdall
+            spec:
+              containers:
+              - command:
+                - heimdall
+                env:
+                - name: DOCKER_CONFIG
+                  value: /usr/local/docker
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: heimdall
+                image: quay.io/integreatly/heimdall-operator:release-1.0.1
+                imagePullPolicy: Always
+                name: heimdall
+                ports:
+                - containerPort: 60000
+                  name: metrics
+                readinessProbe:
+                  exec:
+                    command:
+                    - stat
+                    - /tmp/operator-sdk-ready
+                  failureThreshold: 1
+                  initialDelaySeconds: 4
+                  periodSeconds: 10
+                resources: {}
+                volumeMounts:
+                - mountPath: /tmp/docker
+                  name: heimdall-dockercfg
+              serviceAccountName: heimdall
+              volumes:
+              - name: heimdall-dockercfg
+                secret:
+                  secretName: heimdall-dockercfg
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          - apps.openshift.io
+          resources:
+          - pods
+          - deploymentconfigs
+          - configmaps
+          - services
+          - services/finalizers
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - replicasets
+          - deployments
+          - deployments/finalizers
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - imagemonitor.integreatly.org
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: heimdall
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  maturity: alpha
+  provider: {}
+  replaces: integreatly-heimdall.v0.0.0
+  version: 1.0.1
