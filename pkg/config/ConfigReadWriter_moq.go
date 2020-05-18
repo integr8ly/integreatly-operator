@@ -22,6 +22,7 @@ var (
 	lockConfigReadWriterMockReadFuse                    sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
+	lockConfigReadWriterMockReadMonitoringSpec          sync.RWMutex
 	lockConfigReadWriterMockReadProduct                 sync.RWMutex
 	lockConfigReadWriterMockReadRHSSO                   sync.RWMutex
 	lockConfigReadWriterMockReadRHSSOUser               sync.RWMutex
@@ -80,6 +81,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
+//             },
+//             ReadMonitoringSpecFunc: func() (*MonitoringSpec, error) {
+// 	               panic("mock out the ReadMonitoringSpec method")
 //             },
 //             ReadProductFunc: func(product v1alpha1.ProductName) (ConfigReadable, error) {
 // 	               panic("mock out the ReadProduct method")
@@ -151,6 +155,9 @@ type ConfigReadWriterMock struct {
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
 
+	// ReadMonitoringSpecFunc mocks the ReadMonitoringSpec method.
+	ReadMonitoringSpecFunc func() (*MonitoringSpec, error)
+
 	// ReadProductFunc mocks the ReadProduct method.
 	ReadProductFunc func(product v1alpha1.ProductName) (ConfigReadable, error)
 
@@ -215,6 +222,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
+		}
+		// ReadMonitoringSpec holds details about calls to the ReadMonitoringSpec method.
+		ReadMonitoringSpec []struct {
 		}
 		// ReadProduct holds details about calls to the ReadProduct method.
 		ReadProduct []struct {
@@ -584,6 +594,32 @@ func (mock *ConfigReadWriterMock) ReadMonitoringCalls() []struct {
 	lockConfigReadWriterMockReadMonitoring.RLock()
 	calls = mock.calls.ReadMonitoring
 	lockConfigReadWriterMockReadMonitoring.RUnlock()
+	return calls
+}
+
+// ReadMonitoringSpec calls ReadMonitoringSpecFunc.
+func (mock *ConfigReadWriterMock) ReadMonitoringSpec() (*MonitoringSpec, error) {
+	if mock.ReadMonitoringSpecFunc == nil {
+		panic("ConfigReadWriterMock.ReadMonitoringSpecFunc: method is nil but ConfigReadWriter.ReadMonitoringSpec was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadMonitoringSpec.Lock()
+	mock.calls.ReadMonitoringSpec = append(mock.calls.ReadMonitoringSpec, callInfo)
+	lockConfigReadWriterMockReadMonitoringSpec.Unlock()
+	return mock.ReadMonitoringSpecFunc()
+}
+
+// ReadMonitoringSpecCalls gets all the calls that were made to ReadMonitoringSpec.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadMonitoringSpecCalls())
+func (mock *ConfigReadWriterMock) ReadMonitoringSpecCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadMonitoringSpec.RLock()
+	calls = mock.calls.ReadMonitoringSpec
+	lockConfigReadWriterMockReadMonitoringSpec.RUnlock()
 	return calls
 }
 
