@@ -1,21 +1,16 @@
 package common
 
 import (
-	goctx "context"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
 	"time"
 
-	// "io/ioutil"
-	//"net/http"
-
-	"k8s.io/apimachinery/pkg/util/wait"
-
+	goctx "context"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/sirupsen/logrus"
-	// "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -83,21 +78,9 @@ func (e *alertsFiringError) isValid() bool {
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
-	// retry the tests every minute for up to 15 minutes
-	monitoringTimeout := 1 * time.Minute
-	monitoringRetryInterval := 1 * time.Minute
-	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		if newErr := getFiringAlerts(t, ctx); newErr != nil {
-			lastError = newErr
-			if _, ok := newErr.(*alertsFiringError); ok {
-				t.Log("Waiting 1 minute for alerts to normalise before retrying")
-				return false, nil
-			}
-			return false, newErr
-		}
-		return true, nil
-	})
-	if err != nil {
+	newErr := getFiringAlerts(t, ctx)
+
+	if newErr != nil {
 		podLogs(t, ctx)
 		t.Fatal(lastError.Error())
 	}
@@ -198,7 +181,8 @@ func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
 			return false, newErr
 		}
 		return true, nil
-	})
+	},
+	)
 	if err != nil {
 		t.Fatal(lastError.Error())
 	}
