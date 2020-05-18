@@ -6,6 +6,7 @@ metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: rhmi-webhook-cert
 spec:
+  clusterIP: "None"
   selector:
     name: rhmi-operator
   ports:
