@@ -3,6 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
 	v1 "k8s.io/api/core/v1"
@@ -77,6 +78,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if err = config.Validate(); err != nil {
 		return nil, fmt.Errorf("fuse config is not valid: %w", err)
 	}
+	config.SetBlackboxTargetPath("/oauth/healthz")
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
@@ -109,10 +111,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
+
 		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
+
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -173,6 +177,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("Phase: %s reconcileTemplates", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
@@ -390,7 +400,22 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 	// if there are no errors, the phase is complete
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
+	}
 
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-syndesis", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		Service: "syndesis-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating syndesis blackbox target: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
 func preUpgradeBackupExecutor(rhmi *integreatlyv1alpha1.RHMI) backup.BackupExecutor {
 	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
 	if rhmi.Spec.UseClusterStorage != "false" {

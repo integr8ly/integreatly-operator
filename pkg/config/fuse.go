@@ -44,6 +44,12 @@ func (f *Fuse) GetOperatorNamespace() string {
 func (f *Fuse) SetOperatorNamespace(newNamespace string) {
 	f.config["OPERATOR_NAMESPACE"] = newNamespace
 }
+func (f *Fuse) GetBlackboxTargetPath() string {
+	return f.config["BLACKBOX_TARGET_PATH"]
+}
+func (f *Fuse) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	f.config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
+}
 
 func (f *Fuse) GetHost() string {
 	return f.config["HOST"]

@@ -3,6 +3,8 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -107,6 +109,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if config.GetNamespace() == "" {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultRhssoNamespace)
 	}
+
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
 			config.SetOperatorNamespace(config.GetNamespace())
@@ -240,6 +243,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
+		return phase, err
+	}
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
@@ -1608,6 +1616,22 @@ func reconcileGroupRealmRoles(kcClient keycloakCommon.KeycloakInterface, groupID
 	}
 
 	return nil
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("errror reading monitoring config: %w", err)
+	}
+
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-rhssouser", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		Service: "rhssouser-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rhssouser blackbox target: %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // Query the clients in a realm and return a map where the key is the client name
