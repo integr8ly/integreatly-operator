@@ -10,6 +10,7 @@ WORK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'operator-sdk version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'go version'
 docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'jq --version'
+docker run --rm --entrypoint=/bin/sh ${IMAGE_NAME} -c 'yq --version'
 
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make vendor/check"
 docker run --rm -u $UID -v "${WORK_DIR}/../..:/integreatly-operator:z" --entrypoint=/bin/sh ${IMAGE_NAME} -c "cd /integreatly-operator && make code/check"
