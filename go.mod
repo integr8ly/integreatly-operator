@@ -79,7 +79,7 @@ replace (
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.2
 )
 
-replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20190924102528-32369d4db2ad // Required until https://github.com/operator-framework/operator-lifecycle-manager/pull/1241 is resolved
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
 
