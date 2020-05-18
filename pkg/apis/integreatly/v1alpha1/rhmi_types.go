@@ -50,6 +50,7 @@ var (
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
 	ProductMonitoringSpec      ProductName = "monitoring-spec"
+	ProductHeimdall						 ProductName = "heimdall"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
@@ -68,6 +69,7 @@ var (
 	VersionRHSSO               ProductVersion = "7.3"
 	VersionRHSSOUser           ProductVersion = "7.3"
 	VersionMonitoringSpec      ProductVersion = "1.0"
+	VersionHeimdall						 ProductVersion = "1.0.1"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -94,6 +96,7 @@ var (
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
+	OperatorVersionHeimdall      OperatorVersion = "1.0.1"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
