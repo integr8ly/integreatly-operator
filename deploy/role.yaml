@@ -48,8 +48,10 @@ rules:
       - apps
     resources:
       - deployments/finalizers
+      - replicasets
     verbs:
       - update
+      - get
   # END For monitoring functions by operator-sdk
 
   # Our own Subscription needs to be switched into Manual mode after initial installation
