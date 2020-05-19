@@ -136,7 +136,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 
 	if !rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV) || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, latestRHMIInstallPlan, eventRecorder)
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, config, latestRHMIInstallPlan, eventRecorder)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
