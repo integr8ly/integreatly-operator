@@ -17,7 +17,7 @@
     "form-data": "3.0.0",
     "googleapis": "47.0.0",
     "gray-matter": "4.0.2",
-    "handlebars": "4.1.2",
+    "handlebars": "4.3.0",
     "jira-client": "6.7.1",
     "markdown2confluence-cws": "2.0.4",
     "prettier": "1.18.2",
