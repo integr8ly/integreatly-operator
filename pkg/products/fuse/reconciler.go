@@ -344,7 +344,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update syndesis-promtheus PVC custom resource: %v", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update syndesis-promtheus PVC custom resource: %w", err)
 	}
 	if opRes != controllerutil.OperationResultNone {
 		r.logger.Infof("operation result of creating/updating syndesis-prometheus PVC CR was %v", opRes)
