@@ -26,6 +26,13 @@ spec:
           command:
           - rhmi-operator
           imagePullPolicy: Always
+          resources:
+            limits:
+              memory: 1536Mi
+              cpu: 80m
+            requests:
+              memory: 64Mi
+              cpu: 40m
           volumeMounts:
           - name: webhook-certs
             mountPath: "/etc/ssl/certs/webhook"
