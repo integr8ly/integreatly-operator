@@ -78,12 +78,13 @@ func (e *alertsFiringError) isValid() bool {
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
-	newErr := getFiringAlerts(t, ctx)
-
-	if newErr != nil {
-		podLogs(t, ctx)
-		t.Fatal(lastError.Error())
+	
+	if newErr := getFiringAlerts(t, ctx); newErr != nil {
+			lastError = newErr
+			podLogs(t, ctx)
+			t.Fatal(lastError.Error())
 	}
+
 }
 
 func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
