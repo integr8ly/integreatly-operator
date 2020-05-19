@@ -46,7 +46,6 @@ spec:
                   type: string
               type: object
             upgrade:
-              description: 'configure when we will apply upgrades of RHMI to the cluster'
               properties:
                 alwaysImmediately:
                   description: 'always-immediately: boolean value, if set to true
@@ -79,7 +78,10 @@ spec:
           description: RHMIConfigStatus defines the observed state of RHMIConfig
           properties:
             maintenance:
-              description: 'configure when we will apply OSD maintenance to the cluster'
+              description: "status block reflects the current configuration of the
+                cr \n \tstatus: \t\tmaintenance: \t\t\tapply-from: 16-05-2020 23:00
+                \t\t\tduration: \"6hrs\" \t\tupgrade: \t\t\twindow: \"3 Jan 1980 -
+                17 Jan 1980\""
               properties:
                 applyFrom:
                   type: string

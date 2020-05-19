@@ -51,6 +51,7 @@ type ConfigReadWriter interface {
 	GetOperatorNamespace() string
 	ReadSolutionExplorer() (*SolutionExplorer, error)
 	ReadMonitoring() (*Monitoring, error)
+	ReadHeimdall() (*Heimdall, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
 	ReadApicurito() (*Apicurito, error)
@@ -232,6 +233,14 @@ func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
 		return nil, err
 	}
 	return NewMonitoringSpec(config), nil
+}
+
+func (m *Manager) ReadHeimdall() (*Heimdall, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductHeimdall)
+	if err != nil {
+		return nil, err
+	}
+	return NewHeimdall(config), nil
 }
 
 func (m *Manager) ReadApicurito() (*Apicurito, error) {

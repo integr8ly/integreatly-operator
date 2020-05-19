@@ -8,6 +8,7 @@ const (
 	CodeReadySubscriptionName        = "rhmi-codeready-workspaces"
 	FuseSubscriptionName             = "rhmi-syndesis"
 	MonitoringSubscriptionName       = "rhmi-monitoring"
+	HeimdallSubscriptionName         = "rhmi-heimdall"
 	RHSSOSubscriptionName            = "rhmi-rhsso"
 	RHSSOUserSubscriptionName        = "rhmi-rhsso"
 	SolutionExplorerSubscriptionName = "rhmi-solution-explorer"

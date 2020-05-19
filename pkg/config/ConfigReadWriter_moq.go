@@ -21,6 +21,7 @@ var (
 	lockConfigReadWriterMockReadDataSync                sync.RWMutex
 	lockConfigReadWriterMockReadFuse                    sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
+	lockConfigReadWriterMockReadHeimdall                sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
 	lockConfigReadWriterMockReadMonitoringSpec          sync.RWMutex
 	lockConfigReadWriterMockReadProduct                 sync.RWMutex
@@ -78,6 +79,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
 // 	               panic("mock out the ReadFuseOnOpenshift method")
+//             },
+//             ReadHeimdallFunc: func() (*Heimdall, error) {
+// 	               panic("mock out the ReadHeimdall method")
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
@@ -152,6 +156,9 @@ type ConfigReadWriterMock struct {
 	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
 	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
 
+	// ReadHeimdallFunc mocks the ReadHeimdall method.
+	ReadHeimdallFunc func() (*Heimdall, error)
+
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
 
@@ -219,6 +226,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
 		ReadFuseOnOpenshift []struct {
+		}
+		// ReadHeimdall holds details about calls to the ReadHeimdall method.
+		ReadHeimdall []struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
@@ -568,6 +578,32 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
 	lockConfigReadWriterMockReadFuseOnOpenshift.RLock()
 	calls = mock.calls.ReadFuseOnOpenshift
 	lockConfigReadWriterMockReadFuseOnOpenshift.RUnlock()
+	return calls
+}
+
+// ReadHeimdall calls ReadHeimdallFunc.
+func (mock *ConfigReadWriterMock) ReadHeimdall() (*Heimdall, error) {
+	if mock.ReadHeimdallFunc == nil {
+		panic("ConfigReadWriterMock.ReadHeimdallFunc: method is nil but ConfigReadWriter.ReadHeimdall was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadHeimdall.Lock()
+	mock.calls.ReadHeimdall = append(mock.calls.ReadHeimdall, callInfo)
+	lockConfigReadWriterMockReadHeimdall.Unlock()
+	return mock.ReadHeimdallFunc()
+}
+
+// ReadHeimdallCalls gets all the calls that were made to ReadHeimdall.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadHeimdallCalls())
+func (mock *ConfigReadWriterMock) ReadHeimdallCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadHeimdall.RLock()
+	calls = mock.calls.ReadHeimdall
+	lockConfigReadWriterMockReadHeimdall.RUnlock()
 	return calls
 }
 
