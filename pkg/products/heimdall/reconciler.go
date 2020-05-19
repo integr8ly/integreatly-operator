@@ -29,7 +29,7 @@ import (
 
 const (
 	defaultInstallationNamespace = "heimdall"
-	defaultHeimdallName   			 = "rhmi-heimdall"
+	defaultHeimdallName          = "rhmi-heimdall"
 	manifestPackage              = "integreatly-heimdall"
 )
 
@@ -43,7 +43,6 @@ type Reconciler struct {
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
-
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	config, err := configManager.ReadHeimdall()
@@ -184,7 +183,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 	}
 
 	//and they should all be ready
-	checkPodStatus:
+checkPodStatus:
 	for _, pod := range pods.Items {
 		for _, cnd := range pod.Status.Conditions {
 			if cnd.Type == corev1.ContainersReady {
@@ -222,7 +221,6 @@ func (r *Reconciler) reconcileImageMonitor(ctx context.Context, client k8sclient
 }
 
 func (r *Reconciler) createImageMonitor(ctx context.Context, heimdall *config.Heimdall, client k8sclient.Client) (*monitorv1alpha1.ImageMonitor, error) {
-
 
 	imageMonitor := &monitorv1alpha1.ImageMonitor{
 		ObjectMeta: metav1.ObjectMeta{
