@@ -38,7 +38,7 @@ type alertsFiringError struct {
 var (
 	podNamespaces = []string{
 
-		"redhat-rhmi-3scale", "redhat-rhmi-3scale-operator", "redhat-rhmi-amq-online", "redhat-rhmi-apicurito", "redhat-rhmi-apicurito-operator", "redhat-rhmi-cloud-resources-operator", "redhat-rhmi-codeready-workspaces", "redhat-rhmi-codeready-workspaces-operators", "redhat-rhmi-fuse", "redhat-rhmi-fuse-operator", "redhat-rhmi-middleware-monitoring-operator", "redhat-rhmi-middleware-monitoring-federate", "redhat-rhmi-operator", "redhat-rhmi-rhsso", "redhat-rhmi-rhsso-operator", "redhat-rhmi-solution-explorer", "redhat-rhmi-solution-explorer-operator", "redhat-rhmi-ups", "redhat-rhmi-ups-operator", "redhat-rhmi-user-sso-operator", "redhat-rhmi-user-sso",
+		"redhat-rhmi-3scale", "redhat-rhmi-3scale-operator", "redhat-rhmi-amq-online", "redhat-rhmi-apicurito", "redhat-rhmi-apicurito-operator", "redhat-rhmi-cloud-resources-operator", "redhat-rhmi-codeready-workspaces", "redhat-rhmi-codeready-workspaces-operator", "redhat-rhmi-fuse", "redhat-rhmi-fuse-operator", "redhat-rhmi-middleware-monitoring-operator", "redhat-rhmi-middleware-monitoring-federate", "redhat-rhmi-operator", "redhat-rhmi-rhsso", "redhat-rhmi-rhsso-operator", "redhat-rhmi-solution-explorer", "redhat-rhmi-solution-explorer-operator", "redhat-rhmi-ups", "redhat-rhmi-ups-operator", "redhat-rhmi-user-sso-operator", "redhat-rhmi-user-sso",
 	}
 )
 
