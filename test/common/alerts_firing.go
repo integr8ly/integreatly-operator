@@ -13,12 +13,9 @@ import (
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	
 )
 
 const deadMansSwitch = "DeadMansSwitch"
-
-var alertsFired = false
 
 // alertsTestMetadata contains metadata about the alert
 type alertTestMetadata struct {
@@ -32,13 +29,32 @@ type alertsFiringError struct {
 	alertsPending        []alertTestMetadata
 	alertsFiring         []alertTestMetadata
 	deadMansSwitchFiring bool
-	MasterURL            string
 }
 
 var (
 	podNamespaces = []string{
 
-		"redhat-rhmi-3scale", "redhat-rhmi-3scale-operator", "redhat-rhmi-amq-online", "redhat-rhmi-apicurito", "redhat-rhmi-apicurito-operator", "redhat-rhmi-cloud-resources-operator", "redhat-rhmi-codeready-workspaces", "redhat-rhmi-codeready-workspaces-operator", "redhat-rhmi-fuse", "redhat-rhmi-fuse-operator", "redhat-rhmi-middleware-monitoring-operator", "redhat-rhmi-middleware-monitoring-federate", "redhat-rhmi-operator", "redhat-rhmi-rhsso", "redhat-rhmi-rhsso-operator", "redhat-rhmi-solution-explorer", "redhat-rhmi-solution-explorer-operator", "redhat-rhmi-ups", "redhat-rhmi-ups-operator", "redhat-rhmi-user-sso-operator", "redhat-rhmi-user-sso",
+		RHMIOperatorNamespace,
+		MonitoringOperatorNamespace,
+		MonitoringFederateNamespace,
+		AMQOnlineOperatorNamespace,
+		ApicuritoProductNamespace,
+		ApicuritoOperatorNamespace,
+		CloudResourceOperatorNamespace,
+		CodeReadyProductNamespace,
+		CodeReadyOperatorNamespace,
+		FuseProductNamespace,
+		FuseOperatorNamespace,
+		RHSSOUserProductOperatorNamespace,
+		RHSSOUserOperatorNamespace,
+		RHSSOProductNamespace,
+		RHSSOOperatorNamespace,
+		SolutionExplorerProductNamespace,
+		SolutionExplorerOperatorNamespace,
+		ThreeScaleProductNamespace,
+		ThreeScaleOperatorNamespace,
+		UPSProductNamespace,
+		UPSOperatorNamespace,
 	}
 )
 
@@ -76,17 +92,15 @@ func (e *alertsFiringError) isValid() bool {
 	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
 }
 
+// reports any alerts that are firing only
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
-	var lastError error
-
-	if newErr := getFiringAlerts(t, ctx); newErr != nil {
-		lastError = newErr
+	//fail immediately if one or more alerts have fired
+	if err := getFiringAlerts(t, ctx); err != nil {
 		podLogs(t, ctx)
-		t.Fatal(lastError.Error())
+		t.Fatal(err)
 	}
 
 }
-
 func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
@@ -109,7 +123,7 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	// create a custom alerts error to keep track of all pending and firing alerts
+	// create a custom alerts error to keep track of all firing alerts
 	alertsError := &alertsFiringError{
 		alertsFiring:         []alertTestMetadata{},
 		deadMansSwitchFiring: true,
@@ -131,7 +145,6 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 		// check for firing alerts
 		if alertName != deadMansSwitch {
 			if alert.State == prometheusv1.AlertStateFiring {
-				alertsFired = true
 				alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
 
 			}
@@ -146,21 +159,20 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 	return nil
 }
 
+// Makes a api call a to get all pods in the rhmi namespaces
 func podLogs(t *testing.T, ctx *TestingContext) {
-	if alertsFired == true {
-		pods := &corev1.PodList{}
+	pods := &corev1.PodList{}
 
-		for _, namespaces := range podNamespaces {
-			err := ctx.Client.List(goctx.TODO(), pods, &k8sclient.ListOptions{Namespace: namespaces})
-			if err != nil {
-				t.Error("Error getting namespaces:", err)
-			}
-			for _, podlogs := range pods.Items {
-				logrus.Infoln("Podname :", podlogs.Name)
-				logrus.Infoln("Namespace :", podlogs.Namespace)
-				logrus.Infoln("Status :", podlogs.Status)
+	for _, namespaces := range podNamespaces {
+		err := ctx.Client.List(goctx.TODO(), pods, &k8sclient.ListOptions{Namespace: namespaces})
+		if err != nil {
+			t.Error("Error getting namespaces:", err)
+		}
+		for _, podlogs := range pods.Items {
+			logrus.Infoln("Podname :", podlogs.Name)
+			logrus.Infoln("Namespace :", podlogs.Namespace)
+			logrus.Infoln("Status :", podlogs.Status)
 
-			}
 		}
 	}
 }
