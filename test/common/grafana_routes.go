@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
-	"net/http/httputil"
 	"testing"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
@@ -45,19 +46,21 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to prepare test request to grafana", err)
 	}
-	successResp, err := ctx.HttpClient.Do(req)
+	err = wait.PollImmediate(time.Second*25, time.Minute*5, func() (bool, error) {
+		resp, err := ctx.HttpClient.Do(req)
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Logf("Expecting statusCode 200, got: %v, retrying", resp.StatusCode)
+			return false, nil
+		}
+		return true, nil
 
+	})
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
-	}
-	defer successResp.Body.Close()
-	if successResp.StatusCode != http.StatusOK {
-		dumpReq, _ := httputil.DumpRequest(req, true)
-		t.Logf("dumpReq: %q", dumpReq)
-		dumpResp, _ := httputil.DumpResponse(successResp, true)
-		t.Logf("dumpResp: %q", dumpResp)
-		t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-6738, got status : %v", successResp.StatusCode)
-		//t.Fatalf("unexpected status code on success request, got=%+v", successResp)
 	}
 }
 
