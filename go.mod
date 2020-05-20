@@ -23,9 +23,8 @@ require (
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
-	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
+	github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54
-	github.com/onsi/gomega v1.8.1
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -82,6 +81,3 @@ replace (
 replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
-
-// Remove when PR https://github.com/keycloak/keycloak-operator/pull/171 is merged
-replace github.com/keycloak/keycloak-operator => github.com/integr8ly/keycloak-operator-rhmi v0.0.0-20200505143708-9f0afbb299cd

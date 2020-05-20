@@ -116,7 +116,6 @@ metadata:
   name: keycloak-operator.v9.0.3
   namespace: placeholder
 spec:
-  replaces: keycloak-operator.v9.0.2
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
