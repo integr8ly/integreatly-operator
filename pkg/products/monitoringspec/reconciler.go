@@ -293,7 +293,7 @@ func (r *Reconciler) reconcileRole(ctx context.Context,
 
 	role := &rbac.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      roleBindingName,
+			Name:      roleRefName,
 			Namespace: namespace,
 		},
 	}

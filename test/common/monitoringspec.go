@@ -64,7 +64,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 		for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
 			err := checkRoleExists(ctx, roleRefName, namespace)
 			if err != nil {
-				t.Fatal("Error retrieving rolebinding: ", err, "in namespace:", namespace)
+				t.Fatal("Error retrieving role: ", err, "in namespace:", namespace)
 			}
 			err = checkRoleBindingExists(ctx, roleBindingName, namespace)
 			if err != nil {
