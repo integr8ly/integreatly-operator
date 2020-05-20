@@ -3,7 +3,6 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
@@ -92,7 +91,7 @@ func (e *alertsFiringError) isValid() bool {
 	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
 }
 
-// reports any alerts that are firing only
+// This test ensures that no alerts are firing during or after installation
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
 	if err := getFiringAlerts(t, ctx); err != nil {
@@ -168,11 +167,9 @@ func podLogs(t *testing.T, ctx *TestingContext) {
 		if err != nil {
 			t.Error("Error getting namespaces:", err)
 		}
-		for _, podlogs := range pods.Items {
-			logrus.Infoln("Podname :", podlogs.Name)
-			logrus.Infoln("Namespace :", podlogs.Namespace)
-			logrus.Infoln("Status :", podlogs.Status)
-
+		t.Log("Namespace:", namespaces)
+		for _, pod := range pods.Items {
+			t.Logf("\tPod name: %s, Status: %s", pod.Name, pod.Status.Phase)
 		}
 	}
 }
@@ -182,7 +179,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
-	monitoringTimeout := 15 * time.Minute
+	monitoringTimeout := 1 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		if newErr := getFiringOrPendingAlerts(ctx); newErr != nil {
@@ -197,6 +194,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
 	},
 	)
 	if err != nil {
+		podLogs(t, ctx)
 		t.Fatal(lastError.Error())
 	}
 }
@@ -255,6 +253,7 @@ func getFiringOrPendingAlerts(ctx *TestingContext) error {
 	}
 	if alertsError.isValid() {
 		return alertsError
+
 	}
 	return nil
 }

@@ -28,6 +28,7 @@ var (
 		{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 		{"C01 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+		{"C01.1 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
