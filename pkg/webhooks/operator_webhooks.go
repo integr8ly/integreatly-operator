@@ -2,17 +2,21 @@ package webhooks
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -51,6 +55,7 @@ const (
 	mountedCertDir         = "/etc/ssl/certs/webhook"
 	caConfigMap            = "rhmi-operator-ca"
 	caConfigMapAnnotation  = "service.beta.openshift.io/inject-cabundle"
+	caServiceAnnotation    = "service.beta.openshift.io/serving-cert-secret-name"
 )
 
 // Config is a global instance. The same instance is needed in order to use the
@@ -78,6 +83,24 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 		return nil
 	}
 
+	// Create a new client to reconcile the Service. `mgr.GetClient()` can't
+	// be used as it relies on the cache that hasn't been initialized yet
+	client, err := k8sclient.New(mgr.GetConfig(), k8sclient.Options{
+		Scheme: mgr.GetScheme(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Create the service pointing to the operator pod
+	if err := webhookConfig.ReconcileService(context.TODO(), client, nil); err != nil {
+		return err
+	}
+	// Get the secret with the certificates for the service
+	if err := webhookConfig.setupCerts(context.TODO(), client); err != nil {
+		return err
+	}
+
 	webhookServer := mgr.GetWebhookServer()
 	webhookServer.Port = webhookConfig.Port
 	webhookServer.CertDir = webhookConfig.CertDir
@@ -99,11 +122,17 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 // Reconcile reconciles a `ValidationWebhookConfiguration` object for each webhook
 // in `webhookConfig.Webhooks`, using the rules and the path as it's generated
 // by controler-runtime webhook builder.
-// It assumes the injection of the CA that signs the TLS certificates into a ConfigMap
-// to be stored in the `ValidationWebhookConfiguration`
-func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, client k8sclient.Client) error {
+// It reconciles a Service that exposes the webhook server
+// A ownerRef to the owner parameter is set on the reconciled resources. This
+// parameter is optional, if `nil` is passed, no ownerReference will be set
+func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
 	if !enabled() {
 		return nil
+	}
+
+	// Reconcile the Service
+	if err := webhookConfig.ReconcileService(ctx, client, owner); err != nil {
+		return err
 	}
 
 	// Create (if it doesn't exist) the config map where the CA certificate is
@@ -147,6 +176,92 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 	return nil
 }
 
+// ReconcileService creates or updates the service that points to the Pod
+func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
+	// Get the service. If it's not found, create it
+	service := &corev1.Service{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: "redhat-rhmi-operator",
+		Name:      operatorPodServiceName,
+	}, service); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+
+		return createService(ctx, client, owner)
+	}
+
+	// If the existing service has a different .spec.clusterIP value, delete it
+	if service.Spec.ClusterIP != "None" {
+		if err := client.Delete(ctx, service); err != nil {
+			return err
+		}
+	}
+
+	return createService(ctx, client, owner)
+}
+
+func createService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
+	service := &corev1.Service{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      operatorPodServiceName,
+			Namespace: "redhat-rhmi-operator",
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, client, service, func() error {
+		if owner != nil {
+			ownerutil.EnsureOwner(service, owner)
+		}
+
+		if service.Annotations == nil {
+			service.Annotations = map[string]string{}
+		}
+		service.Annotations[caServiceAnnotation] = "rhmi-webhook-cert"
+		service.Spec.ClusterIP = "None"
+		service.Spec.Selector = map[string]string{
+			"name": "rhmi-operator",
+		}
+		service.Spec.Ports = []corev1.ServicePort{
+			{
+				Protocol:   corev1.ProtocolTCP,
+				Port:       443,
+				TargetPort: intstr.FromInt(8090),
+			},
+		}
+
+		return nil
+	})
+	return err
+}
+
+// setupCerts waits for the secret created for the operator Service to exist, and
+// when it's ready, extracts the certificates and saves them in webhookConfig.CertDir
+func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, client k8sclient.Client) error {
+	// Wait for the secret to te created
+	secret := &corev1.Secret{}
+	err := wait.PollImmediate(time.Second*1, time.Second*30, func() (bool, error) {
+		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: "redhat-rhmi-operator", Name: "rhmi-webhook-cert"}, secret)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// Save the key
+	if err := webhookConfig.saveCertFromSecret(secret.Data, "tls.key"); err != nil {
+		return err
+	}
+	// Save the cert
+	return webhookConfig.saveCertFromSecret(secret.Data, "tls.crt")
+}
+
 func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.Context, client k8sclient.Client) ([]byte, error) {
 	var caBundle []byte
 
@@ -180,6 +295,23 @@ func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.
 // starting the server as it registers the endpoints for the validation
 func (webhookConfig *IntegreatlyWebhookConfig) AddWebhook(webhook IntegreatlyWebhook) {
 	webhookConfig.Webhooks = append(webhookConfig.Webhooks, webhook)
+}
+
+func (webhookConfig *IntegreatlyWebhookConfig) saveCertFromSecret(secretData map[string][]byte, fileName string) error {
+	value, ok := secretData[fileName]
+	if !ok {
+		return fmt.Errorf("Secret does not contain key %s", fileName)
+	}
+
+	// Save the key
+	f, err := os.Create(fmt.Sprintf("%s/%s", webhookConfig.CertDir, fileName))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write(value)
+	return err
 }
 
 func enabled() bool {

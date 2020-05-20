@@ -25,7 +25,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -374,32 +373,6 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")
 	if !found {
 		t.Fatal("INSTALLATION_PREFIX env var is not set")
-	}
-
-	var service = &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-webhooks",
-			Namespace: namespace,
-			Annotations: map[string]string{
-				"service.beta.openshift.io/serving-cert-secret-name": "rhmi-webhook-cert",
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"name": "rhmi-operator",
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Protocol:   corev1.ProtocolTCP,
-					Port:       443,
-					TargetPort: intstr.FromInt(8090),
-				},
-			},
-		},
-	}
-	err = f.Client.Create(context.TODO(), service, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
 	}
 
 	var smtpSec = &corev1.Secret{

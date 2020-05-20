@@ -3,10 +3,11 @@ package installation
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -303,7 +304,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(r.context, r.client); err != nil {
+	if err := webhooks.Config.Reconcile(r.context, r.client, installation); err != nil {
 		return reconcile.Result{}, err
 	}
 
