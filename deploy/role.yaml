@@ -37,6 +37,7 @@ rules:
       - watch
       - create
       - update
+      - delete
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -361,4 +362,5 @@ rules:
       - list
       - create
       - update
+      - delete
   # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
