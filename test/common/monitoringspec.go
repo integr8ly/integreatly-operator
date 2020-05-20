@@ -15,7 +15,8 @@ const (
 	clonedServiceMonitorLabelKey   = "integreatly.org/cloned-servicemonitor"
 	clonedServiceMonitorLabelValue = "true"
 	labelSelector                  = "monitoring-key=middleware"
-	roleBindingName                = "prometheus-k8s"
+	roleBindingName                = "rhmi-prometheus-k8s"
+	roleRefName                    = "rhmi-prometheus-k8s"
 )
 
 //Defines an list of expected service monitor names
@@ -61,7 +62,11 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 	//Check if rolebindings exists
 	for _, sm := range monSermonMap {
 		for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
-			err := checkRoleBindingExists(ctx, roleBindingName, namespace)
+			err := checkRoleExists(ctx, roleRefName, namespace)
+			if err != nil {
+				t.Fatal("Error retrieving rolebinding: ", err, "in namespace:", namespace)
+			}
+			err = checkRoleBindingExists(ctx, roleBindingName, namespace)
 			if err != nil {
 				t.Fatal("Error retrieving rolebinding: ", err, "in namespace:", namespace)
 			}
@@ -138,5 +143,11 @@ func getClonedServiceMonitorLabel() map[string]string {
 func checkRoleBindingExists(ctx *TestingContext, name, namespace string) (err error) {
 	rb := &rbac.RoleBinding{}
 	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, rb)
+	return err
+}
+
+func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
+	role := &rbac.Role{}
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, role)
 	return err
 }
