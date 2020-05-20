@@ -96,7 +96,7 @@ func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 	//fail immediately if one or more alerts have fired
 	if err := getFiringAlerts(t, ctx); err != nil {
 		podLogs(t, ctx)
-		t.Fatal(err)
+		t.Fatal(err.Error())
 	}
 
 }

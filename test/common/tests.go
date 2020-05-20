@@ -27,7 +27,7 @@ var (
 		{"E01 - Verify Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 		{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
-		{"Verify Alerts are not firing during or after intsallation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+		{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 		{"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
