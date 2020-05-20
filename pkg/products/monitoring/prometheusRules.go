@@ -157,8 +157,8 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"sop_url": "TBA",
 				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been killed due to being Out Of Memory.",
 			},
-			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) \n/ \ncount_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))\n* \non (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"),
-			For:    "5m", //TBD
+			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) / count_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))* on (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"),
+			For:    "5m",
 			Labels: map[string]string{"severity": "warning"},
 		},
 		{
@@ -167,8 +167,8 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"sop_url": "TBA",
 				"message": "Multiple Pods in the {{ $labels.namespace }} are being killed off due to Out Of Memory ",
 			},
-			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) \n/ \ncount_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))\n* \non (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"), //TODO discuss the threshold of the no. of pods that are considered critical with SRE
-			For:    "10m",                                                                                                                                                                                                                                                                                                                                         //TBD
+			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) / count_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))* on (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"),
+			For:    "10m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
