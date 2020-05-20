@@ -6,7 +6,7 @@ metadata:
   annotations:
     repository: https://github.com/3scale/3scale-operator
     capabilities: Full Lifecycle
-    categories: "Integration & Delivery"
+    categories: "Integration xxxxxx & Delivery"
     certified: "false"
     description: 3scale Operator to provision 3scale and publish/manage API
     containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator:1.10-4
