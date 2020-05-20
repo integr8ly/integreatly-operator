@@ -321,7 +321,7 @@ func (r *Reconciler) reconcileRole(ctx context.Context,
 		return nil
 	})
 	if opRes != controllerutil.OperationResultNone {
-		r.Logger.Infof("operation result of creating role: %v was %v", roleBindingName, opRes)
+		r.Logger.Infof("operation result of creating role: %v was %v", roleRefName, opRes)
 	}
 	return err
 }
