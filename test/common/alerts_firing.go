@@ -179,7 +179,7 @@ func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
-	monitoringTimeout := 1 * time.Minute
+	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err := wait.Poll(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		if newErr := getFiringOrPendingAlerts(ctx); newErr != nil {
