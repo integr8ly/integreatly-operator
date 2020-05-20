@@ -46,7 +46,7 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Developer Tools, OpenShift Optional
     certified: "true"
-    containerImage: quay.io/integreatly/delorean:codeready-workspaces-crw-2-rhel8-operator_latest
+    containerImage: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:02e8777fa295e6615bbd73f3d92911e7e7029b02cdf6346eba502aaeb8fe3de1
     createdAt: "2020-01-20T11:59:59+00:00"
     description: A Kube-native development solution that delivers portable and collaborative
       developer workspaces in OpenShift.
@@ -291,24 +291,24 @@ spec:
                 - name: CHE_VERSION
                   value: 2.1.1
                 - name: IMAGE_default_che_server
-                  value: quay.io/integreatly/delorean:codeready-workspaces-server-rhel8_latest
+                  value: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:f7b27fb525a24c4273f0a3e18461a70f3cbb897e845e44abd8ca10fd1de3e1b2
                 - name: IMAGE_default_plugin_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_latest
+                  value: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:6cd737a9e9df54407959a0e8e4bb6a3e3b9e37cf590193545f609b2c4af4bf46
                 - name: IMAGE_default_devfile_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_latest
+                  value: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:0124562131e8cde6b2b9a5e4bced93522da3c1c95e9122306ecd8acb093650e0
                 - name: IMAGE_default_pvc_jobs
                   value: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
                 - name: IMAGE_default_postgres
-                  value: quay.io/integreatly/delorean:rhscl-postgresql-96-rhel7_latest
+                  value: registry.redhat.io/rhscl/postgresql-96-rhel7@sha256:196abd9a1221fb38dd5693203f068fc4d520bb351928ef84e5e15984f5152476
                 - name: IMAGE_default_keycloak
-                  value: quay.io/integreatly/delorean:redhat-sso-7-sso73-openshift_latest
+                  value: registry.redhat.io/redhat-sso-7/sso73-openshift@sha256:0dc950903bbc971c14e6223efe3493f0f50eb8af7cbe91aeea621f80f99f155f
                 - name: IMAGE_default_che_workspace_plugin_broker_metadata
-                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginbroker-metadata-rhel8_latest
+                  value: registry.redhat.io/codeready-workspaces/pluginbroker-metadata-rhel8@sha256:6c9abe63a70a6146dc49845f2f7732e3e6e0bcae6a19c3a6557367d6965bc1f8
                 - name: IMAGE_default_che_workspace_plugin_broker_artifacts
-                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginbroker-artifacts-rhel8_latest
+                  value: registry.redhat.io/codeready-workspaces/pluginbroker-artifacts-rhel8@sha256:5815bab69fc343cbf6dac0fd67dd70a25757fac08689a15e4a762655fa2e8a2c
                 - name: IMAGE_default_che_server_secure_exposer_jwt_proxy_image
-                  value: quay.io/integreatly/delorean:codeready-workspaces-jwtproxy-rhel8_latest
-                image: quay.io/integreatly/delorean:codeready-workspaces-crw-2-rhel8-operator_latest
+                  value: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:63182dae6377ac01fbebdcb9c6a4435681ea88521cfc6e4222fe3920a3641127
+                image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:02e8777fa295e6615bbd73f3d92911e7e7029b02cdf6346eba502aaeb8fe3de1
                 imagePullPolicy: Always
                 name: codeready-operator
                 ports:
