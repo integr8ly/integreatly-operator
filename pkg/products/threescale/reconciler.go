@@ -3,7 +3,9 @@ package threescale
 import (
 	"context"
 	"fmt"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"net/http"
+	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -234,7 +236,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	threescaleMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-master")
+	threescaleMasterRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-master", nil)
 	if err != nil || threescaleMasterRoute == nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -269,6 +271,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.backupSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileRouteEditRole(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile roles", err)
 		return phase, err
 	}
 
@@ -501,7 +509,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
 
-		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider")
+		threescaleRoute, err := r.getThreescaleRoute(ctx, serverClient, "system-provider", func(r routev1.Route) bool {
+			return strings.HasPrefix(r.Spec.Host, "3scale-admin.")
+		})
 		if threescaleRoute != nil {
 			r.Config.SetHost("https://" + threescaleRoute.Spec.Host)
 			err = r.ConfigManager.WriteConfig(r.Config)
@@ -1030,7 +1040,9 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the developer console ui
-	route, err := r.getThreescaleRoute(ctx, client, "system-developer")
+	route, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+		return strings.HasPrefix(r.Spec.Host, "3scale.")
+	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer route: %w", err)
 	}
@@ -1043,7 +1055,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the master console ui
-	route, err = r.getThreescaleRoute(ctx, client, "system-master")
+	route, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master route: %w", err)
 	}
@@ -1058,7 +1070,12 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string) (*routev1.Route, error) {
+func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8sclient.Client, label string, filterFn func(r routev1.Route) bool) (*routev1.Route, error) {
+	// Add backwards compatible filter function, first element will do
+	if filterFn == nil {
+		filterFn = func(r routev1.Route) bool { return true }
+	}
+
 	selector, err := labels.Parse(fmt.Sprintf("zync.3scale.net/route-to=%v", label))
 	if err != nil {
 		return nil, err
@@ -1079,7 +1096,14 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 		return nil, nil
 	}
 
-	return &routes.Items[0], nil
+	var foundRoute *routev1.Route
+	for _, route := range routes.Items {
+		if filterFn(route) {
+			foundRoute = &route
+			break
+		}
+	}
+	return foundRoute, nil
 }
 
 func (r *Reconciler) GetAdminNameAndPassFromSecret(ctx context.Context, serverClient k8sclient.Client) (*string, *string, error) {
@@ -1316,4 +1340,66 @@ func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.Keycloa
 			},
 		},
 	}
+}
+
+func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	// Allow dedicated-admin group to edit routes. This is enabled to allow the public API in 3Scale, on private clusters, to be exposed.
+	// This is achieved by labelling the route to match the additional router created by SRE for private clusters. INTLY-7398.
+
+	logrus.Infof("reconciling edit routes role to the dedicated admins group")
+
+	editRoutesRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "edit-3scale-routes",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, editRoutesRole, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(editRoutesRole, r.installation)
+
+		editRoutesRole.Rules = []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"route.openshift.io"},
+				Resources: []string{"routes"},
+				Verbs:     []string{"get", "update", "list", "watch", "patch"},
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling edit routes role %v: %w", editRoutesRole, err)
+	}
+
+	// Bind the amq online service admin role to the dedicated-admins group
+	editRoutesRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dedicated-admins-edit-routes",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, editRoutesRoleBinding, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(editRoutesRoleBinding, r.installation)
+
+		editRoutesRoleBinding.RoleRef = rbacv1.RoleRef{
+			Name: editRoutesRole.GetName(),
+			Kind: "Role",
+		}
+		editRoutesRoleBinding.Subjects = []rbacv1.Subject{
+			{
+				Name: "dedicated-admins",
+				Kind: "Group",
+			},
+		}
+
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role binding %v: %w", editRoutesRoleBinding, err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

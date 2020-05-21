@@ -28,11 +28,11 @@ spec:
           imagePullPolicy: Always
           resources:
             limits:
-              cpu: 60m
-              memory: 128Mi
+              memory: 1536Mi
+              cpu: 80m
             requests:
-              cpu: 40m
               memory: 64Mi
+              cpu: 40m
           volumeMounts:
           - name: webhook-certs
             mountPath: "/etc/ssl/certs/webhook"

@@ -56,6 +56,7 @@ type ConfigReadWriter interface {
 	ReadApicurito() (*Apicurito, error)
 	ReadCloudResources() (*CloudResources, error)
 	ReadDataSync() (*DataSync, error)
+	ReadMonitoringSpec() (*MonitoringSpec, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -122,6 +123,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadMonitoring()
 	case integreatlyv1alpha1.ProductDataSync:
 		return m.ReadDataSync()
+	case integreatlyv1alpha1.ProductMonitoringSpec:
+		return m.ReadMonitoringSpec()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
@@ -221,6 +224,14 @@ func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 		return nil, err
 	}
 	return NewMonitoring(config), nil
+}
+
+func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoringSpec)
+	if err != nil {
+		return nil, err
+	}
+	return NewMonitoringSpec(config), nil
 }
 
 func (m *Manager) ReadApicurito() (*Apicurito, error) {

@@ -4,14 +4,16 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/route/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -96,6 +98,38 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
+
+	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
+}
+
+// Verify that a dedicated admin can edit routes in the 3scale namespace
+func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+	ns := "redhat-rhmi-3scale"
+	route := "backend"
+
+	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err := client.DoOpenshiftGetRequest(path)
+	if err != nil {
+		t.Errorf("Failed to get route : %s", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("Unable to get 3scale route as dedicated admin : %v", resp)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body) // Use response from GET
+	if err != nil {
+		t.Errorf("failed to read response body from get route request : %s", err)
+	}
+
+	path = fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err = client.DoOpenshiftPutRequest(path, bodyBytes)
+
+	if err != nil {
+		t.Errorf("Failed to update route : %s", err)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("Failed to update route as dedicated admin : %v", resp)
+	}
 }
 
 // verifies that there is at least 1 project with a prefix `openshift` , `redhat` and `kube`
@@ -154,7 +188,12 @@ func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *re
 	}
 
 	// Dedicate admin can not CREATE new RHMI config
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1alpha1",
+			Kind:       "RHMIConfig",
+		},
+	}
 	bodyBytes, err = json.Marshal(rhmiConfig)
 
 	resp, err = openshiftClient.DoOpenshiftPostRequest(path, bodyBytes)

@@ -12,7 +12,10 @@ var (
 
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
+		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
+		{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
+		{"A05 - Verify product operator version", TestProductOperatorVersions},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
@@ -29,6 +32,7 @@ var (
 		{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 		{"C01 - Verify Alerts are not firing apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
+		{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
 		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
 		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
@@ -37,6 +41,8 @@ var (
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
+		{"A06 - Verify PVC", TestPVClaims},
+		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{

@@ -8,6 +8,7 @@ REALM_DISPLAY_NAME="${REALM_DISPLAY_NAME:-Testing IDP}"
 INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o json | jq -r .items[0].spec.namespacePrefix)}"
 INSTALLATION_PREFIX=${INSTALLATION_PREFIX%-} # remove trailing dash
 ADMIN_USERNAME="${ADMIN_USERNAME:-customer-admin}"
+DEDICATED_ADMIN_PASSWORD="${DEDICATED_ADMIN_PASSWORD:-$(openssl rand -base64 12)}"
 NUM_ADMIN="${NUM_ADMIN:-3}"
 REGULAR_USERNAME="${REGULAR_USERNAME:-test-user}"
 NUM_REGULAR_USER="${NUM_REGULAR_USER:-10}"
@@ -42,7 +43,7 @@ create_dedicated_admins() {
   echo "Creating dedicated admin users"
   for ((i = 1; i <= NUM_ADMIN; i++)); do
     format_user_name $i "$ADMIN_USERNAME"
-    oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Customer" -p LASTNAME="Admin ${USER_NUM}" -f "${BASH_SOURCE%/*}/admin-template.yml" | oc apply -f -
+    oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$DEDICATED_ADMIN_PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Customer" -p LASTNAME="Admin ${USER_NUM}" -f "${BASH_SOURCE%/*}/admin-template.yml" | oc apply -f -
     add_user_to_dedicated_admin_group "$USERNAME"
   done
 }
@@ -67,7 +68,7 @@ create_users() {
 }
 
 echo "User password set to \"${PASSWORD}\""
-
+echo "Dedciated Admin password set to \"${DEDICATED_ADMIN_PASSWORD}\""
 CLIENT_SECRET=$(openssl rand -base64 20)
 OAUTH_URL=https://$(oc get route oauth-openshift -n openshift-authentication -o json | jq -r .spec.host)
 KEYCLOAK_URL=https://$(oc get route keycloak-edge -n "$INSTALLATION_PREFIX-rhsso" -o json | jq -r .spec.host)

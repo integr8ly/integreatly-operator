@@ -21,6 +21,7 @@ const (
 	OpenshiftPathGetSecret    = "/api/kubernetes/api/v1/namespaces/%s/secrets"
 	PathListRHMIConfig        = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs"
 	PathGetRHMIConfig         = "/apis/integreatly.org/v1alpha1/namespaces/redhat-rhmi-operator/rhmiconfigs/%s"
+	PathGetRoute              = "/apis/route.openshift.io/v1/namespaces/%s/routes/%s"
 )
 
 type OpenshiftClient struct {
@@ -227,7 +228,7 @@ func (oc *OpenshiftClient) DoOpenshiftPutRequest(path string, data []byte) (*htt
 
 // make a delete request, expects a path
 func (oc *OpenshiftClient) DoOpenshiftDeleteRequest(path string) (*http.Response, error) {
-	req, err := http.NewRequest("Delete", fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("https://%s%s", oc.ApiUrl, path), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while creating new http request : %w", err)
 	}
