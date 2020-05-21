@@ -214,6 +214,9 @@ func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (s
 	// ensure maintenance applyFrom format is correct
 	// we expect a format of: `DDD HH:mm`
 	maintenanceSegments := strings.Split(maintenanceApplyFrom, " ")
+	if len(maintenanceSegments) != 2 {
+		return "", "", fmt.Errorf("failed to parse maintenance ApplyFrom value : expected format DDD HH:mm , found format %s", maintenanceApplyFrom)
+	}
 	maintenanceDay := maintenanceSegments[0]
 	maintenanceTime := maintenanceSegments[1]
 

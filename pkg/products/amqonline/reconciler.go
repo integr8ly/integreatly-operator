@@ -44,7 +44,6 @@ const (
 	defaultInstallationNamespace = "amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
-	postgresTier                 = "production"
 )
 
 type Reconciler struct {
@@ -302,7 +301,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		serverClient,
 		defaultInstallationNamespace,
 		"workshop", // workshop here so that it creates in-cluster postgresql
-		postgresTier,
+		croUtil.TierProduction,
 		postgresqlName,
 		r.inst.Namespace,
 		postgresqlName,

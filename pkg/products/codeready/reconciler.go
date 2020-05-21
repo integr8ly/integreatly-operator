@@ -42,7 +42,6 @@ const (
 	defaultClientName            = "che-client"
 	defaultCheClusterName        = "rhmi-cluster"
 	manifestPackage              = "integreatly-codeready-workspaces"
-	tier                         = "production"
 )
 
 type Reconciler struct {
@@ -190,7 +189,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// setup postgres custom resource
 	postgresName := fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
