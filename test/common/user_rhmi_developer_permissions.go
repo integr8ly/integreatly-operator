@@ -102,6 +102,23 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 
 	// Verify RHMI Developer permissions around RHMI Config
 	verifyRHMIDeveloperRHMIConfigPermissions(t, openshiftClient)
+
+	verifyRHMIDeveloper3ScaleRoutePermissions(t, openshiftClient)
+}
+
+// Verify that a dedicated admin can edit routes in the 3scale namespace
+func verifyRHMIDeveloper3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+	ns := "redhat-rhmi-3scale"
+	route := "backend"
+
+	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err := client.DoOpenshiftGetRequest(path)
+	if err != nil {
+		t.Errorf("Failed to get route : %s", err)
+	}
+	if resp.StatusCode != 403 {
+		t.Errorf("RHMI Developer was incorrectly able to get route : %v", resp)
+	}
 }
 
 func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {

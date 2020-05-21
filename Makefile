@@ -15,6 +15,7 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 CONTAINER_ENGINE ?= docker
+TEST_RESULTS_DIR ?= "test-results"
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -45,7 +46,6 @@ export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
-export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -160,6 +160,21 @@ test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
 
+.PHONY: test/products/local
+test/products/local:
+	# Running the products tests against an existing cluster inside a container. Make sure you have logged in to the cluster.
+	# Using 'test-containers.yaml' as config and 'test-results' as output dir
+	mkdir -p "test-results"
+	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean tests run --test-config ./test-containers.yaml --output /test-results --namespace test-products
+
+.PHONY: test/products
+test/products:
+	# Running the products tests against an existing cluster. Make sure you have logged in to the cluster.
+	# Using "test-containers.yaml" as config and $(TEST_RESULTS_DIR) as output dir
+	mkdir -p $(TEST_RESULTS_DIR)
+	delorean tests run --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
+
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
 
@@ -239,17 +254,13 @@ cluster/prepare/dms:
 		--from-literal=url=https://dms.example.com
 
 .PHONY: cluster/prepare/delorean
-cluster/prepare/delorean:
-ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
-	@echo Detected a delorean ews branch. The integreatly-delorean-secret.yml is required.
-	@echo Please contact the delorean team to get this if you do not already have it.
-	@echo Add it to the root dir of this repo and rerun the desired target if the target fails on it not existing
-	@ oc apply -f integreatly-delorean-secret.yml --namespace=$(NAMESPACE)
-endif
+cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 
 .PHONY: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
+ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	@./scripts/setup-delorean-pullsecret.sh
+endif
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
@@ -284,15 +295,6 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
-ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE/$(NAMESPACE)/g" deploy/integreatly-rhmi-cr.yml
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME/$(DELOREAN_PULL_SECRET_NAME)/g" deploy/integreatly-rhmi-cr.yml
-	rm deploy/integreatly-rhmi-cr.yml.bak
-else
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAMESPACE//g" deploy/integreatly-rhmi-cr.yml
-	@sed -i.bak "s/DELOREAN_PULL_SECRET_NAME//g" deploy/integreatly-rhmi-cr.yml
-	rm deploy/integreatly-rhmi-cr.yml.bak
-endif
 	@-oc create -f deploy/integreatly-rhmi-cr.yml
 
 .PHONY: prepare-patch-release

@@ -50,6 +50,7 @@ var (
 	ProductMonitoring          ProductName = "middleware-monitoring"
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
+	ProductMonitoringSpec      ProductName = "monitoring-spec"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
@@ -59,14 +60,15 @@ var (
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
-	VersionMonitoring          ProductVersion = "1.1.5"
+	VersionMonitoring          ProductVersion = "1.1.6"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.15.1"
+	VersionCloudResources      ProductVersion = "0.15.2"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.3"
 	VersionRHSSOUser           ProductVersion = "7.3"
+	VersionMonitoringSpec      ProductVersion = "1.0"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -89,9 +91,10 @@ var (
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
 	OperatorVersion3Scale              OperatorVersion = "0.5.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.15.1"
+	OperatorVersionCloudResources      OperatorVersion = "0.15.2"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
+	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"

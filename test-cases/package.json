@@ -1,0 +1,34 @@
+{
+  "name": "integreatly-test-cases",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "lint": "prettier --check '**/*.*' && ./tools.sh rename && tslint -p .",
+    "prettier": "prettier --write '**/*.*'",
+    "rename": "./tools.sh rename --write"
+  },
+  "dependencies": {
+    "@types/jira-client": "6.4.4",
+    "@types/xml2js": "0.4.5",
+    "@types/yargs": "13.0.0",
+    "axios": "0.19.2",
+    "clone": "2.1.2",
+    "deepmerge": "3.2.0",
+    "form-data": "3.0.0",
+    "googleapis": "47.0.0",
+    "gray-matter": "4.0.2",
+    "handlebars": "4.1.2",
+    "jira-client": "6.7.1",
+    "markdown2confluence-cws": "2.0.4",
+    "prettier": "1.18.2",
+    "prompt-promise": "1.0.3",
+    "ts-node": "8.2.0",
+    "tslint": "5.17.0",
+    "tslint-config-prettier": "1.18.0",
+    "tslint-plugin-prettier": "2.0.1",
+    "typescript": "3.5.1",
+    "winston": "^3.2.1",
+    "xml2js": "0.4.23",
+    "yargs": "13.2.4"
+  }
+}

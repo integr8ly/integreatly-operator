@@ -8,6 +8,7 @@ tmp/_output/bin/integreatly-operator
 cmd/manager/debug
 build/_output
 build/_test
+test-results
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-

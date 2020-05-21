@@ -3,6 +3,8 @@ package apicurito
 import (
 	"context"
 	"fmt"
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -52,16 +54,24 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	apicuritoConfig, err := configManager.ReadApicurito()
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not retrieve apicurito config : %w", err)
 	}
 
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
+		configManager.WriteConfig(apicuritoConfig)
 	}
+	if apicuritoConfig.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace())
+		}
+		configManager.WriteConfig(apicuritoConfig)
+	}
+	apicuritoConfig.SetBlackboxTargetPath("/oauth/healthz")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		Config:        apicuritoConfig,
@@ -155,6 +165,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
@@ -546,4 +562,22 @@ func (r *Reconciler) reconcilePodCountAlert(ctx context.Context, client k8sclien
 	}
 
 	return nil
+
+}
+
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config : %w", err)
+	}
+
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-apicurito", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		Service: "apicurito-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating apicurito blackbox target: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

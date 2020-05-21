@@ -178,6 +178,13 @@ To run E2E tests against an existing RHMI cluster:
 make test/functional
 ```
 
+### Products tests
+
+To run products tests against an existing RHMI cluster
+```
+make test/products/local
+```
+
 ## Using `ocm` for installation of RHMI
 
 If you want to test your changes on a cluster, the easiest solution would be to spin up OSD 4 cluster using `ocm`. If you want to spin up a cluster using BYOC (your own AWS credentials), follow the additional steps marked as **BYOC**.

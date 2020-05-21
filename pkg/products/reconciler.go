@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 
@@ -132,6 +133,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		}
 	case integreatlyv1alpha1.ProductMonitoring:
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductMonitoringSpec:
+		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductApicurito:
 		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:

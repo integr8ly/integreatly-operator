@@ -36,6 +36,7 @@ const (
 	ThreeScaleOperatorNamespace       = ThreeScaleProductNamespace + "-operator"
 	UPSProductNamespace               = NamespacePrefix + "ups"
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
+	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
 )
 
 type TestingContext struct {
@@ -90,4 +91,9 @@ type ExpectedRoute struct {
 type SubscriptionCheck struct {
 	Name      string
 	Namespace string
+}
+
+type PersistentVolumeClaim struct {
+	Namespace                  string
+	PersistentVolumeClaimNames []string
 }
