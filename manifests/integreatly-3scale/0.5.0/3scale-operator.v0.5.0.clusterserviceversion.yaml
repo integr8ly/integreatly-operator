@@ -8,7 +8,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: "Integration & Delivery"
     certified: "false"
-    description: 3scale Operator to provision 3scale and publish/manage API
+    description: 3scale Operatorrrrr to provision 3scale and publish/manage API
     containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:2ba16314ee046b3c3814fe4e356b728da6853743bd72f8651e1a338e8bbf4f81
     createdAt: 2019-05-30T22:40:00Z
     support: Red Hat, Inc.
