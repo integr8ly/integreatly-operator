@@ -15,6 +15,7 @@ AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 CONTAINER_ENGINE ?= docker
+TEST_RESULTS_DIR ?= "test-results"
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -158,6 +159,21 @@ test/functional:  export SURF_DEBUG_HEADERS=1
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
+
+.PHONY: test/products/local
+test/products/local:
+	# Running the products tests against an existing cluster inside a container. Make sure you have logged in to the cluster.
+	# Using 'test-containers.yaml' as config and 'test-results' as output dir
+	mkdir -p "test-results"
+	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean tests run --test-config ./test-containers.yaml --output /test-results --namespace test-products
+
+.PHONY: test/products
+test/products:
+	# Running the products tests against an existing cluster. Make sure you have logged in to the cluster.
+	# Using "test-containers.yaml" as config and $(TEST_RESULTS_DIR) as output dir
+	mkdir -p $(TEST_RESULTS_DIR)
+	delorean tests run --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
