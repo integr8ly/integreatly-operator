@@ -216,7 +216,8 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, installation *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}

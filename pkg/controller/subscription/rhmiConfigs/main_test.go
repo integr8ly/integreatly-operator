@@ -637,7 +637,7 @@ func TestApproveUpgrade(t *testing.T) {
 		RhmiInstallPlan *olmv1alpha1.InstallPlan
 		Config          *integreatlyv1alpha1.RHMIConfig
 		RHMI            *integreatlyv1alpha1.RHMI
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error)
+		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
@@ -652,7 +652,7 @@ func TestApproveUpgrade(t *testing.T) {
 				},
 			},
 			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error) {
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -684,7 +684,7 @@ func TestApproveUpgrade(t *testing.T) {
 				},
 			},
 			RHMI: rhmiMock,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error) {
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, config *integreatlyv1alpha1.RHMIConfig, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -697,7 +697,6 @@ func TestApproveUpgrade(t *testing.T) {
 				if config.Status.Upgrade.Scheduled != nil {
 					t.Fatalf("Expected scheduled field to be empty")
 				}
-
 				if rhmi.Status.ToVersion != version.Version {
 					t.Fatalf("Expected ToVersion to be version.version")
 				}
@@ -707,18 +706,14 @@ func TestApproveUpgrade(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RhmiInstallPlan, scenario.RHMI, scenario.Config, scenario.EventRecorder)
-
+			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.Config, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
-
-			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
-
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
-
-			scenario.Verify(retrievedInstallPlan, rhmi, updatedConfig, err)
+			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
+			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
+			scenario.Verify(retrievedInstallPlan, updatedConfig, rhmi, err)
 		})
 	}
 }

@@ -143,7 +143,8 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, latestRHMIInstallPlan, installation, config, eventRecorder)
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, config, installation, latestRHMIInstallPlan, eventRecorder)
+
 		if err != nil {
 			return reconcile.Result{}, err
 		}
