@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -53,7 +52,6 @@ const (
 	alertManagerRouteName            = "alertmanager-route"
 	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
 	alertManagerConfigSecretFileName = "alertmanager.yaml"
-	alertmanagerAlertAddressEnv      = "ALERTING_EMAIL_ADDRESS"
 	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"
 
 	// cluster monitorint federation
@@ -626,9 +624,9 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	// only set the to address to a real value for managed deployments
 	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToAddressEnvVal := os.Getenv(alertmanagerAlertAddressEnv)
-	if smtpToAddressEnvVal != "" {
-		smtpToAddress = smtpToAddressEnvVal
+	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddress
+	if smtpToAddressCRDVal != "" {
+		smtpToAddress = smtpToAddressCRDVal
 	}
 
 	// parse the config template into a secret object
