@@ -17,12 +17,16 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -66,7 +70,7 @@ type Upgrade struct {
 	Contacts string `json:"contacts,omitempty"`
 	// always-immediately: boolean value, if set to true an upgrade will be applied as soon as it is available,
 	// whether service affecting or not.
-	// This takes precedences over all other options
+	// This takes precedence over all other options
 	AlwaysImmediately bool `json:"alwaysImmediately"`
 	// during-next-maintenance: boolean value, if set to true an upgrade will be applied within the next maintenance window.
 	// Takes precedence over apply-on
@@ -138,6 +142,43 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 
 func (c *RHMIConfig) ValidateDelete() error {
 	return nil
+}
+
+// +k8s:deepcopy-gen=false
+type rhmiConfigMutatingHandler struct {
+	decoder *admission.Decoder
+}
+
+func NewRHMIConfigMutatingHandler() admission.Handler {
+	return &rhmiConfigMutatingHandler{}
+}
+
+func (h *rhmiConfigMutatingHandler) InjectDecoder(d *admission.Decoder) error {
+	h.decoder = d
+	return nil
+}
+
+func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admission.Request) admission.Response {
+	rhmiConfig := &RHMIConfig{}
+	if err := h.decoder.Decode(request, rhmiConfig); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if rhmiConfig.Annotations == nil {
+		rhmiConfig.Annotations = map[string]string{}
+	}
+
+	if request.UserInfo.Username != "system:serviceaccount:redhat-rhmi-operator:rhmi-operator" {
+		rhmiConfig.Annotations["lastEditUsername"] = request.UserInfo.Username
+		rhmiConfig.Annotations["lastEditTimestamp"] = time.Now().UTC().Format(DateFormat)
+	}
+
+	marshalled, err := json.Marshal(rhmiConfig)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	return admission.PatchResponseFromRaw(request.Object.Raw, marshalled)
 }
 
 func init() {
