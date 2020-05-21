@@ -5,7 +5,7 @@ estimate: 30m
 ---
 
 # A22 - Verify RHMIConfig maintenance and backup validation
-We have a RHMIConfig validation webhook, this test is to verify the maintenance and backup validation works as expected
+This test is to verify that the RHMIConfig validation webhook for maintenance and backup values works as expected.
 
 The expected value formats are:
 ```yaml
@@ -16,18 +16,25 @@ spec:
      applyFrom : "DDD HH:mm"
 ```
 
-1. Add new values in correct format to ensure the validation works with no error
+1. Add new values in correct format to ensure the validation works with no error. We require the expected values outlined above. We also expect these values to be parsed as a 1 hour window, which should not overlap 
+```
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/backup/applyOn", "value": "20:00"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/maintenance/applyFrom", "value": "sun 21:00"}]' -n redhat-rhmi-operator
 
-We require the expected values outlined above, we also expect these values to be parsed as a 1hour window
-These windows can not overlap, the following steps we need to add a number of poorly formatted values and overlapping window values and ensure 
-the validation webhook stops these values from being updated
-2. Add poorly formatted values eg `"wefwef:wfwefwef", 12:111, sqef 12:13, 42:23` etc
-4. Add overlapping values,
-```yaml
-spec:
-  backup: 
-    applyOn : "22:01"
-  maintenance: 
-     applyFrom : "Mon 22:20"
+```
+2. Add poorly formatted values and ensure that the validation webhook does not allow these changes to be made
+```
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/backup/applyOn", "value": "20:000"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/maintenance/applyFrom", "value": "sun 21:000"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/backup/applyOn", "value": "wrong value"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/maintenance/applyFrom", "value": "notADay 12:00"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/backup/applyOn", "value": "wrong value"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/maintenance/applyFrom", "value": "wrong value"}]' -n redhat-rhmi-operator
+```
+
+3. Add overlapping values for these time windows and ensure that the validation webhook does not allow these values. 
+```
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/backup/applyOn", "value": "20:05"}]' -n redhat-rhmi-operator
+oc patch rhmiconfig rhmi-config --type=json -p='[{"op" : "add", "path" : "/spec/maintenance/applyFrom", "value": "sun 20:15"}]' -n redhat-rhmi-operator
 ```
 

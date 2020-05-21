@@ -190,17 +190,19 @@ func init() {
 	SchemeBuilder.Register(&RHMIConfig{}, &RHMIConfigList{})
 }
 
-// we require backup and maintenance windows to be a minimum of 1hour block each
-// these blocks can not over lap each other
-// this function checks that the applyOn and applyFrom values are correctly formatted
-// it builds 1 hour blocks and ensures these times do not overlap
+// ValidateBackupAndMaintenance ensures that the backup and maintenance times
+//   * are not empty
+//   * are correctly formatted
+//   * do not overlap
+// If the times are valid, 1 hour non-overlapping backup and maintenance windows
+// are returned as a result in a format required by AWS
 func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (string, string, error) {
 	// we should expect both values to be set when RHMI config is updated
 	if maintenanceApplyFrom == "" {
-		return "", "", errors.New(fmt.Sprintf("maintenance apply from value is required"))
+		return "", "", fmt.Errorf("maintenance apply from value is required")
 	}
 	if backupApplyOn == "" {
-		return "", "", errors.New(fmt.Sprintf("backup apply on value is required"))
+		return "", "", fmt.Errorf("backup apply on value is required")
 	}
 
 	// ensure backup applyOn format is correct
@@ -210,9 +212,12 @@ func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (s
 	}
 
 	// ensure maintenance applyFrom format is correct
-	// split maintenance value expected format : `DDD HH:mm`
-	windowSegments := strings.Split(maintenanceApplyFrom, " ")
-	// check if day is correct
+	// we expect a format of: `DDD HH:mm`
+	maintenanceSegments := strings.Split(maintenanceApplyFrom, " ")
+	maintenanceDay := maintenanceSegments[0]
+	maintenanceTime := maintenanceSegments[1]
+
+	// verify maintenance day is valid
 	var expectedDays = []string{
 		"sun",
 		"mon",
@@ -222,20 +227,20 @@ func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (s
 		"fri",
 		"sat",
 	}
-	if !contains(expectedDays, strings.ToLower(windowSegments[0])) {
-		return "", "", errors.New(fmt.Sprintf("formating failure, applyFrom format expected `DDD HH:mm` found : %s", maintenanceApplyFrom))
-	}
-	// check if maintenance applyFrom time value is correct
-	parsedMaintenanceTime, err := time.Parse("15:04", windowSegments[1])
-	if err != nil {
-		return "", "", fmt.Errorf("failure while parsing maintenance applyFrom value, format expected `DDD HH:mm` found : %s : %v", maintenanceApplyFrom, err)
+	if !contains(expectedDays, strings.ToLower(maintenanceDay)) {
+		return "", "", fmt.Errorf("formatting failure, found invalid maintenance applyFrom value. Expected: `DDD HH:mm` found: %s", maintenanceApplyFrom)
 	}
 
+	// verify maintenance time is valid
+	parsedMaintenanceTime, err := time.Parse("15:04", maintenanceTime)
+	if err != nil {
+		return "", "", fmt.Errorf("failure while parsing maintenance applyFrom value. Format expected: `DDD HH:mm` found: %s: %v", maintenanceApplyFrom, err)
+	}
+
+	// add an hour to maintenace and backup time to create the windows.
 	// we require a minimum of 1hr windows for both maintenance and backup
-	// these windows can not over lap, this is a requirement of AWS
-	// set maintenance time plus one hour
+	// these windows cannot overlap, this is a requirement of AWS
 	parsedMaintenanceTimePlusOneHour := parsedMaintenanceTime.Add(time.Hour)
-	// add one hour to applyOn format
 	parsedBackupTimePlusOneHour := parsedBackupTime.Add(time.Hour)
 
 	// build expected maintenance window strings for error message,
@@ -243,16 +248,18 @@ func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (s
 	builtBackupString := fmt.Sprintf("%02d:%02d-%02d:%02d", parsedBackupTime.Hour(), parsedBackupTime.Minute(), parsedBackupTimePlusOneHour.Hour(), parsedBackupTimePlusOneHour.Minute())
 
 	// ensure backup and maintenance time ranges do not overlap
-	// we expect RHMI operator to validate the ranges, as a sanity check we preform an extra validation here
+	// we expect RHMI operator to validate the ranges, as a sanity check we perform an extra validation here
 	// this is to avoid an obscure error message from AWS when we apply the times
 	// http://baodad.blogspot.com/2014/06/date-range-overlap.html
 	// (StartA <= EndB)  and  (EndA >= StartB)
 	if timeBlockOverlaps(parsedBackupTime, parsedBackupTimePlusOneHour, parsedMaintenanceTime, parsedMaintenanceTimePlusOneHour) {
-		return "", "", errors.New(fmt.Sprintf("backup and maintenance times can not overlap, each time is parsed as a 1 hour window, current backup applyOn window : %s overlaps with current maintenance window : %s ", builtBackupString, builtMaintenanceString))
+		return "", "", fmt.Errorf("backup and maintenance times cannot overlap, each time is parsed as a 1 hour window, current backup applyOn window : %s overlaps with current maintenance window : %s ", builtBackupString, builtMaintenanceString)
 	}
 	return backupApplyOn, maintenanceApplyFrom, nil
 }
 
+// timeBlockOverlaps checks if two time ranges overlap and returns true
+// if they do
 func timeBlockOverlaps(startA, endA, startB, endB time.Time) bool {
 	return startA.Before(endB) && endA.After(startB)
 }
