@@ -29,11 +29,11 @@ import (
 const (
 	defaultInstallationNamespace              = "monitoring"
 	packageName                               = "monitoringspec"
-	roleBindingName                           = "prometheus-k8s"
+	roleBindingName                           = "rhmi-prometheus-k8s"
 	clusterMonitoringPrometheusServiceAccount = "prometheus-k8s"
 	clusterMonitoringNamespace                = "openshift-monitoring"
 	roleRefAPIGroup                           = "rbac.authorization.k8s.io"
-	roleRefName                               = "view"
+	roleRefName                               = "rhmi-prometheus-k8s"
 	labelSelector                             = "monitoring-key=middleware"
 	clonedServiceMonitorLabelKey              = "integreatly.org/cloned-servicemonitor"
 	clonedServiceMonitorLabelValue            = "true"
@@ -117,7 +117,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileMonitoring(ctx, serverClient, installation)
 	logrus.Infof("Phase: %s reconcileMonitoring", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		logrus.Errorf("ailed to reconcile: %v", err)
+		logrus.Errorf("failed to reconcile: %v", err)
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile:", err)
 		return phase, err
 	}
@@ -218,7 +218,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 			}
 			//Remove rolebindings
 			for _, namespace := range sm.Spec.NamespaceSelector.MatchNames {
-				err := r.removeRoleBinding(ctx, serverClient, namespace, roleBindingName)
+				err := r.removeRoleandRoleBinding(ctx, serverClient, namespace, roleRefName, roleBindingName)
 				if err != nil {
 					return integreatlyv1alpha1.PhaseFailed, err
 				}
@@ -276,10 +276,52 @@ func (r *Reconciler) reconcileRoleBindingsForServiceMonitor(ctx context.Context,
 	}
 	//Create role binding for each of the namespace label selectors
 	for _, namespace := range sermon.Spec.NamespaceSelector.MatchNames {
-		err := r.reconcileRoleBinding(ctx, serverClient, namespace)
+		err := r.reconcileRole(ctx, serverClient, namespace)
 		if err != nil {
 			return err
 		}
+		err = r.reconcileRoleBinding(ctx, serverClient, namespace)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *Reconciler) reconcileRole(ctx context.Context,
+	serverClient k8sclient.Client, namespace string) (err error) {
+
+	role := &rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleRefName,
+			Namespace: namespace,
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, role, func() error {
+		resources := []string{
+			"services",
+			"endpoints",
+			"pods",
+		}
+
+		verbs := []string{
+			"get",
+			"list",
+			"watch",
+		}
+		apiGroups := []string{""}
+
+		role.Rules = []rbac.PolicyRule{
+			{
+				APIGroups: apiGroups,
+				Resources: resources,
+				Verbs:     verbs,
+			},
+		}
+		return nil
+	})
+	if opRes != controllerutil.OperationResultNone {
+		r.Logger.Infof("operation result of creating role: %v was %v", roleRefName, opRes)
 	}
 	return err
 }
@@ -303,7 +345,7 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 		}
 		roleBinding.RoleRef = rbac.RoleRef{
 			APIGroup: roleRefAPIGroup,
-			Kind:     bundle.ClusterRoleKind,
+			Kind:     bundle.RoleKind,
 			Name:     roleRefName,
 		}
 		return nil
@@ -330,8 +372,8 @@ func (r *Reconciler) removeServiceMonitor(ctx context.Context,
 	return err
 }
 
-func (r *Reconciler) removeRoleBinding(ctx context.Context,
-	serverClient k8sclient.Client, namespace, name string) (err error) {
+func (r *Reconciler) removeRoleandRoleBinding(ctx context.Context,
+	serverClient k8sclient.Client, namespace, roleName, rbName string) (err error) {
 
 	// Check if the namespace has service monitors
 	// if so do not delete the rolebinding
@@ -347,13 +389,23 @@ func (r *Reconciler) removeRoleBinding(ctx context.Context,
 		return nil
 	}
 
+	//Get the role
+	role := &rbac.Role{}
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: roleName, Namespace: namespace}, role)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
+	//Delete the role
+	err = serverClient.Delete(ctx, role)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return err
+	}
+
 	//Get the rolebinding
 	rb := &rbac.RoleBinding{}
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: namespace}, rb)
-	if err != nil && k8serr.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: rbName, Namespace: namespace}, rb)
+	if err != nil && !k8serr.IsNotFound(err) {
 		return err
 	}
 

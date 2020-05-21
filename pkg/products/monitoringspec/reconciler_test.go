@@ -95,13 +95,43 @@ func createRoleBinding(name, namespace string) *rbac.RoleBinding {
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: roleRefAPIGroup,
-			Kind:     bundle.ClusterRoleKind,
+			Kind:     bundle.RoleKind,
 			Name:     roleRefName,
 		},
 	}
 	return roleBinding
 }
 
+func createRole(name, namespace string) *rbac.Role {
+
+	resources := []string{
+		"services",
+		"endpoints",
+		"pods",
+	}
+
+	verbs := []string{
+		"get",
+		"list",
+		"watch",
+	}
+	apiGroups := []string{""}
+
+	role := &rbac.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleBindingName,
+			Namespace: namespace,
+		},
+	}
+	role.Rules = []rbac.PolicyRule{
+		{
+			APIGroups: apiGroups,
+			Resources: resources,
+			Verbs:     verbs,
+		},
+	}
+	return role
+}
 func basicConfigMock() *config.ConfigReadWriterMock {
 	return &config.ConfigReadWriterMock{
 		ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
@@ -320,6 +350,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
+			//Verify that a role was created in the fuse namespace
+			role := &rbac.Role{}
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: roleRefName, Namespace: "fuse"}, role)
+			if err != nil {
+				t.Fatalf("expected no error but got one: %v", err)
+			}
+
 		})
 	}
 }
@@ -366,8 +403,8 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 	upssm := createServicemonitor("ups-servicemon", defaultInstallationNamespace)
 
 	//Create a rolebinding in fuse namespace
-
 	rb := createRoleBinding(roleBindingName, "fuse")
+	role := createRole(roleRefName, "fuse")
 	if len(upssm.Labels) == 0 {
 		upssm.Labels = make(map[string]string)
 	}
@@ -390,7 +427,7 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 		{
 			Name:           "test successful reconcile with cleanup",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, installation, monitoringns, upssm, fusens, rb),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, installation, monitoringns, upssm, fusens, rb, role),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringSpecFunc: func() (ready *config.MonitoringSpec, e error) {
 					return config.NewMonitoringSpec(config.ProductConfig{
@@ -457,6 +494,13 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
 
+			//Verify that the fuse namespace has a stale role
+			role := &rbac.Role{}
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: roleRefName, Namespace: "fuse"}, role)
+			if err != nil {
+				t.Fatalf("expected no error but got one: %v", err)
+			}
+
 			//Verify that reconcilation was completed successfuly
 			status, err := reconciler.Reconcile(ctx, tc.Installation, tc.Product, tc.FakeClient)
 			if err != nil && !tc.ExpectError {
@@ -477,6 +521,13 @@ func TestReconciler_fullReconcileWithCleanUp(t *testing.T) {
 			//Verify that the stale rolebinding is removed
 			rb = &rbac.RoleBinding{}
 			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: roleBindingName, Namespace: "fuse"}, rb)
+			if err != nil && !k8serr.IsNotFound(err) {
+				t.Fatalf("expected no error but got one: %v", err)
+			}
+
+			//Verify that the stale role is removed
+			role = &rbac.Role{}
+			err = tc.FakeClient.Get(ctx, k8sclient.ObjectKey{Name: roleBindingName, Namespace: "fuse"}, role)
 			if err != nil && !k8serr.IsNotFound(err) {
 				t.Fatalf("expected no error but got one: %v", err)
 			}
