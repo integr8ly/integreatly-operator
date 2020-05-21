@@ -35,15 +35,18 @@ var (
 		{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 		{"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
 		{"H05 - Verify Fuse CRUDL permissions", TestFuseCrudlPermissions},
-		{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 		{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
-		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
-		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 		{"A06 - Verify PVC", TestPVClaims},
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
+	}
+
+	MANAGED_PRODUCT_TESTS = []TestCase{
+			{"B05 - Verify Codeready CRUDL permissions", TestCodereadyCrudlPermisssions},
+			{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
+			{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{

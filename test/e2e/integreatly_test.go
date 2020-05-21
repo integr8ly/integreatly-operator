@@ -1,8 +1,10 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
 	goctx "context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -22,6 +25,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,7 +50,13 @@ const (
 	artifactsDirEnv              = "ARTIFACT_DIR"
 )
 
+var profile = flag.String("profile", "self-managed", "profile type: managed, self-managed")
+
 func TestIntegreatly(t *testing.T) {
+	if profile != nil {
+		t.Log("Initializing test for profile:", *profile)
+	}
+
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, &integreatlyv1alpha1.RHMIList{})
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
@@ -94,7 +104,7 @@ func TestIntegreatly(t *testing.T) {
 		}
 
 		t.Run("Cluster", func(t *testing.T) {
-			IntegreatlyCluster(t, f, ctx)
+			IntegreatlyCluster(t, f, ctx, *profile)
 		})
 
 		for _, test := range common.HAPPY_PATH_TESTS {
@@ -165,7 +175,66 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	return nil
 }
 
-func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+func execToPod(command string, podname string, namespace string, container string, f *framework.Framework) (string, error) {
+	req := f.KubeClient.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podname).
+		Namespace(namespace).
+		SubResource("exec").
+		Param("container", container)
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return "", fmt.Errorf("error adding to scheme: %v", err)
+	}
+	parameterCodec := runtime.NewParameterCodec(scheme)
+	req.VersionedParams(&corev1.PodExecOptions{
+		Container: container,
+		Command:   strings.Fields(command),
+		Stdin:     false,
+		Stdout:    true,
+		Stderr:    true,
+		TTY:       false,
+	}, parameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(f.KubeConfig, "POST", req.URL())
+	if err != nil {
+		return "", fmt.Errorf("error while creating Executor: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+		Tty:    false,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error in Stream: %v", err)
+	}
+
+	return stdout.String(), nil
+}
+
+func getConfigMap(name string, namespace string, f *framework.Framework) (map[string]string, error) {
+	configmap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	key := k8sclient.ObjectKey{
+		Name:      configmap.GetName(),
+		Namespace: configmap.GetNamespace(),
+	}
+	err := f.Client.Get(goctx.TODO(), key, configmap)
+	if err != nil {
+		return map[string]string{}, fmt.Errorf("could not get configmap: %configmapname", err)
+	}
+
+	return configmap.Data, nil
+}
+
+func integreatlyTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, products map[string]string) error {
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
@@ -213,16 +282,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	//Product Stage - verify operators deploy
-	products := map[string]string{
-		"3scale":               "3scale-operator",
-		"amq-online":           "enmasse-operator",
-		"codeready-workspaces": "codeready-operator",
-		"fuse":                 "syndesis-operator",
-		"user-sso":             "keycloak-operator",
-		"ups":                  "unifiedpush-operator",
-		"apicurito":            "apicurito-operator",
-	}
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
 		if err != nil {
@@ -367,7 +426,7 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
-func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) {
+func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, profile string) {
 	namespace, err := ctx.GetNamespace()
 	// Create SMTP Secret
 	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")
@@ -432,7 +491,30 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	//TODO: split them into their own test cases
 	// check that all of the operators deploy and all of the installation phases complete
-	if err = integreatlyManagedTest(t, f, ctx); err != nil {
-		t.Fatal(err)
+	if profile == "managed" {
+		//Product Stage - verify operators deploy
+		products := map[string]string{
+			"3scale":               "3scale-operator",
+			"amq-online":           "enmasse-operator",
+			"codeready-workspaces": "codeready-operator",
+			"fuse":                 "syndesis-operator",
+			"user-sso":             "keycloak-operator",
+			"ups":                  "unifiedpush-operator",
+			"apicurito":            "apicurito-operator",
+		}
+		if err = integreatlyTest(t, f, ctx, products); err != nil {
+			t.Fatal(err)
+		}
+	} else if profile == "self-managed" {
+		//Product Stage - verify operators deploy
+		products := map[string]string{
+			"amqstreams": "strimzi-cluster-operator",
+			"user-sso":   "keycloak-operator",
+			"ups":        "unifiedpush-operator",
+		}
+		if err = integreatlyTest(t, f, ctx, products); err != nil {
+			t.Fatal(err)
+		}
 	}
+
 }
