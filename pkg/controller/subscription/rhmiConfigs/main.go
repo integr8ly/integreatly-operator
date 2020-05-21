@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
@@ -163,7 +165,7 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, installation *integreatlyv1alpha1.RHMI, eventRecorder record.EventRecorder) error {
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
@@ -176,6 +178,21 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *o
 	if err != nil {
 		return err
 	}
+
+	csv, err := GetCSV(installPlan)
+	if err != nil {
+		return err
+	}
+
+	version := csv.Spec.Version.String()
+	logrus.Infof("Update approved, setting rhmi version to install %s", version)
+	installation.Status.ToVersion = version
+	err = client.Status().Update(ctx, installation)
+	if err != nil {
+		return err
+	}
+
+	metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion)
 
 	return nil
 }

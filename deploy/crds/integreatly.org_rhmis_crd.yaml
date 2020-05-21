@@ -140,6 +140,10 @@ spec:
                 code after modifying this file Add custom validation using kubebuilder
                 tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               type: object
+            toVersion:
+              type: string
+            version:
+              type: string
           required:
           - lastError
           - stage

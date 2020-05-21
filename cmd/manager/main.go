@@ -55,6 +55,8 @@ func init() {
 	// Register custom metrics with the global prometheus registry
 	customMetrics.Registry.MustRegister(integreatlymetrics.OperatorVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatusAvailable)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIVersion)
+	integreatlymetrics.OperatorVersion.Add(1)
 }
 
 func printVersion() {

@@ -228,6 +228,18 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMIStatus(ref common.ReferenceCallbac
 							Format: "",
 						},
 					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"toVersion": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"stages", "stage", "lastError"},
 			},

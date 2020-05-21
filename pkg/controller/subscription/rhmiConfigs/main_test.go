@@ -2,6 +2,7 @@ package rhmiConfigs
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/version"
 	"strings"
 	"testing"
 	"time"
@@ -445,6 +446,23 @@ func TestApproveUpgrade(t *testing.T) {
 				"RHMI-v1.0.0",
 			},
 		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     "ClusterServiceVersion",
+						Manifest: "{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"2.2.0\"}}",
+					},
+				},
+			},
+		},
+	}
+
+	rhmiMock := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "redhat-rhmi-operator",
+		},
 	}
 
 	installPlanAlreadyUpgrading := &olmv1alpha1.InstallPlan{
@@ -463,15 +481,17 @@ func TestApproveUpgrade(t *testing.T) {
 		Context         context.Context
 		EventRecorder   record.EventRecorder
 		RhmiInstallPlan *olmv1alpha1.InstallPlan
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, err error)
+		RHMI            *integreatlyv1alpha1.RHMI
+		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading, rhmiMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, err error) {
+			RHMI:            rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -484,11 +504,12 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 		{
 			Name:            "Test install plan ready to upgrade",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval, rhmiMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, err error) {
+			RHMI:            rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -497,17 +518,23 @@ func TestApproveUpgrade(t *testing.T) {
 				if updatedRhmiInstallPlan.Spec.Approved != true {
 					t.Fatalf("Expected installplan.Spec.Approved to be true")
 				}
+
+				if rhmi.Status.ToVersion != version.Version {
+					t.Fatalf("Expected ToVersion to be version.version")
+				}
 			},
 		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RhmiInstallPlan, scenario.RHMI, scenario.EventRecorder)
 
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
-			scenario.Verify(retrievedInstallPlan, err)
+			rhmi := &integreatlyv1alpha1.RHMI{}
+			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
+			scenario.Verify(retrievedInstallPlan, rhmi, err)
 		})
 	}
 }

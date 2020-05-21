@@ -136,7 +136,14 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 
 	if !rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV) || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, latestRHMIInstallPlan, eventRecorder)
+
+		// TODO: investigate a better approach to getting RHMI rather than hardcoding values
+		installation := &integreatlyv1alpha1.RHMI{}
+		err = r.client.Get(ctx, k8sclient.ObjectKey{Name: "rhmi", Namespace: "redhat-rhmi-operator"}, installation)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, latestRHMIInstallPlan, installation, eventRecorder)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
