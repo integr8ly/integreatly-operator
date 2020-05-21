@@ -2,7 +2,7 @@
   "byoc": false,
   "managed": true,
   "multi_az": false,
-  "name": "my_cluster_name",
+  "name": "my_name",
   "nodes" : {
     "compute" : 4,
     "compute_machine_type" : {"id" : "m5.xlarge" }
