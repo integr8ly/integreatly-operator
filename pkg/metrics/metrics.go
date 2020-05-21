@@ -49,6 +49,18 @@ var (
 		},
 	)
 
+	RHMIVersion = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhmi_version",
+			Help: "RHMI versions",
+		},
+		[]string{
+			"stage",
+			"version",
+			"to_version",
+		},
+	)
+
 	RHMIStatus *prometheus.GaugeVec = nil
 
 	rhmiStatusLabels = []string{
@@ -133,4 +145,9 @@ func SanitizeForPrometheusLabel(productName integreatlyv1alpha1.ProductName) str
 		productName = "threescale"
 	}
 	return fmt.Sprintf("%s_status", strings.ReplaceAll(string(productName), "-", "_"))
+}
+
+func SetRhmiVersions(stage string, version string, toVersion string, firstInstallTimestamp int64) {
+	RHMIVersion.Reset()
+	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
 }

@@ -172,6 +172,8 @@ type RHMIStatus struct {
 	LastError          string                        `json:"lastError"`
 	GitHubOAuthEnabled bool                          `json:"gitHubOAuthEnabled,omitempty"`
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
+	Version            string                        `json:"version,omitempty"`
+	ToVersion          string                        `json:"toVersion,omitempty"`
 }
 
 type RHMIStageStatus struct {
