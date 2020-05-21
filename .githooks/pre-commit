@@ -7,5 +7,5 @@ staged_go_files=$(git diff --cached --name-only | grep ".go$" | grep -v "vendor/
 unformatted_files=$(gofmt -l $staged_go_files)
 [ -z "$unformatted_files" ] && exit 0
 
-echo >&2 "[code/check failed] run 'make code/fix' to fix formatting issues"
+echo >&2 "[code/check failed] run 'make code/fix' to fix formattttting issues"
 exit 1

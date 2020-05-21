@@ -1,5 +1,7 @@
 # Integreatly Test Cases
 
+Test
+
 - Test cases are located in the directory `tests/` and are organized in subdirectories by categories.
 - Each markdown file `*.md` inside the `tests/` represents one test case.
 - Each test case must start with the ID and a title immediately after the metadata `# ID - This is a title`.

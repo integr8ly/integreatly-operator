@@ -2,6 +2,8 @@
 #OCM=docker run --rm -it -u 1000 -v "/home/mnairn/go/src/github.com/integr8ly/integreatly-operator:/integreatly-operator/" -w "/integreatly-operator" -v "${HOME}/tmp-home:/myhome:z" -e "HOME=/myhome" --entrypoint=/usr/local/bin/ocm ${OCM_IMAGE}
 OCM=ocm
 
+
+
 .PHONY: ocm/version
 ocm/version:
 	@${OCM} version

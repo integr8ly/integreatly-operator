@@ -2,6 +2,8 @@
 set -e
 set -o pipefail
 
+echo "blah"
+
 PREVIOUS_VERSION=$(grep integreatly-operator deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml | awk -F v '{print $2}')
 
 create_new_csv() {

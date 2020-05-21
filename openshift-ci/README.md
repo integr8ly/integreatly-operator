@@ -2,6 +2,8 @@
 
 ### Dockerfile.tools
 
+TEST
+
 Base image used on CI for all builds and test jobs.
 
 #### Build and Test
