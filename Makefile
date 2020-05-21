@@ -149,11 +149,11 @@ test/e2e/prow: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
 test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd cluster/prepare/service deploy/integreatly-rhmi-cr.yml
 	 export SURF_DEBUG_HEADERS=1
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=90m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
 test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --up-local
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=90m" --debug --up-local
 
 
 .PHONY: test/functional
