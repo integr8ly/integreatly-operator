@@ -99,7 +99,6 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			Namespace: r.Config.GetOperatorNamespace(),
 		},
 	}
-
 	rules := []monitoringv1.Rule{
 		{
 			Alert: "KubePodCrashLooping",
