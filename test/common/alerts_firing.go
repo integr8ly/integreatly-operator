@@ -3,13 +3,15 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
+	goctx "context"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const deadMansSwitch = "DeadMansSwitch"
@@ -28,9 +30,37 @@ type alertsFiringError struct {
 	deadMansSwitchFiring bool
 }
 
+var (
+	podNamespaces = []string{
+
+		RHMIOperatorNamespace,
+		MonitoringOperatorNamespace,
+		MonitoringFederateNamespace,
+		AMQOnlineOperatorNamespace,
+		ApicuritoProductNamespace,
+		ApicuritoOperatorNamespace,
+		CloudResourceOperatorNamespace,
+		CodeReadyProductNamespace,
+		CodeReadyOperatorNamespace,
+		FuseProductNamespace,
+		FuseOperatorNamespace,
+		RHSSOUserProductOperatorNamespace,
+		RHSSOUserOperatorNamespace,
+		RHSSOProductNamespace,
+		RHSSOOperatorNamespace,
+		SolutionExplorerProductNamespace,
+		SolutionExplorerOperatorNamespace,
+		ThreeScaleProductNamespace,
+		ThreeScaleOperatorNamespace,
+		UPSProductNamespace,
+		UPSOperatorNamespace,
+	}
+)
+
 // Error implements the error interface and returns a readable output message
 func (e *alertsFiringError) Error() string {
 	var str strings.Builder
+
 	if e.deadMansSwitchFiring {
 		str.WriteString("\nThe following alerts were not fired, but were expected to be firing:")
 		str.WriteString(fmt.Sprintf("\n\talert: %s", deadMansSwitch))
@@ -61,8 +91,91 @@ func (e *alertsFiringError) isValid() bool {
 	return !e.deadMansSwitchFiring || len(e.alertsFiring) != 0 || len(e.alertsPending) != 0
 }
 
-// TestIntegreatlyAlertsFiring reports any firing or pending alerts
+// This test ensures that no alerts are firing during or after installation
 func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
+	//fail immediately if one or more alerts have fired
+	if err := getFiringAlerts(t, ctx); err != nil {
+		podLogs(t, ctx)
+		t.Fatal(err.Error())
+	}
+
+}
+func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
+	output, err := execToPod("curl localhost:9090/api/v1/alerts",
+		"prometheus-application-monitoring-0",
+		MonitoringOperatorNamespace,
+		"prometheus",
+		ctx)
+	if err != nil {
+		return fmt.Errorf("failed to exec to prometheus pod: %w", err)
+	}
+
+	// get all found rules from the prometheus api
+	var promApiCallOutput prometheusAPIResponse
+	err = json.Unmarshal([]byte(output), &promApiCallOutput)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+	var alertsResult prometheusv1.AlertsResult
+	err = json.Unmarshal(promApiCallOutput.Data, &alertsResult)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	// create a custom alerts error to keep track of all firing alerts
+	alertsError := &alertsFiringError{
+		alertsFiring:         []alertTestMetadata{},
+		deadMansSwitchFiring: true,
+	}
+
+	// // check if any alerts other than DeadMansSwitch are firing
+	for _, alert := range alertsResult.Alerts {
+		alertName := string(alert.Labels["alertname"])
+		alertMetadata := alertTestMetadata{
+			alertName: alertName,
+			podName:   string(alert.Labels["pod"]),
+			namespace: string(alert.Labels["namespace"]),
+		}
+
+		// check if dead mans switch is firing
+		if alertName == deadMansSwitch && alert.State != prometheusv1.AlertStateFiring {
+			alertsError.deadMansSwitchFiring = false
+		}
+		// check for firing alerts
+		if alertName != deadMansSwitch {
+			if alert.State == prometheusv1.AlertStateFiring {
+				alertsError.alertsFiring = append(alertsError.alertsFiring, alertMetadata)
+
+			}
+
+		}
+	}
+
+	if alertsError.isValid() {
+		return alertsError
+
+	}
+	return nil
+}
+
+// Makes a api call a to get all pods in the rhmi namespaces
+func podLogs(t *testing.T, ctx *TestingContext) {
+	pods := &corev1.PodList{}
+
+	for _, namespaces := range podNamespaces {
+		err := ctx.Client.List(goctx.TODO(), pods, &k8sclient.ListOptions{Namespace: namespaces})
+		if err != nil {
+			t.Error("Error getting namespaces:", err)
+		}
+		t.Log("Namespace:", namespaces)
+		for _, pod := range pods.Items {
+			t.Logf("\tPod name: %s, Status: %s", pod.Name, pod.Status.Phase)
+		}
+	}
+}
+
+// TestIntegreatlyAlertsFiring reports any firing or pending alerts
+func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes
@@ -78,8 +191,10 @@ func TestIntegreatlyAlertsFiring(t *testing.T, ctx *TestingContext) {
 			return false, newErr
 		}
 		return true, nil
-	})
+	},
+	)
 	if err != nil {
+		podLogs(t, ctx)
 		t.Fatal(lastError.Error())
 	}
 }
@@ -138,6 +253,7 @@ func getFiringOrPendingAlerts(ctx *TestingContext) error {
 	}
 	if alertsError.isValid() {
 		return alertsError
+
 	}
 	return nil
 }
