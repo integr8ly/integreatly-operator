@@ -8,5 +8,11 @@ else
 		@echo "No image_mirror_mapping files found in manifests directory"
 endif
 
+.PHONY: manifest/check/registries
+manifest/check/registries:
+	@! grep "registry.stage.redhat.io" -r manifests/ --include=*clusterserviceversion.{yml,yaml}
+	@! grep "quay.io/integreatly/delorean" -r manifests/ --include=*clusterserviceversion.{yml,yaml}
+	@! grep "registry-proxy.engineering.redhat.com" -r manifests/ --include=*clusterserviceversion.{yml,yaml}
+
 .PHONY: manifest/check
-manifest/check: manifest/check/image_mirror_mapping
+manifest/check: manifest/check/image_mirror_mapping manifest/check/registries
