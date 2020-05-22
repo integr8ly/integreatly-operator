@@ -6,7 +6,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"k8s.io/apimachinery/pkg/util/wait"
-	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"testing"
 	"time"
 )
@@ -33,7 +32,7 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
 
-	loginTo3ScaleAsDevloper(t, developerUser, host)
+	loginTo3ScaleAsDevloper(t, developerUser, host, ctx)
 
 	err = loginToThreeScale(t, host, dedicatedAdminUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
