@@ -316,7 +316,12 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 			{
 				APIGroups: []string{"integreatly.org"},
 				Resources: []string{"rhmiconfigs"},
-				Verbs:     []string{"update", "get", "list"},
+				Verbs:     []string{"update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"integreatly.org"},
+				Resources: []string{"rhmis"},
+				Verbs:     []string{"watch", "get", "list"},
 			},
 		}
 		return nil
