@@ -48,6 +48,8 @@ const (
 	productsStageTimout          = time.Minute * 30
 	solutionExplorerStageTimeout = time.Minute * 10
 	artifactsDirEnv              = "ARTIFACT_DIR"
+	managed                      = "managed"
+	selfManaged                  = "self-managed"
 )
 
 var profile = flag.String("profile", "self-managed", "profile type: managed, self-managed")
@@ -117,6 +119,12 @@ func TestIntegreatly(t *testing.T) {
 			})
 		}
 
+		if *profile == managed {
+			testingContext, err = runProductTest(t, testingContext, err, f, common.MANAGED_PRODUCT_TESTS)
+		} else if *profile == "self-managed" {
+			testingContext, err = runProductTest(t, testingContext, err, f, common.SELF_MANAGED_PRODUCT_TESTS)
+		}
+
 		// Do not execute these tests unless DESTRUCTIVE is set to true
 		if os.Getenv("DESTRUCTIVE") == "true" {
 			t.Run("Integreatly Destructive Tests", func(t *testing.T) {
@@ -148,6 +156,19 @@ func TestIntegreatly(t *testing.T) {
 	} else {
 		ctx.Cleanup()
 	}
+}
+
+func runProductTest(t *testing.T, testingContext *common.TestingContext, err error, f *framework.Framework, tests []common.TestCase) (*common.TestingContext, error) {
+	for _, test := range tests {
+		t.Run(test.Description, func(t *testing.T) {
+			testingContext, err = common.NewTestingContext(f.KubeConfig)
+			if err != nil {
+				t.Fatal("failed to create testing context", err)
+			}
+			test.Test(t, testingContext)
+		})
+	}
+	return testingContext, err
 }
 
 func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
@@ -234,7 +255,7 @@ func getConfigMap(name string, namespace string, f *framework.Framework) (map[st
 	return configmap.Data, nil
 }
 
-func integreatlyTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, products map[string]string) error {
+func integreatlyTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, products map[string]string, profile string) error {
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
@@ -307,6 +328,83 @@ func integreatlyTest(t *testing.T, f *framework.Framework, ctx *framework.TestCt
 		return err
 	}
 
+	// check namespaces labelled correctly
+	expectedNamespaces := []string{}
+
+	if profile == managed {
+		expectedNamespaces = []string{
+			"3scale",
+			"3scale-operator",
+			"amq-online",
+			"apicurito",
+			"apicurito-operator",
+			"codeready-workspaces",
+			"codeready-workspaces-operator",
+			"fuse",
+			"fuse-operator",
+			"middleware-monitoring-operator",
+			"rhsso",
+			"rhsso-operator",
+			"solution-explorer",
+			"solution-explorer-operator",
+			"ups",
+			"ups-operator",
+			"user-sso",
+			"user-sso-operator",
+		}
+	} else if profile == selfManaged {
+		expectedNamespaces = []string{
+			"middleware-monitoring-operator",
+			"rhsso",
+			"rhsso-operator",
+			"solution-explorer",
+			"solution-explorer-operator",
+			"ups",
+			"ups-operator",
+			"user-sso",
+			"user-sso-operator",
+		}
+	}
+
+	err = checkIntegreatlyNamespaceLabels(t, f, expectedNamespaces, namespaceLabel)
+	if err != nil {
+		return err
+	}
+
+	// check auth stage operator versions
+	authOperators := map[string]string{
+		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.OperatorVersionRHSSO),
+	}
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperators)
+	if err != nil {
+		return err
+	}
+
+	// check cloud resources stage operator versions
+	resouceOperators := map[string]string{
+		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.OperatorVersionCloudResources),
+	}
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperators)
+	if err != nil {
+		return err
+	}
+
+	// check monitoring stage operator versions
+	monitoringOperators := map[string]string{
+		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.OperatorVersionMonitoring),
+	}
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperators)
+	if err != nil {
+		return err
+	}
+
+	// check products stage operator versions
+	productOperators := getProductOperators(profile)
+	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperators)
+	if err != nil {
+		return err
+	}
+
 	// check authentication stage operand versions
 	authOperands := map[string]string{
 		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
@@ -334,32 +432,109 @@ func integreatlyTest(t *testing.T, f *framework.Framework, ctx *framework.TestCt
 		return err
 	}
 
-	// check products stage operands versions
-	productOperands := map[string]string{
-		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.Version3Scale),
-		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.VersionAMQOnline),
-		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.VersionApicurito),
-		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
-		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.VersionFuseOnOpenshift),
-		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.VersionUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.VersionRHSSOUser),
-	}
+	productOperands := getProductOperands(profile)
 	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperands)
 	if err != nil {
 		return err
 	}
 
 	// check no failed PVCs
-	pvcNamespaces := []string{
-		string(integreatlyv1alpha1.Product3Scale),
-		string(integreatlyv1alpha1.ProductFuse),
-		string(integreatlyv1alpha1.ProductRHSSO),
-		string(integreatlyv1alpha1.ProductSolutionExplorer),
-		string(integreatlyv1alpha1.ProductUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser),
+	var pvcNamespaces []string
+	if profile == managed {
+		pvcNamespaces = []string{
+			string(integreatlyv1alpha1.Product3Scale),
+			string(integreatlyv1alpha1.ProductFuse),
+			string(integreatlyv1alpha1.ProductRHSSO),
+			string(integreatlyv1alpha1.ProductSolutionExplorer),
+			string(integreatlyv1alpha1.ProductUps),
+			string(integreatlyv1alpha1.ProductRHSSOUser),
+		}
+	} else if profile == selfManaged {
+		pvcNamespaces = []string{
+			string(integreatlyv1alpha1.ProductRHSSO),
+			string(integreatlyv1alpha1.ProductSolutionExplorer),
+			string(integreatlyv1alpha1.ProductUps),
+			string(integreatlyv1alpha1.ProductRHSSOUser),
+		}
 	}
 	err = checkPvcs(t, f, namespace, pvcNamespaces)
 	return err
+}
+
+func getProductOperands(profile string) map[string]string {
+	// check products stage operands versions
+	productOperands := map[string]string{}
+	if profile == managed {
+		productOperands = map[string]string{
+			string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.Version3Scale),
+			string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.VersionAMQOnline),
+			string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.VersionApicurito),
+			string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
+			string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.VersionFuseOnOpenshift),
+			string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.VersionUps),
+			string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.VersionRHSSOUser),
+		}
+	} else if profile == selfManaged {
+		productOperands = map[string]string{
+			string(integreatlyv1alpha1.ProductUps):       string(integreatlyv1alpha1.VersionUps),
+			string(integreatlyv1alpha1.ProductRHSSOUser): string(integreatlyv1alpha1.VersionRHSSOUser),
+		}
+	}
+	return productOperands
+}
+
+func getProductOperators(profile string) map[string]string {
+	productOperators := map[string]string{}
+	if profile == managed {
+		productOperators = map[string]string{
+			string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.OperatorVersion3Scale),
+			string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.OperatorVersionAMQOnline),
+			string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.OperatorVersionApicurito),
+			string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
+			string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.OperatorVersionFuse),
+			string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.OperatorVersionUPS),
+			string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
+		}
+	} else if profile == selfManaged {
+		productOperators = map[string]string{
+			string(integreatlyv1alpha1.ProductUps):       string(integreatlyv1alpha1.OperatorVersionUPS),
+			string(integreatlyv1alpha1.ProductRHSSOUser): string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
+		}
+	}
+	return productOperators
+}
+
+func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
+	for _, namespaceName := range namespaces {
+		namespace := &corev1.Namespace{}
+		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: common.NamespacePrefix + namespaceName}, namespace)
+		if err != nil {
+			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
+		}
+		value, ok := namespace.Labels[label]
+		if !ok || value != "true" {
+			return fmt.Errorf("Incorrect %v label on integreatly namespace: %v. Expected: true. Got: %v", label, namespaceName, value)
+		}
+	}
+	return nil
+}
+
+func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operatorVersions map[string]string) error {
+	installation := &integreatlyv1alpha1.RHMI{}
+
+	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
+	if err != nil {
+		return fmt.Errorf("Error getting installation CR from cluster when checking operator versions: %w", err)
+	}
+
+	for product, version := range operatorVersions {
+		clusterVersion := installation.Status.Stages[stage].Products[integreatlyv1alpha1.ProductName(product)].OperatorVersion
+		if clusterVersion != integreatlyv1alpha1.OperatorVersion(version) {
+			return fmt.Errorf("Error with version of %s operator deployed on cluster. Expected %s. Got %s", product, version, clusterVersion)
+		}
+	}
+
+	return nil
 }
 
 func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
@@ -502,17 +677,17 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 			"ups":                  "unifiedpush-operator",
 			"apicurito":            "apicurito-operator",
 		}
-		if err = integreatlyTest(t, f, ctx, products); err != nil {
+		if err = integreatlyTest(t, f, ctx, products, profile); err != nil {
 			t.Fatal(err)
 		}
-	} else if profile == "self-managed" {
+	} else if profile == selfManaged {
 		//Product Stage - verify operators deploy
 		products := map[string]string{
 			"amqstreams": "strimzi-cluster-operator",
 			"user-sso":   "keycloak-operator",
 			"ups":        "unifiedpush-operator",
 		}
-		if err = integreatlyTest(t, f, ctx, products); err != nil {
+		if err = integreatlyTest(t, f, ctx, products, profile); err != nil {
 			t.Fatal(err)
 		}
 	}

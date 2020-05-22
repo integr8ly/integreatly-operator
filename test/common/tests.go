@@ -49,6 +49,10 @@ var (
 			{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 	}
 
+	SELF_MANAGED_PRODUCT_TESTS = []TestCase{
+
+	}
+
 	DESTRUCTIVE_TESTS = []TestCase{
 		// Add all destructive tests here that should not be executed as part of the happy path tests
 		{"J03 - Verify namespaces restored when deleted", TestNamespaceRestoration},
