@@ -78,14 +78,14 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 
 // Login as a developer and create a separate testing context. This will provide a separate http client, mimicking
 // What would happen in reality, i.e. 2 users using separate browsers.
-func loginTo3ScaleAsDevloper(t *testing.T, user string, host string) error {
-	config, err := runtimeConfig.GetConfig()
-	if err != nil {
-		t.Fatalf("Failed to get runtime config: %v", err)
-	}
-	ctx, err := NewTestingContext(config)
+func loginTo3ScaleAsDevloper(t *testing.T, user string, host string, ctx *TestingContext) error {
 
-	err = loginToThreeScale(t, host, user, DefaultPassword, "testing-idp", ctx.HttpClient)
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = loginToThreeScale(t, host, user, DefaultPassword, "testing-idp", httpClient)
 	if err != nil {
 		t.Fatalf("Failed to log into 3Scale: %v", err)
 	}
