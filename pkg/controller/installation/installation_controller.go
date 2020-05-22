@@ -306,7 +306,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(r.context, r.client); err != nil {
+	if err := webhooks.Config.Reconcile(r.context, r.client, installation); err != nil {
 		return reconcile.Result{}, err
 	}
 
