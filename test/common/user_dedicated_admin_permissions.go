@@ -114,7 +114,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
 
 	// Verify dedicated admin permissions around AuthenticationService
-	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+	//verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient) - comment out due to causing e2e flake https://issues.redhat.com/browse/INTLY-7932
 
 	// Verify dedicated admin Role / Role binding for AMQ Online resources
 	verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
