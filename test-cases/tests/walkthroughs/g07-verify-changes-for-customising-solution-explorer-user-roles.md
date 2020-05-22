@@ -1,15 +1,10 @@
 ---
 estimate: 15m
 tags:
-  - nottesting
 ---
 
 # G07 - Verify changes for customising solution explorer user roles
 
-Description:
+Acceptance criteria:
 
-TBC
-
-Steps:
-
-TBC
+The masthead should have a user drop down menu in the right side.  When accessed there should be user information determining if the user is a developer or admin user.
