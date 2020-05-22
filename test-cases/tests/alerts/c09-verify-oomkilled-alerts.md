@@ -36,12 +36,12 @@ Another alternative to make pod be OOMKilled in RHMI namespace is to use `polinu
 ### Check that alerts are NOT fired for non-RHMI OOMKilled pods
 
 1. Create new project in OpenShift
-2. Under `Workloads` tab click `add another content`
-3. Select `From Catalog`
+2. Under **Workloads** tab click **add another content**
+3. Select **From Catalog**
 4. Search for `node`
-5. Select `Node.js + MongoDB`
-6. `Instantiate` and `Create`
-7. Navigate to `Workloads > Pods`
+5. Select **Node.js + MongoDB**
+6. **Instantiate** and **Create**
+7. Navigate to **Workloads > Pods**
 8. Wait for `nodejs-mongo-persistent` pod to be ready
 9. Open the pod's terminal
 10. Use the above 2 commands to fill the container's memory
