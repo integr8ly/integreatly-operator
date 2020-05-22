@@ -107,7 +107,7 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
 				"message": "Pod {{  $labels.namespace  }} / {{  $labels.pod  }} ({{  $labels.container  }}) is restarting {{  $value  }} times every 5 minutes; for the last 15 minutes",
 			},
-			Expr:   intstr.FromString("rate(kube_pod_container_status_restarts_total{job='kube-state-metrics'}[15m]) * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'} * 60 * 5 > 0"),
+			Expr:   intstr.FromString("rate(kube_pod_container_status_restarts_total{job='kube-state-metrics'}[10m]) * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'} * 60 * 5 > 0"),
 			For:    "15m",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -149,26 +149,6 @@ func (r *Reconciler) reconcileKubeStateMetricsAlerts(ctx context.Context, server
 			},
 			Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ContainerCreating'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 			For:    "15m",
-			Labels: map[string]string{"severity": "critical"},
-		},
-		{
-			Alert: "KubePodOutOfMemoryKilledWarning",
-			Annotations: map[string]string{
-				"sop_url": "TBA",
-				"message": "Pod {{ $labels.namespace }} / {{  $labels.pod  }} has been killed due to being Out Of Memory.",
-			},
-			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) / count_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))* on (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"),
-			For:    "5m",
-			Labels: map[string]string{"severity": "warning"},
-		},
-		{
-			Alert: "KubePodOutOfMemoryKilledCritical",
-			Annotations: map[string]string{
-				"sop_url": "TBA",
-				"message": "Multiple Pods in the {{ $labels.namespace }} are being killed off due to Out Of Memory ",
-			},
-			Expr:   intstr.FromString("(((sum_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]) / count_over_time(kube_pod_container_status_last_terminated_reason {reason='OOMKilled'}[5m]))* on (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) * 100) > 90"),
-			For:    "10m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
