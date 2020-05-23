@@ -49,8 +49,10 @@ rules:
       - apps
     resources:
       - deployments/finalizers
+      - replicasets
     verbs:
       - update
+      - get
   # END For monitoring functions by operator-sdk
 
   # Our own Subscription needs to be switched into Manual mode after initial installation
@@ -99,6 +101,19 @@ rules:
       - update
       - list
       - watch
+
+  # Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  # END Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
