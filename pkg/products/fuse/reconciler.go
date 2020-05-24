@@ -3,6 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
@@ -29,6 +30,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -43,6 +45,8 @@ const (
 	developersGroupName          = "rhmi-developers"
 	clusterViewRoleName          = "view"
 	manifestPackage              = "integreatly-fuse-online"
+	syndesisPrometheusPVC        = "10Gi"
+	syndesisPrometheus           = "syndesis-prometheus"
 )
 
 // Reconciler reconciles everything needed to install Syndesis/Fuse. The resources that it works
@@ -320,6 +324,30 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile fuse external database secret: %w", err)
+	}
+
+	//Reconcile PVC for syndesis-prometheus
+	pvccr := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      syndesisPrometheus,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, client, pvccr, func() error {
+		if len(pvccr.Spec.Resources.Requests) == 0 {
+			pvccr.Spec.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
+			pvccr.Spec.Resources.Requests = make(v1.ResourceList)
+			pvccr.Spec.Resources.Requests[v1.ResourceStorage] = resource.MustParse(syndesisPrometheusPVC)
+		} else {
+			pvccr.Spec.Resources.Requests[v1.ResourceStorage] = resource.MustParse(syndesisPrometheusPVC)
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update syndesis-promtheus PVC custom resource: %w", err)
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.logger.Infof("operation result of creating/updating syndesis-prometheus PVC CR was %v", opRes)
 	}
 
 	cr := &syndesisv1beta1.Syndesis{
