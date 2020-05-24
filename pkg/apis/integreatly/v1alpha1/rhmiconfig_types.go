@@ -30,8 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+const (
+	DefaultBackupApplyOn        = "03:01"
+	DefaultMaintenanceApplyFrom = "Thu 02:00"
+)
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
 type RHMIConfigSpec struct {
@@ -197,12 +199,15 @@ func init() {
 // If the times are valid, 1 hour non-overlapping backup and maintenance windows
 // are returned as a result in a format required by AWS
 func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (string, string, error) {
-	// we should expect both values to be set when RHMI config is updated
+	// we accept a blank string for both ApplyOn and ApplyFrom
+	// in the case where these values are empty the RHMIConfig controller will set them to the expected defaults
+	// despite defaults we need to still validate to catch cases where one value is a blank string
+	// we need to ensure there are no overlapping time values
 	if maintenanceApplyFrom == "" {
-		return "", "", fmt.Errorf("maintenance apply from value is required")
+		maintenanceApplyFrom = DefaultMaintenanceApplyFrom
 	}
 	if backupApplyOn == "" {
-		return "", "", fmt.Errorf("backup apply on value is required")
+		backupApplyOn = DefaultBackupApplyOn
 	}
 
 	// ensure backup applyOn format is correct

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -116,12 +117,13 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 		RequeueAfter: 10 * time.Second,
 	}
 
-	// Call update to apply default values
-	err = r.client.Update(context.TODO(), rhmiConfig)
-	if err != nil {
-		return reconcile.Result{}, err
+	// ensure values are as expected
+	if err := r.reconcileBackupAndMaintenanceValues(rhmiConfig); err != nil {
+		logrus.Errorf("failed to reconcile rhmi config values : %v", err)
+		return retryRequeue, err
 	}
 
+	// create cloud resource operator override config map
 	if err := r.ReconcileCloudResourceStrategies(rhmiConfig); err != nil {
 		logrus.Errorf("rhmi config failure while reconciling cloud resource strategies : %v", err)
 		return retryRequeue, err
@@ -157,5 +159,24 @@ func (r *ReconcileRHMIConfig) ReconcileCloudResourceStrategies(config *integreat
 		return fmt.Errorf("failure to reconcile aws strategy map : %v", err)
 	}
 
+	return nil
+}
+
+// we require that blank applyOn and applyFrom values be set to defaults
+// we expect a user to set their own times, but in the case where times are not set
+// we set our maintenance applyFrom values to be Thu 02:00
+// we set out backup applyOn values to be 03:01
+func (r *ReconcileRHMIConfig) reconcileBackupAndMaintenanceValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig) error {
+	if _, err := controllerutil.CreateOrUpdate(r.context, r.client, rhmiConfig, func() error {
+		if rhmiConfig.Spec.Maintenance.ApplyFrom == "" {
+			rhmiConfig.Spec.Maintenance.ApplyFrom = integreatlyv1alpha1.DefaultMaintenanceApplyFrom
+		}
+		if rhmiConfig.Spec.Backup.ApplyOn == "" {
+			rhmiConfig.Spec.Backup.ApplyOn = integreatlyv1alpha1.DefaultBackupApplyOn
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to create or update rhmiConfig : %v", err)
+	}
 	return nil
 }
