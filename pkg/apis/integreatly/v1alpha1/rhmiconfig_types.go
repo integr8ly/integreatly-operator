@@ -63,7 +63,37 @@ type RHMIConfigStatusMaintenance struct {
 
 type RHMIConfigStatusUpgrade struct {
 	Window string `json:"window,omitempty"`
+
+	// Scheduled contains the information on the next upgrade schedule
+	Scheduled *UpgradeSchedule `json:"scheduled,omitempty"`
 }
+
+type UpgradeSchedule struct {
+	// For is the calculated time when the upgrade is scheduled for, in format "2 Jan 2006 15:04"
+	For string `json:"for,omitempty"`
+
+	// CalculatedFrom shows how the "For" value is calculated. The following
+	// values are possible:
+	// * ApplyOn: When a value for "spec.Upgrade.ApplyOn" is set, the upgrade is
+	//   scheduled for that date
+	// * NextMaintenance: When "spec.Upgrade.DuringNextMaintenance" is true, the
+	//   upgrade is scheduled for the next maintenance date,
+	//   calculated from "spec.Maintenance"
+	// * TwoWeeksMaintenanceWindow: If no value is set for "spec.Upgrade", the
+	//   upgrade is scheduled for the next maintenance window two weeks after
+	//   the install plan is created
+	// * DefaultTwoWeeks: If no value is set for "spec.Upgrade" and no maintenance
+	//   window has been specified in "spec.Maintenance", the default schedule
+	//   is two weeks after the install plan is created
+	CalculatedFrom UpgradeScheduleCalculation `json:"calculatedFrom,omitempty"`
+}
+
+type UpgradeScheduleCalculation string
+
+const DefaultTwoWeeks UpgradeScheduleCalculation = "DefaultTwoWeeks"
+const TwoWeeksMaintenanceWindow UpgradeScheduleCalculation = "TwoWeeksMaintenanceWindow"
+const NextMaintenance UpgradeScheduleCalculation = "NextMaintenance"
+const ApplyOn UpgradeScheduleCalculation = "ApplyOn"
 
 const DateFormat = "2 Jan 2006 15:04"
 

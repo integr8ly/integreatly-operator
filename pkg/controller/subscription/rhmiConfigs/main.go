@@ -59,8 +59,9 @@ func GetCSV(installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVe
 }
 
 func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installplan *olmv1alpha1.InstallPlan) error {
+	// Calculate the next maintenance window based on the maintenance schedule
 	if config.Spec.Maintenance.ApplyFrom != "" {
-		mtStart, _, err := getWeeklyWindow(config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
+		mtStart, _, err := getWeeklyWindowFromNow(config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
 		if err != nil {
 			return err
 		}
@@ -69,13 +70,59 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
 
+	// Calculate the upgrade window
 	if installplan.Spec.Approved {
 		config.Status.Upgrade.Window = ""
 	} else {
 		upStart := installplan.ObjectMeta.CreationTimestamp.Time.Format("2 Jan 2006")
-		upEnd := installplan.ObjectMeta.CreationTimestamp.Time.Add((time.Hour * 24) * 14).Format("2 Jan 2006")
+		upEnd := installplan.ObjectMeta.CreationTimestamp.Time.Add(daysDuration(14)).Format("2 Jan 2006")
 		config.Status.Upgrade.Window = upStart + " - " + upEnd
 	}
+
+	// Calculate the upgrade schedule based on the spec:
+	//     * If it's set to AlwaysImmediatly, there's no schedule
+	if config.Spec.Upgrade.AlwaysImmediately {
+		config.Status.Upgrade.Scheduled = nil
+
+		// * If it's set to next maintenance, it's scheduled at the next maintenance window
+	} else if config.Spec.Upgrade.DuringNextMaintenance {
+		mtStart, _ := time.Parse("2-1-2006 15:04", config.Status.Maintenance.ApplyFrom)
+		config.Status.Upgrade.Scheduled = &integreatlyv1alpha1.UpgradeSchedule{
+			For:            mtStart.Format(integreatlyv1alpha1.DateFormat),
+			CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+		}
+
+		// * If the ApplyOn is specified, schedule it for that time
+	} else if config.Spec.Upgrade.ApplyOn != "" {
+		config.Status.Upgrade.Scheduled = &integreatlyv1alpha1.UpgradeSchedule{
+			For:            config.Spec.Upgrade.ApplyOn,
+			CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+		}
+
+		// * Otherwise, default it to two weeks time. If there's a maintenance schedule
+		// set, set it for the next maintenance after two weeks. Otherwise, two weeks
+		// after the install plan was created
+	} else {
+		from := installplan.ObjectMeta.CreationTimestamp.Time.
+			Add(daysDuration(14))
+		upStart := from
+		calculatedFrom := integreatlyv1alpha1.DefaultTwoWeeks
+
+		if config.Spec.Maintenance.ApplyFrom != "" {
+			var err error
+			upStart, _, err = getWeeklyWindow(from, config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
+			if err != nil {
+				return err
+			}
+			calculatedFrom = integreatlyv1alpha1.TwoWeeksMaintenanceWindow
+		}
+
+		config.Status.Upgrade.Scheduled = &integreatlyv1alpha1.UpgradeSchedule{
+			For:            upStart.Format(integreatlyv1alpha1.DateFormat),
+			CalculatedFrom: calculatedFrom,
+		}
+	}
+
 	return client.Status().Update(ctx, config)
 }
 
@@ -84,32 +131,27 @@ func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig) (bool, error) {
 		return true, nil
 	}
 
-	//Check if we are in the maintenance window
+	var duration int
+	// Upgrade window taken either from the maintenance window or, by default
+	// from the WINDOW constant
 	if config.Spec.Upgrade.DuringNextMaintenance {
-		duration, err := strconv.Atoi(strings.Replace(config.Status.Maintenance.Duration, "hrs", "", -1))
+		var err error
+		duration, err = strconv.Atoi(strings.Replace(config.Status.Maintenance.Duration, "hrs", "", -1))
 		if err != nil {
 			return false, err
 		}
-
-		//don't approve upgrades in the last hour of maintenance
-		window := time.Hour * time.Duration(duration-WINDOW_MARGIN)
-
-		mtStart, err := time.Parse("2-1-2006 15:04", config.Status.Maintenance.ApplyFrom)
-		if err != nil {
-			return false, err
-		}
-
-		return inWindow(mtStart, mtStart.Add(window)), nil
+	} else {
+		duration = WINDOW
 	}
 
-	if config.Spec.Upgrade.ApplyOn != "" {
-		upTime, err := time.Parse("2 Jan 2006 15:04", config.Spec.Upgrade.ApplyOn)
-		if err != nil {
-			return false, err
-		}
-		return inWindow(upTime, upTime.Add(time.Hour*(WINDOW-WINDOW_MARGIN))), nil
+	//don't approve upgrades in the last hour of the window
+	window := time.Hour * time.Duration(duration-WINDOW_MARGIN)
+	upgradeTime, err := time.Parse(integreatlyv1alpha1.DateFormat, config.Status.Upgrade.Scheduled.For)
+	if err != nil {
+		return false, err
 	}
-	return false, nil
+
+	return inWindow(upgradeTime, upgradeTime.Add(window)), nil
 }
 
 func inWindow(windowStart time.Time, windowEnd time.Time) bool {
@@ -117,8 +159,7 @@ func inWindow(windowStart time.Time, windowEnd time.Time) bool {
 	return windowStart.Before(now) && windowEnd.After(now)
 }
 
-//windowStartStr must be in format: sun 23:00
-func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
+func getWeeklyWindow(from time.Time, windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
 	var shortDays = map[string]int{
 		"sun": 0,
 		"mon": 1,
@@ -128,7 +169,7 @@ func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, 
 		"fri": 5,
 		"sat": 6,
 	}
-	now := time.Now().UTC()
+
 	windowSegments := strings.Split(windowStartStr, " ")
 	windowDay := windowSegments[0]
 
@@ -143,11 +184,20 @@ func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, 
 	}
 
 	//calculate how far away from maintenance day today is, within the current week
-	dayDiff := shortDays[windowDay] - int(now.Weekday())
+	dayDiff := shortDays[windowDay] - int(from.Weekday())
+	if dayDiff < 0 {
+		dayDiff = 7 + dayDiff
+	}
 
 	//negative days roll back the month and year, tested here: https://play.golang.org/p/gBBHw49nH1b
-	windowStart := time.Date(now.Year(), now.Month(), now.Day()+dayDiff, windowHour, windowMin, 0, 0, time.UTC)
+	windowStart := time.Date(from.Year(), from.Month(), from.Day(), windowHour, windowMin, 0, 0, time.UTC)
+	windowStart = windowStart.Add(daysDuration(dayDiff))
 	return windowStart, windowStart.Add(duration), nil
+}
+
+//windowStartStr must be in format: sun 23:00
+func getWeeklyWindowFromNow(windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
+	return getWeeklyWindow(time.Now().UTC(), windowStartStr, duration)
 }
 
 func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
@@ -163,7 +213,7 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
@@ -177,5 +227,10 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *o
 		return err
 	}
 
-	return nil
+	config.Status.Upgrade.Scheduled = nil
+	return client.Status().Update(ctx, config)
+}
+
+func daysDuration(numberOfDays int) time.Duration {
+	return time.Duration(numberOfDays) * 24 * time.Hour
 }
