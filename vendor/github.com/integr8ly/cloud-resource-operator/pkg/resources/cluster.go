@@ -28,14 +28,22 @@ func GetClusterID(ctx context.Context, c client.Client) (string, error) {
 }
 
 func GetAWSRegion(ctx context.Context, c client.Client) (string, error) {
-	infra := &v1.Infrastructure{}
-	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
-		return "", errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
+	infra, err := GetClusterInfrastructure(ctx, c)
+	if err != nil {
+		return "", errorUtil.Wrapf(err, "failure happened while retrieving cluster infrastructure")
 	}
 	if infra.Status.PlatformStatus.Type == v1.AWSPlatformType {
 		return infra.Status.PlatformStatus.AWS.Region, nil
 	}
 	return "", errorUtil.New("infrastructure does not container aws region")
+}
+
+func GetClusterInfrastructure(ctx context.Context, c client.Client) (*v1.Infrastructure, error) {
+	infra := &v1.Infrastructure{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, infra); err != nil {
+		return nil, errorUtil.Wrap(err, "failed to retrieve cluster infrastructure")
+	}
+	return infra, nil
 }
 
 //go:generate moq -out cluster_moq.go . PodCommander

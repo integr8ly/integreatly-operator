@@ -23,7 +23,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -44,7 +44,6 @@ const (
 	defaultInstallationNamespace = "amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
-	postgresTier                 = "production"
 )
 
 type Reconciler struct {
@@ -302,7 +301,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		serverClient,
 		defaultInstallationNamespace,
 		"workshop", // workshop here so that it creates in-cluster postgresql
-		postgresTier,
+		croUtil.TierProduction,
 		postgresqlName,
 		r.inst.Namespace,
 		postgresqlName,

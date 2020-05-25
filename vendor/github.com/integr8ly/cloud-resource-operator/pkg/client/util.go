@@ -1,4 +1,4 @@
-package resources
+package client
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -50,41 +51,6 @@ func ReconcileBlobStorage(ctx context.Context, client client.Client, productName
 	}
 
 	return bs, nil
-}
-
-// ReconcileSMTPCredentialSet creates or updates an SMTP credential set
-func ReconcileSMTPCredentialSet(ctx context.Context, client client.Client, deploymentType, tier, name, ns, secretName, secretNs string, modifyFunc modifyResourceFunc) (*v1alpha1.SMTPCredentialSet, error) {
-	smtp := &v1alpha1.SMTPCredentialSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-	}
-
-	// execute logic to modify the resource before creation
-	// e.g. add owner refs
-	if modifyFunc != nil {
-		err := modifyFunc(smtp)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to execute modification function on resource %s", name)
-		}
-	}
-
-	// Create or update the resource
-	_, err := controllerutil.CreateOrUpdate(ctx, client, smtp, func() error {
-		smtp.Spec.Type = deploymentType
-		smtp.Spec.Tier = tier
-		smtp.Spec.SecretRef = &croType.SecretRef{
-			Name:      secretName,
-			Namespace: secretNs,
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to reconcile smtp credential set request for %s", name)
-	}
-
-	return smtp, nil
 }
 
 // ReconcilePostgres creates or updates a postgres custom resource

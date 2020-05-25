@@ -68,6 +68,7 @@ github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1
 github.com/asaskevich/govalidator
 # github.com/aws/aws-sdk-go v1.25.50
 github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/awserr
 github.com/aws/aws-sdk-go/aws/awsutil
 github.com/aws/aws-sdk-go/aws/client
@@ -86,19 +87,32 @@ github.com/aws/aws-sdk-go/aws/request
 github.com/aws/aws-sdk-go/aws/session
 github.com/aws/aws-sdk-go/aws/signer/v4
 github.com/aws/aws-sdk-go/internal/ini
+github.com/aws/aws-sdk-go/internal/s3err
 github.com/aws/aws-sdk-go/internal/sdkio
 github.com/aws/aws-sdk-go/internal/sdkmath
 github.com/aws/aws-sdk-go/internal/sdkrand
 github.com/aws/aws-sdk-go/internal/sdkuri
 github.com/aws/aws-sdk-go/internal/shareddefaults
 github.com/aws/aws-sdk-go/private/protocol
+github.com/aws/aws-sdk-go/private/protocol/ec2query
+github.com/aws/aws-sdk-go/private/protocol/eventstream
+github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
 github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
 github.com/aws/aws-sdk-go/private/protocol/query
 github.com/aws/aws-sdk-go/private/protocol/query/queryutil
 github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/restxml
 github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/service/ec2
+github.com/aws/aws-sdk-go/service/ec2/ec2iface
 github.com/aws/aws-sdk-go/service/elasticache
+github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface
 github.com/aws/aws-sdk-go/service/rds
+github.com/aws/aws-sdk-go/service/rds/rdsiface
+github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/service/s3/internal/arn
+github.com/aws/aws-sdk-go/service/s3/s3iface
+github.com/aws/aws-sdk-go/service/s3/s3manager
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
@@ -344,10 +358,14 @@ github.com/imdario/mergo
 github.com/inconshreveable/mousetrap
 # github.com/integr8ly/application-monitoring-operator v1.1.1
 github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1
-# github.com/integr8ly/cloud-resource-operator v0.11.0
+# github.com/integr8ly/cloud-resource-operator v0.16.0
+github.com/integr8ly/cloud-resource-operator/pkg/annotations
 github.com/integr8ly/cloud-resource-operator/pkg/apis/config/v1
 github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types
+github.com/integr8ly/cloud-resource-operator/pkg/client
+github.com/integr8ly/cloud-resource-operator/pkg/providers
+github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
 github.com/integr8ly/cloud-resource-operator/pkg/resources
 # github.com/integr8ly/grafana-operator v1.3.1
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
@@ -452,6 +470,8 @@ github.com/openshift/client-go/oauth/clientset/versioned/fake
 github.com/openshift/client-go/oauth/clientset/versioned/scheme
 github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1
 github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1/fake
+# github.com/openshift/cloud-credential-operator v0.0.0-20190812222907-ec6f38d73a79
+github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
 # github.com/operator-framework/api v0.0.0-20200120235816-80fd2f1a09c9

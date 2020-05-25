@@ -134,7 +134,7 @@ func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiConfig, func() error {
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling the Customer Config CR: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling the Customer Config CR: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
