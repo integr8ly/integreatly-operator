@@ -15,8 +15,7 @@ spec:
       serviceAccountName: rhmi-operator
       volumes:
       - name: webhook-certs
-        secret:
-          secretName: rhmi-webhook-cert
+        emptyDir: {}
       containers:
         - name: rhmi-operator
           # Replace this with the built image name
@@ -26,10 +25,16 @@ spec:
           command:
           - rhmi-operator
           imagePullPolicy: Always
+          resources:
+            limits:
+              memory: 1536Mi
+              cpu: 80m
+            requests:
+              memory: 64Mi
+              cpu: 40m
           volumeMounts:
           - name: webhook-certs
             mountPath: "/etc/ssl/certs/webhook"
-            readOnly: true
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
