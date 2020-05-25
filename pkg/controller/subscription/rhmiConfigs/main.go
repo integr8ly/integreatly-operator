@@ -129,7 +129,13 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 	return client.Status().Update(ctx, config)
 }
 
-func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig) (bool, error) {
+func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI) (bool, error) {
+
+	//Another upgrade in progress - don't proceed with upgrade
+	if (string(installation.Status.Stage) != string(integreatlyv1alpha1.PhaseCompleted)) && installation.Status.ToVersion != "" {
+		return false, nil
+	}
+
 	if config.Spec.Upgrade.AlwaysImmediately {
 		return true, nil
 	}

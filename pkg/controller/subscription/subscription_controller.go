@@ -90,12 +90,23 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	result, err := r.HandleUpgrades(context.TODO(), subscription)
+	// TODO: investigate a better approach to getting RHMI rather than hardcoding values
+	installation := &integreatlyv1alpha1.RHMI{}
+	err = r.client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi", Namespace: request.NamespacedName.Namespace}, installation)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request. Return and don't requeue
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, err
+	}
+
+	result, err := r.HandleUpgrades(context.TODO(), subscription, installation)
 
 	return result, err
 }
 
-func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription) (reconcile.Result, error) {
+func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
 		logrus.Infof("no upgrade available")
 		return reconcile.Result{}, nil
@@ -129,7 +140,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		return reconcile.Result{}, err
 	}
 
-	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config)
+	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config, installation)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -137,14 +148,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	if !rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV) || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
 
-		// TODO: investigate a better approach to getting RHMI rather than hardcoding values
-		installation := &integreatlyv1alpha1.RHMI{}
-		err = r.client.Get(ctx, k8sclient.ObjectKey{Name: "rhmi", Namespace: "redhat-rhmi-operator"}, installation)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, config, installation, latestRHMIInstallPlan, eventRecorder)
-
 		if err != nil {
 			return reconcile.Result{}, err
 		}
