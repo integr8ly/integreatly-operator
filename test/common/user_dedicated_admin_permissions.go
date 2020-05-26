@@ -114,7 +114,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
 
 	// Verify dedicated admin permissions around AuthenticationService
-	//verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient) - comment out due to causing e2e flake https://issues.redhat.com/browse/INTLY-7932
+	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
 
 	// Verify dedicated admin Role / Role binding for AMQ Online resources
 	verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
@@ -394,6 +394,14 @@ func verifyDedicatedAdminAuthenticationServicePermissions(t *testing.T, openshif
 			},
 			Spec: enmasseadminv1beta1.AuthenticationServiceSpec{
 				Type: enmasseadminv1beta1.External,
+				External: &enmasseadminv1beta1.AuthenticationServiceSpecExternal{
+					Host: "test",
+					Port: 0,
+				},
+			},
+			Status: enmasseadminv1beta1.AuthenticationServiceStatus{
+				Host:  "test",
+				Phase: enmasseadminv1beta1.AuthenticationServiceActive,
 			},
 		},
 	}
