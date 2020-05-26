@@ -716,14 +716,10 @@ spec:
         "list": [
           {
             "allValue": null,
-            "current": {
-              "text": "webapp",
-              "value": "webapp"
-            },
             "datasource": "Prometheus",
             "definition": "",
             "hide": 0,
-            "includeAll": true,
+            "includeAll": false,
             "label": "namespace",
             "multi": false,
             "name": "namespace",
