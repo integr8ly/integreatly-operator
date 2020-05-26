@@ -656,13 +656,9 @@ func buildRedisInfoMetricLabels(r *v1alpha1.Redis, group *elasticache.Replicatio
 	return labels
 }
 
-func buildRedisStatusMetricsLabels(r *v1alpha1.Redis, clusterID, cacheName string) map[string]string {
+func buildRedisStatusMetricsLabels(r *v1alpha1.Redis, clusterID, cacheName string, phase croType.StatusPhase) map[string]string {
 	labels := buildRedisGenericMetricLabels(r, clusterID, cacheName)
-	if len(string(r.Status.Phase)) != 0 {
-		labels["statusPhase"] = string(r.Status.Phase)
-		return labels
-	}
-	labels["statusPhase"] = "nil"
+	labels["statusPhase"] = string(phase)
 	return labels
 }
 
@@ -687,25 +683,29 @@ func (p *RedisProvider) exposeRedisMetrics(ctx context.Context, cr *v1alpha1.Red
 	// build generic metrics
 	genericLabels := buildRedisGenericMetricLabels(cr, clusterID, cacheName)
 
-	statusLabels := buildRedisStatusMetricsLabels(cr, clusterID, cacheName)
-
 	// set status gauge
 	resources.SetMetricCurrentTime(resources.DefaultRedisInfoMetricName, infoLabels)
 
-	// set the status phase metric
-	if len(string(cr.Status.Phase)) == 0 || cr.Status.Phase != croType.PhaseComplete {
-		resources.SetMetric(resources.DefaultRedisStatusMetricName, statusLabels, 0)
-	} else {
-		resources.SetMetric(resources.DefaultRedisStatusMetricName, statusLabels, 1)
+	// set generic status metrics
+	// a single metric should be exposed for each possible phase
+	// the value of the metric should be 1.0 when the resource is in that phase
+	// the value of the metric should be 0.0 when the resource is not in that phase
+	// this follows the approach that pod status
+	for _, phase := range []croType.StatusPhase{croType.PhaseFailed, croType.PhaseDeleteInProgress, croType.PhasePaused, croType.PhaseComplete, croType.PhaseInProgress} {
+		labelsFailed := buildRedisStatusMetricsLabels(cr, clusterID, cacheName, phase)
+		resources.SetMetric(resources.DefaultRedisStatusMetricName, labelsFailed, resources.Btof64(cr.Status.Phase == phase))
 	}
 
-	// set available metric
-	if instance == nil || *instance.Status != "available" {
+	// set availability metric, based on the status flag on the elasticache replication group in aws.
+	// 0 is a failure status, 1 is a success status.
+	// consider available and snapshotting as non-failure states.
+	// see .ReplicationGroups.Status in https://docs.aws.amazon.com/cli/latest/reference/elasticache/describe-replication-groups.html#output
+	// for more details on possible status values.
+	if instance == nil || !resources.Contains([]string{"available", "snapshotting"}, *instance.Status) {
 		resources.SetMetric(resources.DefaultRedisAvailMetricName, genericLabels, 0)
-		return
+	} else {
+		resources.SetMetric(resources.DefaultRedisAvailMetricName, genericLabels, 1)
 	}
-	resources.SetMetric(resources.DefaultRedisAvailMetricName, genericLabels, 1)
-
 }
 
 // sets maintenance metric

@@ -75,7 +75,7 @@ var (
 				"sts:GetCallerIdentity",
 				"iam:CreateServiceLinkedRole",
 				"cloudwatch:ListMetrics",
-				"cloudwatch:GetMetricStatistics",
+				"cloudwatch:GetMetricData",
 			},
 			Resource: "*",
 		},

@@ -79,11 +79,11 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/cloud-resource-operator:v0.15.2
+    containerImage: quay.io/integreatly/cloud-resource-operator:v0.16.1
     createdAt: "2019-10-07 12:34:56"
     description: Operator to provision cloud provider resources in an abstracted manner
     support: Integreatly
-  name: cloud-resources.v0.15.2
+  name: cloud-resources.v0.16.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -222,7 +222,7 @@ spec:
                         value: cloud-resource-operator
                       - name: TAG_KEY_PREFIX
                         value: integreatly.org/
-                    image: quay.io/integreatly/cloud-resource-operator:v0.15.2
+                    image: quay.io/integreatly/cloud-resource-operator:v0.16.1
                     imagePullPolicy: Always
                     name: cloud-resource-operator
                     resources: {}
@@ -341,4 +341,5 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  version: 0.15.2
+  replaces: cloud-resources.v0.15.2
+  version: 0.16.1
