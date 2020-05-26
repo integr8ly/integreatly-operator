@@ -7,4 +7,4 @@ tags:
 
 Acceptance criteria:
 
-The masthead should have a user drop down menu in the right side.  When accessed there should be user information determining if the user is a developer or admin user.
+The masthead should have a user drop down menu in the right side. When accessed there should be user information determining if the user is a developer or admin user.
