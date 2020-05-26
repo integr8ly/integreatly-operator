@@ -44,6 +44,8 @@ var (
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 		{"A06 - Verify PVC", TestPVClaims},
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
+		{"Test RHMI installation CR metric", TestRHMICRMetrics},
+		{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
