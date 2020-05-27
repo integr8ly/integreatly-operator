@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/tools/record"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -213,7 +216,7 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, installation *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, eventRecorder record.EventRecorder) error {
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
@@ -227,8 +230,28 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, config *integr
 		return err
 	}
 
+	csv, err := GetCSV(installPlan)
+	if err != nil {
+		return err
+	}
+
+	version := csv.Spec.Version.String()
+	logrus.Infof("Update approved, setting rhmi version to install %s", version)
+	installation.Status.ToVersion = version
+	err = client.Status().Update(ctx, installation)
+	if err != nil {
+		return err
+	}
+
+	metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+
 	config.Status.Upgrade.Scheduled = nil
-	return client.Status().Update(ctx, config)
+	err = client.Status().Update(ctx, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func daysDuration(numberOfDays int) time.Duration {
