@@ -1,0 +1,125 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: rhmiconfigs.integreatly.org
+spec:
+  group: integreatly.org
+  names:
+    kind: RHMIConfig
+    listKind: RHMIConfigList
+    plural: rhmiconfigs
+    singular: rhmiconfig
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: RHMIConfig is the Schema for the rhmiconfigs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: RHMIConfigSpec defines the desired state of RHMIConfig
+          properties:
+            backup:
+              properties:
+                applyOn:
+                  description: 'apply-on: string, day time. Format: "DDD hh:mm" >
+                    "wed 20:00". UTC time'
+                  type: string
+              type: object
+            maintenance:
+              properties:
+                applyFrom:
+                  description: 'apply-from: string, day time. Currently this is a
+                    6 hour window. Format: "DDD hh:mm" > "sun 23:00". UTC time'
+                  type: string
+              type: object
+            upgrade:
+              properties:
+                alwaysImmediately:
+                  description: 'always-immediately: boolean value, if set to true
+                    an upgrade will be applied as soon as it is available, whether
+                    service affecting or not. This takes precedence over all other
+                    options'
+                  type: boolean
+                applyOn:
+                  description: 'apply-on: string date value. If ''always-immediately''
+                    or ''during-next-maintenance'' is not set the customer is required
+                    to pick a time for the upgrade. Time value will be validated by
+                    a webhook and reset to blank after upgrade has completed. Format:
+                    "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". UTC time'
+                  type: string
+                contacts:
+                  description: 'contacts: list of contacts which are comma separated
+                    "user1@example.com,user2@example.com"'
+                  type: string
+                duringNextMaintenance:
+                  description: 'during-next-maintenance: boolean value, if set to
+                    true an upgrade will be applied within the next maintenance window.
+                    Takes precedence over apply-on'
+                  type: boolean
+              required:
+              - alwaysImmediately
+              - duringNextMaintenance
+              type: object
+          type: object
+        status:
+          description: RHMIConfigStatus defines the observed state of RHMIConfig
+          properties:
+            maintenance:
+              description: "status block reflects the current configuration of the
+                cr \n \tstatus: \t\tmaintenance: \t\t\tapply-from: 16-05-2020 23:00
+                \t\t\tduration: \"6hrs\" \t\tupgrade: \t\t\twindow: \"3 Jan 1980 -
+                17 Jan 1980\""
+              properties:
+                applyFrom:
+                  type: string
+                duration:
+                  type: string
+              type: object
+            upgrade:
+              properties:
+                scheduled:
+                  description: Scheduled contains the information on the next upgrade
+                    schedule
+                  properties:
+                    calculatedFrom:
+                      description: 'CalculatedFrom shows how the "For" value is calculated.
+                        The following values are possible: * ApplyOn: When a value
+                        for "spec.Upgrade.ApplyOn" is set, the upgrade is   scheduled
+                        for that date * NextMaintenance: When "spec.Upgrade.DuringNextMaintenance"
+                        is true, the   upgrade is scheduled for the next maintenance
+                        date,   calculated from "spec.Maintenance" * TwoWeeksMaintenanceWindow:
+                        If no value is set for "spec.Upgrade", the   upgrade is scheduled
+                        for the next maintenance window two weeks after   the install
+                        plan is created * DefaultTwoWeeks: If no value is set for
+                        "spec.Upgrade" and no maintenance   window has been specified
+                        in "spec.Maintenance", the default schedule   is two weeks
+                        after the install plan is created'
+                      type: string
+                    for:
+                      description: For is the calculated time when the upgrade is
+                        scheduled for, in format "2 Jan 2006 15:04"
+                      type: string
+                  type: object
+                window:
+                  type: string
+              type: object
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
