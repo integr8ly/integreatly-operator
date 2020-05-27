@@ -246,9 +246,10 @@ func TestUpdateStatus(t *testing.T) {
 
 func TestCanUpgradeNow(t *testing.T) {
 	scenarios := []struct {
-		Name     string
-		Config   *integreatlyv1alpha1.RHMIConfig
-		Validate func(*testing.T, bool, error)
+		Name         string
+		Config       *integreatlyv1alpha1.RHMIConfig
+		Installation *integreatlyv1alpha1.RHMI
+		Validate     func(*testing.T, bool, error)
 	}{
 		{
 			Name: "always immediately returns true",
@@ -263,6 +264,15 @@ func TestCanUpgradeNow(t *testing.T) {
 						DuringNextMaintenance: false,
 						ApplyOn:               "",
 					},
+				},
+			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -302,6 +312,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 				},
 			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
+				},
+			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
 				if err != nil {
 					t.Error("Expected no errors, got: " + err.Error())
@@ -337,6 +356,15 @@ func TestCanUpgradeNow(t *testing.T) {
 							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
 						},
 					},
+				},
+			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -375,6 +403,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 				},
 			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
+				},
+			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
 				if err != nil {
 					t.Error("Expected no errors, got: " + err.Error())
@@ -405,6 +442,15 @@ func TestCanUpgradeNow(t *testing.T) {
 							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
 						},
 					},
+				},
+			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -439,6 +485,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 				},
 			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
+				},
+			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
 				if err != nil {
 					t.Error("Expected no errors, got: " + err.Error())
@@ -471,6 +526,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 				},
 			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
+				},
+			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
 				if err != nil {
 					t.Error("Expected no errors, got: " + err.Error())
@@ -480,10 +544,45 @@ func TestCanUpgradeNow(t *testing.T) {
 				}
 			},
 		},
+		{
+			Name: "Do not upgrade when another upgrade is in progress",
+			Config: &integreatlyv1alpha1.RHMIConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi-config",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						AlwaysImmediately:     true,
+						DuringNextMaintenance: false,
+						ApplyOn:               "",
+					},
+				},
+			},
+			Installation: &integreatlyv1alpha1.RHMI{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIStatus{
+					Stage:     integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseInProgress),
+					ToVersion: "next-version",
+				},
+			},
+			Validate: func(t *testing.T, canUpgrade bool, err error) {
+				if err != nil {
+					t.Error("Expected no errors")
+				}
+				if canUpgrade {
+					t.Error("Expected canUpgrade false, got true")
+				}
+
+			},
+		},
 	}
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			canUpgrade, err := CanUpgradeNow(scenario.Config)
+			canUpgrade, err := CanUpgradeNow(scenario.Config, scenario.Installation)
 			scenario.Validate(t, canUpgrade, err)
 		})
 	}
