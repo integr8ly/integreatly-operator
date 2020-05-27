@@ -2,6 +2,7 @@ package rhmiConfigs
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -604,7 +605,7 @@ func TestApproveUpgrade(t *testing.T) {
 				{
 					Resource: olmv1alpha1.StepResource{
 						Kind:     "ClusterServiceVersion",
-						Manifest: "{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"2.2.0\"}}",
+						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.Version),
 					},
 				},
 			},

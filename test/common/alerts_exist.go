@@ -338,6 +338,102 @@ var expectedAWSRules = []alertsTestRule{
 			"Fuse-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-fuse-postgres-rhmi.yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Redis-RhmiRedisResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-ups-postgres-rhmi.yaml",
+		Rules: []string{
+			"Ups-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-rhssouser-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhssouser-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-rhsso-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhsso-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-ups-postgres-rhmi.yaml",
+		Rules: []string{
+			"Ups-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-postgres-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-fuse-postgres-rhmi.yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Redis-RhmiRedisResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-rhsso-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhsso-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-backend-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Backend-Redis-RhmiRedisResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-codeready-postgres-rhmi.yaml",
+		Rules: []string{
+			"Codeready-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-rhssouser-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhssouser-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-backend-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Backend-Redis-RhmiRedisResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-postgres-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-codeready-postgres-rhmi.yaml",
+		Rules: []string{
+			"Codeready-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
