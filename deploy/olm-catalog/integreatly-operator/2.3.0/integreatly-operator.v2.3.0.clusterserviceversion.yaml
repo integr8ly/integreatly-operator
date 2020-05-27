@@ -445,7 +445,7 @@ spec:
   minKubeVersion: 1.12.0
   provider:
     name: rhmi
-  replaces: integreatly-operator.v2.2.0
+  replaces: integreatly-operator.v2.2.1
   selector:
     matchLabels:
       alm-owner-rhmi: rhmi-operator
