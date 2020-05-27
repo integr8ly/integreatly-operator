@@ -1,10 +1,12 @@
 ---
 tags:
   - happy-path
+require:
+  - N01
 estimate: 30m
 ---
 
-# N03 - There are no failures with minimal CIDR block
+# N04 - There are no failures with minimal CIDR block
 
 ## Prerequisites
 
