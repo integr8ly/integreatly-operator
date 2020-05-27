@@ -225,6 +225,17 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
+	// gets the products from the install type to expose rhmi status metric
+	stages := make([]integreatlyv1alpha1.RHMIStageStatus, 0)
+	for _, stage := range installType.GetStages() {
+		stages = append(stages, integreatlyv1alpha1.RHMIStageStatus{
+			Name:     stage.Name,
+			Phase:    "",
+			Products: stage.Products,
+		})
+	}
+	metrics.ExposeRHMIStatusMetric(stages)
+
 	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -256,6 +267,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		metrics.RHMIStatusAvailable.Set(0)
 		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
 		installation.Status.LastError = ""
+		// updates rhmi status metric to deletion
+		metrics.SetRHMIStatus(installation)
 		_ = r.client.Status().Update(context.TODO(), installation)
 
 		// Clean up the products which have finalizers associated to them
@@ -333,6 +346,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		} else {
 			installation.Status.LastError = ""
 		}
+
 		//don't move to next stage until current stage is complete
 		if stagePhase != integreatlyv1alpha1.PhaseCompleted {
 			installInProgress = true
@@ -341,6 +355,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// UPDATE STATUS
+	// updates rhmi status metric according to the status of the products
+	if installInProgress {
+		metrics.SetRHMIStatus(installation)
+	}
+
 	err = r.client.Status().Update(r.context, installation)
 	if err != nil {
 		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
@@ -377,7 +396,10 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return retryRequeue, nil
 	}
 	installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
+	// updates rhmi status metric to complete
+	metrics.SetRHMIStatus(installation)
 	_ = r.client.Status().Update(r.context, installation)
+
 	metrics.RHMIStatusAvailable.Set(1)
 	logrus.Infof("installation completed succesfully")
 	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
@@ -571,6 +593,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		productsAux[product.Name] = product
 		*stage = Stage{Name: stage.Name, Products: productsAux}
 	}
+
 	//some products in this stage have not installed successfully yet
 	if incompleteStage {
 		return integreatlyv1alpha1.PhaseInProgress, mErr
