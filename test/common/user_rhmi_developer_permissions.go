@@ -18,7 +18,6 @@ import (
 
 const (
 	expectedRhmiDeveloperProjectCount = 1
-	expectedFusePodCount              = 6
 )
 
 // struct used to create query string for fuse logs endpoint
@@ -66,17 +65,6 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	podlist, err := openshiftClient.ListPods(fuseNamespace)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
-	}
-
-	// check if six pods are running
-	runningCount := 0
-	for _, p := range podlist.Items {
-		if p.Status.Phase == "Running" {
-			runningCount++
-		}
-	}
-	if runningCount != expectedFusePodCount {
-		t.Fatalf("test-failed - expected fuse pod count : %d found fuse pod count: %d", expectedFusePodCount, runningCount)
 	}
 
 	// log through rhmi developer fuse podlist
