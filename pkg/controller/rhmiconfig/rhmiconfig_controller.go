@@ -18,9 +18,14 @@ package rhmiconfig
 
 import (
 	"context"
+	"fmt"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -46,7 +51,13 @@ func Add(mgr manager.Manager, _ []string) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileRHMIConfig{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	ctx, cancel := context.WithCancel(context.Background())
+	return &ReconcileRHMIConfig{
+		client:  mgr.GetClient(),
+		scheme:  mgr.GetScheme(),
+		context: ctx,
+		cancel:  cancel,
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -73,8 +84,10 @@ var _ reconcile.Reconciler = &ReconcileRHMIConfig{}
 type ReconcileRHMIConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client  client.Client
+	scheme  *runtime.Scheme
+	context context.Context
+	cancel  context.CancelFunc
 }
 
 // Reconcile reads that state of the cluster for a RHMIConfig object and makes changes based on the state read
@@ -83,14 +96,13 @@ type ReconcileRHMIConfig struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling RHMIConfig")
+	logrus.Info("reconciling RHMIConfig")
 
 	// Fetch the RHMIConfig instance
-	instance := &integreatlyv1alpha1.RHMIConfig{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
+	err := r.client.Get(r.context, request.NamespacedName, rhmiConfig)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if k8sErr.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
@@ -100,11 +112,71 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	// Call update to apply default values
-	err = r.client.Update(context.TODO(), instance)
-	if err != nil {
-		return reconcile.Result{}, err
+	retryRequeue := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
 	}
 
-	return reconcile.Result{}, nil
+	// ensure values are as expected
+	if err := r.reconcileBackupAndMaintenanceValues(rhmiConfig); err != nil {
+		logrus.Errorf("failed to reconcile rhmi config values : %v", err)
+		return retryRequeue, err
+	}
+
+	// create cloud resource operator override config map
+	if err := r.ReconcileCloudResourceStrategies(rhmiConfig); err != nil {
+		logrus.Errorf("rhmi config failure while reconciling cloud resource strategies : %v", err)
+		return retryRequeue, err
+	}
+
+	logrus.Infof("rhmi config reconciled successfully")
+	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
+}
+
+// reconciles cloud resource strategies, setting backup and maintenance values for postgres and redis instances
+func (r *ReconcileRHMIConfig) ReconcileCloudResourceStrategies(config *integreatlyv1alpha1.RHMIConfig) error {
+	logrus.Info("reconciling cloud resource maintenance strategies")
+
+	// validate the applyOn and applyFrom values are correct
+	// we also perform this validation on the validate web-hook
+	// we should also provide validation in the controller prior to provisioning/updating the cloud resources (Postgres and Redis)
+	// this is to avoid any chance of a badly formatted value making it to CRO
+	// cloud providers are consistently good at obscure error messages
+	backupApplyOn, maintenanceApplyFrom, err := integreatlyv1alpha1.ValidateBackupAndMaintenance(config.Spec.Backup.ApplyOn, config.Spec.Maintenance.ApplyFrom)
+	if err != nil {
+		return fmt.Errorf("failure validating backup and maintenance values : %v", err)
+	}
+
+	// build time config expected by CRO
+	timeConfig := &croUtil.StrategyTimeConfig{
+		BackupStartTime:      backupApplyOn,
+		MaintenanceStartTime: maintenanceApplyFrom,
+	}
+
+	// reconcile cro strategy config map, RHMI operator does not care what infrastructure the cluster is running in
+	// as we support different cloud providers this CRO Reconcile Function will ensure the correct infrastructure strategies are provisioned
+	if err := croUtil.ReconcileStrategyMaps(r.context, r.client, timeConfig, croUtil.TierProduction, config.Namespace); err != nil {
+		return fmt.Errorf("failure to reconcile aws strategy map : %v", err)
+	}
+
+	return nil
+}
+
+// we require that blank applyOn and applyFrom values be set to defaults
+// we expect a user to set their own times, but in the case where times are not set
+// we set our maintenance applyFrom values to be Thu 02:00
+// we set out backup applyOn values to be 03:01
+func (r *ReconcileRHMIConfig) reconcileBackupAndMaintenanceValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig) error {
+	if _, err := controllerutil.CreateOrUpdate(r.context, r.client, rhmiConfig, func() error {
+		if rhmiConfig.Spec.Maintenance.ApplyFrom == "" {
+			rhmiConfig.Spec.Maintenance.ApplyFrom = integreatlyv1alpha1.DefaultMaintenanceApplyFrom
+		}
+		if rhmiConfig.Spec.Backup.ApplyOn == "" {
+			rhmiConfig.Spec.Backup.ApplyOn = integreatlyv1alpha1.DefaultBackupApplyOn
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to create or update rhmiConfig : %v", err)
+	}
+	return nil
 }

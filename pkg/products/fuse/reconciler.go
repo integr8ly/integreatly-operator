@@ -6,7 +6,7 @@ import (
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croResources "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croResources "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -272,12 +272,23 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 
 	pgName := fmt.Sprintf("%s%s", constants.FusePostgresPrefix, rhmi.Name)
 	ns := rhmi.Namespace
-	postgres, err := croResources.ReconcilePostgres(ctx, client, defaultInstallationNamespace, rhmi.Spec.Type, "production", pgName, ns, pgName, ns, func(cr metav1.Object) error {
+	postgres, err := croResources.ReconcilePostgres(ctx, client, defaultInstallationNamespace, rhmi.Spec.Type, croResources.TierProduction, pgName, ns, pgName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, rhmi)
 		return nil
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres instance for fuse: %w", err)
+	}
+
+	// cr returning a failed state
+	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, client, rhmi, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
+	}
+	// cr stuck in a pending state for greater that 5 min
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, rhmi, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
 	}
 
 	// postgres provisioning is still in progress

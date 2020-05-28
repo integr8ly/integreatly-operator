@@ -2,9 +2,12 @@ package rhmiConfigs
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/version"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +39,45 @@ func buildScheme() *runtime.Scheme {
 func nowOffset(hours int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
+}
+
+type scheduleScenario struct {
+	name             string
+	config           *integreatlyv1alpha1.RHMIConfig
+	expectedSchedule *integreatlyv1alpha1.UpgradeSchedule
+}
+
+func makeScheduleScenario(scenario *scheduleScenario) struct {
+	Name        string
+	Config      *integreatlyv1alpha1.RHMIConfig
+	InstallPlan *olmv1alpha1.InstallPlan
+	Validate    func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
+} {
+	scenario.config.Name = "test-config"
+	scenario.config.Namespace = "redhat-rhmi-operator"
+
+	return struct {
+		Name        string
+		Config      *integreatlyv1alpha1.RHMIConfig
+		InstallPlan *olmv1alpha1.InstallPlan
+		Validate    func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
+	}{
+		Name:   scenario.name,
+		Config: scenario.config,
+		InstallPlan: &olmv1alpha1.InstallPlan{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
+			},
+		},
+		Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
+			if err != nil {
+				t.Errorf("Unexpected error occurred: %v", err)
+			}
+			if !reflect.DeepEqual(config.Status.Upgrade.Scheduled, scenario.expectedSchedule) {
+				t.Errorf("Upgrade schedule different than expected")
+			}
+		},
+	}
 }
 
 func TestUpdateStatus(t *testing.T) {
@@ -118,6 +160,76 @@ func TestUpdateStatus(t *testing.T) {
 				}
 			},
 		},
+		makeScheduleScenario(&scheduleScenario{
+			name: "no schedule for always immedieately",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						AlwaysImmediately: true,
+					},
+				},
+			},
+			expectedSchedule: nil,
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name: "schedule from applyOn",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						ApplyOn: "13 Jul 2020 00:00",
+					},
+				},
+			},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				For:            "13 Jul 2020 00:00",
+				CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+			},
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name: "schedule from next maintenance",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Maintenance: integreatlyv1alpha1.Maintenance{
+						ApplyFrom: "sun 00:00",
+					},
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						DuringNextMaintenance: true,
+					},
+				},
+			},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+				For: time.
+					Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+					AddDate(0, 0, 7-int(time.Now().Weekday())).
+					Format(integreatlyv1alpha1.DateFormat),
+			},
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name:   "schedule after two weeks",
+			config: &integreatlyv1alpha1.RHMIConfig{},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				For:            nowOffset(-2).AddDate(0, 0, 14).Format(integreatlyv1alpha1.DateFormat),
+				CalculatedFrom: integreatlyv1alpha1.DefaultTwoWeeks,
+			},
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name: "schedule in maintenance after two weeks",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Maintenance: integreatlyv1alpha1.Maintenance{
+						ApplyFrom: "sun 00:00",
+					},
+				},
+			},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				CalculatedFrom: integreatlyv1alpha1.TwoWeeksMaintenanceWindow,
+				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+					AddDate(0, 0, 14).
+					AddDate(0, 0, 7-int(time.Now().Weekday())).
+					Format(integreatlyv1alpha1.DateFormat),
+			},
+		}),
 	}
 
 	for _, scenario := range scenarios {
@@ -181,6 +293,12 @@ func TestCanUpgradeNow(t *testing.T) {
 						ApplyFrom: nowOffset(-1).Format("2-1-2006 15:04"),
 						Duration:  "6hrs",
 					},
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+						},
+					},
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -212,6 +330,12 @@ func TestCanUpgradeNow(t *testing.T) {
 						ApplyFrom: nowOffset(-7).Format("2-1-2006 15:04"),
 						Duration:  "6hrs",
 					},
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+						},
+					},
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -242,6 +366,12 @@ func TestCanUpgradeNow(t *testing.T) {
 						ApplyFrom: nowOffset(2).Format("2-1-2006 15:04"),
 						Duration:  "6hrs",
 					},
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(2).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+						},
+					},
 				},
 			},
 			Validate: func(t *testing.T, canUpgrade bool, err error) {
@@ -264,7 +394,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						AlwaysImmediately:     false,
 						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(-1).Format("2 Jan 2006 15:04"),
+						ApplyOn:               nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
+					},
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+						},
 					},
 				},
 			},
@@ -288,7 +426,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						AlwaysImmediately:     false,
 						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(-7).Format("2 Jan 2006 15:04"),
+						ApplyOn:               nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
+					},
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+						},
 					},
 				},
 			},
@@ -312,7 +458,15 @@ func TestCanUpgradeNow(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						AlwaysImmediately:     false,
 						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(1).Format("2 Jan 2006 15:04"),
+						ApplyOn:               nowOffset(1).Format(integreatlyv1alpha1.DateFormat),
+					},
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            nowOffset(1).Format(integreatlyv1alpha1.DateFormat),
+							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+						},
 					},
 				},
 			},
@@ -445,6 +599,23 @@ func TestApproveUpgrade(t *testing.T) {
 				"RHMI-v1.0.0",
 			},
 		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     "ClusterServiceVersion",
+						Manifest: "{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"2.2.0\"}}",
+					},
+				},
+			},
+		},
+	}
+
+	rhmiMock := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi",
+			Namespace: "redhat-rhmi-operator",
+		},
 	}
 
 	installPlanAlreadyUpgrading := &olmv1alpha1.InstallPlan{
@@ -463,15 +634,24 @@ func TestApproveUpgrade(t *testing.T) {
 		Context         context.Context
 		EventRecorder   record.EventRecorder
 		RhmiInstallPlan *olmv1alpha1.InstallPlan
-		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, err error)
+		Config          *integreatlyv1alpha1.RHMIConfig
+		RHMI            *integreatlyv1alpha1.RHMI
+		Verify          func(rhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error)
 	}{
 		{
 			Name:            "Test install plan already upgrading",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanAlreadyUpgrading, rhmiMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanAlreadyUpgrading,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, err error) {
+			Config: &integreatlyv1alpha1.RHMIConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-config",
+					Namespace: "redhat-rhmi-operator",
+				},
+			},
+			RHMI: rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -484,11 +664,26 @@ func TestApproveUpgrade(t *testing.T) {
 		},
 		{
 			Name:            "Test install plan ready to upgrade",
-			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval),
+			FakeClient:      fake.NewFakeClientWithScheme(buildScheme(), installPlanReadyForApproval, rhmiMock),
 			Context:         context.TODO(),
 			EventRecorder:   setupRecorder(),
 			RhmiInstallPlan: installPlanReadyForApproval,
-			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, err error) {
+			Config: &integreatlyv1alpha1.RHMIConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-config",
+					Namespace: "redhat-rhmi-operator",
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For:            "13 Jul 2020 00:00",
+							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+						},
+					},
+				},
+			},
+			RHMI: rhmiMock,
+			Verify: func(updatedRhmiInstallPlan *olmv1alpha1.InstallPlan, rhmi *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, err error) {
 				// Should not return an error
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
@@ -497,17 +692,32 @@ func TestApproveUpgrade(t *testing.T) {
 				if updatedRhmiInstallPlan.Spec.Approved != true {
 					t.Fatalf("Expected installplan.Spec.Approved to be true")
 				}
+
+				if config.Status.Upgrade.Scheduled != nil {
+					t.Fatalf("Expected scheduled field to be empty")
+				}
+
+				if rhmi.Status.ToVersion != version.Version {
+					t.Fatalf("Expected ToVersion to be version.version")
+				}
 			},
 		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RhmiInstallPlan, scenario.RHMI, scenario.Config, scenario.EventRecorder)
 
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
-			scenario.Verify(retrievedInstallPlan, err)
+
+			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
+			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
+
+			rhmi := &integreatlyv1alpha1.RHMI{}
+			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
+
+			scenario.Verify(retrievedInstallPlan, rhmi, updatedConfig, err)
 		})
 	}
 }

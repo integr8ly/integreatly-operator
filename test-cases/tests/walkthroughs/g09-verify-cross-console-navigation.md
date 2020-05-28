@@ -6,6 +6,6 @@ tag:
 
 # G09 - Verify cross console navigation
 
-Acceptance Criteria :
+Acceptance Criteria:
 
 TBC

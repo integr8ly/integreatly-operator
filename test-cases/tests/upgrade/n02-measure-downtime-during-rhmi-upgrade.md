@@ -1,5 +1,7 @@
 ---
 estimate: 2h
+require:
+  - N04
 ---
 
 # N02 - Measure downtime during RHMI upgrade

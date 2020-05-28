@@ -62,11 +62,11 @@ var (
 	VersionMonitoring          ProductVersion = "1.1.6"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.15.2"
+	VersionCloudResources      ProductVersion = "0.16.1"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "7.3"
-	VersionRHSSOUser           ProductVersion = "7.3"
+	VersionRHSSO               ProductVersion = "7.4"
+	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
@@ -84,13 +84,13 @@ var (
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline           OperatorVersion = "1.4"
 	OperatorVersionMonitoring          OperatorVersion = "1.1.5"
-	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.53"
-	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
-	OperatorVersionRHSSOUser           OperatorVersion = "9.0.2"
+	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.55"
+	OperatorVersionRHSSO               OperatorVersion = "10.0.0"
+	OperatorVersionRHSSOUser           OperatorVersion = "10.0.0"
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
 	OperatorVersion3Scale              OperatorVersion = "0.5.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.15.2"
+	OperatorVersionCloudResources      OperatorVersion = "0.16.1"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
@@ -172,6 +172,8 @@ type RHMIStatus struct {
 	LastError          string                        `json:"lastError"`
 	GitHubOAuthEnabled bool                          `json:"gitHubOAuthEnabled,omitempty"`
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
+	Version            string                        `json:"version,omitempty"`
+	ToVersion          string                        `json:"toVersion,omitempty"`
 }
 
 type RHMIStageStatus struct {

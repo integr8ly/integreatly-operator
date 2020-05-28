@@ -409,6 +409,19 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
 	}
+	if postgres != nil {
+		// cr returning a failed state
+		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
+		}
+		// cr stuck in a pending state for greater that 5 min
+		_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
+		}
+	}
+
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
@@ -436,7 +449,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.0/keycloak-metrics-spi-2.0.0.jar",
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()

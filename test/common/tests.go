@@ -13,14 +13,18 @@ var (
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
 		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
+		{"Test RHMI installation CR metric", TestRHMICRMetrics},
 		{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
+		{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 		{"A05 - Verify product operator version", TestProductOperatorVersions},
+		{"A07 - Verify product versions", TestProductVersions},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 		{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
+		{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 		{"E03 - Verify dashboards exist", TestIntegreatlyDashboardsExist},
 		{"A10 - Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 		{"A11 - Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},
@@ -44,7 +48,7 @@ var (
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 		{"A06 - Verify PVC", TestPVClaims},
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
-		{"Test RHMI installation CR metric", TestRHMICRMetrics},
+		{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 		{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 	}
 

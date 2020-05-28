@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"math/rand"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -32,7 +30,7 @@ const (
 var (
 	smtpReplicas            int32 = 1
 	threescaleLoginUserSMTP       = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
-	emailAddress                  = fmt.Sprintf("test%v@test.com", rand.Intn(100))
+	emailAddress                  = "test@test.com"
 	serviceIP                     = ""
 	emailUsername                 = "dummy"
 	emailPassword                 = "dummy"
@@ -72,7 +70,7 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 		t.Log(err)
 	}
 	t.Log("Checking pods are ready")
-	err = check3ScaleReplicasAreReady(ctx, t, 2, retryInterval, timeout)
+	err = checkThreeScaleReplicasAreReady(ctx, t, 2, retryInterval, timeout)
 	if err != nil {
 		t.Log(err)
 	}
@@ -100,7 +98,7 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 
 }
 
-func check3ScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
+func checkThreeScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
 	//Check pods are ready to ensure they are using the new smtp details
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
@@ -132,6 +130,27 @@ func check3ScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, replic
 	})
 	if err != nil {
 		return fmt.Errorf("Number of replicas for threescale replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
+	}
+
+	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+
+		// get console master url
+		rhmi, err := getRHMI(dynClient.Client)
+		if err != nil {
+			t.Fatalf("error getting RHMI CR: %v", err)
+		}
+
+		host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
+
+		if host == "" {
+			t.Log("3scale host URL not ready yet.")
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		//return fmt.Error("Number of replicas for threescale replicas is not correct : Replicas - %w, Expected")
+		return fmt.Errorf("Error, Host url not ready before timeout - %v", err)
 	}
 	return nil
 }
@@ -183,12 +202,12 @@ func checkEmail(ctx *TestingContext, t *testing.T, email string) error {
 	receivedEmail := false
 	pods, err := ctx.KubeClient.CoreV1().Pods("smtp-server").List(metav1.ListOptions{})
 	if err != nil {
-		t.Fatalf("Couldn't find pods: ", err)
+		t.Logf("Couldn't find pods: %v", err)
 	}
 	for _, pod := range pods.Items {
 		fmt.Println(pod.Name, pod.Status.PodIP)
 		// exec into the smtp-server pod
-		output, err := execToPod("cat /tmp/mail.log",
+		output, err := execToPod("cat /newuser/mail.log",
 			pod.Name,
 			"smtp-server",
 			"smtp-server", ctx)
@@ -208,22 +227,6 @@ func checkEmail(ctx *TestingContext, t *testing.T, email string) error {
 	return nil
 }
 
-func lookup3ScaleClientSecret(client dynclient.Client, clientID string) (string, error) {
-	secretName := fmt.Sprintf("keycloak-client-secret-%v", clientID)
-	selector := dynclient.ObjectKey{
-		Namespace: "redhat-rhmi-rhsso",
-		Name:      secretName,
-	}
-
-	secret := &v1.Secret{}
-	err := client.Get(goctx.TODO(), selector, secret)
-	if err != nil {
-		return "", err
-	}
-
-	return string(secret.Data["CLIENT_SECRET"]), nil
-}
-
 func sendTestEmail(ctx *TestingContext, t *testing.T) {
 	// Send test email using the 3scale api
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
@@ -235,28 +238,15 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	masterURL := rhmi.Spec.MasterURL
-
-	clientSecret, err := lookup3ScaleClientSecret(ctx.Client, "3scale")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	// Get the fuse host url from the rhmi status
 	host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
 	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
 	redirectURL := fmt.Sprintf("%v/p/admin/dashboard", host)
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectURL, ctx.HttpClient, ctx.Client, t)
-	// First login to OpenShift
-	t.Log(threescaleLoginUserSMTP)
-	err = tsClient.LoginOpenshift(masterURL, threescaleLoginUserSMTP, DefaultPassword, rhmi.Spec.NamespacePrefix)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	// Login to 3Scale via rhsso
-	err = tsClient.Login3Scale(clientSecret)
+	// Login to 3Scale
+	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		t.Fatal(err)
 	}

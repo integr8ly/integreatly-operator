@@ -248,18 +248,5 @@ func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string, t *testing.T) 
 		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
 	}
 
-	// Parse the html to get a link back to the created service
-	doc, err := ParseHtmlResponse(resp)
-	selector := doc.Find("a.pf-c-nav__link")
-	if selector.Length() == 0 {
-		return "", errors.New("unable to retrieve service id")
-	}
-
-	href, _ := selector.Attr("href")
-	if strings.Contains(href, "/") == false {
-
-	}
-
-	id := strings.Split(href, "/")
-	return id[len(id)-1], nil
+	return "Completed", nil
 }

@@ -19,12 +19,12 @@ psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postg
 $ select * from workspaces;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/codeready_backup.md#codeready-postgres)
+3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/codeready_backup.md#codeready-postgres)
 4. Verify workspace is in postgres, follow `Step 2.`
 5. Verify you can log into workspace
 
 ## PV
 
 1. Create Workspace as `test-user`
-2. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/codeready_backup.md#codeready-workspace-pv)
+2. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/codeready_backup.md#codeready-workspace-pv)
 3. Verify workspace exists and can be used
