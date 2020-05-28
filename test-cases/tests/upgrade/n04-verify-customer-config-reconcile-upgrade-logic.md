@@ -4,7 +4,7 @@ require:
   - N01
 ---
 
-# N01 - verify customer config reconcile upgrade logic
+# N04 - verify customer config reconcile upgrade logic
 
 ## Prerequisites
 
