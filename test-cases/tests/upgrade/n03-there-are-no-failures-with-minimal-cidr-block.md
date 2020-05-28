@@ -1,6 +1,8 @@
 ---
 tags:
   - happy-path
+require:
+  - N04
 estimate: 30m
 ---
 

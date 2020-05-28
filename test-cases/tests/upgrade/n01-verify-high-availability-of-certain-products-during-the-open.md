@@ -1,5 +1,7 @@
 ---
 estimate: 2h
+require:
+  - N04
 ---
 
 # N01 - Verify High Availability of certain products during the OpenShift upgrade
