@@ -1,7 +1,21 @@
 FROM registry.svc.ci.openshift.org/openshift/release:golang-1.13
 
 ENV OPERATOR_SDK_VERSION=v0.15.1 \
+    DELOREAN_VERSION=master \
     GOFLAGS=""
+
+RUN set -o pipefail && \
+    INSTALL_PKGS="skopeo" && \
+    yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS
+
+# install delorean (from git with no history and only the tag)
+# Note: Change to using pre-built binary when it's available https://issues.redhat.com/browse/DEL-288
+RUN mkdir -p $GOPATH/src/github.com/delorean \
+    && cd $GOPATH/src/github.com/delorean \
+    && git clone --depth 1 -b $DELOREAN_VERSION https://github.com/integr8ly/delorean \
+    && cd delorean \
+    && make build/cli \
+    && cp delorean /usr/local/bin
 
 # install operator-sdk (from git with no history and only the tag)
 RUN mkdir -p $GOPATH/src/github.com/operator-framework \
@@ -28,4 +42,4 @@ ENV NODE_VERSION=12.16.3 \
 RUN curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
     && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
     && rm "node-v$NODE_VERSION-linux-x64.tar.xz" \
-    && ln -s /usr/local/bin/node /usr/local/bin/nodejs 
+    && ln -s /usr/local/bin/node /usr/local/bin/nodejs
