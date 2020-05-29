@@ -39,7 +39,7 @@ func ReconcileRHSSOPostgresCredentials(ctx context.Context, installation *integr
 		return nil, nil, fmt.Errorf("failed to provision postgres instance while reconciling rhsso postgres credentials, %s: %w", name, err)
 	}
 	if postgres.Status.Phase != types.PhaseComplete {
-		return nil, nil, nil
+		return postgres, nil, nil
 	}
 	postgresSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, postgresSec)

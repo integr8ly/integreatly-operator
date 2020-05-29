@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	alertFor10Mins = "10m"
+	alertFor20Mins = "20m"
 	alertFor5Mins  = "5m"
 )
 
@@ -96,13 +96,13 @@ func CreatePostgresResourceStatusPhasePendingAlert(ctx context.Context, client k
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 1)",
 			croResources.DefaultPostgresStatusMetricName, cr.Namespace, cr.Name, productName),
 	)
-	alertDescription := fmt.Sprintf("The creation of the Postgres instance has take longer that %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor10Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	alertDescription := fmt.Sprintf("The creation of the Postgres instance has take longer that %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor20Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresResourceStatusPhasePending, alertFor10Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -150,13 +150,13 @@ func CreateRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='complete'} == 1)",
 			croResources.DefaultRedisStatusMetricName, cr.Namespace, cr.Name, productName),
 	)
-	alertDescription := fmt.Sprintf("The creation of the Redis cache has take longer that %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor10Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	alertDescription := fmt.Sprintf("The creation of the Redis cache has take longer that %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor20Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
 		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisResourceStatusPhasePending, alertFor10Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisResourceStatusPhasePending, alertFor20Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}

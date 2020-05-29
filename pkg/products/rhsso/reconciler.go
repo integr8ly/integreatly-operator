@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -410,17 +411,21 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
 	}
 
-	// create prometheus phase failed rule
-	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
-	}
-
+	// at this point it should be ok to create the failed alert.
 	if postgres != nil {
-		// create prometheus pending rule
-		_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+		// create prometheus phase failed rule
+		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		}
+
+		// create prometheus pending rule only when CR has completed for the first time.
+		if postgres.Status.Phase == types.PhaseComplete {
+
+			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+			}
 		}
 	}
 
