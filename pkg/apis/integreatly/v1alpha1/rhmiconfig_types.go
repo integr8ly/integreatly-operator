@@ -299,7 +299,7 @@ func ValidateBackupAndMaintenance(backupApplyOn, maintenanceApplyFrom string) (s
 // timeBlockOverlaps checks if two time ranges overlap and returns true
 // if they do
 func timeBlockOverlaps(startA, endA, startB, endB time.Time) bool {
-	return startA.Before(endB) && endA.After(startB)
+	return startA.Unix() <= endB.Unix() && endA.Unix() >= startB.Unix()
 }
 
 func contains(s []string, e string) bool {
