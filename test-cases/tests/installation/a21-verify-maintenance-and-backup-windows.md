@@ -1,18 +1,21 @@
 ---
 targets:
-- 2.3.0
+  - 2.3.0
 tags:
   - automated
 ---
 
 # A21 - Verify maintenance and backup windows
 
-## Automated 
+## Automated
+
 https://github.com/integr8ly/integreatly-operator/blob/master/test/common/rhmi_config_cro_strategy_override.go
 https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_strategy_override.go
 
-## Manual 
+## Manual
+
 ### AWS Infrastructure Steps
+
 The following steps are valid for a cluster provisioned in AWS backed by AWS RDS, Elasticache and S3 resources
 
 1. After RHMI has installed, check for `cloud-resources-aws-strategies` config map in RHMI operator ns
