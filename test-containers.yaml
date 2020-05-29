@@ -12,3 +12,9 @@ tests:
     envVars:
       - name: NAMESPACE
         value: redhat-rhmi-3scale
+  - name: amq-test
+    image: quay.io/enmasse/enmasse-test-container
+    timeout: 3600
+    envVars:
+      - name: KUBERNETES_NAMESPACE
+        value: redhat-rhmi-amq-online
