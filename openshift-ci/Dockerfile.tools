@@ -5,7 +5,7 @@ ENV OPERATOR_SDK_VERSION=v0.15.1 \
     GOFLAGS=""
 
 RUN set -o pipefail && \
-    INSTALL_PKGS="skopeo" && \
+    INSTALL_PKGS="skopeo rsync" && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS
 
 # install delorean (from git with no history and only the tag)
