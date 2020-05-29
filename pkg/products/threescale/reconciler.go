@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"net/http"
 	"strings"
+
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -648,17 +649,18 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// redis cr returning a failed state
 	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create backend-redis resource on provider: %w", err)
-	}
-	// redis cr stuck in a pending state for greater that 5 min
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create backend-redis resource on provider stuck in a pending state: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis failure alert: %w", err)
 	}
 
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule
@@ -697,20 +699,21 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
-	// cr returning a failed state
+	// create prometheus failure rule
 	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create system-redis resource on provider: %w", err)
-	}
-	// cr stuck in a pending state for greater that 5 min
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create system-redis resource on provider stuck in a pending state: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis failure alert: %w", err)
 	}
 
 	// wait for the system redis cr to reconcile
 	if systemRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule
@@ -755,17 +758,18 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// cr returning a failed state
 	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
-	}
-	// cr stuck in a pending state for greater that 5 min
-	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
 	}
 
 	// wait for the postgres cr to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule

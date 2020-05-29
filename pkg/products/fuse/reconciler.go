@@ -280,20 +280,21 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres instance for fuse: %w", err)
 	}
 
-	// cr returning a failed state
+	// create prometheus failed rule
 	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, client, rhmi, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
-	}
-	// cr stuck in a pending state for greater that 5 min
-	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, rhmi, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
 	}
 
 	// postgres provisioning is still in progress
 	if postgres.Status.Phase != croTypes.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, rhmi, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule
