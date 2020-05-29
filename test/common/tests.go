@@ -46,6 +46,7 @@ var (
 		{"A06 - Verify PVC", TestPVClaims},
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 		{"Test RHMI installation CR metric", TestRHMICRMetrics},
+		{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 	}
 
 	DESTRUCTIVE_TESTS = []TestCase{
