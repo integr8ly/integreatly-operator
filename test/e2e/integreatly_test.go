@@ -126,7 +126,7 @@ func TestIntegreatly(t *testing.T) {
 	})
 
 	artifactsDir := os.Getenv(artifactsDirEnv)
-	if t.Failed() && artifactsDir != "" {
+	if artifactsDir != "" {
 		if _, err := os.Stat(artifactsDir); !os.IsNotExist(err) {
 			out := path.Join(artifactsDir, "rhmi.yaml")
 			t.Logf("Writing rhmi.yaml file to %s", out)
@@ -135,8 +135,6 @@ func TestIntegreatly(t *testing.T) {
 				t.Error("Failed to write RHMI cr due to error", err)
 			}
 		}
-	} else {
-		ctx.Cleanup()
 	}
 }
 

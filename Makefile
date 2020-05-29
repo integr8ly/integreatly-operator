@@ -143,7 +143,7 @@ test/unit:
 test/e2e/prow: export SURF_DEBUG_HEADERS=1
 test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
-test/e2e/prow: test/e2e
+test/e2e/prow: test/e2e test/products/prow
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
@@ -168,6 +168,10 @@ test/products/local:
 	mkdir -p "test-results"
 	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
 	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean tests run --test-config ./test-containers.yaml --output /test-results --namespace test-products
+
+.PHONY: test/products/prow
+test/products/prow: test/products
+	cp ${TEST_RESULTS_DIR} -r ${ARTIFACT_DIR}
 
 .PHONY: test/products
 test/products:
