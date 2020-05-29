@@ -39,7 +39,7 @@ parameters:
   - description: The name of the operator group
     displayName: Operator Group Name
     name: OPERATOR_GROUP_NAME
-    value: rhmi-operator
+    value: rhmi-registry-og
   - description: The name of the subscription
     displayName: Subscription Name
     name: SUBSCRIPTION_NAME
