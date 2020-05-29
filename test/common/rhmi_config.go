@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"testing"
 	"time"
 
@@ -20,8 +21,93 @@ import (
 )
 
 const (
-	RHMIConfigCRName = "rhmi-config-test"
+	RHMIConfigCRName = "rhmi-config"
 )
+
+// we reuse this struct in tests A21 and A22
+type MaintenanceBackup struct {
+	Backup      v1alpha1.Backup
+	Maintenance v1alpha1.Maintenance
+}
+
+// this state check covers test case - A22
+// verify that the RHMIConfig validation webhook for Maintenance and Backup values work as expected
+var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error){
+	// we expect no error as blank strings will be set to default vals
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "",
+		},
+	}: assertNoError,
+	// valid input format hh:mm and ddd hh:mm
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "20:05",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Sun 22:10",
+		},
+	}: assertNoError,
+	// we expect an error due to both times being parsed as a 1 hour window
+	// for aws these windows can not overlap
+	// this state provides overlapping times
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "20:05",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Sun 20:15",
+		},
+	}: assertValidationError,
+	// another overlap check, we want to ensure we get an error from a single minute overlap
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "20:15",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Thu 19:16",
+		},
+	}: assertValidationError,
+	// we expect the following :
+	//  * Backup hh:mm
+	//  * Maintenance ddd hh:mm
+	// the following checks will verify malformed times
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "26:00",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Sun 12:05",
+		},
+	}: assertValidationError,
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "22:00",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Malformed 12:05",
+		},
+	}: assertValidationError,
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "malformed",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "Sun 20:00",
+		},
+	}: assertValidationError,
+	{
+		Backup: v1alpha1.Backup{
+			ApplyOn: "20:00",
+		},
+		Maintenance: v1alpha1.Maintenance{
+			ApplyFrom: "malformed",
+		},
+	}: assertValidationError,
+}
 
 var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
 	{}: assertNoError,
@@ -72,13 +158,10 @@ var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
 func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	t.Log("Test rhmi config cr creation")
 
-	rhmiConfig := &v1alpha1.RHMIConfig{
-		TypeMeta: v1.TypeMeta{},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      RHMIConfigCRName,
-			Namespace: RHMIOperatorNamespace,
-		},
-	}
+	rhmiConfig := RHMIConfigTemplate()
+
+	// we need to delete the CR to ensure it is a blank CR for validation/creation
+	deleteRHMIConfigCR(t, ctx.Client, rhmiConfig)
 
 	// Wait for the ValidatingWebhookConfiguration to be reconciled. In the edge
 	// case that this test is run so fast that the operator mightn't have had
@@ -87,12 +170,11 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("Error waiting for ValidatingWebhookConfiguration: %v", err)
 	}
 
-	if err := ctx.Client.Create(goctx.TODO(), rhmiConfig); err != nil {
+	if _, err := controllerutil.CreateOrUpdate(goctx.TODO(), ctx.Client, rhmiConfig, func() error {
+		return nil
+	}); err != nil {
 		t.Fatalf("Failed to create RHMI Config resource %v", err)
 	}
-
-	// Clean up after testing
-	defer deleteRHMIConfigCR(t, ctx.Client, rhmiConfig)
 
 	// Test the CR is created with default values
 	verifyCr(t, ctx)
@@ -103,9 +185,16 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	// Test each possible state for the Upgrade section
 	for state, assertion := range upgradeSectionStates {
 		t.Logf("Testing the RHMIConfig state: %s", logUpgrade(state))
-
 		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
 			cr.Spec.Upgrade = state
+		})
+	}
+
+	// test for possible state changes for the Backup and Maintenance section
+	for state, assertion := range maintenanceBackupStates {
+		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
+			cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
+			cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
 		})
 	}
 }
@@ -154,7 +243,7 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 }
 
 // verifyRHMIConfigMutatingWebhook tests the mutating webhook by logging in as
-// a customer admin in the testing IdP and performing an update to the RHMIConfig
+// a customer admin in the testing IDP and performing an update to the RHMIConfig
 // instance, and checking that the webhooks adds the correct annotations
 func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 	// Create the testing IdP
@@ -247,6 +336,18 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		}
 	} else {
 		t.Error("Expected mutating webhook to add lastEditTimestamp annotation to RHMIConfig")
+	}
+}
+
+// we require this template across different tests for RHMI config
+// rhmi config we need to use the config map provisioned in the RHMI install
+// this to avoid a conflict of having multiple rhmi configs
+func RHMIConfigTemplate() *v1alpha1.RHMIConfig {
+	return &v1alpha1.RHMIConfig{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      RHMIConfigCRName,
+			Namespace: RHMIOperatorNamespace,
+		},
 	}
 }
 

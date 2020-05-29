@@ -1,13 +1,18 @@
 ---
 targets:
-  - 2.3.0
-estimate: 30m
+- 2.3.0
+tags:
+  - automated
 ---
 
 # A22 - Verify RHMIConfig maintenance and backup validation
 
 This test is to verify that the RHMIConfig validation webhook for maintenance and backup values works as expected.
 
+## Automated Test
+https://github.com/integr8ly/integreatly-operator/blob/master/test/common/rhmi_config.go
+
+## Manual Test
 The expected value formats are:
 
 ```
