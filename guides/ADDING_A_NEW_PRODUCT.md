@@ -196,6 +196,9 @@ The [config manager](../pkg/config/manager.go) is used by the installation_contr
 needs to be updated to know how interact with the new products config object. To do this the configManager requires the 
 `ReadProduct` function updated with the new config, and also a new function named as: `Read<ProductName>`.
 
+## Add Types to Scheme
+Open the [pkg/apis/addtoscheme_integreatly_v1alpha1.go](https://github.com/redhat-integration/rhi-operator/blob/master/pkg/apis/addtoscheme_integreatly_v1alpha1.go) file and add the product operator types to the Scheme so the components can map objects to GroupVersionKinds and back.
+
 ## Tests
 We include both unit tests and e2e tests in the integreatly-operator, the unit tests are run on every PR. The e2e tests
 are also run on every PR, in all the nightly builds, and as validation of the operator against the OSD managed-tenants
