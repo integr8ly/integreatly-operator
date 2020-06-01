@@ -15,7 +15,7 @@ Login as a user in the **developer** group.
 1. Open the Fuse Online Console and create a new Integration
 
    ```
-   Note: a) Use Fuse instance that is linked with Solution
+   Note: a) Use Fuse instance that is linked in Solution
             Explorer
          b) Namespace of the deployment-config may vary based
             on the namespace of Fuse instance
