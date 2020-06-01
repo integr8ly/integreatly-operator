@@ -18,7 +18,7 @@ Login as a user in the **developer** group.
    Note: a) Use Fuse instance that is linked with Solution
             Explorer
          b) Namespace of the deployment-config may vary based
-            on  the namespace of Fuse instance
+            on the namespace of Fuse instance
    ```
 
    1. Select API Provider
@@ -37,7 +37,7 @@ Login as a user in the **developer** group.
    > - i-`integration-name`
    >
    > ```
-   > oc get deploymentconfigs --namespace=<fuse-namespace>| grep <integration-name>
+   > oc get deploymentconfigs --namespace=<fuse-namespace> | grep <integration-name>
    > ```
 
 2. Delete the Integration
