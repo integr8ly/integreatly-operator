@@ -68,6 +68,7 @@ var (
 	VersionRHSSO               ProductVersion = "7.3"
 	VersionRHSSOUser           ProductVersion = "7.3"
 	VersionMonitoringSpec      ProductVersion = "1.0"
+	VersionSolutionExplorer    ProductVersion = "2.25.1"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
