@@ -295,13 +295,6 @@ spec:
                   description: A set of Keycloak Users.
                   items:
                     properties:
-                      attributes:
-                        additionalProperties:
-                          items:
-                            type: string
-                          type: array
-                        description: A set of Attributes.
-                        type: object
                       clientRoles:
                         additionalProperties:
                           items:
