@@ -1,20 +1,20 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: keycloakbackups.keycloak.org
+  name: keycloakusers.keycloak.org
 spec:
   group: keycloak.org
   names:
-    kind: KeycloakBackup
-    listKind: KeycloakBackupList
-    plural: keycloakbackups
-    singular: keycloakbackup
+    kind: KeycloakUser
+    listKind: KeycloakUserList
+    plural: keycloakusers
+    singular: keycloakuser
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
-      description: KeycloakBackup is the Schema for the keycloakbackups API
+      description: KeycloakUser is the Schema for the keycloakusers API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,39 +29,10 @@ spec:
         metadata:
           type: object
         spec:
-          description: KeycloakBackupSpec defines the desired state of KeycloakBackup
+          description: KeycloakUserSpec defines the desired state of KeycloakUser
           properties:
-            aws:
-              description: If provided, an automatic database backup will be created
-                on AWS S3 instead of a local Persistent Volume. If this property is
-                not provided - a local Persistent Volume backup will be chosen.
-              properties:
-                credentialsSecretName:
-                  description: "Provides a secret name used for connecting to AWS
-                    S3 Service. The secret needs to be in the following form: \n     apiVersion:
-                    v1     kind: Secret     metadata:       name: <Secret name>     type:
-                    Opaque     stringData:       AWS_S3_BUCKET_NAME: <S3 Bucket Name>
-                    \      AWS_ACCESS_KEY_ID: <AWS Access Key ID>       AWS_SECRET_ACCESS_KEY:
-                    <AWS Secret Key> \n For more information, please refer to the
-                    Operator documentation."
-                  type: string
-                encryptionKeySecretName:
-                  description: "If provided, the database backup will be encrypted.
-                    Provides a secret name used for encrypting database data. The
-                    secret needs to be in the following form: \n     apiVersion: v1
-                    \    kind: Secret     metadata:       name: <Secret name>     type:
-                    Opaque     stringData:       GPG_PUBLIC_KEY: <GPG Public Key>
-                    \      GPG_TRUST_MODEL: <GPG Trust Model>       GPG_RECIPIENT:
-                    <GPG Recipient> \n For more information, please refer to the Operator
-                    documentation."
-                  type: string
-                schedule:
-                  description: If specified, it will be used as a schedule for creating
-                    a CronJob
-                  type: string
-              type: object
-            instanceSelector:
-              description: Selector for looking up Keycloak Custom Resources.
+            realmSelector:
+              description: Selector for looking up KeycloakRealm Custom Resources.
               properties:
                 matchExpressions:
                   description: matchExpressions is a list of label selector requirements.
@@ -103,18 +74,88 @@ spec:
                     are ANDed.
                   type: object
               type: object
-            restore:
-              description: "Controls automatic restore behavior. Currently not implemented.
-                \n In the future this will be used to trigger automatic restore for
-                a given KeycloakBackup. Each backup will correspond to a single snapshot
-                of the database (stored either in a Persistent Volume or AWS). If
-                a user wants to restore it, all he/she needs to do is to change this
-                flag to true. Potentially, it will be possible to restore a single
-                backup multiple times."
-              type: boolean
+            user:
+              description: Keycloak User REST object.
+              properties:
+                clientRoles:
+                  additionalProperties:
+                    items:
+                      type: string
+                    type: array
+                  description: A set of Client Roles.
+                  type: object
+                credentials:
+                  description: A set of Credentials.
+                  items:
+                    properties:
+                      temporary:
+                        description: True if this credential object is temporary.
+                        type: boolean
+                      type:
+                        description: Credential Type.
+                        type: string
+                      value:
+                        description: Credential Value.
+                        type: string
+                    type: object
+                  type: array
+                email:
+                  description: Email.
+                  type: string
+                emailVerified:
+                  description: True if email has already been verified.
+                  type: boolean
+                enabled:
+                  description: User enabled flag.
+                  type: boolean
+                federatedIdentities:
+                  description: A set of Federated Identities.
+                  items:
+                    properties:
+                      identityProvider:
+                        description: Federated Identity Provider.
+                        type: string
+                      userId:
+                        description: Federated Identity User ID.
+                        type: string
+                      userName:
+                        description: Federated Identity User Name.
+                        type: string
+                    type: object
+                  type: array
+                firstName:
+                  description: First Name.
+                  type: string
+                groups:
+                  description: A set of Groups.
+                  items:
+                    type: string
+                  type: array
+                id:
+                  description: User ID.
+                  type: string
+                lastName:
+                  description: Last Name.
+                  type: string
+                realmRoles:
+                  description: A set of Realm Roles.
+                  items:
+                    type: string
+                  type: array
+                requiredActions:
+                  description: A set of Required Actions.
+                  items:
+                    type: string
+                  type: array
+                username:
+                  description: User Name.
+                  type: string
+              type: object
+          required:
+            - user
           type: object
         status:
-          description: KeycloakBackupStatus defines the observed state of KeycloakBackup
+          description: KeycloakUserStatus defines the observed state of KeycloakUser
           properties:
             message:
               description: Human-readable message indicating details about current
@@ -123,23 +164,9 @@ spec:
             phase:
               description: Current phase of the operator.
               type: string
-            ready:
-              description: True if all resources are in a ready state and all work
-                is done.
-              type: boolean
-            secondaryResources:
-              additionalProperties:
-                items:
-                  type: string
-                type: array
-              description: 'A map of all the secondary resources types and names created
-                for this CR. e.g "Deployment": [ "DeploymentName1", "DeploymentName2"
-                ]'
-              type: object
           required:
             - message
             - phase
-            - ready
           type: object
       type: object
   version: v1alpha1

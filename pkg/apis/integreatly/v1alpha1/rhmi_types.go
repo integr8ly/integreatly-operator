@@ -65,8 +65,8 @@ var (
 	VersionCloudResources      ProductVersion = "0.16.1"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "7.4"
-	VersionRHSSOUser           ProductVersion = "7.4"
+	VersionRHSSO               ProductVersion = "7.3"
+	VersionRHSSOUser           ProductVersion = "7.3"
 	VersionMonitoringSpec      ProductVersion = "1.0"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
@@ -85,8 +85,8 @@ var (
 	OperatorVersionAMQOnline           OperatorVersion = "1.4"
 	OperatorVersionMonitoring          OperatorVersion = "1.1.5"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.55"
-	OperatorVersionRHSSO               OperatorVersion = "10.0.0"
-	OperatorVersionRHSSOUser           OperatorVersion = "10.0.0"
+	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
+	OperatorVersionRHSSOUser           OperatorVersion = "9.0.2"
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
 	OperatorVersion3Scale              OperatorVersion = "0.5.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
