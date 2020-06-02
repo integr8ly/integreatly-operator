@@ -209,6 +209,13 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Annotations["lastEditUsername"] = request.UserInfo.Username
 		rhmiConfig.Annotations["lastEditTimestamp"] = time.Now().UTC().Format(DateFormat)
 	}
+	
+	if rhmiConfig.Spec.Maintenance.ApplyFrom == "" {
+		rhmiConfig.Spec.Maintenance.ApplyFrom = DefaultMaintenanceApplyFrom
+	}
+	if rhmiConfig.Spec.Backup.ApplyOn == "" {
+		rhmiConfig.Spec.Backup.ApplyOn = DefaultBackupApplyOn
+	}
 
 	marshalled, err := json.Marshal(rhmiConfig)
 	if err != nil {
