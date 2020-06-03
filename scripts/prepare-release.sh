@@ -23,6 +23,11 @@ set_images() {
   "${SED_INLINE[@]}" "s/containerImage:.*/containerImage: quay\.io\/integreatly\/integreatly-operator:$IMAGE_TAG/g" "deploy/olm-catalog/integreatly-operator/${VERSION}/integreatly-operator.v${VERSION}.clusterserviceversion.yaml"
 }
 
+set_csv_not_service_affecting() {
+  echo "Update CSV for release $SEMVER to be not service affecting"
+  yq w -i "deploy/olm-catalog/integreatly-operator/${VERSION}/integreatly-operator.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' metadata.annotations.serviceAffecting "false"
+}
+
 if [[ -z "$SEMVER" ]]; then
  echo "ERROR: no SEMVER value set"
  exit 1
@@ -54,3 +59,7 @@ else
 fi
 
 set_images
+
+if [[ ! -z "$NON_SERVICE_AFFECTING" ]]; then
+ set_csv_not_service_affecting
+fi
