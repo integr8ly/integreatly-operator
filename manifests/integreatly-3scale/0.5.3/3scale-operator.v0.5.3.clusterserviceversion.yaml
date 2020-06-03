@@ -324,7 +324,7 @@ spec:
     name: apicast-gateway-rhel8
   - image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:bd626295c55a7815a816d7049fba1febdec6a3305dee2a3292e92a26d56036b0
     name: backend-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:a934997501b41be2ca2b62e37c35bd334252b5e2ed28652c275bd1de8a9d324a
+  - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:104267db29ea178c650796d42f473276450a4cf6d9a50ba4e3508a5866723f21
     name: system-rhel7
   - image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:fd539b44f0fd70726fa3ed42417bf9084a95c1d8f4d01579d4cea78e9c90110c
     name: zync-rhel7
