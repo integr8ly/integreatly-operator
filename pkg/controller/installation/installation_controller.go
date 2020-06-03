@@ -3,10 +3,11 @@ package installation
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -77,12 +78,14 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 	}
 	r.controller = c
 
-	// Creates a new managed install CR if it is not available
-	kubeConfig := controllerruntime.GetConfigOrDie()
-	client, err := k8sclient.New(kubeConfig, k8sclient.Options{})
-	err = createInstallationCR(context.Background(), client)
-	if err != nil {
-		return err
+	if isAutoInstallAtStartup() {
+		// Creates a new managed install CR if it is not available
+		kubeConfig := controllerruntime.GetConfigOrDie()
+		client, err := k8sclient.New(kubeConfig, k8sclient.Options{})
+		err = createInstallationCR(context.Background(), client)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Watch for changes to primary resource Installation
@@ -115,6 +118,11 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 	}
 
 	return nil
+}
+
+func isAutoInstallAtStartup() bool {
+	autoInstallAtStartup, _ := os.LookupEnv("AUTO_INSTALL_AT_STARTUP")
+	return autoInstallAtStartup != "false"
 }
 
 func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) error {

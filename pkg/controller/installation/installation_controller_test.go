@@ -126,3 +126,23 @@ func getInstallationCR(ctx context.Context, serverClient k8sclient.Client, t *te
 
 	return &installationList.Items[0], nil
 }
+
+func TestIsAutoInstallAtStartup(t *testing.T) {
+	os.Unsetenv("AUTO_INSTALL_AT_STARTUP")
+	if isAutoInstallAtStartup() == false {
+		t.Fatal("Should return 'true' when AUTO_INSTALL_AT_STARTUP env var isn't set")
+	}
+
+	os.Setenv("AUTO_INSTALL_AT_STARTUP", "true")
+	if isAutoInstallAtStartup() == false {
+		t.Fatal("Should return 'true' when AUTO_INSTALL_AT_STARTUP env var is set to 'true'")
+	}
+
+	os.Setenv("AUTO_INSTALL_AT_STARTUP", "false")
+	if isAutoInstallAtStartup() == true {
+		t.Fatal("Should return 'false' when AUTO_INSTALL_AT_STARTUP env var is set to 'false'")
+	}
+
+	// clean up
+	os.Unsetenv("AUTO_INSTALL_AT_STARTUP")
+}
