@@ -444,9 +444,9 @@ spec:
     name: crw-2-rhel8-operator
   - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:e0213722a6eeab5926c4d6ef5c7220a58124136b9d08aba165cacae911235f43
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:b7238af122ea409466d225a08a5d3d179de61f63662d30cdc9e29aed9d5c2037
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:8775a73f99c61ed38f24d31b28ab074437d81701a105cbfdef506e99cdf1565f
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:5294f58cdf1bbd9c6ef49430e0da7a5ae752670ab2eec4b87977753eb2318af8
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:a88889d56d576554be6d0d3a7d84ed04f358366b7ff4e4e786fcce9c0613386d
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -454,9 +454,9 @@ spec:
     name: postgresql-96
   - image: registry.redhat.io/rh-sso-7/sso74-openshift-rhel8@sha256:f67d5d8f870969a54c61bab5f6bfda6c9c166ae3f232c9ec07c40773cb87174e
     name: sso74-openshift-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginbroker-metadata-rhel8@sha256:6d4033a5e5e90e9b719a739d168561455cef352eaabdaae7b5116f0d94cbbdad
+  - image: registry.redhat.io/codeready-workspaces/pluginbroker-metadata-rhel8@sha256:d79dd2ff39c07c546f1fe6e0c71e891c56a5343aa0156a58941912f056e1d778
     name: pluginbroker-metadata-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginbroker-artifacts-rhel8@sha256:83c793a7108568e924ac701a41ffdcd4f83951fedc197e538b13836ab25b44c1
+  - image: registry.redhat.io/codeready-workspaces/pluginbroker-artifacts-rhel8@sha256:a1a8c7c7519d642955eba16c137358ec323da3f0b8b2ea2d13265a61ae3caf95
     name: pluginbroker-artifacts-rhel8
   - image: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:7efa5c75e4b0a0b2eadbdab1d1ae7323cd0d655d05657087e8f20de920f814a2
     name: jwtproxy-rhel8
@@ -484,7 +484,7 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:70b035a9b69de9148ce0adf6c9cbbbb45840dcedb386af053db16edfed6621d3
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:a19a8ecef2219824205438d47e47b33fc4afd759cadc410ac8929eb242ce0780
     name: theia-endpoint-rhel8
   - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:945abc209aeec2239f3dce6c2861a31320e3664d4347f4ce5f1ca779cebc74e4
     name: theia-rhel8
