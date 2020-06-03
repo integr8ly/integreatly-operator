@@ -18,21 +18,21 @@ require (
 	github.com/google/go-querystring v1.0.0
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
-	github.com/integr8ly/application-monitoring-operator v1.1.1
+	github.com/integr8ly/application-monitoring-operator v1.2.0
 	github.com/integr8ly/cloud-resource-operator v0.16.1
 	github.com/integr8ly/grafana-operator v1.3.1
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54
-	github.com/onsi/gomega v1.8.1
+	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-registry v1.5.7-0.20200121213444-d8e2ec52c19a
-	github.com/operator-framework/operator-sdk v0.15.1
+	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.3.0
 	github.com/sirupsen/logrus v1.4.2
