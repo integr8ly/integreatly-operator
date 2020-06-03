@@ -6,7 +6,6 @@ import (
 	"time"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,48 +75,24 @@ func getAPIManager(dynClient k8sclient.Client) (threescalev1.APIManager, error) 
 }
 
 func updateAPIManager(dynClient k8sclient.Client, replicas int64) (threescalev1.APIManager, error) {
-
 	apim, err := getAPIManager(dynClient)
 	if err != nil {
 		return apim, err
 	}
-	resourceRequirements := true
-	apim = threescalev1.APIManager{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			ResourceVersion: apim.GetResourceVersion(),
-		},
-		Spec: threescalev1.APIManagerSpec{
-			HighAvailability: &threescalev1.HighAvailabilitySpec{},
-			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
-				ResourceRequirementsEnabled: &resourceRequirements,
-			},
-			System: &threescalev1.SystemSpec{
-				DatabaseSpec: &threescalev1.SystemDatabaseSpec{
-					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
-				},
-				FileStorageSpec: &threescalev1.SystemFileStorageSpec{
-					S3: &threescalev1.SystemS3Spec{},
-				},
-				AppSpec:     &threescalev1.SystemAppSpec{Replicas: &[]int64{replicas}[0]},
-				SidekiqSpec: &threescalev1.SystemSidekiqSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Apicast: &threescalev1.ApicastSpec{
-				ProductionSpec: &threescalev1.ApicastProductionSpec{Replicas: &[]int64{replicas}[0]},
-				StagingSpec:    &threescalev1.ApicastStagingSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Backend: &threescalev1.BackendSpec{
-				ListenerSpec: &threescalev1.BackendListenerSpec{Replicas: &[]int64{replicas}[0]},
-				WorkerSpec:   &threescalev1.BackendWorkerSpec{Replicas: &[]int64{replicas}[0]},
-				CronSpec:     &threescalev1.BackendCronSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Zync: &threescalev1.ZyncSpec{
-				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{replicas}[0]},
-				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{replicas}[0]},
-			},
-		},
-	}
+
+	apim.Name = name
+	apim.Namespace = namespace
+	apim.ResourceVersion = apim.GetResourceVersion()
+
+	apim.Spec.System.AppSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.System.SidekiqSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Apicast.ProductionSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Apicast.StagingSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Backend.ListenerSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Backend.WorkerSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Backend.CronSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Zync.AppSpec.Replicas = &[]int64{replicas}[0]
+	apim.Spec.Zync.QueSpec.Replicas = &[]int64{replicas}[0]
 
 	if err := dynClient.Update(goctx.TODO(), apim.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
 		return apim, err
