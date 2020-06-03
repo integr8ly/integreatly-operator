@@ -722,3 +722,40 @@ func TestApproveUpgrade(t *testing.T) {
 		})
 	}
 }
+
+func TestGetWeeklyWindow(t *testing.T) {
+	// Monday
+	from := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.UTC)
+
+	// Test same day
+	r, _, err := getWeeklyWindow(from, "Mon 00:00", time.Hour)
+	if err != nil {
+		t.Errorf("Error calculating weekly window for same day: %v", err)
+	} else if r.Day() != from.Day() || r.Month() != from.Month() || r.Year() != from.Year() {
+		t.Errorf("Expected result to be same day, got %s", r.Format(integreatlyv1alpha1.DateFormat))
+	}
+
+	// Test next day
+	r, _, err = getWeeklyWindow(from, "Tue 00:00", time.Hour)
+	if err != nil {
+		t.Errorf("Error calculating weekly window for same day: %v", err)
+	} else if r.Day() != from.Day()+1 || r.Month() != from.Month() || r.Year() != from.Year() {
+		t.Errorf("Expected result to be next day, got %s", r.Format(integreatlyv1alpha1.DateFormat))
+	}
+
+	// Test day before
+	r, _, err = getWeeklyWindow(from, "SuN 00:00", time.Hour)
+	if err != nil {
+		t.Errorf("Error calculating weekly window for same day: %v", err)
+	} else if r.Day() != from.Day()+6 || r.Month() != from.Month() || r.Year() != from.Year() {
+		t.Errorf("Expected result to be next Sunday, got %s", r.Format(integreatlyv1alpha1.DateFormat))
+	}
+
+	// Test 3 days after
+	r, _, err = getWeeklyWindow(from, "Thu 02:00", time.Hour)
+	if err != nil {
+		t.Errorf("Error calculating weekly window for same day: %v", err)
+	} else if r.Day() != from.Day()+3 || r.Month() != from.Month() || r.Year() != from.Year() {
+		t.Errorf("Expected result to be Thursday, got %s", r.Format(integreatlyv1alpha1.DateFormat))
+	}
+}

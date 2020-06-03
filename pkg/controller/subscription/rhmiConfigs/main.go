@@ -187,7 +187,7 @@ func getWeeklyWindow(from time.Time, windowStartStr string, duration time.Durati
 	}
 
 	//calculate how far away from maintenance day today is, within the current week
-	dayDiff := shortDays[windowDay] - int(from.Weekday())
+	dayDiff := shortDays[strings.ToLower(windowDay)] - int(from.Weekday())
 	if dayDiff < 0 {
 		dayDiff = 7 + dayDiff
 	}
