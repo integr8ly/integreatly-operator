@@ -38,9 +38,9 @@ spec:
                   url:
                     type: string
                 required:
-                - url
-                - service
-                - module
+                  - url
+                  - service
+                  - module
                 type: object
               type: array
           type: object
@@ -51,10 +51,10 @@ spec:
               format: int64
               type: integer
           required:
-          - phase
+            - phase
           type: object
   version: v1alpha1
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true

@@ -11,6 +11,8 @@ import (
 type ApplicationMonitoringSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+
+	// +kubebuilder:validation:MinLength=1
 	LabelSelector                    string `json:"labelSelector"`
 	AdditionalScrapeConfigSecretName string `json:"additionalScrapeConfigSecretName,omitempty"`
 	AdditionalScrapeConfigSecretKey  string `json:"additionalScrapeConfigSecretKey,omitempty"`
@@ -25,6 +27,7 @@ type ApplicationMonitoringSpec struct {
 type ApplicationMonitoringStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+
 	Phase              int    `json:"phase"`
 	LastBlackboxConfig string `json:"lastblackboxconfig"`
 }
@@ -33,6 +36,7 @@ type ApplicationMonitoringStatus struct {
 
 // ApplicationMonitoring is the Schema for the applicationmonitorings API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:path=applicationmonitorings,scope=Namespaced
 type ApplicationMonitoring struct {
 	metav1.TypeMeta   `json:",inline"`
