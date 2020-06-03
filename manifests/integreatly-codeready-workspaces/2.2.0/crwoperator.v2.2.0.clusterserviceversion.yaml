@@ -442,11 +442,11 @@ spec:
   relatedImages:
   - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:154e330eede7c2e3e16e8f1f95b5f8e3b7178a88d846edf2f89365b86cafc746
     name: crw-2-rhel8-operator
-  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:7398aed4a255f64ba485b3775f2e3b8d39aaada25fdf0525f63d51d68a58c0a6
+  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:e0213722a6eeab5926c4d6ef5c7220a58124136b9d08aba165cacae911235f43
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:b2cf4295d8f53c0ee19607d9df6ca97158cc04a5aed2206711871cd2f7be29fe
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:b7238af122ea409466d225a08a5d3d179de61f63662d30cdc9e29aed9d5c2037
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:ddcc6e9c14570bde27bf20185082d5f6d24831bc69613aa8abdfd17d8e487632
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:5294f58cdf1bbd9c6ef49430e0da7a5ae752670ab2eec4b87977753eb2318af8
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -458,15 +458,15 @@ spec:
     name: pluginbroker-metadata-rhel8
   - image: registry.redhat.io/codeready-workspaces/pluginbroker-artifacts-rhel8@sha256:83c793a7108568e924ac701a41ffdcd4f83951fedc197e538b13836ab25b44c1
     name: pluginbroker-artifacts-rhel8
-  - image: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:fac97b7ea5d2757321806303d0c814a0685a42aa76e62c9d689ed6ee2c748493
+  - image: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:7efa5c75e4b0a0b2eadbdab1d1ae7323cd0d655d05657087e8f20de920f814a2
     name: jwtproxy-rhel8
   - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7@sha256:973c66d587b45e1d8985e769c11e1f5b93eb04803a61471a66a6f2f847499dd3
     name: jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7
-  - image: registry.redhat.io/codeready-workspaces/machineexec-rhel8@sha256:fdf0ea5bea3a3b8ddfa1c96e342bc5c03cfca3ce0774b583964ce7b0196949a5
+  - image: registry.redhat.io/codeready-workspaces/machineexec-rhel8@sha256:5fdd1d993f34c60458f39ca57f92bf57e14eaca2bb4fb8efbe1f22df307a3c5e
     name: machineexec-rhel8
   - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:daaaa220f9bc0f2a19c63389b19e0d1ec962063f6345e8aad1561bdfb61c9fcc
     name: plugin-java11-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-kubernetes-rhel8@sha256:a9add83c76ed566e4451b8902c8236787ee6e8b8941b2744cacf3467f7c655ef
+  - image: registry.redhat.io/codeready-workspaces/plugin-kubernetes-rhel8@sha256:18c64ed3cbc607d69f42baa7f4b8a5064d55b432d0a7bafc6e7815f01ade78c7
     name: plugin-kubernetes-rhel8
   - image: registry.redhat.io/codeready-workspaces/plugin-openshift-rhel8@sha256:fa05da28a3324abe0778ad35a9fd6ca7f19e185ad4be9e2bedc8d2ac6315c421
     name: plugin-openshift-rhel8
@@ -474,13 +474,13 @@ spec:
     name: stacks-cpp-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-dotnet-rhel8@sha256:341332f429b915e42e1f136be230ec9b77308e401027ec45794a636b056b795f
     name: stacks-dotnet-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-golang-rhel8@sha256:2bd7c36cd0dc3ea3cdde369bd6af1197459b65b015608d44cabbe9c678151c0f
+  - image: registry.redhat.io/codeready-workspaces/stacks-golang-rhel8@sha256:d27d8e2550ce6a5867dff65754a3ea88ffab350d7e08dbb49ad0a85573c5b3f8
     name: stacks-golang-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-java-rhel8@sha256:573ca673f972ba6a73d21da03cef927f753604d7a4e452f44ea6ee76d9d03394
     name: stacks-java-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-node-rhel8@sha256:97cd244362f3fc9f0da6dfa9ff228eb4e6da570c86e3997562341fb0166f9ffd
+  - image: registry.redhat.io/codeready-workspaces/stacks-node-rhel8@sha256:09f867835d372a91a5390c083decc98854efd9e2040ec2f89599e026f16a1ee7
     name: stacks-node-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-php-rhel8@sha256:706524f78495d8fd5e93f62fcaa48edb5cf2c46fbf94783d72ea4f6fc22ba07c
+  - image: registry.redhat.io/codeready-workspaces/stacks-php-rhel8@sha256:62ffa0e5e320084809716370fba5c657c40638cf35b83687ec2e38fdd0630042
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
