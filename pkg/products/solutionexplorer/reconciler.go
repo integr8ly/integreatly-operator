@@ -44,7 +44,7 @@ import (
 const (
 	defaultName               = "solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.6"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.7"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
