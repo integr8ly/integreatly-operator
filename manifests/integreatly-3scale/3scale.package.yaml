@@ -1,4 +1,5 @@
-packageName: rhmi-3scale
 channels:
-- name: rhmi
-  currentCSV: 3scale-operator.v0.5.0
+- currentCSV: 3scale-operator.v0.5.3
+  name: rhmi
+defaultChannel: rhmi
+packageName: rhmi-3scale
