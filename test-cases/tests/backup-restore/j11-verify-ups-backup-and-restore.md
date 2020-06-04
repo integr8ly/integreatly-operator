@@ -19,5 +19,7 @@ psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postg
 $ select * from android_variants;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/ups_backup_and_restore.md#unified-push-server-ups-backup-and-restoration)
-4. Verify data is in Postgres, repeat `Step 2.`
+3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/ups_backup_and_restore.md#unified-push-server-ups-backup-and-restoration) to backup the database.
+4. Delete the application and variant created in `Step 1`.
+5. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/ups_backup_and_restore.md#unified-push-server-ups-backup-and-restoration) to restore the database.
+6. Verify data is in Postgres, repeat `Step 2.`

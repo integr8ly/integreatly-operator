@@ -10,7 +10,8 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ## Postgres
 
-1. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
+1. Login to 3scale as a customer admin and create a `Product`.
+2. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
 
 ```
 # password and host retrieved from threescale-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
@@ -19,8 +20,10 @@ $ select * from plans;
 $ select * from accounts;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres)
-4. Verify the same data exist in postgres follow `Step 2.`
+3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres) to back up the database.
+4. Login to 3scale as a customer admin and delete the product created in `Step 1`.
+5. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres) to restore the database.
+6. Verify the same data exist in postgres follow `Step 2.`
 
 ## Redis
 

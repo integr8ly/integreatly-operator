@@ -20,9 +20,10 @@ Note: this test should only be performed at a time it will not affect other ongo
    2. Create a Brokered Address Space
    3. Create a Brokered Queue Address in the Address Space
 
-2. Follow Brokered Queue PV [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#2-brokered-queue-pv) section
-
-3. Verify that the above data items are restored
+2. Follow Brokered Queue PV [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#2-brokered-queue-pv) section to backup the PV.
+3. Delete the Address and Address Space created in `Step 1`.
+4. Follow Brokered Queue PV [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#2-brokered-queue-pv) section to restore the PV.
+5. Verify that the above data items are restored
 
 ## AMQ Resources
 
@@ -37,6 +38,7 @@ Note: this test should only be performed at a time it will not affect other ongo
       - BrokeredInfraConfig
       - StandardInfraConfig
 
-2. Follow AMQ Resources [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#3-amq-resources-backup) section
-
-3. Verify the restoration of the resources created in step 2.
+2. Follow AMQ Resources [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#3-amq-resources-backup) section to backup the resources.
+3. Delete the resources created in `Step 1`.
+4. Follow AMQ Resources [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#3-amq-resources-backup) section to restore the resources.
+5. Verify the restoration of the resources created in `Step 1`.

@@ -19,5 +19,7 @@ $ select * from clients;
 $ select * from realms;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/user_sso_backup.md)
-4. Verify the same clients and realms exist in postgres follow `Step 2.`
+2. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/user_sso_backup.md) to backup the database.
+3. Delete all Realms (which also includes all Clients).
+4. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/user_sso_backup.md) to restore the database.
+5. Verify the same clients and realms exist in postgres follow `Step 1`.

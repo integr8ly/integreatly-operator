@@ -93,6 +93,9 @@ htpasswd
 scripts/jenkins/build.json
 scripts/jenkins/report.txt
 
+# test-cases node resources
+yarn.lock
+
 # CRDs that get generated because of our odd duplicated type stuff in
 # pkg/apis. We should really not have those in pkg/apis, and instead
 # depend on them as Go modules.

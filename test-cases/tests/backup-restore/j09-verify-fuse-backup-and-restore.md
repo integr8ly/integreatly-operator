@@ -21,5 +21,7 @@ psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postg
 $ \dt
 ```
 
-4. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/fuse_online_backup_and_restore.md#fuse-online-backup-and-restoration)
-5. Verify integreation is restored
+4. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/fuse_online_backup_and_restore.md#fuse-online-backup-and-restoration) to backup fuse.
+5. Delete the connection and integration created in `Step 2`.
+6. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/fuse_online_backup_and_restore.md#fuse-online-backup-and-restoration) to restore fuse.
+7. Verify integreation is restored
