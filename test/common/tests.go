@@ -13,6 +13,7 @@ var (
 	HAPPY_PATH_TESTS = []TestCase{
 		// Add all happy path tests to be executed after RHMI installation is completed here
 		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
+		{"Test RHMI installation CR metric", TestRHMICRMetrics},
 		{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
@@ -47,7 +48,6 @@ var (
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 		{"A06 - Verify PVC", TestPVClaims},
 		{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
-		{"Test RHMI installation CR metric", TestRHMICRMetrics},
 		{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 	}
 

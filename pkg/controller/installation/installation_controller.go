@@ -235,7 +235,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			Products: stage.Products,
 		})
 	}
-	metrics.ExposeRHMIStatusMetric(stages)
+	metrics.SetRHMIStatus(installation)
 
 	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
