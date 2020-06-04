@@ -442,11 +442,11 @@ spec:
   relatedImages:
   - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:154e330eede7c2e3e16e8f1f95b5f8e3b7178a88d846edf2f89365b86cafc746
     name: crw-2-rhel8-operator
-  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:e0213722a6eeab5926c4d6ef5c7220a58124136b9d08aba165cacae911235f43
+  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:db90d42d10b4fc010ca93d8a3dbf00618b2646286a45245712c16941ef6c43cd
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:8775a73f99c61ed38f24d31b28ab074437d81701a105cbfdef506e99cdf1565f
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:a4fac135d15be55aaa01b91a3c87afc958c92232506eb0ae4352c2bc657932f9
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:a88889d56d576554be6d0d3a7d84ed04f358366b7ff4e4e786fcce9c0613386d
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:ef002e1680133de83e982dadc8f9ee19c712564a3a9107ce44ef3e159e051f7d
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -484,9 +484,9 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:a19a8ecef2219824205438d47e47b33fc4afd759cadc410ac8929eb242ce0780
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:aba3ee2e79affc39240d0b9540364d3d66f78310d0214aaa9728307ab4406c1e
     name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:945abc209aeec2239f3dce6c2861a31320e3664d4347f4ce5f1ca779cebc74e4
+  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:9a545c79902b16ac7a6d4bb9376c20ae80310a2691b59fb5f51b1abd08eed2e3
     name: theia-rhel8
   - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8@sha256:94e1cd4eb4196a358e301c1992663258c0016c80247f507fd1c39cf9a73da833
     name: jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8
