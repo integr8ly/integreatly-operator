@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 	"testing"
 	"time"
 )
@@ -72,17 +73,33 @@ func TestRHMIConfigCROStrategyOverride(t *testing.T, testingCtx *TestingContext)
 
 // gets cro strategy map, checks both redis and postgres values to be as expected.
 func VerifyCROStrategyMap(context context.Context, client client.Client, expectedBackupWindow, expectedMaintenanceWindow string) error {
+	var foundErrors []string
+
 	croStrategyConfig := &v12.ConfigMap{}
 	if err := client.Get(context, types.NamespacedName{Name: CROStrategyConfigMap, Namespace: RHMIOperatorNamespace}, croStrategyConfig); err != nil {
 		return fmt.Errorf("unable to get cloud-resources-aws-strategies config map : %v", err)
 	}
 
-	if croStrategyConfig.Data["redis"] != BuildExpectRedisStrat(expectedBackupWindow, expectedMaintenanceWindow) {
-		return fmt.Errorf("\n - Redis data found : \n\t%s\n - Redis data expected : \n\t%s\n", croStrategyConfig.Data["redis"], BuildExpectRedisStrat(expectedBackupWindow, expectedMaintenanceWindow))
+	redisExpectedBackupWindow := fmt.Sprintf("\"SnapshotWindow\":\"%s\"", expectedBackupWindow)
+	if !strings.Contains(croStrategyConfig.Data["redis"], redisExpectedBackupWindow) {
+		foundErrors = append(foundErrors, fmt.Sprintf("\n - expected '%s' not found in Redis strategy config map", redisExpectedBackupWindow))
+	}
+	redisExpectedMaintenaceWindow := fmt.Sprintf("\"PreferredMaintenanceWindow\":\"%s\"", expectedMaintenanceWindow)
+	if !strings.Contains(croStrategyConfig.Data["redis"], redisExpectedMaintenaceWindow) {
+		foundErrors = append(foundErrors, fmt.Sprintf("\n - expected '%s' not found in Redis strategy config map", redisExpectedMaintenaceWindow))
 	}
 
-	if croStrategyConfig.Data["postgres"] != buildExpectPostgresStrat(expectedBackupWindow, expectedMaintenanceWindow) {
-		return fmt.Errorf("\n - Postgres data found : \n\t%s\n - Postgres data expected : \n\t%s\n", croStrategyConfig.Data["postgres"], buildExpectPostgresStrat(expectedBackupWindow, expectedMaintenanceWindow))
+	postgresExpectedBackupWindow := fmt.Sprintf("\"PreferredBackupWindow\":\"%s\"", expectedBackupWindow)
+	if !strings.Contains(croStrategyConfig.Data["postgres"], postgresExpectedBackupWindow) {
+		foundErrors = append(foundErrors, fmt.Sprintf("\n - expected '%s' not found in Postgres strategy config map", postgresExpectedBackupWindow))
+	}
+	postgresExpectedMaintenanceWindow := fmt.Sprintf("\"PreferredMaintenanceWindow\":\"%s\"", expectedMaintenanceWindow)
+	if !strings.Contains(croStrategyConfig.Data["postgres"], postgresExpectedMaintenanceWindow) {
+		foundErrors = append(foundErrors, fmt.Sprintf("\n - expected '%s' not found in Postgres strategy config map", postgresExpectedMaintenanceWindow))
+	}
+
+	if len(foundErrors) != 0 {
+		return fmt.Errorf("\n - Redis data found : \n\t%s\n - Postgres data found : \n\t%s\n %s", croStrategyConfig.Data["redis"], croStrategyConfig.Data["postgres"], foundErrors)
 	}
 
 	return nil
