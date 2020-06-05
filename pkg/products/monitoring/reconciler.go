@@ -601,7 +601,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	// handle smtp credentials
 	smtpSecret := &corev1.Secret{}
 	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.SMTPSecret, Namespace: rhmiOperatorNs}, smtpSecret); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain smtp credentials secret: %w", err)
+		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
 	}
 
 	// handle pagerduty credentials

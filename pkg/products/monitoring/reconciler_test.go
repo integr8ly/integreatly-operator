@@ -682,17 +682,6 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		wantErr      string
 	}{
 		{
-			name: "fails when smtp secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "could not obtain smtp credentials secret: secrets \"test-smtp\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)

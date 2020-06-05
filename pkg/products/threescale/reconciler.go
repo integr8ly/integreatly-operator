@@ -373,17 +373,13 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 }
 
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling smtp")
+	logrus.Info("Reconciling smtp credentials")
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
-		// For non-managed installations, the SMTP secret isn't critical
-		if k8serr.IsNotFound(err) && r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
+		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
 	}
 	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -399,13 +395,50 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		if smtpConfigSecret.Data == nil {
 			smtpConfigSecret.Data = map[string][]byte{}
 		}
-		smtpConfigSecret.Data["address"] = credSec.Data["host"]
-		smtpConfigSecret.Data["authentication"] = []byte("login")
-		smtpConfigSecret.Data["domain"] = []byte(fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
-		smtpConfigSecret.Data["openssl.verify.mode"] = []byte("")
-		smtpConfigSecret.Data["password"] = credSec.Data["password"]
-		smtpConfigSecret.Data["port"] = credSec.Data["port"]
-		smtpConfigSecret.Data["username"] = credSec.Data["username"]
+
+		smtpUpdated := false
+
+		if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
+			smtpConfigSecret.Data["address"] = credSec.Data["host"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
+			smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
+			smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
+			smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
+			smtpConfigSecret.Data["password"] = credSec.Data["password"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
+			smtpConfigSecret.Data["port"] = credSec.Data["port"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
+			smtpConfigSecret.Data["username"] = credSec.Data["username"]
+			smtpUpdated = true
+		}
+
+		if smtpUpdated {
+			err = r.RolloutDeployment("system-app")
+			if err != nil {
+				logrus.Error(err)
+			}
+
+			err = r.RolloutDeployment("system-sidekiq")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
