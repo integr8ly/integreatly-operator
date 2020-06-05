@@ -1,6 +1,6 @@
 ---
 targets:
-- 2.3.0
+  - 2.3.0
 tags:
   - automated
 ---
@@ -10,9 +10,11 @@ tags:
 This test is to verify that the RHMIConfig validation webhook for maintenance and backup values works as expected.
 
 ## Automated Test
+
 https://github.com/integr8ly/integreatly-operator/blob/master/test/common/rhmi_config.go
 
 ## Manual Test
+
 The expected value formats are:
 
 ```
