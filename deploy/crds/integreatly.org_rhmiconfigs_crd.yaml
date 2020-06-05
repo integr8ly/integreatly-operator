@@ -47,31 +47,19 @@ spec:
               type: object
             upgrade:
               properties:
-                alwaysImmediately:
-                  description: 'always-immediately: boolean value, if set to true
-                    an upgrade will be applied as soon as it is available, whether
-                    service affecting or not. This takes precedence over all other
-                    options'
-                  type: boolean
-                applyOn:
-                  description: 'apply-on: string date value. If ''always-immediately''
-                    or ''during-next-maintenance'' is not set the customer is required
-                    to pick a time for the upgrade. Time value will be validated by
-                    a webhook and reset to blank after upgrade has completed. Format:
-                    "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". UTC time'
-                  type: string
                 contacts:
                   description: 'contacts: list of contacts which are comma separated
                     "user1@example.com,user2@example.com"'
                   type: string
-                duringNextMaintenance:
-                  description: 'during-next-maintenance: boolean value, if set to
-                    true an upgrade will be applied within the next maintenance window.
-                    Takes precedence over apply-on'
-                  type: boolean
-              required:
-              - alwaysImmediately
-              - duringNextMaintenance
+                notBeforeDays:
+                  description: Minimum of days since an upgrade is made available
+                    until it's approved
+                  type: string
+                waitForMaintenance:
+                  description: If this value is true, upgrades will be approved in
+                    the next maintenance window n days after the upgrade is made available.
+                    Being n the value of `notBeforeDays`.
+                  type: string
               type: object
           type: object
         status:
@@ -94,20 +82,6 @@ spec:
                   description: Scheduled contains the information on the next upgrade
                     schedule
                   properties:
-                    calculatedFrom:
-                      description: 'CalculatedFrom shows how the "For" value is calculated.
-                        The following values are possible: * ApplyOn: When a value
-                        for "spec.Upgrade.ApplyOn" is set, the upgrade is   scheduled
-                        for that date * NextMaintenance: When "spec.Upgrade.DuringNextMaintenance"
-                        is true, the   upgrade is scheduled for the next maintenance
-                        date,   calculated from "spec.Maintenance" * TwoWeeksMaintenanceWindow:
-                        If no value is set for "spec.Upgrade", the   upgrade is scheduled
-                        for the next maintenance window two weeks after   the install
-                        plan is created * DefaultTwoWeeks: If no value is set for
-                        "spec.Upgrade" and no maintenance   window has been specified
-                        in "spec.Maintenance", the default schedule   is two weeks
-                        after the install plan is created'
-                      type: string
                     for:
                       description: For is the calculated time when the upgrade is
                         scheduled for, in format "2 Jan 2006 15:04"

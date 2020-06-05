@@ -38,7 +38,7 @@ func buildScheme() *runtime.Scheme {
 }
 
 func nowOffset(hours int) time.Time {
-	now := time.Now()
+	now := time.Now().UTC()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
 }
 
@@ -99,6 +99,10 @@ func TestUpdateStatus(t *testing.T) {
 					Maintenance: integreatlyv1alpha1.Maintenance{
 						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
 					},
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						NotBeforeDays:      "8",
+						WaitForMaintenance: "true",
+					},
 				},
 			},
 			InstallPlan: &olmv1alpha1.InstallPlan{
@@ -134,6 +138,11 @@ func TestUpdateStatus(t *testing.T) {
 						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
 					},
 				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{},
+					},
+				},
 			},
 			InstallPlan: &olmv1alpha1.InstallPlan{
 				ObjectMeta: metav1.ObjectMeta{
@@ -162,44 +171,33 @@ func TestUpdateStatus(t *testing.T) {
 			},
 		},
 		makeScheduleScenario(&scheduleScenario{
-			name: "no schedule for always immedieately",
+			name: "do not wait for maintenance 0 days",
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately: true,
-					},
-				},
-			},
-			expectedSchedule: nil,
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "schedule from applyOn",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						ApplyOn: "13 Jul 2020 00:00",
+						NotBeforeDays:      "0",
+						WaitForMaintenance: "false",
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For:            "13 Jul 2020 00:00",
-				CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+				For: nowOffset(-2).Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
 		makeScheduleScenario(&scheduleScenario{
-			name: "schedule from next maintenance",
+			name: "wait for maintenance 0 days",
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: "sun 00:00",
+						ApplyFrom: "Sun 00:00",
 					},
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						DuringNextMaintenance: true,
+						NotBeforeDays:      "0",
+						WaitForMaintenance: "true",
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
 				For: time.
 					Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
 					AddDate(0, 0, 7-int(time.Now().Weekday())).
@@ -207,28 +205,57 @@ func TestUpdateStatus(t *testing.T) {
 			},
 		}),
 		makeScheduleScenario(&scheduleScenario{
-			name:   "schedule after two weeks",
-			config: &integreatlyv1alpha1.RHMIConfig{},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For:            nowOffset(-2).AddDate(0, 0, 14).Format(integreatlyv1alpha1.DateFormat),
-				CalculatedFrom: integreatlyv1alpha1.DefaultTwoWeeks,
-			},
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "schedule in maintenance after two weeks",
+			name: "wait for maintenance, notBefore: 3 days before next window",
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: "sun 00:00",
+						ApplyFrom: strings.ToLower(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+							Add(6 * 24 * time.Hour).
+							Format("Mon 15:04")),
+					},
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						WaitForMaintenance: "true",
+						NotBeforeDays:      "3",
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				CalculatedFrom: integreatlyv1alpha1.TwoWeeksMaintenanceWindow,
-				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
-					AddDate(0, 0, 14).
-					AddDate(0, 0, 7-int(time.Now().Weekday())).
+				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).Add(6 * 24 * time.Hour).
 					Format(integreatlyv1alpha1.DateFormat),
+			},
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name: "wait for maintenance, notBefore: 3 days after next window",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Maintenance: integreatlyv1alpha1.Maintenance{
+						ApplyFrom: strings.ToLower(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+							Add(3 * 24 * time.Hour).
+							Format("Mon 15:04")),
+					},
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						WaitForMaintenance: "true",
+						NotBeforeDays:      "6",
+					},
+				},
+			},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).Add(10 * 24 * time.Hour).
+					Format(integreatlyv1alpha1.DateFormat),
+			},
+		}),
+		makeScheduleScenario(&scheduleScenario{
+			name: "do not wait for maintenance, notBefore > 0",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				Spec: integreatlyv1alpha1.RHMIConfigSpec{
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						NotBeforeDays:      "3",
+						WaitForMaintenance: "false",
+					},
+				},
+			},
+			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
+				For: nowOffset(-2).Add(3 * 24 * time.Hour).Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
 	}
@@ -260,9 +287,15 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     true,
-						DuringNextMaintenance: false,
-						ApplyOn:               "",
+						NotBeforeDays:      "0",
+						WaitForMaintenance: "false",
+					},
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+							For: nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
+						},
 					},
 				},
 			},
@@ -294,9 +327,8 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: true,
-						ApplyOn:               "",
+						WaitForMaintenance: "true",
+						NotBeforeDays:      "0",
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -306,8 +338,7 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
 						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+							For: nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
 						},
 					},
 				},
@@ -340,9 +371,7 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: true,
-						ApplyOn:               "",
+						WaitForMaintenance: "true",
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -352,8 +381,7 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
 						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
+							For: nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
 						},
 					},
 				},
@@ -385,9 +413,7 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: true,
-						ApplyOn:               "",
+						WaitForMaintenance: "true",
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -397,131 +423,7 @@ func TestCanUpgradeNow(t *testing.T) {
 					},
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
 						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(2).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.NextMaintenance,
-						},
-					},
-				},
-			},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Status: integreatlyv1alpha1.RHMIStatus{
-					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
-				},
-			},
-			Validate: func(t *testing.T, canUpgrade bool, err error) {
-				if err != nil {
-					t.Error("Expected no errors, got: " + err.Error())
-				}
-				if canUpgrade {
-					t.Error("Expected canUpgrade false, got true")
-				}
-			},
-		},
-		{
-			Name: "upgrade apply-on now returns true",
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
-					},
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(-1).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
-						},
-					},
-				},
-			},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Status: integreatlyv1alpha1.RHMIStatus{
-					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
-				},
-			},
-			Validate: func(t *testing.T, canUpgrade bool, err error) {
-				if err != nil {
-					t.Error("Expected no errors, got: " + err.Error())
-				}
-				if !canUpgrade {
-					t.Error("Expected canUpgrade true, got false")
-				}
-			},
-		},
-		{
-			Name: "upgrade apply-on expired returns false",
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
-					},
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(-7).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
-						},
-					},
-				},
-			},
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Status: integreatlyv1alpha1.RHMIStatus{
-					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
-				},
-			},
-			Validate: func(t *testing.T, canUpgrade bool, err error) {
-				if err != nil {
-					t.Error("Expected no errors, got: " + err.Error())
-				}
-				if canUpgrade {
-					t.Error("Expected canUpgrade false, got true")
-				}
-			},
-		},
-		{
-			Name: "upgrade apply-on in future returns false",
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     false,
-						DuringNextMaintenance: false,
-						ApplyOn:               nowOffset(1).Format(integreatlyv1alpha1.DateFormat),
-					},
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            nowOffset(1).Format(integreatlyv1alpha1.DateFormat),
-							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+							For: nowOffset(2).Format(integreatlyv1alpha1.DateFormat),
 						},
 					},
 				},
@@ -553,9 +455,8 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						AlwaysImmediately:     true,
-						DuringNextMaintenance: false,
-						ApplyOn:               "",
+						NotBeforeDays:      "0",
+						WaitForMaintenance: "false",
 					},
 				},
 			},
@@ -776,8 +677,7 @@ func TestApproveUpgrade(t *testing.T) {
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
 						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
-							For:            "13 Jul 2020 00:00",
-							CalculatedFrom: integreatlyv1alpha1.ApplyOn,
+							For: "13 Jul 2020 00:00",
 						},
 					},
 				},
@@ -805,7 +705,7 @@ func TestApproveUpgrade(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.Config, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
 			rhmi := &integreatlyv1alpha1.RHMI{}

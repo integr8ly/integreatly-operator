@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +34,9 @@ import (
 const (
 	DefaultBackupApplyOn        = "03:01"
 	DefaultMaintenanceApplyFrom = "Thu 02:00"
+
+	DefaultNotBeforeDays      = "7"
+	DefaultWaitForMaintenance = "true"
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -71,21 +75,6 @@ type RHMIConfigStatusUpgrade struct {
 type UpgradeSchedule struct {
 	// For is the calculated time when the upgrade is scheduled for, in format "2 Jan 2006 15:04"
 	For string `json:"for,omitempty"`
-
-	// CalculatedFrom shows how the "For" value is calculated. The following
-	// values are possible:
-	// * ApplyOn: When a value for "spec.Upgrade.ApplyOn" is set, the upgrade is
-	//   scheduled for that date
-	// * NextMaintenance: When "spec.Upgrade.DuringNextMaintenance" is true, the
-	//   upgrade is scheduled for the next maintenance date,
-	//   calculated from "spec.Maintenance"
-	// * TwoWeeksMaintenanceWindow: If no value is set for "spec.Upgrade", the
-	//   upgrade is scheduled for the next maintenance window two weeks after
-	//   the install plan is created
-	// * DefaultTwoWeeks: If no value is set for "spec.Upgrade" and no maintenance
-	//   window has been specified in "spec.Maintenance", the default schedule
-	//   is two weeks after the install plan is created
-	CalculatedFrom UpgradeScheduleCalculation `json:"calculatedFrom,omitempty"`
 }
 
 type UpgradeScheduleCalculation string
@@ -101,17 +90,13 @@ type Upgrade struct {
 	// contacts: list of contacts which are comma separated
 	// "user1@example.com,user2@example.com"
 	Contacts string `json:"contacts,omitempty"`
-	// always-immediately: boolean value, if set to true an upgrade will be applied as soon as it is available,
-	// whether service affecting or not.
-	// This takes precedence over all other options
-	AlwaysImmediately bool `json:"alwaysImmediately"`
-	// during-next-maintenance: boolean value, if set to true an upgrade will be applied within the next maintenance window.
-	// Takes precedence over apply-on
-	DuringNextMaintenance bool `json:"duringNextMaintenance"`
-	// apply-on: string date value. If 'always-immediately' or 'during-next-maintenance' is not set the customer is
-	// required to pick a time for the upgrade. Time value will be validated by a webhook and reset to blank after
-	// upgrade has completed. Format: "dd MMM YYYY hh:mm" > "12 Jan 1980 23:00". UTC time
-	ApplyOn string `json:"applyOn,omitempty"`
+
+	// If this value is true, upgrades will be approved in the next maintenance window
+	// n days after the upgrade is made available. Being n the value of `notBeforeDays`.
+	WaitForMaintenance string `json:"waitForMaintenance,omitempty"`
+
+	// Minimum of days since an upgrade is made available until it's approved
+	NotBeforeDays string `json:"notBeforeDays,omitempty"`
 }
 
 type Maintenance struct {
@@ -157,21 +142,24 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 		return err
 	}
 
-	if c.Spec.Upgrade.ApplyOn == "" {
-		return nil
+	// Validate the NotBeforeDays. Must be an integer greater than or equal to 0
+	if c.Spec.Upgrade.NotBeforeDays != "" {
+		notBeforeDays, err := strconv.Atoi(c.Spec.Upgrade.NotBeforeDays)
+		if err != nil {
+			return fmt.Errorf("Error parsing spec.Upgrade.NotBeforeDays. Expected integer, got %s", c.Spec.Upgrade.NotBeforeDays)
+		}
+
+		if notBeforeDays < 0 {
+			return errors.New("Value of spec.Upgrade.NotBeforeDays must be greater or equal to zero")
+		}
 	}
 
-	if c.Spec.Upgrade.AlwaysImmediately || c.Spec.Upgrade.DuringNextMaintenance {
-		return errors.New("spec.Upgrade.ApplyOn shouldn't be set when spec.Upgrade.AlwaysImmediatly or spec.Upgrade.DuringNextMaintenance are true")
-	}
-
-	applyOn, err := time.Parse(DateFormat, c.Spec.Upgrade.ApplyOn)
-	if err != nil {
-		return fmt.Errorf("invalid value for spec.Upgrade.ApplyOn, must be a date with the format %s", DateFormat)
-	}
-
-	if !applyOn.UTC().After(time.Now().UTC()) {
-		return fmt.Errorf("invalid value for spec.Upgrade.ApplyOn: %s. It must be a future date", applyOn.Format(DateFormat))
+	// Validate the WaitForMaintenance field. Must be a boolean
+	if c.Spec.Upgrade.WaitForMaintenance != "" {
+		_, err := strconv.ParseBool(c.Spec.Upgrade.WaitForMaintenance)
+		if err != nil {
+			return fmt.Errorf("Error parsing spec.Upgrade.WaitForMaintenance. Expected boolean, got %s", c.Spec.Upgrade.WaitForMaintenance)
+		}
 	}
 
 	return nil
@@ -217,12 +205,40 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Spec.Backup.ApplyOn = DefaultBackupApplyOn
 	}
 
+	defaultUpgradeSpec := &Upgrade{
+		NotBeforeDays:      DefaultNotBeforeDays,
+		WaitForMaintenance: DefaultWaitForMaintenance,
+	}
+
+	oldUpgradeSpec := &Upgrade{}
+	oldRhmiConfig := &RHMIConfig{}
+	if err := h.decoder.DecodeRaw(request.OldObject, oldRhmiConfig); err == nil {
+		oldUpgradeSpec = &oldRhmiConfig.Spec.Upgrade
+	}
+
+	rhmiConfig.Spec.Upgrade.WaitForMaintenance = either(
+		rhmiConfig.Spec.Upgrade.WaitForMaintenance,
+		oldUpgradeSpec.WaitForMaintenance,
+		defaultUpgradeSpec.WaitForMaintenance,
+	)
+
+	rhmiConfig.Spec.Upgrade.NotBeforeDays = either(
+		rhmiConfig.Spec.Upgrade.NotBeforeDays,
+		oldUpgradeSpec.NotBeforeDays,
+		defaultUpgradeSpec.NotBeforeDays,
+	)
+
 	marshalled, err := json.Marshal(rhmiConfig)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
 	return admission.PatchResponseFromRaw(request.Object.Raw, marshalled)
+}
+
+func (u *Upgrade) DefaultIfEmpty() {
+	u.NotBeforeDays = either(u.NotBeforeDays, DefaultNotBeforeDays)
+	u.WaitForMaintenance = either(strings.ToLower(u.WaitForMaintenance), DefaultWaitForMaintenance)
 }
 
 func init() {
@@ -316,4 +332,14 @@ func contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func either(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+
+	return ""
 }
