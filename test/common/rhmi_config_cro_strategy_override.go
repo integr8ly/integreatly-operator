@@ -61,11 +61,9 @@ func TestRHMIConfigCROStrategyOverride(t *testing.T, testingCtx *TestingContext)
 	// we expect the change to be immediate, the poll is help with any potential test flake
 	var lastPollError error
 	if err := wait.PollImmediate(time.Second*5, time.Second*30, func() (done bool, err error) {
-		lastPollError := VerifyCROStrategyMap(ctx, testingCtx.Client, expectedBackupWindow, expectedMaintenanceWindow)
-		if lastPollError == nil {
-			return true, nil
-		}
-		return false, nil
+		lastPollError = VerifyCROStrategyMap(ctx, testingCtx.Client, expectedBackupWindow, expectedMaintenanceWindow)
+		// If lastPollError is now nil, we've succeeded, return true for 'done' to exit the poll
+		return lastPollError == nil, nil
 	}); err != nil {
 		t.Fatalf("test failed : strategy map not as expected : %v : %v ", lastPollError, err)
 	}
