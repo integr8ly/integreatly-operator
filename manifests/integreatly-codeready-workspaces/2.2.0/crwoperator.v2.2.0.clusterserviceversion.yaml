@@ -215,7 +215,7 @@ spec:
 
 
     ```
-    oc create secret self-signed-certificate generic --from-file=/path/to/certificate/ca.crt -n=$codeReadyNamespace
+    oc create secret generic self-signed-certificate  --from-file=/path/to/certificate/ca.crt -n=$codeReadyNamespace
     ```
   displayName: Red Hat CodeReady Workspaces
   icon:

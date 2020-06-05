@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2018-2020 Red Hat, Inc.
+#  Copyright (c) 2012-2020 Red Hat, Inc.
 #    This program and the accompanying materials are made
 #    available under the terms of the Eclipse Public License 2.0
 #    which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -19,13 +19,12 @@ spec:
     listKind: CheClusterList
     plural: checlusters
     singular: checluster
+  preserveUnknownFields: false
   scope: Namespaced
   subresources:
     status: {}
-  preserveUnknownFields: false
   validation:
     openAPIV3Schema:
-      type: object
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -548,8 +547,9 @@ spec:
                 the pod is in this state.
               type: string
           type: object
+      type: object
   version: v1
   versions:
-  - name: v1
-    served: true
-    storage: true
+    - name: v1
+      served: true
+      storage: true
