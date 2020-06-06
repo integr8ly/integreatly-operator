@@ -440,13 +440,13 @@ spec:
   provider:
     name: Red Hat, Inc.
   relatedImages:
-  - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:154e330eede7c2e3e16e8f1f95b5f8e3b7178a88d846edf2f89365b86cafc746
+  - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:6250828ed8f45dc22e4252ab493903493e56cdff1788d234dd7bc49a03e96431
     name: crw-2-rhel8-operator
-  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:db90d42d10b4fc010ca93d8a3dbf00618b2646286a45245712c16941ef6c43cd
+  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:93d0cff03a518903d5726ccc2ce9cfe95768fb8e66fbdfc6cc51100603e72a4c
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:db2310687d311d231d2e0fa9458be028833fd0dc3406f53fadad48d547b332b6
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:971c51198a4f5249a753106753f8ef1886bb497caab27175634ee1ec50f883db
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:f225b0abedb908aae5e903b556b708f08e6fcd9881dc25522b2a86df474eaee9
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:21b76c55d3634dc5eb65b265a1e0890f7b6f2b15fe4d798a4763c794122f6f60
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -460,11 +460,9 @@ spec:
     name: pluginbroker-artifacts-rhel8
   - image: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:7efa5c75e4b0a0b2eadbdab1d1ae7323cd0d655d05657087e8f20de920f814a2
     name: jwtproxy-rhel8
-  - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7@sha256:973c66d587b45e1d8985e769c11e1f5b93eb04803a61471a66a6f2f847499dd3
-    name: jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7
-  - image: registry.redhat.io/codeready-workspaces/machineexec-rhel8@sha256:5fdd1d993f34c60458f39ca57f92bf57e14eaca2bb4fb8efbe1f22df307a3c5e
+  - image: registry.redhat.io/codeready-workspaces/machineexec-rhel8@sha256:a5a57f3c57af0f0c1bf61f68eddd5a710c9e7ed00e6c3eb38fffd9bf2cbad5ab
     name: machineexec-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:daaaa220f9bc0f2a19c63389b19e0d1ec962063f6345e8aad1561bdfb61c9fcc
+  - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:a3bc3a44749f6cdaf8ceaf074348dd03e12d734b50717488b3d5c57f83ce36ac
     name: plugin-java11-rhel8
   - image: registry.redhat.io/codeready-workspaces/plugin-kubernetes-rhel8@sha256:18c64ed3cbc607d69f42baa7f4b8a5064d55b432d0a7bafc6e7815f01ade78c7
     name: plugin-kubernetes-rhel8
@@ -488,8 +486,14 @@ spec:
     name: theia-endpoint-rhel8
   - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:9438b3ec8ac2fc1d9cfff699d40059b5a01d782fd4cb26f30efcbf6407c82327
     name: theia-rhel8
+  - image: registry.redhat.io/ubi8/openjdk-11@sha256:a9b1a21661411b692cb621b5f1dc55e8ac6324e5f342c3fa80e85c315975373b
+    name: openjdk-11
+  - image: registry.redhat.io/ubi8/openjdk-8@sha256:573fdab1e0d40fdb5b786c13c50be542258fe65fc22904d3ab1588389330acc7
+    name: openjdk-8
   - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8@sha256:94e1cd4eb4196a358e301c1992663258c0016c80247f507fd1c39cf9a73da833
     name: jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8
+  - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7@sha256:973c66d587b45e1d8985e769c11e1f5b93eb04803a61471a66a6f2f847499dd3
+    name: jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7
   - image: registry.redhat.io/rhscl/mongodb-36-rhel7@sha256:9f799d356d7d2e442bde9d401b720600fd9059a3d8eefea6f3b2ffa721c0dc73
     name: mongodb-36-rhel7
   replaces: crwoperator.v2.0.0
