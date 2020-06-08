@@ -17,6 +17,7 @@ var (
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 		{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 		{"A05 - Verify product operator version", TestProductOperatorVersions},
+		{"A07 - Verify product versions", TestProductVersions},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},

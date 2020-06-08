@@ -248,48 +248,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check authentication stage operand versions
-	authOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperands)
-	if err != nil {
-		return err
-	}
-
-	// check cloud resources stage operand versions
-	resouceOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.VersionCloudResources),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperands)
-	if err != nil {
-		return err
-	}
-
-	// check monitoring stage operand versions
-	monitoringOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.VersionMonitoring),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperands)
-	if err != nil {
-		return err
-	}
-
-	// check products stage operands versions
-	productOperands := map[string]string{
-		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.Version3Scale),
-		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.VersionAMQOnline),
-		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.VersionApicurito),
-		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
-		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.VersionFuseOnOpenshift),
-		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.VersionUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.VersionRHSSOUser),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperands)
-	if err != nil {
-		return err
-	}
-
 	// check no failed PVCs
 	pvcNamespaces := []string{
 		string(integreatlyv1alpha1.Product3Scale),
@@ -301,24 +259,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 	}
 	err = checkPvcs(t, f, namespace, pvcNamespaces)
 	return err
-}
-
-func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.RHMI{}
-
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
-	if err != nil {
-		return fmt.Errorf("Error getting installation CR from cluster when checking operand versions: %w", err)
-	}
-
-	for product, version := range operandVersions {
-		clusterVersion := installation.Status.Stages[stage].Products[integreatlyv1alpha1.ProductName(product)].Version
-		if clusterVersion != integreatlyv1alpha1.ProductVersion(version) {
-			return fmt.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s", product, version, clusterVersion)
-		}
-	}
-
-	return nil
 }
 
 func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
