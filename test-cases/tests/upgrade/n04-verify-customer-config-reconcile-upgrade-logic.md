@@ -1,7 +1,5 @@
 ---
 estimate: 2h
-require:
-  - N01
 ---
 
 # N04 - verify customer config reconcile upgrade logic
