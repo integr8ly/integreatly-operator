@@ -23,7 +23,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "ThreeScaleApicastProductionServiceEndpointDown",
+			Alert: "RHMIThreeScaleApicastProductionServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -33,7 +33,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleApicastStagingServiceEndpointDown",
+			Alert: "RHMIThreeScaleApicastStagingServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -43,7 +43,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleBackendListenerServiceEndpointDown",
+			Alert: "RHMIThreeScaleBackendListenerServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -53,7 +53,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleSystemDeveloperServiceEndpointDown",
+			Alert: "RHMIThreeScaleSystemDeveloperServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -63,7 +63,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleSystemMasterServiceEndpointDown",
+			Alert: "RHMIThreeScaleSystemMasterServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -73,7 +73,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleSystemMemcacheServiceEndpointDown",
+			Alert: "RHMIThreeScaleSystemMemcacheServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -83,7 +83,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleSystemProviderServiceEndpointDown",
+			Alert: "RHMIThreeScaleSystemProviderServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -93,7 +93,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleSystemSphinxServiceEndpointDown",
+			Alert: "RHMIThreeScaleSystemSphinxServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -103,7 +103,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleZyncServiceEndpointDown",
+			Alert: "RHMIThreeScaleZyncServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
@@ -113,7 +113,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "ThreeScaleZyncDatabaseServiceEndpointDown",
+			Alert: "RHMIThreeScaleZyncDatabaseServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No endpoints available for the {{  $labels.endpoint  }} service in the %s namespace", r.Config.GetNamespace()),
