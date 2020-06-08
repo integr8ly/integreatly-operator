@@ -14,6 +14,13 @@ Login as a user in the **developer** group.
 
 1. Open the Fuse Online Console and create a new Integration
 
+   ```
+   Note: a) Use Fuse instance that is linked in Solution
+            Explorer
+         b) Namespace of the deployment-config may vary based
+            on the namespace of Fuse instance
+   ```
+
    1. Select API Provider
    2. Choose `Create a new OpenAPI 3.x document`, and Next
    3. Add a new Path `/dummy`
@@ -30,7 +37,7 @@ Login as a user in the **developer** group.
    > - i-`integration-name`
    >
    > ```
-   > oc get deploymentconfigs --namespace=redhat-rhmi-fuse | grep <integration-name>
+   > oc get deploymentconfigs --namespace=<fuse-namespace> | grep <integration-name>
    > ```
 
 2. Delete the Integration
