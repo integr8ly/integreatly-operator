@@ -12,7 +12,7 @@ spec:
   json: |
     {
       "annotations": {
-        "list": [
+         "list": [
           {
             "builtIn": 1,
             "datasource": "-- Grafana --",
@@ -21,6 +21,22 @@ spec:
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
             "type": "dashboard"
+          },
+          {
+            "datasource": "Prometheus",
+            "enable": true,
+            "expr": "count by (stage,version,to_version)(rhmi_version{to_version!=\"\"})",
+            "hide": false,
+            "iconColor": "#FADE2A",
+            "limit": 100,
+            "name": "Upgrade",
+            "showIn": 0,
+            "step": "",
+            "tagKeys": "stage,version,to_version",
+            "tags": "",
+            "titleFormat": "Upgrade",
+            "type": "tags",
+            "useValueForTime": false
           }
         ]
       },
@@ -1302,6 +1318,6 @@ spec:
       "timezone": "",
       "title": "Endpoints Detailed",
       "uid": "xtkCtBkiz2",
-      "version": 13
+      "version": 14
     }
   name: endpointsdetailed.json
