@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -20,6 +21,8 @@ const (
 	rhssoNamespace             = "redhat-rhmi-rhsso"
 	userSSOName                = "rhssouser"
 	userSSONamespace           = "redhat-rhmi-user-sso"
+	requestURLSSO              = "/apis/keycloak.org/v1alpha1"
+	kindSSO                    = "Keycloaks"
 )
 
 func TestReplicasInRHSSOAndUserSSO(t *testing.T, ctx *TestingContext) {
@@ -38,7 +41,7 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 		t.Fatalf("Incorrect number of replicas to start : %v", err)
 	}
 
-	keycloakCR, err = updateKeycloakCR(ctx.Client, scaleUpRhssoReplicas, keycloakCRName, keycloakCRNamespace)
+	keycloakCR, err = updateKeycloakCR(ctx, scaleUpRhssoReplicas, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -48,7 +51,7 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	keycloakCR, err = updateKeycloakCR(ctx.Client, scaleDownRhssoReplicas, keycloakCRName, keycloakCRNamespace)
+	keycloakCR, err = updateKeycloakCR(ctx, scaleDownRhssoReplicas, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -58,7 +61,7 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	keycloakCR, err = updateKeycloakCR(ctx.Client, numberOfRhssoReplicas, keycloakCRName, keycloakCRNamespace)
+	keycloakCR, err = updateKeycloakCR(ctx, numberOfRhssoReplicas, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -66,6 +69,11 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 	t.Log("Checking correct number of replicas has been reset")
 	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, numberOfRhssoReplicas, retryInterval, timeout, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
+	}
+
+	t.Log("Checking replicas are ready")
+	if err := checkSSOReplicasAreReady(ctx, t, int32(numberOfRhssoReplicas), keycloakCRName, keycloakCRNamespace, retryInterval, timeout); err != nil {
+		t.Fatalf("Replicas weren't ready within timeout")
 	}
 }
 
@@ -79,24 +87,27 @@ func getKeycloakCR(dynClient k8sclient.Client, keycloakCRName string, keycloakCR
 	return *keycloakCR, nil
 }
 
-func updateKeycloakCR(dynClient k8sclient.Client, replicas int, keycloakCRName string, keycloakCRNamespace string) (keycloakv1alpha1.Keycloak, error) {
+func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName string, keycloakCRNamespace string) (keycloakv1alpha1.Keycloak, error) {
 
-	keycloakCR, err := getKeycloakCR(dynClient, keycloakCRName, keycloakCRNamespace)
+	replica := fmt.Sprintf(`{
+		"apiVersion": "keycloak.org/v1alpha1",
+		"kind": "Keycloak",
+		"spec": {
+			"instances": %[1]v
+		}		
+	}`, replicas)
+
+	replicaBytes := []byte(replica)
+
+	request := dynClient.ExtensionClient.RESTClient().Patch(types.MergePatchType).
+		Resource(kindSSO).
+		Name(keycloakCRName).
+		Namespace(keycloakCRNamespace).
+		RequestURI(requestURLSSO).Body(replicaBytes).Do()
+	_, err := request.Raw()
+
+	keycloakCR, err := getKeycloakCR(dynClient.Client, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
-		return keycloakCR, err
-	}
-	keycloakCR = keycloakv1alpha1.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            keycloakCRName,
-			Namespace:       keycloakCRNamespace,
-			ResourceVersion: keycloakCR.GetResourceVersion(),
-		},
-		Spec: keycloakv1alpha1.KeycloakSpec{
-			Instances: replicas,
-		},
-	}
-
-	if err := dynClient.Update(goctx.TODO(), keycloakCR.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
 		return keycloakCR, err
 	}
 
@@ -116,4 +127,25 @@ func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak
 		}
 		return true, nil
 	})
+}
+
+func checkSSOReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int32, keycloakCRName string, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
+
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+
+		statefulset, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get("keycloak", metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("Failed to get Statefulset %s in namespace %s with error: %s", "Keycloak", keycloakCRNamespace, err)
+		}
+		if statefulset.Status.ReadyReplicas != replicas {
+			t.Logf("Replicas Ready %v", statefulset.Status.ReadyReplicas)
+			t.Logf("retrying in : %v seconds", retryInterval)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("Number of replicas for sso.Spec.replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
+	}
+	return nil
 }
