@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -248,32 +247,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check no failed PVCs
-	pvcNamespaces := []string{
-		string(integreatlyv1alpha1.Product3Scale),
-		string(integreatlyv1alpha1.ProductFuse),
-		string(integreatlyv1alpha1.ProductRHSSO),
-		string(integreatlyv1alpha1.ProductSolutionExplorer),
-		string(integreatlyv1alpha1.ProductUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser),
-	}
-	err = checkPvcs(t, f, namespace, pvcNamespaces)
-	return err
-}
-
-func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
-	for _, pvcNamespace := range pvcNamespaces {
-		pvcs := &corev1.PersistentVolumeClaimList{}
-		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: common.NamespacePrefix + pvcNamespace})
-		if err != nil {
-			return fmt.Errorf("Error getting PVCs for namespace: %v. %w", pvcNamespace, err)
-		}
-		for _, pvc := range pvcs.Items {
-			if pvc.Status.Phase != "Bound" {
-				return fmt.Errorf("Error with pvc: %v. Status: %v", pvc.Name, pvc.Status.Phase)
-			}
-		}
-	}
 	return nil
 }
 
