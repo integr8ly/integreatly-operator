@@ -88,7 +88,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  " 3scale.rules",
+					Name:  "fuse.rules",
 					Rules: rules,
 				},
 			},
@@ -96,7 +96,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating 3scale PrometheusRule: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating fuse PrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

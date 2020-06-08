@@ -13,7 +13,6 @@ import (
 
 	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -171,6 +169,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
 		return phase, err
 	}
 
@@ -520,49 +524,6 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 	r.logger.Infof("The operation result for apicurito deployment config %s was %s", deployment.Name, or)
 
 	return nil
-}
-
-func (r *Reconciler) reconcilePodCountAlert(ctx context.Context, client k8sclient.Client) error {
-	const apicuritoPodCountExpected int = 3
-	ns := r.Config.GetNamespace()
-	prometheusRule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ksm-apicurito-alerts",
-			Namespace: ns,
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(ctx, client, prometheusRule, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(prometheusRule, r.installation)
-
-		prometheusRule.Spec = monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
-				{
-					Name: "apicurito.rules",
-					Rules: []monitoringv1.Rule{
-						{
-							Alert: "ApicuritoPodCount",
-							Annotations: map[string]string{
-								"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-								"message": fmt.Sprintf("Pod count for namespace %s is %s. Expected exactly %d pods.", "{{ $labels.namespace }}", "{{  printf \"%.0f\" $value }}", apicuritoPodCountExpected),
-							},
-							Expr: intstr.FromString(
-								fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) != %d", ns, ns, apicuritoPodCountExpected)),
-							For:    "5m",
-							Labels: map[string]string{"severity": "critical"},
-						},
-					},
-				},
-			},
-		}
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("error creating Apicurito PrometheusRule: %w", err)
-	}
-
-	return nil
-
 }
 
 func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
