@@ -16,7 +16,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
 	rule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ksm-fuse-endpoint-alerts",
+			Name:      "ksm-endpoint-alerts",
 			Namespace: r.Config.GetNamespace(),
 		},
 	}

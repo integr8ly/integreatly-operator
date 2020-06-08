@@ -1,4 +1,4 @@
-package codeready
+package rhsso
 
 import (
 	"context"
@@ -23,32 +23,22 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMICodeReadyCheHostServiceEndpointDown",
+			Alert: "RHMIRhssoKeycloakServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='che-host'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='keycloak'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMICodeReadyDevfileRegistryServiceEndpointDown",
+			Alert: "RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='devfile-registry'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
-			Labels: map[string]string{"severity": "critical"},
-		},
-		{
-			Alert: "RHMICodeReadyPluginRegistryServiceEndpointDown",
-			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
-				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
-			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='plugin-registry'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='keycloak-discovery'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
@@ -58,7 +48,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "codeready.rules",
+					Name:  "rhsso.rules",
 					Rules: rules,
 				},
 			},
@@ -66,7 +56,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating codeready PrometheusRule: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso PrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

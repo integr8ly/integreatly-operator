@@ -79,7 +79,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-amq-online-ksm-endpoint-alerts",
+			Name:      "ksm-endpoint-alerts",
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
