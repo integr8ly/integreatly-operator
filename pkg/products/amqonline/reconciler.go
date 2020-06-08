@@ -199,13 +199,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.reconcileSloAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile slo prometheus rules", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile slo alerts", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available prometheus rules", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
 		return phase, err
 	}
 
