@@ -444,9 +444,9 @@ spec:
     name: crw-2-rhel8-operator
   - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:93d0cff03a518903d5726ccc2ce9cfe95768fb8e66fbdfc6cc51100603e72a4c
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:971c51198a4f5249a753106753f8ef1886bb497caab27175634ee1ec50f883db
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:8d67955e439546910c06bb94737b08c2e7d1f8f562ffb81710e77d1a8a25d231
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:21b76c55d3634dc5eb65b265a1e0890f7b6f2b15fe4d798a4763c794122f6f60
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:9f9292e219ac815a9f2c58da8fad719dd4132ea9b5dd6e7f364697098a7dc9a1
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -482,9 +482,9 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:68472d3b771111c8bf8139a773dcf50f1b276aa3a4186814dea2eb5ae7fd4fc9
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:54b18c5e28dcd8261d9fc0e7e08cb0afe99b8b01edfbf9841f74802e33c32943
     name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:9438b3ec8ac2fc1d9cfff699d40059b5a01d782fd4cb26f30efcbf6407c82327
+  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:839a415e83f5ec8c01b2d42ce7ed174d241a43de2aead3d862d27fd34bf4d1ad
     name: theia-rhel8
   - image: registry.redhat.io/ubi8/openjdk-11@sha256:a9b1a21661411b692cb621b5f1dc55e8ac6324e5f342c3fa80e85c315975373b
     name: openjdk-11
