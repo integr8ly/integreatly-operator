@@ -8,8 +8,8 @@ estimate: 15m
 
 ## Prerequisites
 
-* Make sure you have the [AWS CLI](https://aws.amazon.com/cli/) installed, and configured correctly.
-* Make sure you have `oc` installed and logged into as admin user to the testing cluster.
+- Make sure you have the [AWS CLI](https://aws.amazon.com/cli/) installed, and configured correctly.
+- Make sure you have `oc` installed and logged into as admin user to the testing cluster.
 
 ## Steps
 
