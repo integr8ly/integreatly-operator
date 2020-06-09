@@ -326,7 +326,7 @@ spec:
     name: backend-rhel7
   - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:29836068f71f53f88b75345055808106cb4620bf3d488bd458709936d716377f
     name: system-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:fd539b44f0fd70726fa3ed42417bf9084a95c1d8f4d01579d4cea78e9c90110c
+  - image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:f46b47b84450a81cb463b66dc86b91baf0dd60bdca275192925f6924b90a57bf
     name: zync-rhel7
   - image: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
     name: memcached-rhel7
