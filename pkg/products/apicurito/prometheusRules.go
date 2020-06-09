@@ -117,12 +117,12 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIApicuritoRhmiRegistryCsServiceEndpointDown",
+			Alert: "RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='rhmi-registry-cs'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace=`%s`} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
@@ -132,7 +132,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  " apicurito-operator.rules",
+					Name:  "apicurito-operator.rules",
 					Rules: rules,
 				},
 			},
