@@ -92,9 +92,19 @@ func TestIntegreatly(t *testing.T) {
 			})
 		}
 
+		var err error
 		t.Run("Cluster", func(t *testing.T) {
-			IntegreatlyCluster(t, f, ctx)
+			err = IntegreatlyCluster(t, f, ctx)
+			if err != nil {
+				t.Log(err)
+				t.Fail()
+			}
 		})
+
+		if err != nil {
+			t.Log("cluster not in a testable state, quiting test run")
+			t.FailNow()
+		}
 
 		for _, test := range common.HAPPY_PATH_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
@@ -280,12 +290,13 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
-func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) {
+func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	namespace, err := ctx.GetNamespace()
 	// Create SMTP Secret
 	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")
 	if !found {
-		t.Fatal("INSTALLATION_PREFIX env var is not set")
+		err := fmt.Errorf("INSTALLATION_PREFIX env var is not set")
+		return err
 	}
 
 	var smtpSec = &corev1.Secret{
@@ -303,7 +314,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), smtpSec, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create SMTP Secret: %w", err)
 	}
 
 	// create pagerduty secret
@@ -319,7 +330,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), pagerdutySecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create pagerduty secret: %w", err)
 	}
 
 	// create dead mans snitch secret
@@ -335,17 +346,20 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), dmsSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create dead mans snitch secret : %w", err)
 	}
 
 	// wait for integreatly-operator to be ready
 	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "rhmi-operator", 1, retryInterval, timeout)
 	if err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("wait for integreatly-operator to be ready: %w", err)
+
 	}
 	//TODO: split them into their own test cases
 	// check that all of the operators deploy and all of the installation phases complete
 	if err = integreatlyManagedTest(t, f, ctx); err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("error in fuction integreatlyManagedTest: %w", err)
 	}
+
+	return nil
 }
