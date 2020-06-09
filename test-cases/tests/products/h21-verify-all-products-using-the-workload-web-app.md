@@ -16,7 +16,9 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
 1. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repository
 
-2. Deploy the **workload-web-app** to the cluster
+2. Login to the cluster as **kubeadmin**
+
+3. Deploy the **workload-web-app** to the cluster
 
    ```bash
     make local/deploy
@@ -32,13 +34,13 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
    > THREE_SCALE_URL=https://...
    > ```
 
-3. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+4. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
 
    ```bash
    echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
    ```
 
-4. Select the **Workload App** dashboard
+5. Select the **Workload App** dashboard
 
    > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph
    >
