@@ -311,13 +311,12 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 			return nil
 		},
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
+	}
 
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
 	}
 
 	// Read the CRO secret, to get values to copy to enmasse namespace.
