@@ -86,7 +86,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIAMQNoneAuthServiceEndpointDown",
+			Alert: "RHMIAmqNoneAuthServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -96,7 +96,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIAMQAddressSpaceControllerServiceEndpointDown",
+			Alert: "RHMIAmqAddressSpaceControllerServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -106,7 +106,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIAMQConsoleServiceEndpointDown",
+			Alert: "RHMIAmqConsoleServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -116,7 +116,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIAMQRegistryCsServiceEndpointDown",
+			Alert: "RHMIAmqRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -126,7 +126,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIAMQStandardAuthServiceServiceEndpointDown",
+			Alert: "RHMIAmqStandardAuthServiceServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
