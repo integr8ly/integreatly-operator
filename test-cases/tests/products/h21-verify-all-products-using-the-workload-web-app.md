@@ -42,4 +42,4 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
    > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph
    >
-   > Note: is normal that there could be some downtime because the workload-web-app could had start testing before the some of the endpoints where ready
+   > Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready
