@@ -8,7 +8,7 @@ estimate: 30m
 
 The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
-- Create a small AMQ Queue and verify that is it can send and receive messages
+- Create a small AMQ Queue and verify that it can send and receive messages
 - Create a user in the User SSO and verify that it can login to it
 - Create a 3scale API and verify that it respond
 
@@ -44,4 +44,4 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
    > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph
    >
-   > Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready
+   > Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
