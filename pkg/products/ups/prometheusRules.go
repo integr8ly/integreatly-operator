@@ -28,7 +28,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='unifiedpush-operator-metrics'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='unifiedpush-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		},
@@ -48,7 +48,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "ups.rules",
+					Name:  "ups-operator.rules",
 					Rules: rules,
 				},
 			},
@@ -57,6 +57,56 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating ups PrometheusRule: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
+	rule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ksm-endpoint-alerts",
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	rules := []monitoringv1.Rule{
+		{
+			Alert: "RHMIUpsRhmiRegistryCsOperatorMetricsServiceEndpointDown",
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
+			For:    "1m",
+			Labels: map[string]string{"severity": "critical"},
+		},
+		{
+			Alert: "RHMIUpsUnifiedPushOperatorMetricsOperatorMetricsServiceEndpointDown",
+			Annotations: map[string]string{
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='unifiedpush-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
+			For:    "1m",
+			Labels: map[string]string{"severity": "critical"},
+		}}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name:  "ups-operator.rules",
+					Rules: rules,
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating ups operator PrometheusRule: %w", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
