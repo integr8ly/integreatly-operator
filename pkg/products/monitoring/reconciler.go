@@ -29,6 +29,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -234,8 +236,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	phase, err = r.reconcileDashBoards(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileDashBoards", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
@@ -457,17 +459,49 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Iterate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
+func (r *Reconciler) reconcileDashBoards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	for _, dashBoard := range r.Config.GetDashBoards() {
+		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashBoard)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
+			logrus.Errorf("Error reconciling dashboards: %v", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashBoard, err)
 		}
-		r.Logger.Infof("Reconciling the monitoring template %s was successful", template)
+		r.Logger.Infof("Reconciling the grafana dashboard  %s was successful", dashBoard)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashBoard string) (err error) {
+
+	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dashBoard,
+			Namespace: r.Config.GetOperatorNamespace(),
+			Labels: map[string]string{
+				"monitoring-key": r.Config.GetLabelSelector(),
+			},
+		},
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
+		specJSON, name, err := getSpecDetailsForDashBoard(dashBoard)
+		if err != nil {
+			return err
+		}
+		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
+			Json: specJSON,
+			Name: name,
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.Logger.Infof("operation result of creating/updating grafana dashboard %v was %v", grafanaDB.Name, opRes)
+	}
+	return err
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

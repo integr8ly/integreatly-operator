@@ -10,6 +10,7 @@ import (
 	v1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -114,6 +115,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := rbac.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
+	if err := grafanav1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+
 	return scheme, nil
 }
 
@@ -440,6 +445,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+
+			//Verify that grafana dashboards are created
+			for _, dashBoard := range reconciler.Config.GetDashBoards() {
+				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
+				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashBoard, Namespace: defaultInstallationNamespace}, grafanaDB)
+				if err != nil {
+					t.Fatalf("expected no error but got one: %v", err)
+				}
 			}
 		})
 	}

@@ -123,15 +123,15 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 	return "50Gi"
 }
 
-func (m *Monitoring) GetTemplateList() []string {
+func (m *Monitoring) GetDashBoards() []string {
 	templateList := []string{
-		"endpointsdetailed.yaml",
-		"endpointsreport.yaml",
-		"endpointssummary.yaml",
-		"resources-by-namespace.yaml",
-		"resources-by-pod.yaml",
-		"cluster-resources.yaml",
-		"critical_slo_alerts.yaml",
+		"endpointsdetailed",
+		"endpointsreport",
+		"endpointssummary",
+		"resources-by-namespace",
+		"resources-by-pod",
+		"cluster-resources",
+		"critical-slo-alerts",
 	}
 	return templateList
 }
