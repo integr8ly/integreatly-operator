@@ -128,7 +128,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  " 3scale.rules",
+					Name:  " 3scale-endpoint.rules",
 					Rules: rules,
 				},
 			},
@@ -178,7 +178,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  " 3scale-operator.rules",
+					Name:  " 3scale-operator-endpoint.rules",
 					Rules: rules,
 				},
 			},

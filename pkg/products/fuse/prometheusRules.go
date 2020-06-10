@@ -88,7 +88,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "fuse.rules",
+					Name:  "fuse-online-endpoint.rules",
 					Rules: rules,
 				},
 			},
@@ -113,7 +113,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIFuseOnlineRhmiRegistryCsMetricsServiceEndpointDown",
+			Alert: "RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -123,7 +123,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIFuseOnlineSyndesisOperatorMetricsOperatorMetricsServiceEndpointDown",
+			Alert: "RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -138,7 +138,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "fuse-online-operator.rules",
+					Name:  "fuse-online-operator-endpoint.rules",
 					Rules: rules,
 				},
 			},

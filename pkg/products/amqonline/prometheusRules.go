@@ -141,7 +141,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "amqonline.rules",
+					Name:  "amqonline-endpoint.rules",
 					Rules: rules,
 				},
 			},

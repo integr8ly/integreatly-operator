@@ -60,7 +60,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
 	rule := &monitoringv1.PrometheusRule{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ksm-apicurito-endpoint-alerts",
+			Name:      "ksm-endpoint-alerts",
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
@@ -92,7 +92,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "apicurito.rules",
+					Name:  "apicurito-endpoint.rules",
 					Rules: rules,
 				},
 			},
@@ -132,7 +132,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "apicurito-operator.rules",
+					Name:  "apicurito-operator-endpoint.rules",
 					Rules: rules,
 				},
 			},

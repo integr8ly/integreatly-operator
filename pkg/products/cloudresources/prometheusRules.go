@@ -32,7 +32,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		}, {
-			Alert: "RHMICloudResourceOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+			Alert: "RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -47,7 +47,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "cloud-resources-operator.rules",
+					Name:  "cloud-resources-operator-endpoint.rules",
 					Rules: rules,
 				},
 			},

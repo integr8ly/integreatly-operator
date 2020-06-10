@@ -58,7 +58,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "codeready.rules",
+					Name:  "codeready-endpoint.rules",
 					Rules: rules,
 				},
 			},
@@ -83,7 +83,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMICodeReadyOperatorMetricsServiceEndpointDown",
+			Alert: "RHMICodeReadyOperatorServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -98,7 +98,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  "code-ready-operator.rules",
+					Name:  "code-ready-operator-endpoint.rules",
 					Rules: rules,
 				},
 			},
