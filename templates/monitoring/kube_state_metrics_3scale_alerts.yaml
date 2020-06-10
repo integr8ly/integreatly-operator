@@ -117,7 +117,7 @@ spec:
           sop_url: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md
           message: The {{ "{{" }} $labels.container {{ "}}" }} Container in the {{ "{{" }} $labels.pod {{ "}}" }} Pod has been using {{ "{{" }} printf "%.0f" $value {{ "}}" }}% of available memory for longer than 15 minutes.
         expr: |
-          sum by(container, pod) (container_memory_usage_bytes{container!="",namespace="{{ index .Params "Namespace" }}"}) / sum by(container, pod) (kube_pod_container_resource_limits_memory_bytes{namespace="{{ index .Params "Namespace" }}"}) * 100 > 90
+          sum by(container, pod) (container_memory_usage_bytes{container!="", container!="system-provider", namespace="{{ index .Params "Namespace" }}"}) / sum by(container, pod) (kube_pod_container_resource_limits_memory_bytes{namespace="{{ index .Params "Namespace" }}"}) * 100 > 90
         for: 15m
         labels:
           severity: warning
