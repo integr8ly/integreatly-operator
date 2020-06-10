@@ -444,9 +444,9 @@ spec:
     name: crw-2-rhel8-operator
   - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:93d0cff03a518903d5726ccc2ce9cfe95768fb8e66fbdfc6cc51100603e72a4c
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:8d67955e439546910c06bb94737b08c2e7d1f8f562ffb81710e77d1a8a25d231
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:e349f1037a2532621488c93c181841d04de7effd50bebc1b419f4dddc1104d11
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:9f9292e219ac815a9f2c58da8fad719dd4132ea9b5dd6e7f364697098a7dc9a1
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:404feb96742ce24611b27c68ec19e1e4bb4f81e4208cff76c4cf49d5aca9668e
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
     name: ubi8-minimal
@@ -482,18 +482,18 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:54b18c5e28dcd8261d9fc0e7e08cb0afe99b8b01edfbf9841f74802e33c32943
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:1fc43eea232f42bff8f7465242621f1483472520b6fea684f789b3559e8401e5
     name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:839a415e83f5ec8c01b2d42ce7ed174d241a43de2aead3d862d27fd34bf4d1ad
+  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:ade182d5d76e6544b06a06808072adf357f732c58eb70f3995f00eeffce8cc5f
     name: theia-rhel8
   - image: registry.redhat.io/ubi8/openjdk-11@sha256:a9b1a21661411b692cb621b5f1dc55e8ac6324e5f342c3fa80e85c315975373b
     name: openjdk-11
   - image: registry.redhat.io/ubi8/openjdk-8@sha256:573fdab1e0d40fdb5b786c13c50be542258fe65fc22904d3ab1588389330acc7
     name: openjdk-8
-  - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8@sha256:94e1cd4eb4196a358e301c1992663258c0016c80247f507fd1c39cf9a73da833
-    name: jboss-eap-7-eap-xp1-openjdk11-openshift-rhel8
-  - image: registry-proxy.engineering.redhat.com/rh-osbs/jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7@sha256:973c66d587b45e1d8985e769c11e1f5b93eb04803a61471a66a6f2f847499dd3
-    name: jboss-eap-7-eap-xp1-openjdk8-openshift-rhel7
+  - image: registry.redhat.io/codeready-workspaces/plugin-java8-rhel8@sha256:0d3a4d498c08545d172eb3f4bebb7dabc55d83dcd7e8a0db7b96878db342a1eb
+    name: plugin-java8-rhel8
+  - image: registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8@sha256:c05fd4c5a3118ebefd5bc4ff1dc21cf775fd7e12435cf28f9ca9c818551c583f
+    name: eap73-openjdk11-openshift-rhel8
   - image: registry.redhat.io/rhscl/mongodb-36-rhel7@sha256:9f799d356d7d2e442bde9d401b720600fd9059a3d8eefea6f3b2ffa721c0dc73
     name: mongodb-36-rhel7
   replaces: crwoperator.v2.0.0
