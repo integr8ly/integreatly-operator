@@ -198,7 +198,9 @@ func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
 		state, err := getFuseAlertState(ctx)
 		if err != nil {
-			return false, fmt.Errorf("failed to get fuse alert state: %w", err)
+			t.Log("failed to get fuse alert state:", err)
+			t.Log("waiting 1 minute before retrying")
+			return false, nil
 		}
 		if state == expectedState {
 			return true, nil
