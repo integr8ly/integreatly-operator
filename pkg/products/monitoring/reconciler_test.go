@@ -448,7 +448,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 
 			//Verify that grafana dashboards are created
-			for _, dashBoard := range reconciler.Config.GetDashBoards() {
+			for _, dashBoard := range reconciler.Config.GetDashboards() {
 				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
 				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashBoard, Namespace: defaultInstallationNamespace}, grafanaDB)
 				if err != nil {
