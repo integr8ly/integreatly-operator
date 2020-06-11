@@ -37,6 +37,9 @@ const (
 
 	DefaultNotBeforeDays      = "7"
 	DefaultWaitForMaintenance = "true"
+
+	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
+	MaxUpgradeDays = 14
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -140,7 +143,8 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 		return err
 	}
 
-	// Validate the NotBeforeDays. Must be an integer greater than or equal to 0
+	// Validate the NotBeforeDays. Must be an integer n where
+	// n > 0 && n <= MaxUpgradeDays
 	if c.Spec.Upgrade.NotBeforeDays != "" {
 		notBeforeDays, err := strconv.Atoi(c.Spec.Upgrade.NotBeforeDays)
 		if err != nil {
@@ -149,6 +153,9 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 
 		if notBeforeDays < 0 {
 			return errors.New("Value of spec.Upgrade.NotBeforeDays must be greater or equal to zero")
+		}
+		if notBeforeDays > MaxUpgradeDays {
+			return fmt.Errorf("Value of spec.Upgrade.NotBeforeDays must be less than or equal to %d", MaxUpgradeDays)
 		}
 	}
 
