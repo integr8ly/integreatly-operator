@@ -1,4 +1,5 @@
-packageName: rhmi-syndesis
 channels:
-- name: rhmi
-  currentCSV: fuse-online-operator.v7.6.0
+- currentCSV: fuse-online-operator.v7.7.0
+  name: rhmi
+defaultChannel: rhmi
+packageName: rhmi-syndesis
