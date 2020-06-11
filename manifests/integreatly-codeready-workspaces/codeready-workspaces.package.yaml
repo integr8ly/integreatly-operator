@@ -1,5 +1,5 @@
 channels:
-- currentCSV: crwoperator.v2.1.1
+- currentCSV: crwoperator.v2.2.0
   name: rhmi
 defaultChannel: rhmi
 packageName: rhmi-codeready-workspaces
