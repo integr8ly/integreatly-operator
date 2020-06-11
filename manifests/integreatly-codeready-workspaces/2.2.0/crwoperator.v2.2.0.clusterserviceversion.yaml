@@ -298,7 +298,7 @@ spec:
                 - name: IMAGE_default_devfile_registry
                   value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_latest
                 - name: IMAGE_default_pvc_jobs
-                  value: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
+                  value: registry.access.redhat.com/ubi8-minimal@sha256:a35e01b96fceb4e0c9c037c9c62e2c16122d4da07cc7508fb62f301d6e2dcfc5
                 - name: IMAGE_default_postgres
                   value: quay.io/integreatly/delorean:rhel8-postgresql-96_latest
                 - name: IMAGE_default_keycloak
@@ -442,15 +442,15 @@ spec:
   relatedImages:
   - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:6250828ed8f45dc22e4252ab493903493e56cdff1788d234dd7bc49a03e96431
     name: crw-2-rhel8-operator
-  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:93d0cff03a518903d5726ccc2ce9cfe95768fb8e66fbdfc6cc51100603e72a4c
+  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:edf89d2efb4f1c03c8a6a7ae69cb4fbcf1167a13cc323a6804c0210c5ea55636
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:e349f1037a2532621488c93c181841d04de7effd50bebc1b419f4dddc1104d11
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:05bdd76ffc2ce56550ef9eef9761aef3b47a456eba63f5e2fbfc396008823b2a
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:404feb96742ce24611b27c68ec19e1e4bb4f81e4208cff76c4cf49d5aca9668e
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:9a9fb69b757bfddbb1a0ea3fc5a8327f518246e3aa628c8649b82d1cf9e21ad5
     name: codeready-workspaces-devfileregistry-rhel8
-  - image: registry.access.redhat.com/ubi8-minimal@sha256:326c94ab44d1472a30d47c49c2f896df687184830fc66a66de00c416885125b0
+  - image: registry.access.redhat.com/ubi8-minimal@sha256:a35e01b96fceb4e0c9c037c9c62e2c16122d4da07cc7508fb62f301d6e2dcfc5
     name: ubi8-minimal
-  - image: registry.redhat.io/rhel8/postgresql-96@sha256:2d36e4a31adaf6805f292f1ff71c6e94c1fbe065b5763e1cbbd8364c94c6b0be
+  - image: registry.redhat.io/rhel8/postgresql-96@sha256:ad64ed5f3683b84e1d289a0f3fd9e9a31bc3a38c8f32063ce3958aaee7e78b97
     name: postgresql-96
   - image: registry.redhat.io/rh-sso-7/sso74-openshift-rhel8@sha256:f67d5d8f870969a54c61bab5f6bfda6c9c166ae3f232c9ec07c40773cb87174e
     name: sso74-openshift-rhel8
@@ -482,15 +482,15 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:a83ff1752b56003c687a6ad4c110ac86a7f7062e107a61f668e0413206913537
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:1fc43eea232f42bff8f7465242621f1483472520b6fea684f789b3559e8401e5
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:cd6723d74826f9cfabb1abd98f47db91fa5df561c7c7e379b2f979b2e0f919d8
     name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:ade182d5d76e6544b06a06808072adf357f732c58eb70f3995f00eeffce8cc5f
+  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:d7c9674e9e764c39fe5b7eca00dce511cd0db88bb89915699300efdc97114b4e
     name: theia-rhel8
   - image: registry.redhat.io/ubi8/openjdk-11@sha256:a9b1a21661411b692cb621b5f1dc55e8ac6324e5f342c3fa80e85c315975373b
     name: openjdk-11
   - image: registry.redhat.io/ubi8/openjdk-8@sha256:573fdab1e0d40fdb5b786c13c50be542258fe65fc22904d3ab1588389330acc7
     name: openjdk-8
-  - image: registry.redhat.io/codeready-workspaces/plugin-java8-rhel8@sha256:0d3a4d498c08545d172eb3f4bebb7dabc55d83dcd7e8a0db7b96878db342a1eb
+  - image: registry.redhat.io/codeready-workspaces/plugin-java8-rhel8@sha256:18ffa957ad91cfb7459f7287301c1ec02e708a4972c42b3f86aeabcf9fad11aa
     name: plugin-java8-rhel8
   - image: registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8@sha256:c05fd4c5a3118ebefd5bc4ff1dc21cf775fd7e12435cf28f9ca9c818551c583f
     name: eap73-openjdk11-openshift-rhel8
