@@ -15,7 +15,7 @@ var (
 		{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
 		{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 		{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
-		{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
+		//{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 		{"A05 - Verify product operator version", TestProductOperatorVersions},
 		{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 		{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
