@@ -236,10 +236,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileDashBoards(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileDashBoards", phase)
+	phase, err = r.reconcileDashboards(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileDashboards", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
 		return phase, err
 	}
 
@@ -459,15 +459,15 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileDashBoards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	for _, dashBoard := range r.Config.GetDashBoards() {
-		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashBoard)
+	for _, dashboard := range r.Config.GetDashboards() {
+		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
 		if err != nil {
 			logrus.Errorf("Error reconciling dashboards: %v", err)
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashBoard, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
 		}
-		r.Logger.Infof("Reconciling the grafana dashboard  %s was successful", dashBoard)
+		r.Logger.Infof("Reconciling the grafana dashboard  %s was successful", dashboard)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -485,7 +485,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
-		specJSON, name, err := getSpecDetailsForDashBoard(dashBoard)
+		specJSON, name, err := getSpecDetailsForDashboard(dashBoard)
 		if err != nil {
 			return err
 		}

@@ -123,7 +123,7 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 	return "50Gi"
 }
 
-func (m *Monitoring) GetDashBoards() []string {
+func (m *Monitoring) GetDashboards() []string {
 	templateList := []string{
 		"endpointsdetailed",
 		"endpointsreport",

@@ -6,9 +6,9 @@ import (
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/products/monitoring/dashboards"
 )
 
-func getSpecDetailsForDashBoard(dbName string) (string, string, error) {
+func getSpecDetailsForDashboard(dashboard string) (string, string, error) {
 
-	switch dbName {
+	switch dashboard {
 
 	case "endpointsdetailed":
 		return monitoring.MonitoringGrafanaDBEndpointsDetailedJSON, "endpointsdetailed.json", nil
