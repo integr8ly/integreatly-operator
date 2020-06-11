@@ -23,6 +23,7 @@ var (
 		{"A13 - Verify Deployment resources have the expected replicas", TestDeploymentExpectedReplicas},
 		{"A14 - Verify Deployment Config resources have the expected replicas", TestDeploymentConfigExpectedReplicas},
 		{"A15 - Verify Stateful Set resources have the expected replicas", TestStatefulSetsExpectedReplicas},
+		{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 		{"E03 - Verify dashboards exist", TestIntegreatlyDashboardsExist},
 		{"A10 - Verify CRO Postgres CRs Successful", TestCROPostgresSuccessfulState},
 		{"A11 - Verify CRO Redis CRs Successful", TestCRORedisSuccessfulState},

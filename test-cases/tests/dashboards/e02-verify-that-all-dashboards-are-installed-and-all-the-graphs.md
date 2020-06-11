@@ -1,8 +1,12 @@
 ---
 estimate: 15m
+tags:
+  - automated
 ---
 
 # E02 - Verify that all dashboards are installed and all the graphs are filled with data
+
+<https://github.com/integr8ly/integreatly-operator/blob/master/test/common/dashboards_data.go>
 
 ## Description
 
