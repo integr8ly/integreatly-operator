@@ -10,12 +10,14 @@ require (
 	// No tags on the apicurio repo so needed to use a commit hash
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.25.50
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.6
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-querystring v1.0.0
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
@@ -34,7 +36,7 @@ require (
 	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.3.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200406175937-7e2945a5ee43
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
