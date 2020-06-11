@@ -364,7 +364,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
-			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='rhmi-registry-cs'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 			For:    "1m",
 			Labels: map[string]string{"severity": "critical"},
 		}}

@@ -83,7 +83,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIUpsUnifiedPushOperatorMetricsServiceEndpointDown",
+			Alert: "RHMIUpsOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
