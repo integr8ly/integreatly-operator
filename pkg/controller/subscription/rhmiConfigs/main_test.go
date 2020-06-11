@@ -121,10 +121,6 @@ func TestUpdateStatus(t *testing.T) {
 				if config.Status.Maintenance.Duration != "6hrs" {
 					t.Errorf("expected maintenance duration '6hrs' but got '%s'", config.Status.Maintenance.Duration)
 				}
-				expectedUpgradeWindow := time.Now().Format("2 Jan 2006") + " - " + time.Now().Add((time.Hour*24)*14).Format("2 Jan 2006")
-				if config.Status.Upgrade.Window != expectedUpgradeWindow {
-					t.Errorf("Expected upgrade window '%s', got: '%s'", expectedUpgradeWindow, config.Status.Upgrade.Window)
-				}
 			},
 		}, {
 			Name: "status unchanged with no pending installplan",
@@ -163,10 +159,6 @@ func TestUpdateStatus(t *testing.T) {
 				}
 				if config.Status.Maintenance.Duration != "6hrs" {
 					t.Errorf("expected maintenance duration '6hrs' but got '%s'", config.Status.Maintenance.Duration)
-				}
-				expectedUpgradeWindow := ""
-				if config.Status.Upgrade.Window != expectedUpgradeWindow {
-					t.Errorf("Expected upgrade window '%s', got: '%s'", expectedUpgradeWindow, config.Status.Upgrade.Window)
 				}
 			},
 		},

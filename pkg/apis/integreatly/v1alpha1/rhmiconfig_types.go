@@ -66,8 +66,6 @@ type RHMIConfigStatusMaintenance struct {
 }
 
 type RHMIConfigStatusUpgrade struct {
-	Window string `json:"window,omitempty"`
-
 	// Scheduled contains the information on the next upgrade schedule
 	Scheduled *UpgradeSchedule `json:"scheduled,omitempty"`
 }

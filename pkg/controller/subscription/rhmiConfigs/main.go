@@ -75,7 +75,6 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 
 	// If the install plan was approved, simply clear the status
 	if installplan.Spec.Approved {
-		config.Status.Upgrade.Window = ""
 		config.Status.Upgrade.Scheduled.For = ""
 
 		return client.Status().Update(ctx, config)
@@ -97,13 +96,8 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		}
 	}
 
-	// Calculate the upgrade window
-	upStart := installplan.ObjectMeta.CreationTimestamp.Time.Format("2 Jan 2006")
-	window := upStart + " - " + upgradeSchedule.Format("2 Jan 2006")
-
 	// Update the upgrade status
 	config.Status.Upgrade = integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-		Window: window,
 		Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
 			For: upgradeSchedule.Format(integreatlyv1alpha1.DateFormat),
 		},
