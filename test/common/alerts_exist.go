@@ -239,6 +239,157 @@ var expectedRules = []alertsTestRule{
 		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
 		Rules: []string{},
 	},
+	{
+		File: NamespacePrefix + "apicurito-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIApicuritoServiceEndpointDown",
+			"RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIThreeScaleApicastProductionServiceEndpointDown",
+			"RHMIThreeScaleApicastStagingServiceEndpointDown",
+			"RHMIThreeScaleBackendListenerServiceEndpointDown",
+			"RHMIThreeScaleSystemDeveloperServiceEndpointDown",
+			"RHMIThreeScaleSystemMasterServiceEndpointDown",
+			"RHMIThreeScaleSystemMemcacheServiceEndpointDown",
+			"RHMIThreeScaleSystemProviderServiceEndpointDown",
+			"RHMIThreeScaleSystemSphinxServiceEndpointDown",
+			"RHMIThreeScaleZyncDatabaseServiceEndpointDown",
+			"RHMIThreeScaleZyncServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "amq-online-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIAMQOnlineNoneAuthServiceEndpointDown",
+			"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
+			"RHMIAMQOnlineConsoleServiceEndpointDown",
+			"RHMIAMQOnlineRegistryCsServiceEndpointDown",
+			"RHMIAMQOnlineStandardAuthServiceServiceEndpointDown",
+			"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUserRhssoKeycloakServiceEndpointDown",
+			"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "cloud-resources-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICloudResourceOperatorMetricsServiceEndpointDown",
+			"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIRhssoKeycloakServiceEndpointDown",
+			"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUpsOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIUpsOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIThreeScaleOperatorServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "codeready-workspaces-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICodeReadyCheHostServiceEndpointDown",
+			"RHMICodeReadyDevfileRegistryServiceEndpointDown",
+			"RHMICodeReadyPluginRegistryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+			"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "apicurito-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMISolutionExplorerKeycloakServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICodeReadyOperatorServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "fuse-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisServerServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUpsUnifiedPushOperatorMetricsServiceEndpointDown",
+			"RHMIUpsUnifiedpushProxyServiceEndpointDown",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
