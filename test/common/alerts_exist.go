@@ -357,7 +357,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
 		Rules: []string{
-			"RHMISolutionExplorerKeycloakServiceEndpointDown",
+			"RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
 		},
 	},
 	{
@@ -369,7 +369,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
 		Rules: []string{
-			"RHMICodeReadyOperatorServiceEndpointDown",
+			"RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
 		},
 	},
 	{
