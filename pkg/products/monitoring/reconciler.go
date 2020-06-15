@@ -481,12 +481,12 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		},
 	}
 
-	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
-		specJSON, name, err := getSpecDetailsForDashboard(dashboard)
-		if err != nil {
-			return err
-		}
+	specJSON, name, err := getSpecDetailsForDashboard(dashboard)
+	if err != nil {
+		return err
+	}
 
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
 		grafanaDB.Labels = map[string]string{
 			"monitoring-key": r.Config.GetLabelSelector(),
 		}
