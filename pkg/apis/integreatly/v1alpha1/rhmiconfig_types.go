@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
+	"reflect"
 	"strings"
 	"time"
 
@@ -35,8 +35,8 @@ const (
 	DefaultBackupApplyOn        = "03:01"
 	DefaultMaintenanceApplyFrom = "Thu 02:00"
 
-	DefaultNotBeforeDays      = "7"
-	DefaultWaitForMaintenance = "true"
+	DefaultNotBeforeDays      = 7
+	DefaultWaitForMaintenance = true
 
 	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
 	MaxUpgradeDays = 14
@@ -94,10 +94,14 @@ type Upgrade struct {
 
 	// If this value is true, upgrades will be approved in the next maintenance window
 	// n days after the upgrade is made available. Being n the value of `notBeforeDays`.
-	WaitForMaintenance string `json:"waitForMaintenance,omitempty"`
+	// +optional
+	// +nullable
+	WaitForMaintenance *bool `json:"waitForMaintenance,omitempty"`
 
 	// Minimum of days since an upgrade is made available until it's approved
-	NotBeforeDays string `json:"notBeforeDays,omitempty"`
+	// +optional
+	// +nullable
+	NotBeforeDays *int `json:"notBeforeDays,omitempty"`
 }
 
 type Maintenance struct {
@@ -145,25 +149,14 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 
 	// Validate the NotBeforeDays. Must be an integer n where
 	// n > 0 && n <= MaxUpgradeDays
-	if c.Spec.Upgrade.NotBeforeDays != "" {
-		notBeforeDays, err := strconv.Atoi(c.Spec.Upgrade.NotBeforeDays)
-		if err != nil {
-			return fmt.Errorf("Error parsing spec.Upgrade.NotBeforeDays. Expected integer, got %s", c.Spec.Upgrade.NotBeforeDays)
-		}
+	if c.Spec.Upgrade.NotBeforeDays != nil {
+		notBeforeDays := *c.Spec.Upgrade.NotBeforeDays
 
 		if notBeforeDays < 0 {
 			return errors.New("Value of spec.Upgrade.NotBeforeDays must be greater or equal to zero")
 		}
 		if notBeforeDays > MaxUpgradeDays {
 			return fmt.Errorf("Value of spec.Upgrade.NotBeforeDays must be less than or equal to %d", MaxUpgradeDays)
-		}
-	}
-
-	// Validate the WaitForMaintenance field. Must be a boolean
-	if c.Spec.Upgrade.WaitForMaintenance != "" {
-		_, err := strconv.ParseBool(c.Spec.Upgrade.WaitForMaintenance)
-		if err != nil {
-			return fmt.Errorf("Error parsing spec.Upgrade.WaitForMaintenance. Expected boolean, got %s", c.Spec.Upgrade.WaitForMaintenance)
 		}
 	}
 
@@ -210,9 +203,12 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Spec.Backup.ApplyOn = DefaultBackupApplyOn
 	}
 
+	defaultNotBeforeDays := DefaultNotBeforeDays
+	defaultWaitForMaintenance := DefaultWaitForMaintenance
+
 	defaultUpgradeSpec := &Upgrade{
-		NotBeforeDays:      DefaultNotBeforeDays,
-		WaitForMaintenance: DefaultWaitForMaintenance,
+		NotBeforeDays:      &defaultNotBeforeDays,
+		WaitForMaintenance: &defaultWaitForMaintenance,
 	}
 
 	oldUpgradeSpec := &Upgrade{}
@@ -225,13 +221,13 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Spec.Upgrade.WaitForMaintenance,
 		oldUpgradeSpec.WaitForMaintenance,
 		defaultUpgradeSpec.WaitForMaintenance,
-	)
+	).(*bool)
 
 	rhmiConfig.Spec.Upgrade.NotBeforeDays = either(
 		rhmiConfig.Spec.Upgrade.NotBeforeDays,
 		oldUpgradeSpec.NotBeforeDays,
 		defaultUpgradeSpec.NotBeforeDays,
-	)
+	).(*int)
 
 	marshalled, err := json.Marshal(rhmiConfig)
 	if err != nil {
@@ -242,8 +238,8 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 }
 
 func (u *Upgrade) DefaultIfEmpty() {
-	u.NotBeforeDays = either(u.NotBeforeDays, DefaultNotBeforeDays)
-	u.WaitForMaintenance = either(strings.ToLower(u.WaitForMaintenance), DefaultWaitForMaintenance)
+	u.NotBeforeDays = either(u.NotBeforeDays, DefaultNotBeforeDays).(*int)
+	u.WaitForMaintenance = either(u.WaitForMaintenance, DefaultWaitForMaintenance).(*bool)
 }
 
 func init() {
@@ -339,12 +335,22 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func either(values ...string) string {
+// Either takes a list of elements of type a or *a, and returns a pointer to the
+// first element that is either not a pointer or, if it's a pointer, is not nil
+func either(values ...interface{}) interface{} {
 	for _, value := range values {
-		if value != "" {
+		refValue := reflect.ValueOf(value)
+
+		if refValue.Kind() != reflect.Ptr {
+			res := reflect.New(reflect.TypeOf(value))
+			res.Elem().Set(refValue)
+			return res.Interface()
+		}
+
+		if !refValue.IsNil() {
 			return value
 		}
 	}
 
-	return ""
+	return nil
 }

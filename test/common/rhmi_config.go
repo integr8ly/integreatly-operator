@@ -114,25 +114,17 @@ var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
 	{}: assertNoError,
 
 	{
-		NotBeforeDays: "-1",
+		NotBeforeDays: intPtr(-1),
 	}: assertValidationError,
 
 	{
-		NotBeforeDays: "seven",
-	}: assertValidationError,
-
-	{
-		WaitForMaintenance: "not even a boolean",
-	}: assertValidationError,
-
-	{
-		NotBeforeDays:      "7",
-		WaitForMaintenance: "true",
+		NotBeforeDays:      intPtr(7),
+		WaitForMaintenance: boolPtr(true),
 	}: assertNoError,
 
 	{
-		NotBeforeDays:      "365",
-		WaitForMaintenance: "true",
+		NotBeforeDays:      intPtr(365),
+		WaitForMaintenance: boolPtr(true),
 	}: assertValidationError,
 }
 
@@ -193,12 +185,12 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 	}
 
 	// The upgrade fields should default to false
-	if rhmiConfig.Spec.Upgrade.WaitForMaintenance != "true" {
-		t.Errorf("WaitForMaintenance should be true by default. Got %s",
+	if *rhmiConfig.Spec.Upgrade.WaitForMaintenance != true {
+		t.Errorf("WaitForMaintenance should be true by default. Got %v",
 			rhmiConfig.Spec.Upgrade.WaitForMaintenance)
 	}
-	if rhmiConfig.Spec.Upgrade.NotBeforeDays != "7" {
-		t.Errorf("NotBeforeDays should be set to 7. Got %s",
+	if *rhmiConfig.Spec.Upgrade.NotBeforeDays != 7 {
+		t.Errorf("NotBeforeDays should be set to 7. Got %v",
 			rhmiConfig.Spec.Upgrade.NotBeforeDays)
 	}
 }
@@ -280,7 +272,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		APIVersion: "integreatly.org/v1alpha1",
 		Kind:       "RHMIConfig",
 	}
-	rhmiConfig.Spec.Upgrade.WaitForMaintenance = "false"
+	*rhmiConfig.Spec.Upgrade.WaitForMaintenance = false
 	rhmiConfigChange, err := json.Marshal(rhmiConfig)
 	if err != nil {
 		t.Errorf("Error marshalling rhmiConfig: %v", err)
@@ -377,8 +369,16 @@ func assertValidationError(t *testing.T) func(error) {
 
 func logUpgrade(upgrade v1alpha1.Upgrade) string {
 	return fmt.Sprintf(
-		"{ notBeforeDays: %s, waitForMaintenance: %s }",
+		"{ notBeforeDays: %v, waitForMaintenance: %v }",
 		upgrade.NotBeforeDays,
 		upgrade.WaitForMaintenance,
 	)
+}
+
+func intPtr(value int) *int {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

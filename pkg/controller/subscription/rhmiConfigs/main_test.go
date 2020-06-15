@@ -38,8 +38,12 @@ func buildScheme() *runtime.Scheme {
 }
 
 func nowOffset(hours int) time.Time {
-	now := time.Now().UTC()
+	now := now()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
+}
+
+func now() time.Time {
+	return time.Now().UTC()
 }
 
 type scheduleScenario struct {
@@ -100,8 +104,8 @@ func TestUpdateStatus(t *testing.T) {
 						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
 					},
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "8",
-						WaitForMaintenance: "true",
+						NotBeforeDays:      intPtr(8),
+						WaitForMaintenance: boolPtr(true),
 					},
 				},
 			},
@@ -167,8 +171,8 @@ func TestUpdateStatus(t *testing.T) {
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "0",
-						WaitForMaintenance: "false",
+						NotBeforeDays:      intPtr(0),
+						WaitForMaintenance: boolPtr(false),
 					},
 				},
 			},
@@ -184,15 +188,15 @@ func TestUpdateStatus(t *testing.T) {
 						ApplyFrom: "Sun 00:00",
 					},
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "0",
-						WaitForMaintenance: "true",
+						NotBeforeDays:      intPtr(0),
+						WaitForMaintenance: boolPtr(true),
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
 				For: time.
-					Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
-					AddDate(0, 0, 7-int(time.Now().Weekday())).
+					Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
+					AddDate(0, 0, 7-int(now().Weekday())).
 					Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
@@ -201,18 +205,18 @@ func TestUpdateStatus(t *testing.T) {
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+						ApplyFrom: strings.ToLower(time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
 							Add(6 * 24 * time.Hour).
 							Format("Mon 15:04")),
 					},
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: "true",
-						NotBeforeDays:      "3",
+						WaitForMaintenance: boolPtr(true),
+						NotBeforeDays:      intPtr(3),
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).Add(6 * 24 * time.Hour).
+				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(6 * 24 * time.Hour).
 					Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
@@ -221,18 +225,18 @@ func TestUpdateStatus(t *testing.T) {
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).
+						ApplyFrom: strings.ToLower(time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
 							Add(3 * 24 * time.Hour).
 							Format("Mon 15:04")),
 					},
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: "true",
-						NotBeforeDays:      "6",
+						WaitForMaintenance: boolPtr(true),
+						NotBeforeDays:      intPtr(6),
 					},
 				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).Add(10 * 24 * time.Hour).
+				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(10 * 24 * time.Hour).
 					Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
@@ -241,8 +245,8 @@ func TestUpdateStatus(t *testing.T) {
 			config: &integreatlyv1alpha1.RHMIConfig{
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "3",
-						WaitForMaintenance: "false",
+						NotBeforeDays:      intPtr(3),
+						WaitForMaintenance: boolPtr(false),
 					},
 				},
 			},
@@ -279,8 +283,8 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "0",
-						WaitForMaintenance: "false",
+						NotBeforeDays:      intPtr(0),
+						WaitForMaintenance: boolPtr(false),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -319,8 +323,8 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: "true",
-						NotBeforeDays:      "0",
+						WaitForMaintenance: boolPtr(true),
+						NotBeforeDays:      intPtr(0),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -363,7 +367,7 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: "true",
+						WaitForMaintenance: boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -405,7 +409,7 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: "true",
+						WaitForMaintenance: boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -447,8 +451,8 @@ func TestCanUpgradeNow(t *testing.T) {
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      "0",
-						WaitForMaintenance: "false",
+						NotBeforeDays:      intPtr(0),
+						WaitForMaintenance: boolPtr(false),
 					},
 				},
 			},
@@ -744,4 +748,12 @@ func TestGetWeeklyWindow(t *testing.T) {
 	} else if r.Day() != from.Day()+3 || r.Month() != from.Month() || r.Year() != from.Year() {
 		t.Errorf("Expected result to be Thursday, got %s", r.Format(integreatlyv1alpha1.DateFormat))
 	}
+}
+
+func intPtr(value int) *int {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

@@ -54,12 +54,14 @@ spec:
                 notBeforeDays:
                   description: Minimum of days since an upgrade is made available
                     until it's approved
-                  type: string
+                  nullable: true
+                  type: integer
                 waitForMaintenance:
                   description: If this value is true, upgrades will be approved in
                     the next maintenance window n days after the upgrade is made available.
                     Being n the value of `notBeforeDays`.
-                  type: string
+                  nullable: true
+                  type: boolean
               type: object
           type: object
         status:
