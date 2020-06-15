@@ -1,6 +1,6 @@
 ---
-tags:
-  - 2.4.0
+targets:
+  - 2.5.0
 ---
 
 # M03 - Verify number of pods for AMO

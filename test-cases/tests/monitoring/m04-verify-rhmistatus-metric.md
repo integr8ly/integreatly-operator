@@ -1,5 +1,5 @@
 ---
-tags:
+targets:
   - 2.4.0
 ---
 
@@ -14,4 +14,4 @@ More info: <https://issues.redhat.com/browse/INTLY-8120>
 3. Open **Networking > Routes**
 4. Click on **Prometheus** route
 5. Type `rhmi_status` into **Expression** field and click **Execute**
-   > Should return 8 metrics, one of them should be of value `1` (indicating current status) and the rest `0`
+   > Should return 1 metric with the stage label having a value of the current stage (e.g. `rhmi_status{stage="bootstrap"}` - `1`)
