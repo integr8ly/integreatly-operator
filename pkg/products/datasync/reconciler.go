@@ -13,6 +13,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 
@@ -51,6 +52,14 @@ type Reconciler struct {
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductDataSync],
+		string(integreatlyv1alpha1.VersionDataSync),
+		"",
+	)
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {

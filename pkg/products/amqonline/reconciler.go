@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/sirupsen/logrus"
 
@@ -93,6 +94,15 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 			Namespace: ns,
 		},
 	}
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	product := installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductAMQOnline]
+	return version.VerifyProductAndOperatorVersion(
+		product,
+		string(integreatlyv1alpha1.VersionAMQOnline),
+		string(integreatlyv1alpha1.OperatorVersionAMQOnline),
+	)
 }
 
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read

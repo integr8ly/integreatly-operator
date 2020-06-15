@@ -14,6 +14,7 @@ import (
 var (
 	lockInterfaceMockGetPreflightObject sync.RWMutex
 	lockInterfaceMockReconcile          sync.RWMutex
+	lockInterfaceMockVerifyVersion      sync.RWMutex
 )
 
 // Ensure, that InterfaceMock does implement Interface.
@@ -32,6 +33,9 @@ var _ Interface = &InterfaceMock{}
 //             ReconcileFunc: func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error) {
 // 	               panic("mock out the Reconcile method")
 //             },
+//             VerifyVersionFunc: func(installation *v1alpha1.RHMI) bool {
+// 	               panic("mock out the VerifyVersion method")
+//             },
 //         }
 //
 //         // use mockedInterface in code that requires Interface
@@ -44,6 +48,9 @@ type InterfaceMock struct {
 
 	// ReconcileFunc mocks the Reconcile method.
 	ReconcileFunc func(ctx context.Context, installation *v1alpha1.RHMI, product *v1alpha1.RHMIProductStatus, serverClient client.Client) (v1alpha1.StatusPhase, error)
+
+	// VerifyVersionFunc mocks the VerifyVersion method.
+	VerifyVersionFunc func(installation *v1alpha1.RHMI) bool
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -62,6 +69,11 @@ type InterfaceMock struct {
 			Product *v1alpha1.RHMIProductStatus
 			// ServerClient is the serverClient argument value.
 			ServerClient client.Client
+		}
+		// VerifyVersion holds details about calls to the VerifyVersion method.
+		VerifyVersion []struct {
+			// Installation is the installation argument value.
+			Installation *v1alpha1.RHMI
 		}
 	}
 }
@@ -137,5 +149,36 @@ func (mock *InterfaceMock) ReconcileCalls() []struct {
 	lockInterfaceMockReconcile.RLock()
 	calls = mock.calls.Reconcile
 	lockInterfaceMockReconcile.RUnlock()
+	return calls
+}
+
+// VerifyVersion calls VerifyVersionFunc.
+func (mock *InterfaceMock) VerifyVersion(installation *v1alpha1.RHMI) bool {
+	if mock.VerifyVersionFunc == nil {
+		panic("InterfaceMock.VerifyVersionFunc: method is nil but Interface.VerifyVersion was just called")
+	}
+	callInfo := struct {
+		Installation *v1alpha1.RHMI
+	}{
+		Installation: installation,
+	}
+	lockInterfaceMockVerifyVersion.Lock()
+	mock.calls.VerifyVersion = append(mock.calls.VerifyVersion, callInfo)
+	lockInterfaceMockVerifyVersion.Unlock()
+	return mock.VerifyVersionFunc(installation)
+}
+
+// VerifyVersionCalls gets all the calls that were made to VerifyVersion.
+// Check the length with:
+//     len(mockedInterface.VerifyVersionCalls())
+func (mock *InterfaceMock) VerifyVersionCalls() []struct {
+	Installation *v1alpha1.RHMI
+} {
+	var calls []struct {
+		Installation *v1alpha1.RHMI
+	}
+	lockInterfaceMockVerifyVersion.RLock()
+	calls = mock.calls.VerifyVersion
+	lockInterfaceMockVerifyVersion.RUnlock()
 	return calls
 }

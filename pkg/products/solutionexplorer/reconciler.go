@@ -129,6 +129,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.SolutionExplorerStage].Products[integreatlyv1alpha1.ProductSolutionExplorer],
+		string(integreatlyv1alpha1.VersionSolutionExplorer),
+		string(integreatlyv1alpha1.OperatorVersionSolutionExplorer),
+	)
+}
+
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Info("Reconciling solution explorer")
 
