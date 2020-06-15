@@ -2,6 +2,8 @@
 estimate: 1h
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-7435
 ---
 
 # H07 - Verify 3scale User Promotion Works and Stays Permanent

@@ -2,6 +2,8 @@
 estimate: 30m
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-7433
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift
