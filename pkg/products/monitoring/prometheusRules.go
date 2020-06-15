@@ -301,71 +301,71 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='alertmanager-operated'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerServiceServiceEndpointDown",
+			Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='alertmanager-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='application-monitoring-operator-metrics'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='grafana-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='prometheus-operated'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='prometheus-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
 

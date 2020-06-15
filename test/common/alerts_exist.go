@@ -268,7 +268,7 @@ var expectedRules = []alertsTestRule{
 			"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
 			"RHMIAMQOnlineConsoleServiceEndpointDown",
 			"RHMIAMQOnlineRegistryCsServiceEndpointDown",
-			"RHMIAMQOnlineStandardAuthServiceServiceEndpointDown",
+			"RHMIAMQOnlineStandardAuthServiceEndpointDown",
 			"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
 		},
 	},
@@ -297,7 +297,7 @@ var expectedRules = []alertsTestRule{
 		File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
 		Rules: []string{
 			"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
 			"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
 			"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
 			"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
@@ -386,7 +386,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
 		Rules: []string{
-			"RHMIUpsUnifiedPushOperatorMetricsServiceEndpointDown",
+			"RHMIUpsUnifiedPushServiceEndpointDown",
 			"RHMIUpsUnifiedpushProxyServiceEndpointDown",
 		},
 	},

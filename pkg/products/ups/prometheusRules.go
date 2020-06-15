@@ -23,23 +23,23 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIUpsUnifiedPushOperatorMetricsServiceEndpointDown",
+			Alert: "RHMIUpsUnifiedPushServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='unifiedpush-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
-			For:    "1m",
+			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='ups-unifiedpush', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIUpsUnifiedpushProxyServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
 			Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='ups-unifiedpush-proxy'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
@@ -75,21 +75,21 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		{
 			Alert: "RHMIUpsOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIUpsOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='unifiedpush-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
 

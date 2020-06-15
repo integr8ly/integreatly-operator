@@ -25,21 +25,21 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 		{
 			Alert: "RHMIRhssoKeycloakServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak-discovery', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
@@ -75,21 +75,21 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 		{
 			Alert: "RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
 			Alert: "RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts",
+				"sop_url": "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc",
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 			},
 			Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='keycloak-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
-			For:    "1m",
+			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
