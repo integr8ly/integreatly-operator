@@ -41,14 +41,14 @@ ocm login --url=https://api.stage.openshift.com --token=<YOUR-TOKEN>
 CLUSTER_ID=$(ocm cluster list | grep <CLUSTER-NAME> | awk '{print $1}')
 ```
 
-5. Poll cluster to check when it is finished upgrading:
+5. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
 
 ```bash
-watch -n 60 "ocm get cluster $CLUSTER_ID | jq -r .metrics.upgrade.state | grep -q completed && echo 'Upgrade completed\!'"
+watch -n 60 " oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHMI Upgrade completed\!'"
 ```
 
-> This script will run every 60 seconds to check whether the OpenShift upgrade has finished
-> Once it's finished, it should print out "Upgrade completed!" (it could take ~1 hour)
+> This script will run every 60 seconds to check whether the RHMI upgrade has finished
+> Once it's finished, it should print out "Upgrade completed!"
 
 6. Go to the OpenShift console, go through the `redhat-rhmi` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
 
