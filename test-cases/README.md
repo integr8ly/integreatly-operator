@@ -181,3 +181,15 @@ Run the `./tools.sh export csv` script to export all test cases in a CSV table:
 ```
 ./tools.sh export csv --output testcases.csv
 ```
+
+## Automation for test cases
+
+As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation_jiras` in its metadata pointing to the automation jira, e.g.:
+
+```yaml
+---
+automation_jiras:
+  - INTLY-7421
+---
+
+```
