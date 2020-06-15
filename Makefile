@@ -167,14 +167,14 @@ test/products/local:
 	# Using 'test-containers.yaml' as config and 'test-results' as output dir
 	mkdir -p "test-results"
 	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
-	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean tests run --test-config ./test-containers.yaml --output /test-results --namespace test-products
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean pipeline product-tests --test-config ./test-containers.yaml --output /test-results --namespace test-products
 
 .PHONY: test/products
 test/products:
 	# Running the products tests against an existing cluster. Make sure you have logged in to the cluster.
 	# Using "test-containers.yaml" as config and $(TEST_RESULTS_DIR) as output dir
 	mkdir -p $(TEST_RESULTS_DIR)
-	delorean tests run --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
+	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
