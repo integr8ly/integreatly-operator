@@ -1,5 +1,7 @@
 ---
 estimate: 15m
+automation_jiras:
+  - INTLY-7415
 ---
 
 # C07 - Verify RHMI Alerts Metrics Exposed Via Telemtry

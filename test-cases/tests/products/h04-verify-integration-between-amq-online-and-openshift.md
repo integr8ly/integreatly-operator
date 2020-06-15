@@ -2,6 +2,8 @@
 estimate: 30m
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-7432
 ---
 
 # H04 - Verify integration between AMQ Online and OpenShift

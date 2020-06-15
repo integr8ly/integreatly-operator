@@ -2,6 +2,8 @@
 estimate: 15m
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-5441
 ---
 
 # H03 - Verify integration between 3Scale and OpenShift

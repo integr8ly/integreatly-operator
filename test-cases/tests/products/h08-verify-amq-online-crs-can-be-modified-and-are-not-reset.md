@@ -2,6 +2,8 @@
 estimate: 4h
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-6123
 ---
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset

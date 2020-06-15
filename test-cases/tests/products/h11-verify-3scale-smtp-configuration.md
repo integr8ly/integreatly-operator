@@ -1,5 +1,7 @@
 ---
 estimate: 15m
+automation_jiras:
+  - INTLY-7439
 ---
 
 # H11 - Verify 3scale SMTP Configuration
