@@ -129,7 +129,13 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 	return client.Status().Update(ctx, config)
 }
 
-func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig) (bool, error) {
+func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI) (bool, error) {
+
+	//Another upgrade in progress - don't proceed with upgrade
+	if (string(installation.Status.Stage) != string(integreatlyv1alpha1.PhaseCompleted)) && installation.Status.ToVersion != "" {
+		return false, nil
+	}
+
 	if config.Spec.Upgrade.AlwaysImmediately {
 		return true, nil
 	}
@@ -216,7 +222,8 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, installation *integreatlyv1alpha1.RHMI, config *integreatlyv1alpha1.RHMIConfig, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}

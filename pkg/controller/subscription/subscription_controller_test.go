@@ -6,6 +6,8 @@ import (
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,6 +22,7 @@ const (
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
