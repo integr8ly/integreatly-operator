@@ -239,6 +239,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileDashboards(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcileDashboards", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		logrus.Errorf("Error reconciling dashboards: %v", err)
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile dashboards", err)
 		return phase, err
 	}
@@ -464,7 +465,6 @@ func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8scl
 	for _, dashboard := range r.Config.GetDashboards() {
 		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
 		if err != nil {
-			logrus.Errorf("Error reconciling dashboards: %v", err)
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
 		}
 		r.Logger.Infof("Reconciling the grafana dashboard  %s was successful", dashboard)
@@ -472,22 +472,23 @@ func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashBoard string) (err error) {
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (err error) {
 
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      dashBoard,
+			Name:      dashboard,
 			Namespace: r.Config.GetOperatorNamespace(),
-			Labels: map[string]string{
-				"monitoring-key": r.Config.GetLabelSelector(),
-			},
 		},
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
-		specJSON, name, err := getSpecDetailsForDashboard(dashBoard)
+		specJSON, name, err := getSpecDetailsForDashboard(dashboard)
 		if err != nil {
 			return err
+		}
+
+		grafanaDB.Labels = map[string]string{
+			"monitoring-key": r.Config.GetLabelSelector(),
 		}
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
 			Json: specJSON,
