@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	defaultName               = "solution-explorer"
+	DefaultName               = "solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
 	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.7"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
@@ -58,6 +58,7 @@ const (
 	manifestPackage           = "integreatly-solution-explorer"
 	paramRoutingSubdomain     = "ROUTING_SUBDOMAIN"
 	paramInstallationType     = "INSTALLATION_TYPE"
+	ParamUpgradeData          = "UPGRADE_DATA"
 )
 
 type Reconciler struct {
@@ -91,7 +92,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 
 	if config.GetNamespace() == "" {
-		config.SetNamespace(installation.Spec.NamespacePrefix + defaultName)
+		config.SetNamespace(installation.Spec.NamespacePrefix + DefaultName)
 	}
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
@@ -356,7 +357,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 	seCR := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
-			Name:      defaultName,
+			Name:      DefaultName,
 		},
 	}
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
@@ -370,7 +371,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 		owner.AddIntegreatlyOwnerAnnotations(seCR, installation)
 		seCR.Spec.AppLabel = "tutorial-web-app"
 		seCR.Spec.Template.Path = defaultTemplateLoc
-		seCR.Spec.Template.Parameters = map[string]string{
+		parameters := map[string]string{
 			paramOauthClient:          r.getOAuthClientName(),
 			paramSSORoute:             ssoConfig.GetHost(),
 			paramOpenShiftHost:        installation.Spec.MasterURL,
@@ -382,6 +383,16 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramWalkthroughLocations: defaultWalkthroughsLoc,
 			paramRoutingSubdomain:     installation.Spec.RoutingSubdomain,
 			paramInstallationType:     installation.Spec.Type,
+		}
+		if seCR.Spec.Template.Parameters == nil {
+			seCR.Spec.Template.Parameters = map[string]string{}
+		}
+		for k, v := range parameters {
+			seCR.Spec.Template.Parameters[k] = v
+		}
+		// If the upgrade data parameter is not found, set it to `null`
+		if _, ok := seCR.Spec.Template.Parameters[ParamUpgradeData]; !ok {
+			seCR.Spec.Template.Parameters[ParamUpgradeData] = "null"
 		}
 		return nil
 	})
