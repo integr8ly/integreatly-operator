@@ -951,6 +951,9 @@ spec:
           strategy: {}
           template:
             metadata:
+              annotations:
+                enmasse.io/revision: ${env.REVISION}
+                enmasse.io/version: ${env.VERSION}
               labels:
                 app: enmasse
                 name: enmasse-operator
@@ -975,6 +978,10 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: REVISION
+                  value: ${env.REVISION}
+                - name: VERSION
+                  value: ${env.VERSION}
                 - name: SHARED_INFRA
                   value: "false"
                 - name: IOT_CONFIG_NAME
