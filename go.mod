@@ -20,7 +20,7 @@ require (
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.16.1
-	github.com/integr8ly/grafana-operator v1.3.1
+	github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
