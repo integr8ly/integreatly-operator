@@ -87,6 +87,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 	config.SetBlackboxTargetPathForAdminUI("/p/login/")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
@@ -97,6 +100,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
+		logger:        logger,
 	}, nil
 }
 
@@ -111,6 +115,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	extraParams map[string]string
 	recorder    record.EventRecorder
+	logger      *logrus.Entry
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {

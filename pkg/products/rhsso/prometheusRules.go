@@ -44,7 +44,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
@@ -58,6 +58,10 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso PrometheusRule: %w", err)
+	}
+
+	if or != controllerutil.OperationResultNone {
+		r.logger.Infof("The operation result for rhsso %s was %s", rule.Name, or)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -94,7 +98,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
@@ -108,6 +112,10 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso operator PrometheusRule: %w", err)
+	}
+
+	if or != controllerutil.OperationResultNone {
+		r.logger.Infof("The operation result for rhsso operator %s was %s", rule.Name, or)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil

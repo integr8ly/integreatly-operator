@@ -147,7 +147,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		}}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
 		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
@@ -161,6 +161,10 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 	})
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse PrometheusRule: %w", err)
+	}
+
+	if or != controllerutil.OperationResultNone {
+		r.logger.Infof("The operation result for amqonline %s was %s", rule.Name, or)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
