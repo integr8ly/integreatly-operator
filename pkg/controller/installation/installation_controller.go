@@ -367,15 +367,25 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 		//don't move to next stage until current stage is complete
 		if stagePhase != integreatlyv1alpha1.PhaseCompleted {
+			logrus.Infof("stage.Name=%s stagePhase=%s", stage.Name, stagePhase)
 			installInProgress = true
 			break
 		}
 	}
 
+	logrus.Infof("installInProgress=%v", installInProgress)
 	// UPDATE STATUS
 	// updates rhmi status metric according to the status of the products
-	if installInProgress {
-		metrics.SetRHMIStatus(installation)
+	if !installInProgress {
+		installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
+	}
+	metrics.SetRHMIStatus(installation)
+
+	// Check if the version needs to be updated
+	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
+		installation.Status.Version = installation.Status.ToVersion
+		installation.Status.ToVersion = ""
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
 
 	err = r.client.Status().Update(r.context, installation)
@@ -413,17 +423,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	if installInProgress {
 		return retryRequeue, nil
 	}
-	installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
-	// updates rhmi status metric to complete
-	metrics.SetRHMIStatus(installation)
-
-	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
-		installation.Status.Version = installation.Status.ToVersion
-		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-	}
-
-	_ = r.client.Status().Update(r.context, installation)
 
 	metrics.RHMIStatusAvailable.Set(1)
 	logrus.Infof("installation completed succesfully")
