@@ -12,6 +12,8 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 - Create a user in the User SSO and verify that it can login to it
 - Create a 3scale API and verify that it respond
 
+When testing the RHMI upgrade, the steps 1., 2. and 3. should be performed before the upgrade and the verification steps 4. and 5. after the upgrade
+
 ## Steps
 
 1. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repository
@@ -43,5 +45,7 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 5. Select the **Workload App** dashboard
 
    > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph
+   >
+   > Note: when testing the RHMI upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues
    >
    > Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
