@@ -24,7 +24,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIUpsUnifiedPushServiceEndpointDown",
+			Alert: "RHMIUPSUnifiedPushServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": resources.SopUrlEndpointAvailableAlert,
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -34,7 +34,7 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIUpsUnifiedpushProxyServiceEndpointDown",
+			Alert: "RHMIUPSUnifiedpushProxyServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": resources.SopUrlEndpointAvailableAlert,
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetNamespace()),
@@ -78,7 +78,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIUpsOperatorRhmiRegistryCsServiceEndpointDown",
+			Alert: "RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": resources.SopUrlEndpointAvailableAlert,
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
@@ -88,7 +88,7 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 			Labels: map[string]string{"severity": "critical"},
 		},
 		{
-			Alert: "RHMIUpsOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+			Alert: "RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
 			Annotations: map[string]string{
 				"sop_url": resources.SopUrlEndpointAvailableAlert,
 				"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),

@@ -322,8 +322,8 @@ var expectedRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
 		Rules: []string{
-			"RHMIUpsOperatorRhmiRegistryCsServiceEndpointDown",
-			"RHMIUpsOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+			"RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
 		},
 	},
 	{
@@ -386,8 +386,8 @@ var expectedRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
 		Rules: []string{
-			"RHMIUpsUnifiedPushServiceEndpointDown",
-			"RHMIUpsUnifiedpushProxyServiceEndpointDown",
+			"RHMIUPSUnifiedPushServiceEndpointDown",
+			"RHMIUPSUnifiedpushProxyServiceEndpointDown",
 		},
 	},
 }
