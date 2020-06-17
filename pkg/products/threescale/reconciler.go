@@ -87,6 +87,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 	config.SetBlackboxTargetPathForAdminUI("/p/login/")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
@@ -97,6 +100,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
+		logger:        logger,
 	}, nil
 }
 
@@ -111,6 +115,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	extraParams map[string]string
 	recorder    record.EventRecorder
+	logger      *logrus.Entry
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -277,6 +282,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileRouteEditRole(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile roles", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
 	}
 

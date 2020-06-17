@@ -295,7 +295,7 @@ func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, 
 		rules = append(rules, monitoringv1.Rule{
 			Alert: "CronJobExists_" + config.Namespace + "_" + component.Name,
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"sop_url": SopUrlAlertsAndTroubleshooting,
 				"message": "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} does not exist",
 			},
 			Expr:   intstr.FromString("absent(kube_cronjob_info{cronjob=\"" + component.Name + "\", namespace=\"" + config.Namespace + "\"})"),
