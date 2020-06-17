@@ -59,8 +59,9 @@ type RHMIConfigStatus struct {
 	//			duration: "6hrs"
 	//		upgrade:
 	//			window: "3 Jan 1980 - 17 Jan 1980"
-	Maintenance RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
-	Upgrade     RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
+	Maintenance   RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
+	Upgrade       RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
+	TargetVersion string                      `json:"targetVersion,omitempty"`
 }
 
 type RHMIConfigStatusMaintenance struct {

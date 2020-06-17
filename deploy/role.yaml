@@ -60,6 +60,7 @@ rules:
       - operators.coreos.com
     resources:
       - subscriptions
+      - subscriptions/status
     verbs:
       - get
       - list
@@ -101,6 +102,7 @@ rules:
       - update
       - list
       - watch
+      - delete
 
   # Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
   - apiGroups:
@@ -301,6 +303,8 @@ rules:
       - operatorgroups
     verbs:
       - create
+      - list
+      - get
   - apiGroups:
       - operators.coreos.com
     resources:

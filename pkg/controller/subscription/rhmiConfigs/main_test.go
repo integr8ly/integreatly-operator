@@ -53,19 +53,21 @@ type scheduleScenario struct {
 }
 
 func makeScheduleScenario(scenario *scheduleScenario) struct {
-	Name        string
-	Config      *integreatlyv1alpha1.RHMIConfig
-	InstallPlan *olmv1alpha1.InstallPlan
-	Validate    func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
+	Name          string
+	Config        *integreatlyv1alpha1.RHMIConfig
+	InstallPlan   *olmv1alpha1.InstallPlan
+	TargetVersion string
+	Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
 } {
 	scenario.config.Name = "test-config"
 	scenario.config.Namespace = "redhat-rhmi-operator"
 
 	return struct {
-		Name        string
-		Config      *integreatlyv1alpha1.RHMIConfig
-		InstallPlan *olmv1alpha1.InstallPlan
-		Validate    func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
+		Name          string
+		Config        *integreatlyv1alpha1.RHMIConfig
+		InstallPlan   *olmv1alpha1.InstallPlan
+		TargetVersion string
+		Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
 	}{
 		Name:   scenario.name,
 		Config: scenario.config,
@@ -74,6 +76,7 @@ func makeScheduleScenario(scenario *scheduleScenario) struct {
 				CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
 			},
 		},
+		TargetVersion: "integreatly-operator-v2.3.0",
 		Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
 			if err != nil {
 				t.Errorf("Unexpected error occurred: %v", err)
@@ -86,11 +89,14 @@ func makeScheduleScenario(scenario *scheduleScenario) struct {
 }
 
 func TestUpdateStatus(t *testing.T) {
+	targetVersion := "integreatly-operator-v2.3.0"
+
 	scenarios := []struct {
-		Name        string
-		Config      *integreatlyv1alpha1.RHMIConfig
-		InstallPlan *olmv1alpha1.InstallPlan
-		Validate    func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
+		Name          string
+		Config        *integreatlyv1alpha1.RHMIConfig
+		InstallPlan   *olmv1alpha1.InstallPlan
+		TargetVersion string
+		Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
 	}{
 		{
 			Name: "status updated when pending installplan exists",
@@ -114,6 +120,7 @@ func TestUpdateStatus(t *testing.T) {
 					CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
 				},
 			},
+			TargetVersion: targetVersion,
 			Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
 				if err != nil {
 					t.Error("Expected no error, but got: " + err.Error())
@@ -152,6 +159,7 @@ func TestUpdateStatus(t *testing.T) {
 					Approved: true,
 				},
 			},
+			TargetVersion: targetVersion,
 			Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
 				if err != nil {
 					t.Error("Expected no error, but got: " + err.Error())
@@ -259,7 +267,7 @@ func TestUpdateStatus(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(buildScheme(), scenario.Config)
-			err := UpdateStatus(context.TODO(), client, scenario.Config, scenario.InstallPlan)
+			err := UpdateStatus(context.TODO(), client, scenario.Config, scenario.InstallPlan, scenario.TargetVersion)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
 			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
 			scenario.Validate(t, err, updatedConfig, scenario.InstallPlan)

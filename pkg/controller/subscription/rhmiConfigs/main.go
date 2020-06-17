@@ -35,6 +35,9 @@ func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
 func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscription, client k8sclient.Client) (*olmv1alpha1.InstallPlan, error) {
 	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	// Get the latest installPlan associated with the currentCSV (newest known to OLM)
+	if subscription.Status.InstallPlanRef == nil {
+		return nil, fmt.Errorf("installplan not found in the subscription status reference")
+	}
 	installPlanName := subscription.Status.InstallPlanRef.Name
 	installPlanNamespace := subscription.Status.InstallPlanRef.Namespace
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: installPlanName, Namespace: installPlanNamespace}, latestInstallPlan)
@@ -61,7 +64,16 @@ func GetCSV(installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVe
 	return csv, nil
 }
 
-func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installplan *olmv1alpha1.InstallPlan) error {
+func DeleteInstallPlan(ctx context.Context, installPlan *olmv1alpha1.InstallPlan, client k8sclient.Client) error {
+	// remove cloud resource config map
+	err := client.Delete(ctx, installPlan)
+	if err != nil {
+		return fmt.Errorf("error occurred trying to delete installplan, %w", err)
+	}
+	return nil
+}
+
+func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installplan *olmv1alpha1.InstallPlan, targetVersion string) error {
 	// Calculate the next maintenance window based on the maintenance schedule
 	if config.Spec.Maintenance.ApplyFrom != "" {
 		mtStart, _, err := getWeeklyWindowFromNow(config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
@@ -72,6 +84,8 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		config.Status.Maintenance.ApplyFrom = mtStart.Format("2-1-2006 15:04")
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
+
+	config.Status.TargetVersion = targetVersion
 
 	// If the install plan was approved, simply clear the status
 	if installplan.Spec.Approved {

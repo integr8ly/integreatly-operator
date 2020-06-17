@@ -78,6 +78,8 @@ spec:
                 duration:
                   type: string
               type: object
+            targetVersion:
+              type: string
             upgrade:
               properties:
                 scheduled:

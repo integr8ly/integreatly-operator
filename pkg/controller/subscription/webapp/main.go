@@ -13,12 +13,17 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type UpgradeNotifier struct {
+type UpgradeNotifier interface {
+	NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error)
+	ClearNotification() error
+}
+
+type UpgradeNotifierImpl struct {
 	client k8sclient.Client
 	ctx    context.Context
 }
 
-func NewUpgradeNotifier(ctx context.Context, restConfig *rest.Config) (*UpgradeNotifier, error) {
+func NewUpgradeNotifier(ctx context.Context, restConfig *rest.Config) (UpgradeNotifier, error) {
 	client, err := k8sclient.New(restConfig, k8sclient.Options{})
 	if err != nil {
 		return nil, err
@@ -27,8 +32,8 @@ func NewUpgradeNotifier(ctx context.Context, restConfig *rest.Config) (*UpgradeN
 	return NewUpgradeNotifierWithClient(ctx, client), nil
 }
 
-func NewUpgradeNotifierWithClient(ctx context.Context, client k8sclient.Client) *UpgradeNotifier {
-	return &UpgradeNotifier{
+func NewUpgradeNotifierWithClient(ctx context.Context, client k8sclient.Client) *UpgradeNotifierImpl {
+	return &UpgradeNotifierImpl{
 		client: client,
 		ctx:    ctx,
 	}
@@ -40,7 +45,7 @@ type upgradeData struct {
 	IsServiceAffecting bool   `json:"isServiceAffecting"`
 }
 
-func (notifier *UpgradeNotifier) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
+func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
@@ -73,7 +78,7 @@ func (notifier *UpgradeNotifier) NotifyUpgrade(config *integreatlyv1alpha1.RHMIC
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (notifier *UpgradeNotifier) ClearNotification() error {
+func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
@@ -107,4 +112,15 @@ func makeUpgradeData(rhmiConfig *integreatlyv1alpha1.RHMIConfig, version string,
 		Version:            version,
 		IsServiceAffecting: isServiceAffecting,
 	}
+}
+
+type NoOp struct {
+}
+
+func (noop *NoOp) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (noop *NoOp) ClearNotification() error {
+	return nil
 }
