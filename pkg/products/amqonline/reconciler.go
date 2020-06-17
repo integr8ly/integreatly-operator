@@ -204,7 +204,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileKubeStateMetricsAmqOnline(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcile prometheusRules", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale ksm alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline ksm alerts", err)
 		return phase, err
 	}
 
@@ -256,18 +256,6 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
 
 func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")

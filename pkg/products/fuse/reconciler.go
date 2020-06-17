@@ -201,6 +201,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
 	}
+	phase, err = r.reconcileKubeStateMetricsFuseAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile fuse ksm alerts", err)
+		return phase, err
+	}
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()

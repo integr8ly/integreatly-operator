@@ -266,13 +266,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
-	}
-
+	
 	phase, err = r.backupSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
@@ -296,6 +290,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
 	}
+	phase, err = r.reconcileKubeStateMetrics3scaleAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale alerts", err)
+		return phase, err
+	}
+	
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
@@ -332,18 +332,6 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
 
 // CreateResource Creates a generic kubernetes resource from a template
 func (r *Reconciler) createResource(ctx context.Context, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
