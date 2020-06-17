@@ -19,10 +19,11 @@ package rhmiconfig
 import (
 	"context"
 	"fmt"
+	"time"
+
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
@@ -118,7 +119,7 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// ensure values are as expected
-	if err := r.reconcileBackupAndMaintenanceValues(rhmiConfig); err != nil {
+	if err := r.reconcileValues(rhmiConfig, reconcileBackupAndMaintenanceValues, reconcileUpgradeValues); err != nil {
 		logrus.Errorf("failed to reconcile rhmi config values : %v", err)
 		return retryRequeue, err
 	}
@@ -166,17 +167,33 @@ func (r *ReconcileRHMIConfig) ReconcileCloudResourceStrategies(config *integreat
 // we expect a user to set their own times, but in the case where times are not set
 // we set our maintenance applyFrom values to be Thu 02:00
 // we set out backup applyOn values to be 03:01
-func (r *ReconcileRHMIConfig) reconcileBackupAndMaintenanceValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig) error {
+func reconcileBackupAndMaintenanceValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig) error {
+	if rhmiConfig.Spec.Maintenance.ApplyFrom == "" {
+		rhmiConfig.Spec.Maintenance.ApplyFrom = integreatlyv1alpha1.DefaultMaintenanceApplyFrom
+	}
+	if rhmiConfig.Spec.Backup.ApplyOn == "" {
+		rhmiConfig.Spec.Backup.ApplyOn = integreatlyv1alpha1.DefaultBackupApplyOn
+	}
+	return nil
+}
+
+func reconcileUpgradeValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig) error {
+	rhmiConfig.Spec.Upgrade.DefaultIfEmpty()
+	return nil
+}
+
+func (r *ReconcileRHMIConfig) reconcileValues(rhmiConfig *integreatlyv1alpha1.RHMIConfig, mutateFns ...func(*integreatlyv1alpha1.RHMIConfig) error) error {
 	if _, err := controllerutil.CreateOrUpdate(r.context, r.client, rhmiConfig, func() error {
-		if rhmiConfig.Spec.Maintenance.ApplyFrom == "" {
-			rhmiConfig.Spec.Maintenance.ApplyFrom = integreatlyv1alpha1.DefaultMaintenanceApplyFrom
+		for _, mutateFn := range mutateFns {
+			if err := mutateFn(rhmiConfig); err != nil {
+				return err
+			}
 		}
-		if rhmiConfig.Spec.Backup.ApplyOn == "" {
-			rhmiConfig.Spec.Backup.ApplyOn = integreatlyv1alpha1.DefaultBackupApplyOn
-		}
+
 		return nil
 	}); err != nil {
 		return fmt.Errorf("failed to create or update rhmiConfig : %v", err)
 	}
+
 	return nil
 }

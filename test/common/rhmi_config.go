@@ -3,9 +3,10 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"testing"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -113,43 +114,17 @@ var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
 	{}: assertNoError,
 
 	{
-		ApplyOn:               "",
-		AlwaysImmediately:     true,
-		DuringNextMaintenance: true,
+		NotBeforeDays: intPtr(-1),
+	}: assertValidationError,
+
+	{
+		NotBeforeDays:      intPtr(7),
+		WaitForMaintenance: boolPtr(true),
 	}: assertNoError,
 
 	{
-		ApplyOn:               "malformed date!",
-		AlwaysImmediately:     false,
-		DuringNextMaintenance: false,
-	}: assertValidationError,
-
-	// Valid: future date
-	{
-		ApplyOn:               time.Now().Add(time.Hour).UTC().Format("2 Jan 2006 15:04"),
-		AlwaysImmediately:     false,
-		DuringNextMaintenance: false,
-	}: assertNoError,
-
-	// Invalid: past date
-	{
-		ApplyOn:               time.Now().Add(-time.Hour).UTC().Format("2 Jan 2006 15:04"),
-		AlwaysImmediately:     false,
-		DuringNextMaintenance: false,
-	}: assertValidationError,
-
-	// Invalid: valid date, but `duringNextmaintenance` is set
-	{
-		ApplyOn:               time.Now().Add(time.Hour).UTC().Format("2 Jan 2006 15:04"),
-		AlwaysImmediately:     false,
-		DuringNextMaintenance: true,
-	}: assertValidationError,
-
-	// Invalid: valid date, but `alwaysImmediately` is set
-	{
-		ApplyOn:               time.Now().Add(time.Hour).UTC().Format("2 Jan 2006 15:04"),
-		AlwaysImmediately:     true,
-		DuringNextMaintenance: false,
+		NotBeforeDays:      intPtr(365),
+		WaitForMaintenance: boolPtr(true),
 	}: assertValidationError,
 }
 
@@ -210,11 +185,13 @@ func verifyCr(t *testing.T, ctx *TestingContext) {
 	}
 
 	// The upgrade fields should default to false
-	if rhmiConfig.Spec.Upgrade.AlwaysImmediately != false {
-		t.Errorf("AlwaysImmediately should be false by default")
+	if *rhmiConfig.Spec.Upgrade.WaitForMaintenance != true {
+		t.Errorf("WaitForMaintenance should be true by default. Got %v",
+			rhmiConfig.Spec.Upgrade.WaitForMaintenance)
 	}
-	if rhmiConfig.Spec.Upgrade.DuringNextMaintenance != false {
-		t.Errorf("DuringNextMaintenance should be set to false")
+	if *rhmiConfig.Spec.Upgrade.NotBeforeDays != 7 {
+		t.Errorf("NotBeforeDays should be set to 7. Got %v",
+			rhmiConfig.Spec.Upgrade.NotBeforeDays)
 	}
 }
 
@@ -295,7 +272,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		APIVersion: "integreatly.org/v1alpha1",
 		Kind:       "RHMIConfig",
 	}
-	rhmiConfig.Spec.Upgrade.AlwaysImmediately = true
+	*rhmiConfig.Spec.Upgrade.WaitForMaintenance = false
 	rhmiConfigChange, err := json.Marshal(rhmiConfig)
 	if err != nil {
 		t.Errorf("Error marshalling rhmiConfig: %v", err)
@@ -392,9 +369,16 @@ func assertValidationError(t *testing.T) func(error) {
 
 func logUpgrade(upgrade v1alpha1.Upgrade) string {
 	return fmt.Sprintf(
-		"{ applyOn: %s, alwaysImmediately: %t, duringNextMaintenance: %t }",
-		upgrade.ApplyOn,
-		upgrade.AlwaysImmediately,
-		upgrade.DuringNextMaintenance,
+		"{ notBeforeDays: %v, waitForMaintenance: %v }",
+		upgrade.NotBeforeDays,
+		upgrade.WaitForMaintenance,
 	)
+}
+
+func intPtr(value int) *int {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

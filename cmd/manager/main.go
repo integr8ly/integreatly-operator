@@ -227,6 +227,7 @@ func setupWebhooks(mgr manager.Manager) error {
 		Name: "rhmiconfig-mutate",
 		Rule: webhooks.NewRule().
 			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForCreate().
 			ForUpdate().
 			NamespacedScope(),
 		Register: webhooks.AdmissionWebhookRegister{
