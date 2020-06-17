@@ -184,13 +184,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
-	}
-
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
@@ -206,6 +199,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+	phase, err = r.reconcileKubeStateMetricsAmqOnline(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcile prometheusRules", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale ksm alerts", err)
 		return phase, err
 	}
 

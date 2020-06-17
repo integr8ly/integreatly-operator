@@ -120,3 +120,49 @@ func (r *Reconciler) reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ct
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+func (r *Reconciler) reconcileKubeStateMetricsCodereadyAlerts(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
+	rule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ksm-codeready-alerts",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	var namespace = r.Config.GetNamespace()
+
+	rules := []monitoringv1.Rule{
+		{
+			Alert: "CodeReadyPodCount",
+			Annotations: map[string]string{
+				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+				"message": "Pod count for namespace {{  $labels.namespace  }} is {{  $value  }}. Expected at least 2 pods.",
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) < 2", namespace, namespace)),
+			For:    "5m",
+			Labels: map[string]string{"severity": "critical"},
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name:  "general.rules",
+					Rules: rules,
+				},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		r.logger.Errorf("Phase: %s reconcilePrometheusAlerts", err)
+
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating backup PrometheusRule: %w", err)
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.logger.Infof("The operation result for codeready %s was %s", rule.Name, opRes)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
