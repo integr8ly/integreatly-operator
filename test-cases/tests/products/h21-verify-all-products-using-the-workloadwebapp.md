@@ -12,7 +12,7 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 - Create a user in the User SSO and verify that it can login to it
 - Create a 3scale API and verify that it respond
 
-When testing the RHMI upgrade, the steps 1., 2. and 3. should be performed before the upgrade and the verification steps 4. and 5. after the upgrade
+**Note:** When testing the RHMI upgrade, the steps 1., 2. and 3. should be performed before the upgrade and the verification steps 4. and 5. after the upgrade
 
 ## Steps
 
