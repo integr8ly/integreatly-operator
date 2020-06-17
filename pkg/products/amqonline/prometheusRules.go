@@ -169,3 +169,60 @@ func (r *Reconciler) reconcileKubeStateMetricsEndpointAvailableAlerts(ctx contex
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+func (r *Reconciler) reconcileKubeStateMetricsAmqOnline(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
+	rule := &monitoringv1.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ksm-amqonline-alerts",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	var namespace = r.Config.GetNamespace()
+
+	rules := []monitoringv1.Rule{
+		{
+			Alert: "AMQOnlinePodCount",
+			Annotations: map[string]string{
+				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+				"message": "Pod count for namespace {{  $labels.namespace  }} is {{  $value }}. Expected at least 2 pods.",
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%[1]v'})) or sum(kube_pod_status_ready{condition='true', namespace='%[1]v'}) < 2", namespace)),
+			For:    "5m",
+			Labels: map[string]string{"severity": "critical"},
+		},
+		{
+			Alert: "AMQOnlineContainerHighMemory",
+			Annotations: map[string]string{
+				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+				"message": "The {{  $labels.container  }} Container in the {{ $labels.pod  }} Pod has been using {{  $value }}% of available memory for longer than 15 minutes.",
+			},
+			Expr:   intstr.FromString(fmt.Sprintf("sum by(container, pod) (container_memory_usage_bytes{container!='',namespace='%[1]v'}) / sum by(container, pod) (kube_pod_container_resource_limits_memory_bytes{namespace='%[1]v'}) * 100 > 90", namespace)),
+			For:    "15m",
+			Labels: map[string]string{"severity": "warning"},
+		},
+	}
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, rule, func() error {
+		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
+		rule.Spec = monitoringv1.PrometheusRuleSpec{
+			Groups: []monitoringv1.RuleGroup{
+				{
+					Name:  "general.rules",
+					Rules: rules,
+				},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		r.logger.Errorf("Phase: %s reconcilePrometheusAlerts", err)
+
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating backup PrometheusRule: %w", err)
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.logger.Infof("The operation result for amq online %s was %s", rule.Name, opRes)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}

@@ -56,13 +56,6 @@ func (s *SolutionExplorer) GetLabelSelector() string {
 	return "middleware"
 }
 
-func (s *SolutionExplorer) GetTemplateList() []string {
-	templateList := []string{
-		"kube_state_metrics_solution_explorer_alerts.yaml",
-	}
-	return templateList
-}
-
 func (s *SolutionExplorer) SetHost(newHost string) {
 	s.config["HOST"] = newHost
 }
