@@ -256,7 +256,6 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
-
 func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")
 
