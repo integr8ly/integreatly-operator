@@ -118,7 +118,7 @@ func (r *Reconciler) reconcileKubeStateMetricsSolutionexplorerAlerts(ctx context
 				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 				"message": "Pod count for namespace {{  $labels.namespace  }} is {{  $value }}. Expected exactly 1 pods.",
 			},
-			Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) != 1", namespace, namespace)),
+			Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%[1]v'})) or sum(kube_pod_status_ready{condition='true', namespace='%[1]v'}) != 1", namespace)),
 			For:    "5m",
 			Labels: map[string]string{"severity": "critical"},
 		},
