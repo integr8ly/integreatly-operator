@@ -6,6 +6,10 @@ estimate: 30m
 
 # N05 - Verify upgrade not approved when another upgrade in progress
 
+## Description
+
+**Note:** This test can be executed only when installing RHMI using olm, just ignore it when testing RHMI on OSD
+
 ## Prerequisites
 
 1. Login via `oc` as a user with **cluster-admin** role (kubeadmin):
