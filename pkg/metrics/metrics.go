@@ -2,13 +2,11 @@ package metrics
 
 import (
 	"fmt"
-	"strings"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/prometheus/client_golang/prometheus"
-	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
 // Custom metrics
@@ -61,16 +59,15 @@ var (
 		},
 	)
 
-	RHMIStatus *prometheus.GaugeVec = nil
-
-	rhmiStatusLabels = []string{
-		"operator_name",
-		"namespace",
-		"last_error",
-		"preflight_message",
-		"preflight_status",
-		"stage",
-	}
+	RHMIStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhmi_status",
+			Help: "RHMI status of an installation",
+		},
+		[]string{
+			"stage",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -87,64 +84,12 @@ func SetRHMIInfo(installation *integreatlyv1alpha1.RHMI) {
 	)
 }
 
+// SetRHMIStatus exposes rhmi_status metric for each stage
 func SetRHMIStatus(installation *integreatlyv1alpha1.RHMI) {
-
-	isCompleted := float64(0)
-	if installation.Status.Stage == "complete" {
-		isCompleted = float64(1)
+	RHMIStatus.Reset()
+	if string(installation.Status.Stage) != "" {
+		RHMIStatus.With(prometheus.Labels{"stage": string(installation.Status.Stage)}).Set(float64(1))
 	}
-
-	// creates the metric labels with values
-	labelsWithValue := make(map[string]string, len(rhmiStatusLabels))
-	for _, label := range rhmiStatusLabels {
-		labelsWithValue[label] = ""
-	}
-
-	// sets value from rhmi installation to labels
-	labelsWithValue["operator_name"] = installation.GetName()
-	labelsWithValue["namespace"] = installation.GetNamespace()
-	labelsWithValue["last_error"] = installation.Status.LastError
-	labelsWithValue["preflight_message"] = installation.Status.PreflightMessage
-	labelsWithValue["preflight_status"] = string(installation.Status.PreflightStatus)
-	labelsWithValue["stage"] = string(installation.Status.Stage)
-
-	for _, stage := range installation.Status.Stages {
-		for _, product := range stage.Products {
-			labelsWithValue[SanitizeForPrometheusLabel(product.Name)] = string(product.Status)
-		}
-	}
-
-	if RHMIStatus != nil {
-		RHMIStatus.Reset()
-		RHMIStatus.With(labelsWithValue).Set(isCompleted)
-	}
-}
-
-func ExposeRHMIStatusMetric(stages []integreatlyv1alpha1.RHMIStageStatus) {
-
-	if RHMIStatus == nil {
-		for _, stage := range stages {
-			for _, product := range stage.Products {
-				rhmiStatusLabels = append(rhmiStatusLabels, SanitizeForPrometheusLabel(product.Name))
-			}
-		}
-
-		RHMIStatus = prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "rhmi_status",
-				Help: "RHMI status for when installation completes",
-			},
-			rhmiStatusLabels,
-		)
-		customMetrics.Registry.MustRegister(RHMIStatus)
-	}
-}
-
-func SanitizeForPrometheusLabel(productName integreatlyv1alpha1.ProductName) string {
-	if productName == integreatlyv1alpha1.Product3Scale {
-		productName = "threescale"
-	}
-	return fmt.Sprintf("%s_status", strings.ReplaceAll(string(productName), "-", "_"))
 }
 
 func SetRhmiVersions(stage string, version string, toVersion string, firstInstallTimestamp int64) {
