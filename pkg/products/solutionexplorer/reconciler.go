@@ -42,9 +42,9 @@ import (
 )
 
 const (
-	defaultName               = "solution-explorer"
+	DefaultName               = "solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.5"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.7"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
@@ -58,6 +58,7 @@ const (
 	manifestPackage           = "integreatly-solution-explorer"
 	paramRoutingSubdomain     = "ROUTING_SUBDOMAIN"
 	paramInstallationType     = "INSTALLATION_TYPE"
+	ParamUpgradeData          = "UPGRADE_DATA"
 )
 
 type Reconciler struct {
@@ -91,7 +92,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 
 	if config.GetNamespace() == "" {
-		config.SetNamespace(installation.Spec.NamespacePrefix + defaultName)
+		config.SetNamespace(installation.Spec.NamespacePrefix + DefaultName)
 	}
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
@@ -228,10 +229,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		return phase, err
+	}
+	phase, err = r.reconcileKubeStateMetricsSolutionexplorerAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile solution-explorer alerts", err)
 		return phase, err
 	}
 
@@ -293,19 +304,6 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	return resource, nil
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
@@ -356,7 +354,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 	seCR := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
-			Name:      defaultName,
+			Name:      DefaultName,
 		},
 	}
 	oauthURL := strings.Replace(strings.Replace(oauthConfig.AuthorizationEndpoint, "https://", "", 1), "/oauth/authorize", "", 1)
@@ -370,7 +368,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 		owner.AddIntegreatlyOwnerAnnotations(seCR, installation)
 		seCR.Spec.AppLabel = "tutorial-web-app"
 		seCR.Spec.Template.Path = defaultTemplateLoc
-		seCR.Spec.Template.Parameters = map[string]string{
+		parameters := map[string]string{
 			paramOauthClient:          r.getOAuthClientName(),
 			paramSSORoute:             ssoConfig.GetHost(),
 			paramOpenShiftHost:        installation.Spec.MasterURL,
@@ -382,6 +380,16 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramWalkthroughLocations: defaultWalkthroughsLoc,
 			paramRoutingSubdomain:     installation.Spec.RoutingSubdomain,
 			paramInstallationType:     installation.Spec.Type,
+		}
+		if seCR.Spec.Template.Parameters == nil {
+			seCR.Spec.Template.Parameters = map[string]string{}
+		}
+		for k, v := range parameters {
+			seCR.Spec.Template.Parameters[k] = v
+		}
+		// If the upgrade data parameter is not found, set it to `null`
+		if _, ok := seCR.Spec.Template.Parameters[ParamUpgradeData]; !ok {
+			seCR.Spec.Template.Parameters[ParamUpgradeData] = "null"
 		}
 		return nil
 	})

@@ -2,6 +2,8 @@
 estimate: 30m
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-7433
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift
@@ -13,6 +15,13 @@ Login as a user in the **developer** group.
 ## Steps
 
 1. Open the Fuse Online Console and create a new Integration
+
+   ```
+   Note: a) Use Fuse instance that is linked in Solution
+            Explorer
+         b) Namespace of the deployment-config may vary based
+            on the namespace of Fuse instance
+   ```
 
    1. Select API Provider
    2. Choose `Create a new OpenAPI 3.x document`, and Next
@@ -30,7 +39,7 @@ Login as a user in the **developer** group.
    > - i-`integration-name`
    >
    > ```
-   > oc get deploymentconfigs --namespace=redhat-rhmi-fuse | grep <integration-name>
+   > oc get deploymentconfigs --namespace=<fuse-namespace> | grep <integration-name>
    > ```
 
 2. Delete the Integration

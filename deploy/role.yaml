@@ -37,6 +37,7 @@ rules:
       - watch
       - create
       - update
+      - delete
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -48,8 +49,10 @@ rules:
       - apps
     resources:
       - deployments/finalizers
+      - replicasets
     verbs:
       - update
+      - get
   # END For monitoring functions by operator-sdk
 
   # Our own Subscription needs to be switched into Manual mode after initial installation
@@ -57,6 +60,7 @@ rules:
       - operators.coreos.com
     resources:
       - subscriptions
+      - subscriptions/status
     verbs:
       - get
       - list
@@ -98,6 +102,20 @@ rules:
       - update
       - list
       - watch
+      - delete
+
+  # Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  # END Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -285,6 +303,8 @@ rules:
       - operatorgroups
     verbs:
       - create
+      - list
+      - get
   - apiGroups:
       - operators.coreos.com
     resources:
@@ -361,4 +381,5 @@ rules:
       - list
       - create
       - update
+      - delete
   # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server

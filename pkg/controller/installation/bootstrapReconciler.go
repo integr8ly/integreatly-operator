@@ -13,6 +13,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -93,7 +94,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
-	logrus.Infof("Bootstrap stage reconciled successfully")
+	metrics.SetRHMIInfo(installation)
+	logrus.Info("Metric rhmi_info exposed")
+
+	logrus.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -135,7 +139,7 @@ func (r *Reconciler) reconcilerRHMIConfigCR(ctx context.Context, serverClient k8
 	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rhmiConfig, func() error {
 		return nil
 	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error reconciling the Customer Config CR: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling the Customer Config CR: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -317,7 +321,12 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 			{
 				APIGroups: []string{"integreatly.org"},
 				Resources: []string{"rhmiconfigs"},
-				Verbs:     []string{"update", "get", "list"},
+				Verbs:     []string{"update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"integreatly.org"},
+				Resources: []string{"rhmis"},
+				Verbs:     []string{"watch", "get", "list"},
 			},
 		}
 		return nil

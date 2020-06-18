@@ -5,13 +5,13 @@ NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-TAG ?= 2.2.0-rc1
+TAG ?= 2.4.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
 COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.15.1
-AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "${QUAY_PASSWORD}"}}' | jq -r '.token')
+AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 CONTAINER_ENGINE ?= docker
@@ -46,6 +46,8 @@ export INSTALLATION_NAME   ?= rhmi
 export INSTALLATION_PREFIX ?= redhat-rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
+export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
+export ALERTING_EMAIL_ADDRESS = noreply-test@rhmi-redhat.com
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
@@ -145,17 +147,16 @@ test/e2e/prow: test/e2e
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
-test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd cluster/prepare/service deploy/integreatly-rhmi-cr.yml
+test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	 export SURF_DEBUG_HEADERS=1
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=90m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
 test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=60m" --debug --up-local
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --namespace="$(NAMESPACE)" --go-test-flags "-timeout=90m" --debug --up-local
 
 
 .PHONY: test/functional
-test/functional:  export SURF_DEBUG_HEADERS=1
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
@@ -166,14 +167,14 @@ test/products/local:
 	# Using 'test-containers.yaml' as config and 'test-results' as output dir
 	mkdir -p "test-results"
 	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
-	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean tests run --test-config ./test-containers.yaml --output /test-results --namespace test-products
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean pipeline product-tests --test-config ./test-containers.yaml --output /test-results --namespace test-products
 
 .PHONY: test/products
 test/products:
 	# Running the products tests against an existing cluster. Make sure you have logged in to the cluster.
 	# Using "test-containers.yaml" as config and $(TEST_RESULTS_DIR) as output dir
 	mkdir -p $(TEST_RESULTS_DIR)
-	delorean tests run --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
+	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
@@ -212,12 +213,8 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/integreatly.org_rhmis_crd.yaml
 	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
-.PHONY: cluster/prepare/service
-cluster/prepare/service:
-	- oc create -f deploy/webhook-service.yaml
-
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/service cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml

@@ -2,10 +2,12 @@ package common
 
 import (
 	goctx "context"
+	"fmt"
 	"testing"
 	"time"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	appsv1 "github.com/openshift/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -20,6 +22,22 @@ const (
 	namespace               = "redhat-rhmi-3scale"
 	retryInterval           = time.Second * 20
 	timeout                 = time.Minute * 7
+	requestURL3scale        = "/apis/apps.3scale.net/v1alpha1"
+	kind                    = "APIManagers"
+)
+
+var (
+	threeScaleDeploymentConfigs = []string{
+		"apicast-production",
+		"apicast-staging",
+		"backend-cron",
+		"backend-listener",
+		"backend-worker",
+		"system-app",
+		"system-sidekiq",
+		"zync",
+		"zync-que",
+	}
 )
 
 func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
@@ -34,7 +52,7 @@ func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("Incorrect number of replicas to start : %v", err)
 	}
 
-	apim, err = updateAPIManager(ctx.Client, scaleUpReplicas)
+	apim, err = updateAPIManager(ctx, scaleUpReplicas)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -44,7 +62,7 @@ func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	apim, err = updateAPIManager(ctx.Client, scaleDownReplicas)
+	apim, err = updateAPIManager(ctx, scaleDownReplicas)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -54,7 +72,7 @@ func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	apim, err = updateAPIManager(ctx.Client, numberOfReplicas)
+	apim, err = updateAPIManager(ctx, numberOfReplicas)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
@@ -63,6 +81,11 @@ func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
 	if err := checkNumberOfReplicasAgainstValue(apim, ctx, numberOfReplicas, retryInterval, timeout, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
+
+	if err := check3ScaleReplicasAreReady(ctx, t, numberOfReplicas, retryInterval, timeout); err != nil {
+		t.Fatalf("Replicas not Ready within timeout: %v", err)
+	}
+
 }
 
 func getAPIManager(dynClient k8sclient.Client) (threescalev1.APIManager, error) {
@@ -71,55 +94,64 @@ func getAPIManager(dynClient k8sclient.Client) (threescalev1.APIManager, error) 
 	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, apim); err != nil {
 		return *apim, err
 	}
-
 	return *apim, nil
 }
 
-func updateAPIManager(dynClient k8sclient.Client, replicas int64) (threescalev1.APIManager, error) {
+func updateAPIManager(dynClient *TestingContext, replicas int64) (threescalev1.APIManager, error) {
 
-	apim, err := getAPIManager(dynClient)
+	replica := fmt.Sprintf(`{
+		"apiVersion": "apps.3scale.net/v1alpha1",
+		"kind": "APIManager",
+		"spec": {
+			"system": {
+				"appSpec": {
+					"replicas": %[1]v
+				},
+				"sidekiqSpec": {
+					"replicas": %[1]v
+				}
+			},
+			"apicast": {
+				"productionSpec": {
+					"replicas": %[1]v
+				},
+				"stagingSpec": {
+					"replicas": %[1]v
+				}
+			},
+			"backend": {
+				"listenerSpec": {
+					"replicas": %[1]v
+				},
+				"cronSpec": {
+					"replicas": %[1]v
+				},
+				"workerSpec": {
+					"replicas": %[1]v
+				}
+			},
+			"zync": {
+				"appSpec": {
+					"replicas": %[1]v
+				},
+				"queSpec": {
+					"replicas": %[1]v
+				}
+			}
+		}
+	}`, replicas)
+
+	replicaBytes := []byte(replica)
+
+	request := dynClient.ExtensionClient.RESTClient().Patch(types.MergePatchType).
+		Resource(kind).
+		Name(name).
+		Namespace(namespace).
+		RequestURI(requestURL3scale).Body(replicaBytes).Do()
+	_, err := request.Raw()
+
+	apim, err := getAPIManager(dynClient.Client)
 	if err != nil {
-		return apim, err
-	}
-	resourceRequirements := true
-	apim = threescalev1.APIManager{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			ResourceVersion: apim.GetResourceVersion(),
-		},
-		Spec: threescalev1.APIManagerSpec{
-			HighAvailability: &threescalev1.HighAvailabilitySpec{},
-			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
-				ResourceRequirementsEnabled: &resourceRequirements,
-			},
-			System: &threescalev1.SystemSpec{
-				DatabaseSpec: &threescalev1.SystemDatabaseSpec{
-					PostgreSQL: &threescalev1.SystemPostgreSQLSpec{},
-				},
-				FileStorageSpec: &threescalev1.SystemFileStorageSpec{
-					S3: &threescalev1.SystemS3Spec{},
-				},
-				AppSpec:     &threescalev1.SystemAppSpec{Replicas: &[]int64{replicas}[0]},
-				SidekiqSpec: &threescalev1.SystemSidekiqSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Apicast: &threescalev1.ApicastSpec{
-				ProductionSpec: &threescalev1.ApicastProductionSpec{Replicas: &[]int64{replicas}[0]},
-				StagingSpec:    &threescalev1.ApicastStagingSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Backend: &threescalev1.BackendSpec{
-				ListenerSpec: &threescalev1.BackendListenerSpec{Replicas: &[]int64{replicas}[0]},
-				WorkerSpec:   &threescalev1.BackendWorkerSpec{Replicas: &[]int64{replicas}[0]},
-				CronSpec:     &threescalev1.BackendCronSpec{Replicas: &[]int64{replicas}[0]},
-			},
-			Zync: &threescalev1.ZyncSpec{
-				AppSpec: &threescalev1.ZyncAppSpec{Replicas: &[]int64{replicas}[0]},
-				QueSpec: &threescalev1.ZyncQueSpec{Replicas: &[]int64{replicas}[0]},
-			},
-		},
-	}
-
-	if err := dynClient.Update(goctx.TODO(), apim.DeepCopy(), &k8sclient.UpdateOptions{}); err != nil {
 		return apim, err
 	}
 
@@ -179,4 +211,123 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 		}
 		return true, nil
 	})
+}
+
+func check3ScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
+
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "apicast-production", Namespace: namespace}}
+
+		errDc := dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "apicast-production", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "apicast-production", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "apicast-staging", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "apicast-staging", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "apicast-staging", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "backend-cron", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "backend-cron", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "backend-cron", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "backend-listener", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "backend-listener", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "backend-listener", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "backend-worker", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "backend-worker", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "backend-worker", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "system-app", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "system-app", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "system-app", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "system-sidekiq", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "system-sidekiq", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "system-sidekiq", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "zync", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "zync", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "zync", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		deploymentConfig = &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: "zync-que", Namespace: namespace}}
+
+		errDc = dynClient.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: "zync-que", Namespace: namespace}, deploymentConfig)
+		if errDc != nil {
+			t.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", "zync-que", namespace, err)
+		}
+
+		if deploymentConfig.Status.Replicas != int32(replicas) {
+			t.Logf("Replicas Ready %v", deploymentConfig.Status.ReadyReplicas)
+			return false, fmt.Errorf("%v", deploymentConfig.Status.ReadyReplicas)
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("Number of replicas for threescale replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
+	}
+	return nil
 }

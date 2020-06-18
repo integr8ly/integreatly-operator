@@ -2,6 +2,8 @@
 tags:
   - happy-path
 estimate: 30m
+automation_jiras:
+  - INTLY-7434
 ---
 
 # H06 - Verify integration between CodeReady and OpenShift

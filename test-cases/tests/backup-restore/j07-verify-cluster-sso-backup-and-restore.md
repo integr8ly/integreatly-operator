@@ -19,5 +19,5 @@ $ select * from clients;
 $ select * from realms;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/rhsso_backup.md#rhsso-backup-and-restoration)
+3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/rhsso_backup.md#rhsso-backup-and-restoration)
 4. Verify the same clients and realms exist in postgres follow `Step 2.`

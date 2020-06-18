@@ -61,13 +61,6 @@ func (t *ThreeScale) GetLabelSelector() string {
 	return "middleware"
 }
 
-func (t *ThreeScale) GetTemplateList() []string {
-	templateList := []string{
-		"kube_state_metrics_3scale_alerts.yaml",
-	}
-	return templateList
-}
-
 func (t *ThreeScale) SetNamespace(newNamespace string) {
 	t.config["NAMESPACE"] = newNamespace
 }

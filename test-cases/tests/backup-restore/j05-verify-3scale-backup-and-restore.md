@@ -19,19 +19,19 @@ $ select * from plans;
 $ select * from accounts;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/3scale_backup.md#postgres)
+3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres)
 4. Verify the same data exist in postgres follow `Step 2.`
 
 ## Redis
 
 ### Backend Redis
 
-1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/3scale_backup.md#backend-redis)
+1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#backend-redis)
 
 ### System Redis
 
-1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/3scale_backup.md#system-redis)
+1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-redis)
 
 ### System App
 
-1. Once all pods are up and running follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup/3scale_backup.md#system-app) and verify 3scale service is working
+1. Once all pods are up and running follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-app) and verify 3scale service is working

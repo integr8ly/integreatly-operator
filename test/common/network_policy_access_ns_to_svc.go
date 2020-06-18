@@ -223,7 +223,6 @@ func checkPodStatus(ctx *TestingContext, podCR *corev1.Pod) (bool, error) {
 }
 
 func get3ScaleAPIcastPod(ctx *TestingContext) (*corev1.Pod, error) {
-
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(map[string]string{
 			"threescale_component": "apicast",
@@ -232,14 +231,16 @@ func get3ScaleAPIcastPod(ctx *TestingContext) (*corev1.Pod, error) {
 	}
 
 	tsApicastPods := &corev1.PodList{}
-
 	err := ctx.Client.List(goctx.TODO(), tsApicastPods, listOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("error listing 3scale apicast pods: %v", err)
 	}
 
-	tsApicastPod := tsApicastPods.Items[0]
-	return &tsApicastPod, nil
+	if len(tsApicastPods.Items) == 0 {
+		return nil, fmt.Errorf("Expected 3scale apicast pods to be created, none found")
+	}
+
+	return &tsApicastPods.Items[0], nil
 }
 
 func getTestingCurlLabels() map[string]string {

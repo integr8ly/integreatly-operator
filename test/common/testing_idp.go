@@ -108,7 +108,6 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 		}
 
 		dedicatedAdminUsername := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins-1)
-		fmt.Println(fmt.Sprintf("https://%s/auth/login", masterURL))
 		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
 		if authErr != nil {
 			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)

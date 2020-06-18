@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -36,7 +37,9 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -571,6 +574,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+
+			pvccr := &v1.PersistentVolumeClaim{}
+			err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: syndesisPrometheus, Namespace: defaultInstallationNamespace}, pvccr)
+			if err != nil {
+				t.Fatalf("expected no error but got one: %v", err)
+			}
+			if pvccr.Spec.Resources.Requests[v1.ResourceStorage] != resource.MustParse(syndesisPrometheusPVC) {
+				t.Fatalf("syndesis-prometheus pvc not set to 10Gi")
 			}
 		})
 	}

@@ -58,17 +58,18 @@ var (
 	VersionAMQOnline           ProductVersion = "1.4"
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
-	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
+	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
 	VersionMonitoring          ProductVersion = "1.1.6"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.15.2"
+	VersionCloudResources      ProductVersion = "0.16.1"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.3"
 	VersionRHSSOUser           ProductVersion = "7.3"
 	VersionMonitoringSpec      ProductVersion = "1.0"
+	VersionSolutionExplorer    ProductVersion = "2.25.1"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -85,13 +86,13 @@ var (
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline           OperatorVersion = "1.4"
 	OperatorVersionMonitoring          OperatorVersion = "1.1.5"
-	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.53"
+	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.58"
 	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
 	OperatorVersionRHSSOUser           OperatorVersion = "9.0.2"
-	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
-	OperatorVersion3Scale              OperatorVersion = "0.5.0"
+	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
+	OperatorVersion3Scale              OperatorVersion = "0.5.2"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.15.2"
+	OperatorVersionCloudResources      OperatorVersion = "0.16.1"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
@@ -112,13 +113,14 @@ type RHMISpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type              string         `json:"type"`
-	RoutingSubdomain  string         `json:"routingSubdomain,omitempty"`
-	MasterURL         string         `json:"masterURL,omitempty"`
-	NamespacePrefix   string         `json:"namespacePrefix"`
-	SelfSignedCerts   bool           `json:"selfSignedCerts,omitempty"`
-	PullSecret        PullSecretSpec `json:"pullSecret,omitempty"`
-	UseClusterStorage string         `json:"useClusterStorage,omitempty"`
+	Type                 string         `json:"type"`
+	RoutingSubdomain     string         `json:"routingSubdomain,omitempty"`
+	MasterURL            string         `json:"masterURL,omitempty"`
+	NamespacePrefix      string         `json:"namespacePrefix"`
+	SelfSignedCerts      bool           `json:"selfSignedCerts,omitempty"`
+	PullSecret           PullSecretSpec `json:"pullSecret,omitempty"`
+	UseClusterStorage    string         `json:"useClusterStorage,omitempty"`
+	AlertingEmailAddress string         `json:"alertingEmailAddress,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product
@@ -172,6 +174,8 @@ type RHMIStatus struct {
 	LastError          string                        `json:"lastError"`
 	GitHubOAuthEnabled bool                          `json:"gitHubOAuthEnabled,omitempty"`
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
+	Version            string                        `json:"version,omitempty"`
+	ToVersion          string                        `json:"toVersion,omitempty"`
 }
 
 type RHMIStageStatus struct {

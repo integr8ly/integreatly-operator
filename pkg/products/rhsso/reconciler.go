@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -226,6 +227,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -403,12 +416,31 @@ func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8scl
 
 func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("Reconciling Keycloak external database instance")
+
 	postgresName := fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installation.Name)
 	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultOperandNamespace)
-
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
 	}
+
+	// at this point it should be ok to create the failed alert.
+	if postgres != nil {
+		// create prometheus phase failed rule
+		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		}
+
+		// create prometheus pending rule only when CR has completed for the first time.
+		if postgres.Status.Phase == types.PhaseComplete {
+
+			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+			}
+		}
+	}
+
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
@@ -436,7 +468,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()

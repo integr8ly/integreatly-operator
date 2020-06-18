@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/api/admissionregistration/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +23,7 @@ func TestReconcile(t *testing.T) {
 	corev1.AddToScheme(scheme)
 	v1beta1.AddToScheme(scheme)
 	schemeBuilder.AddToScheme(scheme)
+	v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	scheme.AddKnownTypes(schemeBuilder.GroupVersion, &mockValidator{})
 
 	// Create testing webhook config
@@ -61,7 +63,9 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 
-	client := fake.NewFakeClientWithScheme(scheme)
+	rhmi := &v1alpha1.RHMI{}
+
+	client := fake.NewFakeClientWithScheme(scheme, rhmi)
 
 	// Start mock of CA controller
 	done := make(chan struct{})
@@ -70,8 +74,20 @@ func TestReconcile(t *testing.T) {
 
 	// Perform one reconcilliation. After this, the ValidatingWebhookConfiguration
 	// must have been created with the specification of the testing webhook
-	if err := settings.Reconcile(context.TODO(), client); err != nil {
+	if err := settings.Reconcile(context.TODO(), client, rhmi); err != nil {
 		t.Fatalf("Error reconciling webhook objects: %v", err)
+	}
+
+	secret := &corev1.Secret{}
+	if err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-webhook-cert", Namespace: "redhat-rhmi-operator"}, secret); err != nil {
+		t.Errorf("Secret with TlS certs not found")
+	} else {
+		if string(secret.Data["tls.key"]) != "TLS KEY" {
+			t.Errorf("Invalid value for secret tls.key. Expected TLS KEY, got %s", string(secret.Data["tls.key"]))
+		}
+		if string(secret.Data["tls.crt"]) != "TLS CERT" {
+			t.Errorf("Invalid value for secret tls.crt. Expected TLS CERT, got %s", string(secret.Data["tls.crt"]))
+		}
 	}
 
 	vwc, err := findValidatingWebhookConfig(client)
@@ -235,6 +251,33 @@ func mockCAController(ctx context.Context, client k8sclient.Client, stop <-chan 
 			}
 
 			client.Update(ctx, &configMap)
+		}
+
+		// Get the list of services
+		services := &corev1.ServiceList{}
+		if err := client.List(ctx, services,
+			k8sclient.InNamespace("redhat-rhmi-operator")); err != nil {
+			continue
+		}
+
+		for _, service := range services.Items {
+			secretName, ok := service.Annotations[caServiceAnnotation]
+			if !ok {
+				continue
+			}
+
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretName,
+					Namespace: "redhat-rhmi-operator",
+				},
+				Data: map[string][]byte{
+					"tls.key": []byte("TLS KEY"),
+					"tls.crt": []byte("TLS CERT"),
+				},
+			}
+
+			client.Create(ctx, secret)
 		}
 	}
 }

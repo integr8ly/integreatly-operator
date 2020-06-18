@@ -2,10 +2,9 @@ package common
 
 import (
 	goctx "context"
-	"encoding/json"
 	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
 
@@ -19,7 +18,6 @@ import (
 
 const (
 	expectedRhmiDeveloperProjectCount = 1
-	expectedFusePodCount              = 6
 )
 
 // struct used to create query string for fuse logs endpoint
@@ -67,17 +65,6 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	podlist, err := openshiftClient.ListPods(fuseNamespace)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
-	}
-
-	// check if six pods are running
-	runningCount := 0
-	for _, p := range podlist.Items {
-		if p.Status.Phase == "Running" {
-			runningCount++
-		}
-	}
-	if runningCount != expectedFusePodCount {
-		t.Fatalf("test-failed - expected fuse pod count : %d found fuse pod count: %d", expectedFusePodCount, runningCount)
 	}
 
 	// log through rhmi developer fuse podlist
@@ -155,65 +142,27 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 }
 
 func verifyRHMIDeveloperRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
-	// RHMI Developer can not LIST RHMI Config CR
-	resp, err := openshiftClient.DoOpenshiftGetRequest(resources.PathListRHMIConfig)
+	t.Log("Verifying RHMI Developer permissions for RHMIConfig Resource")
 
-	if err != nil {
-		t.Errorf("failed to perform LIST request for rhmi config with error : %s", err)
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 403,
+		ExpectedReadStatusCode:   403,
+		ExpectedUpdateStatusCode: 403,
+		ExpectedDeleteStatusCode: 403,
+		ExpectedListStatusCode:   403,
+		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
+		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-rhmi-config",
+				Namespace: RHMIOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1alpha1",
+				Kind:       "RHMIConfig",
+			},
+		},
 	}
 
-	if resp.StatusCode != 403 {
-		t.Errorf("unexpected response from LIST request for rhmi config : %v", resp)
-	}
-
-	// RHMI Developer can not GET RHMI Config CR
-	path := fmt.Sprintf(resources.PathGetRHMIConfig, "rhmi-config")
-
-	resp, err = openshiftClient.DoOpenshiftGetRequest(path)
-
-	if err != nil {
-		t.Errorf("failed to perform GET request for rhmi config with error : %s", err)
-	}
-
-	if resp.StatusCode != 403 {
-		t.Errorf("unexpected response from GET request for rhmi config : %v", resp)
-	}
-
-	// RHMI Developer can not UPDATE RHMI Config CR
-	bodyBytes, err := ioutil.ReadAll(resp.Body) // Use response from GET
-
-	resp, err = openshiftClient.DoOpenshiftPutRequest(path, bodyBytes)
-
-	if err != nil {
-		t.Errorf("failed to perform UPDATE request for rhmi config with error : %s", err)
-	}
-
-	if resp.StatusCode != 403 {
-		t.Errorf("unexpected response from UPDATE request for rhmi config : %v", resp)
-	}
-
-	// RHMI Developer can not CREATE new RHMI config
-	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
-	bodyBytes, err = json.Marshal(rhmiConfig)
-
-	resp, err = openshiftClient.DoOpenshiftPostRequest(path, bodyBytes)
-
-	if err != nil {
-		t.Errorf("failed to perform CREATE request for rhmi config with error : %s", err)
-	}
-
-	if resp.StatusCode != 403 {
-		t.Errorf("unexpected response from CREATE request for rhmi config : %v", resp)
-	}
-
-	// RHMI Developer can not DELETE RHMI config
-	resp, err = openshiftClient.DoOpenshiftDeleteRequest(path)
-
-	if err != nil {
-		t.Errorf("failed to perform DELETE request for rhmi config with error : %s", err)
-	}
-
-	if resp.StatusCode != 403 {
-		t.Errorf("unexpected response from DELETE request for rhmi config : %v", resp)
-	}
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }

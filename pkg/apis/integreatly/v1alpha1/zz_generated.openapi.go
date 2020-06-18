@@ -128,6 +128,12 @@ func schema_apis_integreatly_v1alpha1__RHMISpec(ref common.ReferenceCallback) co
 							Format: "",
 						},
 					},
+					"alertingEmailAddress": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 					"operatorsInProductNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OperatorsInProductNamespace is a flag that decides if the product operators should be installed in the product namespace (when set to true) or in standalone namespace (when set to false, default). Standalone namespace will be used only for those operators that support it.",
@@ -219,6 +225,18 @@ func schema_apis_integreatly_v1alpha1__RHMIStatus(ref common.ReferenceCallback) 
 					"smtpEnabled": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"version": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"toVersion": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
 							Format: "",
 						},
 					},

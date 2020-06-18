@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "github.com/openshift/api/route/v1"
-	"github.com/sirupsen/logrus"
-	"os"
 	"testing"
 
+	v1 "github.com/openshift/api/route/v1"
+	"github.com/sirupsen/logrus"
+
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -40,9 +41,10 @@ import (
 )
 
 const (
-	mockSMTPSecretName      = "test-smtp"
-	mockPagerdutySecretName = "test-pd"
-	mockDMSSecretName       = "test-dms"
+	mockSMTPSecretName       = "test-smtp"
+	mockPagerdutySecretName  = "test-pd"
+	mockDMSSecretName        = "test-dms"
+	mockAlertingEmailAddress = "noreply-test@rhmi-redhat.com"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -62,6 +64,12 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			DeadMansSnitchSecret: mockDMSSecretName,
 		},
 	}
+}
+
+func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
+	installation := basicInstallation()
+	installation.Spec.AlertingEmailAddress = mockAlertingEmailAddress
+	return installation
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -107,6 +115,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := rbac.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
+	if err := grafanav1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+
 	return scheme, nil
 }
 
@@ -434,6 +446,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
+
+			//Verify that grafana dashboards are created
+			for _, dashboard := range reconciler.Config.GetDashboards() {
+				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
+				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashboard, Namespace: defaultInstallationNamespace}, grafanaDB)
+				if err != nil {
+					t.Fatalf("expected no error but got one: %v", err)
+				}
+			}
 		})
 	}
 }
@@ -675,17 +696,6 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		wantErr      string
 	}{
 		{
-			name: "fails when smtp secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "could not obtain smtp credentials secret: secrets \"test-smtp\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
@@ -804,10 +814,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			setup: func() error {
-				return os.Setenv(alertmanagerAlertAddressEnv, "test")
+				reconciler := basicReconciler
+				reconciler.installation = basicInstallationWithAlertEmailAddress()
+				return reconciler
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -823,7 +832,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPPassword":        string(smtpSecret.Data["password"]),
 					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-					"SMTPToAddress":       "test",
+					"SMTPToAddress":       mockAlertingEmailAddress,
 				})
 
 				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -839,12 +848,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.setup != nil {
-				err = tt.setup()
-				if err != nil {
-					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
-				}
-			}
+
 			reconciler := tt.reconciler()
 			serverClient := tt.serverClient()
 

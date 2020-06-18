@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/tools/record"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -32,6 +35,9 @@ func IsUpgradeAvailable(subscription *olmv1alpha1.Subscription) bool {
 func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscription, client k8sclient.Client) (*olmv1alpha1.InstallPlan, error) {
 	latestInstallPlan := &olmv1alpha1.InstallPlan{}
 	// Get the latest installPlan associated with the currentCSV (newest known to OLM)
+	if subscription.Status.InstallPlanRef == nil {
+		return nil, fmt.Errorf("installplan not found in the subscription status reference")
+	}
 	installPlanName := subscription.Status.InstallPlanRef.Name
 	installPlanNamespace := subscription.Status.InstallPlanRef.Namespace
 	err := client.Get(ctx, k8sclient.ObjectKey{Name: installPlanName, Namespace: installPlanNamespace}, latestInstallPlan)
@@ -58,9 +64,19 @@ func GetCSV(installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVe
 	return csv, nil
 }
 
-func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installplan *olmv1alpha1.InstallPlan) error {
+func DeleteInstallPlan(ctx context.Context, installPlan *olmv1alpha1.InstallPlan, client k8sclient.Client) error {
+	// remove cloud resource config map
+	err := client.Delete(ctx, installPlan)
+	if err != nil {
+		return fmt.Errorf("error occurred trying to delete installplan, %w", err)
+	}
+	return nil
+}
+
+func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integreatlyv1alpha1.RHMIConfig, installplan *olmv1alpha1.InstallPlan, targetVersion string) error {
+	// Calculate the next maintenance window based on the maintenance schedule
 	if config.Spec.Maintenance.ApplyFrom != "" {
-		mtStart, _, err := getWeeklyWindow(config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
+		mtStart, _, err := getWeeklyWindowFromNow(config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
 		if err != nil {
 			return err
 		}
@@ -69,47 +85,69 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
 
+	config.Status.TargetVersion = targetVersion
+
+	// If the install plan was approved, simply clear the status
 	if installplan.Spec.Approved {
-		config.Status.Upgrade.Window = ""
-	} else {
-		upStart := installplan.ObjectMeta.CreationTimestamp.Time.Format("2 Jan 2006")
-		upEnd := installplan.ObjectMeta.CreationTimestamp.Time.Add((time.Hour * 24) * 14).Format("2 Jan 2006")
-		config.Status.Upgrade.Window = upStart + " - " + upEnd
+		config.Status.Upgrade.Scheduled.For = ""
+
+		return client.Status().Update(ctx, config)
 	}
+
+	// Calculate the upgrade schedule based on the spec:
+	// We can assume there's no error parsing the value as it was validated
+	notBeforeDays := *config.Spec.Upgrade.NotBeforeDays
+	waitForMaintenance := *config.Spec.Upgrade.WaitForMaintenance
+
+	upgradeSchedule := installplan.ObjectMeta.CreationTimestamp.Time.
+		Add(daysDuration(notBeforeDays))
+
+	if waitForMaintenance {
+		var err error
+		upgradeSchedule, _, err = getWeeklyWindow(upgradeSchedule, config.Spec.Maintenance.ApplyFrom, time.Hour*WINDOW)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Update the upgrade status
+	config.Status.Upgrade = integreatlyv1alpha1.RHMIConfigStatusUpgrade{
+		Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
+			For: upgradeSchedule.Format(integreatlyv1alpha1.DateFormat),
+		},
+	}
+
 	return client.Status().Update(ctx, config)
 }
 
-func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig) (bool, error) {
-	if config.Spec.Upgrade.AlwaysImmediately {
-		return true, nil
+func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig, installation *integreatlyv1alpha1.RHMI) (bool, error) {
+	//Another upgrade in progress - don't proceed with upgrade
+	if (string(installation.Status.Stage) != string(integreatlyv1alpha1.PhaseCompleted)) && installation.Status.ToVersion != "" {
+		return false, nil
 	}
 
-	//Check if we are in the maintenance window
-	if config.Spec.Upgrade.DuringNextMaintenance {
-		duration, err := strconv.Atoi(strings.Replace(config.Status.Maintenance.Duration, "hrs", "", -1))
+	var duration int
+	// Upgrade window taken either from the maintenance window or, by default
+	// from the WINDOW constant
+	waitForMaintenance := *config.Spec.Upgrade.WaitForMaintenance
+	if waitForMaintenance {
+		var err error
+		duration, err = strconv.Atoi(strings.Replace(config.Status.Maintenance.Duration, "hrs", "", -1))
 		if err != nil {
 			return false, err
 		}
-
-		//don't approve upgrades in the last hour of maintenance
-		window := time.Hour * time.Duration(duration-WINDOW_MARGIN)
-
-		mtStart, err := time.Parse("2-1-2006 15:04", config.Status.Maintenance.ApplyFrom)
-		if err != nil {
-			return false, err
-		}
-
-		return inWindow(mtStart, mtStart.Add(window)), nil
+	} else {
+		duration = WINDOW
 	}
 
-	if config.Spec.Upgrade.ApplyOn != "" {
-		upTime, err := time.Parse("2 Jan 2006 15:04", config.Spec.Upgrade.ApplyOn)
-		if err != nil {
-			return false, err
-		}
-		return inWindow(upTime, upTime.Add(time.Hour*(WINDOW-WINDOW_MARGIN))), nil
+	//don't approve upgrades in the last hour of the window
+	window := time.Hour * time.Duration(duration-WINDOW_MARGIN)
+	upgradeTime, err := time.Parse(integreatlyv1alpha1.DateFormat, config.Status.Upgrade.Scheduled.For)
+	if err != nil {
+		return false, err
 	}
-	return false, nil
+
+	return inWindow(upgradeTime, upgradeTime.Add(window)), nil
 }
 
 func inWindow(windowStart time.Time, windowEnd time.Time) bool {
@@ -117,8 +155,7 @@ func inWindow(windowStart time.Time, windowEnd time.Time) bool {
 	return windowStart.Before(now) && windowEnd.After(now)
 }
 
-//windowStartStr must be in format: sun 23:00
-func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
+func getWeeklyWindow(from time.Time, windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
 	var shortDays = map[string]int{
 		"sun": 0,
 		"mon": 1,
@@ -128,7 +165,7 @@ func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, 
 		"fri": 5,
 		"sat": 6,
 	}
-	now := time.Now().UTC()
+
 	windowSegments := strings.Split(windowStartStr, " ")
 	windowDay := windowSegments[0]
 
@@ -143,11 +180,20 @@ func getWeeklyWindow(windowStartStr string, duration time.Duration) (time.Time, 
 	}
 
 	//calculate how far away from maintenance day today is, within the current week
-	dayDiff := shortDays[windowDay] - int(now.Weekday())
+	dayDiff := shortDays[strings.ToLower(windowDay)] - int(from.Weekday())
+	if dayDiff < 0 {
+		dayDiff = 7 + dayDiff
+	}
 
 	//negative days roll back the month and year, tested here: https://play.golang.org/p/gBBHw49nH1b
-	windowStart := time.Date(now.Year(), now.Month(), now.Day()+dayDiff, windowHour, windowMin, 0, 0, time.UTC)
+	windowStart := time.Date(from.Year(), from.Month(), from.Day(), windowHour, windowMin, 0, 0, time.UTC)
+	windowStart = windowStart.Add(daysDuration(dayDiff))
 	return windowStart, windowStart.Add(duration), nil
+}
+
+//windowStartStr must be in format: sun 23:00
+func getWeeklyWindowFromNow(windowStartStr string, duration time.Duration) (time.Time, time.Time, error) {
+	return getWeeklyWindow(time.Now().UTC(), windowStartStr, duration)
 }
 
 func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
@@ -163,7 +209,8 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
 	}
@@ -177,5 +224,24 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installPlan *o
 		return err
 	}
 
+	csv, err := GetCSV(installPlan)
+	if err != nil {
+		return err
+	}
+
+	version := csv.Spec.Version.String()
+	logrus.Infof("Update approved, setting rhmi version to install %s", version)
+	installation.Status.ToVersion = version
+	err = client.Status().Update(ctx, installation)
+	if err != nil {
+		return err
+	}
+
+	metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+
 	return nil
+}
+
+func daysDuration(numberOfDays int) time.Duration {
+	return time.Duration(numberOfDays) * 24 * time.Hour
 }

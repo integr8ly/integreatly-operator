@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"net/http"
 	"strings"
+
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -17,7 +18,7 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -55,7 +56,6 @@ const (
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
 
-	tier                           = "production"
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
@@ -87,6 +87,9 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 	config.SetBlackboxTargetPathForAdminUI("/p/login/")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
+
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
@@ -97,6 +100,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
+		logger:        logger,
 	}, nil
 }
 
@@ -111,6 +115,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	extraParams map[string]string
 	recorder    record.EventRecorder
+	logger      *logrus.Entry
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -261,13 +266,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
-	}
-
 	phase, err = r.backupSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
@@ -277,6 +275,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileRouteEditRole(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile roles", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		return phase, err
+	}
+	phase, err = r.reconcileKubeStateMetrics3scaleAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale alerts", err)
 		return phase, err
 	}
 
@@ -311,19 +326,6 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -373,17 +375,13 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 }
 
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling smtp")
+	logrus.Info("Reconciling smtp credentials")
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
-		// For non-managed installations, the SMTP secret isn't critical
-		if k8serr.IsNotFound(err) && r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
-			return integreatlyv1alpha1.PhaseCompleted, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get smtp credential secret: %w", err)
+		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
 	}
 	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -399,13 +397,50 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		if smtpConfigSecret.Data == nil {
 			smtpConfigSecret.Data = map[string][]byte{}
 		}
-		smtpConfigSecret.Data["address"] = credSec.Data["host"]
-		smtpConfigSecret.Data["authentication"] = []byte("login")
-		smtpConfigSecret.Data["domain"] = []byte(fmt.Sprintf("3scale-admin.%s", r.installation.Spec.RoutingSubdomain))
-		smtpConfigSecret.Data["openssl.verify.mode"] = []byte("")
-		smtpConfigSecret.Data["password"] = credSec.Data["password"]
-		smtpConfigSecret.Data["port"] = credSec.Data["port"]
-		smtpConfigSecret.Data["username"] = credSec.Data["username"]
+
+		smtpUpdated := false
+
+		if string(credSec.Data["host"]) != string(smtpConfigSecret.Data["address"]) {
+			smtpConfigSecret.Data["address"] = credSec.Data["host"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["authentication"]) != string(smtpConfigSecret.Data["authentication"]) {
+			smtpConfigSecret.Data["authentication"] = credSec.Data["authentication"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["domain"]) != string(smtpConfigSecret.Data["domain"]) {
+			smtpConfigSecret.Data["domain"] = credSec.Data["domain"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["openssl.verify.mode"]) != string(smtpConfigSecret.Data["openssl.verify.mode"]) {
+			smtpConfigSecret.Data["openssl.verify.mode"] = credSec.Data["openssl.verify.mode"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["password"]) != string(smtpConfigSecret.Data["password"]) {
+			smtpConfigSecret.Data["password"] = credSec.Data["password"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["port"]) != string(smtpConfigSecret.Data["port"]) {
+			smtpConfigSecret.Data["port"] = credSec.Data["port"]
+			smtpUpdated = true
+		}
+		if string(credSec.Data["username"]) != string(smtpConfigSecret.Data["username"]) {
+			smtpConfigSecret.Data["username"] = credSec.Data["username"]
+			smtpUpdated = true
+		}
+
+		if smtpUpdated {
+			err = r.RolloutDeployment("system-app")
+			if err != nil {
+				logrus.Error(err)
+			}
+
+			err = r.RolloutDeployment("system-sidekiq")
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -533,7 +568,7 @@ func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sc
 
 	// setup blob storage cr for the cloud resource operator
 	blobStorageName := fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, r.installation.Name)
-	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
+	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, blobStorageName, ns, blobStorageName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -614,7 +649,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating backend redis instance")
 	backendRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, r.installation.Name)
-	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
+	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -626,7 +661,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
 	systemRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, r.installation.Name)
-	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
+	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -638,7 +673,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// this will be used by the cloud resources operator to provision a postgres instance
 	logrus.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, r.installation.Name)
-	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, tier, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
+	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
 	})
@@ -646,9 +681,21 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
+	// redis cr returning a failed state
+	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis failure alert: %w", err)
+	}
+
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule
@@ -687,9 +734,21 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
+	// create prometheus failure rule
+	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis failure alert: %w", err)
+	}
+
 	// wait for the system redis cr to reconcile
 	if systemRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule
@@ -731,9 +790,21 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalRedisSecretName, err)
 	}
 
+	// cr returning a failed state
+	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+	}
+
 	// wait for the postgres cr to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule

@@ -1,4 +1,6 @@
 ---
+automation_jiras:
+  - INTLY-7430
 ---
 
 # H01 - UPS: Verify that UPS can send push notification

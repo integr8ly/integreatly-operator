@@ -20,7 +20,7 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -160,8 +160,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
+
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
@@ -184,9 +197,21 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
+	// create prometheus failed rule
+	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, client, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+	}
+
 	// wait for the postgres instance to reconcile
 	if postgres.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create the prometheus pending rule
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
 	}
 
 	// create the prometheus availability rule

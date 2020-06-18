@@ -35,9 +35,14 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	if forbiddenResp.StatusCode != http.StatusForbidden {
 		t.Fatalf("unexpected status code on forbidden request, got=%+v", forbiddenResp)
 	}
+	//create new http client
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal("failed to create testing http client", err)
+	}
 	//retrieve an openshift oauth proxy cookie
 	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err := resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
+	if err := resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, httpClient, TestingIDPRealm, t); err != nil {
 		t.Fatal("failed to login through openshift oauth proxy", err)
 	}
 
@@ -45,7 +50,7 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to prepare test request to grafana", err)
 	}
-	successResp, err := ctx.HttpClient.Do(req)
+	successResp, err := httpClient.Do(req)
 
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
@@ -70,14 +75,19 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
+	//create new http client
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal("failed to create testing http client", err)
+	}
 	//retrieve an openshift oauth proxy cookie
 	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
+	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, httpClient, TestingIDPRealm, t); err != nil {
 		t.Fatal("failed to login through openshift oauth proxy", err)
 	}
 	//get dashboards for grafana from the external route
 	grafanaDashboardsUrl := fmt.Sprintf("%s/api/search", grafanaRootHostname)
-	dashboardResp, err := ctx.HttpClient.Get(grafanaDashboardsUrl)
+	dashboardResp, err := httpClient.Get(grafanaDashboardsUrl)
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
 	}
