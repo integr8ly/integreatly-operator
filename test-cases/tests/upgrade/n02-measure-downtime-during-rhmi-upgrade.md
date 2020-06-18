@@ -23,6 +23,7 @@ Mesure the downtime of the RHMI components during the RHMI upgrade (not to be co
    ```
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
+
 2. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repo and run the following command:
 
    ```
@@ -70,7 +71,7 @@ Mesure the downtime of the RHMI components during the RHMI upgrade (not to be co
    make build/cli
    ./delorean pipeline query-report --config-file ./configurations/downtime-report.yaml -o <output_dir>
    ```
-   
+
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue.
 
 9. Terminate the process for measuring the downtime of components in terminal window #1
