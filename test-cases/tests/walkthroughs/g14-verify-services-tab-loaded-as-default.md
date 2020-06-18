@@ -1,6 +1,7 @@
 ---
 estimate: 15m
 tags:
+  - 2.3.0
 ---
 
 # G14 - Verify services tab loaded as default
