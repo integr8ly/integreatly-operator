@@ -283,6 +283,28 @@ func TestReconciler_handleProgress(t *testing.T) {
 		})
 	}
 
+	mixedReadinessPods := []runtime.Object{}
+	for i := 0; i < 8; i++ {
+		readyCondition := corev1.ConditionFalse
+		if (i % 2) == 0 {
+			readyCondition = corev1.ConditionTrue
+		}
+		mixedReadinessPods = append(mixedReadinessPods, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
+				Namespace: defaultInstallationNamespace,
+			},
+			Status: corev1.PodStatus{
+				Conditions: []corev1.PodCondition{
+					corev1.PodCondition{
+						Type:   corev1.ContainersReady,
+						Status: readyCondition,
+					},
+				},
+			},
+		})
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -320,6 +342,14 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:           "test unready pods returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
+			FakeConfig:     basicConfigMock(),
+			Installation:   &integreatlyv1alpha1.RHMI{},
+			Recorder:       setupRecorder(),
+		},
+		{
+			Name:           "test mixed readiness pods returns phase in progress",
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, mixedReadinessPods...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			Recorder:       setupRecorder(),

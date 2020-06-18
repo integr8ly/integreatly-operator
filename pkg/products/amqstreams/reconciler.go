@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	"github.com/sirupsen/logrus"
@@ -18,6 +17,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,7 +33,9 @@ var (
 	// ClusterName is the Kafka cluster name
 	ClusterName                          = "rhmi-cluster"
 	manifestPackage                      = "integreatly-amq-streams"
-	replicas                             = 3
+	kafkaReplicas                        = 3
+	zookeeperReplicas                    = 3
+	entityOperatorReplicas               = 1
 	offsetsTopicReplicationFactor        = "3"
 	transactionStateLogReplicationFactor = "3"
 )
@@ -175,8 +177,8 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Namespace = r.Config.GetNamespace()
 
 		kafka.Spec.Kafka.Version = "2.1.1"
-		if kafka.Spec.Kafka.Replicas < replicas {
-			kafka.Spec.Kafka.Replicas = replicas
+		if kafka.Spec.Kafka.Replicas < kafkaReplicas {
+			kafka.Spec.Kafka.Replicas = kafkaReplicas
 		}
 		kafka.Spec.Kafka.Listeners = map[string]kafkav1alpha1.KafkaListener{
 			"plain": {},
@@ -190,8 +192,8 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Spec.Kafka.Storage.Size = "10Gi"
 		kafka.Spec.Kafka.Storage.DeleteClaim = false
 
-		if kafka.Spec.Zookeeper.Replicas < replicas {
-			kafka.Spec.Zookeeper.Replicas = replicas
+		if kafka.Spec.Zookeeper.Replicas < zookeeperReplicas {
+			kafka.Spec.Zookeeper.Replicas = zookeeperReplicas
 		}
 		kafka.Spec.Zookeeper.Storage.Type = "persistent-claim"
 		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
@@ -224,25 +226,48 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
 	}
 
-	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
+	minExpectedPods := kafkaReplicas + zookeeperReplicas + entityOperatorReplicas
+	if len(pods.Items) < minExpectedPods {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	//and they should all be ready
-checkPodStatus:
+	if !r.allPodsReady(pods) {
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	r.logger.Infof("all pods ready, returning complete")
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) allPodsReady(pods *corev1.PodList) bool {
 	for _, pod := range pods.Items {
 		for _, cnd := range pod.Status.Conditions {
 			if cnd.Type == corev1.ContainersReady {
 				if cnd.Status != corev1.ConditionStatus("True") {
-					return integreatlyv1alpha1.PhaseInProgress, nil
+					return false
 				}
-				break checkPodStatus
 			}
 		}
 	}
+	return true
+}
 
-	r.logger.Infof("all pods ready, returning complete")
+// setHostInConfig sets the Kafka Bootstrap service address into the config object
+func (r *Reconciler) setHostInConfig(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "rhmi-cluster-kafka-bootstrap", Namespace: r.Config.GetNamespace()}, service)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read amq streams bootstrap server service: %w", err)
+	}
+
+	r.Config.SetHost(fmt.Sprintf("%s.%s.svc:9092", service.GetName(), service.GetNamespace()))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not persist config: %w", err)
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -266,22 +291,4 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		serverClient,
 		catalogSourceReconciler,
 	)
-}
-
-// setHostInConfig sets the Kafka Bootstrap service address into the config object
-func (r *Reconciler) setHostInConfig(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	service := &corev1.Service{}
-
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: "rhmi-cluster-kafka-bootstrap", Namespace: r.Config.GetNamespace()}, service)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read amq streams bootstrap server service: %w", err)
-	}
-
-	r.Config.SetHost(fmt.Sprintf("%s.%s.svc:9092", service.GetName(), service.GetNamespace()))
-	err = r.ConfigManager.WriteConfig(r.Config)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not persist config: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
