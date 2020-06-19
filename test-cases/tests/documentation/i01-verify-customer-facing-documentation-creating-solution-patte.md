@@ -6,12 +6,12 @@ estimate: 2h
 
 ## Creating Solution Patterns
 
-**Note the following link is not to the Customer Portal, the formatting will not match what is on Customer Portal, however the steps should be the same.**
+**Note the following link is to our docs staging server. **
 
-https://integr8ly.github.io/user-docs-site/integreatly/creating-sps/master.html
+https://access.redhat.com/documentation/en-us/red_hat_managed_integration/2/html-single/creating_solution_patterns_for_red_hat_managed_integration_2/index?lb_target=stage
 
 Acceptance Criteria:
 
-1. All tasks on the document can be completed
+1. All tasks in the document can be completed
 2. The flow of instructions makes sense
 3. All links are accessible
