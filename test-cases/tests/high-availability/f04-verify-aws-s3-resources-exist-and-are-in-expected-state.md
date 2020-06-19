@@ -17,7 +17,6 @@ automation_jiras:
   - In the `AWS IAM credentials` tab, create a new access key, note the `Access Key ID` and `Secret Access Key` that will be returned, use these in your CLI to configure aws with `aws configure`.
 - Make sure you have `oc` installed and logged into as admin user to the testing cluster.
 
-
 ## Steps
 
 1. Run the following command:
