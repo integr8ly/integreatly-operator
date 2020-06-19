@@ -492,6 +492,8 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		return err
 	}
 
+	pluginList := getPluginsForGrafanaDashboard(dashboard)
+
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
 		grafanaDB.Labels = map[string]string{
 			"monitoring-key": r.Config.GetLabelSelector(),
@@ -499,6 +501,9 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
 			Json: specJSON,
 			Name: name,
+		}
+		if len(pluginList) > 0 {
+			grafanaDB.Spec.Plugins = pluginList
 		}
 		return nil
 	})
