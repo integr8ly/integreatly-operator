@@ -15,3 +15,11 @@ Acceptance Criteria:
 1. All tasks on the document can be completed
 2. The flow of instructions makes sense
 3. All links are accessible
+
+## Managing Solution Patterns
+https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/RHMIDOC-149/docs/assemblies/admin-guide/as_managing-solution-patterns.adoc
+
+Acceptance Criteria:
+
+1. Instructions are coherent and sequenced appropriately 
+2. Links are accessible 
