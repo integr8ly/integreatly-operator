@@ -45,3 +45,8 @@ aws elasticache describe-cache-clusters | jq -r '.CacheClusters[] | .CacheNodeTy
 5. Check updated RDS and Elasticache instance types with AWS CLI (use the same commands as before)
    > output for RDS instances should contain only "db.t3.small"
    > output for Elasticache instances should contain only "cache.t3.micro"
+6. Verify the correct Redis/Elasticache engine version:
+``` bash
+aws elasticache describe-cache-clusters | jq -r '.CacheClusters[].EngineVersion'
+```
+  > output should contain only the versions "5.0.6"
