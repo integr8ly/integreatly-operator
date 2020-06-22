@@ -82,4 +82,6 @@ Mesure the downtime of the RHMI components during the RHMI upgrade (not to be co
 
 10. Upload that file to the JIRA ticket
 
-11. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+11. Upload all reports to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
+
+12. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
