@@ -1,8 +1,7 @@
 ---
 tags:
   - happy-path
-automation_jiras:
-  - INTLY-7961
+  - automated
 ---
 
 # A07 - All operand versions are correct
