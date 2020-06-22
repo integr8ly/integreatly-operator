@@ -6,12 +6,13 @@ estimate: 3h
 
 # RHMI 2 Getting Started
 
-**Note the following link is not to the Customer Portal, the formatting will not match what is on Customer Portal, however the steps should be the same.**
+**Note the following link is for the staging branch of the Customer Portal.**
 
-https://integr8ly.github.io/user-docs-site/integreatly/getting-started/master.html
+https://access.redhat.com/documentation/en-us/red_hat_managed_integration/2/html-single/getting_started_with_red_hat_managed_integration_2/?lb_target=stage
 
 Acceptance Criteria:
 
-1. All tasks on the document can be completed
-2. The flow of instructions makes sense
-3. All links are accessible
+1. QE and writer agree that the latest build of the book is available at the link above.
+2. All tasks on the document can be completed
+3. The flow of instructions makes sense
+4. All links are accessible
