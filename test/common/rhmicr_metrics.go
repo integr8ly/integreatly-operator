@@ -36,7 +36,7 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 	// check if rhmi_status is present
 	rhmiStatusMetricPresent := regexp.MustCompile(`rhmi_status{.*}`)
 	if !rhmiStatusMetricPresent.MatchString(output) {
-		t.Fatalf("rhmi_status metric is not present: %w", err)
+		t.Fatalf("rhmi_status metric is not present. Metrics output:\n%v", output)
 	}
 
 	// check if the metric labels matches rhmi CR
@@ -49,7 +49,7 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 	// check if rhmi_info is present
 	rhmiInfoMetricPresent := regexp.MustCompile(`rhmi_spec{.*}`)
 	if !rhmiInfoMetricPresent.MatchString(output) {
-		t.Fatalf("rhmi_spec metric is not present: %w", err)
+		t.Fatalf("rhmi_spec metric is not present. Metrics output:\n%v", output)
 	}
 
 	// check if rhmi_info metric labels matches with rhmi installation CR
@@ -69,7 +69,7 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 		doRHMIInfoLabelsMatch = false
 	}
 	if !doRHMIInfoLabelsMatch {
-		t.Fatalf("rhmi_info metric labels do not match with rhmi CR: %w", err)
+		t.Fatalf("rhmi_info metric labels do not match with rhmi CR. Labels:\n%v", rhmiInfoLabels)
 	}
 }
 
