@@ -46,7 +46,9 @@ aws elasticache describe-cache-clusters | jq -r '.CacheClusters[] | .CacheNodeTy
    > output for RDS instances should contain only "db.t3.small"
    > output for Elasticache instances should contain only "cache.t3.micro"
 6. Verify the correct Redis/Elasticache engine version:
-``` bash
+
+```bash
 aws elasticache describe-cache-clusters | jq -r '.CacheClusters[].EngineVersion'
 ```
-  > output should contain only the versions "5.0.6"
+
+> output should contain only the versions "5.0.6"
