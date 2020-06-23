@@ -2,6 +2,8 @@
 estimate: 15m
 tags:
   - happy-path
+automation_jiras:
+  - INTLY-7416
 ---
 
 # B01 - Verify that the users can login in all products

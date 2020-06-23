@@ -33,16 +33,6 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("failed to exec to prometheus pod: %w", err)
 	}
 
-	// check if rhmi_status value matches with status.stage
-	isCompleted := 0
-	if string(rhmi.Status.Stage) == "complete" {
-		isCompleted = 1
-	}
-	rhmiStatusMetricValid := regexp.MustCompile(fmt.Sprintf(`rhmi_status{.*} [%v]`, isCompleted))
-	if !rhmiStatusMetricValid.MatchString(output) {
-		t.Fatalf("rhmi_status metric is not present: %w", err)
-	}
-
 	// check if rhmi_status is present
 	rhmiStatusMetricPresent := regexp.MustCompile(`rhmi_status{.*}`)
 	if !rhmiStatusMetricPresent.MatchString(output) {
@@ -52,26 +42,8 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 	// check if the metric labels matches rhmi CR
 	stringRHMIStatus := rhmiStatusMetricPresent.FindString(output)
 	labels := parsePrometheusMetricToMap(stringRHMIStatus, "rhmi_status")
-	doRHMIStatusLabelsMatch := true
-	if labels["operator_name"] != rhmi.GetName() ||
-		labels["namespace"] != rhmi.GetNamespace() ||
-		labels["last_error"] != rhmi.Status.LastError ||
-		labels["preflight_message"] != rhmi.Status.PreflightMessage ||
-		labels["preflight_status"] != string(rhmi.Status.PreflightStatus) ||
-		labels["stage"] != string(rhmi.Status.Stage) {
-		doRHMIStatusLabelsMatch = false
-	}
-
-	for _, stage := range rhmi.Status.Stages {
-		for _, product := range stage.Products {
-			productStatus := labels[sanitizeForPrometheusLabel(product.Name)]
-			if productStatus != string(product.Status) {
-				doRHMIStatusLabelsMatch = false
-			}
-		}
-	}
-	if !doRHMIStatusLabelsMatch {
-		t.Fatalf("rhmi_status metric labels do not match with rhmi CR: %w", err)
+	if labels["stage"] != string(rhmi.Status.Stage) {
+		t.Fatalf("rhmi_status metric stage does not match current stage: %s != %s", labels["stage"], string(rhmi.Status.Stage))
 	}
 
 	// check if rhmi_info is present

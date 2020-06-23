@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+automation_jiras:
+  - INTLY-7421
 ---
 
 # E04 - Verify SLO dashboard

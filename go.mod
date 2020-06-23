@@ -10,20 +10,22 @@ require (
 	// No tags on the apicurio repo so needed to use a commit hash
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.25.50
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.6
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/go-querystring v1.0.0
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
 	github.com/integr8ly/cloud-resource-operator v0.16.1
-	github.com/integr8ly/grafana-operator v1.3.1
+	github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
-	github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
+	github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
@@ -31,10 +33,10 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-registry v1.5.7-0.20200121213444-d8e2ec52c19a
-	github.com/operator-framework/operator-sdk v0.15.1
+	github.com/operator-framework/operator-sdk v0.15.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.3.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200406175937-7e2945a5ee43
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975 // indirect
@@ -81,3 +83,6 @@ replace (
 replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
+
+// Remove when PR https://github.com/keycloak/keycloak-operator/pull/171 is merged
+replace github.com/keycloak/keycloak-operator => github.com/integr8ly/keycloak-operator-rhmi v0.0.0-20200505143708-9f0afbb299cd

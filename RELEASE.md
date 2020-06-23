@@ -13,13 +13,13 @@ NOTE: Red Hat VPN is required to access.
 
 # Prepare for Patch Releases
 
-In order to create patch releases, we need to make sure a release branch is created first and it is configured properly. Run the following command:
+In order to create patch releases, we need to make sure a release branch is created first and it is configured properly.
    
-```
-TAG=2.1.1 make prepare-patch-release
-```
+Run the following pipeline to create a release branch: [rhmi-prepare-patch-release](https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/Delorean/job/rhmi-prepare-patch-release/)
 
-The above command will create the release branch if it doesn't exist, and also update the [openshift/release](https://github.com/openshift/release) repo to update build configurations for the release branch if it's new.
+- Fill in the `version` with the patch version that you are going to create (example: `2.1.1`, `2.3.1`)
+
+The above pipeline will create the release branch if it doesn't exist, and update or create the build configuration for the release branch in the [openshift/release](https://github.com/openshift/release) repository.
 
 Once the release branch is created, you can make changes to it. The same changes should be cherry-picked to master branch as well.
 

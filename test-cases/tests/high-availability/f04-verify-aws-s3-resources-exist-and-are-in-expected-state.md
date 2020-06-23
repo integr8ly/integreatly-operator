@@ -1,28 +1,37 @@
 ---
 estimate: 15m
+automation_jiras:
+  - INTLY-6654
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state
 
 ## Description
 
-### AWS Resources
-
-#### S3 Bucket:
-
-- 1 for 3scale (name: rhmibyocjlkcwredhat**rhmioperatorthre**-mpm4)
-- 1 for backup (name: rhmibyocjlkcwredhat**rhmioperatorback**-6ibv)
-
 ## Prerequisites
 
-Need to login to AWS with the same user used to create the cluster.
+- Make sure you have the [AWS CLI](https://aws.amazon.com/cli/) installed, and configured correctly.
+- Make sure you have `oc` installed and logged into as admin user to the testing cluster.
 
 ## Steps
 
-1. Open and login to the [AWS Console](console.aws.amazon.com)
-2. Go to the **S3** Service and resources are present in AWS
-   > All [S3 resources](#s3-bucket) should be present
-   >
-   > For each S3 resource:
-   >
-   > - The Access column should report `Bucket and objects not public`
+1. Run the following command:
+   ```
+   aws resourcegroupstaggingapi get-resources \
+      --region=$(oc get infrastructure cluster -o jsonpath='{.status.platformStatus.aws.region}') \
+      --tag-filters Key=integreatly.org/clusterID,Values=$(oc get infrastructure cluster -o jsonpath='{.status.infrastructureName}') \
+      --resource-type-filters s3
+   ```
+2. You should see 2 buckets listed when the command is finished running. You should also be able to see the tags for each of the bucket. One of these tags should be `integreatly.org/product-name`. One bucket should have value `cloud-resources` for this tag, and the other should have `3scale` for this tag. The following is an example output:
+   ```
+   RESOURCETAGMAPPINGLIST  arn:aws:s3:::addonflow1154pgnwredhatrhmioperator-misj
+   TAGS    integreatly.org/clusterID       addon-flow-115-4pgnw
+   TAGS    integreatly.org/product-name    cloud-resources
+   TAGS    integreatly.org/resource-name   backups-blobstorage-rhmi
+   TAGS    integreatly.org/resource-type   managed
+   RESOURCETAGMAPPINGLIST  arn:aws:s3:::addonflow1154pgnwredhatrhmioperator-tdhs
+   TAGS    integreatly.org/clusterID       addon-flow-115-4pgnw
+   TAGS    integreatly.org/product-name    3scale
+   TAGS    integreatly.org/resource-name   threescale-blobstorage-rhmi
+   TAGS    integreatly.org/resource-type   managed
+   ```

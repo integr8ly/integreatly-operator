@@ -239,6 +239,157 @@ var expectedRules = []alertsTestRule{
 		File:  "redhat-rhmi-amq-online-enmasse-console-rules.yaml",
 		Rules: []string{},
 	},
+	{
+		File: NamespacePrefix + "apicurito-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIApicuritoServiceEndpointDown",
+			"RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIThreeScaleApicastProductionServiceEndpointDown",
+			"RHMIThreeScaleApicastStagingServiceEndpointDown",
+			"RHMIThreeScaleBackendListenerServiceEndpointDown",
+			"RHMIThreeScaleSystemDeveloperServiceEndpointDown",
+			"RHMIThreeScaleSystemMasterServiceEndpointDown",
+			"RHMIThreeScaleSystemMemcacheServiceEndpointDown",
+			"RHMIThreeScaleSystemProviderServiceEndpointDown",
+			"RHMIThreeScaleSystemSphinxServiceEndpointDown",
+			"RHMIThreeScaleZyncDatabaseServiceEndpointDown",
+			"RHMIThreeScaleZyncServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "amq-online-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIAMQOnlineNoneAuthServiceEndpointDown",
+			"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
+			"RHMIAMQOnlineConsoleServiceEndpointDown",
+			"RHMIAMQOnlineRegistryCsServiceEndpointDown",
+			"RHMIAMQOnlineStandardAuthServiceEndpointDown",
+			"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUserRhssoKeycloakServiceEndpointDown",
+			"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "cloud-resources-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICloudResourceOperatorMetricsServiceEndpointDown",
+			"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
+			"RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIRhssoKeycloakServiceEndpointDown",
+			"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
+			"RHMIThreeScaleOperatorServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "codeready-workspaces-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICodeReadyCheHostServiceEndpointDown",
+			"RHMICodeReadyDevfileRegistryServiceEndpointDown",
+			"RHMICodeReadyPluginRegistryServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+			"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "apicurito-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "fuse-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisServerServiceEndpointDown",
+			"RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"RHMIUPSUnifiedPushServiceEndpointDown",
+			"RHMIUPSUnifiedpushProxyServiceEndpointDown",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
@@ -336,6 +487,102 @@ var expectedAWSRules = []alertsTestRule{
 		File: RHMIOperatorNamespace + "-availability-rule-fuse-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"Fuse-Postgres-RhmiPostgresInstanceUnavailable",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-fuse-postgres-rhmi.yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Redis-RhmiRedisResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-ups-postgres-rhmi.yaml",
+		Rules: []string{
+			"Ups-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-rhssouser-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhssouser-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-rhsso-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhsso-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-ups-postgres-rhmi.yaml",
+		Rules: []string{
+			"Ups-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-postgres-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-fuse-postgres-rhmi.yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Redis-RhmiRedisResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-rhsso-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhsso-Postgres-RhmiPostgresResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-threescale-backend-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Backend-Redis-RhmiRedisResourceStatusPhasePending",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-codeready-postgres-rhmi.yaml",
+		Rules: []string{
+			"Codeready-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-rhssouser-postgres-rhmi.yaml",
+		Rules: []string{
+			"Rhssouser-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-backend-redis-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Backend-Redis-RhmiRedisResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-failed-rule-threescale-postgres-rhmi.yaml",
+		Rules: []string{
+			"Threescale-Postgres-RhmiPostgresResourceStatusPhaseFailed",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-resource-status-phase-pending-rule-codeready-postgres-rhmi.yaml",
+		Rules: []string{
+			"Codeready-Postgres-RhmiPostgresResourceStatusPhasePending",
 		},
 	},
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
@@ -60,7 +62,6 @@ const (
 	developersGroupName         = "rhmi-developers"
 	dedicatedAdminsGroupName    = "dedicated-admins"
 	realmManagersGroupName      = "realm-managers"
-	fullRealmManagersGroupPath  = dedicatedAdminsGroupName + "/" + realmManagersGroupName
 	viewRealmRoleName           = "view-realm"
 	createRealmRoleName         = "create-realm"
 	manageRealmRoleName         = "manage-realm"
@@ -253,6 +254,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -271,16 +284,20 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso: %w", err)
 	}
 
-	// cr returning a failed state
+	// at this point it should be ok to create the failed alert.
 	if postgres != nil {
+		// create prometheus failed rule
 		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
 		}
-		// cr stuck in a pending state for greater that 5 min
-		_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to create postgres resource on provider stuck in a pending state: %w", err)
+
+		// create prometheus pending rule only when CR has completed for the first time.
+		if postgres.Status.Phase == types.PhaseComplete {
+			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+			}
 		}
 	}
 
@@ -312,7 +329,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.0/keycloak-metrics-spi-2.0.0.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()
@@ -422,6 +439,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		} else {
 			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 		}
+	}
+
+	// Reconcile dedicated-admin group members based on the openshift users
+	phase, err = r.reconcileDedicatedAdminUsers(serverClient, ctx, kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile dedicated-admins members: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -606,7 +629,7 @@ func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.
 					"manage-users",
 				},
 			},
-			Groups: []string{dedicatedAdminsGroupName, fullRealmManagersGroupPath},
+			Groups: []string{dedicatedAdminsGroupName, realmManagersGroupName},
 		})
 	}
 	return keycloakUsers
@@ -637,7 +660,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					if group == dedicatedAdminsGroupName {
 						hasDedicatedAdminGroup = true
 					}
-					if group == fullRealmManagersGroupPath {
+					if group == realmManagersGroupName {
 						hasRealmManagerGroup = true
 					}
 				}
@@ -645,7 +668,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					allUsers[i].Groups = append(allUsers[i].Groups, dedicatedAdminsGroupName)
 				}
 				if !hasRealmManagerGroup {
-					allUsers[i].Groups = append(allUsers[i].Groups, fullRealmManagersGroupPath)
+					allUsers[i].Groups = append(allUsers[i].Groups, realmManagersGroupName)
 				}
 
 				break
@@ -672,7 +695,7 @@ func demoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, demoted []keycloak
 				// Remove the dedicated-admins group from the user groups list
 				groups := []string{}
 				for _, group := range allUsers[i].Groups {
-					if (group != dedicatedAdminsGroupName) && (group != fullRealmManagersGroupPath) {
+					if (group != dedicatedAdminsGroupName) && (group != realmManagersGroupName) {
 						groups = append(groups, group)
 					}
 				}
@@ -1286,6 +1309,116 @@ func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integ
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, err
+}
+
+// Reconcile the members of the dedicated-admin and realm-managers groups. Gets
+// the dedicated admin users from Openshift and compares them with the current
+// members of the groups, adding or removing them from the groups.
+// NOTE: The Keyclock operator does not reconcile the KeycloakUser.Spec.user.groups
+//       array, that's why this is done manually. If the operator is updated to
+//		 reconcile this field, this function will become redundant, as the membership
+//       could be declared in the CR spec.
+func (r *Reconciler) reconcileDedicatedAdminUsers(serverClient k8sclient.Client, ctx context.Context, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
+	// Get Keycloak client
+	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	openshiftUsers := &usersv1.UserList{}
+	err = serverClient.List(ctx, openshiftUsers)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	openshiftGroups := &usersv1.GroupList{}
+	err = serverClient.List(ctx, openshiftGroups)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	// Get OS dedicated-admin users
+	dedicatedAdminUsers := getDedicatedAdmins(*openshiftUsers, *openshiftGroups)
+
+	// Reconcile their membership to the dedicated-admins and realm-managers
+	// groups
+	for _, groupName := range []string{dedicatedAdminsGroupName, realmManagersGroupName} {
+		err = reconcileDedicatedAdminsMembership(kcClient, dedicatedAdminUsers, groupName)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func reconcileDedicatedAdminsMembership(kcClient keycloakCommon.KeycloakInterface, dedicatedAdminUsers []usersv1.User, groupName string) error {
+	group, err := kcClient.FindGroupByName(groupName, masterRealmName)
+	if err != nil {
+		return err
+	}
+
+	groupMembers, err := kcClient.ListUsersInGroup(masterRealmName, group.ID)
+	if err != nil {
+		return err
+	}
+
+	// Look for the users in OS that are not members of the group and add
+	// them to it
+	for _, osDedicatedAdmin := range dedicatedAdminUsers {
+		// Search for the user in the group members list
+		ssoUserID := ""
+		for _, groupMember := range groupMembers {
+			if osDedicatedAdmin.Name == groupMember.UserName {
+				ssoUserID = groupMember.ID
+				break
+			}
+		}
+
+		// If the user is found, skip it
+		if ssoUserID != "" {
+			continue
+		}
+
+		// Look for the user in the keycloak API. If the user is not found,
+		// skip it, as it might not have been reconciled yet
+		kcUser, err := kcClient.FindUserByUsername(osDedicatedAdmin.Name, masterRealmName)
+		if err != nil {
+			return err
+		}
+		if kcUser == nil {
+			logrus.Infof("Openshift dedicated-admin %s not found in User SSO, skipping...", osDedicatedAdmin.Name)
+			continue
+		}
+
+		// Add the user to the group
+		err = kcClient.AddUserToGroup(masterRealmName, kcUser.ID, group.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Look for the users in the group that are not dedicated admins in OS
+	// and remove them from the group
+	for _, groupMember := range groupMembers {
+		found := false
+		for _, osDedicatedAdmin := range dedicatedAdminUsers {
+			if osDedicatedAdmin.Name == groupMember.UserName {
+				found = true
+				break
+			}
+		}
+
+		if found {
+			continue
+		}
+
+		err = kcClient.DeleteUserFromGroup(masterRealmName, groupMember.ID, group.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, clientID, roleName string) error {

@@ -1,0 +1,51 @@
+package common
+
+import (
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"testing"
+)
+
+var (
+	productVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
+		integreatlyv1alpha1.AuthenticationStage: {
+			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
+		},
+		integreatlyv1alpha1.MonitoringStage: {
+			integreatlyv1alpha1.ProductMonitoring: integreatlyv1alpha1.VersionMonitoring,
+		},
+		integreatlyv1alpha1.CloudResourcesStage: {
+			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
+		},
+		integreatlyv1alpha1.ProductsStage: {
+			integreatlyv1alpha1.Product3Scale:              integreatlyv1alpha1.Version3Scale,
+			integreatlyv1alpha1.ProductFuse:                integreatlyv1alpha1.VersionFuseOnOpenshift,
+			integreatlyv1alpha1.ProductRHSSOUser:           integreatlyv1alpha1.VersionRHSSOUser,
+			integreatlyv1alpha1.ProductCodeReadyWorkspaces: integreatlyv1alpha1.VersionCodeReadyWorkspaces,
+			integreatlyv1alpha1.ProductAMQOnline:           integreatlyv1alpha1.VersionAMQOnline,
+			integreatlyv1alpha1.ProductUps:                 integreatlyv1alpha1.VersionUps,
+			integreatlyv1alpha1.ProductApicurito:           integreatlyv1alpha1.VersionApicurito,
+		},
+		integreatlyv1alpha1.SolutionExplorerStage: {
+			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.VersionSolutionExplorer,
+		},
+	}
+)
+
+func TestProductVersions(t *testing.T, ctx *TestingContext) {
+
+	rhmi, err := getRHMI(ctx.Client)
+
+	if err != nil {
+		t.Fatalf("failed to get the RHMI: %s", err)
+	}
+
+	for stage := range productVersions {
+		for productName, productVersion := range productVersions[stage] {
+			clusterVersion := rhmi.Status.Stages[stage].Products[productName].Version
+			if clusterVersion != productVersion {
+				t.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s", productName, productVersion, clusterVersion)
+			}
+		}
+
+	}
+}
