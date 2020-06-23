@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"

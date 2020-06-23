@@ -3,15 +3,16 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"strings"
 
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 

@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	oauthv1 "github.com/openshift/api/oauth/v1"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	"github.com/sirupsen/logrus"
@@ -32,7 +35,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"

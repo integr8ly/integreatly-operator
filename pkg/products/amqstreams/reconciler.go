@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +18,6 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	appsv1 "k8s.io/api/apps/v1"

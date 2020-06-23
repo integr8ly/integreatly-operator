@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -50,23 +51,20 @@ const (
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string) error {
-	return add(mgr, newReconciler(mgr, products))
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, products []string) ReconcileInstallation {
-	ctx, cancel := context.WithCancel(context.Background())
+func newReconciler(mgr manager.Manager) ReconcileInstallation {
 	restConfig := controllerruntime.GetConfigOrDie()
+	restConfig.Timeout = 10 * time.Second
 	return ReconcileInstallation{
-		client:            mgr.GetClient(),
-		scheme:            mgr.GetScheme(),
-		restConfig:        restConfig,
-		productsToInstall: products,
-		context:           ctx,
-		cancel:            cancel,
-		mgr:               mgr,
-		customInformers:   make(map[string]map[string]*cache.Informer),
+		client:          mgr.GetClient(),
+		scheme:          mgr.GetScheme(),
+		restConfig:      restConfig,
+		mgr:             mgr,
+		customInformers: make(map[string]map[string]*cache.Informer),
 	}
 }
 
@@ -182,15 +180,12 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client            k8sclient.Client
-	scheme            *runtime.Scheme
-	restConfig        *rest.Config
-	productsToInstall []string
-	context           context.Context
-	cancel            context.CancelFunc
-	mgr               manager.Manager
-	controller        controller.Controller
-	customInformers   map[string]map[string]*cache.Informer
+	client          k8sclient.Client
+	scheme          *runtime.Scheme
+	restConfig      *rest.Config
+	mgr             manager.Manager
+	controller      controller.Controller
+	customInformers map[string]map[string]*cache.Informer
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -206,18 +201,14 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	originalInstallation := installation.DeepCopy()
+
 	retryRequeue := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
 	}
 
-	//context is cancelled on delete of an installation, so if context is cancelled but there is no deletion timestamp
-	//the installation must be created after one was deleted, so recreate a context to use for the new installation.
-	if r.context.Err() == context.Canceled && installation.DeletionTimestamp == nil {
-		r.context, r.cancel = context.WithCancel(context.Background())
-	}
-
-	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
+	installType, err := TypeFactory(installation.Spec.Type)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -237,14 +228,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 	metrics.SetRHMIStatus(installation)
 
-	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
+	configManager, err := config.NewManager(context.TODO(), r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = resources.AddFinalizer(r.context, installation, r.client, deletionFinalizer)
-	if err != nil {
-		return reconcile.Result{}, err
+	if !resources.Contains(installation.GetFinalizers(), deletionFinalizer) && installation.GetDeletionTimestamp() == nil {
+		installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
 	}
 
 	if installation.Status.Stages == nil {
@@ -257,73 +247,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return r.preflightChecks(installation, installType, configManager)
 	}
 
-	// If the CR is being deleted, cancel the current context
-	// and attempt to clean up the products with finalizers
+	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
-		// Cancel this context to kill all ongoing requests to the API
-		// and use a new context to handle deletion logic
-		r.cancel()
-
-		// Set metrics status to unavailable
-		metrics.RHMIStatusAvailable.Set(0)
-		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
-		installation.Status.LastError = ""
-		// updates rhmi status metric to deletion
-		metrics.SetRHMIStatus(installation)
-		_ = r.client.Status().Update(context.TODO(), installation)
-
-		// Clean up the products which have finalizers associated to them
-		merr := &multiErr{}
-		for _, productFinalizer := range installation.Finalizers {
-			if !strings.Contains(productFinalizer, "integreatly") {
-				continue
-			}
-			productName := strings.Split(productFinalizer, ".")[1]
-			product := installation.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
-			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
-			}
-			serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
-			}
-			phase, err := reconciler.Reconcile(context.TODO(), installation, product, serverClient)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
-			}
-			logrus.Infof("current phase for %s is: %s", product.Name, phase)
-		}
-
-		if len(merr.errors) == 0 && len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
-			// delete ConfigMap after all product finalizers finished
-			if err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
-				return retryRequeue, merr
-			}
-
-			if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
-				return retryRequeue, merr
-			}
-
-			err = resources.RemoveFinalizer(context.TODO(), installation, r.client, deletionFinalizer)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
-				return retryRequeue, merr
-			}
-			logrus.Infof("uninstall completed")
-			return reconcile.Result{}, nil
-		}
-
-		return retryRequeue, nil
+		return r.handleUninstall(installation)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
 	if installation.Status.Version == "" && installation.Status.ToVersion == "" {
 		installation.Status.ToVersion = version.IntegreatlyVersion
 		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.IntegreatlyVersion)
-		if err := r.client.Status().Update(r.context, installation); err != nil {
+		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -337,7 +270,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(r.context, r.client, installation); err != nil {
+	if err := webhooks.Config.Reconcile(context.TODO(), r.client, installation); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -387,46 +320,152 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
+	metrics.SetRHMIStatus(installation)
 
-	err = r.client.Status().Update(r.context, installation)
+	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
+		installation.Status.Version = installation.Status.ToVersion
+		installation.Status.ToVersion = ""
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+	}
+
+	err = r.updateStatusAndObject(originalInstallation, installation)
 	if err != nil {
-		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-		if k8serr.IsConflict(err) {
-			// If there is a conflict, requeue the resource and retry Update
-			logrus.Info("Error updating Installation resource status. Requeue and retry.", err)
-			return retryRequeue, nil
-		}
+		return retryRequeue, err
+	}
 
-		logrus.Error(err, "error reconciling installation installation")
-		if installInProgress {
-			return retryRequeue, err
+	// installation completed
+	if !installInProgress {
+		metrics.RHMIStatusAvailable.Set(1)
+		logrus.Infof("installation completed succesfully")
+		return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
+	}
+
+	//installation still in progress
+	return retryRequeue, nil
+}
+
+func (r *ReconcileInstallation) updateStatusAndObject(original, installation *integreatlyv1alpha1.RHMI) error {
+	if !reflect.DeepEqual(original.Status, installation.Status) {
+		logrus.Info("updating status")
+		err := r.client.Status().Update(context.TODO(), installation)
+		if err != nil {
+			return err
 		}
+	}
+
+	if !reflect.DeepEqual(original, installation) {
+		logrus.Info("updating object")
+		err := r.client.Update(context.TODO(), installation)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
+	retryRequeue := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
+	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
+	if installationCfgMap == "" {
+		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
+	}
+	configManager, err := config.NewManager(context.TODO(), r.client, installation.Namespace, installationCfgMap, installation)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// UPDATE OBJECT
-	err = r.client.Update(r.context, installation)
-	if err != nil {
-		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-		if k8serr.IsConflict(err) {
-			// If there is a conflict, requeue the resource and retry Update
-			logrus.Info("Error updating Installation resource. Requeue and retry.", err)
-			return retryRequeue, nil
-		}
+	// Set metrics status to unavailable
+	metrics.RHMIStatusAvailable.Set(0)
 
-		logrus.Error(err, "error reconciling installation installation")
-		if installInProgress {
-			return retryRequeue, err
-		}
-		return reconcile.Result{}, err
+	installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
+	installation.Status.LastError = ""
+
+	// updates rhmi status metric to deletion
+	metrics.SetRHMIStatus(installation)
+
+	// Clean up the products which have finalizers associated to them
+	merr := &multiErr{}
+	finalizers := []string{}
+	for _, finalizer := range installation.Finalizers {
+		finalizers = append(finalizers, finalizer)
 	}
-	if installInProgress {
+	for _, productFinalizer := range finalizers {
+		if !strings.Contains(productFinalizer, "integreatly") {
+			continue
+		}
+		productName := strings.Split(productFinalizer, ".")[1]
+		product := installation.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
+		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
+		}
+		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
+		}
+		phase, err := reconciler.Reconcile(context.TODO(), installation, product, serverClient)
+		if err != nil {
+			merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
+		}
+		logrus.Infof("current phase for %s is: %s", product.Name, phase)
+	}
+
+	//any products left to uninstall, or any errors during product uninstall, add to CR and return
+	if len(installation.Finalizers) > 1 || len(merr.errors) > 0 {
+		if len(merr.errors) > 0 {
+			installation.Status.LastError = merr.Error()
+			r.client.Status().Update(context.TODO(), installation)
+		}
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			merr.Add(err)
+		}
 		return retryRequeue, nil
 	}
 
-	metrics.RHMIStatusAvailable.Set(1)
-	logrus.Infof("installation completed succesfully")
-	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
+	//all products gone and no errors, tidy up bootstrap stuff
+	if len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
+		logrus.Infof("len finalizers: %v", len(installation.Finalizers))
+		// delete ConfigMap after all product finalizers finished
+		if err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: installation.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
+			merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
+			installation.Status.LastError = merr.Error()
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
+			return retryRequeue, merr
+		}
+
+		if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
+			merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
+			installation.Status.LastError = merr.Error()
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
+			return retryRequeue, merr
+		}
+
+		installation.SetFinalizers(resources.Remove(installation.GetFinalizers(), deletionFinalizer))
+
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			merr.Add(err)
+			return retryRequeue, merr
+		}
+
+		logrus.Infof("uninstall completed")
+		return reconcile.Result{}, nil
+	}
+
+	logrus.Infof("updating uninstallation object")
+	// no finalizers left, update object
+	err = r.client.Update(context.TODO(), installation)
+	return retryRequeue, err
 }
 
 func isFirstInstallReconcile(installation *integreatlyv1alpha1.RHMI) bool {
@@ -688,7 +727,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
 		installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 		installation.Status.PreflightMessage = "Spec.useClusterStorage must be set to either 'true' or 'false' to continue"
-		_ = r.client.Status().Update(r.context, installation)
+		_ = r.client.Status().Update(context.TODO(), installation)
 		logrus.Infof("preflight checks failed on useClusterStorage value")
 		return result, nil
 	}
@@ -703,7 +742,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 					Namespace: installation.Namespace,
 				},
 			}
-			if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
+			if exists, err := resources.Exists(context.TODO(), r.client, secret); err != nil {
 				return reconcile.Result{}, err
 			} else if !exists {
 				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
@@ -712,7 +751,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 
 				installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 				installation.Status.PreflightMessage = preflightMessage
-				_ = r.client.Status().Update(r.context, installation)
+				_ = r.client.Status().Update(context.TODO(), installation)
 
 				return reconcile.Result{}, err
 			}
@@ -724,7 +763,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 
 	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
-	err := r.client.List(r.context, namespaces)
+	err := r.client.List(context.TODO(), namespaces)
 	if err != nil {
 		// could not list namespaces, keep trying
 		logrus.Infof("error listing namespaces, will retry")
@@ -743,14 +782,14 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
 			logrus.Infof("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
-			_ = r.client.Status().Update(r.context, installation)
+			_ = r.client.Status().Update(context.TODO(), installation)
 			return result, err
 		}
 	}
 
 	installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"
-	err = r.client.Status().Update(r.context, installation)
+	err = r.client.Status().Update(context.TODO(), installation)
 	if err != nil {
 		logrus.Infof("error updating status: %s", err.Error())
 	}
@@ -777,7 +816,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 			if search == nil {
 				continue
 			}
-			exists, err := resources.Exists(r.context, serverClient, search)
+			exists, err := resources.Exists(context.TODO(), serverClient, search)
 			if err != nil {
 				return foundProducts, err
 			} else if exists {
@@ -801,7 +840,7 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
-	phase, err := reconciler.Reconcile(r.context, installation, serverClient)
+	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
@@ -816,7 +855,6 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	installation.Status.Stage = stage.Name
 
 	for _, product := range stage.Products {
-
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
@@ -825,7 +863,8 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(r.context, installation, &product, serverClient)
+		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient)
+
 		if err != nil {
 			if mErr == nil {
 				mErr = &multiErr{}
@@ -838,6 +877,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to read product config for %s: %v", string(product.Name), err)
 		}
+
 		if product.Status == integreatlyv1alpha1.PhaseCompleted {
 			for _, crd := range config.GetWatchableCRDs() {
 				namespace := config.GetNamespace()
@@ -900,7 +940,7 @@ func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1
 
 func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
-	mapper, err := apiutil.NewDiscoveryRESTMapper(r.restConfig)
+	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
 	if err != nil {
 		return fmt.Errorf("Failed to get API Group-Resources: %v", err)
 	}

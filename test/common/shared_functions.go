@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/resources"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/resources"
 
 	"golang.org/x/net/publicsuffix"
 	"gopkg.in/yaml.v2"
@@ -242,7 +243,7 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 	}
 
 	resp, err = openshiftClient.DoOpenshiftPostRequest(expectedPermission.ListPath, bodyBytes)
-
+	defer resp.Body.Close()
 	if err != nil {
 		t.Errorf("failed to perform CREATE request with error : %s", err)
 	}

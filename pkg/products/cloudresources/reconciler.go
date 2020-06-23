@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	"github.com/sirupsen/logrus"
@@ -14,10 +19,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"

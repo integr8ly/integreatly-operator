@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	"github.com/sirupsen/logrus"
@@ -18,7 +20,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
