@@ -25,11 +25,13 @@ Acceptance Criteria:
 ## Sprint 19 
 * ends 24/Jun/20
 
-### Managing Solution Patterns
-https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/RHMIDOC-149/docs/assemblies/admin-guide/as_managing-solution-patterns.adoc
+### RHMIDOC-149:Managing Solution Patterns
+Jira: https://issues.redhat.com/browse/RHMIDOC-149
+File: https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/RHMIDOC-149/docs/assemblies/admin-guide/as_managing-solution-patterns.adoc
 
 
 Acceptance Criteria:
 
 1. Instructions are coherent and sequenced appropriately. 
 2. Links are accessible. 
+3. Peer Tester: Joan Edwards
