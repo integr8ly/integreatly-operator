@@ -26,8 +26,9 @@ Acceptance Criteria:
 * ends 24/Jun/20
 
 ### RHMIDOC-149:Managing Solution Patterns
-Jira: https://issues.redhat.com/browse/RHMIDOC-149
-File: https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/RHMIDOC-149/docs/assemblies/admin-guide/as_managing-solution-patterns.adoc
+* Jira: https://issues.redhat.com/browse/RHMIDOC-149
+
+* File: https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/RHMIDOC-149/docs/assemblies/admin-guide/as_managing-solution-patterns.adoc
 
 
 Acceptance Criteria:
