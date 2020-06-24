@@ -23,6 +23,11 @@ type UpgradeNotifierImpl struct {
 	ctx    context.Context
 }
 
+type LazyUpgradeNotifier struct {
+	ClientResolver func() (k8sclient.Client, error)
+	Notifier       UpgradeNotifier
+}
+
 func NewUpgradeNotifier(ctx context.Context, restConfig *rest.Config) (UpgradeNotifier, error) {
 	client, err := k8sclient.New(restConfig, k8sclient.Options{})
 	if err != nil {
@@ -30,6 +35,12 @@ func NewUpgradeNotifier(ctx context.Context, restConfig *rest.Config) (UpgradeNo
 	}
 
 	return NewUpgradeNotifierWithClient(ctx, client), nil
+}
+
+func NewLazyUpgradeNotifier(createClient func() (k8sclient.Client, error)) UpgradeNotifier {
+	return &LazyUpgradeNotifier{
+		ClientResolver: createClient,
+	}
 }
 
 func NewUpgradeNotifierWithClient(ctx context.Context, client k8sclient.Client) *UpgradeNotifierImpl {
@@ -43,6 +54,37 @@ type upgradeData struct {
 	ScheduledFor       string `json:"scheduledFor"`
 	Version            string `json:"version"`
 	IsServiceAffecting bool   `json:"isServiceAffecting"`
+}
+
+func (lazyNotifier *LazyUpgradeNotifier) GetNotifier() (UpgradeNotifier, error) {
+	if lazyNotifier.Notifier != nil {
+		return lazyNotifier.Notifier, nil
+	}
+	client, err := lazyNotifier.ClientResolver()
+	if err != nil {
+		return nil, err
+	}
+
+	lazyNotifier.Notifier = NewUpgradeNotifierWithClient(context.TODO(), client)
+	return lazyNotifier.Notifier, nil
+}
+
+func (lazyNotifier *LazyUpgradeNotifier) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
+	notifer, err := lazyNotifier.GetNotifier()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return notifer.NotifyUpgrade(config, version, isServiceAffecting)
+}
+
+func (lazyNotifier *LazyUpgradeNotifier) ClearNotification() error {
+	notifier, err := lazyNotifier.GetNotifier()
+	if err != nil {
+		return err
+	}
+
+	return notifier.ClearNotification()
 }
 
 func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
