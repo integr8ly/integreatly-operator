@@ -20,7 +20,9 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
 2. Login to the cluster as **kubeadmin**
 
-3. Deploy the **workload-web-app** to the cluster
+3. Deploy the **workload-web-app** to the cluster.
+
+   IMPORTANT. Make sure that you don't run `make local/deploy` again, as this will break the monitoring dashboard
 
    ```bash
     export GRAFANA_DASHBOARD=true
