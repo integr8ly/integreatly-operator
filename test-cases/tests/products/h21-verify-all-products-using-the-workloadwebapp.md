@@ -23,6 +23,7 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 3. Deploy the **workload-web-app** to the cluster
 
    ```bash
+    export GRAFANA_DASHBOARD=true
     make local/deploy
    ```
 
@@ -44,8 +45,9 @@ The [workload-web-app](https://github.com/integr8ly/workload-web-app) will:
 
 5. Select the **Workload App** dashboard
 
-   > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph
+   > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph.
+   > Take the screenshot of the dashboard and attach it to this ticket
    >
-   > Note: when testing the RHMI upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues
+   > Note: when testing the RHMI upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues (also make sure that the screenshot of the dashboard post-upgrade is attached to this Jira)
    >
    > Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
