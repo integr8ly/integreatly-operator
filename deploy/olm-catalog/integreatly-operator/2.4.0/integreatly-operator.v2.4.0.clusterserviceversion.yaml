@@ -44,7 +44,6 @@ metadata:
     containerImage: quay.io/integreatly/integreatly-operator:v2.4.0-rc2
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
-    serviceAffecting: "false"
     support: RHMI
   name: integreatly-operator.v2.4.0
   namespace: placeholder
@@ -53,6 +52,7 @@ spec:
   customresourcedefinitions:
     owned:
     - description: RHMIConfig is the Schema for the rhmiconfigs API
+      displayName: RHMI Configuration
       kind: RHMIConfig
       name: rhmiconfigs.integreatly.org
       version: v1alpha1
