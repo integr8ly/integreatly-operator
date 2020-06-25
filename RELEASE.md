@@ -11,20 +11,6 @@ Our release process has been automated and the Jenkins pipeline can be found [he
 
 NOTE: Red Hat VPN is required to access.
 
-# Prepare for Patch Releases
-
-In order to create patch releases, we need to make sure a release branch is created first and it is configured properly.
-   
-Run the following pipeline to create a release branch: [rhmi-prepare-patch-release](https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/Delorean/job/rhmi-prepare-patch-release/)
-
-- Fill in the `version` with the patch version that you are going to create (example: `2.1.1`, `2.3.1`)
-
-The above pipeline will create the release branch if it doesn't exist, and update or create the build configuration for the release branch in the [openshift/release](https://github.com/openshift/release) repository.
-
-Once the release branch is created, you can make changes to it. The same changes should be cherry-picked to master branch as well.
-
-Then follow steps described in the next section to create a release when it's ready.
-
 # All Releases
 
 To perform a release, you should:
@@ -40,7 +26,8 @@ To perform a release, you should:
 6. Wait for the build to finish, and at the end you should see a merge request link to the managed-tenant repo.
 7. Review the MR (and make any additional changes if required). Ping reviewers on the PR once it's ready. 
 8. When the final release is done, make sure close the merge blocker issue on Github to allow Prow to start merging PRs back to the release branch.
-9. If this is a patch release and a new ClusterServiceVersion (CSV) is generated, please make sure adding the new CSV files back to the master branch. This needs to be done manually for now and we will add automation in the future. The following is an example how you can do it:
+9. If this is a patch release, please make sure that the pipeline has created a release branch if it doesn't already exist, and updated or created the build configuration for the release branch in the [openshift/release](https://github.com/openshift/release) repository.
+10. If this is a patch release and a new ClusterServiceVersion (CSV) is generated, please make sure adding the new CSV files back to the master branch. This needs to be done manually for now and we will add automation in the future. The following is an example how you can do it:
     
     ```
     git checkout upstream/release-v2.1 -- deploy/olm-catalog/integreatly-operator/
