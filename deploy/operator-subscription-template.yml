@@ -18,7 +18,7 @@ objects:
       namespace: ${NAMESPACE}
     spec:
       channel: ${CHANNEL}
-      installPlanApproval: Automatic
+      installPlanApproval: ${INSTALL_PLAN_APPROVAL}
       name: integreatly
       source: ${CATALOG_SOURCE_CONFIG_NAME}
       sourceNamespace: ${CATALOG_SOURCE_CONFIG_NAMESPACE}
@@ -48,3 +48,7 @@ parameters:
     displayName: Channel Name
     name: CHANNEL
     value: rhmi
+  - description: Approval type for installations and upgrades
+    displayName: Install type Approval
+    name: INSTALL_PLAN_APPROVAL
+    value: Manual
