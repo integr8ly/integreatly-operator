@@ -26,7 +26,10 @@ To perform a release, you should:
 6. Wait for the build to finish, and at the end you should see a merge request link to the managed-tenant repo.
 7. Review the MR (and make any additional changes if required). Ping reviewers on the PR once it's ready. 
 8. When the final release is done, make sure close the merge blocker issue on Github to allow Prow to start merging PRs back to the release branch.
-9. If this is a patch release, please make sure that the pipeline has created a release branch if it doesn't already exist, and updated or created the build configuration for the release branch in the [openshift/release](https://github.com/openshift/release) repository.
+9. If this is a minor release, please make sure that the pipeline has created a release branch if it doesn't already exist, and updated or created the build configuration for the release branch in the [openshift/release](https://github.com/openshift/release) repository.
+Go to [this directory](https://github.com/openshift/release/tree/master/ci-operator/config/integr8ly/integreatly-operator) to see if the correct config file has created.
+>Example: For the minor release 2.4.0 it is expected to have  `integr8ly-integreatly-operator-release-v2.4.yaml` file.
+
 10. If this is a patch release and a new ClusterServiceVersion (CSV) is generated, please make sure adding the new CSV files back to the master branch. This needs to be done manually for now and we will add automation in the future. The following is an example how you can do it:
     
     ```
