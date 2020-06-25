@@ -28,10 +28,10 @@ spec:
           resources:
             limits:
               memory: 1536Mi
-              cpu: 80m
+              cpu: 150m
             requests:
               memory: 64Mi
-              cpu: 40m
+              cpu: 100m
           volumeMounts:
           - name: webhook-certs
             mountPath: "/etc/ssl/certs/webhook"
