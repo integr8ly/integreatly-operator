@@ -11,6 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/sirupsen/logrus"
 
+	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/tools/record"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -69,6 +70,20 @@ func DeleteInstallPlan(ctx context.Context, installPlan *olmv1alpha1.InstallPlan
 	err := client.Delete(ctx, installPlan)
 	if err != nil {
 		return fmt.Errorf("error occurred trying to delete installplan, %w", err)
+	}
+	return nil
+}
+
+func CreateInstallPlan(ctx context.Context, rhmiSubscription *olmv1alpha1.Subscription, client k8sclient.Client) error {
+	// workaround to trigger the creation of another installplan by OLM
+	rhmiSubscription.Status.State = operatorsv1alpha1.SubscriptionStateAtLatest
+	rhmiSubscription.Status.InstallPlanRef = nil
+	rhmiSubscription.Status.Install = nil
+	rhmiSubscription.Status.CurrentCSV = rhmiSubscription.Status.InstalledCSV
+
+	err := client.Status().Update(ctx, rhmiSubscription)
+	if err != nil {
+		return fmt.Errorf("error updating the subscripion status block %w", err)
 	}
 	return nil
 }
