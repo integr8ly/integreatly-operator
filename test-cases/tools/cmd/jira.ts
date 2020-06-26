@@ -136,7 +136,7 @@ const jira: CommandModule<{}, Args> = {
         },
         "auto-resolve": {
             describe:
-                "tasks that passed or were skipped in previous epic will be resolved (Requires --previousEpic)",
+                "tasks that passed [Done] or were skipped [Won't Do] in previous epic will be resolved (Requires --previousEpic)",
             type: "boolean",
             default: false
         }
