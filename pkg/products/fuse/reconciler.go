@@ -184,13 +184,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
-	}
-
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
@@ -235,19 +228,6 @@ func (r *Reconciler) createResource(ctx context.Context, resourceName string, se
 	}
 
 	return resource, nil
-}
-
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // Ensures all users in rhmi-developers group have view Fuse permissions
@@ -408,6 +388,9 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 					Enabled:      false,
 					OperatorOnly: true,
 					ClientOnly:   true,
+				},
+				Ops: syndesisv1beta1.AddonSpec{
+					Enabled: true,
 				},
 				Todo: syndesisv1beta1.AddonSpec{
 					Enabled: false,

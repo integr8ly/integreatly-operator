@@ -2,9 +2,10 @@ package monitoringspec
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
@@ -39,6 +40,79 @@ const (
 	clonedServiceMonitorLabelKey              = "integreatly.org/cloned-servicemonitor"
 	clonedServiceMonitorLabelValue            = "true"
 )
+
+//Remove this section, it's used for a temporary function to clean up obsolete resources
+//TODO remove from here ---------------------------------------------------
+type obsoleteObjectStruct struct {
+	name       string
+	namespace  string
+	objectType string
+}
+
+var obsoleteObjects = []obsoleteObjectStruct{
+	{
+		name:       "syndesis-infra-api-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-infra-home-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-integrations-alerting-rules",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "PrometheusRule",
+	},
+	{
+		name:       "syndesis-integrations-camel-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-integrations-home-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-integrations-jvm-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-integrations",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "Service",
+	},
+	{
+		name:       "syndesis-integrations",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "ServiceMonitor",
+	},
+	{
+		name:       "syndesis-infra-jvm-dashboard",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "GrafanaDashboard",
+	},
+	{
+		name:       "syndesis-infra-meta-alerting-rules",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "PrometheusRule",
+	},
+	{
+		name:       "syndesis-infra-server-alerting-rules",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "PrometheusRule",
+	},
+	{
+		name:       "syndesis-infra",
+		namespace:  "redhat-rhmi-middleware-monitoring",
+		objectType: "ServiceMonitor",
+	},
+}
+
+//TODO remove to here ----------------------------------------------------
 
 type Reconciler struct {
 	Config        *config.MonitoringSpec
@@ -234,6 +308,18 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 			}
 		}
 	}
+	//TODO remove from here vvvvvvvvvvvvvvvvvvvvv
+	for _, object := range obsoleteObjects {
+		err := r.removeOldResources(ctx, serverClient, object.objectType, object.name, object.namespace)
+		if k8serr.IsNotFound(err) {
+			//ignore not found, We expect to hit this on every reconcile apart from the first after upgrade
+			continue
+		}
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+	//TODO remove to here ^^^^^^^^^^^^^^^^^^^
 	return integreatlyv1alpha1.PhaseCompleted, err
 }
 
@@ -364,6 +450,67 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 	}
 	return err
 }
+
+//this is only a temporary function included to remove obsolete resources left from a workaround for a fuse syndesis bug, all these objects should now be generated through the ops addon
+//TODO Remove from here vvvvvvvvvvvvvvvvvv
+func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, objectType, name, namespace string) error {
+	if objectType == "PrometheusRule" {
+		promRuleToDelete := &monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := serverClient.Delete(ctx, promRuleToDelete)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	if objectType == "GrafanaDashboard" {
+		GrafanDashToDelete := &grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := serverClient.Delete(ctx, GrafanDashToDelete)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	if objectType == "Service" {
+		ServiceToDelete := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := serverClient.Delete(ctx, ServiceToDelete)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	if objectType == "ServiceMonitor" {
+		ServiceMonitorToDelete := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		}
+		err := serverClient.Delete(ctx, ServiceMonitorToDelete)
+		if err != nil {
+			return err
+		}
+	} else if objectType != "PrometheusRule" && objectType != "GrafanaDashboard" && objectType != "Service" && objectType != "ServiceMonitor" {
+		return errors.New("Object type passed to obsolete resource deletion does not match any expected object types")
+	}
+	return nil
+}
+
+//TODO remove to here ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 func (r *Reconciler) removeServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, namespace, name string) (err error) {
