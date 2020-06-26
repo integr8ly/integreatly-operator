@@ -1,5 +1,5 @@
 channels:
-- currentCSV: amq-online.1.4.4
+- currentCSV: amq-online.1.5.1
   name: rhmi
 defaultChannel: rhmi
 packageName: rhmi-amq-online

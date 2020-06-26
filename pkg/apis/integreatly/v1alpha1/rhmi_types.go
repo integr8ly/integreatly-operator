@@ -56,7 +56,7 @@ var (
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
-	VersionAMQOnline           ProductVersion = "1.4"
+	VersionAMQOnline           ProductVersion = "1.5"
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
@@ -85,7 +85,7 @@ var (
 
 	// Operator image tags
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline           OperatorVersion = "1.4"
+	OperatorVersionAMQOnline           OperatorVersion = "1.5.1"
 	OperatorVersionMonitoring          OperatorVersion = "1.2.1"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.60"
 	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
