@@ -1033,13 +1033,13 @@ spec:
                 - name: RELATED_IMAGE_IOT_PROXY_CONFIGURATOR
                   value: quay.io/integreatly/delorean:amq7-tech-preview-amq-online-1-iot-proxy-configurator_1.5
                 - name: RELATED_IMAGE_ROUTER
-                  value: registry-proxy.engineering.redhat.com/rh-osbs/amq7-amq-interconnect:1.8
+                  value: quay.io/integreatly/delorean:amq7-amq-interconnect_1.8
                 - name: RELATED_IMAGE_STANDARD_CONTROLLER
                   value: quay.io/integreatly/delorean:amq7-amq-online-1-standard-controller_1.5
                 - name: RELATED_IMAGE_AGENT
                   value: quay.io/integreatly/delorean:amq7-amq-online-1-agent_1.5
                 - name: RELATED_IMAGE_BROKER
-                  value: registry-proxy.engineering.redhat.com/rh-osbs/amq-broker-7-amq-broker-77-openshift:7.7
+                  value: quay.io/integreatly/delorean:amq7-amq-broker_7.7
                 - name: RELATED_IMAGE_BROKER_PLUGIN
                   value: quay.io/integreatly/delorean:amq7-amq-online-1-broker-plugin_1.5
                 - name: RELATED_IMAGE_TOPIC_FORWARDER
