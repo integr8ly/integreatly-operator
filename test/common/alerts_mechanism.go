@@ -226,7 +226,7 @@ func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing
 		for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
 			if fuseAlertState != expectedState {
 				alertsInExpectedState = false
-				t.Log(fuseAlertName+" alert is not in expected state ("+expectedState+") yet, current state:", fuseAlertState)
+				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", fuseAlertName, expectedState, fuseAlertState)
 				t.Log("waiting 1 minute before retrying")
 			}
 		}
