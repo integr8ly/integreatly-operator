@@ -27,24 +27,41 @@ type alertManagerConfig struct {
 		SMTPAuthUsername string `yaml:"smtp_auth_username"`
 		SMTPAuthPassword string `yaml:"smtp_auth_password"`
 	} `yaml:"global"`
+
 	Receivers []map[string]interface{} `yaml:"receivers"`
 }
 
 const (
-	fuseAlertName              = "FuseOnlineSyndesisUIInstanceDown"
 	fuseOperatorDeploymentName = "syndesis-operator"
 	fuseUIDeploymentConfigName = "syndesis-ui"
 )
 
+var fuseAlertsToTest = map[string]string{
+	"FuseOnlineSyndesisUIInstanceDown":            "none",
+	"RHMIFuseOnlineSyndesisUiServiceEndpointDown": "none",
+}
+
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
 func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 	// verify that alert to be tested is not firing before starting the test
-	state, err := getFuseAlertState(ctx)
+	err := getFuseAlertState(ctx)
 	if err != nil {
 		t.Fatal("failed to get fuse alert state", err)
 	}
-	if state != "none" {
-		t.Fatal("fuse alert should not be firing")
+
+	fuseAlertsFiring := false
+
+	// check if any alerts are firing before test execution
+	for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
+		if fuseAlertState != "none" {
+			fuseAlertsFiring = true
+			t.Errorf("%s alert should not be firing", fuseAlertName)
+		}
+	}
+
+	// fail test if any alerts are firing
+	if fuseAlertsFiring {
+		t.FailNow()
 	}
 
 	// scale down Fuse operator and UI pods and verify that fuse alert is firing
@@ -174,8 +191,10 @@ func checkAlertManager(ctx *TestingContext) error {
 		return fmt.Errorf("failed to exec to alertmanger pod: %w", err)
 	}
 
-	if !strings.Contains(output, fuseAlertName) {
-		return fmt.Errorf("alert not firing in alertmanager")
+	for fuseAlertName := range fuseAlertsToTest {
+		if !strings.Contains(output, fuseAlertName) {
+			return fmt.Errorf("%s alert not firing in alertmanager", fuseAlertName)
+		}
 	}
 
 	return nil
@@ -196,57 +215,70 @@ func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing
 	monitoringTimeout := 15 * time.Minute
 	monitoringRetryInterval := time.Minute
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		state, err := getFuseAlertState(ctx)
+		err = getFuseAlertState(ctx)
 		if err != nil {
 			t.Log("failed to get fuse alert state:", err)
 			t.Log("waiting 1 minute before retrying")
 			return false, nil
 		}
-		if state == expectedState {
+
+		alertsInExpectedState := true
+		for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
+			if fuseAlertState != expectedState {
+				alertsInExpectedState = false
+				t.Log(fuseAlertName+" alert is not in expected state ("+expectedState+") yet, current state:", fuseAlertState)
+				t.Log("waiting 1 minute before retrying")
+			}
+		}
+
+		if alertsInExpectedState {
 			return true, nil
 		}
 
-		t.Log("fuse alert is not in expected state ("+expectedState+") yet, current state:", state)
-		t.Log("waiting 1 minute before retrying")
 		return false, nil
 	})
 
 	return err
 }
 
-func getFuseAlertState(ctx *TestingContext) (string, error) {
+func getFuseAlertState(ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to exec to prometheus pod: %w", err)
+		return fmt.Errorf("failed to exec to prometheus pod: %w", err)
 	}
 
 	var promAPICallOutput prometheusAPIResponse
 	err = json.Unmarshal([]byte(output), &promAPICallOutput)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal json: %w", err)
+		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
 	var alertsResult prometheusv1.AlertsResult
 	err = json.Unmarshal(promAPICallOutput.Data, &alertsResult)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal json: %w", err)
+		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	state := "none"
+	// reset the state to "none" as the prom api only returns alerts that are triggering hence the state needs to be reset.
+	for fuseAlertName := range fuseAlertsToTest {
+		fuseAlertsToTest[fuseAlertName] = "none"
+	}
 
 	for _, alert := range alertsResult.Alerts {
 		alertName := string(alert.Labels["alertname"])
 
-		if alertName == fuseAlertName {
-			state = string(alert.State)
+		for fuseAlertName := range fuseAlertsToTest {
+			if alertName == fuseAlertName {
+				fuseAlertsToTest[fuseAlertName] = string(alert.State)
+			}
 		}
 	}
 
-	return state, nil
+	return nil
 }
 
 func getNumOfReplicasDeployment(name string, namespace string, kubeClient kubernetes.Interface) (int32, error) {
