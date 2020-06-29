@@ -163,7 +163,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 
 	// verify subnets
-	err = verifySubnets(ec2Sess, clusterTag, expectedCidr)
+	subnets, err := verifySubnets(ec2Sess, clusterTag, expectedCidr)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
 
 	// verify security groups
@@ -174,14 +174,20 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	// since tag filtering isnt currently available
 	name := resources.ShortenString(fmt.Sprintf("%s-%s", clusterTag, "subnet-group"), 40)
 
+	// build array list of all vpc private subnets
+	var subnetIDs []*string
+	for _, subnet := range subnets {
+		subnetIDs = append(subnetIDs, subnet.SubnetId)
+	}
+
 	// verify rds subnet groups
 	rdsSvc := rds.New(session)
-	err = verifyRdsSubnetGroups(rdsSvc, name)
+	err = verifyRdsSubnetGroups(rdsSvc, name, subnetIDs)
 	testErrors.rdsSubnetGroupsError = err.(*networkConfigTestError).rdsSubnetGroupsError
 
 	// verify elasticache subnet groups
 	cacheSvc := elasticache.New(session)
-	err = verifyCacheSubnetGroups(cacheSvc, name)
+	err = verifyCacheSubnetGroups(cacheSvc, name, subnetIDs)
 	testErrors.rdsSubnetGroupsError = err.(*networkConfigTestError).rdsSubnetGroupsError
 
 	// peering connection and route tables
@@ -247,7 +253,7 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 }
 
 // verify that the vpc subnets are created
-func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) error {
+func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Subnet, error) {
 	newErr := &networkConfigTestError{
 		subnetsError: []string{},
 	}
@@ -267,25 +273,25 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) error {
 	})
 	if err != nil {
 		newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not describe subnets: %v", err))
-		return newErr
+		return nil, newErr
 	}
 
 	// parse the vpc cidr block from the createStrategy for _network
+	subnets := describeSubnets.Subnets
 	_, cidr, err := net.ParseCIDR(expectedCidr)
 	if err != nil {
 		newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not parse vpc cidr block: %v", err))
-		return newErr
+		return subnets, newErr
 	}
 	cidrMask, _ := cidr.Mask.Size()
 
 	// verify the subnet masks for the subnets are one bit bigger
 	// than the vpc subnet mask
-	subnets := describeSubnets.Subnets
 	for _, subnet := range subnets {
 		_, subnetCidr, err := net.ParseCIDR(aws.StringValue(subnet.CidrBlock))
 		if err != nil {
 			newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not parse subnet mask for vpc subnets: %v", err))
-			return newErr
+			return subnets, newErr
 		}
 		subnetCidrMask, _ := subnetCidr.Mask.Size()
 		if subnetCidrMask != cidrMask+1 {
@@ -293,7 +299,7 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) error {
 		}
 	}
 
-	return newErr
+	return subnets, newErr
 }
 
 // verify vpc security group
@@ -330,7 +336,7 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 }
 
 // verify that the subnet groups for rds are created
-func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string) error {
+func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string, subnets []*string) error {
 	newErr := &networkConfigTestError{
 		rdsSubnetGroupsError: []string{},
 	}
@@ -351,11 +357,23 @@ func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string) error {
 		return newErr
 	}
 
+	// ensure all subnets exist in subnet group
+	subnetsExist := true
+	for _, subnet := range subnetGroups[0].Subnets {
+		if !contains(subnets, subnet.SubnetIdentifier) {
+			subnetsExist = false
+			break
+		}
+	}
+	if !subnetsExist {
+		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, "rds subnet group does not contain expected subnets")
+	}
+
 	return newErr
 }
 
 // verify that the subnet groups for elasticache are created
-func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string) error {
+func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string, subnets []*string) error {
 	newErr := &networkConfigTestError{
 		cacheSubnetGroupsError: []string{},
 	}
@@ -373,6 +391,18 @@ func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string) err
 	cacheSubnetGroups := describeCacheGroups.CacheSubnetGroups
 	if len(cacheSubnetGroups) != 1 {
 		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, fmt.Sprintf("unexpected number of elasticache subnet groups: %d", len(cacheSubnetGroups)))
+	}
+
+	// ensure all subnets exist in subnet group
+	subnetsExist := true
+	for _, subnet := range cacheSubnetGroups[0].Subnets {
+		if !contains(subnets, subnet.SubnetIdentifier) {
+			subnetsExist = false
+			break
+		}
+	}
+	if !subnetsExist {
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, "elasticache subnet group does not contain expected subnets")
 	}
 
 	return newErr
@@ -531,4 +561,13 @@ func getCidrBlock(ctx context.Context, strategyMap *v1.ConfigMap) (string, error
 		return "", fmt.Errorf("cidr block cannot be empty")
 	}
 	return aws.StringValue(vpcCreateConfig.CidrBlock), nil
+}
+
+func contains(strs []*string, str *string) bool {
+	for _, s := range strs {
+		if aws.StringValue(str) == aws.StringValue(s) {
+			return true
+		}
+	}
+	return false
 }
