@@ -140,8 +140,16 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 		t.Fatal("could not get aws strategy map", err)
 	}
 
+	// get the create strategy for _network in the aws strategy configmap
+	// if this doesn't exist, skip the test completely since we're dealing
+	// with legacy cro networking
+	strat, err := getStrategyForResource(strategyMap, resourceType, tier)
+	if err != nil {
+		t.Skip("_network key does not exist in aws strategy configmap, skipping standalone vpc network test")
+	}
+
 	// get the vpc cidr block
-	expectedCidr, err := getCidrBlock(ctx, strategyMap)
+	expectedCidr, err := getCidrBlock(strat)
 	if err != nil {
 		t.Fatal("could not get cidr block", err)
 	}
@@ -553,11 +561,7 @@ func getClusterID(ctx context.Context, client client.Client) (string, error) {
 	return infra.Status.InfrastructureName, nil
 }
 
-func getCidrBlock(ctx context.Context, strategyMap *v1.ConfigMap) (string, error) {
-	strat, err := getStrategyForResource(ctx, strategyMap, resourceType, tier)
-	if err != nil {
-		return "", err
-	}
+func getCidrBlock(strat *strategyMap) (string, error) {
 	vpcCreateConfig := &ec2.CreateVpcInput{}
 	if err := json.Unmarshal(strat.CreateStrategy, vpcCreateConfig); err != nil {
 		return "", err

@@ -180,7 +180,7 @@ func getCROAnnotation(instance metav1.Object) (string, error) {
 	return "", errors.New(fmt.Sprintf("no resource identifier found for resource %s", instance.GetName()))
 }
 
-func getStrategyForResource(ctx context.Context, configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {
+func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {
 	rawStrategyMapping := configMap.Data[resourceType]
 	if rawStrategyMapping == "" {
 		return nil, fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
