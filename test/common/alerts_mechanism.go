@@ -51,7 +51,6 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 
 	fuseAlertsFiring := false
 
-	// check if any alerts are firing before test execution
 	for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
 		if fuseAlertState != "none" {
 			fuseAlertsFiring = true
@@ -59,7 +58,6 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 		}
 	}
 
-	// fail test if any alerts are firing
 	if fuseAlertsFiring {
 		t.FailNow()
 	}
@@ -269,7 +267,6 @@ func getFuseAlertState(ctx *TestingContext) error {
 		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	// reset the state to "none" as the prom api only returns alerts that are triggering hence the state needs to be reset.
 	for fuseAlertName := range fuseAlertsToTest {
 		fuseAlertsToTest[fuseAlertName] = "none"
 	}
