@@ -30,12 +30,6 @@ var (
 	resourceType    = "_network"
 	tier            = "development"
 	strategyMapName = "cloud-resources-aws-strategies"
-
-	vpcTagName           = "RHMI Cloud Resource VPC"
-	subnetTagName        = "RHMI Cloud Resource Subnet"
-	securityGroupTagName = "RHMI Cloud Resource Security Group"
-	peeringTagName       = "RHMI Cloud Resource Peering Connection"
-	routeTableTagName    = "RHMI Cloud Resource Route Table"
 )
 
 type strategyMap struct {
@@ -45,14 +39,14 @@ type strategyMap struct {
 // a custom error for reporting errors for each
 // network component
 type networkConfigTestError struct {
-	vpcError                  []string
-	subnetsError              []string
-	securityGroupError        []string
-	peeringConnError          []string
-	standaloneRouteTableError []string
-	clusterRouteTablesError   []string
-	rdsSubnetGroupsError      []string
-	cacheSubnetGroupsError    []string
+	vpcError                  []error
+	subnetsError              []error
+	securityGroupError        []error
+	peeringConnError          []error
+	standaloneRouteTableError []error
+	clusterRouteTablesError   []error
+	rdsSubnetGroupsError      []error
+	cacheSubnetGroupsError    []error
 }
 
 // pretty print the error message if there are any errors
@@ -62,49 +56,49 @@ func (e *networkConfigTestError) Error() string {
 	if len(e.vpcError) != 0 {
 		str.WriteString("\nVPC errors:")
 		for _, item := range e.vpcError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.subnetsError) != 0 {
 		str.WriteString("\nSubnet errors:")
 		for _, item := range e.subnetsError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.securityGroupError) != 0 {
 		str.WriteString("\nSecurity Group errors:")
 		for _, item := range e.securityGroupError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.peeringConnError) != 0 {
 		str.WriteString("\nPeering Connection errors:")
 		for _, item := range e.peeringConnError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.standaloneRouteTableError) != 0 {
 		str.WriteString("\nStandalone Route Table errors:")
 		for _, item := range e.standaloneRouteTableError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.clusterRouteTablesError) != 0 {
 		str.WriteString("\nCluster Route Table errors:")
 		for _, item := range e.clusterRouteTablesError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.rdsSubnetGroupsError) != 0 {
 		str.WriteString("\nRDS Subnet Groups errors:")
 		for _, item := range e.rdsSubnetGroupsError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	if len(e.cacheSubnetGroupsError) != 0 {
 		str.WriteString("\nElasticache Subnet Groups errors:")
 		for _, item := range e.cacheSubnetGroupsError {
-			str.WriteString(fmt.Sprintf("\n\t%s", item))
+			str.WriteString(fmt.Sprintf("\n\t%s", item.Error()))
 		}
 	}
 	return str.String()
@@ -162,6 +156,12 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 
+	// fail immediately if the vpc is nil, since all of the
+	// other network components are associated with it
+	if vpc == nil {
+		t.Fatal(testErrors.Error())
+	}
+
 	// verify subnets
 	subnets, err := verifySubnets(ec2Sess, clusterTag, expectedCidr)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
@@ -188,24 +188,21 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	// verify elasticache subnet groups
 	cacheSvc := elasticache.New(session)
 	err = verifyCacheSubnetGroups(cacheSvc, name, subnetIDs)
-	testErrors.rdsSubnetGroupsError = err.(*networkConfigTestError).rdsSubnetGroupsError
+	testErrors.cacheSubnetGroupsError = err.(*networkConfigTestError).cacheSubnetGroupsError
 
-	// peering connection and route tables
-	if vpc == nil {
-		testErrors.peeringConnError = []string{"skipping peering connection test, vpc cannot be nil"}
-		testErrors.standaloneRouteTableError = []string{"skipping standalone route table test, vpc cannot be nil"}
-		testErrors.clusterRouteTablesError = []string{"skipping cluster route table test, vpc cannot be nil"}
-	} else {
-		conn, err := verifyPeeringConnection(ec2Sess, clusterTag, expectedCidr, aws.StringValue(vpc.VpcId))
-		testErrors.peeringConnError = err.(*networkConfigTestError).peeringConnError
+	// verify peering connection
+	conn, err := verifyPeeringConnection(ec2Sess, clusterTag, expectedCidr, aws.StringValue(vpc.VpcId))
+	testErrors.peeringConnError = err.(*networkConfigTestError).peeringConnError
 
-		err = verifyStandaloneRouteTable(ec2Sess, clusterTag, conn)
-		testErrors.standaloneRouteTableError = err.(*networkConfigTestError).peeringConnError
+	// verify standalone vpc route table
+	err = verifyStandaloneRouteTable(ec2Sess, clusterTag, conn)
+	testErrors.standaloneRouteTableError = err.(*networkConfigTestError).standaloneRouteTableError
 
-		err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn)
-		testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
-	}
+	// verify cluster route table
+	err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn)
+	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
+	// if any error was found, fail the test
 	if testErrors.isValid() {
 		t.Fatal(testErrors.Error())
 	}
@@ -214,16 +211,12 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 // verify that the standalone vpc is created
 func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, error) {
 	newErr := &networkConfigTestError{
-		vpcError: []string{},
+		vpcError: []error{},
 	}
 
-	// filter vpcs by name and integreatly tag
+	// filter vpcs by integreatly cluster id tag
 	describeVpcs, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(vpcTagName)},
-			},
 			{
 				Name:   aws.String("tag:integreatly.org/clusterID"),
 				Values: []*string{aws.String(clusterTag)},
@@ -231,14 +224,14 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 		},
 	})
 	if err != nil {
-		newErr.vpcError = append(newErr.vpcError, fmt.Sprintf("could not find vpc: %v", err))
+		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("could not find vpc: %v", err))
 		return nil, newErr
 	}
 
 	// only one vpc is expected
 	vpcs := describeVpcs.Vpcs
 	if len(vpcs) != 1 {
-		newErr.vpcError = append(newErr.vpcError, fmt.Sprintf("expected 1 vpc but found %d", len(vpcs)))
+		newErr.vpcError = append(newErr.vpcError, fmt.Errorf("expected 1 vpc but found %d", len(vpcs)))
 		return nil, newErr
 	}
 
@@ -246,7 +239,8 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 	vpc := vpcs[0]
 	foundCidr := aws.StringValue(vpc.CidrBlock)
 	if foundCidr != expectedCidr {
-		newErr.vpcError = append(newErr.vpcError, fmt.Sprintf("cidr blocks not equal, expected %s but got %s", expectedCidr, foundCidr))
+		errMsg := fmt.Errorf("expected vpc cidr block to match _network cidr block in aws strategy configmap. Expected %s, but got %s", expectedCidr, foundCidr)
+		newErr.vpcError = append(newErr.vpcError, errMsg)
 	}
 
 	return vpc, newErr
@@ -255,16 +249,12 @@ func verifyVpc(session *ec2.EC2, clusterTag, expectedCidr string) (*ec2.Vpc, err
 // verify that the vpc subnets are created
 func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Subnet, error) {
 	newErr := &networkConfigTestError{
-		subnetsError: []string{},
+		subnetsError: []error{},
 	}
 
-	// filter subnets by name and integreatly tag
+	// filter subnets by integreatly cluster id tag
 	describeSubnets, err := session.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(subnetTagName)},
-			},
 			{
 				Name:   aws.String("tag:integreatly.org/clusterID"),
 				Values: []*string{aws.String(clusterTag)},
@@ -272,7 +262,8 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 		},
 	})
 	if err != nil {
-		newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not describe subnets: %v", err))
+		errMsg := fmt.Errorf("could not describe subnets: %v", err)
+		newErr.subnetsError = append(newErr.subnetsError, errMsg)
 		return nil, newErr
 	}
 
@@ -280,7 +271,8 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 	subnets := describeSubnets.Subnets
 	_, cidr, err := net.ParseCIDR(expectedCidr)
 	if err != nil {
-		newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not parse vpc cidr block: %v", err))
+		errMsg := fmt.Errorf("could not parse vpc cidr block: %v", err)
+		newErr.subnetsError = append(newErr.subnetsError, errMsg)
 		return subnets, newErr
 	}
 	cidrMask, _ := cidr.Mask.Size()
@@ -290,12 +282,14 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 	for _, subnet := range subnets {
 		_, subnetCidr, err := net.ParseCIDR(aws.StringValue(subnet.CidrBlock))
 		if err != nil {
-			newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("could not parse subnet mask for vpc subnets: %v", err))
+			errMsg := fmt.Errorf("could not parse subnet mask for vpc subnets: %v", err)
+			newErr.subnetsError = append(newErr.subnetsError, errMsg)
 			return subnets, newErr
 		}
 		subnetCidrMask, _ := subnetCidr.Mask.Size()
 		if subnetCidrMask != cidrMask+1 {
-			newErr.subnetsError = append(newErr.subnetsError, fmt.Sprintf("unexpected subnet mask size for vpc subnets: %v", err))
+			errMsg := fmt.Errorf("subnet mask expect to be 1 bit greater than vpc subnet mask, found : %d, expected %d", subnetCidrMask, cidrMask+1)
+			newErr.subnetsError = append(newErr.subnetsError, errMsg)
 		}
 	}
 
@@ -305,16 +299,12 @@ func verifySubnets(session *ec2.EC2, clusterTag, expectedCidr string) ([]*ec2.Su
 // verify vpc security group
 func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 	newErr := &networkConfigTestError{
-		securityGroupError: []string{},
+		securityGroupError: []error{},
 	}
 
-	// filter security groups by name and integreatly tag
+	// filter security groups by integreatly cluster id tag
 	describeGroups, err := session.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(securityGroupTagName)},
-			},
 			{
 				Name:   aws.String("tag:integreatly.org/clusterID"),
 				Values: []*string{aws.String(clusterTag)},
@@ -322,13 +312,15 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 		},
 	})
 	if err != nil {
-		newErr.securityGroupError = append(newErr.securityGroupError, fmt.Sprintf("could not find vpc security group: %v", err))
+		errMsg := fmt.Errorf("could not find vpc security group: %v", err)
+		newErr.securityGroupError = append(newErr.securityGroupError, errMsg)
 	}
 
 	// expect 1 security group
 	secGroups := describeGroups.SecurityGroups
 	if len(secGroups) != 1 {
-		newErr.securityGroupError = append(newErr.securityGroupError, fmt.Sprintf("unexpected number of security groups: %d", len(secGroups)))
+		errMsg := fmt.Errorf("unexpected number of security groups: %d", len(secGroups))
+		newErr.securityGroupError = append(newErr.securityGroupError, errMsg)
 		return newErr
 	}
 
@@ -338,7 +330,7 @@ func verifySecurityGroup(session *ec2.EC2, clusterTag string) error {
 // verify that the subnet groups for rds are created
 func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string, subnets []*string) error {
 	newErr := &networkConfigTestError{
-		rdsSubnetGroupsError: []string{},
+		rdsSubnetGroupsError: []error{},
 	}
 
 	// get rds subnet groups by subnet group name
@@ -346,14 +338,16 @@ func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string, subnets []*string) err
 		DBSubnetGroupName: aws.String(name),
 	})
 	if err != nil {
-		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, fmt.Sprintf("error describing rds subnet groups: %v", err))
+		errMsg := fmt.Errorf("error describing rds subnet groups: %v", err)
+		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
 		return newErr
 	}
 
 	// expect 1 subnet group
 	subnetGroups := describeGroups.DBSubnetGroups
 	if len(subnetGroups) != 1 {
-		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, fmt.Sprintf("unexpected number of rds subnet groups: %d", len(subnetGroups)))
+		errMsg := fmt.Errorf("unexpected number of rds subnet groups: %d", len(subnetGroups))
+		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
 		return newErr
 	}
 
@@ -366,7 +360,8 @@ func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string, subnets []*string) err
 		}
 	}
 	if !subnetsExist {
-		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, "rds subnet group does not contain expected subnets")
+		errMsg := fmt.Errorf("rds subnet group does not contain expected subnets: %s, %s", aws.StringValue(subnets[0]), aws.StringValue(subnets[1]))
+		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
 	}
 
 	return newErr
@@ -375,7 +370,7 @@ func verifyRdsSubnetGroups(rdsSess *rds.RDS, name string, subnets []*string) err
 // verify that the subnet groups for elasticache are created
 func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string, subnets []*string) error {
 	newErr := &networkConfigTestError{
-		cacheSubnetGroupsError: []string{},
+		cacheSubnetGroupsError: []error{},
 	}
 
 	// get elasticache subnet groups by subnet group name
@@ -383,14 +378,16 @@ func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string, sub
 		CacheSubnetGroupName: aws.String(name),
 	})
 	if err != nil {
-		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, fmt.Sprintf("error describing elasticache subnet groups: %v", err))
+		errMsg := fmt.Errorf("error describing elasticache subnet groups: %v", err)
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 		return newErr
 	}
 
 	// expect 1 subnet group
 	cacheSubnetGroups := describeCacheGroups.CacheSubnetGroups
 	if len(cacheSubnetGroups) != 1 {
-		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, fmt.Sprintf("unexpected number of elasticache subnet groups: %d", len(cacheSubnetGroups)))
+		errMsg := fmt.Errorf("unexpected number of elasticache subnet groups: %d", len(cacheSubnetGroups))
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 	}
 
 	// ensure all subnets exist in subnet group
@@ -402,7 +399,8 @@ func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string, sub
 		}
 	}
 	if !subnetsExist {
-		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, "elasticache subnet group does not contain expected subnets")
+		errMsg := fmt.Errorf("elasticache subnet group does not contain expected subnets: %s, %s", aws.StringValue(subnets[0]), aws.StringValue(subnets[1]))
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 	}
 
 	return newErr
@@ -411,16 +409,12 @@ func verifyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, name string, sub
 // verify that the peering connection we create has the correct requester info
 func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID string) (*ec2.VpcPeeringConnection, error) {
 	newErr := &networkConfigTestError{
-		peeringConnError: []string{},
+		peeringConnError: []error{},
 	}
 
-	// filter the peering connections by name and integreatly tag
+	// filter the peering connections by integreatly cluster id tag
 	peeringConn, err := session.DescribeVpcPeeringConnections(&ec2.DescribeVpcPeeringConnectionsInput{
 		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(peeringTagName)},
-			},
 			{
 				Name:   aws.String("tag:integreatly.org/clusterID"),
 				Values: []*string{aws.String(clusterTag)},
@@ -428,21 +422,30 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 		},
 	})
 	if err != nil {
-		newErr.peeringConnError = append(newErr.peeringConnError, fmt.Sprintf("could not describe peering connections: %v", err))
+		errMsg := fmt.Errorf("could not describe peering connections: %v", err)
+		newErr.peeringConnError = append(newErr.peeringConnError, errMsg)
 		return nil, newErr
 	}
 
 	// expect 1 peering connection to be found
 	conns := peeringConn.VpcPeeringConnections
 	if len(conns) != 1 {
-		newErr.peeringConnError = append(newErr.peeringConnError, fmt.Sprintf("unexpected number of vpc peering connections: %d", len(conns)))
+		errMsg := fmt.Errorf("unexpected number of vpc peering connections: %d", len(conns))
+		newErr.peeringConnError = append(newErr.peeringConnError, errMsg)
 		return nil, newErr
 	}
 
 	// verify that the requester info is correct
 	conn := conns[0]
 	if aws.StringValue(conn.RequesterVpcInfo.CidrBlock) != expectedCidr && aws.StringValue(conn.RequesterVpcInfo.VpcId) != vpcID {
-		newErr.peeringConnError = append(newErr.peeringConnError, fmt.Sprintf("unexpected accepter vpc cidr block: %d", len(conns)))
+		errMsg := fmt.Errorf("unexpected accepter vpc cidr block: %d", len(conns))
+		newErr.peeringConnError = append(newErr.peeringConnError, errMsg)
+	}
+
+	// verify the peering connection state is active
+	if aws.StringValue(conn.Status.Code) != ec2.VpcPeeringConnectionStateReasonCodeActive {
+		errMsg := fmt.Errorf("unexpected peering connection status: %s", aws.StringValue(conn.Status.Code))
+		newErr.peeringConnError = append(newErr.peeringConnError, errMsg)
 	}
 
 	return conn, newErr
@@ -451,16 +454,12 @@ func verifyPeeringConnection(session *ec2.EC2, clusterTag, expectedCidr, vpcID s
 // verify that the standalone route table contains a route to the peering connection
 func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.VpcPeeringConnection) error {
 	newErr := &networkConfigTestError{
-		standaloneRouteTableError: []string{},
+		standaloneRouteTableError: []error{},
 	}
 
-	// filter the route tables by name and integreatly tag
+	// filter the route tables by integreatly cluster id tag
 	describeRouteTables, err := session.DescribeRouteTables(&ec2.DescribeRouteTablesInput{
 		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(routeTableTagName)},
-			},
 			{
 				Name:   aws.String("tag:integreatly.org/clusterID"),
 				Values: []*string{aws.String(clusterTag)},
@@ -468,14 +467,16 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 		},
 	})
 	if err != nil {
-		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, fmt.Sprintf("could not describe route tab;es: %v", err))
+		errMsg := fmt.Errorf("could not describe route tables: %v", err)
+		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, errMsg)
 		return newErr
 	}
 
 	// expect 1 route table
 	routeTables := describeRouteTables.RouteTables
 	if len(routeTables) != 1 {
-		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, fmt.Sprintf("unexpected number of route tables: %d", len(routeTables)))
+		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
+		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, errMsg)
 		return newErr
 	}
 
@@ -487,7 +488,8 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 		}
 	}
 	if !foundRoute {
-		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, "did not find expected route table entries")
+		errMsg := fmt.Errorf("did not find expected route with peering connection: %s", aws.StringValue(conn.VpcPeeringConnectionId))
+		newErr.standaloneRouteTableError = append(newErr.standaloneRouteTableError, errMsg)
 	}
 
 	return newErr
@@ -496,7 +498,7 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 // verify that the cluster route tables contain a route to the peering connection and the standalone vpc
 func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peeringConn *ec2.VpcPeeringConnection) error {
 	newErr := &networkConfigTestError{
-		clusterRouteTablesError: []string{},
+		clusterRouteTablesError: []error{},
 	}
 
 	// filter the route tables by kubernetes owner id
@@ -509,14 +511,16 @@ func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peer
 		},
 	})
 	if err != nil {
-		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, fmt.Sprintf("could not describe route tables: %v", err))
+		errMsg := fmt.Errorf("could not describe route tables: %v", err)
+		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		return newErr
 	}
 
 	// expect 2 route tables (main and non-main)
 	routeTables := describeRouteTables.RouteTables
 	if len(routeTables) != 2 {
-		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, fmt.Sprintf("unexpected number of route tables: %d", len(routeTables)))
+		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
+		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		return newErr
 	}
 
@@ -532,7 +536,8 @@ func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peer
 		}
 		if !foundRoute {
 			tableID := aws.StringValue(routeTable.RouteTableId)
-			newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, fmt.Sprintf("expected route for cluster route table %s not found", tableID))
+			errMsg := fmt.Errorf("expected route for cluster route table %s not found", tableID)
+			newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		}
 	}
 
