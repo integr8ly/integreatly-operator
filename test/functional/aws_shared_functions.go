@@ -2,8 +2,10 @@ package functional
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,6 +15,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -175,4 +178,19 @@ func getCROAnnotation(instance metav1.Object) (string, error) {
 		}
 	}
 	return "", errors.New(fmt.Sprintf("no resource identifier found for resource %s", instance.GetName()))
+}
+
+func getStrategyForResource(ctx context.Context, configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {
+	rawStrategyMapping := configMap.Data[resourceType]
+	if rawStrategyMapping == "" {
+		return nil, fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
+	}
+	var strategyMapping map[string]*strategyMap
+	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	if strategyMapping[tier] == nil {
+		return nil, fmt.Errorf("no strategy found for deployment type: %s and deployment tier: %s", resourceType, tier)
+	}
+	return strategyMapping[tier], nil
 }
