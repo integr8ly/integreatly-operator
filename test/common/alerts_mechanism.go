@@ -177,11 +177,11 @@ func performTest(t *testing.T, ctx *TestingContext) error {
 		return err
 	}
 
-	err = checkAlertManager(ctx)
+	err = checkAlertManager(ctx, t)
 	return err
 }
 
-func checkAlertManager(ctx *TestingContext) error {
+func checkAlertManager(ctx *TestingContext, t *testing.T) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
 		"alertmanager-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -191,10 +191,16 @@ func checkAlertManager(ctx *TestingContext) error {
 		return fmt.Errorf("failed to exec to alertmanger pod: %w", err)
 	}
 
+	alertsFiringInAlertManager := false
 	for fuseAlertName := range fuseAlertsToTest {
 		if !strings.Contains(output, fuseAlertName) {
-			return fmt.Errorf("%s alert not firing in alertmanager", fuseAlertName)
+			alertsFiringInAlertManager = true
+			t.Errorf("%s alert not firing in alertmanager", fuseAlertName)
 		}
+	}
+
+	if alertsFiringInAlertManager {
+		t.FailNow()
 	}
 
 	return nil
