@@ -237,21 +237,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	phase, err = r.newAlertReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
-		return phase, err
-	}
-	phase, err = r.reconcileKubeStateMetricsSolutionexplorerAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile solution-explorer alerts", err)
-		return phase, err
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile solution explorer alerts", err)
 	}
 
 	product.Host = r.Config.GetHost()

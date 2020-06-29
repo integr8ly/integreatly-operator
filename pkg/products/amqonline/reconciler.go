@@ -201,21 +201,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileSloAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile slo alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
-		return phase, err
-	}
-	phase, err = r.reconcileKubeStateMetricsAmqOnline(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcile prometheusRules", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline ksm alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline alerts", err)
 		return phase, err
 	}
 
