@@ -28,7 +28,7 @@ import (
 
 var (
 	resourceType    = "_network"
-	tier            = "development"
+	tier            = "production"
 	strategyMapName = "cloud-resources-aws-strategies"
 )
 
@@ -105,7 +105,7 @@ func (e *networkConfigTestError) Error() string {
 }
 
 // the error is valid if any of the error slices are not empty
-func (e *networkConfigTestError) isValid() bool {
+func (e *networkConfigTestError) hasError() bool {
 	return len(e.vpcError) != 0 ||
 		len(e.subnetsError) != 0 ||
 		len(e.securityGroupError) != 0 ||
@@ -180,7 +180,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 
 	// we have to manually construct the subnet group names for rds and elasticache,
 	// since tag filtering isnt currently available
-	name := resources.ShortenString(fmt.Sprintf("%s-%s", clusterTag, "subnet-group"), 40)
+	subnetGroupName := resources.ShortenString(fmt.Sprintf("%s-%s", clusterTag, "subnet-group"), 40)
 
 	// build array list of all vpc private subnets
 	var subnetIDs []*string
@@ -190,12 +190,12 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 
 	// verify rds subnet groups
 	rdsSvc := rds.New(session)
-	err = verifyRdsSubnetGroups(rdsSvc, name, subnetIDs)
+	err = verifyRdsSubnetGroups(rdsSvc, subnetGroupName, subnetIDs)
 	testErrors.rdsSubnetGroupsError = err.(*networkConfigTestError).rdsSubnetGroupsError
 
 	// verify elasticache subnet groups
 	cacheSvc := elasticache.New(session)
-	err = verifyCacheSubnetGroups(cacheSvc, name, subnetIDs)
+	err = verifyCacheSubnetGroups(cacheSvc, subnetGroupName, subnetIDs)
 	testErrors.cacheSubnetGroupsError = err.(*networkConfigTestError).cacheSubnetGroupsError
 
 	// verify peering connection
@@ -211,7 +211,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
 	// if any error was found, fail the test
-	if testErrors.isValid() {
+	if testErrors.hasError() {
 		t.Fatal(testErrors.Error())
 	}
 }
