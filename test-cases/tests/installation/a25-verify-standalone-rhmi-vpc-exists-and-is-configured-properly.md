@@ -49,23 +49,23 @@ CID=$(ocm get cluster <cluster-id> | jq -r .infra_id)
 aws ec2 describe-vpcs --filter "Name=tag-value,Values=$CID"
 ```
 
-  > Verify that the VPC was created and verify that the CIDR block is the same as the one previously noted
+> Verify that the VPC was created and verify that the CIDR block is the same as the one previously noted
 
 5. Following list of verification steps are effectively covered by the functional test
-Note: correct tag for the AWS resources: (Key: `integreatly.org/clusterID`, Value: `<cluster-infra-id>`)
+   Note: correct tag for the AWS resources: (Key: `integreatly.org/clusterID`, Value: `<cluster-infra-id>`)
 
-  > - Standalone VPC subnet exists and has the expected CIRD block
-  >
-  > - Subnet masks for the subnets are one bit greater than the VPC subnet mask
-  >
-  > - Single VPC security groups with the correct tag exists
-  >
-  > - All RDS subnets exist in a single subnet group
-  >
-  > - All Elasticache subnets exist in a single subnet group
-  >
-  > - Single VPC peering connection with the correct tag exists and is active
-  >
-  > - VPC route table with the correct tag exists and has a route to the peering connection
-  >
-  > - Cluster route tables with the correct tag exist and contain a route to the peering connection and the standalone vpc
+> - Standalone VPC subnet exists and has the expected CIRD block
+>
+> - Subnet masks for the subnets are one bit greater than the VPC subnet mask
+>
+> - Single VPC security groups with the correct tag exists
+>
+> - All RDS subnets exist in a single subnet group
+>
+> - All Elasticache subnets exist in a single subnet group
+>
+> - Single VPC peering connection with the correct tag exists and is active
+>
+> - VPC route table with the correct tag exists and has a route to the peering connection
+>
+> - Cluster route tables with the correct tag exist and contain a route to the peering connection and the standalone vpc
