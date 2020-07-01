@@ -41,9 +41,10 @@ func TestProductVersions(t *testing.T, ctx *TestingContext) {
 
 	for stage := range productVersions {
 		for productName, productVersion := range productVersions[stage] {
-			clusterVersion := rhmi.Status.Stages[stage].Products[productName].Version
+			productStatus := rhmi.Status.Stages[stage].Products[productName]
+			clusterVersion := productStatus.Version
 			if clusterVersion != productVersion {
-				t.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s", productName, productVersion, clusterVersion)
+				t.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s\nProduct status: %v", productName, productVersion, clusterVersion, productStatus)
 			}
 		}
 
