@@ -56,16 +56,16 @@ aws ec2 describe-vpcs --filter "Name=tag-value,Values=$CID"
 
 > - Standalone VPC subnet exists and has the expected CIRD block
 >
-> - Subnet masks for the subnets are one bit greater than the VPC subnet mask
+> - There are 2 VPC private subnets in total and the subnet masks for the subnets are one bit greater than the VPC subnet mask. Also both subnets are in different Availability Zones.
 >
-> - Single VPC security groups with the correct tag exists
+> - Single VPC security groups with the correct tag exists and has the ingress rules to except all traffic from the Cluster VPC
 >
-> - All RDS subnets exist in a single subnet group
+> - There should be 2 RDS subnets, they match previously found subnets and both exist in a single subnet group
 >
-> - All Elasticache subnets exist in a single subnet group
+> - There should be 2 Elasticache subnets, they match previously found subnets and both exist in a single subnet group
 >
-> - Single VPC peering connection with the correct tag exists and is active
+> - Single VPC peering connection status is active, the requester is the Standalone VPC and the Accepter is a Cluster VPC
 >
-> - VPC route table with the correct tag exists and has a route to the peering connection
+> - Standalone VPC route table exists, has the correct tag and has a route targeting the peering connection
 >
 > - Cluster route tables with the correct tag exist and contain a route to the peering connection and the standalone vpc
