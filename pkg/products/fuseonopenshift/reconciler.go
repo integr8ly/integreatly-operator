@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"path/filepath"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/sirupsen/logrus"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 
@@ -134,6 +136,14 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		recorder:      recorder,
 		installation:  installation,
 	}, nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductFuseOnOpenshift],
+		string(integreatlyv1alpha1.VersionFuseOnOpenshift),
+		string(integreatlyv1alpha1.OperatorVersionFuse),
+	)
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

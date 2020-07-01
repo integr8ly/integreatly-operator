@@ -9,6 +9,7 @@ import (
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -144,6 +145,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 			Namespace: ns,
 		},
 	}
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser],
+		string(integreatlyv1alpha1.VersionRHSSOUser),
+		string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
+	)
 }
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
