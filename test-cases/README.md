@@ -92,6 +92,16 @@ Prerequisites:
 
 - Nodejs >= 10
 
+**!! Please Read !! :**
+
+- Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jirat tasks during the release testing
+
+- Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
+
+  ```bash
+  /tools.sh jira --help
+  ```
+
 Run:
 
 ```bash
@@ -116,6 +126,12 @@ If you need to link the new tasks to the task of a previous test round use the `
 > - [New Test] -> Major
 > - Won't Do -> Minor
 > - Done -> Optional
+
+To automatically close as **Won't Do** all tests marked as **Won't Do** or **Done** in the previous Epic use the `--auto-resolve` option:
+
+```bash
+./tools.sh jira --epic EPICKEY-01 --previousEpic EPICKEY-00 --auto-resolve
+```
 
 It is also possible to set the Jira username and password in environment variables:
 
