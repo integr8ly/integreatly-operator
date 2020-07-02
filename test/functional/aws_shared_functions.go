@@ -194,3 +194,21 @@ func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) 
 	}
 	return strategyMapping[tier], nil
 }
+
+func putStrategyForResource(configMap *v1.ConfigMap, stratMap *strategyMap, resourceType, tier string) error {
+	rawStrategyMapping := configMap.Data[resourceType]
+	if rawStrategyMapping == "" {
+		return fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
+	}
+	var strategyMapping map[string]*strategyMap
+	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
+		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	strategyMapping[tier] = stratMap
+	updatedRawStrategyMapping, err := json.Marshal(strategyMapping)
+	if err != nil {
+		return fmt.Errorf("failed to marshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	configMap.Data[resourceType] = string(updatedRawStrategyMapping)
+	return nil
+}
