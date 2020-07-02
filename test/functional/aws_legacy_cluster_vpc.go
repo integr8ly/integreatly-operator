@@ -65,6 +65,10 @@ func TestLegacyClusterVPC(t *testing.T, testingCtx *common.TestingContext) {
 	vpc, err := verifyLegacyVPC(ec2Svc, clusterTag)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
 
+	if vpc == nil {
+		t.Fatal(testErrors.Error())
+	}
+
 	clusterVpcId := *vpc.VpcId
 
 	vpcSubnets, err := verifyLegacySubnets(ec2Svc, clusterTag, clusterVpcId)
@@ -131,7 +135,6 @@ func verifyLegacyVPC(session *ec2.EC2, clusterTag string) (*ec2.Vpc, error) {
 		return nil, newErr
 	}
 
-	// cidr blocks should match
 	return vpcs[0], newErr
 }
 
@@ -245,7 +248,7 @@ func verifyLegacyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, subnetGrou
 	// ensure the subnet group belongs to the cluster vpc
 	if *subnetGroup.VpcId != clusterVPCId {
 		errMsg := fmt.Errorf("elasticache subnet group %s does not belong to cluster VPC. got = %s, wanted = %s", *subnetGroup.CacheSubnetGroupName, *subnetGroup.VpcId, clusterVPCId)
-		newErr.cacheSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 	}
 
 	// ensure each subnet is found in the list of subnets found in the cluster vpc
@@ -267,8 +270,8 @@ func verifyLegacyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, subnetGrou
 
 	// check the lengths match, i.e. the subnets cover every AZ in the region
 	if len(coveredAZs) != len(azs) {
-		errMsg := fmt.Errorf("rds subnet group does not have a subnet group for each availability zone. Availability Zones: %+v Subnet Groups: %+v", subnetGroup.Subnets, azs)
-		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
+		errMsg := fmt.Errorf("elasticache subnet group does not have a subnet group for each availability zone. Availability Zones: %+v Subnet Groups: %+v", subnetGroup.Subnets, azs)
+		newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 	}
 
 	return newErr
