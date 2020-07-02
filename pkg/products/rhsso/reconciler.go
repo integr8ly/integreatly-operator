@@ -129,9 +129,11 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
 			phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -143,14 +145,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 
-			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 		}
-		_, err = resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
+		_, err = resources.GetNS(ctx, operatorNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -161,8 +163,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 
 		//if both namespaces are deleted, return complete
-		_, operatorNSErr := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
-		_, nsErr := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+		_, operatorNSErr := resources.GetNS(ctx, operatorNamespace, serverClient)
+		_, nsErr := resources.GetNS(ctx, productNamespace, serverClient)
 		if k8serr.IsNotFound(operatorNSErr) && k8serr.IsNotFound(nsErr) {
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
@@ -173,31 +175,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetNamespace()), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
 	}
 
-	preUpgradeBackupsExecutor := r.preUpgradeBackupsExecutor()
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackupsExecutor, serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
 		return phase, err
@@ -232,7 +227,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
 		return phase, err
@@ -1051,4 +1046,33 @@ func GetInstanceLabels() map[string]string {
 	return map[string]string{
 		SSOLabelKey: SSOLabelValue,
 	}
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	productNamespaceObj, err := resources.GetNS(ctx, productNamespace, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, inst, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", productNamespace), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	target := marketplace.Target{
+		Pkg:       constants.RHSSOSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		productNamespaceObj,
+		target,
+		[]string{productNamespace},
+		r.preUpgradeBackupsExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }

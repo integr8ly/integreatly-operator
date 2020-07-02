@@ -6,11 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
-
-	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,9 +13,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+
+	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func buildScheme() *runtime.Scheme {
+func buildConfigMapCatalogSourceReconcilerTestScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	coreosv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	corev1.SchemeBuilder.AddToScheme(scheme)
@@ -28,35 +29,40 @@ func buildScheme() *runtime.Scheme {
 	return scheme
 }
 
-func TestReconcileCatalogSource(t *testing.T) {
+func TestConfigMapCatalogSourceReconcilerReconcileCatalogSource(t *testing.T) {
 
 	testNameSpace := "test-namespace"
 
 	scenarios := []struct {
-		Name       string
-		FakeClient k8sclient.Client
-		Verify     func(csName string, err error, c k8sclient.Client)
+		Name                     string
+		FakeClient               k8sclient.Client
+		DesiredConfigMapName     string
+		DesiredCatalogSourceName string
+		Verify                   func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client)
 	}{
 		{
-			Name:       "Test catalog source created successfully",
-			FakeClient: fake.NewFakeClientWithScheme(buildScheme()),
-			Verify: func(csName string, err error, c k8sclient.Client) {
+			Name:                     "Test catalog source created successfully",
+			FakeClient:               fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme()),
+			DesiredConfigMapName:     "example-configmap",
+			DesiredCatalogSourceName: "example-catalogsourcename",
+			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
-
 				catalogSource := &coreosv1alpha1.CatalogSource{}
-				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
-
-				if err != nil && catalogSource.Spec.ConfigMap != csName {
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
+				if err != nil {
 					t.Fatalf("Expected catalog source to be created but wasn't: %v", err)
+				}
+				if catalogSource.Spec.ConfigMap != desiredConfigMapName {
+					t.Fatalf("CatalogSource ConfigMap field not reconciled: desired '%s', existing '%s'", desiredConfigMapName, catalogSource.Spec.ConfigMap)
 				}
 
 			},
 		},
 		{
 			Name: "Test catalog source updated successfully",
-			FakeClient: fake.NewFakeClientWithScheme(buildScheme(), &coreosv1alpha1.CatalogSource{
+			FakeClient: fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme(), &coreosv1alpha1.CatalogSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cs-" + testNameSpace,
 					Namespace: testNameSpace,
@@ -65,16 +71,22 @@ func TestReconcileCatalogSource(t *testing.T) {
 					ConfigMap: "randomConfigMap",
 				},
 			}),
-			Verify: func(csName string, err error, c k8sclient.Client) {
+			DesiredConfigMapName:     "desiredRandomConfigMap",
+			DesiredCatalogSourceName: "registry-cs-" + testNameSpace,
+			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
 				if err != nil {
 					t.Fatalf("Unexpected error %v", err)
 				}
 
 				catalogSource := &coreosv1alpha1.CatalogSource{}
-				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: csName, Namespace: testNameSpace}, catalogSource)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: desiredCSName, Namespace: testNameSpace}, catalogSource)
 
-				if err != nil && catalogSource.Spec.ConfigMap != csName && catalogSource.Spec.ConfigMap != "randomConfigMap" {
+				if err != nil {
 					t.Fatalf("Expected catalog source to be updated but wasn't: %v", err)
+				}
+
+				if catalogSource.Spec.ConfigMap != desiredConfigMapName {
+					t.Fatalf("CatalogSource ConfigMap field not reconciled: desired '%s', existing '%s'", desiredConfigMapName, catalogSource.Spec.ConfigMap)
 				}
 			},
 		},
@@ -85,7 +97,9 @@ func TestReconcileCatalogSource(t *testing.T) {
 					return errors.New("General error")
 				},
 			},
-			Verify: func(csName string, err error, c k8sclient.Client) {
+			DesiredConfigMapName:     "dummycm",
+			DesiredCatalogSourceName: "example-catalogsourcename",
+			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -101,7 +115,9 @@ func TestReconcileCatalogSource(t *testing.T) {
 					return errors.New("dummy create error")
 				},
 			},
-			Verify: func(csName string, err error, c k8sclient.Client) {
+			DesiredConfigMapName:     "dummycm",
+			DesiredCatalogSourceName: "example-catalogsourcename",
+			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -117,7 +133,9 @@ func TestReconcileCatalogSource(t *testing.T) {
 					return errors.New("dummy update error")
 				},
 			},
-			Verify: func(csName string, err error, c k8sclient.Client) {
+			DesiredConfigMapName:     "dummycm",
+			DesiredCatalogSourceName: "example-catalogsourcename",
+			Verify: func(desiredCSName string, desiredConfigMapName string, res reconcile.Result, err error, c k8sclient.Client) {
 				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
@@ -127,13 +145,14 @@ func TestReconcileCatalogSource(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			catalogSourceName, err := NewManager().reconcileCatalogSource(context.TODO(), scenario.FakeClient, testNameSpace, "testCm")
-			scenario.Verify(catalogSourceName, err, scenario.FakeClient)
+			csReconciler := NewConfigMapCatalogSourceReconciler("example-manifestproduct-dir", scenario.FakeClient, testNameSpace, scenario.DesiredCatalogSourceName)
+			res, err := csReconciler.reconcileCatalogSource(context.TODO(), scenario.DesiredConfigMapName)
+			scenario.Verify(scenario.DesiredCatalogSourceName, scenario.DesiredConfigMapName, res, err, scenario.FakeClient)
 		})
 	}
 }
 
-func TestReconcileRegistryConfigMap(t *testing.T) {
+func TestConfigMapCatalogSourceReconcilerRegistryConfigMap(t *testing.T) {
 
 	testNameSpace := "test-namespace"
 
@@ -145,7 +164,7 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 	}{
 		{
 			Name:        "Test registry config map created successfully",
-			FakeClient:  fake.NewFakeClientWithScheme(buildScheme()),
+			FakeClient:  fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme()),
 			FakeMapData: map[string]string{"test": "someData"},
 			Verify: func(cmName string, err error, c k8sclient.Client, configMapData map[string]string) {
 				if err != nil {
@@ -162,7 +181,7 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 		},
 		{
 			Name: "Test registry config map gets updated successfully",
-			FakeClient: fake.NewFakeClientWithScheme(buildScheme(), &corev1.ConfigMap{
+			FakeClient: fake.NewFakeClientWithScheme(buildConfigMapCatalogSourceReconcilerTestScheme(), &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cm-" + testNameSpace,
 					Namespace: testNameSpace,
@@ -229,8 +248,9 @@ func TestReconcileRegistryConfigMap(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			configMapName, err := NewManager().reconcileRegistryConfigMap(context.TODO(), scenario.FakeClient, testNameSpace, scenario.FakeMapData)
-			scenario.Verify(configMapName, err, scenario.FakeClient, scenario.FakeMapData)
+			csReconciler := NewConfigMapCatalogSourceReconciler("example-manifestproduct-dir", scenario.FakeClient, testNameSpace, "csName")
+			desiredConfigMapName, err := csReconciler.reconcileRegistryConfigMap(context.TODO(), scenario.FakeMapData)
+			scenario.Verify(desiredConfigMapName, err, scenario.FakeClient, scenario.FakeMapData)
 		})
 	}
 }
