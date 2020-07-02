@@ -49,10 +49,6 @@ const (
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 )
 
-var (
-	allProductsReconciled = false
-)
-
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -319,7 +315,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	metrics.SetRHMIStatus(installation)
 
 	// Check if the version needs to be updated
-	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled {
+	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
 		installation.Status.Version = installation.Status.ToVersion
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
@@ -484,6 +480,240 @@ func isUpgradeReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	return false
 }
 
+func allProductsReconciled(installation *integreatlyv1alpha1.RHMI) bool {
+	stages := installation.Status.Stages
+
+	return (verifyClusterRHSSOVersions(stages) &&
+		verifyCloudResourceVersions(stages) &&
+		verifyAMQOnlineVersions(stages) &&
+		verifyApicuritoVersions(stages) &&
+		verifyCodeReadyWorkspacesVersions(stages) &&
+		verifyFuseOnOpenshiftVersions(stages) &&
+		verifyMonitoringVersions(stages) &&
+		verify3ScaleVersions(stages) &&
+		verifyFuseOnlineVersions(stages) &&
+		verifyDataSyncVersions(stages) &&
+		verifyRHSSOUserVersions(stages) &&
+		verifyUPSVersions(stages) &&
+		verifySolutionExplorerVersions(stages))
+}
+
+func verifySolutionExplorerVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.SolutionExplorerStage].Products[integreatlyv1alpha1.ProductSolutionExplorer]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionSolutionExplorer)
+	installedOpVersion := string(versions.OperatorVersion)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Solution Explorer Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	return true
+}
+
+func verifyClusterRHSSOVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.AuthenticationStage].Products[integreatlyv1alpha1.ProductRHSSO]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionRHSSO)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionRHSSO)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Cluster RHSSO Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Cluster RHSSO Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyMonitoringVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.MonitoringStage].Products[integreatlyv1alpha1.ProductMonitoring]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionMonitoring)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionMonitoring)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Monitoring Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Monitoring Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyCloudResourceVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.CloudResourcesStage].Products[integreatlyv1alpha1.ProductCloudResources]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionCloudResources)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionCloudResources)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Cloud Resource Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Cloud Resource Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyApicuritoVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductApicurito]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionApicurito)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionApicurito)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Apicurito Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Apicurito Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyRHSSOUserVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionRHSSOUser)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionRHSSOUser)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("RHSSOUser Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("RHSSOUser Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyUPSVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductUps]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionUPS)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionUps)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("UPS Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("UPS Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verify3ScaleVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.Product3Scale]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersion3Scale)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.Version3Scale)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("3Scale Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("3Scale Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyDataSyncVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductDataSync]
+	expectedProductVersion := string(integreatlyv1alpha1.VersionDataSync)
+	installedProductVersion := string(versions.Version)
+
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Data Sync Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyFuseOnlineVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductFuse]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionFuse)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionFuseOnline)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("Fuse Online Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("Fuse Online Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyCodeReadyWorkspacesVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductCodeReadyWorkspaces]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionCodeReadyWorkspaces)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("CodeReady Workspaces Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("CodeReady Workspaces Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyAMQOnlineVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductAMQOnline]
+	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionAMQOnline)
+	installedOpVersion := string(versions.OperatorVersion)
+	expectedProductVersion := string(integreatlyv1alpha1.VersionAMQOnline)
+	installedProductVersion := string(versions.Version)
+
+	if expectedOpVersion != installedOpVersion {
+		logrus.Debugf("AMQOnline Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
+		return false
+	}
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("AMQOnline Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
+func verifyFuseOnOpenshiftVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
+	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductFuseOnOpenshift]
+	expectedProductVersion := string(integreatlyv1alpha1.VersionFuseOnOpenshift)
+	installedProductVersion := string(versions.Version)
+
+	if expectedProductVersion != installedProductVersion {
+		logrus.Debugf("FuseOnOpenShift Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
+		return false
+	}
+	return true
+}
+
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
 	logrus.Info("Running preflight checks..")
 	installation.Status.Stage = integreatlyv1alpha1.StageName("Preflight Checks")
@@ -629,9 +859,6 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
-
-		allProductsReconciled = reconciler.VerifyVersion(installation)
-
 		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
@@ -681,7 +908,6 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	if incompleteStage {
 		return integreatlyv1alpha1.PhaseInProgress, mErr
 	}
-
 	return integreatlyv1alpha1.PhaseCompleted, mErr
 }
 
