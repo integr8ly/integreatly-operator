@@ -38,6 +38,8 @@ ocm get cluster <cluster-id> | jq -r .infra_id
 5. Click on the VPC -> tags
 
 > Verify that the VPC belongs to the OSD cluster VPC (it should have a tag `kubernetes.io/cluster/<cluster-infra-id>`)
+>
+> Verify no other VPC exists in the account with a tag `integreatly.org/clusterId=<cluster-infra-id>`
 
 6. Back in Networking tab, verify that the subnets belong to the Cluster VPC
 
