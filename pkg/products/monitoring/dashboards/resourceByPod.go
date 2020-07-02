@@ -439,7 +439,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace', pod=~'$pod', container!='POD', container!=''}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container=''}) by (pod)",
 					"format": "time_series",
 					"intervalFactor": 2,
 					"legendFormat": "{{pod}}",
@@ -664,7 +664,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 				}
 			],
 			"targets": [{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace', pod=~'$pod', container!='POD', container!=''}) by (container)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container=''}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -682,7 +682,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container) / sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -700,7 +700,7 @@ const MonitoringGrafanaDBResourceByPodJSON = `{
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace', pod=~'$pod', container!=''}) by (container) / sum(kube_pod_container_resource_limits_memory_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', pod=~'$pod', container=''}) by (container) / sum(kube_pod_container_resource_limits_memory_bytes{namespace=~'$namespace', pod=~'$pod'}) by (container)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
