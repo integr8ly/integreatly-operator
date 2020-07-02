@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-  
+
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"

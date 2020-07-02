@@ -326,12 +326,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 	metrics.SetRHMIStatus(installation)
 
-	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
-		installation.Status.Version = installation.Status.ToVersion
-		installation.Status.ToVersion = ""
-		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
-	}
-
 	err = r.updateStatusAndObject(originalInstallation, installation)
 	if err != nil {
 		return retryRequeue, err
@@ -629,9 +623,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
-
 		allProductsReconciled = reconciler.VerifyVersion(installation)
-
 		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
@@ -681,7 +673,6 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	if incompleteStage {
 		return integreatlyv1alpha1.PhaseInProgress, mErr
 	}
-
 	return integreatlyv1alpha1.PhaseCompleted, mErr
 }
 
