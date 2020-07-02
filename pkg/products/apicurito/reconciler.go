@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/version"
+
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -86,6 +90,14 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductApicurito],
+		string(integreatlyv1alpha1.VersionApicurito),
+		string(integreatlyv1alpha1.OperatorVersionApicurito),
+	)
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

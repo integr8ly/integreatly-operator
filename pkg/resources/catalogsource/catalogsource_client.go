@@ -56,7 +56,7 @@ func (client *CatalogSourceClient) GetLatestCSV(catalogSourceKey k8sclient.Objec
 	csv := &olmv1alpha1.ClusterServiceVersion{}
 	err = json.Unmarshal([]byte(bundle.GetCsvJson()), &csv)
 	if err != nil {
-		logrus.Errorf("failed to unmarshal json: %w", err)
+		logrus.Errorf("failed to unmarshal json: %v", err)
 	}
 	return csv, nil
 }

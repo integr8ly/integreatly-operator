@@ -86,6 +86,10 @@ type Interface interface {
 	//For example, codeready looks for a deployment in the scanned namespace with the name "codeready", if found this
 	//installation will stall until that product is removed.
 	GetPreflightObject(ns string) runtime.Object
+
+	//VerifyVersion checks if the version of the product installed is the same as the one defined in the operator
+	//
+	VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool
 }
 
 func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
@@ -199,4 +203,8 @@ func (n *NoOp) Reconcile(_ context.Context, _ *integreatlyv1alpha1.RHMI, _ *inte
 
 func (n *NoOp) GetPreflightObject(ns string) runtime.Object {
 	return &appsv1.Deployment{}
+}
+
+func (n *NoOp) VerifyVersion(_ *integreatlyv1alpha1.RHMI) bool {
+	return true
 }

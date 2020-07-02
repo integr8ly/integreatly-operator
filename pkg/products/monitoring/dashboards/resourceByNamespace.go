@@ -423,7 +423,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 			"stack": false,
 			"steppedLine": false,
 			"targets": [{
-				"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace', container!=''}) by (pod)",
+				"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace', container=''}) by (pod)",
 				"format": "time_series",
 				"intervalFactor": 2,
 				"legendFormat": "{{pod}}",
@@ -632,7 +632,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 				}
 			],
 			"targets": [{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace',container!=''}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -650,7 +650,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace',container!=''}) by (pod) / sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'$namespace'}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod) / sum(kube_pod_container_resource_requests_memory_bytes{namespace=~'$namespace'}) by (pod)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,
@@ -668,7 +668,7 @@ const MonitoringGrafanaDBResourceByNSJSON = `{
 					"step": 10
 				},
 				{
-					"expr": "sum(container_memory_usage_bytes{namespace=~'$namespace',container!=''}) by (pod) / sum(kube_pod_container_resource_limits_memory_bytes{namespace=~'$namespace'}) by (pod)",
+					"expr": "sum(container_memory_working_set_bytes{namespace=~'$namespace',container=''}) by (pod) / sum(kube_pod_container_resource_limits_memory_bytes{namespace=~'$namespace'}) by (pod)",
 					"format": "table",
 					"instant": true,
 					"intervalFactor": 2,

@@ -10,6 +10,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/sirupsen/logrus"
 
@@ -72,6 +73,15 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	product := installation.Status.Stages[integreatlyv1alpha1.CloudResourcesStage].Products[integreatlyv1alpha1.ProductCloudResources]
+	return version.VerifyProductAndOperatorVersion(
+		product,
+		string(integreatlyv1alpha1.VersionCloudResources),
+		string(integreatlyv1alpha1.OperatorVersionCloudResources),
+	)
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

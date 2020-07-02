@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+  
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 
@@ -114,6 +116,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 			Namespace: ns,
 		},
 	}
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.AuthenticationStage].Products[integreatlyv1alpha1.ProductRHSSO],
+		string(integreatlyv1alpha1.VersionRHSSO),
+		string(integreatlyv1alpha1.OperatorVersionRHSSO),
+	)
 }
 
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
