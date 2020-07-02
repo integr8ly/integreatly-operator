@@ -12,7 +12,6 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	v1 "k8s.io/api/apps/v1"
 
