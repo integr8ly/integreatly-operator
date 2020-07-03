@@ -3,6 +3,7 @@ package monitoringspec
 import (
 	"context"
 	"errors"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -155,6 +156,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := rbac.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := grafanav1alpha1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, nil
