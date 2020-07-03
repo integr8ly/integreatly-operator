@@ -32,7 +32,7 @@ import (
 var (
 	resourceType    = "_network"
 	tier            = "production"
-	dummyIpAddress  = "172.10.0.0/24"
+	dummyIpAddress  = "172.11.0.0/24"
 	strategyMapName = "cloud-resources-aws-strategies"
 )
 
@@ -124,7 +124,8 @@ func (e *networkConfigTestError) hasError() bool {
 		len(e.standaloneRouteTableError) != 0 ||
 		len(e.clusterRouteTablesError) != 0 ||
 		len(e.rdsSubnetGroupsError) != 0 ||
-		len(e.cacheSubnetGroupsError) != 0
+		len(e.cacheSubnetGroupsError) != 0 ||
+		len(e.updateCidrBlockError) != 0
 }
 
 // TestStandaloneVPCExists tests that the cloud resource operator network components
@@ -577,6 +578,7 @@ func verifyCidrBlockUpdate(ctx context.Context, testingCtx *common.TestingContex
 
 	// get _network resource type
 	strat, err := getStrategyForResource(stratMap, resourceType, tier)
+
 	if err != nil {
 		errMsg := fmt.Errorf("failed to get strategy for _network: %w", err)
 		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
@@ -590,6 +592,8 @@ func verifyCidrBlockUpdate(ctx context.Context, testingCtx *common.TestingContex
 		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
 		return newErr
 	}
+
+	originalCidrBlock := *vpcCreateConfig.CidrBlock
 
 	// update the cidr block
 	vpcCreateConfig.CidrBlock = aws.String(dummyIpAddress)
@@ -617,7 +621,7 @@ func verifyCidrBlockUpdate(ctx context.Context, testingCtx *common.TestingContex
 	}
 
 	// wait 120 seconds for any changes to be reconciled
-	err = wait.PollImmediate(15*time.Second, 2*time.Minute, func() (bool, error) {
+	pollErr := wait.PollImmediate(15*time.Second, 2*time.Minute, func() (bool, error) {
 		vpcOutput, err := session.DescribeVpcs(&ec2.DescribeVpcsInput{
 			Filters: []*ec2.Filter{
 				{
@@ -639,14 +643,41 @@ func verifyCidrBlockUpdate(ctx context.Context, testingCtx *common.TestingContex
 		}
 		return false, nil
 	})
+
+	// update the vpc CIDR block back to its original value
+	// update the cidr block
+	vpcCreateConfig.CidrBlock = aws.String(originalCidrBlock)
+
+	// marshal create config
+	bytesOutput, err = json.Marshal(vpcCreateConfig)
 	if err != nil {
+		errMsg := fmt.Errorf("failed to unmarshal create config: %w", err)
+		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
+		return newErr
+	}
+
+	// update the ip address in the _network create strategy
+	if err = putStrategyForResource(stratMap, &strategyMap{CreateStrategy: bytesOutput}, resourceType, tier); err != nil {
+		errMsg := fmt.Errorf("failed to update strategy map for _network create strategy: %w", err)
+		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
+		return newErr
+	}
+
+	// update config map
+	if err := testingCtx.Client.Update(ctx, stratMap); err != nil {
+		errMsg := fmt.Errorf("failed to update aws strategy map: %w", err)
+		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
+		return newErr
+	}
+
+	if pollErr != nil {
 		// if the poll timed out, the vpc cidr block did not change,
 		// so don't return any error
-		if strings.Contains(err.Error(), "timed out") {
+		if strings.Contains(pollErr.Error(), "timed out") {
 			return newErr
 		}
 
-		errMsg := fmt.Errorf("unexpected error updating cidr block in aws strategy map: %w", err)
+		errMsg := fmt.Errorf("unexpected error updating cidr block in aws strategy map: %w", pollErr)
 		newErr.updateCidrBlockError = append(newErr.updateCidrBlockError, errMsg)
 		return newErr
 	}
