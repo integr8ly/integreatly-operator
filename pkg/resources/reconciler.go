@@ -177,10 +177,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 
 			// Remove the finalizer to allow for deletion of the installation cr
 			logrus.Infof("Removing finalizer: %s", finalizer)
-			err = RemoveProductFinalizer(ctx, inst, client, productName)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
+			inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 		}
 		// Don't continue reconciling the product
 		return integreatlyv1alpha1.PhaseNone, nil

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -78,6 +79,8 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	var httpClient http.Client
+	httpClient.Timeout = time.Second * 10
+	httpClient.Transport = &http.Transport{DisableKeepAlives: true, IdleConnTimeout: time.Second * 10}
 
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -111,6 +114,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", templateFn, err)
 		}
+		defer fileData.Close()
 
 		content, err := ioutil.ReadAll(fileData)
 		if err != nil {

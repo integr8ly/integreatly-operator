@@ -37,7 +37,7 @@ const (
 
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, _ []string) error {
+func Add(mgr manager.Manager) error {
 	reconcile, err := newReconciler(mgr)
 	if err != nil {
 		return err
@@ -49,6 +49,8 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	operatorNs := "redhat-rhmi-operator"
 
 	restConfig := controllerruntime.GetConfigOrDie()
+	restConfig.Timeout = time.Second * 10
+
 	client, err := k8sclient.New(restConfig, k8sclient.Options{})
 	if err != nil {
 		return nil, err

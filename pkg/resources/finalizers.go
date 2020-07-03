@@ -82,8 +82,8 @@ func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI,
 	return nil
 }
 
-// RemoveFinalizer removes a given finalizer from the installation custom resource
-func RemoveFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
+// RemoveFinalizerAndUpdate removes a given finalizer from the installation custom resource
+func RemoveFinalizerAndUpdate(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {

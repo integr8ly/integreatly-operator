@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
@@ -93,7 +94,15 @@ type Interface interface {
 
 func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
-	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
+	oauthHttpClient := &http.Client{
+		Timeout: time.Second * 10,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			IdleConnTimeout:   time.Second * 10,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+		},
+	}
+	oauthResolver := resources.NewOauthResolver(oauthHttpClient)
 	oauthResolver.Host = rc.Host
 	recorder := mgr.GetEventRecorderFor(string(product))
 
@@ -102,6 +111,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -111,6 +121,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		}
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -128,6 +139,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -143,18 +155,23 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
+		client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
 
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
 
 		httpc := &http.Client{
+			Timeout: time.Second * 10,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+				DisableKeepAlives: true,
+				IdleConnTimeout:   time.Second * 10,
+				TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
 			},
 		}
 

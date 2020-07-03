@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -24,6 +25,7 @@ type OauthResolver struct {
 }
 
 func NewOauthResolver(client *http.Client) *OauthResolver {
+	client.Timeout = time.Second * 10
 	return &OauthResolver{
 		client: client,
 		Host:   defaultHost,
@@ -41,6 +43,7 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		or.client.Transport = tr
+		or.client.Timeout = time.Second * 10
 	} else {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read k8s root CA file: %w", err)
@@ -52,7 +55,7 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 			RootCAs: caCertPool,
 		}
 		tlsConfig.BuildNameToCertificate()
-		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		transport := &http.Transport{TLSClientConfig: tlsConfig, DisableKeepAlives: true}
 		or.client.Transport = transport
 	}
 
