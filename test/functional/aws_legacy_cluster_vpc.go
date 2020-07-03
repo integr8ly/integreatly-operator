@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+var internalSubnetTag = "kubernetes.io/role/internal-elb"
+
 func TestLegacyClusterVPC(t *testing.T, testingCtx *common.TestingContext) {
 	ctx := context.TODO()
 	testErrors := &networkConfigTestError{}
@@ -58,7 +60,7 @@ func TestLegacyClusterVPC(t *testing.T, testingCtx *common.TestingContext) {
 	azs, err := getAvailabilityZones(ec2Svc)
 
 	if err != nil {
-		t.Fatal("could get aws availability zones", err)
+		t.Fatal("could not get aws availability zones", err)
 	}
 
 	// find and verify the cluster VPC
@@ -71,7 +73,7 @@ func TestLegacyClusterVPC(t *testing.T, testingCtx *common.TestingContext) {
 
 	clusterVpcId := *vpc.VpcId
 
-	vpcSubnets, err := verifyLegacySubnets(ec2Svc, clusterTag, clusterVpcId)
+	vpcSubnets, err := getLegacySubnets(ec2Svc, clusterTag, clusterVpcId)
 	testErrors.subnetsError = err.(*networkConfigTestError).subnetsError
 
 	// we have to manually construct the subnet group names for rds and elasticache,
@@ -139,7 +141,7 @@ func verifyLegacyVPC(session *ec2.EC2, clusterTag string) (*ec2.Vpc, error) {
 }
 
 // verify that the vpc subnets are created
-func verifyLegacySubnets(session *ec2.EC2, clusterTag, clusterVPCId string) ([]*ec2.Subnet, error) {
+func getLegacySubnets(session *ec2.EC2, clusterTag, clusterVPCId string) ([]*ec2.Subnet, error) {
 	newErr := &networkConfigTestError{
 		subnetsError: []error{},
 	}
@@ -194,10 +196,21 @@ func verifyLegacyRDSSubnetGroups(rdsSvc *rds.RDS, subnetGroupName, clusterVPCId 
 		newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
 	}
 
-	// ensure each subnet belongs to the vpc
-	for _, subnet := range subnetGroup.Subnets {
-		if !subnetExistsInVPCSubnetList(*subnet.SubnetIdentifier, vpcSubnets) {
+	// ensure each subnet is found in the list of subnets found in the cluster vpc
+	subnetGroupSubnets := make([]*ec2.Subnet, 0)
+	for _, cacheSubnet := range subnetGroup.Subnets {
+		ec2Subnet := findSubnetInList(*cacheSubnet.SubnetIdentifier, vpcSubnets)
+		if ec2Subnet == nil {
 			errMsg := fmt.Errorf("rds subnet group %+v has a subnet that doesn't belong to the cluster VPC %s", subnetGroup, clusterVPCId)
+			newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
+		}
+		subnetGroupSubnets = append(subnetGroupSubnets, ec2Subnet)
+	}
+
+	// verify that the subnets have the right tag that indicates it's private
+	for _, subnet := range subnetGroupSubnets {
+		if !subnetContainsTagKey(subnet, internalSubnetTag) {
+			errMsg := fmt.Errorf("rds subnet %s doesn't have the tag %s", *subnet.SubnetId, internalSubnetTag)
 			newErr.rdsSubnetGroupsError = append(newErr.rdsSubnetGroupsError, errMsg)
 		}
 	}
@@ -252,9 +265,20 @@ func verifyLegacyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, subnetGrou
 	}
 
 	// ensure each subnet is found in the list of subnets found in the cluster vpc
-	for _, subnet := range subnetGroup.Subnets {
-		if !subnetExistsInVPCSubnetList(*subnet.SubnetIdentifier, vpcSubnets) {
-			errMsg := fmt.Errorf("rds subnet group %+v has a subnet that doesn't belong to the cluster VPC %s", subnetGroup, clusterVPCId)
+	subnetGroupSubnets := make([]*ec2.Subnet, 0)
+	for _, cacheSubnet := range subnetGroup.Subnets {
+		ec2Subnet := findSubnetInList(*cacheSubnet.SubnetIdentifier, vpcSubnets)
+		if ec2Subnet == nil {
+			errMsg := fmt.Errorf("elasticache subnet group %+v has a subnet that doesn't belong to the cluster VPC %s", subnetGroup, clusterVPCId)
+			newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
+		}
+		subnetGroupSubnets = append(subnetGroupSubnets, ec2Subnet)
+	}
+
+	// verify that the subnets have the right tag that indicates it's private
+	for _, subnet := range subnetGroupSubnets {
+		if !subnetContainsTagKey(subnet, internalSubnetTag) {
+			errMsg := fmt.Errorf("elasticache subnet %s doesn't have the tag %s", *subnet.SubnetId, internalSubnetTag)
 			newErr.cacheSubnetGroupsError = append(newErr.cacheSubnetGroupsError, errMsg)
 		}
 	}
@@ -277,9 +301,18 @@ func verifyLegacyCacheSubnetGroups(cacheSvc *elasticache.ElastiCache, subnetGrou
 	return newErr
 }
 
-func subnetExistsInVPCSubnetList(subnetIdentifier string, vpcSubnets []*ec2.Subnet) bool {
+func findSubnetInList(subnetIdentifier string, vpcSubnets []*ec2.Subnet) *ec2.Subnet {
 	for _, vpcSubnet := range vpcSubnets {
 		if subnetIdentifier == *vpcSubnet.SubnetId {
+			return vpcSubnet
+		}
+	}
+	return nil
+}
+
+func subnetContainsTagKey(subnet *ec2.Subnet, tagKey string) bool {
+	for _, tag := range subnet.Tags {
+		if *tag.Key == tagKey {
 			return true
 		}
 	}
