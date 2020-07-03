@@ -7,7 +7,7 @@ tests:
       - name: CODEREADY_NAMESPACE
         value: redhat-rhmi-codeready-workspaces
   - name: 3scale-test
-    image: quay.io/integreatly/3scale-py-testsuite:0.1.0
+    image: quay.io/integreatly/3scale-py-testsuite:2.9
     timeout: 3600
     envVars:
       - name: NAMESPACE
