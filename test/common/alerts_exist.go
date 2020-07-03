@@ -390,6 +390,13 @@ var expectedRules = []alertsTestRule{
 			"RHMIUPSUnifiedpushProxyServiceEndpointDown",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-rhmi-installation-controller-alerts.yaml",
+		Rules: []string{
+			"RHMIInstallationControllerIsNotReconciling",
+			"RHMIInstallationControllerStoppedReconciling",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{

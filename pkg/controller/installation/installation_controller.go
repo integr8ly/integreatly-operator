@@ -273,6 +273,18 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
 
+	// reconciles rhmi installation alerts
+	_, err = r.reconcileRHMIInstallationAlerts(context.TODO(), r.client, installation)
+	if err != nil {
+		logrus.Infof("Error reconciling alerts for the rhmi installation controller: %w", err)
+	}
+
+	// reconciles rhmi installation completion alert in openshift monitoring
+	_, err = r.reconcileRHMIInstallationAlertsOpenshiftMonitoring(context.TODO(), r.client, installation)
+	if err != nil {
+		logrus.Info("Error reconciling alerts for completion of rhmi installation in openshift monitoring :%w", err)
+	}
+
 	// Reconcile the webhooks
 	if err := webhooks.Config.Reconcile(context.TODO(), r.client, installation); err != nil {
 		return reconcile.Result{}, err
