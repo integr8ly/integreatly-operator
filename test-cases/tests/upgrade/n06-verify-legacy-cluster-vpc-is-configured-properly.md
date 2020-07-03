@@ -6,7 +6,7 @@ targets:
   - 2.5.0
 ---
 
-# N06 - Verify VPC backwards compatibility after upgrade
+# N06 - Verify Legacy cluster VPC is configured properly
 
 <https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_legacy_vpc.go>
 
