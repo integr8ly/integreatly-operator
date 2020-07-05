@@ -34,10 +34,10 @@ type alertManagerConfig struct {
 const (
 	fuseOperatorDeploymentName            = "syndesis-operator"
 	fuseUIDeploymentConfigName            = "syndesis-ui"
-	monitoringTimeout                     = 15 * time.Minute
+	monitoringTimeout                     = time.Minute * 15
 	monitoringRetryInterval               = time.Minute
-	verifyOperatorDeploymentTimeout       = 5 * time.Minute
-	verifyOperatorDeploymentRetryInterval = 15 * time.Second
+	verifyOperatorDeploymentTimeout       = time.Minute * 5
+	verifyOperatorDeploymentRetryInterval = time.Second * 15
 )
 
 var fuseAlertsToTest = map[string]string{
@@ -365,7 +365,7 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 }
 
 func checkFuseOperatorReplicasAreReady(ctx *TestingContext, t *testing.T) error {
-	t.Logf("Checking correct number of fuse operator replicas (%s) are set", fmt.Sprint(originalOperatorReplicas))
+	t.Logf("Checking correct number of fuse operator replicas (%d) are set", originalOperatorReplicas)
 	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
 		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, ctx.KubeClient)
 
