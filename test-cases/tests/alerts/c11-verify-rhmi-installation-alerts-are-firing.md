@@ -13,14 +13,14 @@ More info: <https://issues.redhat.com/browse/INTLY-7395>
 
 ## Steps
 
-1. Verify RHMIOperatorInstallCompleted alert is present and firing:
+1. Verify RHMIOperatorInstallDelayed alert is present and firing:
    1. Open OpenShift console in your browser and login as admin
    2. Login as admin
    3. Go to Deployments, in the `redhat-rhmi-operator` namespace and click on `rhmi-operator`
    4. In the details tab, decrease the pod count by clicking on the down arrow
       > RHMI pod should be scaled to 0
    5. In the left hand side menu, go to Monitoring >> Alerting and select only Firing in the filter bar
-      > RHMIInstallationCompleted should be in the list
+      > RHMIOperatorInstallDelayed should be in the list
    6. Go to `rhmi-operator` deployment and scale the pod up again.
 2. Verify RHMIInstallationControllerIsNotReconciling and RHMIInstallationControllerStoppedReconciling alerts are present and firing:
    1. Open OpenShift console in your browser and login as admin

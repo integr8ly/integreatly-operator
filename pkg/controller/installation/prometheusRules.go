@@ -80,12 +80,12 @@ func (r *ReconcileInstallation) reconcileRHMIInstallationAlertsOpenshiftMonitori
 
 	rules := []monitoringv1.Rule{
 		{
-			Alert: "RHMIOperatorInstallCompleted",
+			Alert: "RHMIOperatorInstallDelayed",
 			Annotations: map[string]string{
 				"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 				"message": "RHMI operator is taking more than 2 hours to go to a complete stage",
 			},
-			Expr:   intstr.FromString(fmt.Sprint("absent(rhmi_status{stage='complete'})")),
+			Expr:   intstr.FromString(fmt.Sprint("absent(rhmi_status{stage='complete'} == 1)")),
 			For:    "120m",
 			Labels: map[string]string{"severity": "critical"},
 		},
