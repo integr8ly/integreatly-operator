@@ -336,5 +336,4 @@ spec:
     value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
   - name: postgresql-10-rhel7
     value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
-  replaces: 3scale-operator.v0.5.0
   version: 0.5.2
