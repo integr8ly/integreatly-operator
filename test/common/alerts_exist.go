@@ -232,6 +232,8 @@ var expectedRules = []alertsTestRule{
 			"RouterMeshConnectivityHealth",
 			"RouterMeshUndeliveredHealth",
 			"BrokerMemory",
+			"AddressCanaryCheckHealth",
+			"AddressCanaryHealth",
 		},
 	},
 	{
