@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -121,6 +122,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := monitoringv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := grafanav1alpha1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, nil
