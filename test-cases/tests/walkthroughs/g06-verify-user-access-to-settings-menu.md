@@ -1,6 +1,7 @@
 ---
 estimate: 15m
 tags:
+  - 2.3.0
 ---
 
 # G06 - Verify user access to settings menu

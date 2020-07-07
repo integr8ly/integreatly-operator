@@ -1,6 +1,7 @@
 ---
 estimate: 15m
 tags:
+  - 2.3.0
 ---
 
 # G07 - Verify changes for customising solution explorer user roles

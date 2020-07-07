@@ -1,6 +1,7 @@
 ---
 estimate: 15m
 tags:
+  - 2.3.0
 ---
 
 # G08 - Verify addition of breadcrumbs to solution explorer
