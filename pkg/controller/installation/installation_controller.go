@@ -223,7 +223,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	// gets the products from the install type to expose rhmi status metric
 	stages := make([]integreatlyv1alpha1.RHMIStageStatus, 0)
-	for _, stage := range installType.GetStages() {
+	for _, stage := range installType.GetInstallStages() {
 		stages = append(stages, integreatlyv1alpha1.RHMIStageStatus{
 			Name:     stage.Name,
 			Phase:    "",
@@ -253,7 +253,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
-		return r.handleUninstall(installation)
+		return r.handleUninstall(installation, installType)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
@@ -278,7 +278,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	for _, stage := range installType.GetStages() {
+	for _, stage := range installType.GetInstallStages() {
 		var err error
 		var stagePhase integreatlyv1alpha1.StatusPhase
 		if stage.Name == integreatlyv1alpha1.BootstrapStage {
@@ -361,7 +361,7 @@ func (r *ReconcileInstallation) updateStatusAndObject(original, installation *in
 	return nil
 }
 
-func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
+func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha1.RHMI, installationType *Type) (reconcile.Result, error) {
 	retryRequeue := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
@@ -390,38 +390,48 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 	for _, finalizer := range installation.Finalizers {
 		finalizers = append(finalizers, finalizer)
 	}
-	for _, productFinalizer := range finalizers {
-		if !strings.Contains(productFinalizer, "integreatly") {
-			continue
+	for _, stage := range installationType.UninstallStages {
+		pendingUninstalls := false
+		for product, _ := range stage.Products {
+			productName := string(product)
+			logrus.Infof("Uninstalling %s in stage %s", productName, stage.Name)
+			productStatus := installation.GetProductStatusObject(product)
+			//if the finalizer for this product is not present, move to the next product
+			for _, productFinalizer := range finalizers {
+				if !strings.Contains(productFinalizer, productName) {
+					continue
+				}
+				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr)
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
+				}
+				serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
+				}
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient)
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
+				}
+				if phase != integreatlyv1alpha1.PhaseCompleted {
+					pendingUninstalls = true
+				}
+				logrus.Infof("current phase for %s is: %s", productName, phase)
+			}
 		}
-		productName := strings.Split(productFinalizer, ".")[1]
-		product := installation.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
-		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
-		if err != nil {
-			merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
+		//don't move to next stage until all products in this stage are removed
+		//update CR and return
+		if pendingUninstalls {
+			if len(merr.errors) > 0 {
+				installation.Status.LastError = merr.Error()
+				r.client.Status().Update(context.TODO(), installation)
+			}
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
+			return retryRequeue, nil
 		}
-		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
-		if err != nil {
-			merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
-		}
-		phase, err := reconciler.Reconcile(context.TODO(), installation, product, serverClient)
-		if err != nil {
-			merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
-		}
-		logrus.Infof("current phase for %s is: %s", product.Name, phase)
-	}
-
-	//any products left to uninstall, or any errors during product uninstall, add to CR and return
-	if len(installation.Finalizers) > 1 || len(merr.errors) > 0 {
-		if len(merr.errors) > 0 {
-			installation.Status.LastError = merr.Error()
-			r.client.Status().Update(context.TODO(), installation)
-		}
-		err = r.client.Update(context.TODO(), installation)
-		if err != nil {
-			merr.Add(err)
-		}
-		return retryRequeue, nil
 	}
 
 	//all products gone and no errors, tidy up bootstrap stuff
@@ -570,7 +580,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	}
 	// new client to avoid caching issues
 	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
-	for _, stage := range installationType.Stages {
+	for _, stage := range installationType.InstallStages {
 		for _, product := range stage.Products {
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 			if err != nil {
