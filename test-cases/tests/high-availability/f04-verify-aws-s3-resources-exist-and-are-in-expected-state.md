@@ -11,6 +11,10 @@ automation_jiras:
 ## Prerequisites
 
 - Make sure you have the [AWS CLI](https://aws.amazon.com/cli/) installed, and configured correctly.
+  - Reach out to QE to get credentials for the web login in AWS.
+  - Once you have logged in, navigate to the user name `tester-XXXX-XXXX-XXXX` on the top right (next to `Global` and `Support` menus).
+  - In the dropdown select and navigate to `My Security Credentials`.
+  - In the `AWS IAM credentials` tab, create a new access key, note the `Access Key ID` and `Secret Access Key` that will be returned, use these in your CLI to configure aws with `aws configure`.
 - Make sure you have `oc` installed and logged into as admin user to the testing cluster.
 
 ## Steps
