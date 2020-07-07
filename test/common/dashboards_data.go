@@ -125,7 +125,7 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 			}
 
 			// completed pods don't use resources -> expected failure
-			matched, _ := regexp.Match(`pod=~'.*-(deploy|hook-pre|hook-post)'`, []byte(failedQuery))
+			matched, _ := regexp.Match(`pod=~'.*(deploy|hook-pre|hook-post|build|pv-backup)*'`, []byte(failedQuery))
 			if matched {
 				continue
 			}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 //go:generate moq -out three_scale_moq.go . ThreeScaleInterface
@@ -34,6 +35,7 @@ type threeScaleClient struct {
 }
 
 func NewThreeScaleClient(httpc *http.Client, wildCardDomain string) *threeScaleClient {
+
 	return &threeScaleClient{
 		httpc:          httpc,
 		wildCardDomain: wildCardDomain,
@@ -50,7 +52,7 @@ func (tsc *threeScaleClient) AddAuthenticationProvider(data map[string]string, a
 	if err != nil {
 		return nil, err
 	}
-
+	tsc.httpc.Timeout = time.Second * 10
 	res, err := tsc.httpc.Post(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/account/authentication_providers.json", tsc.wildCardDomain),
 		"application/json",
@@ -134,6 +136,7 @@ func (tsc *threeScaleClient) AddUser(username string, email string, password str
 	data["email"] = email
 	data["password"] = password
 	reqData, err := json.Marshal(data)
+
 	res, err := tsc.httpc.Post(
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users.json", tsc.wildCardDomain),
 		"application/json",
@@ -156,6 +159,7 @@ func (tsc *threeScaleClient) DeleteUser(userID int, accessToken string) (*http.R
 		fmt.Sprintf("https://3scale-admin.%s/admin/api/users/%d.json", tsc.wildCardDomain, userID),
 		bytes.NewBuffer(reqData))
 	req.Header.Add("Content-type", "application/json")
+	tsc.httpc.Timeout = time.Second * 10
 	res, err := tsc.httpc.Do(req)
 	if err != nil {
 		return nil, err
@@ -179,6 +183,8 @@ func (tsc *threeScaleClient) SetUserAsAdmin(userID int, accessToken string) (*ht
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	tsc.httpc.Timeout = time.Second * 10
+
 	res, err := tsc.httpc.Do(req)
 
 	return res, err
@@ -199,6 +205,7 @@ func (tsc *threeScaleClient) SetUserAsMember(userID int, accessToken string) (*h
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	tsc.httpc.Timeout = time.Second * 10
 	res, err := tsc.httpc.Do(req)
 
 	return res, err
@@ -221,6 +228,7 @@ func (tsc *threeScaleClient) UpdateUser(userID int, username string, email strin
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	tsc.httpc.Timeout = time.Second * 10
 	res, err := tsc.httpc.Do(req)
 
 	return res, err

@@ -90,7 +90,6 @@ func makeScheduleScenario(scenario *scheduleScenario) struct {
 
 func TestUpdateStatus(t *testing.T) {
 	targetVersion := "integreatly-operator-v2.3.0"
-
 	scenarios := []struct {
 		Name          string
 		Config        *integreatlyv1alpha1.RHMIConfig
@@ -204,7 +203,7 @@ func TestUpdateStatus(t *testing.T) {
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
 				For: time.
 					Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
-					AddDate(0, 0, 7-int(now().Weekday())).
+					AddDate(0, 0, (7-int(now().Weekday()))%7).
 					Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),

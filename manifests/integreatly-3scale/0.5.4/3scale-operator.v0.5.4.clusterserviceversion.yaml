@@ -1,20 +1,8 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: 3scale-operator.v0.5.0
-  namespace: placeholder
   annotations:
-    repository: https://github.com/3scale/3scale-operator
-    capabilities: Full Lifecycle
-    categories: "Integration & Delivery"
-    certified: "false"
-    description: 3scale Operator to provision 3scale and publish/manage API
-    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:2ba16314ee046b3c3814fe4e356b728da6853743bd72f8651e1a338e8bbf4f81
-    createdAt: 2019-05-30T22:40:00Z
-    support: Red Hat, Inc.
-    tectonic-visibility: ocs
-    alm-examples: >-
-      [{"apiVersion":"apps.3scale.net/v1alpha1","kind":"APIManager","metadata":{"name":"example-apimanager"},"spec":{"wildcardDomain":"example.com"}},
+    alm-examples: '[{"apiVersion":"apps.3scale.net/v1alpha1","kind":"APIManager","metadata":{"name":"example-apimanager"},"spec":{"wildcardDomain":"example.com"}},
       {"apiVersion":"apps.3scale.net/v1alpha1","kind":"APIManager","metadata":{"name":"example-apimanager-ha"},"spec":{"highAvailability":{"enabled":true},"wildcardDomain":"example.com"}},
       {"apiVersion":"apps.3scale.net/v1alpha1","kind":"APIManager","metadata":{"name":"example-apimanager-s3"},"spec":{"system":{"fileStorage":{"simpleStorageService":{"configurationSecretRef":{"name":"aws-auth"}}}},"wildcardDomain":"\u003cdesired-domain\u003e"}},
       {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"API","metadata":{"labels":{"environment":"testing"},"name":"example-api"},"spec":{"description":"api01","integrationMethod":{"apicastHosted":{"apiTestGetRequest":"/","authenticationSettings":{"credentials":{"apiKey":{"authParameterName":"user-key","credentialsLocation":"headers"}},"errors":{"authenticationFailed":{"contentType":"text/plain;
@@ -26,32 +14,25 @@ metadata:
       {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"MappingRule","metadata":{"labels":{"api":"api01"},"name":"metric01-get-path01"},"spec":{"increment":1,"method":"GET","metricRef":{"name":"metric01"},"path":"/path01"}},
       {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"Metric","metadata":{"labels":{"api":"api01"},"name":"metric01"},"spec":{"description":"metric01","incrementHits":false,"unit":"hit"}},
       {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"Plan","metadata":{"labels":{"api":"api01"},"name":"example-plan"},"spec":{"approvalRequired":false,"costs":{"costMonth":0,"setupFee":0},"default":true,"limitSelector":{"matchLabels":{"plan":"plan01"}},"trialPeriod":0}},
-      {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"Tenant","metadata":{"name":"example-tenant"},"spec":{"email":"admin@example.com","masterCredentialsRef":{"name":"system-seed"},"organizationName":"Example.com","passwordCredentialsRef":{"name":"ecorp-admin-secret"},"systemMasterUrl":"https://master.example.com","tenantSecretRef":{"name":"ecorp-tenant-secret","namespace":"operator-test"},"username":"admin"}}]
+      {"apiVersion":"capabilities.3scale.net/v1alpha1","kind":"Tenant","metadata":{"name":"example-tenant"},"spec":{"email":"admin@example.com","masterCredentialsRef":{"name":"system-seed"},"organizationName":"Example.com","passwordCredentialsRef":{"name":"ecorp-admin-secret"},"systemMasterUrl":"https://master.example.com","tenantSecretRef":{"name":"ecorp-tenant-secret","namespace":"operator-test"},"username":"admin"}}]'
+    capabilities: Full Lifecycle
+    categories: Integration & Delivery
+    certified: "false"
+    containerImage: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ba6ec8ed984a011796bbe1eafabb2791957f58ed66ec4a484c024dd96eaf427
+    createdAt: "2019-05-30T22:40:00Z"
+    description: 3scale Operator to provision 3scale and publish/manage API
+    repository: https://github.com/3scale/3scale-operator
+    support: Red Hat, Inc.
+    tectonic-visibility: ocs
+  name: 3scale-operator.v0.5.4
+  namespace: placeholder
 spec:
-  relatedImages:
-  - name: apicast-gateway-rhel8
-    image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:21be62a6557846337dc0cf764be63442718fab03b95c198a301363886a9e74f9
-  - name: backend-rhel7
-    image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:ea8a31345d3c2a56b02998b019db2e17f61eeaa26790a07962d5e3b66032d8e5
-  - name: system-rhel7
-    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:93819c324831353bb8f7cb6e9910694b88609c3a20d4c1b9a22d9c2bbfbad16f
-  - name: zync-rhel7
-    image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:f4d5c1fdebe306f4e891ddfc4d3045a622d2f01db21ecfc9397cab25c9baa91a
-  - name: memcached-rhel7
-    image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:ff5f3d2d131631d5db8985a5855ff4607e91f0aa86d07dafdcec4f7da13c9e05
-  - name: redis-32-rhel7
-    value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
-  - name: mysql-57-rhel7
-    value: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
-  - name: postgresql-10-rhel7
-    value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
   customresourcedefinitions:
     owned:
-    - kind: APIManager
-      name: apimanagers.apps.3scale.net
-      version: v1alpha1
-      description: API Manager
+    - description: API Manager
       displayName: API Manager
+      kind: APIManager
+      name: apimanagers.apps.3scale.net
       resources:
       - kind: DeploymentConfig
         name: ""
@@ -80,7 +61,7 @@ spec:
         path: deployments
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podStatuses
-#      version: v1alpha1
+      version: v1alpha1
     - description: API
       displayName: API
       kind: API
@@ -116,28 +97,40 @@ spec:
       kind: Tenant
       name: tenants.capabilities.3scale.net
       version: v1alpha1
-  description: "The 3scale Operator creates and maintains the Red Hat 3scale API Management
-    on OpenShift in various deployment configurations.\n\n3scale API Management makes
-    it easy to manage your APIs. \nShare, secure, distribute, control, and monetize
-    your APIs on an infrastructure platform built for performance, customer control,
-    and future growth.\n\n### Supported Features\n* **Installer** A way to install
-    a 3scale API Management solution, providing configurability options at the time
-    of installation\n* **Upgrade** Upgrade from previously installed 3scale API Management
-    solution\n* **Reconcilliation** Tunable CRD parameters after 3scale API Management
-    solution is installed\n* **Capabilities** Ability to define 3scale API definitions
-    and set them into a 3scale API Management solution\n\n### Documentation\n[3scale
-    api management](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management)\n[Deploying
-    3scale using the operator](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.8/html-single/installing_3scale/index?lb_target=stage#deploying-threescale-using-the-operator)\n\n###
-    Getting help\nIf you encounter any issues while using 3scale operator, you can
-    create an issue on our [Github repo](https://github.com/3scale/3scale-operator)
-    for bugs, enhancements, or other requests.\n\n### Contributing\nYou can contribute
-    by:\n\n* Raising any issues you find using 3scale Operator\n* Fixing issues by
-    opening [Pull Requests](https://github.com/3scale/3scale-operator/pulls)\n* Improving
-    [documentation](https://github.com/3scale/3scale-operator/blob/v0.5.0/doc/user-guide.md)\n*
-    Talking about 3scale Operator\n\nAll bugs, tasks or enhancements are tracked as
-    [GitHub issues](https://github.com/3scale/3scale-operator/issues).\n\n### License\n3scale
-    Operator is licensed under the [Apache 2.0 license](https://github.com/3scale/3scale-operator/blob/master/LICENSE)\n"
+  description: |
+    The 3scale Operator creates and maintains the Red Hat 3scale API Management on OpenShift in various deployment configurations.
+
+    3scale API Management makes it easy to manage your APIs.
+    Share, secure, distribute, control, and monetize your APIs on an infrastructure platform built for performance, customer control, and future growth.
+
+    ### Supported Features
+    * **Installer** A way to install a 3scale API Management solution, providing configurability options at the time of installation
+    * **Upgrade** Upgrade from previously installed 3scale API Management solution
+    * **Reconcilliation** Tunable CRD parameters after 3scale API Management solution is installed
+    * **Capabilities** Ability to define 3scale API definitions and set them into a 3scale API Management solution
+
+    ### Documentation
+    [3scale api management](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management)
+    [Deploying 3scale using the operator](https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.8/html/installing_3scale/install-threescale-on-openshift-guide#deploying-threescale-using-the-operator)
+
+    ### Getting help
+    If you encounter any issues while using 3scale operator, you can create an issue on our [Github repo](https://github.com/3scale/3scale-operator) for bugs, enhancements, or other requests.
+
+    ### Contributing
+    You can contribute by:
+
+    * Raising any issues you find using 3scale Operator
+    * Fixing issues by opening [Pull Requests](https://github.com/3scale/3scale-operator/pulls)
+    * Talking about 3scale Operator
+
+    All bugs, tasks or enhancements are tracked as [GitHub issues](https://github.com/3scale/3scale-operator/issues).
+
+    ### License
+    3scale Operator is licensed under the [Apache 2.0 license](https://github.com/3scale/3scale-operator/blob/master/LICENSE)
   displayName: Red Hat Integration - 3scale
+  icon:
+  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+
+    mediatype: image/svg+xml
   install:
     spec:
       deployments:
@@ -168,15 +161,15 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:ea8a31345d3c2a56b02998b019db2e17f61eeaa26790a07962d5e3b66032d8e5
+                  value: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:d8322db4149afc5672ebc3d0430a077c58a8e3e98d7fce720b6a5a3d2498c9c5
                 - name: APICAST_IMAGE
-                  value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:21be62a6557846337dc0cf764be63442718fab03b95c198a301363886a9e74f9
+                  value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
                 - name: SYSTEM_IMAGE
-                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:93819c324831353bb8f7cb6e9910694b88609c3a20d4c1b9a22d9c2bbfbad16f
+                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:a934997501b41be2ca2b62e37c35bd334252b5e2ed28652c275bd1de8a9d324a
                 - name: ZYNC_IMAGE
-                  value: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:f4d5c1fdebe306f4e891ddfc4d3045a622d2f01db21ecfc9397cab25c9baa91a
+                  value: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:34fa60de75f5a0e220105c6bf0ed676f16c8b206812fad65078cf98a16a6d4ef
                 - name: SYSTEM_MEMCACHED_IMAGE
-                  value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:ff5f3d2d131631d5db8985a5855ff4607e91f0aa86d07dafdcec4f7da13c9e05
+                  value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
                 - name: BACKEND_REDIS_IMAGE
                   value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
                 - name: SYSTEM_REDIS_IMAGE
@@ -187,7 +180,7 @@ spec:
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
                 - name: ZYNC_POSTGRESQL_IMAGE
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
-                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:2ba16314ee046b3c3814fe4e356b728da6853743bd72f8651e1a338e8bbf4f81
+                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ba6ec8ed984a011796bbe1eafabb2791957f58ed66ec4a484c024dd96eaf427
                 name: 3scale-operator
                 resources: {}
               serviceAccountName: 3scale-operator
@@ -317,7 +310,7 @@ spec:
   - name: GitHub
     url: https://github.com/3scale/3scale-operator
   - name: Documentation
-    url: https://github.com/3scale/3scale-operator/blob/v0.5.0/doc/user-guide.md
+    url: https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.8/html/installing_3scale/install-threescale-on-openshift-guide#deploying-threescale-using-the-operator
   maintainers:
   - email: eastizle+3scaleoperator@redhat.com
     name: 3scale
@@ -326,8 +319,22 @@ spec:
   maturity: stable
   provider:
     name: Red Hat
-  version: 0.5.0
-  icon:
-  - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+
-    mediatype: image/svg+xml
-  replaces: 3scale-operator.v0.4.0
+  relatedImages:
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
+    name: apicast-gateway-rhel8
+  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:d8322db4149afc5672ebc3d0430a077c58a8e3e98d7fce720b6a5a3d2498c9c5
+    name: backend-rhel7
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:a934997501b41be2ca2b62e37c35bd334252b5e2ed28652c275bd1de8a9d324a
+    name: system-rhel7
+  - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:34fa60de75f5a0e220105c6bf0ed676f16c8b206812fad65078cf98a16a6d4ef
+    name: zync-rhel7
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
+    name: memcached-rhel7
+  - image: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
+    name: redis-32-rhel7
+  - image: registry.redhat.io/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+    name: mysql-57-rhel7
+  - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
+    name: postgresql-10-rhel7
+  replaces: 3scale-operator.v0.5.2
+  version: 0.5.4

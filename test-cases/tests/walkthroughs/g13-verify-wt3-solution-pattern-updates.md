@@ -18,6 +18,4 @@ Page 2 of the walkthrough.
 
 2. section 2.2.5.f. Should read 'Add Features and Functionality'
 
-3. section 2.2.5.i.
-
-- Should read 'Where should Fuse post?'
+3. section 2.2.5.i. Should read 'Where should Fuse post?'

@@ -44,7 +44,7 @@ import (
 const (
 	DefaultName               = "solution-explorer"
 	defaultTemplateLoc        = "/home/tutorial-web-app-operator/deploy/template/tutorial-web-app.yml"
-	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.7"
+	defaultWalkthroughsLoc    = "https://github.com/integr8ly/solution-patterns.git#v1.0.9"
 	paramOpenShiftHost        = "OPENSHIFT_HOST"
 	paramOpenShiftOauthHost   = "OPENSHIFT_OAUTH_HOST"
 	paramOauthClient          = "OPENSHIFT_OAUTHCLIENT_ID"
@@ -127,6 +127,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 			Namespace: ns,
 		},
 	}
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.SolutionExplorerStage].Products[integreatlyv1alpha1.ProductSolutionExplorer],
+		string(integreatlyv1alpha1.VersionSolutionExplorer),
+		string(integreatlyv1alpha1.OperatorVersionSolutionExplorer),
+	)
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

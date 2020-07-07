@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 )
 
 func Auth3Scale(client *http.Client, redirectUrl, keycloakHost, clientId, secret string) (string, error) {
@@ -167,7 +169,9 @@ func ProxyOAuth(client *http.Client, host string, username string, password stri
 		form = document.Find("form")
 		if form.Length() == 0 {
 			// Nope
-			return nil, errorWithResponseDump(response, err)
+			// return nil, errorWithResponseDump(response, err)
+			// this is a workaround for the oauth-proxy issue (https://issues.redhat.com/browse/INTLY-8473)
+			return client, nil
 		}
 
 		_, err = approvePermissions(form, client, response)
@@ -269,21 +273,34 @@ func approvePermissions(form *goquery.Selection, client *http.Client, response *
 
 func dumpResponse(r *http.Response) string {
 	msg := "> Request\n"
-	bytes, err := httputil.DumpRequestOut(r.Request, false)
+	reqOut, err := httputil.DumpRequestOut(r.Request, false)
 	if err != nil {
 		msg += fmt.Sprintf("failed to dump the request: %s", err)
 	} else {
-		msg += string(bytes)
+		msg += string(reqOut)
 	}
 	msg += "\n"
 
 	msg += "< Response\n"
-	bytes, err = httputil.DumpResponse(r, true)
-	if err != nil {
-		msg += fmt.Sprintf("failed to dump the response: %s", err)
-	} else {
-		msg += string(bytes)
+	for name, values := range r.Header {
+		// Loop over all values for the name.
+		for _, value := range values {
+			msg += name + " " + value + "\n"
+		}
 	}
+
+	document, err := ParseHtmlResponse(r)
+	if err != nil {
+		msg += "parse html response failed"
+	} else {
+		selection := document.Find("body")
+		if selection.Length() == 1 {
+			var b bytes.Buffer
+			err = html.Render(&b, selection.Nodes[0])
+			msg += b.String()
+		}
+	}
+
 	msg += "\n"
 
 	return msg

@@ -18,6 +18,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -114,6 +115,14 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.MonitoringStage].Products[integreatlyv1alpha1.ProductMonitoring],
+		string(integreatlyv1alpha1.VersionMonitoring),
+		string(integreatlyv1alpha1.OperatorVersionMonitoring),
+	)
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -492,6 +501,8 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		return err
 	}
 
+	pluginList := getPluginsForGrafanaDashboard(dashboard)
+
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
 		grafanaDB.Labels = map[string]string{
 			"monitoring-key": r.Config.GetLabelSelector(),
@@ -499,6 +510,9 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
 			Json: specJSON,
 			Name: name,
+		}
+		if len(pluginList) > 0 {
+			grafanaDB.Spec.Plugins = pluginList
 		}
 		return nil
 	})

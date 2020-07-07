@@ -3,17 +3,18 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"io/ioutil"
+	"reflect"
+	"strings"
+	"testing"
+
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"io/ioutil"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -130,6 +131,7 @@ func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.
 	if err != nil {
 		t.Errorf("Failed to get route : %s", err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.Errorf("Unable to get 3scale route as dedicated admin : %v", resp)
 	}

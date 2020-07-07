@@ -37,7 +37,7 @@ const (
 
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, _ []string) error {
+func Add(mgr manager.Manager) error {
 	reconcile, err := newReconciler(mgr)
 	if err != nil {
 		return err
@@ -49,6 +49,8 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	operatorNs := "redhat-rhmi-operator"
 
 	restConfig := controllerruntime.GetConfigOrDie()
+	restConfig.Timeout = time.Second * 10
+
 	client, err := k8sclient.New(restConfig, k8sclient.Options{})
 	if err != nil {
 		return nil, err
@@ -59,10 +61,10 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return nil, err
 	}
 
-	webappNotifierClient, err := webapp.NewUpgradeNotifier(context.TODO(), restConfig)
-	if err != nil {
-		return nil, err
-	}
+	webappNotifierClient := webapp.NewLazyUpgradeNotifier(func() (k8sclient.Client, error) {
+		restConfig := controllerruntime.GetConfigOrDie()
+		return k8sclient.New(restConfig, k8sclient.Options{})
+	})
 
 	return &ReconcileSubscription{
 		mgr:                 mgr,
@@ -144,6 +146,11 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
 		logrus.Infof("no upgrade available")
+
+		if err := r.webbappNotifier.ClearNotification(); err != nil {
+			return reconcile.Result{}, err
+		}
+
 		return reconcile.Result{}, nil
 	}
 
@@ -234,10 +241,6 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 
 	if !isServiceAffecting || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
-
-		if err := r.webbappNotifier.ClearNotification(); err != nil {
-			return reconcile.Result{}, err
-		}
 
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, installation, latestRHMIInstallPlan, eventRecorder)
 		if err != nil {
