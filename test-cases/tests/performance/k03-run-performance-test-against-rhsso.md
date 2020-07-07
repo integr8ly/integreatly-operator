@@ -41,7 +41,7 @@ You should have an AWS IAM account in [QE-AWS account](https://068334777414.sign
    export STRESS_TEST_UPS_FIRST=14
    ./stress-test.sh -DmaxMeanReponseTime=1000
    ```
-12. Once tests have finished, results will be saved to `/home/centos/keycloak/testsuite/performance/tests/target/gatling/`. Copy the last two folders to your local machine to view the tests using something similar to `scp -r -i ../stephin.pem centos@ec2-3-8-28-1.eu-west-2.compute.amazonaws.com:/home/centos/keycloak/testsuite/performance/tests/target/gatling/oidcloginandlogoutsimulation-1580403162107 ./`
+10. Once tests have finished, results will be saved to `/home/centos/keycloak/testsuite/performance/tests/target/gatling/`. Copy the last two folders to your local machine to view the tests using something similar to `scp -r -i ../stephin.pem centos@ec2-3-8-28-1.eu-west-2.compute.amazonaws.com:/home/centos/keycloak/testsuite/performance/tests/target/gatling/oidcloginandlogoutsimulation-1580403162107 ./`
 
 > Capture the results and compare them against [the previous run](https://docs.google.com/spreadsheets/d/1VGL87kaSKaz7ndjj1tNlRQiYDf2zn-lT1uHeOCPII3M/edit#gid=1845969669)
 >
