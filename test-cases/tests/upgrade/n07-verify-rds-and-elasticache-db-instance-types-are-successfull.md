@@ -3,7 +3,7 @@ targets:
   - 2.5.0
 ---
 
-# N06 - Verify RDS and Elasticache DB instance types are successfully migrated
+# N07 - Verify RDS and Elasticache DB instance types are successfully migrated
 
 ## Description
 
