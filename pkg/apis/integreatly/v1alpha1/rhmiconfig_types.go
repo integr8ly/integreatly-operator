@@ -40,6 +40,8 @@ const (
 
 	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
 	MaxUpgradeDays = 14
+
+	RecalculateScheduleAnnotation = "recalculateSchedule"
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -229,6 +231,10 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		oldUpgradeSpec.NotBeforeDays,
 		defaultUpgradeSpec.NotBeforeDays,
 	).(*int)
+
+	if !reflect.DeepEqual(oldUpgradeSpec, &rhmiConfig.Spec.Upgrade) {
+		rhmiConfig.Annotations[RecalculateScheduleAnnotation] = "true"
+	}
 
 	marshalled, err := json.Marshal(rhmiConfig)
 	if err != nil {
