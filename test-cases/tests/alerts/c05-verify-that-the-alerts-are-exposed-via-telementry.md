@@ -4,7 +4,11 @@ automation_jiras:
   - INTLY-7413
 ---
 
-# C05 - Verify that no alerts were firing during and after installation
+# C05 - Verify that the alerts are exposed via Telementry
+
+## Description
+
+Verify that the RHMI alerts are exposed via Telementry to cloud.redhat.com and that no RHMI alerts are firing.
 
 ## Steps
 
