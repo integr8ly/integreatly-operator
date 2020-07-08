@@ -47,6 +47,7 @@ const (
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
+	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
 )
 
 var (
@@ -143,7 +144,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	if len(installationList.Items) == 0 {
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
-		alertingEmailAddress, _ := os.LookupEnv("ALERTING_EMAIL_ADDRESS")
+		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
 
@@ -219,6 +220,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
 	if installationCfgMap == "" {
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
+	}
+
+	alertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddress == "" && alertingEmailAddress != "" {
+		logrus.Infof("Adding alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddress = alertingEmailAddress
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			logrus.Errorf("Error while copying alerting email address to RHMI CR: %w", err)
+		}
 	}
 
 	// gets the products from the install type to expose rhmi status metric
