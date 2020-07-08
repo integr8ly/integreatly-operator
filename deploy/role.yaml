@@ -78,6 +78,7 @@ rules:
       - create
       - update
       - delete
+      - watch
   # Adding a role and rolebinding to allow GitHub Secret management by dedicated-admins
   - apiGroups:
       - rbac.authorization.k8s.io
