@@ -10,7 +10,7 @@ Acceptance Criteria:
 
 When logged into solution explorer as a customer-admin
 
-1. Select ? in the top right hand corner to check the Solution Explorer version. It should be 2.26.1.
+1. Select ? in the top right hand corner to check the Solution Explorer version and confirm that it matches the version obtained via CLI: oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r '.status.stages."solution-explorer".products."solution-explorer".version'
 2. Select the settings cog in the top right hand corner, it should be active.
 3. From the backup drop down menu select a time to do the backup.
 
