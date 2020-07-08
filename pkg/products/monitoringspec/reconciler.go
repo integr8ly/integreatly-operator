@@ -3,6 +3,7 @@ package monitoringspec
 import (
 	"context"
 	"fmt"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/version"
@@ -215,6 +216,7 @@ func (r *Reconciler) reconcileMonitoring(ctx context.Context, serverClient k8scl
 			}
 		}
 	}
+
 	//Clean-up the stale service monitors and rolebindings if any
 	if len(monSermonMap) > 0 {
 		for _, sm := range monSermonMap {

@@ -3,8 +3,8 @@ package fuse
 import (
 	"context"
 	"fmt"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
@@ -57,71 +57,55 @@ const (
 
 //Remove this section, it's used for a temporary function to clean up obsolete resources
 //TODO remove from here ---------------------------------------------------
-type obsoleteObjectStruct struct {
-	name       string
-	namespace  string
-	objectType string
-}
 
-var obsoleteObjects = []obsoleteObjectStruct{
+var obsoleteObjects = []v1.ObjectReference{
 	{
-		name:       "syndesis-infra-api-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-infra-api-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-infra-home-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-infra-home-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-integrations-alerting-rules",
-		namespace:  obsoleteResourceNS,
-		objectType: "PrometheusRule",
+		Name:      "syndesis-integrations-alerting-rules",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-integrations-camel-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-integrations-camel-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-integrations-home-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-integrations-home-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-integrations-jvm-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-integrations-jvm-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-integrations",
-		namespace:  obsoleteResourceNS,
-		objectType: "ServiceMonitor",
+		Name:      "syndesis-integrations",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-infra-jvm-dashboard",
-		namespace:  obsoleteResourceNS,
-		objectType: "GrafanaDashboard",
+		Name:      "syndesis-infra-jvm-dashboard",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-infra-meta-alerting-rules",
-		namespace:  obsoleteResourceNS,
-		objectType: "PrometheusRule",
+		Name:      "syndesis-infra-meta-alerting-rules",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-infra-server-alerting-rules",
-		namespace:  obsoleteResourceNS,
-		objectType: "PrometheusRule",
+		Name:      "syndesis-infra-server-alerting-rules",
+		Namespace: obsoleteResourceNS,
 	},
 	{
-		name:       "syndesis-infra",
-		namespace:  obsoleteResourceNS,
-		objectType: "ServiceMonitor",
+		Name:      "syndesis-infra",
+		Namespace: obsoleteResourceNS,
 	},
 }
 
-//TODO remove to here ----------------------------------------------------
+//TODO remove to here ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // Reconciler reconciles everything needed to install Syndesis/Fuse. The resources that it works
 // with are considered secondary resources in the context of the installation controller.
@@ -250,6 +234,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	//TODO remove from here vvvvvvvvvvvvvvvvvvvvv
+	phase, err = r.removeOldResources(ctx, serverClient, obsoleteObjects)
+	if !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	//TODO remove to here ^^^^^^^^^^^^^^^^^^^
+
 	phase, err = r.reconcileCustomResource(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile custom resource", err)
@@ -267,15 +258,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
-	//TODO remove from here vvvvvvvvvvvvvvvvvvvvv
-	phase, err = r.removeOldResources(ctx, serverClient, obsoleteObjects)
-	if k8serr.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	//TODO remove to here ^^^^^^^^^^^^^^^^^^^
 
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
@@ -577,48 +559,27 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 
 //this is only a temporary function included to remove obsolete resources left from a workaround for a fuse syndesis bug, all these objects should now be generated through the ops addon
 //TODO Remove from here vvvvvvvvvvvvvvvvvv
-func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, obsoleteObjects []obsoleteObjectStruct) (integreatlyv1alpha1.StatusPhase, error) {
-
+func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, obsoleteObjects []v1.ObjectReference) (integreatlyv1alpha1.StatusPhase, error) {
+	var clusterObject runtime.Object
 	for _, object := range obsoleteObjects {
-		if object.objectType == "PrometheusRule" {
-			promRuleToDelete := &monitoringv1.PrometheusRule{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      object.name,
-					Namespace: object.namespace,
-				},
-			}
-			err := serverClient.Delete(ctx, promRuleToDelete)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
+		if err := serverClient.Get(ctx, types.NamespacedName{
+			Namespace: object.Namespace,
+			Name:      object.Name,
+		}, clusterObject); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		if object.objectType == "GrafanaDashboard" {
-			GrafanDashToDelete := &grafanav1alpha1.GrafanaDashboard{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      object.name,
-					Namespace: object.namespace,
-				},
-			}
-			err := serverClient.Delete(ctx, GrafanDashToDelete)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
+
+		metaClusterObject, err := meta.Accessor(clusterObject)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
-		if object.objectType == "ServiceMonitor" {
-			ServiceMonitorToDelete := &v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      object.name,
-					Namespace: object.namespace,
-				},
-			}
-			err := serverClient.Delete(ctx, ServiceMonitorToDelete)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
-		} else if object.objectType != "PrometheusRule" && object.objectType != "GrafanaDashboard" && object.objectType != "ServiceMonitor" {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("object type passed to obsolete resource deletion does not match any expected object types")
+
+		if metav1.Object.GetOwnerReferences(metaClusterObject) != nil {
+			continue
+		}
+
+		if err := serverClient.Delete(ctx, clusterObject); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
