@@ -197,7 +197,6 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, destSecretNamespac
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-// TODO change  catalogSourceReconciler ...CatalogSourceReconciler by just CatalogSourceReconciler
 func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, catalogSourceReconciler marketplace.CatalogSourceReconciler) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, marketplace.IntegreatlyChannel, target.Namespace)
 	err := r.mpm.InstallOperator(ctx, client, owner, target, operandNS, operatorsv1alpha1.ApprovalManual, catalogSourceReconciler)
