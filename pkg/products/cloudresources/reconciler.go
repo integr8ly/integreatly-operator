@@ -85,11 +85,11 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	ns := r.Config.GetOperatorNamespace()
+	operatorNamespace := r.Config.GetOperatorNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, ns, client)
+		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
 			// ensure resources are cleaned up before deleting the namespace
 			phase, err := r.cleanupResources(ctx, installation, client)
@@ -98,7 +98,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			}
 
 			// remove the namespace
-			phase, err = resources.RemoveNamespace(ctx, installation, client, ns)
+			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -110,19 +110,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, client)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.CloudResourceSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{installation.Namespace}, backup.NewNoopBackupExecutor(), client)
+	// In this case due to cloudresources reconciler is always installed in the
+	// same namespace as the operatorNamespace we pass operatorNamespace as the
+	// productNamepace too
+	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
 		return phase, err
@@ -232,4 +229,33 @@ func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	productNamespaceObj, err := resources.GetNS(ctx, productNamespace, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, inst, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", productNamespace), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	target := marketplace.Target{
+		Pkg:       constants.CloudResourceSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		productNamespaceObj,
+		target,
+		[]string{inst.Namespace}, // TODO why is this this value and not productNamespace?
+		backup.NewNoopBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }
