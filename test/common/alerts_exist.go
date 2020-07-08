@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -643,7 +642,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 				alertRule := promRule.(prometheusv1.AlertingRule)
 				rule.Rules = append(rule.Rules, alertRule.Name)
 			default:
-				fmt.Printf("unknown rule type %s", v)
+				t.Logf("unknown rule type %s", v)
 			}
 		}
 		actualRules = append(actualRules, rule)
@@ -687,10 +686,10 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	extraCount := 0
 	for k, v := range reportMapping {
 		if v.Status != fileCorrect {
-			fmt.Println("\nFile Name:", k)
-			fmt.Println("Missing Rules:", v.MissingRules)
-			fmt.Println("Unexpected Rules:", v.AdditionalRules)
-			fmt.Println("Status:", v.Status)
+			t.Log("\nFile Name:", k)
+			t.Log("Missing Rules:", v.MissingRules)
+			t.Log("Unexpected Rules:", v.AdditionalRules)
+			t.Log("Status:", v.Status)
 		}
 		if v.Status == fileMissing || len(v.MissingRules) > 0 {
 			missingCount++
@@ -701,10 +700,10 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	}
 
 	if missingCount > 0 {
-		fmt.Println("\nMissing alerts were found from Prometheus. If the removal of these Alert rules was intentional, please update this test to remove them from the check. If the removal of these Alert rules was not intendended or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed")
+		t.Log("\nMissing alerts were found from Prometheus. If the removal of these Alert rules was intentional, please update this test to remove them from the check. If the removal of these Alert rules was not intendended or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed")
 	}
 	if extraCount > 0 {
-		fmt.Println("\nUnexpected alerts were found in Prometheus. If these Alert rules were intentionally added, please update this test to add them to the check. If these Alert rules were not added intentionally or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed.")
+		t.Log("\nUnexpected alerts were found in Prometheus. If these Alert rules were intentionally added, please update this test to add them to the check. If these Alert rules were not added intentionally or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed.")
 	}
 	if extraCount > 0 || missingCount > 0 {
 		t.Fatal("Found missing or too many alerts")

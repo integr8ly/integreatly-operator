@@ -173,21 +173,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
 	}
 
@@ -277,12 +271,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	err = r.updateDeploymentWithConfigMapVolume(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to update apicurito deployment config with config map"), err)
-		return phase, err
-	}
-
-	err = r.reconcilePodCountAlert(ctx, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to CreateOrUpdate PrometheusRule for Apicurito", err)
 		return phase, err
 	}
 
