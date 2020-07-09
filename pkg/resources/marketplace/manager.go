@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	resourcesowner "github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/sirupsen/logrus"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
@@ -57,12 +53,6 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		Package:                t.Pkg,
 		CatalogSourceNamespace: t.Namespace,
 	}
-
-	metaOwner, err := meta.Accessor(owner)
-	if err != nil {
-		return err
-	}
-	resourcesowner.AddIntegreatlyOwnerAnnotations(sub, metaOwner)
 
 	res, err := catalogSourceReconciler.Reconcile(ctx)
 	if res.Requeue {
