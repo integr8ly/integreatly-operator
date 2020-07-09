@@ -234,12 +234,6 @@ func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	productNamespaceObj, err := resources.GetNS(ctx, productNamespace, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, inst, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", productNamespace), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	target := marketplace.Target{
 		Pkg:       constants.CloudResourceSubscriptionName,
 		Namespace: operatorNamespace,
@@ -253,7 +247,6 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	)
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
-		productNamespaceObj,
 		target,
 		[]string{inst.Namespace}, // TODO why is this this value and not productNamespace?
 		backup.NewNoopBackupExecutor(),
