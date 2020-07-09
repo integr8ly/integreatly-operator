@@ -63,6 +63,7 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
+          - get
         serviceAccountName: alertmanager-service-account
       - rules:
         - apiGroups:
