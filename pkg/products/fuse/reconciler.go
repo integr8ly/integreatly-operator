@@ -3,6 +3,8 @@ package fuse
 import (
 	"context"
 	"fmt"
+	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -58,50 +60,78 @@ const (
 //Remove this section, it's used for a temporary function to clean up obsolete resources
 //TODO remove from here ---------------------------------------------------
 
-var obsoleteObjects = []v1.ObjectReference{
-	{
-		Name:      "syndesis-infra-api-dashboard",
-		Namespace: obsoleteResourceNS,
+var obsoleteObjects = []runtime.Object{
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra-api-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-infra-home-dashboard",
-		Namespace: obsoleteResourceNS,
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra-home-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-integrations-alerting-rules",
-		Namespace: obsoleteResourceNS,
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations-camel-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-integrations-camel-dashboard",
-		Namespace: obsoleteResourceNS,
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations-home-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-integrations-home-dashboard",
-		Namespace: obsoleteResourceNS,
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations-jvm-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-integrations-jvm-dashboard",
-		Namespace: obsoleteResourceNS,
+	&grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra-jvm-dashboard",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-integrations",
-		Namespace: obsoleteResourceNS,
+	&prometheus.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations-alerting-rules",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-infra-jvm-dashboard",
-		Namespace: obsoleteResourceNS,
+	&prometheus.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra-meta-alerting-rules",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-infra-meta-alerting-rules",
-		Namespace: obsoleteResourceNS,
+	&prometheus.PrometheusRule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra-server-alerting-rules",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-infra-server-alerting-rules",
-		Namespace: obsoleteResourceNS,
+	&v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations",
+			Namespace: obsoleteResourceNS,
+		},
 	},
-	{
-		Name:      "syndesis-infra",
-		Namespace: obsoleteResourceNS,
+	&prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-integrations",
+			Namespace: obsoleteResourceNS,
+		},
+	},
+	&prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "syndesis-infra",
+			Namespace: obsoleteResourceNS,
+		},
 	},
 }
 
@@ -559,23 +589,21 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 
 //this is only a temporary function included to remove obsolete resources left from a workaround for a fuse syndesis bug, all these objects should now be generated through the ops addon
 //TODO Remove from here vvvvvvvvvvvvvvvvvv
-func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, obsoleteObjects []v1.ObjectReference) (integreatlyv1alpha1.StatusPhase, error) {
-	var clusterObject runtime.Object
+func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, obsoleteObjects []runtime.Object) (integreatlyv1alpha1.StatusPhase, error) {
 	for _, object := range obsoleteObjects {
-		if err := serverClient.Get(ctx, types.NamespacedName{
-			Namespace: object.Namespace,
-			Name:      object.Name,
-		}, clusterObject); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		metaClusterObject, err := meta.Accessor(clusterObject)
+		metaObj, err := meta.Accessor(object)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
+		if err := serverClient.Get(ctx, types.NamespacedName{
+			Namespace: metaObj.GetName(),
+			Name:      metaObj.GetNamespace(),
+		}, object); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
 
-		if metav1.Object.GetOwnerReferences(metaClusterObject) == nil {
-			if err := serverClient.Delete(ctx, clusterObject); err != nil {
+		if metaObj.GetOwnerReferences() == nil {
+			if err := serverClient.Delete(ctx, object); err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
 		}
