@@ -574,12 +574,10 @@ func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8scli
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
-		if metav1.Object.GetOwnerReferences(metaClusterObject) != nil {
-			continue
-		}
-
-		if err := serverClient.Delete(ctx, clusterObject); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
+		if metav1.Object.GetOwnerReferences(metaClusterObject) == nil {
+			if err := serverClient.Delete(ctx, clusterObject); err != nil {
+				return integreatlyv1alpha1.PhaseFailed, err
+			}
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
