@@ -1,8 +1,5 @@
 ---
 estimate: 120m
-require:
-  - J01
-  - J02
 ---
 
 # J03 - Verify that namespaces get recreated by the integreatly-operator if deleted
