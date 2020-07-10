@@ -1,5 +1,5 @@
 ---
-estimate: 1h
+estimate: 15m
 automation_jiras:
   - INTLY-7748
 ---
