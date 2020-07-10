@@ -3,7 +3,7 @@ package fuse
 import (
 	"context"
 	"fmt"
-	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -53,89 +53,7 @@ const (
 	manifestPackage              = "integreatly-fuse-online"
 	syndesisPrometheusPVC        = "10Gi"
 	syndesisPrometheus           = "syndesis-prometheus"
-	//TODO remove this var vvvv
-	obsoleteResourceNS = "redhat-rhmi-fuse"
 )
-
-//Remove this section, it's used for a temporary function to clean up obsolete resources
-//TODO remove from here ---------------------------------------------------
-
-var obsoleteObjects = []runtime.Object{
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra-api-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra-home-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations-camel-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations-home-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations-jvm-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&grafanav1alpha1.GrafanaDashboard{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra-jvm-dashboard",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&prometheus.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations-alerting-rules",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&prometheus.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra-meta-alerting-rules",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&prometheus.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra-server-alerting-rules",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&v1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&prometheus.ServiceMonitor{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-integrations",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-	&prometheus.ServiceMonitor{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "syndesis-infra",
-			Namespace: obsoleteResourceNS,
-		},
-	},
-}
-
-//TODO remove to here ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 // Reconciler reconciles everything needed to install Syndesis/Fuse. The resources that it works
 // with are considered secondary resources in the context of the installation controller.
@@ -264,10 +182,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	//TODO remove from here vvvvvvvvvvvvvvvvvvvvv
-	phase, err = r.removeOldResources(ctx, serverClient, obsoleteObjects)
-	if !k8serr.IsNotFound(err) {
-		return integreatlyv1alpha1.PhaseFailed, err
+	//TODO remove from here vvvvvvvvvvvvvvvvvvvvv https://issues.redhat.com/browse/INTLY-9262
+	phase, err = r.removeOldResources(ctx, serverClient)
+	if err != nil {
+		// resources won't be found if freshly installed, this function is designed to delete resources from a previous version only
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		}
+		return phase, err
 	}
 	//TODO remove to here ^^^^^^^^^^^^^^^^^^^
 
@@ -588,8 +510,85 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 }
 
 //this is only a temporary function included to remove obsolete resources left from a workaround for a fuse syndesis bug, all these objects should now be generated through the ops addon
-//TODO Remove from here vvvvvvvvvvvvvvvvvv
-func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client, obsoleteObjects []runtime.Object) (integreatlyv1alpha1.StatusPhase, error) {
+//TODO Remove from here vvvvvvvvvvvvvvvvvv https://issues.redhat.com/browse/INTLY-9262
+func (r *Reconciler) removeOldResources(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	obsoleteResourceNS := "redhat-rhmi-fuse"
+
+	var obsoleteObjects = []runtime.Object{
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra-api-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra-home-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations-camel-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations-home-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations-jvm-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&grafanav1alpha1.GrafanaDashboard{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra-jvm-dashboard",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations-alerting-rules",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra-meta-alerting-rules",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&monitoringv1.PrometheusRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra-server-alerting-rules",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&monitoringv1.ServiceMonitor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-integrations",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+		&monitoringv1.ServiceMonitor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "syndesis-infra",
+				Namespace: obsoleteResourceNS,
+			},
+		},
+	}
+
 	for _, object := range obsoleteObjects {
 		metaObj, err := meta.Accessor(object)
 		if err != nil {
