@@ -905,6 +905,7 @@ spec:
           - get
           - list
           - watch
+          - update
         serviceAccountName: iot-protocol-adapter
       - rules:
         - apiGroups:
