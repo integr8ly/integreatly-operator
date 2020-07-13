@@ -16,6 +16,7 @@ TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= "test-results"
+TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -260,7 +261,9 @@ cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 .PHONY: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
 ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
+	$(MAKE) setup/service_account
 	@./scripts/setup-delorean-pullsecret.sh
+	$(MAKE) cluster/cleanup/serviceaccount
 endif
 
 .PHONY: cluster/cleanup
@@ -269,6 +272,14 @@ cluster/cleanup:
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete -f deploy/role.yaml
 	@-oc delete -f deploy/role_binding.yaml
+
+.PHONY: cluster/cleanup/serviceaccount
+cluster/cleanup/serviceaccount:
+	@-oc delete serviceaccount ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
+	@-oc delete role ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
+	@-oc delete rolebinding ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
+	@-oc delete clusterrole ${TEMP_SERVICEACCOUNT_NAME}
+	@-oc delete clusterrolebinding ${TEMP_SERVICEACCOUNT_NAME}
 
 .PHONY: cluster/cleanup/olm
 cluster/cleanup/olm: cluster/cleanup
