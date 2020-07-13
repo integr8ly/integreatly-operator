@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 set -o pipefail
 
 CONFIG_PULLSECRET="$(pwd)/config-pullsecret"
@@ -7,6 +6,8 @@ DECODED_PULLSECRET="$(pwd)/config-pullsecret-decoded"
 DELOREAN_PULLSECRET="$(pwd)/integreatly-delorean-auth.json"
 STAGED_PULLSECRET="$(pwd)/staged-pullsecret"
 COMBINED_PULLSECRET="$(pwd)/combined-pullsecret"
+TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
+OPERATOR_NAMESPACE="redhat-rhmi-operator"
 
 if [ ! -z "${DELOREAN_DOCKER_CONFIG}" ]; then
     echo -e $DELOREAN_DOCKER_CONFIG > $DELOREAN_PULLSECRET
@@ -20,16 +21,42 @@ if [ ! -f ${DELOREAN_PULLSECRET} ]; then
   exit 1
 fi
 
-sed -i 's+quay.io+quay.io/integreatly/delorean+g' $DELOREAN_PULLSECRET
+DELOREAN_PASSWORD="$(cat $DELOREAN_PULLSECRET | grep auth\": | tr -d \" | tr -d , | awk -F ' ' '{print $2}' | base64 --decode| awk -F : '{print $2}')"
+DELOREAN_USERNAME="$(cat $DELOREAN_PULLSECRET | grep auth\": | tr -d \" | tr -d , | awk -F ' ' '{print $2}' | base64 --decode| awk -F : '{print $1}')"
 
 oc get secret pull-secret -n openshift-config -o yaml > "$CONFIG_PULLSECRET"
 yq r $CONFIG_PULLSECRET 'data' | awk '{print $2}' | base64 -d > $DECODED_PULLSECRET
-jq -s -c '{auths: map(.auths) | add}' $DECODED_PULLSECRET $DELOREAN_PULLSECRET | base64 > $STAGED_PULLSECRET
-awk '{ printf "%s", $0 }' $STAGED_PULLSECRET  > $COMBINED_PULLSECRET
-oc patch secret pull-secret -n openshift-config -p='{"data": {".dockerconfigjson": "'$(cat ${COMBINED_PULLSECRET})'"}}'
-rm $CONFIG_PULLSECRET $STAGED_PULLSECRET $COMBINED_PULLSECRET $DECODED_PULLSECRET
+combine_and_deploy_cluster_secret() {
+    jq -s -c '{auths: map(.auths) | add}' $DECODED_PULLSECRET $DELOREAN_PULLSECRET | base64 > $STAGED_PULLSECRET
+    awk '{ printf "%s", $0 }' $STAGED_PULLSECRET  > $COMBINED_PULLSECRET
+    oc patch secret pull-secret -n openshift-config -p='{"data": {".dockerconfigjson": "'$(cat ${COMBINED_PULLSECRET})'"}}'
+    rm -f $CONFIG_PULLSECRET $STAGED_PULLSECRET $COMBINED_PULLSECRET $DECODED_PULLSECRET
+    echo "waiting 10 minutes to allow cluster to stabilize ..."
+    sleep 10m
+    echo "secret 'pull-secret' patched in namespace 'openshift-config' to add delorean quay.io access!"
+}
 
-echo "waiting 10 minutes to allow cluster to stabilize ..."
-sleep 10m
+setup_ns_and_local_secret() {
+  oc new-project redhat-rhmi-3scale --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc new-project redhat-rhmi-fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc create secret docker-registry --docker-server=quay.io --docker-username="${DELOREAN_USERNAME}" --docker-password="${DELOREAN_PASSWORD}" regsecret -n redhat-rhmi-3scale --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc create secret docker-registry --docker-server=quay.io --docker-username="${DELOREAN_USERNAME}" --docker-password="${DELOREAN_PASSWORD}" regsecret -n redhat-rhmi-fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc secrets link default regsecret --for=pull -n redhat-rhmi-3scale --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc secrets link default regsecret --for=pull -n redhat-rhmi-fuse --as system:serviceaccount:${OPERATOR_NAMESPACE}:${TEMP_SERVICEACCOUNT_NAME}
+  oc project ${OPERATOR_NAMESPACE}
+}
 
-echo "secret 'pull-secret' patched in namespace 'openshift-config' to add delorean quay.io access!"
+if [ -n "$(cat ${DECODED_PULLSECRET} | grep delorean)" ]; then
+  echo "Delorean secret found on cluster"
+  rm $CONFIG_PULLSECRET $DECODED_PULLSECRET
+else
+  if [ -n "$(cat ${DELOREAN_PULLSECRET} | grep delorean)" ]; then
+    combine_and_deploy_cluster_secret
+  else
+    sed -i 's+quay.io+quay.io/integreatly/delorean+g' $DELOREAN_PULLSECRET
+    combine_and_deploy_cluster_secret
+  fi
+fi
+
+echo "Setting up secrets for imagestreams"
+setup_ns_and_local_secret
