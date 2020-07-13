@@ -8,7 +8,7 @@ targets:
 ## Description
 
 This RHMI test case should verify that RDS and Elasticache DB instance types were successfully upgraded to types specified in
-the config map, cloud-resources-aws-strategies, after a maintenance job has executed. RDS and Elasticache currently start as 
+the config map, `cloud-resources-aws-strategies`, after a maintenance job has executed. RDS and Elasticache currently start as 
 db.t3.small and cache.t3.micro respectivily. These can be overridden in cloud-resources-aws-strategies.
 More info: <https://issues.redhat.com/browse/INTLY-8447>
 
@@ -42,7 +42,7 @@ aws elasticache describe-cache-clusters | jq -r '.CacheClusters[] | .CacheNodeTy
 
 > output should contain only "cache.t3.micro"
 
-3. Update config map cloud-resources-aws-strategies to modify the node types for rds and elastic cache.
+3. Update config map `cloud-resources-aws-strategies` to modify the node types for rds and elastic cache.
 For rds, change the dbInstanceClass to "db.t3.large". For elastic cache change the cachenodetype to "cache.m3.medium"
 4. Follow [the guide for updating the maintenance window](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/cssre_info/info_aws_update_backup_maintenance_window.md) and set it to an hour from now
 5. Come back after maintenance actions are completed
