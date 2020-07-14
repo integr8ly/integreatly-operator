@@ -68,4 +68,16 @@ function loadTestFiles(testDirectory?: string): TestFile[] {
     });
 }
 
-export { loadTestFiles, TestFile, Metadata };
+function desiredFileName(title: string): string {
+    let name = title;
+
+    name = name.toLowerCase();
+    name = name.replace(/[^a-z0-9\s]/g, "");
+    name = name.replace(/\s+/g, "-");
+    name = name.substr(0, 64);
+    name = name.replace(/-$/, "");
+
+    return `${name}.md`;
+}
+
+export { loadTestFiles, desiredFileName, TestFile, Metadata };
