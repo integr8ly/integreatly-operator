@@ -1,14 +1,24 @@
 ---
-# see the Tags section in the README for the list of tags that we use
-tags:
-  - tag1
-  - tag2
-
-require:
-  - ID1
-  - ID2
-
+# See the metatadata section in the README.md for details on the
+# allowed fields and values
 estimate: 1h
+tags:
+  - automated
+  - per-build
+components:
+  - product-3scale
+  - product-amq
+  - product-fuse
+  - product-codeready
+  - product-sso
+  - product-ups
+  - product-data-sync
+  - monitoring
+  - openshift
+targets:
+  - 0.0.0
+automation_jiras:
+  - INTLY-0000
 ---
 
 # [ID] - [Title]

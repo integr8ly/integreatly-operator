@@ -8,10 +8,6 @@
 - The `./tools.sh` script requires Nodejs >= 10.
 - Try to write test cases using the standard syntax described in the [test-template.md](./fixtures/test-template.md).
 - General guidelines in `common/general-guidelines.md` are imported on the bottom of every test case.
-- Tags can be added to test cases using metadata, see the section below.
-- A test case can be manual or automated
-- A manual test case contains also the manual steps to perform
-- An automated test case is an empty file that links to the automated test script
 
 ## How to create a test case
 
@@ -44,10 +40,11 @@ Each manual test case should have a rough estimation of the time (in hours) requ
 
 The estimation should be set in the test case metadata like this
 
-```yaml
+```
 ---
 estimate: 2h
 ---
+
 # Z00 - My test
 ```
 
@@ -79,10 +76,8 @@ estimate: 2h
 4. Once the automated test is working and running as part of the nightly pipeline the related test
    case should be:
 
-   - flagged as automated by setting the `automated` tag
-   - the **Steps** and **Prerequisites** section should be removed because new changes should be done
-     directly to the automated test
-   - and add the link to to the automated test in the test case
+   - Flag the test cases as automated by setting the `automated` tag
+   - Add the link to to the automated test in the test case
 
 Example: [MR!63](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases/merge_requests/63)
 
@@ -92,23 +87,19 @@ Prerequisites:
 
 - Nodejs >= 10
 
-**!! Please Read !! :**
+> Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jirat tasks during the release testing
 
-- Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jirat tasks during the release testing
+> Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
+>
+> ```bash
+> /tools.sh jira --help
+> ```
 
-- Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
-
-  ```bash
-  /tools.sh jira --help
-  ```
-
-Run:
+To create a tasks for each test case in in Jira under an epic use:
 
 ```bash
 ./tools.sh jira --jira-username yourusername --jira-password yourpassword --epic EPICKEY-00
 ```
-
-this will create a task for each test case in Jira under the passed epic.
 
 If you need to link the new tasks to the task of a previous test round use the `previousEpic` option:
 
@@ -167,16 +158,71 @@ This command will read all test results from Jira, and upload them to Polarion.
 JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390
 ```
 
-## Tags
+## Test Case Metadata
 
-Tags can be added for each test case inside the metadata section in the header. Tags can be defined globally
-or specifically for each variant.
+### Tags
 
-Supported tags:
+Tags are used to define specific behaviors for the test case.
 
-- `draft` Indicates that this test case is uncompleted and should not be executed.
 - `automated` Indicates that this test case is already automated and that it doesn't need to be executed manually
-- `obsolete` Indicates that this test case is obsolete and that it must be updated as soon as possible
+- `per-build` Indicates that this test case should be executed on each build even if passed in the previous one
+- `per-release` Automatically generated if the `targets` field is set, and it indicates that the tests will be executed on each release
+
+E.g.:
+
+```
+---
+tags:
+  - per-build
+---
+
+# Z00 - Verify
+```
+
+### Components
+
+The component field is used to decide which tests should be added in the next release.
+
+- `product-3scale` 3Scale minor or major product upgrades
+- `product-amq` AMQ minor or major product upgrades
+- `product-fuse` Fuse minor or major product upgrades
+- `product-codeready` CodeReady minor or major product upgrades
+- `product-sso` SSO minor or major product upgrades
+- `product-ups` UPS minor or major product upgrades
+- `product-data-sync` Data Sync minor or major product upgrades
+- `monitoring` Monitoring stack changes or upgrade
+- `openshift` Special component using for testing OpenShift upgrades
+
+### Targets
+
+The Targets define against which release the test case would have to be executed the next time. This is useful to include or exclude the test cases form a specific release.
+
+If the Targets is not defined then the tests will be marked as per-release and would be included in all releases.
+
+In this example the test case `Z00` would be included in the `2.7.0` and `2.9.0` releases but excluded from any other release:
+
+```
+---
+targets:
+  - 2.7.0
+  - 2.9.0
+---
+
+# Z00 - Verify
+```
+
+### Automation Jiras
+
+As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation_jiras` in its metadata pointing to the automation jira, e.g.:
+
+```
+---
+automation_jiras:
+  - INTLY-7421
+---
+
+# Z00 - Verify
+```
 
 ## Prettier
 
@@ -190,22 +236,10 @@ npm run prettier
 
 Or using the VS Code extension: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
 
-## Export to CSV
+## How to export the test cases to CSV
 
 Run the `./tools.sh export csv` script to export all test cases in a CSV table:
 
 ```
 ./tools.sh export csv --output testcases.csv
-```
-
-## Automation for test cases
-
-As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation_jiras` in its metadata pointing to the automation jira, e.g.:
-
-```yaml
----
-automation_jiras:
-  - INTLY-7421
----
-
 ```
