@@ -11,7 +11,7 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
 ## Prerequisites
 
 - Node.js installed locally
-- [oc CLI v4.3](https://docs.openshift.com/container-platform/3.6/cli_reference/get_started_cli.html#installing-the-cli) 
+- [oc CLI v4.3](https://docs.openshift.com/container-platform/3.6/cli_reference/get_started_cli.html#installing-the-cli)
 - [ocm CLI](https://github.com/openshift-online/ocm-cli/releases) installed locally
 - [jq v1.6](https://github.com/stedolan/jq/releases) installed locally
 
