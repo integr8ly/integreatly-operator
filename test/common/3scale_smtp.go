@@ -65,12 +65,20 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 
 	t.Log("Restart system-app and system-sidekiq")
 	err = patchReplicationController(ctx, t)
-
 	if err != nil {
 		t.Log(err)
 	}
+
 	t.Log("Checking pods are ready")
 	err = checkThreeScaleReplicasAreReady(ctx, t, 2, retryInterval, timeout)
+	if err != nil {
+		t.Log(err)
+	}
+
+	// Add sleep to give threescale time to reconcile the pods restarts otherwise host address will update during next steps
+	time.Sleep(30 * time.Second)
+	t.Log("Checking host address is ready")
+	err = checkHostAddressIsReady(ctx, t, retryInterval, timeout)
 	if err != nil {
 		t.Log(err)
 	}
@@ -98,6 +106,30 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 
 }
 
+func checkHostAddressIsReady(dynClient *TestingContext, t *testing.T, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+
+		// get console master url
+		rhmi, err := getRHMI(dynClient.Client)
+		if err != nil {
+			t.Fatalf("error getting RHMI CR: %v", err)
+		}
+
+		host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
+		status := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Status
+		if host == "" || status == "in progress" {
+			t.Log("3scale host URL not ready yet.")
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		//return fmt.Error("Number of replicas for threescale replicas is not correct : Replicas - %w, Expected")
+		return fmt.Errorf("Error, Host url not ready before timeout - %v", err)
+	}
+	return nil
+
+}
 func checkThreeScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
 	//Check pods are ready to ensure they are using the new smtp details
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
@@ -130,27 +162,6 @@ func checkThreeScaleReplicasAreReady(dynClient *TestingContext, t *testing.T, re
 	})
 	if err != nil {
 		return fmt.Errorf("Number of replicas for threescale replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
-	}
-
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-
-		// get console master url
-		rhmi, err := getRHMI(dynClient.Client)
-		if err != nil {
-			t.Fatalf("error getting RHMI CR: %v", err)
-		}
-
-		host := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
-
-		if host == "" {
-			t.Log("3scale host URL not ready yet.")
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		//return fmt.Error("Number of replicas for threescale replicas is not correct : Replicas - %w, Expected")
-		return fmt.Errorf("Error, Host url not ready before timeout - %v", err)
 	}
 	return nil
 }
