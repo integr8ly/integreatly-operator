@@ -5,7 +5,7 @@ NAMESPACE=redhat-rhmi-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
-TAG ?= 2.4.0
+TAG ?= 2.5.0
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -204,6 +204,10 @@ cluster/prepare/project:
 cluster/prepare/configmaps:
 	@oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) | oc apply -f -
 
+.PHONY: cluster/prepare/croaws
+cluster/prepare/croaws:
+	@oc create -f deploy/cro-aws-config.yml -n $(NAMESPACE)
+
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
 	- oc process -p NAMESPACE=$(NAMESPACE) OPERATOR_SOURCE_REGISTRY_NAMESPACE=$(ORG) -f deploy/operator-source-template.yml | oc apply -f - -n openshift-marketplace
@@ -214,7 +218,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/croaws
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/role_binding.yaml

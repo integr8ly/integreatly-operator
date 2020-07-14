@@ -10,7 +10,6 @@ require (
 	// No tags on the apicurio repo so needed to use a commit hash
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.25.50
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.35.0
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -55,6 +54,7 @@ require (
 // Pinned to kubernetes-1.16.2
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
+	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.0-rc8
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	k8s.io/api => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65

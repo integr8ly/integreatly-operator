@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"github.com/sirupsen/logrus"
@@ -47,6 +49,7 @@ const (
 type Reconciler struct {
 	Config        *config.Ups
 	ConfigManager config.ConfigReadWriter
+	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 	*resources.Reconciler
@@ -79,6 +82,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
+		installation:  installation,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -95,15 +99,26 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductUps],
+		string(integreatlyv1alpha1.VersionUps),
+		string(integreatlyv1alpha1.OperatorVersionUPS),
+	)
+}
+
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", defaultUpsName)
 
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
+
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -114,28 +129,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	ns := r.Config.GetNamespace()
-
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	preUpgradeBackups := preUpgradeBackupExecutor(installation)
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.UPSSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, preUpgradeBackups, serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.UPSSubscriptionName), err)
 
@@ -160,15 +166,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
 
@@ -335,5 +335,34 @@ func preUpgradeBackupExecutor(installation *integreatlyv1alpha1.RHMI) backup.Bac
 		installation.Namespace,
 		"ups-postgres-rhmi",
 		backup.PostgresSnapshotType,
+	)
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	productNamespaceObj, err := resources.GetNS(ctx, productNamespace, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, inst, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", productNamespace), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	target := marketplace.Target{
+		Pkg:       constants.UPSSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		productNamespaceObj,
+		target,
+		[]string{productNamespace},
+		preUpgradeBackupExecutor(inst),
+		serverClient,
+		catalogSourceReconciler,
 	)
 }

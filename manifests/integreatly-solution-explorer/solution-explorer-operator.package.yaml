@@ -1,4 +1,4 @@
 packageName: rhmi-solution-explorer
 channels:
-- currentCSV: solution-explorer-operator.v0.0.58
+- currentCSV: solution-explorer-operator.v0.0.60
   name: rhmi

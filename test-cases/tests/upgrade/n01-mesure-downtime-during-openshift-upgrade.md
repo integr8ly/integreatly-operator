@@ -11,6 +11,7 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
 ## Prerequisites
 
 - Node.js installed locally
+- [oc CLI v4.3](https://docs.openshift.com/container-platform/3.6/cli_reference/get_started_cli.html#installing-the-cli)
 - [ocm CLI](https://github.com/openshift-online/ocm-cli/releases) installed locally
 - [jq v1.6](https://github.com/stedolan/jq/releases) installed locally
 
@@ -40,7 +41,7 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
 
    > You should see the message saying the upgrade of the OpenShift cluster is triggered
 
-5. Login to the ocm staging environment and get the ID of the cluster that is going to be upgraded:
+5. Ask QE team to login to the ocm staging environment and get the ID of the cluster that is going to be upgraded:
 
    ```bash
    # Get the token at https://qaprodauth.cloud.redhat.com/openshift/token
@@ -48,7 +49,7 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
    CLUSTER_ID=$(ocm cluster list | grep <CLUSTER-NAME> | awk '{print $1}')
    ```
 
-6. Run this command to wait for the OpenShift upgrade to complete:
+6. Ask QE team to run this command to wait for the OpenShift upgrade to complete:
 
    ```bash
    watch -n 60 "ocm get cluster $CLUSTER_ID | jq -r .metrics.upgrade.state | grep -q completed && echo 'Upgrade completed\!'"

@@ -6,6 +6,7 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	"github.com/sirupsen/logrus"
@@ -52,6 +53,14 @@ type Reconciler struct {
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
+}
+
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.MonitoringStage].Products[integreatlyv1alpha1.ProductMonitoringSpec],
+		string(integreatlyv1alpha1.VersionMonitoringSpec),
+		"",
+	)
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI,

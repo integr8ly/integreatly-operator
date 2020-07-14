@@ -439,7 +439,7 @@ github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830
+# github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830 => github.com/opencontainers/runc v1.0.0-rc8
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
@@ -583,7 +583,6 @@ github.com/operator-framework/operator-sdk/pkg/leader
 github.com/operator-framework/operator-sdk/pkg/log/zap
 github.com/operator-framework/operator-sdk/pkg/metrics
 github.com/operator-framework/operator-sdk/pkg/predicate
-github.com/operator-framework/operator-sdk/pkg/restmapper
 github.com/operator-framework/operator-sdk/pkg/test
 github.com/operator-framework/operator-sdk/pkg/test/e2eutil
 github.com/operator-framework/operator-sdk/version

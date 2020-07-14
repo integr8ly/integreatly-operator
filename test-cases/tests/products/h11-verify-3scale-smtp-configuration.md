@@ -18,9 +18,9 @@ Login to 3scale console as a **customer-admin** (user with customer-admin permis
 
 1. Sign into the Openshift console as customer-admin
 2. Home -> Projects -> redhat-rhmi-3scale
-3. Home -> Networking -> Routes
+3. Networking -> Routes
 4. Under Location, select the URL matching this pattern https://3scale-admin.apps.<your cluster>.s1.devshift.org
-5. Sign into 3scale via sso signle sign in option using customer-admin credentials
+5. Sign into 3scale via single sign on option using customer-admin credentials
 6. Click the gear icon in top right corner of console.
 7. Users -> Invitations
 8. Select +Invite a New Team Member

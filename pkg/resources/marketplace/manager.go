@@ -3,7 +3,6 @@ package marketplace
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	resourcesowner "github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
@@ -15,7 +14,6 @@ import (
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	ownerutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +28,7 @@ const (
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error
+	InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
 	GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
 }
 
@@ -44,10 +42,9 @@ type Target struct {
 	Namespace,
 	Pkg,
 	Channel string
-	ManifestPackage string
 }
 
-func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval) error {
+func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
@@ -67,11 +64,14 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 	}
 	resourcesowner.AddIntegreatlyOwnerAnnotations(sub, metaOwner)
 
-	csName, err := m.createAndWaitCatalogSource(ctx, owner, t, serverClient)
+	res, err := catalogSourceReconciler.Reconcile(ctx)
+	if res.Requeue {
+		return fmt.Errorf("Requeue")
+	}
 	if err != nil {
 		return err
 	}
-	sub.Spec.CatalogSource = csName
+	sub.Spec.CatalogSource = catalogSourceReconciler.CatalogSourceName()
 
 	//catalog source is ready create the other stuff
 	og := &v1.OperatorGroup{
@@ -99,26 +99,6 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 
 	return nil
 
-}
-
-func (m *Manager) createAndWaitCatalogSource(ctx context.Context, owner ownerutil.Owner, t Target, client k8sclient.Client) (string, error) {
-
-	configMapData, err := GenerateRegistryConfigMapFromManifest(t.ManifestPackage)
-	if err != nil {
-		return "", fmt.Errorf("Failed to generated config map data from manifest: %w", err)
-	}
-
-	configMapName, err := m.reconcileRegistryConfigMap(ctx, client, t.Namespace, configMapData)
-	if err != nil {
-		return "", fmt.Errorf("Failed to reconcile config map for registry: %w", err)
-	}
-
-	csSourceName, err := m.reconcileCatalogSource(ctx, client, t.Namespace, configMapName)
-	if err != nil {
-		return "", fmt.Errorf("Failed to reconcile catalog source for registry: %w", err)
-	}
-
-	return csSourceName, nil
 }
 
 func (m *Manager) getSubscription(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.Subscription, error) {
@@ -157,86 +137,4 @@ func (m *Manager) GetSubscriptionInstallPlans(ctx context.Context, serverClient 
 	}
 
 	return ip, sub, err
-}
-
-func (m *Manager) reconcileRegistryConfigMap(ctx context.Context, client k8sclient.Client, namespace string, configMapData map[string]string) (string, error) {
-	logrus.Infof("Reconciling registry config map for namespace %s", namespace)
-
-	configMapName := "registry-cm-" + namespace
-	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      configMapName,
-		},
-	}
-
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, configMap)
-
-	if err != nil && !k8serr.IsNotFound(err) {
-		return "", fmt.Errorf("Failed to get config map %s from %s namespace: %w", configMap.Name, configMap.Namespace, err)
-	} else if k8serr.IsNotFound(err) {
-		configMap.Data = configMapData
-		if err := client.Create(ctx, configMap); err != nil {
-			return "", fmt.Errorf("Failed to create configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
-		}
-
-		logrus.Infof("Created registry config map for namepsace %s", namespace)
-	} else {
-		if !reflect.DeepEqual(configMap.Data, configMapData) {
-			configMap.Data = configMapData
-			if err := client.Update(ctx, configMap); err != nil {
-				return "", fmt.Errorf("Failed to update configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
-			}
-
-			logrus.Infof("Updated config map %s in namspace %s", configMapName, namespace)
-		}
-	}
-
-	logrus.Infof("Successfully reconciled registry config map for namespace %s", namespace)
-
-	return configMapName, nil
-}
-
-func (m *Manager) reconcileCatalogSource(ctx context.Context, client k8sclient.Client, namespace string, configMapName string) (string, error) {
-
-	logrus.Infof("Reconciling registry catalog source for namespace %s", namespace)
-
-	catalogSource := &coreosv1alpha1.CatalogSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      CatalogSourceName,
-			Namespace: namespace,
-		},
-	}
-
-	catalogSourceSpec := coreosv1alpha1.CatalogSourceSpec{
-		SourceType:  coreosv1alpha1.SourceTypeConfigmap,
-		ConfigMap:   configMapName,
-		DisplayName: CatalogSourceName,
-		Publisher:   Publisher,
-	}
-
-	err := client.Get(ctx, k8sclient.ObjectKey{Name: catalogSource.Name, Namespace: catalogSource.Namespace}, catalogSource)
-
-	if err != nil && !k8serr.IsNotFound(err) {
-		return "", fmt.Errorf("Failed to get catalog source %s from %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
-	} else if k8serr.IsNotFound(err) {
-		catalogSource.Spec = catalogSourceSpec
-		if err := client.Create(ctx, catalogSource); err != nil {
-			return "", fmt.Errorf("Failed to create catalog source %s in %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
-		}
-
-		logrus.Infof("Created registry catalog source for namespace %s", namespace)
-	} else {
-		if catalogSource.Spec.ConfigMap != catalogSourceSpec.ConfigMap {
-			catalogSource.Spec.ConfigMap = catalogSourceSpec.ConfigMap
-			if err := client.Update(ctx, catalogSource); err != nil {
-				return "", fmt.Errorf("Failed to update catalog source %s in %s namespace: %w", catalogSource.Name, catalogSource.Namespace, err)
-			}
-			logrus.Infof("Updated registry catalog source for namespace %s", namespace)
-		}
-	}
-
-	logrus.Infof("Successfully reconciled registry catalog source for namespace %s", namespace)
-
-	return CatalogSourceName, nil
 }

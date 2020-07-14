@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -46,27 +47,29 @@ const (
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
+	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
+)
+
+var (
+	allProductsReconciled = false
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string) error {
-	return add(mgr, newReconciler(mgr, products))
+func Add(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, products []string) ReconcileInstallation {
-	ctx, cancel := context.WithCancel(context.Background())
+func newReconciler(mgr manager.Manager) ReconcileInstallation {
 	restConfig := controllerruntime.GetConfigOrDie()
+	restConfig.Timeout = 10 * time.Second
 	return ReconcileInstallation{
-		client:            mgr.GetClient(),
-		scheme:            mgr.GetScheme(),
-		restConfig:        restConfig,
-		productsToInstall: products,
-		context:           ctx,
-		cancel:            cancel,
-		mgr:               mgr,
-		customInformers:   make(map[string]map[string]*cache.Informer),
+		client:          mgr.GetClient(),
+		scheme:          mgr.GetScheme(),
+		restConfig:      restConfig,
+		mgr:             mgr,
+		customInformers: make(map[string]map[string]*cache.Informer),
 	}
 }
 
@@ -141,7 +144,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	if len(installationList.Items) == 0 {
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
-		alertingEmailAddress, _ := os.LookupEnv("ALERTING_EMAIL_ADDRESS")
+		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
 
@@ -182,15 +185,12 @@ var _ reconcile.Reconciler = &ReconcileInstallation{}
 type ReconcileInstallation struct {
 	// This client, initialized using mgr.client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client            k8sclient.Client
-	scheme            *runtime.Scheme
-	restConfig        *rest.Config
-	productsToInstall []string
-	context           context.Context
-	cancel            context.CancelFunc
-	mgr               manager.Manager
-	controller        controller.Controller
-	customInformers   map[string]map[string]*cache.Informer
+	client          k8sclient.Client
+	scheme          *runtime.Scheme
+	restConfig      *rest.Config
+	mgr             manager.Manager
+	controller      controller.Controller
+	customInformers map[string]map[string]*cache.Informer
 }
 
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
@@ -206,18 +206,14 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	originalInstallation := installation.DeepCopy()
+
 	retryRequeue := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: 10 * time.Second,
 	}
 
-	//context is cancelled on delete of an installation, so if context is cancelled but there is no deletion timestamp
-	//the installation must be created after one was deleted, so recreate a context to use for the new installation.
-	if r.context.Err() == context.Canceled && installation.DeletionTimestamp == nil {
-		r.context, r.cancel = context.WithCancel(context.Background())
-	}
-
-	installType, err := TypeFactory(installation.Spec.Type, r.productsToInstall)
+	installType, err := TypeFactory(installation.Spec.Type)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -226,9 +222,19 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
+	alertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddress == "" && alertingEmailAddress != "" {
+		logrus.Infof("Adding alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddress = alertingEmailAddress
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			logrus.Errorf("Error while copying alerting email address to RHMI CR: %w", err)
+		}
+	}
+
 	// gets the products from the install type to expose rhmi status metric
 	stages := make([]integreatlyv1alpha1.RHMIStageStatus, 0)
-	for _, stage := range installType.GetStages() {
+	for _, stage := range installType.GetInstallStages() {
 		stages = append(stages, integreatlyv1alpha1.RHMIStageStatus{
 			Name:     stage.Name,
 			Phase:    "",
@@ -237,14 +243,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 	metrics.SetRHMIStatus(installation)
 
-	configManager, err := config.NewManager(r.context, r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
+	configManager, err := config.NewManager(context.TODO(), r.client, request.NamespacedName.Namespace, installationCfgMap, installation)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	err = resources.AddFinalizer(r.context, installation, r.client, deletionFinalizer)
-	if err != nil {
-		return reconcile.Result{}, err
+	if !resources.Contains(installation.GetFinalizers(), deletionFinalizer) && installation.GetDeletionTimestamp() == nil {
+		installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
 	}
 
 	if installation.Status.Stages == nil {
@@ -257,73 +262,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return r.preflightChecks(installation, installType, configManager)
 	}
 
-	// If the CR is being deleted, cancel the current context
-	// and attempt to clean up the products with finalizers
+	// If the CR is being deleted, handle uninstall and return
 	if installation.DeletionTimestamp != nil {
-		// Cancel this context to kill all ongoing requests to the API
-		// and use a new context to handle deletion logic
-		r.cancel()
-
-		// Set metrics status to unavailable
-		metrics.RHMIStatusAvailable.Set(0)
-		installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
-		installation.Status.LastError = ""
-		// updates rhmi status metric to deletion
-		metrics.SetRHMIStatus(installation)
-		_ = r.client.Status().Update(context.TODO(), installation)
-
-		// Clean up the products which have finalizers associated to them
-		merr := &multiErr{}
-		for _, productFinalizer := range installation.Finalizers {
-			if !strings.Contains(productFinalizer, "integreatly") {
-				continue
-			}
-			productName := strings.Split(productFinalizer, ".")[1]
-			product := installation.GetProductStatusObject(integreatlyv1alpha1.ProductName(productName))
-			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", product.Name, err))
-			}
-			serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to create server client for %s: %w", product.Name, err))
-			}
-			phase, err := reconciler.Reconcile(context.TODO(), installation, product, serverClient)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", product.Name, err))
-			}
-			logrus.Infof("current phase for %s is: %s", product.Name, phase)
-		}
-
-		if len(merr.errors) == 0 && len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
-			// delete ConfigMap after all product finalizers finished
-			if err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: request.NamespacedName.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
-				return retryRequeue, merr
-			}
-
-			if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
-				merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
-				return retryRequeue, merr
-			}
-
-			err = resources.RemoveFinalizer(context.TODO(), installation, r.client, deletionFinalizer)
-			if err != nil {
-				merr.Add(fmt.Errorf("Failed to remove finalizer: %w", err))
-				return retryRequeue, merr
-			}
-			logrus.Infof("uninstall completed")
-			return reconcile.Result{}, nil
-		}
-
-		return retryRequeue, nil
+		return r.handleUninstall(installation, installType)
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
 	if installation.Status.Version == "" && installation.Status.ToVersion == "" {
 		installation.Status.ToVersion = version.IntegreatlyVersion
 		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.IntegreatlyVersion)
-		if err := r.client.Status().Update(r.context, installation); err != nil {
+		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -336,12 +284,24 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
 
+	// reconciles rhmi installation alerts
+	_, err = r.reconcileRHMIInstallationAlerts(context.TODO(), r.client, installation)
+	if err != nil {
+		logrus.Infof("Error reconciling alerts for the rhmi installation controller: %w", err)
+	}
+
+	// reconciles rhmi installation completion alert in openshift monitoring
+	_, err = r.reconcileRHMIInstallationAlertsOpenshiftMonitoring(context.TODO(), r.client, installation)
+	if err != nil {
+		logrus.Info("Error reconciling alerts for completion of rhmi installation in openshift monitoring :%w", err)
+	}
+
 	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(r.context, r.client, installation); err != nil {
+	if err := webhooks.Config.Reconcile(context.TODO(), r.client, installation); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	for _, stage := range installType.GetStages() {
+	for _, stage := range installType.GetInstallStages() {
 		var err error
 		var stagePhase integreatlyv1alpha1.StatusPhase
 		if stage.Name == integreatlyv1alpha1.BootstrapStage {
@@ -382,51 +342,161 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	metrics.SetRHMIStatus(installation)
 
 	// Check if the version needs to be updated
-	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled(installation) {
+	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled {
 		installation.Status.Version = installation.Status.ToVersion
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
+	metrics.SetRHMIStatus(installation)
 
-	err = r.client.Status().Update(r.context, installation)
+	err = r.updateStatusAndObject(originalInstallation, installation)
 	if err != nil {
-		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-		if k8serr.IsConflict(err) {
-			// If there is a conflict, requeue the resource and retry Update
-			logrus.Info("Error updating Installation resource status. Requeue and retry.", err)
-			return retryRequeue, nil
-		}
+		return retryRequeue, err
+	}
 
-		logrus.Error(err, "error reconciling installation installation")
-		if installInProgress {
-			return retryRequeue, err
+	// installation completed
+	if !installInProgress {
+		metrics.RHMIStatusAvailable.Set(1)
+		logrus.Infof("installation completed succesfully")
+		return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
+	}
+
+	//installation still in progress
+	return retryRequeue, nil
+}
+
+func (r *ReconcileInstallation) updateStatusAndObject(original, installation *integreatlyv1alpha1.RHMI) error {
+	if !reflect.DeepEqual(original.Status, installation.Status) {
+		logrus.Info("updating status")
+		err := r.client.Status().Update(context.TODO(), installation)
+		if err != nil {
+			return err
 		}
+	}
+
+	if !reflect.DeepEqual(original, installation) {
+		logrus.Info("updating object")
+		err := r.client.Update(context.TODO(), installation)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha1.RHMI, installationType *Type) (reconcile.Result, error) {
+	retryRequeue := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: 10 * time.Second,
+	}
+	installationCfgMap := os.Getenv("INSTALLATION_CONFIG_MAP")
+	if installationCfgMap == "" {
+		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
+	}
+	configManager, err := config.NewManager(context.TODO(), r.client, installation.Namespace, installationCfgMap, installation)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// UPDATE OBJECT
-	err = r.client.Update(r.context, installation)
-	if err != nil {
-		// The 'Update' function can error if the resource has been updated by another process and the versions are not correct.
-		if k8serr.IsConflict(err) {
-			// If there is a conflict, requeue the resource and retry Update
-			logrus.Info("Error updating Installation resource. Requeue and retry.", err)
+	// Set metrics status to unavailable
+	metrics.RHMIStatusAvailable.Set(0)
+
+	installation.Status.Stage = integreatlyv1alpha1.StageName("deletion")
+	installation.Status.LastError = ""
+
+	// updates rhmi status metric to deletion
+	metrics.SetRHMIStatus(installation)
+
+	// Clean up the products which have finalizers associated to them
+	merr := &multiErr{}
+	finalizers := []string{}
+	for _, finalizer := range installation.Finalizers {
+		finalizers = append(finalizers, finalizer)
+	}
+	for _, stage := range installationType.UninstallStages {
+		pendingUninstalls := false
+		for product, _ := range stage.Products {
+			productName := string(product)
+			logrus.Infof("Uninstalling %s in stage %s", productName, stage.Name)
+			productStatus := installation.GetProductStatusObject(product)
+			//if the finalizer for this product is not present, move to the next product
+			for _, productFinalizer := range finalizers {
+				if !strings.Contains(productFinalizer, productName) {
+					continue
+				}
+				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr)
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
+				}
+				serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to create server client for %s: %w", productName, err))
+				}
+				phase, err := reconciler.Reconcile(context.TODO(), installation, productStatus, serverClient)
+				if err != nil {
+					merr.Add(fmt.Errorf("Failed to reconcile product %s: %w", productName, err))
+				}
+				if phase != integreatlyv1alpha1.PhaseCompleted {
+					pendingUninstalls = true
+				}
+				logrus.Infof("current phase for %s is: %s", productName, phase)
+			}
+		}
+		//don't move to next stage until all products in this stage are removed
+		//update CR and return
+		if pendingUninstalls {
+			if len(merr.errors) > 0 {
+				installation.Status.LastError = merr.Error()
+				r.client.Status().Update(context.TODO(), installation)
+			}
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
 			return retryRequeue, nil
 		}
+	}
 
-		logrus.Error(err, "error reconciling installation installation")
-		if installInProgress {
-			return retryRequeue, err
+	//all products gone and no errors, tidy up bootstrap stuff
+	if len(installation.Finalizers) == 1 && installation.Finalizers[0] == deletionFinalizer {
+		logrus.Infof("len finalizers: %v", len(installation.Finalizers))
+		// delete ConfigMap after all product finalizers finished
+		if err := r.client.Delete(context.TODO(), &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: installationCfgMap, Namespace: installation.Namespace}}); err != nil && !k8serr.IsNotFound(err) {
+			merr.Add(fmt.Errorf("failed to remove installation ConfigMap: %w", err))
+			installation.Status.LastError = merr.Error()
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
+			return retryRequeue, merr
 		}
-		return reconcile.Result{}, err
-	}
-	if installInProgress {
-		return retryRequeue, nil
+
+		if err = r.handleCROConfigDeletion(*installation); err != nil && !k8serr.IsNotFound(err) {
+			merr.Add(fmt.Errorf("failed to remove Cloud Resource ConfigMap: %w", err))
+			installation.Status.LastError = merr.Error()
+			err = r.client.Update(context.TODO(), installation)
+			if err != nil {
+				merr.Add(err)
+			}
+			return retryRequeue, merr
+		}
+
+		installation.SetFinalizers(resources.Remove(installation.GetFinalizers(), deletionFinalizer))
+
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			merr.Add(err)
+			return retryRequeue, merr
+		}
+
+		logrus.Infof("uninstall completed")
+		return reconcile.Result{}, nil
 	}
 
-	metrics.RHMIStatusAvailable.Set(1)
-	logrus.Infof("installation completed succesfully")
-	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
+	logrus.Infof("updating uninstallation object")
+	// no finalizers left, update object
+	err = r.client.Update(context.TODO(), installation)
+	return retryRequeue, err
 }
 
 func isFirstInstallReconcile(installation *integreatlyv1alpha1.RHMI) bool {
@@ -439,240 +509,6 @@ func isUpgradeReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 		return true
 	}
 	return false
-}
-
-func allProductsReconciled(installation *integreatlyv1alpha1.RHMI) bool {
-	stages := installation.Status.Stages
-
-	return (verifyClusterRHSSOVersions(stages) &&
-		verifyCloudResourceVersions(stages) &&
-		verifyAMQOnlineVersions(stages) &&
-		verifyApicuritoVersions(stages) &&
-		verifyCodeReadyWorkspacesVersions(stages) &&
-		verifyFuseOnOpenshiftVersions(stages) &&
-		verifyMonitoringVersions(stages) &&
-		verify3ScaleVersions(stages) &&
-		verifyFuseOnlineVersions(stages) &&
-		verifyDataSyncVersions(stages) &&
-		verifyRHSSOUserVersions(stages) &&
-		verifyUPSVersions(stages) &&
-		verifySolutionExplorerVersions(stages))
-}
-
-func verifySolutionExplorerVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.SolutionExplorerStage].Products[integreatlyv1alpha1.ProductSolutionExplorer]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionSolutionExplorer)
-	installedOpVersion := string(versions.OperatorVersion)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Solution Explorer Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	return true
-}
-
-func verifyClusterRHSSOVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.AuthenticationStage].Products[integreatlyv1alpha1.ProductRHSSO]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionRHSSO)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionRHSSO)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Cluster RHSSO Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Cluster RHSSO Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyMonitoringVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.MonitoringStage].Products[integreatlyv1alpha1.ProductMonitoring]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionMonitoring)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionMonitoring)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Monitoring Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Monitoring Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyCloudResourceVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.CloudResourcesStage].Products[integreatlyv1alpha1.ProductCloudResources]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionCloudResources)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionCloudResources)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Cloud Resource Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Cloud Resource Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyApicuritoVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductApicurito]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionApicurito)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionApicurito)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Apicurito Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Apicurito Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyRHSSOUserVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionRHSSOUser)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionRHSSOUser)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("RHSSOUser Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("RHSSOUser Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyUPSVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductUps]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionUPS)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionUps)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("UPS Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("UPS Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verify3ScaleVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.Product3Scale]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersion3Scale)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.Version3Scale)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("3Scale Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("3Scale Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyDataSyncVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductDataSync]
-	expectedProductVersion := string(integreatlyv1alpha1.VersionDataSync)
-	installedProductVersion := string(versions.Version)
-
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Data Sync Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyFuseOnlineVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductFuse]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionFuse)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionFuseOnline)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("Fuse Online Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("Fuse Online Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyCodeReadyWorkspacesVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductCodeReadyWorkspaces]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionCodeReadyWorkspaces)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("CodeReady Workspaces Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("CodeReady Workspaces Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyAMQOnlineVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductAMQOnline]
-	expectedOpVersion := string(integreatlyv1alpha1.OperatorVersionAMQOnline)
-	installedOpVersion := string(versions.OperatorVersion)
-	expectedProductVersion := string(integreatlyv1alpha1.VersionAMQOnline)
-	installedProductVersion := string(versions.Version)
-
-	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("AMQOnline Operator Version is not as expected. Expected %s, Actual %s", expectedOpVersion, installedOpVersion)
-		return false
-	}
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("AMQOnline Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
-}
-
-func verifyFuseOnOpenshiftVersions(stages map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus) bool {
-	versions := stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductFuseOnOpenshift]
-	expectedProductVersion := string(integreatlyv1alpha1.VersionFuseOnOpenshift)
-	installedProductVersion := string(versions.Version)
-
-	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("FuseOnOpenShift Version is not as expected. Expected %s, Actual %s", expectedProductVersion, installedProductVersion)
-		return false
-	}
-	return true
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {
@@ -688,7 +524,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
 		installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 		installation.Status.PreflightMessage = "Spec.useClusterStorage must be set to either 'true' or 'false' to continue"
-		_ = r.client.Status().Update(r.context, installation)
+		_ = r.client.Status().Update(context.TODO(), installation)
 		logrus.Infof("preflight checks failed on useClusterStorage value")
 		return result, nil
 	}
@@ -703,7 +539,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 					Namespace: installation.Namespace,
 				},
 			}
-			if exists, err := resources.Exists(r.context, r.client, secret); err != nil {
+			if exists, err := resources.Exists(context.TODO(), r.client, secret); err != nil {
 				return reconcile.Result{}, err
 			} else if !exists {
 				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
@@ -712,7 +548,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 
 				installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 				installation.Status.PreflightMessage = preflightMessage
-				_ = r.client.Status().Update(r.context, installation)
+				_ = r.client.Status().Update(context.TODO(), installation)
 
 				return reconcile.Result{}, err
 			}
@@ -724,7 +560,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 
 	logrus.Infof("getting namespaces")
 	namespaces := &corev1.NamespaceList{}
-	err := r.client.List(r.context, namespaces)
+	err := r.client.List(context.TODO(), namespaces)
 	if err != nil {
 		// could not list namespaces, keep trying
 		logrus.Infof("error listing namespaces, will retry")
@@ -743,14 +579,14 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 			installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 			installation.Status.PreflightMessage = "found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName()
 			logrus.Infof("found conflicting packages: " + strings.Join(products, ", ") + ", in namespace: " + ns.GetName())
-			_ = r.client.Status().Update(r.context, installation)
+			_ = r.client.Status().Update(context.TODO(), installation)
 			return result, err
 		}
 	}
 
 	installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightSuccess
 	installation.Status.PreflightMessage = "preflight checks passed"
-	err = r.client.Status().Update(r.context, installation)
+	err = r.client.Status().Update(context.TODO(), installation)
 	if err != nil {
 		logrus.Infof("error updating status: %s", err.Error())
 	}
@@ -767,7 +603,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	}
 	// new client to avoid caching issues
 	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
-	for _, stage := range installationType.Stages {
+	for _, stage := range installationType.InstallStages {
 		for _, product := range stage.Products {
 			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 			if err != nil {
@@ -777,7 +613,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 			if search == nil {
 				continue
 			}
-			exists, err := resources.Exists(r.context, serverClient, search)
+			exists, err := resources.Exists(context.TODO(), serverClient, search)
 			if err != nil {
 				return foundProducts, err
 			} else if exists {
@@ -801,7 +637,7 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 	}
-	phase, err := reconciler.Reconcile(r.context, installation, serverClient)
+	phase, err := reconciler.Reconcile(context.TODO(), installation, serverClient)
 	if err != nil || phase == integreatlyv1alpha1.PhaseFailed {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Bootstrap stage reconcile failed: %w", err)
 	}
@@ -816,16 +652,17 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	installation.Status.Stage = stage.Name
 
 	for _, product := range stage.Products {
-
 		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
+		allProductsReconciled = reconciler.VerifyVersion(installation)
 		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
 		}
-		product.Status, err = reconciler.Reconcile(r.context, installation, &product, serverClient)
+		product.Status, err = reconciler.Reconcile(context.TODO(), installation, &product, serverClient)
+
 		if err != nil {
 			if mErr == nil {
 				mErr = &multiErr{}
@@ -838,6 +675,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to read product config for %s: %v", string(product.Name), err)
 		}
+
 		if product.Status == integreatlyv1alpha1.PhaseCompleted {
 			for _, crd := range config.GetWatchableCRDs() {
 				namespace := config.GetNamespace()
@@ -900,7 +738,7 @@ func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1
 
 func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace string) error {
 	gvk := crd.GetObjectKind().GroupVersionKind().String()
-	mapper, err := apiutil.NewDiscoveryRESTMapper(r.restConfig)
+	mapper, err := apiutil.NewDynamicRESTMapper(r.restConfig, apiutil.WithLazyDiscovery)
 	if err != nil {
 		return fmt.Errorf("Failed to get API Group-Resources: %v", err)
 	}
