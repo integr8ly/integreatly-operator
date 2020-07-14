@@ -279,7 +279,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultRhssoNamespace)
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso for user rhsso: %w", err)
 	}
 
 	// at this point it should be ok to create the failed alert.
@@ -287,14 +287,19 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 		// create prometheus failed rule
 		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for user rhsso: %w", err)
+		}
+
+		// create the prometheus deletion rule
+		if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for user rhsso: %s", err)
 		}
 
 		// create prometheus pending rule only when CR has completed for the first time.
 		if postgres.Status.Phase == types.PhaseComplete {
 			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for user rhsso: %w", err)
 			}
 		}
 	}
@@ -306,12 +311,12 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 
 	// create the prometheus availability rule
 	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for user rhsso: %w", err)
 	}
 
 	// create the prometheus connectivity rule
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso : %s", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for user rhsso : %s", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

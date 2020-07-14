@@ -420,7 +420,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	postgresName := fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installation.Name)
 	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultOperandNamespace)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning sso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning rhsso: %w", err)
 	}
 
 	// at this point it should be ok to create the failed alert.
@@ -428,7 +428,12 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 		// create prometheus phase failed rule
 		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for rhsso: %w", err)
+		}
+
+		// create the prometheus deletion rule
+		if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for rhsso: %s", err)
 		}
 
 		// create prometheus pending rule only when CR has completed for the first time.
@@ -436,7 +441,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 
 			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
 			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for rhsso: %w", err)
 			}
 		}
 	}
