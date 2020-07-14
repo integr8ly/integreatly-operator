@@ -89,7 +89,7 @@ Prerequisites:
 
 > Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
 
-> Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
+> Use the `--help` flags to get the full documentation of all available flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
 >
 > ```bash
 > /tools.sh jira --help
@@ -162,7 +162,7 @@ JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./to
 
 ### Tags
 
-Tags are used to define specific behaviors for the test case.
+Tags are used to define specific characteristics of a test case.
 
 - `automated` Indicates that this test case is already automated and that it doesn't need to be executed manually
 - `per-build` Indicates that this test case should be executed on each build even if passed in the previous one
