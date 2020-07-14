@@ -11,8 +11,10 @@ interface TestCase {
     category: string;
     title: string;
     content: string;
-    tags: string[];
     estimate: number;
+    tags: string[];
+    targets: string[];
+    automationJiras: string[];
     require: string[];
     file: TestFile;
 }
@@ -137,6 +139,12 @@ function loadTestCases(file: TestFile): TestCase[] {
 
         content = expandImports(content, file.file);
 
+        const tags = data.tags || []
+
+        if (data.targets === undefined) {
+            tags.push("per-release")
+        }
+
         return {
             category,
             content,
@@ -144,7 +152,9 @@ function loadTestCases(file: TestFile): TestCase[] {
             file,
             id,
             require: data.require || [],
-            tags: data.tags || [],
+            tags: tags,
+            targets: data.targets || [],
+            automationJiras: data.automation_jiras || [],
             title
         };
     });

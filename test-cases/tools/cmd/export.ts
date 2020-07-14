@@ -43,8 +43,10 @@ const csv: CommandModule<{}, CSVArgs> = {
                 "Category",
                 "Title",
                 "Tags",
+                "Targets",
                 "Estimate",
                 "Require",
+                "Automation Jiras",
                 "Link",
                 "Runs"
             ].join(",")
@@ -56,8 +58,10 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.category,
                 t.title,
                 t.tags.join(" "),
+                t.targets.join(" "),
                 t.estimate,
                 t.require.join(" "),
+                t.automationJiras.join(" "),
                 t.file.link,
                 runsLink(t.id)
             ].join(",")

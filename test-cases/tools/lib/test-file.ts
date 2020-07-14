@@ -10,6 +10,8 @@ const REPO_URL =
 interface Metadata {
     tags: string[];
     estimate: string;
+    targets: string[];
+    automation_jiras: string[];
     require: string[];
 }
 
