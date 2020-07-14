@@ -147,16 +147,16 @@ function loadTestCases(file: TestFile): TestCase[] {
         }
 
         return {
+            automationJiras: data.automation_jiras || [],
             category,
+            components: data.components || [],
             content,
             estimate: data.estimate ? convertEstimation(data.estimate) : null,
             file,
             id,
             require: data.require || [],
-            tags: tags,
-            components: data.components || [],
+            tags,
             targets: data.targets || [],
-            automationJiras: data.automation_jiras || [],
             title
         };
     });
