@@ -1,5 +1,7 @@
 ---
 estimate: 1h
+components:
+  - product-codeready
 targets: []
 require:
   - J03

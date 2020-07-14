@@ -1,4 +1,6 @@
 ---
+components:
+  - monitoring
 targets:
   - 2.4.0
 ---

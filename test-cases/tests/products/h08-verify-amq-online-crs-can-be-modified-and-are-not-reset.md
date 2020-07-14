@@ -1,6 +1,8 @@
 ---
 estimate: 1h
 targets: []
+components:
+  - product-amq
 automation_jiras:
   - INTLY-6123
 ---

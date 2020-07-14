@@ -1,5 +1,7 @@
 ---
 estimate: 3h
+components:
+  - product-3scale
 targets: []
 require:
   - J03

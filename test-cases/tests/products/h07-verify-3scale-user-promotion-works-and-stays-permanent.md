@@ -1,5 +1,7 @@
 ---
 estimate: 1h
+components:
+  - product-3scale
 targets: []
 automation_jiras:
   - INTLY-7435

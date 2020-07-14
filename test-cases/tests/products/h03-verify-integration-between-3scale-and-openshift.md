@@ -1,5 +1,8 @@
 ---
 estimate: 15m
+components:
+  - product-3scale
+  - openshift
 targets: []
 automation_jiras:
   - INTLY-5441

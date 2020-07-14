@@ -1,4 +1,7 @@
 ---
+components:
+  - product-3scale
+  - product-fuse
 targets: []
 ---
 

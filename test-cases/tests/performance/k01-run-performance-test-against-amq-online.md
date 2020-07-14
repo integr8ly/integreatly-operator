@@ -1,5 +1,7 @@
 ---
 estimate: 4h
+components:
+  - product-amq
 targets: []
 ---
 

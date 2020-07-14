@@ -1,5 +1,7 @@
 ---
 estimate: 1h
+components:
+  - product-fuse
 targets: []
 require:
   - J03

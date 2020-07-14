@@ -1,5 +1,8 @@
 ---
 estimate: 30m
+components:
+  - product-fuse
+  - product-amq
 targets: []
 ---
 

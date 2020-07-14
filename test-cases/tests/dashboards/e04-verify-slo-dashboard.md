@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+components:
+  - monitoring
 targets: []
 automation_jiras:
   - INTLY-7421

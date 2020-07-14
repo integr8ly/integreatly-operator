@@ -1,5 +1,7 @@
 ---
 estimate: 15m
+components:
+  - product-3scale
 targets: []
 automation_jiras:
   - INTLY-7439

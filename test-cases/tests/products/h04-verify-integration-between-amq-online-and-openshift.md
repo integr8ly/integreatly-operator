@@ -1,5 +1,8 @@
 ---
 estimate: 30m
+components:
+  - product-amq
+  - openshift
 targets: []
 automation_jiras:
   - INTLY-7432

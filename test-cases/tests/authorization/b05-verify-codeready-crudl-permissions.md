@@ -1,5 +1,7 @@
 ---
 targets: []
+components:
+  - product-codeready
 automation_jiras:
   - INTLY-6652
 ---

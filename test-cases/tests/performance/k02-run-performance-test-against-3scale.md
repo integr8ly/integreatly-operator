@@ -1,5 +1,7 @@
 ---
 estimate: 2h
+components:
+  - product-3scale
 targets: []
 ---
 

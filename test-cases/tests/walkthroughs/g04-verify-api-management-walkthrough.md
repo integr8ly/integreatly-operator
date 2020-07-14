@@ -1,5 +1,7 @@
 ---
 estimate: 45m
+components:
+  - product-fuse
 targets: []
 require:
   - G03
