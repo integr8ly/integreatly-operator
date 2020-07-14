@@ -1,6 +1,8 @@
 ---
 estimate: 1h
 ---
+tags:
+    - apicurito
 
 # G03 - Verify API development walkthrough
 

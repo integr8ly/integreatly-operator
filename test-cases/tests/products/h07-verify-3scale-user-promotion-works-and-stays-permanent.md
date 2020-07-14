@@ -2,6 +2,7 @@
 estimate: 1h
 tags:
   - happy-path
+  - 3scale
 automation_jiras:
   - INTLY-7435
 ---

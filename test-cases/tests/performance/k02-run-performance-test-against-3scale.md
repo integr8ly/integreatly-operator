@@ -1,5 +1,9 @@
 ---
 estimate: 2h
+tags:
+  - 3scale
+  - fuse
+  
 ---
 
 # K02 - Run performance test against 3Scale

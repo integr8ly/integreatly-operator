@@ -2,6 +2,8 @@
 estimate: 30m
 tags:
   - happy-path
+  - amq
+  - openshift
 automation_jiras:
   - INTLY-7432
 ---

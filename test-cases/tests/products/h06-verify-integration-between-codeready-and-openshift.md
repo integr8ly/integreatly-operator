@@ -1,6 +1,8 @@
 ---
 tags:
   - happy-path
+  - codeready
+  - opensift
 estimate: 30m
 automation_jiras:
   - INTLY-7434

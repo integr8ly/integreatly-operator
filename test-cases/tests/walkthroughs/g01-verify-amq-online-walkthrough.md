@@ -1,5 +1,8 @@
 ---
 estimate: 30m
+tags:
+  - fuse
+  - amq
 ---
 
 # G01 - Verify AMQ Online walkthrough

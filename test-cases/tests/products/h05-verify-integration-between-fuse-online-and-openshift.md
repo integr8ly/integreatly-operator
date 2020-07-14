@@ -2,6 +2,7 @@
 estimate: 30m
 tags:
   - happy-path
+  - openshift
 automation_jiras:
   - INTLY-7433
 ---

@@ -2,6 +2,8 @@
 estimate: 1h
 require:
   - J03
+tags:
+  - codeready
 ---
 
 # J06 - Verify CodeReady Backup and Restore

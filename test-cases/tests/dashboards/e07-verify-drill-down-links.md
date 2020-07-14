@@ -1,6 +1,9 @@
 ---
 targets:
   - 2.4.0
+tags:
+  - grafana
+
 ---
 
 # E07 - Verify drill down links

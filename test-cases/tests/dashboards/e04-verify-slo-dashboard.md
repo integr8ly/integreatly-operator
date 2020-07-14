@@ -2,6 +2,8 @@
 estimate: 30m
 automation_jiras:
   - INTLY-7421
+tags:
+  - grafana
 ---
 
 # E04 - Verify SLO dashboard

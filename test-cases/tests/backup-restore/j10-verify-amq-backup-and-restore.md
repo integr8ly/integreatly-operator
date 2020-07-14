@@ -2,6 +2,8 @@
 estimate: 2h
 require:
   - J03
+tags:
+  - amq
 ---
 
 # J10 - Verify AMQ backup and restore

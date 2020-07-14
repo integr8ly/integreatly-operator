@@ -1,6 +1,8 @@
 ---
 targets:
   - 2.4.0
+tags:
+  - grafana
 ---
 
 # E08 - Verify values are correct in Resource usage dashboard

@@ -2,6 +2,8 @@
 estimate: 45m
 require:
   - G03
+tags:
+  - fuse
 ---
 
 # G04 - Verify API management walkthrough

@@ -2,6 +2,7 @@
 estimate: 1h
 tags:
   - happy-path
+  - amq
 automation_jiras:
   - INTLY-6123
 ---

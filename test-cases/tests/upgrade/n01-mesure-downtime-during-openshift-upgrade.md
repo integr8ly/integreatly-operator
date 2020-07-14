@@ -1,5 +1,7 @@
 ---
 estimate: 2h
+tags:
+  - all-products
 ---
 
 # N01 - Mesure downtime during OpenShift upgrade

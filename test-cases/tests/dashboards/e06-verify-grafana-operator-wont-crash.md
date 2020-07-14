@@ -3,6 +3,7 @@ targets:
   - 2.3.0
 tags:
   - optional
+  - grafana
 ---
 
 # E06 - Verify Grafana operator won't crash

@@ -1,5 +1,6 @@
 ---
-tags: [] # Add tags here. See the tags section in the README for the list of tags that we use
+tags:
+  - codeready
 ---
 
 # B05 - Verify Codeready CRUDL Permissions

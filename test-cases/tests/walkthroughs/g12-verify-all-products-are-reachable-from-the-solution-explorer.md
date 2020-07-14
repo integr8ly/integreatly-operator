@@ -1,5 +1,8 @@
 ---
 estimate: 15m
+
+tags:
+  - all-products
 ---
 
 # G12 - Verify all products are reachable from the Solution Explorer

@@ -2,6 +2,8 @@
 estimate: 1h
 require:
   - J03
+tags:
+  - fuse
 ---
 
 # J09 - Verify Fuse Backup and Restore

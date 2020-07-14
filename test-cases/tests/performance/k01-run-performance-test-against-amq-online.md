@@ -1,5 +1,7 @@
 ---
 estimate: 4h
+tags:
+  - amq
 ---
 
 # K01 - Run performance test against AMQ Online

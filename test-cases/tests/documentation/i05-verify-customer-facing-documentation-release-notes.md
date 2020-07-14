@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+tags:
+  - 3scale
 ---
 
 # I05 - verify customer facing documentation release notes
