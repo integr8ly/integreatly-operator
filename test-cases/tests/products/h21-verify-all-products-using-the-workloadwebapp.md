@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+tags:
+  - per-build
 ---
 
 # H21 - Verify all products using the workload-web-app

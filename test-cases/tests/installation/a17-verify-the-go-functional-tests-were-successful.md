@@ -1,5 +1,7 @@
 ---
 estimate: 15m
+tags:
+  per-build
 ---
 
 # A17 - Verify the Go functional tests were successful
