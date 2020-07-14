@@ -1,5 +1,7 @@
 ---
 estimate: 2h
+components:
+  - product-sso
 targets: []
 ---
 

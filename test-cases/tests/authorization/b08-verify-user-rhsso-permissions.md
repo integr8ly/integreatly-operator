@@ -1,4 +1,6 @@
 ---
+components:
+  - product-sso
 targets: []
 automation_jiras:
   - INTLY-6408

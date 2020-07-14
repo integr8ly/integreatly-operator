@@ -1,5 +1,7 @@
 ---
 estimate: 1h
+components:
+  - product-sso
 targets: []
 require:
   - J03

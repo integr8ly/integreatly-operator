@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+components:
+  - product-sso
 targets: []
 require:
   - G01

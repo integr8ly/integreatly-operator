@@ -1,5 +1,8 @@
 ---
 estimate: 15m
+components:
+  - cloud-resource-operator
+  - product-3scale
 targets: []
 automation_jiras:
   - INTLY-6654
