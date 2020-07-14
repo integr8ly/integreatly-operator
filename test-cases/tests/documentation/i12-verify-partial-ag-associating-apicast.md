@@ -1,6 +1,8 @@
-# I12 - Verify partial ag associating apicast
+---
+targets: []
+---
 
-Sprint #20
+# I12 - Verify partial ag associating apicast
 
 ## Description
 

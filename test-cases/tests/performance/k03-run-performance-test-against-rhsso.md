@@ -1,5 +1,6 @@
 ---
 estimate: 2h
+targets: []
 ---
 
 # K03 - Run performance test against RHSSO

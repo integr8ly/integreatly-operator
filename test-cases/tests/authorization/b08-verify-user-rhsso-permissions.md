@@ -1,5 +1,7 @@
 ---
-tags: [] # Add tags here. See the tags section in the README for the list of tags that we use
+targets: []
+automation_jiras:
+  - INTLY-6408
 ---
 
 # B08 - Verify User RHSSO Permissions

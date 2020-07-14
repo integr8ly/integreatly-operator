@@ -1,7 +1,6 @@
 ---
-tags:
-  - happy-path
 estimate: 30m
+targets: []
 ---
 
 # N05 - Verify upgrade not approved when another upgrade in progress

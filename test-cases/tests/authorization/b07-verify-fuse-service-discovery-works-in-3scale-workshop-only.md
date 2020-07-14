@@ -1,5 +1,5 @@
 ---
-tags: [] # Add tags here. See the tags section in the README for the list of tags that we use
+targets: []
 ---
 
 # B07 - Verify Fuse Service Discovery Works in 3Scale (Workshop Only)

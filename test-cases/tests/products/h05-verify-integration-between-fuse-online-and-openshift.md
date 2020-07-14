@@ -1,7 +1,6 @@
 ---
 estimate: 30m
-tags:
-  - happy-path
+targets: []
 automation_jiras:
   - INTLY-7433
 ---

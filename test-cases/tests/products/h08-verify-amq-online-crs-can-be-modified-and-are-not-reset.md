@@ -1,7 +1,6 @@
 ---
 estimate: 1h
-tags:
-  - happy-path
+targets: []
 automation_jiras:
   - INTLY-6123
 ---

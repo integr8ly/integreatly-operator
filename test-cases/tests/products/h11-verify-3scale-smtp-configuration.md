@@ -1,5 +1,6 @@
 ---
 estimate: 15m
+targets: []
 automation_jiras:
   - INTLY-7439
 ---

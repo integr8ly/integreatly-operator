@@ -1,5 +1,6 @@
 ---
 estimate: 30m
+targets: []
 ---
 
 # G01 - Verify AMQ Online walkthrough

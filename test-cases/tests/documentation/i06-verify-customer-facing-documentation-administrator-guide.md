@@ -1,5 +1,6 @@
 ---
 estimate: 7h
+targets: []
 ---
 
 # I06 - verify customer facing documentation administrator guide

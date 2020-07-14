@@ -1,4 +1,5 @@
 ---
+targets: []
 automation_jiras:
   - INTLY-7430
 ---

@@ -1,5 +1,6 @@
 ---
 estimate: 1h
+targets: []
 ---
 
 # G03 - Verify API development walkthrough

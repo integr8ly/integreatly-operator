@@ -1,6 +1,8 @@
-# I13 - Verify partial ag network policy
+---
+targets: []
+---
 
-Sprint #20
+# I13 - Verify partial ag network policy
 
 ## Description
 

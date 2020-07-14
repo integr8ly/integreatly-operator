@@ -1,6 +1,4 @@
 ---
-tags:
-  - happy-path
 estimate: 30m
 ---
 

@@ -1,6 +1,8 @@
-# I10 - Align docs with changes to Solution Explorer UI text
+---
+targets: []
+---
 
-- Sprint #20
+# I10 - Align docs with changes to Solution Explorer UI text
 
 ## Description
 

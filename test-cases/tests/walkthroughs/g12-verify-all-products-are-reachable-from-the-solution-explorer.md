@@ -1,5 +1,6 @@
 ---
 estimate: 15m
+targets: []
 ---
 
 # G12 - Verify all products are reachable from the Solution Explorer

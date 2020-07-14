@@ -1,5 +1,6 @@
 ---
 estimate: 4h
+targets: []
 ---
 
 # K01 - Run performance test against AMQ Online

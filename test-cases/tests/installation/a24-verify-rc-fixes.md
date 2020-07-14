@@ -1,4 +1,6 @@
 ---
+tags:
+  - per-build
 ---
 
 # A24 - Verify RC fixes

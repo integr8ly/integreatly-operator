@@ -1,5 +1,6 @@
 ---
 estimate: 1h
+targets: []
 ---
 
 # G05 - Verify Data Sync walkthrough

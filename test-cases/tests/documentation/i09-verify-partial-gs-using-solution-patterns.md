@@ -1,6 +1,8 @@
-# I09 - Verify partial gs using solution patterns
+---
+targets: []
+---
 
-Sprint #20
+# I09 - Verify partial gs using solution patterns
 
 ## Description
 

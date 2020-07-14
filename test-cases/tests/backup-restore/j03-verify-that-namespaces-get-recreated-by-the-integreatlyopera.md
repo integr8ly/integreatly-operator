@@ -1,5 +1,6 @@
 ---
 estimate: 120m
+targets: []
 ---
 
 # J03 - Verify that namespaces get recreated by the integreatly-operator if deleted

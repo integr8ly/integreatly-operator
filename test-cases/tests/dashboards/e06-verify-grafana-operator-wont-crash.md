@@ -1,8 +1,6 @@
 ---
 targets:
   - 2.3.0
-tags:
-  - optional
 ---
 
 # E06 - Verify Grafana operator won't crash

@@ -1,6 +1,5 @@
 ---
 tags:
-  - happy-path
   - automated
 targets:
   - 2.5.0

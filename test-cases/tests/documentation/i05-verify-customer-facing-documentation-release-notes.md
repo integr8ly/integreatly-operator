@@ -1,5 +1,6 @@
 ---
 estimate: 30m
+targets: []
 ---
 
 # I05 - verify customer facing documentation release notes

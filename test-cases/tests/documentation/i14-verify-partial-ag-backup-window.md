@@ -1,6 +1,8 @@
-# I14 - Verify partial ag backup window
+---
+targets: []
+---
 
-Sprint #20
+# I14 - Verify partial ag backup window
 
 ## Description
 

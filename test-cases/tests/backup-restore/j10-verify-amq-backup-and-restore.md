@@ -1,5 +1,6 @@
 ---
 estimate: 2h
+targets: []
 require:
   - J03
 ---

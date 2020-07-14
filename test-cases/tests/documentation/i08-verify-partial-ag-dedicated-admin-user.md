@@ -1,6 +1,8 @@
-# I08 - verify partial ag dedicated admin user
+---
+targets: []
+---
 
-- Sprint #20
+# I08 - verify partial ag dedicated admin user
 
 ## Description
 

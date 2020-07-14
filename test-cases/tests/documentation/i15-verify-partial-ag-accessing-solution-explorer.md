@@ -1,6 +1,8 @@
-# I15 - Verify partial ag accessing solution explorer
+---
+targets: []
+---
 
-Sprint #20
+# I15 - Verify partial ag accessing solution explorer
 
 ## Description
 

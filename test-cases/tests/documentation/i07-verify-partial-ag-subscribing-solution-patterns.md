@@ -1,6 +1,8 @@
-# I07 - Verify partial ag subscribing solution patterns
+---
+targets: []
+---
 
-Sprint #20
+# I07 - Verify partial ag subscribing solution patterns
 
 ## Description
 

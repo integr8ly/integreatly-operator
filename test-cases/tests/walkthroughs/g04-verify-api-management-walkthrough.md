@@ -1,5 +1,6 @@
 ---
 estimate: 45m
+targets: []
 require:
   - G03
 ---

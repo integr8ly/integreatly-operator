@@ -1,6 +1,7 @@
 ---
 estimate: 1h
-tags: [] # Add tags here. See the tags section in the README for the list of tags that we use
+automation_jiras:
+  - INTLY-7748
 ---
 
 # B04 - Verify Dedicated Admin User Permissions are Correct

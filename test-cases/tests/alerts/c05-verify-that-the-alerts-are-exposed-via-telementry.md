@@ -1,5 +1,7 @@
 ---
 estimate: 15m
+tags:
+  - per-build
 automation_jiras:
   - INTLY-7413
 ---

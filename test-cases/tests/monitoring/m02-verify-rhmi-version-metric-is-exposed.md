@@ -1,8 +1,7 @@
 ---
-tags:
-  - 2.3.0
-
 estimate: 15m
+targets:
+  - 2.3.0
 ---
 
 # M02 - Verify RHMI version metric is exposed

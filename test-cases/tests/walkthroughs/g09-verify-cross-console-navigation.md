@@ -1,7 +1,6 @@
 ---
 estimate: 15m
-tag:
-  - nottesting
+targets: []
 ---
 
 # G09 - Verify cross console navigation

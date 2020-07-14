@@ -1,5 +1,6 @@
 ---
 estimate: 2h
+targets: []
 ---
 
 # K02 - Run performance test against 3Scale
