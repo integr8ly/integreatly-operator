@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -137,18 +138,26 @@ func performTest(t *testing.T, ctx *TestingContext) error {
 	}
 
 	quit1 := make(chan struct{})
-	go repeat(func() {
-		scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, 0, ctx.KubeClient)
-	}, quit1)
+	var wg1 sync.WaitGroup
+	wg1.Add(1)
+	defer scaleDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, originalUIReplicas, ctx.Client)
+	defer wg1.Wait()
 	defer close(quit1)
-	defer scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, originalOperatorReplicas, ctx.KubeClient)
 
 	quit2 := make(chan struct{})
+	var wg2 sync.WaitGroup
+	wg2.Add(1)
+	defer scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, originalOperatorReplicas, ctx.KubeClient)
+	defer wg2.Wait()
+	defer close(quit2)
+
 	go repeat(func() {
 		scaleDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, 0, ctx.Client)
-	}, quit2)
-	defer close(quit2)
-	defer scaleDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, originalUIReplicas, ctx.Client)
+	}, quit1, &wg1)
+
+	go repeat(func() {
+		scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, 0, ctx.KubeClient)
+	}, quit2, &wg2)
 
 	err = waitForFuseAlertState("pending", ctx, t)
 	if err != nil {
@@ -181,10 +190,11 @@ func checkAlertManager(ctx *TestingContext) error {
 	return nil
 }
 
-func repeat(function repeatFunc, quit chan struct{}) {
+func repeat(function repeatFunc, quit chan struct{}, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-quit:
+			wg.Done()
 			return
 		default:
 			function()
