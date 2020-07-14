@@ -87,7 +87,7 @@ Prerequisites:
 
 - Nodejs >= 10
 
-> Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jirat tasks during the release testing
+> Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
 
 > Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
 >
