@@ -15,6 +15,6 @@ export function extractId(title: string): { id: string; title: string } {
             title: match.groups.title
         };
     } else {
-        throw new Error(`can not extract the id from '${title}'`);
+        throw new Error(`can not extract the ID from '${title}'`);
     }
 }

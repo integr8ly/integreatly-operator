@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "lint": "prettier --check '**/*.*' && ./tools.sh rename && tslint -p .",
+    "lint": "prettier --check '**/*.*' && ./tools.sh lint && tslint -p .",
     "prettier": "prettier --write '**/*.*'",
-    "rename": "./tools.sh rename --write"
+    "rename": "./tools.sh rename"
   },
   "dependencies": {
     "@types/jira-client": "6.4.4",
