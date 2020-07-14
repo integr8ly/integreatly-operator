@@ -14,6 +14,7 @@ interface TestCase {
     estimate: number;
     tags: string[];
     targets: string[];
+    components: string[];
     automationJiras: string[];
     require: string[];
     file: TestFile;
@@ -139,10 +140,10 @@ function loadTestCases(file: TestFile): TestCase[] {
 
         content = expandImports(content, file.file);
 
-        const tags = data.tags || []
+        const tags = data.tags || [];
 
         if (data.targets === undefined) {
-            tags.push("per-release")
+            tags.push("per-release");
         }
 
         return {
@@ -153,6 +154,7 @@ function loadTestCases(file: TestFile): TestCase[] {
             id,
             require: data.require || [],
             tags: tags,
+            components: data.components || [],
             targets: data.targets || [],
             automationJiras: data.automation_jiras || [],
             title
