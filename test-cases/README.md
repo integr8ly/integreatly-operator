@@ -195,7 +195,7 @@ The component field is used to decide which tests should be added in the next re
 
 ### Targets
 
-The Targets define against which release the test case would have to be executed the next time. This is useful to include or exclude the test cases form a specific release.
+Targets version defines against which release the test case is going to be executed next time. This is useful to include or exclude the test cases form a specific release.
 
 If the Targets is not defined then the tests will be marked as per-release and would be included in all releases.
 
@@ -226,7 +226,7 @@ automation_jiras:
 
 ## Prettier
 
-> All of the test cases must be prettify before being committed
+> All of the test cases must be prettified before being committed
 
 You can prettify the test cases using the command line:
 
