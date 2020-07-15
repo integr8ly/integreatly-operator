@@ -719,5 +719,4 @@ spec:
     value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
   - image: registry.redhat.io/openshift4/ose-cli@sha256:353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
     name: openshift-cli
-  replaces: 3scale-operator.v0.5.5
   version: 0.6.0
