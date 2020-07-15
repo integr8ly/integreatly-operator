@@ -115,9 +115,9 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 			if cloudConfig.Data == nil {
 				cloudConfig.Data = map[string]string{}
 			}
-			cloudConfig.Data["managed"] = 		`{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			cloudConfig.Data["workshop"] = 		`{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			cloudConfig.Data["self-managed"] = 	`{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["self-managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			return nil
 		})
 

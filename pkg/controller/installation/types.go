@@ -206,7 +206,7 @@ var (
 			{
 				Name: integreatlyv1alpha1.MonitoringStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductMonitoring: {Name: integreatlyv1alpha1.ProductMonitoring},
+					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
 				},
 			},
@@ -235,10 +235,10 @@ var (
 			{
 				Name: integreatlyv1alpha1.UninstallProductsStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductCloudResources:      {Name: integreatlyv1alpha1.ProductCloudResources},
-					integreatlyv1alpha1.ProductRHSSO:               {Name: integreatlyv1alpha1.ProductRHSSO},
-					integreatlyv1alpha1.ProductAMQStreams:          {Name: integreatlyv1alpha1.ProductAMQStreams},
-					integreatlyv1alpha1.ProductSolutionExplorer:    {Name: integreatlyv1alpha1.ProductSolutionExplorer},
+					integreatlyv1alpha1.ProductCloudResources:   {Name: integreatlyv1alpha1.ProductCloudResources},
+					integreatlyv1alpha1.ProductRHSSO:            {Name: integreatlyv1alpha1.ProductRHSSO},
+					integreatlyv1alpha1.ProductAMQStreams:       {Name: integreatlyv1alpha1.ProductAMQStreams},
+					integreatlyv1alpha1.ProductSolutionExplorer: {Name: integreatlyv1alpha1.ProductSolutionExplorer},
 				},
 			},
 			{
