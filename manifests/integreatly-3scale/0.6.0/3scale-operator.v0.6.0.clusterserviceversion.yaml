@@ -318,7 +318,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_1306fe0a713725f131135ba9eeef0008feb5cc419cb040768b7b3010d8eea710
+    containerImage: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_5b606ef1c9134329f9f482df06f354ef8e7acb7fd5aef1dc9e32bab6feae7eb6
     createdAt: "2019-05-30T22:40:00Z"
     description: 3scale Operator to provision 3scale and publish/manage API
     repository: https://github.com/3scale/3scale-operator
@@ -478,7 +478,7 @@ spec:
                   value: quay.io/integreatly/delorean:rhscl-postgresql-10-rhel7_de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
                 - name: OC_CLI_IMAGE
                   value: quay.io/integreatly/delorean:openshift4-ose-cli_353036a27e810730ce35d699dcf09141af9f8ae9e365116755016d864475c2c4
-                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_1306fe0a713725f131135ba9eeef0008feb5cc419cb040768b7b3010d8eea710
+                image: quay.io/integreatly/delorean:3scale-amp2-3scale-rhel7-operator_5b606ef1c9134329f9f482df06f354ef8e7acb7fd5aef1dc9e32bab6feae7eb6
                 name: 3scale-operator
                 resources: {}
               serviceAccountName: 3scale-operator
