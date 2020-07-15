@@ -66,7 +66,7 @@ var (
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
 	VersionMonitoring          ProductVersion = "1.2.1"
-	Version3Scale              ProductVersion = "2.8"
+	Version3Scale              ProductVersion = "2.9"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.20.0"
 	VersionFuseOnline          ProductVersion = "7.6"
@@ -96,7 +96,7 @@ var (
 	OperatorVersionRHSSOUser        OperatorVersion = "10.0.0"
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
-	OperatorVersion3Scale              OperatorVersion = "0.5.4"
+	OperatorVersion3Scale              OperatorVersion = "0.6.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.20.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
