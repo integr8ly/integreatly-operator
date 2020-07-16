@@ -147,7 +147,7 @@ func CreatePostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 	alertName := postgresCRName + "PostgresResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{productName='%s',resourceID='%s',statusPhase='failed}", croResources.DefaultPostgresDeletionMetricName, cr.Name, productName),
+		fmt.Sprintf("%s{productName='%s',resourceID='%s',statusPhase='failed'}", croResources.DefaultPostgresDeletionMetricName, productName, cr.Name),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Postgres instance has been failing longer than %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
@@ -227,7 +227,7 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	alertName := redisCRName + "RedisResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{productName='%s',resourceID='%s',statusPhase='failed}", croResources.DefaultRedisDeletionMetricName, cr.Name, productName),
+		fmt.Sprintf("%s{productName='%s',resourceID='%s',statusPhase='failed'}", croResources.DefaultRedisDeletionMetricName, productName, cr.Name),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Redus instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
