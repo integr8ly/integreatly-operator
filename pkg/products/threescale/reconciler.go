@@ -827,7 +827,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create the prometheus deletion rule
-	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
+	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for threescale: %s", err)
 	}
 
