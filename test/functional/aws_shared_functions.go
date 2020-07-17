@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	awsCredsNamespace  = "redhat-rhmi-operator"
-	awsCredsSecretName = "cloud-resources-aws-credentials"
+	awsCredsNamespace  = "kube-system"
+	awsCredsSecretName = "aws-creds"
 )
 
 var (
@@ -41,6 +41,12 @@ var (
 	expectedRedis = []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, common.InstallationName),
 		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, common.InstallationName),
+	}
+
+	// expected blob storage
+	expectedBlobStorage = []string{
+		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, common.InstallationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, common.InstallationName),
 	}
 )
 
@@ -104,6 +110,32 @@ func GetRDSResourceIDs(ctx context.Context, client client.Client) ([]string, []s
 	return foundResourceIDs, foundErrors
 }
 
+func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+	var foundErrors []string
+	var foundResourceIDs []string
+
+	for _, r := range expectedBlobStorage {
+		// get rds cr
+		blobStorage := &crov1.BlobStorage{}
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHMIOperatorNamespace, Name: r}, blobStorage); err != nil {
+			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s blobStorage cr : %v", r, err))
+		}
+		// ensure phase is completed
+		if blobStorage.Status.Phase != croTypes.PhaseComplete {
+			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s blobStorage not ready with phase: %s, message: %s", r, blobStorage.Status.Phase, blobStorage.Status.Message))
+		}
+		// return resource id
+		resourceID, err := getCROAnnotation(blobStorage)
+		if err != nil {
+			foundErrors = append(foundErrors, fmt.Sprintf("\n%s blobStorage cr does not contain a resource id annotation: %v", r, err))
+		}
+		// populate the array
+		foundResourceIDs = append(foundResourceIDs, resourceID)
+	}
+
+	return foundResourceIDs, foundErrors
+}
+
 // creates a session to be used in getting an api instance for aws
 func CreateAWSSession(ctx context.Context, client client.Client) (*session.Session, error) {
 	//retrieve aws credentials for creating an aws session
@@ -159,6 +191,7 @@ func getAWSCredentials(ctx context.Context, client client.Client) (string, strin
 	}
 	awsAccessKeyID := string(secret.Data["aws_access_key_id"])
 	awsSecretAccessKey := string(secret.Data["aws_secret_access_key"])
+
 	if awsAccessKeyID == "" && awsSecretAccessKey == "" {
 		return "", "", errors.New("aws credentials secret can't be empty")
 	}
