@@ -457,11 +457,11 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_6f8a7f5b1f4360d555a60eb493d40f7f44117db6d1a641ebda736a33bec5f690
+                  value: quay.io/integreatly/delorean:3scale-amp2-backend-rhel7_c5189c2f9916cf9a714c1fc19cff18e382c5db42ad9c8c64975efbb86c9dbe0d
                 - name: APICAST_IMAGE
                   value: quay.io/integreatly/delorean:3scale-amp2-apicast-gateway-rhel8_a2988a4807f00072d1b2ee0f4ff74161cc993022efb4a562ad52e4f1dce4e8c8
                 - name: SYSTEM_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_adeae1ec86207eed05ff1c23e6eec9b7cd4f3d072ddf278d3ff902cf70c45ecf
+                  value: quay.io/integreatly/delorean:3scale-amp2-system-rhel7_8d647510ca480ba585677be55e980be2041396a04116fcb6137f593c7339f752
                 - name: ZYNC_IMAGE
                   value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_2c5b2c3bc75488b95f7ee7df790f243d7cd2cd54f99bf08423976efcd8a89159
                 - name: SYSTEM_MEMCACHED_IMAGE
@@ -703,9 +703,9 @@ spec:
   relatedImages:
   - image: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:a2988a4807f00072d1b2ee0f4ff74161cc993022efb4a562ad52e4f1dce4e8c8
     name: apicast-gateway-rhel8
-  - image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:6f8a7f5b1f4360d555a60eb493d40f7f44117db6d1a641ebda736a33bec5f690
+  - image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:c5189c2f9916cf9a714c1fc19cff18e382c5db42ad9c8c64975efbb86c9dbe0d
     name: backend-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:adeae1ec86207eed05ff1c23e6eec9b7cd4f3d072ddf278d3ff902cf70c45ecf
+  - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:8d647510ca480ba585677be55e980be2041396a04116fcb6137f593c7339f752
     name: system-rhel7
   - image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:2c5b2c3bc75488b95f7ee7df790f243d7cd2cd54f99bf08423976efcd8a89159
     name: zync-rhel7
