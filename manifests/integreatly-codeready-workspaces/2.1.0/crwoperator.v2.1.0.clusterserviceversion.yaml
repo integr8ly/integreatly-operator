@@ -16,7 +16,7 @@ metadata:
                 "cheFlavor":"codeready",
                 "devfileRegistryImage": "",
                 "pluginRegistryImage": "",
-                "tlsSupport": false,
+                "tlsSupport": true,
                 "selfSignedCert": false
              },
              "database": {
@@ -295,7 +295,7 @@ spec:
                 - name: IMAGE_default_plugin_registry
                   value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_8dfc6464612e2c88a173ddd5161e09301dc55d8a9578bb031b8d5bad31b5256e
                 - name: IMAGE_default_devfile_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_0ec94bec471746a96689b8413d0ae51191fca6122694106b12775267af2d0055
+                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_2349a8e66e0a0437b6eb1112824f58551eaf0d9461673ce518ba1f0652326938
                 - name: IMAGE_default_pvc_jobs
                   value: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
                 - name: IMAGE_default_postgres
@@ -423,7 +423,7 @@ spec:
     name: server-rhel8
   - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:8dfc6464612e2c88a173ddd5161e09301dc55d8a9578bb031b8d5bad31b5256e
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:0ec94bec471746a96689b8413d0ae51191fca6122694106b12775267af2d0055
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:2349a8e66e0a0437b6eb1112824f58551eaf0d9461673ce518ba1f0652326938
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
     name: ubi8-minimal
@@ -459,7 +459,7 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:79ea94cb8f576b9744e07c1864ca48be22ed4b73ca617b43b1bd000fe4fb1fd7
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:c7d0c2ac86725ecca695ef567b10c5b4d97ee2b6b15521df20a1ae70dbdb1966
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:33e0e12e23f61a77a4daa963e30151f926759fc9f586fe7c91436ad4db6ae20d
     name: theia-endpoint-rhel8
   - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:f955def1601dfd84da22d1a7bdff3606a0de314e1ff105281611296305b39db1
     name: theia-rhel8
