@@ -293,9 +293,9 @@ spec:
                 - name: IMAGE_default_che_server
                   value: quay.io/integreatly/delorean:codeready-workspaces-server-rhel8_4b690f9769ba255d3515afc6f9190bf5a0373fc85f0e47b4932fa4c156470e3d
                 - name: IMAGE_default_plugin_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_2561ae405c9b9268433f2562dcb056866c72c165a637b3579b7910be7f008f38
+                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_ee63cb68eee691258e4c28731bc4ce85502313af9d6c5ace9543b482bcb2ea2d
                 - name: IMAGE_default_devfile_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_44b8937a4d3d16a71b7265fa990484fbcb60053af528940d3834cb00b607dc0d
+                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_dd00704ef06395b5ed02bd67c7cbee8fc6d4e627bdf4f04612774094c11505cd
                 - name: IMAGE_default_pvc_jobs
                   value: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
                 - name: IMAGE_default_postgres
@@ -421,9 +421,9 @@ spec:
     name: crw-2-rhel8-operator
   - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:4b690f9769ba255d3515afc6f9190bf5a0373fc85f0e47b4932fa4c156470e3d
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:2561ae405c9b9268433f2562dcb056866c72c165a637b3579b7910be7f008f38
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:ee63cb68eee691258e4c28731bc4ce85502313af9d6c5ace9543b482bcb2ea2d
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:44b8937a4d3d16a71b7265fa990484fbcb60053af528940d3834cb00b607dc0d
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:dd00704ef06395b5ed02bd67c7cbee8fc6d4e627bdf4f04612774094c11505cd
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
     name: ubi8-minimal
