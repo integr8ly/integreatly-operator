@@ -437,49 +437,5 @@ spec:
     name: pluginbroker-artifacts-rhel8
   - image: registry.redhat.io/codeready-workspaces/jwtproxy-rhel8@sha256:90d6772a7602cf2eecaa766998cea7c5b6fac319b1ae01145fa7be1741c11ebe
     name: jwtproxy-rhel8
-  - image: registry.redhat.io/codeready-workspaces/machineexec-rhel8@sha256:efa0f210eef139c3b06db1cd404fcad79789250d04668fed41be39bfb56f75ae
-    name: machineexec-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:21cf498dbfb24cda991cd8612130f54b06b9281823df8a7a0d437f84d3292751
-    name: plugin-java11-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-kubernetes-rhel8@sha256:47b4d77ef4fcd3667dd9c83fc07fbbcc20e5ed4189fd9372af511914cc0fc266
-    name: plugin-kubernetes-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-openshift-rhel8@sha256:f52fdb29e18f2a1f4eda4c99b0837c65eaffbae331798508a0006499daaef51e
-    name: plugin-openshift-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-cpp-rhel8@sha256:05f54872af92971083927d90a36a47c4a5ffbb6d4774ef8a9aceac50b1c7caaf
-    name: stacks-cpp-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-dotnet-rhel8@sha256:32c288c3f18b242ad4dc53a86f61d55e2907b63a50667b2725204b5d35699e49
-    name: stacks-dotnet-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-golang-rhel8@sha256:f46f852c9cb50856b30161377b5fc7c5b2d388df5e68204304b654d244dc4f96
-    name: stacks-golang-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-java-rhel8@sha256:db19cfebe33f0fbc1307d95a1700366fcb5fc869486fda6f0023bc059474c7c5
-    name: stacks-java-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-node-rhel8@sha256:880beabedb2f749f83d8d5a78ac9eca8276f6425cd81b8a456532417e3661471
-    name: stacks-node-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-php-rhel8@sha256:6e5e0ffaf8794795547bd859ff201f86ba7b744434d58866e401a67f7f279c36
-    name: stacks-php-rhel8
-  - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:79ea94cb8f576b9744e07c1864ca48be22ed4b73ca617b43b1bd000fe4fb1fd7
-    name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:5b6bb6d11f2072dfb7abc4bffe026b7573d992ad14dcd629f36176c8d38505b1
-    name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:03a1d7c76b3883a6e28ce804ae88121b3adc5e04b886db53bbccad122e57ae88
-    name: theia-rhel8
-  - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:21cf498dbfb24cda991cd8612130f54b06b9281823df8a7a0d437f84d3292751
-    name: plugin-java11-rhel8-1
-  - image: registry.redhat.io/codeready-workspaces/stacks-cpp-rhel8@sha256:05f54872af92971083927d90a36a47c4a5ffbb6d4774ef8a9aceac50b1c7caaf
-    name: stacks-cpp-rhel8-2
-  - image: registry.redhat.io/codeready-workspaces/stacks-dotnet-rhel8@sha256:32c288c3f18b242ad4dc53a86f61d55e2907b63a50667b2725204b5d35699e49
-    name: stacks-dotnet-rhel8-3
-  - image: registry.redhat.io/codeready-workspaces/stacks-golang-rhel8@sha256:f46f852c9cb50856b30161377b5fc7c5b2d388df5e68204304b654d244dc4f96
-    name: stacks-golang-rhel8-4
-  - image: registry.redhat.io/codeready-workspaces/stacks-java-rhel8@sha256:db19cfebe33f0fbc1307d95a1700366fcb5fc869486fda6f0023bc059474c7c5
-    name: stacks-java-rhel8-5
-  - image: registry.redhat.io/codeready-workspaces/stacks-node-rhel8@sha256:880beabedb2f749f83d8d5a78ac9eca8276f6425cd81b8a456532417e3661471
-    name: stacks-node-rhel8-6
-  - image: registry.redhat.io/codeready-workspaces/stacks-php-rhel8@sha256:6e5e0ffaf8794795547bd859ff201f86ba7b744434d58866e401a67f7f279c36
-    name: stacks-php-rhel8-7
-  - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:79ea94cb8f576b9744e07c1864ca48be22ed4b73ca617b43b1bd000fe4fb1fd7
-    name: stacks-python-rhel8-8
-  - image: registry.redhat.io/rhscl/mongodb-34-rhel7@sha256:16c5bb07cf9a3a758d2e9a9e0cc6913ec32cb3cb7a2178bc3a44b3cd9e903213
-    name: mongodb-34-rhel7
   replaces: crwoperator.v2.1.0
   version: 2.1.0
