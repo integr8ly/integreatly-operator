@@ -291,11 +291,11 @@ spec:
                 - name: CHE_VERSION
                   value: "2.1"
                 - name: IMAGE_default_che_server
-                  value: quay.io/integreatly/delorean:codeready-workspaces-server-rhel8_58f33e52825b73734dc34ee9404a528a493f04e37f0f01822d9c982ea298813f
+                  value: quay.io/integreatly/delorean:codeready-workspaces-server-rhel8_f5be4915ae04d3ba7c0a13769be23b58901525991819915796f0cbfd9774188d
                 - name: IMAGE_default_plugin_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_524a8361e061453f4f11fef6971779d924ddd8f750daf22438c194877e59b272
+                  value: quay.io/integreatly/delorean:codeready-workspaces-pluginregistry-rhel8_6359dfe12f8c05e23f8a1063fb84036e1f9eba90fafb908fc5ac7bbaa72893cb
                 - name: IMAGE_default_devfile_registry
-                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_e2eeac055126c7ca48c180a40f1676bd14785a54e0bf7d6874dfad60c17d7266
+                  value: quay.io/integreatly/delorean:codeready-workspaces-devfileregistry-rhel8_9d80f78ea668a3034a500f6eb7899f7e498beabf70d8561e67a07da6152d3c96
                 - name: IMAGE_default_pvc_jobs
                   value: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
                 - name: IMAGE_default_postgres
@@ -419,11 +419,11 @@ spec:
   relatedImages:
   - image: registry.redhat.io/codeready-workspaces/crw-2-rhel8-operator@sha256:bab400c42d0ef6faa15aece196836aad128338ac440d95e9594112a47e624066
     name: crw-2-rhel8-operator
-  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:58f33e52825b73734dc34ee9404a528a493f04e37f0f01822d9c982ea298813f
+  - image: registry.redhat.io/codeready-workspaces/server-rhel8@sha256:f5be4915ae04d3ba7c0a13769be23b58901525991819915796f0cbfd9774188d
     name: server-rhel8
-  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:524a8361e061453f4f11fef6971779d924ddd8f750daf22438c194877e59b272
+  - image: registry.redhat.io/codeready-workspaces/pluginregistry-rhel8@sha256:6359dfe12f8c05e23f8a1063fb84036e1f9eba90fafb908fc5ac7bbaa72893cb
     name: codeready-workspaces-pluginregistry-rhel8
-  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:e2eeac055126c7ca48c180a40f1676bd14785a54e0bf7d6874dfad60c17d7266
+  - image: registry.redhat.io/codeready-workspaces/devfileregistry-rhel8@sha256:9d80f78ea668a3034a500f6eb7899f7e498beabf70d8561e67a07da6152d3c96
     name: codeready-workspaces-devfileregistry-rhel8
   - image: registry.access.redhat.com/ubi8-minimal@sha256:9285da611437622492f9ef4229877efe302589f1401bbd4052e9bb261b3d4387
     name: ubi8-minimal
@@ -459,9 +459,9 @@ spec:
     name: stacks-php-rhel8
   - image: registry.redhat.io/codeready-workspaces/stacks-python-rhel8@sha256:79ea94cb8f576b9744e07c1864ca48be22ed4b73ca617b43b1bd000fe4fb1fd7
     name: stacks-python-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:5b6bb6d11f2072dfb7abc4bffe026b7573d992ad14dcd629f36176c8d38505b1
+  - image: registry.redhat.io/codeready-workspaces/theia-endpoint-rhel8@sha256:5866f074bad82800a52fee0fc024f76aa890474800f7225b3a685b5aed755e17
     name: theia-endpoint-rhel8
-  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:03a1d7c76b3883a6e28ce804ae88121b3adc5e04b886db53bbccad122e57ae88
+  - image: registry.redhat.io/codeready-workspaces/theia-rhel8@sha256:98e71f6976b7202d4f10ef890993aaa1afd6ba10621a6a54b7902378c25051b2
     name: theia-rhel8
   - image: registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:21cf498dbfb24cda991cd8612130f54b06b9281823df8a7a0d437f84d3292751
     name: plugin-java11-rhel8-1
