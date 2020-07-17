@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/rhmiConfigs"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
 	"github.com/integr8ly/integreatly-operator/version"
@@ -69,13 +70,16 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return k8sclient.New(restConfig, k8sclient.Options{})
 	})
 
+	csvLocator := csvlocator.NewCachedCSVLocator(&csvlocator.ConfigMapCSVLocator{})
+
 	return &ReconcileSubscription{
 		mgr:                 mgr,
-		client:              mgr.GetClient(),
+		client:              client,
 		scheme:              mgr.GetScheme(),
 		operatorNamespace:   operatorNs,
 		catalogSourceClient: catalogSourceClient,
 		webbappNotifier:     webappNotifierClient,
+		csvLocator:          csvLocator,
 	}, nil
 }
 
@@ -111,6 +115,7 @@ type ReconcileSubscription struct {
 	mgr                 manager.Manager
 	catalogSourceClient catalogsourceClient.CatalogSourceClientInterface
 	webbappNotifier     webapp.UpgradeNotifier
+	csvLocator          csvlocator.CSVLocator
 }
 
 // Reconcile will ensure that that Subscription object(s) have Manual approval for the upgrades
@@ -178,7 +183,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		return reconcile.Result{}, err
 	}
 
-	latestRHMICSV, err := rhmiConfigs.GetCSV(latestRHMIInstallPlan)
+	latestRHMICSV, err := r.csvLocator.GetCSV(ctx, r.client, latestRHMIInstallPlan)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -279,7 +284,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	if !isServiceAffecting || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
 
-		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, installation, latestRHMIInstallPlan, eventRecorder)
+		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, installation, latestRHMIInstallPlan, r.csvLocator, eventRecorder)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

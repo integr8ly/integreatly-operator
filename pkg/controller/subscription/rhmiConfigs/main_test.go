@@ -11,6 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -700,7 +701,7 @@ func TestApproveUpgrade(t *testing.T) {
 					t.Fatalf("Expected scheduled field to be empty")
 				}
 				if rhmi.Status.ToVersion != version.Version {
-					t.Fatalf("Expected ToVersion to be version.version")
+					t.Fatalf("Expected ToVersion to be version.version, got %s", rhmi.Status.ToVersion)
 				}
 			},
 		},
@@ -708,7 +709,7 @@ func TestApproveUpgrade(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RHMI, scenario.RhmiInstallPlan, scenario.EventRecorder)
+			ApproveUpgrade(context.TODO(), scenario.FakeClient, scenario.RHMI, scenario.RhmiInstallPlan, &csvlocator.EmbeddedCSVLocator{}, scenario.EventRecorder)
 			retrievedInstallPlan := &olmv1alpha1.InstallPlan{}
 			err := scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RhmiInstallPlan.Name, Namespace: scenario.RhmiInstallPlan.Namespace}, retrievedInstallPlan)
 			rhmi := &integreatlyv1alpha1.RHMI{}

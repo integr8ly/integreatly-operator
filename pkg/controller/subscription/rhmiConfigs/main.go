@@ -2,12 +2,12 @@ package rhmiConfigs
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
 	"github.com/sirupsen/logrus"
 
@@ -47,22 +47,6 @@ func GetLatestInstallPlan(ctx context.Context, subscription *olmv1alpha1.Subscri
 	}
 
 	return latestInstallPlan, nil
-}
-
-func GetCSV(installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
-	csv := &olmv1alpha1.ClusterServiceVersion{}
-
-	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
-	for _, installPlanResources := range installPlan.Status.Plan {
-		if installPlanResources.Resource.Kind == olmv1alpha1.ClusterServiceVersionKind {
-			err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &csv)
-			if err != nil {
-				return csv, fmt.Errorf("failed to unmarshal json: %w", err)
-			}
-		}
-	}
-
-	return csv, nil
 }
 
 func DeleteInstallPlan(ctx context.Context, installPlan *olmv1alpha1.InstallPlan, client k8sclient.Client) error {
@@ -115,7 +99,7 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 	waitForMaintenance := *config.Spec.Upgrade.WaitForMaintenance
 
 	upgradeSchedule := installplan.ObjectMeta.CreationTimestamp.Time.
-		Add(daysDuration(notBeforeDays))
+		Add(daysDuration(notBeforeDays)).UTC()
 
 	if waitForMaintenance {
 		var err error
@@ -224,7 +208,7 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, csvLocator csvlocator.CSVLocator, eventRecorder record.EventRecorder) error {
 
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
@@ -239,7 +223,7 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *
 		return err
 	}
 
-	csv, err := GetCSV(installPlan)
+	csv, err := csvLocator.GetCSV(ctx, client, installPlan)
 	if err != nil {
 		return err
 	}
