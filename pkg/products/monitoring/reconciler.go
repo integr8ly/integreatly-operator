@@ -788,10 +788,8 @@ func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8scli
 
 	if len(pagerdutySecret.Data["PAGERDUTY_KEY"]) != 0 {
 		secret = string(pagerdutySecret.Data["PAGERDUTY_KEY"])
-
 	} else if len(pagerdutySecret.Data["serviceKey"]) != 0 {
 		secret = string(pagerdutySecret.Data["serviceKey"])
-
 	}
 
 	if secret == "" {
