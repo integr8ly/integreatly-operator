@@ -25,6 +25,8 @@ Namespaces for manual deletion:
 
 1. By default, this test is not run as part of the functional test suite. To run the test as part of the functional test suite, run the following `makefile` command from the RHMI operator repo against a target cluster:
 
+- ***Note:*** *to speed up this test case, comment out all but destructive tests from the `test/common/tests.go` directory.*
+
    ```
    DESTRUCTIVE=true make test/functional
    ```
@@ -33,6 +35,7 @@ Namespaces for manual deletion:
    1. delete namespace "`oc delete namespace <namespace>`"
    2. check namespace is recreated (e.g. "`oc describe project <namespace>`" / attribute 'Created')
    3. check product is in `Complete` status in RHMI CR
+   - If the status is still showing as `in progress` reffer to the ***Bug Notice*** above 
 
 **Note finalizers:**
 
