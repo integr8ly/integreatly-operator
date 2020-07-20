@@ -635,13 +635,10 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
 	}
 
-	// handle pagerduty credentials
-	pagerdutySecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret, Namespace: rhmiOperatorNs}, pagerdutySecret); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
-	}
-	if len(pagerdutySecret.Data["serviceKey"]) == 0 {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("serviceKey is undefined in pager duty secret")
+	//Get pagerduty credentials
+	pagerDutySecret, err := r.getPagerDutySecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	// handle dead mans snitch credentials
@@ -668,7 +665,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"SMTPUsername":        string(smtpSecret.Data["username"]),
 		"SMTPPassword":        string(smtpSecret.Data["password"]),
 		"SMTPToAddress":       smtpToAddress,
-		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
+		"PagerDutyServiceKey": pagerDutySecret,
 		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
 	})
 	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -775,4 +772,31 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		catalogSourceReconciler,
 	)
 
+}
+
+func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
+
+	var secret string
+
+	pagerdutySecret := &corev1.Secret{}
+	err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret,
+		Namespace: r.installation.Namespace}, pagerdutySecret)
+
+	if err != nil {
+		return "", fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
+	}
+
+	if len(pagerdutySecret.Data["PAGERDUTY_KEY"]) != 0 {
+		secret = string(pagerdutySecret.Data["PAGERDUTY_KEY"])
+
+	} else if len(pagerdutySecret.Data["serviceKey"]) != 0 {
+		secret = string(pagerdutySecret.Data["serviceKey"])
+
+	}
+
+	if secret == "" {
+		return "", fmt.Errorf("secret key is undefined in pager duty secret")
+	}
+
+	return secret, nil
 }
