@@ -60,7 +60,7 @@ var (
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionAMQOnline           ProductVersion = "1.4"
 	VersionApicurioRegistry    ProductVersion = "1.2.3.final"
-	VersionApicurito           ProductVersion = "7.6"
+	VersionApicurito           ProductVersion = "7.7"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
@@ -100,7 +100,7 @@ var (
 	OperatorVersionCloudResources      OperatorVersion = "0.18.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
-	OperatorVersionApicurito           OperatorVersion = "1.6.0"
+	OperatorVersionApicurito           OperatorVersion = "1.7.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 
 	// Event reasons to be used when emitting events
