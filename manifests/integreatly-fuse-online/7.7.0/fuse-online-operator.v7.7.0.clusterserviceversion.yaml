@@ -23,7 +23,7 @@ metadata:
     capabilities: Seamless Upgrades
     categories: Integration & Delivery
     certified: "false"
-    containerImage: quay.io/integreatly/delorean:fuse7-fuse-online-operator_latest
+    containerImage: registry.redhat.io/fuse7/fuse-online-operator
     createdAt: "2020-06-04T16:12:00Z"
     description: Manages the installation of Fuse Online, a flexible and customizable
       open source platform that provides core integration capabilities as a service.
@@ -112,7 +112,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: syndesis-operator
-                image: quay.io/integreatly/delorean:fuse7-fuse-online-operator_1.7
+                image: registry.redhat.io/fuse7/fuse-online-operator:1.7
                 imagePullPolicy: Always
                 name: syndesis-operator
                 ports:
