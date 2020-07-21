@@ -67,8 +67,8 @@ var (
 	VersionCloudResources      ProductVersion = "0.17.0"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "7.3"
-	VersionRHSSOUser           ProductVersion = "7.3"
+	VersionRHSSO               ProductVersion = "7.4"
+	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
 	VersionSolutionExplorer    ProductVersion = "2.26.3"
 
@@ -86,10 +86,11 @@ var (
 	// Operator image tags
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline           OperatorVersion = "1.4"
+<<<<<<< HEAD
 	OperatorVersionMonitoring          OperatorVersion = "1.2.1"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.60"
-	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
-	OperatorVersionRHSSOUser           OperatorVersion = "9.0.2"
+	OperatorVersionRHSSO               OperatorVersion = "10.0.0"
+	OperatorVersionRHSSOUser           OperatorVersion = "10.0.0"
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.5.4"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
