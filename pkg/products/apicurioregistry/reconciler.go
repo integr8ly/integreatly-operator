@@ -3,8 +3,12 @@ package apicurioregistry
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
+	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -18,6 +22,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -133,12 +138,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileStorage(ctx, client)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile storage", err)
-		return phase, err
-	}
-
 	phase, err = r.reconcileCustomResource(ctx, installation, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile custom resource", err)
@@ -167,7 +166,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileStorage(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileAMQStreamsStorage(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	amqStreams, err := r.ConfigManager.ReadAMQStreams()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read AMQ Streams config: %s", err)
@@ -211,11 +210,6 @@ func createKafkaTopic(ctx context.Context, client k8sclient.Client, name string,
 
 // ReconcileCustomResource creates/updates the ApicurioRegistry custom resource
 func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	amqStreams, err := r.ConfigManager.ReadAMQStreams()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
 	apicurioRegistry := &apicurioregistry.ApicurioRegistry{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: r.Config.GetNamespace(),
@@ -223,16 +217,93 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, installation *
 		},
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, client, apicurioRegistry, func() error {
-		apicurioRegistry.Spec.Configuration.Persistence = "streams"
-		apicurioRegistry.Spec.Configuration.Streams.ApplicationId = string(r.Config.GetProductName())
-		apicurioRegistry.Spec.Configuration.Streams.BootstrapServers = amqStreams.GetHost()
+	// TODO make the datasource configurable
+	return r.reconcileApicurioRegistryPostgreSQLBasedCustomResource(ctx, apicurioRegistry, installation, client)
+}
 
-		if apicurioRegistry.Spec.Deployment.Replicas < replicas {
-			apicurioRegistry.Spec.Deployment.Replicas = replicas
+func (r *Reconciler) reconcileApicurioRegistryStreamsBasedCustomResource(ctx context.Context, cr *apicurioregistry.ApicurioRegistry, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.reconcileAMQStreamsStorage(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile storage", err)
+		return phase, err
+	}
+
+	amqStreams, err := r.ConfigManager.ReadAMQStreams()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+		cr.Spec.Configuration.Persistence = "streams"
+		cr.Spec.Configuration.Streams.ApplicationId = string(r.Config.GetProductName())
+		cr.Spec.Configuration.Streams.BootstrapServers = amqStreams.GetHost()
+
+		if cr.Spec.Deployment.Replicas < replicas {
+			cr.Spec.Deployment.Replicas = replicas
 		}
 
-		owner.AddIntegreatlyOwnerAnnotations(apicurioRegistry, installation)
+		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile ApicurioRegistry resource: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileApicurioRegistryPostgreSQLBasedCustomResource(ctx context.Context, cr *apicurioregistry.ApicurioRegistry, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	phase, err := r.reconcileCROPostgreSQL(ctx, client, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, err
+	}
+
+	croPostgreSQL := &crov1alpha1.Postgres{}
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: r.croPostgreSQLName(installation), Namespace: installation.Namespace}, croPostgreSQL)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get PostgreSQL CRO '%s/%s': %w", r.croPostgreSQLName(installation), installation.Namespace, err)
+	}
+
+	// get the secret containing CR PostgreSQL credentials
+	croPostgreSQLCredSec := &corev1.Secret{}
+	croPostgreSQLCredObjKey := k8sclient.ObjectKey{Name: croPostgreSQL.Status.SecretRef.Name, Namespace: croPostgreSQL.Status.SecretRef.Namespace}
+	err = client.Get(ctx, croPostgreSQLCredObjKey, croPostgreSQLCredSec)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get postgres credential secret '%s/%s': %w", croPostgreSQLCredObjKey.Name, croPostgreSQLCredObjKey.Namespace, err)
+	}
+
+	// Secret field names have been taken from cloud-resources-operator postgresql
+	// provider type
+	croPostgreSQLHost := string(croPostgreSQLCredSec.Data["host"])
+	croPostgreSQLPort := string(croPostgreSQLCredSec.Data["port"])
+	croPostgreSQLDatabaseName := string(croPostgreSQLCredSec.Data["database"])
+	croPostgreSQLURLStr := croPostgreSQLHost
+	if croPostgreSQLPort != "" {
+		croPostgreSQLURLStr = fmt.Sprintf("%s:%s", croPostgreSQLURLStr, croPostgreSQLPort)
+	}
+	if croPostgreSQLDatabaseName != "" {
+		croPostgreSQLURLStr = fmt.Sprintf("%s/%s", croPostgreSQLURLStr, croPostgreSQLDatabaseName)
+	}
+
+	croPostgreSQLURL, err := url.Parse(croPostgreSQLURLStr)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to parse PostgreSQL URL from postgresql credential secret contents: %w", err)
+	}
+
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+		cr.Spec.Configuration.Persistence = "jpa"
+		// Apicurio registry Datasource URL requires the specification of the driver
+		// and the scheme of the connection in the URL itself. CRO does not provide
+		// those so we prepend them here
+		cr.Spec.Configuration.DataSource.Url = fmt.Sprintf("jdbc:postgresql://%s", croPostgreSQLURL.String())
+		cr.Spec.Configuration.DataSource.UserName = string(croPostgreSQLCredSec.Data["username"])
+		cr.Spec.Configuration.DataSource.Password = string(croPostgreSQLCredSec.Data["password"])
+
+		if cr.Spec.Deployment.Replicas < replicas {
+			cr.Spec.Deployment.Replicas = replicas
+		}
+
+		owner.AddIntegreatlyOwnerAnnotations(cr, installation)
 		return nil
 	})
 	if err != nil {
@@ -298,4 +369,60 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		serverClient,
 		catalogSourceReconciler,
 	)
+}
+
+func (r *Reconciler) croPostgreSQLName(installation *integreatlyv1alpha1.RHMI) string {
+	return fmt.Sprintf("%s%s", constants.ApicurioRegistryPostgresPrefix, installation.Name)
+}
+
+func (r *Reconciler) reconcileCROPostgreSQL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	installationNamespace := installation.Namespace
+
+	// setup postgres cr for the cloud resource operator
+	// this will be used by the cloud resources operator to provision a postgres instance
+	logrus.Info("Creating postgres instance")
+	postgresName := r.croPostgreSQLName(installation)
+	postgreSQLSecret := postgresName
+	postgres, err := croUtil.ReconcilePostgres(ctx,
+		serverClient, defaultInstallationNamespace,
+		installation.Spec.Type, croUtil.TierProduction, postgresName,
+		installationNamespace, postgreSQLSecret, installationNamespace,
+		func(cr metav1.Object) error {
+			owner.AddIntegreatlyOwnerAnnotations(cr, installation)
+			return nil
+		},
+	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
+	}
+
+	// Create a PrometheusRule alert to watch for apicurio registry's PostgreSQL CRO state
+	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+	}
+
+	// wait for the postgres cr to reconcile
+	if postgres.Status.Phase != types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+	}
+
+	// create the prometheus availability rule
+	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
+	}
+	// create postgres connectivity alert
+	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

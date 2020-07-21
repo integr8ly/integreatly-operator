@@ -3,6 +3,7 @@ package apicurioregistry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
@@ -11,6 +12,7 @@ import (
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	projectv1 "github.com/openshift/api/project/v1"
@@ -19,6 +21,9 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
+	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,6 +56,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = coreosv1.SchemeBuilder.AddToScheme(scheme)
 	err = kafkav1alpha1.SchemeBuilder.AddToScheme(scheme)
 	err = apicurioregistry.SchemeBuilder.AddToScheme(scheme)
+	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
+	err = crov1.SchemeBuilder.AddToScheme(scheme)
 	projectv1.AddToScheme(scheme)
 	return scheme, err
 }
@@ -287,9 +294,36 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
+
+	croPostgresNameAndSecret := fmt.Sprintf("%s%s", constants.ApicurioRegistryPostgresPrefix, installation.Name)
+	//completed postgres that points at the secret croPostgresSecret
+	croPostgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      croPostgresNameAndSecret,
+			Namespace: defaultInstallationNamespace,
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      croPostgresNameAndSecret,
+				Namespace: defaultInstallationNamespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      croPostgresNameAndSecret,
+			Namespace: defaultInstallationNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
 	cr := newApicurioRegistry(replicas)
 
-	objs = append(objs, ns, operatorNS, installation, cr)
+	objs = append(objs, ns, operatorNS, installation, croPostgres, croPostgresSecret, cr)
 
 	cases := []struct {
 		Name           string
