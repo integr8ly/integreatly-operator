@@ -141,3 +141,73 @@ func (l *CachedCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, 
 
 	return csv, nil
 }
+
+type ConditionalCSVLocator struct {
+	Condition func(installPlan *olmv1alpha1.InstallPlan) CSVLocator
+}
+
+func NewConditionalCSVLocator(condition func(installPlan *olmv1alpha1.InstallPlan) CSVLocator) *ConditionalCSVLocator {
+	return &ConditionalCSVLocator{
+		Condition: condition,
+	}
+}
+
+var _ CSVLocator = &ConditionalCSVLocator{}
+
+func (l *ConditionalCSVLocator) GetCSV(ctx context.Context, client k8sclient.Client, installPlan *olmv1alpha1.InstallPlan) (*olmv1alpha1.ClusterServiceVersion, error) {
+	locator := l.Condition(installPlan)
+	if locator == nil {
+		return nil, fmt.Errorf("no csvlocator found for installplan %s", installPlan.Name)
+	}
+
+	return locator.GetCSV(ctx, client, installPlan)
+}
+
+func SwitchLocators(conditions ...func(*olmv1alpha1.InstallPlan) CSVLocator) func(*olmv1alpha1.InstallPlan) CSVLocator {
+	return func(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
+		for _, condition := range conditions {
+			if locator := condition(installPlan); locator != nil {
+				return locator
+			}
+		}
+
+		return nil
+	}
+}
+
+func ForReference(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
+	for _, installPlanResources := range installPlan.Status.Plan {
+		if installPlanResources.Resource.Kind != olmv1alpha1.ClusterServiceVersionKind {
+			continue
+		}
+
+		// Get the reference to the ConfigMap that contains the CSV
+		ref := &unpackedBundleReference{}
+		err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &ref)
+		if err != nil || ref.Name == "" || ref.Namespace == "" {
+			return nil
+		}
+
+		return &ConfigMapCSVLocator{}
+	}
+
+	return nil
+}
+
+func ForEmbedded(installPlan *olmv1alpha1.InstallPlan) CSVLocator {
+	csv := &olmv1alpha1.ClusterServiceVersion{}
+
+	// The latest CSV is only represented in the new install plan while the upgrade is pending approval
+	for _, installPlanResources := range installPlan.Status.Plan {
+		if installPlanResources.Resource.Kind == olmv1alpha1.ClusterServiceVersionKind {
+			err := json.Unmarshal([]byte(installPlanResources.Resource.Manifest), &csv)
+			if err != nil || csv.Name == "" || csv.Namespace == "" {
+				return nil
+			}
+
+			return &EmbeddedCSVLocator{}
+		}
+	}
+
+	return nil
+}

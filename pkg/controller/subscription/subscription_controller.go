@@ -70,7 +70,12 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return k8sclient.New(restConfig, k8sclient.Options{})
 	})
 
-	csvLocator := csvlocator.NewCachedCSVLocator(&csvlocator.ConfigMapCSVLocator{})
+	csvLocator := csvlocator.NewCachedCSVLocator(csvlocator.NewConditionalCSVLocator(
+		csvlocator.SwitchLocators(
+			csvlocator.ForReference,
+			csvlocator.ForEmbedded,
+		),
+	))
 
 	return &ReconcileSubscription{
 		mgr:                 mgr,

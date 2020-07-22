@@ -181,6 +181,110 @@ func TestCachedCSVLocator(t *testing.T) {
 	}
 }
 
+func TestConditionalCSVLocator(t *testing.T) {
+	csv1 := `{"metadata":{"name":"test-csv-1","namespace":"test","creationTimestamp":null},"spec":{"install":{"strategy":""},"version":"1.0.0","customresourcedefinitions":{},"apiservicedefinitions":{},"displayName":"","provider":{}},"status":{"lastUpdateTime":null,"lastTransitionTime":null,"certsLastUpdated":null,"certsRotateAt":null}}`
+	csv2 := `
+apiVersion: v1alpha1
+kind: ClusterServiceVersion
+metadata:
+    creationTimestamp: null
+    name: test-csv-2
+    namespace: test
+spec:
+    apiservicedefinitions: {}
+    customresourcedefinitions: {}
+    displayName: ""
+    install:
+        strategy: ""
+        provider: {}
+    version: 1.0.0
+status:
+    certsLastUpdated: null
+    certsRotateAt: null
+    lastTransitionTime: null
+    lastUpdateTime: null`
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-cm",
+			Namespace: "test",
+		},
+		Data: map[string]string{
+			"csv.yaml": csv2,
+		},
+	}
+
+	configMapRef := &unpackedBundleReference{
+		Namespace: "test",
+		Name:      "test-cm",
+	}
+
+	configMapRefJSON, err := json.Marshal(configMapRef)
+	if err != nil {
+		t.Fatalf("failed to marshal config map reference: %v", err)
+	}
+
+	installPlan1 := &olmv1alpha1.InstallPlan{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-ip",
+			Namespace: "test",
+		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+						Manifest: csv1,
+					},
+				},
+			},
+		},
+	}
+
+	installPlan2 := &olmv1alpha1.InstallPlan{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-ip",
+			Namespace: "test",
+		},
+		Status: olmv1alpha1.InstallPlanStatus{
+			Plan: []*olmv1alpha1.Step{
+				{
+					Resource: olmv1alpha1.StepResource{
+						Kind:     olmv1alpha1.ClusterServiceVersionKind,
+						Manifest: string(configMapRefJSON),
+					},
+				},
+			},
+		},
+	}
+
+	client := fake.NewFakeClientWithScheme(buildScheme(), configMap)
+
+	locator := NewConditionalCSVLocator(
+		SwitchLocators(
+			ForReference,
+			ForEmbedded,
+		),
+	)
+
+	resultCSV1, err1 := locator.GetCSV(context.TODO(), client, installPlan1)
+	resultCSV2, err2 := locator.GetCSV(context.TODO(), client, installPlan2)
+
+	if err1 != nil {
+		t.Errorf("unexpected error when retrieving CSV 1: %v", err1)
+	}
+	if err2 != nil {
+		t.Errorf("unexpected error when retrieving CSV 2: %v", err2)
+	}
+
+	if resultCSV1.Name != "test-csv-1" {
+		t.Errorf("unexpected name for csv 1. Expected test-csv-1, got %s", resultCSV1.Name)
+	}
+	if resultCSV2.Name != "test-csv-2" {
+		t.Errorf("unexpected name for csv 2. Expected test-csv-2, got %s", resultCSV2.Name)
+	}
+}
+
 func assertCorrectCSV(t *testing.T, err error, csv *olmv1alpha1.ClusterServiceVersion) {
 	if err != nil {
 		t.Fatalf("no error expected, got %v", err)
