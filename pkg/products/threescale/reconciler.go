@@ -834,7 +834,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// create the prometheus free storage alert rules
 	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for codeready: %s", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for threescale: %s", err)
 	}
 
 	// get the secret containing redis credentials

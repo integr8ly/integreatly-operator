@@ -639,6 +639,20 @@ var expectedAWSRules = []alertsTestRule{
 			"Codeready-Postgres-RhmiPostgresResourceStatusPhasePending",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-postgres-storage-will-fill-in-4-hours.yaml",
+		Rules: []string{
+			"PostgresStorageWillFillIn4Hours",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-postgres-storage-will-fill-in-4-days.yaml",
+		Rules: []string{
+			"PostgresStorageWillFillIn4Days",
+		},
+	},
+
+
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {

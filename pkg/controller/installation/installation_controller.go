@@ -566,7 +566,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 			if exists, err := resources.Exists(context.TODO(), r.client, secret); err != nil {
 				return reconcile.Result{}, err
 			} else if !exists {
-				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secretName, installation.Namespace)
+				preflightMessage := fmt.Sprintf("Could not find %s secret in %s namespace", secret.Name, installation.Namespace)
 				logrus.Info(preflightMessage)
 				eventRecorder.Event(installation, "Warning", integreatlyv1alpha1.EventProcessingError, preflightMessage)
 
