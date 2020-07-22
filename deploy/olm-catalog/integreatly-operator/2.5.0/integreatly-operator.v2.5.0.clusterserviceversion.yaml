@@ -41,7 +41,7 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.5.0-rc2
+    containerImage: quay.io/integreatly/integreatly-operator:v2.5.0-rc3
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     support: RHMI
@@ -275,6 +275,12 @@ spec:
           - create
           - update
           - delete
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
         serviceAccountName: rhmi-operator
       deployments:
       - name: rhmi-operator
@@ -305,7 +311,7 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v2.5.0-rc2
+                image: quay.io/integreatly/integreatly-operator:v2.5.0-rc3
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
