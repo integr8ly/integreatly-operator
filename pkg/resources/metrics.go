@@ -23,6 +23,10 @@ import (
 const (
 	alertFor20Mins = "20m"
 	alertFor5Mins  = "5m"
+	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0
+	// once it is possible to update to that version
+	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
+	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
 )
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
@@ -147,7 +151,7 @@ func CreatePostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 	alertName := postgresCRName + "PostgresResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", croResources.DefaultPostgresDeletionMetricName, cr.Namespace, cr.Name, productName),
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultPostgresDeletionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Postgres instance has been failing longer than %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
@@ -227,7 +231,7 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	alertName := redisCRName + "RedisResourceDeletionStatusPhaseFailed"
 	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
-		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", croResources.DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Redus instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
