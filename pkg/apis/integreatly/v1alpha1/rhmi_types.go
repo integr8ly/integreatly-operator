@@ -63,12 +63,12 @@ var (
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
-	VersionFuseOnOpenshift     ProductVersion = "7.6"
+	VersionFuseOnOpenshift     ProductVersion = "7.7"
 	VersionMonitoring          ProductVersion = "1.2.1"
 	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.18.0"
-	VersionFuseOnline          ProductVersion = "7.6"
+	VersionFuseOnline          ProductVersion = "7.7"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.4"
 	VersionRHSSOUser           ProductVersion = "7.4"
@@ -79,8 +79,8 @@ var (
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
 	// The need for the below tag references is due to the nature of installing which is documented here: (for 7.6)
 	// https://access.redhat.com/documentation/en-us/red_hat_fuse/7.6/html-single/fuse_on_openshift_guide/index#install-fuse-on-openshift4
-	TagFuseOnOpenShiftCore        string = "application-templates-2.1.0.fuse-760043-redhat-00001"
-	TagFuseOnOpenShiftSpringBoot2 string = "application-templates-2.1.0.fuse-sb2-760039-redhat-00001"
+	TagFuseOnOpenShiftCore        string = "application-templates-2.1.0.fuse-770012-redhat-00004"
+	TagFuseOnOpenShiftSpringBoot2 string = "application-templates-2.1.0.fuse-sb2-770017-redhat-00001"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
@@ -96,7 +96,7 @@ var (
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.5.4"
-	OperatorVersionFuse                OperatorVersion = "1.6.0"
+	OperatorVersionFuse                OperatorVersion = "7.7.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.18.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
