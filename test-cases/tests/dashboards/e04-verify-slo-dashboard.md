@@ -23,6 +23,10 @@ Note: this test should only be performed at a time it will not affect other ongo
    > redhat-rhmi-solution-explorer -> Workloads -> Deployment Configs -> Scale to 1
    > redhat-rhmi-ups -> Workloads -> Deployments -> Scale to 1
 
+**_Note_**: The alerts firing panel in the SLO summary dashboard may show alerts firing even if the product is no longer triggering an alert in prometheus.
+If the alert box shows alerts firing, change the `quick range` in the top right of Grafana UI to a lower range (such as 5 minutes) and check the `alert firing` box again and ensure
+that the graph is true to the actual state of the alerts in prometheus, if the `alert firing` box is no longer showing alerts and the graph is true to the actual state then no further action is required.
+
 ### Code #1
 
 ```bash
