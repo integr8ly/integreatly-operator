@@ -318,6 +318,11 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for user rhsso : %s", err)
 	}
+
+	// create the prometheus free storage alert rules
+	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for codeready: %s", err)
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

@@ -21,12 +21,13 @@ import (
 )
 
 const (
-	alertFor20Mins = "20m"
 	alertFor5Mins  = "5m"
 	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0
 	// once it is possible to update to that version
 	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
 	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
+	alertFor15Mins = "15m"
+	alertFor20Mins = "20m"
 )
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
@@ -300,6 +301,43 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, err
 	}
 	return pr, nil
+}
+
+
+func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) error {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping postgres free storage alert creation, useClusterStorage is true")
+		return nil
+	}
+
+	alertName := "PostgresStorageWillFillIn4Hours"
+	ruleName := "postgres-storage-will-fill-in-4-hours"
+	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 hours"
+	labels := map[string]string{
+		"severity":    "critical",
+	}
+	alertExp := intstr.FromString("predict_linear(cro_postgres_free_storage_average[1h], 4 * 3600) <= 0")
+
+	// create the rule
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor5Mins, alertExp, labels)
+	if err != nil {
+		return err
+	}
+
+	alertName = "PostgresStorageWillFillIn4Days"
+	ruleName = "postgres-storage-will-fill-in-4-days"
+	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 days"
+	labels = map[string]string{
+		"severity":    "critical",
+	}
+	alertExp = intstr.FromString("predict_linear(cro_postgres_free_storage_average[6h], 4 * 24 * 3600) <= 0")
+
+	// create the rule
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor5Mins, alertExp, labels)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object

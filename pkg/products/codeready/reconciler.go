@@ -221,6 +221,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for codeready: %w", err)
 	}
+
 	// create the prometheus connectivity rule
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for codeready: %s", err)
@@ -229,6 +230,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// create the prometheus deletion rule
 	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for codeready: %s", err)
+	}
+
+	// create the prometheus free storage alert rules
+	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for codeready: %s", err)
 	}
 
 	// get the secret created by the cloud resources operator

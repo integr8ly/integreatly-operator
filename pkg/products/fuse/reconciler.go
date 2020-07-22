@@ -324,6 +324,11 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, client, rhmi, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for fuse: %s", err)
 	}
+
+	// create the prometheus free storage alert rules
+	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, client, r.installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for codeready: %s", err)
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
