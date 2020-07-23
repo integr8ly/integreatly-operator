@@ -22,7 +22,7 @@ When logged into openshift as cluster-admin
 3. Check the yaml to ensure the selections you made have been updated to the correct values.
 
 ```
-##for example 
+##for example
 spec:
   backup:
     applyOn: '07:00'
