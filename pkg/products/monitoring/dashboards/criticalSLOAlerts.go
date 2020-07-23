@@ -92,6 +92,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS {severity='critical', alertstate='firing'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -169,12 +170,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertstate=\"firing\", severity=\"critical\"}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -225,6 +226,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{severity='critical', alertstate='firing'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -330,11 +332,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "$slo_001_ms - (sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000))",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0,0",
-			"timeFrom": null,
+			"timeFrom": 28d,
 			"timeShift": null,
 			"title": "Remaining Error Budget",
 			"type": "singlestat",
@@ -409,6 +412,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertstate=\"firing\", severity=\"critical\"})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -514,6 +518,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -598,12 +603,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -661,6 +666,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -774,6 +780,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -884,6 +891,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -976,7 +984,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -1037,6 +1045,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1153,6 +1162,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1263,6 +1273,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1350,12 +1361,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -1416,6 +1427,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1532,6 +1544,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1642,6 +1655,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1729,12 +1743,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -1795,6 +1809,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1911,6 +1926,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2021,6 +2037,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2108,12 +2125,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -2174,6 +2191,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2290,6 +2308,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2400,6 +2419,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2487,12 +2507,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -2553,6 +2573,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2669,6 +2690,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2779,6 +2801,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2866,12 +2889,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -2932,6 +2955,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3048,6 +3072,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3158,6 +3183,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3245,12 +3271,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -3311,6 +3337,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3427,6 +3454,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3537,6 +3565,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3624,12 +3653,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "0.999,0.999",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Overall SLO %",
 			"type": "singlestat",
@@ -3690,6 +3719,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3806,6 +3836,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -4181,8 +4212,9 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			}
 		]
 	},
+	"refresh": "10s"
 	"time": {
-		"from": "now-15m",
+		"from": "now-5m",
 		"to": "now"
 	},
 	"timepicker": {
