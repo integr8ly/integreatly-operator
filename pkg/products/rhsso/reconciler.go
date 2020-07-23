@@ -462,7 +462,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	}
 
 	// create the prometheus free storage alert rules
-	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
+	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, installation, postgres); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for rhsso: %s", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil

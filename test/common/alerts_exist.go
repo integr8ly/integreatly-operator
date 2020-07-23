@@ -651,8 +651,12 @@ var expectedAWSRules = []alertsTestRule{
 			"PostgresStorageWillFillIn4Days",
 		},
 	},
-
-
+	{
+		File: "redhat-rhmi-operator-postgres-storage-low.yaml",
+		Rules: []string{
+			"PostgresStorageLow",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {

@@ -1,3 +1,17 @@
+// utility functions for creating and reconciling on cloud resource alerts
+//
+// alerts created :
+//  * Postgres Availability Alerts (per product)
+//  * Postgres Connectivity Alerts (per product)
+//  * Postgres Resource Status Phase Pending (per product)
+//  * Postgres Resource Status Phase Failed (per product)
+//  * Redis Availability Alerts (per product)
+//  * Redis Connectivity Alerts (per product)
+//  * Redis Resource Status Phase Pending (per product)
+//  * Redis Resource Status Phase Failed (per product)
+//  * Postgres will run out of space in 4 days (per product)
+//  * Postgres will run out of space in 4 hours (per product)
+//
 package resources
 
 import (
@@ -21,13 +35,15 @@ import (
 )
 
 const (
-	alertFor5Mins  = "5m"
-	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0
-	// once it is possible to update to that version
+	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0 once it is possible to update to that version
 	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
 	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
+
+	alertFor5Mins  = "5m"
 	alertFor15Mins = "15m"
 	alertFor20Mins = "20m"
+	alertFor30Mins = "30m"
+	alertFor60Mins = "60m"
 )
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
@@ -296,44 +312,83 @@ func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisConnectionFailed, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisConnectionFailed, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
 	return pr, nil
 }
 
-
+// ReconcilePostgresFreeStorageAlerts reconciles on both free storage alerts (4 days and 4 hours) and a low storage alert
+// To avoid any false positives when the instances are being deployed for linear projection (4 days and 4 hours)
+// the alert query requires a minimum time of data before it will evaluate if the instance would run out of storage.
+//
+// the low storage alert fires if storage is under 10% of current capacity, with a 30 minute alertOn value to allow for any
+// provider autoscaling to happen, if after 30 minutes the instance will require manual intervention
 func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) error {
+	// dont create the alert if we are using in cluster storage
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping postgres free storage alert creation, useClusterStorage is true")
 		return nil
 	}
 
+	// job to check time that the operator metrics are exposed
+	job := "cloud-resource-operator-metrics"
+
+	// build and reconcile postgres will fill in 4 hours alert
 	alertName := "PostgresStorageWillFillIn4Hours"
 	ruleName := "postgres-storage-will-fill-in-4-hours"
 	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 hours"
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity": "critical",
 	}
-	alertExp := intstr.FromString("predict_linear(cro_postgres_free_storage_average[1h], 4 * 3600) <= 0")
 
-	// create the rule
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor5Mins, alertExp, labels)
+	// building a predict_linear query using 2 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
+	//    * [2h] - one hour data points
+	//    * , 4 * 3600 - multiplying data points by 4 hours
+	// and matching by label `job` if the current time is greater than 1 hour of the process start time for the cloud resource operator metrics.
+	//    * on(job) - matching queries by label job across both metrics
+	alertExp := intstr.FromString(
+		fmt.Sprintf("predict_linear(cro_postgres_free_storage_average{job='%s'}[2h], 4 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2", job, job))
+
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
 
+	// build and reconcile postgres will fill in 4 days alert
 	alertName = "PostgresStorageWillFillIn4Days"
 	ruleName = "postgres-storage-will-fill-in-4-days"
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 days"
 	labels = map[string]string{
-		"severity":    "critical",
+		"severity": "critical",
 	}
-	alertExp = intstr.FromString("predict_linear(cro_postgres_free_storage_average[6h], 4 * 24 * 3600) <= 0")
 
-	// create the rule
-	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor5Mins, alertExp, labels)
+	// building a predict_linear query using 2 hour of data points to predict a 4 day projection, and checking if it is less than or equal 0
+	//    * [2h] - 2 hour data points
+	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
+	// and matching by label `job` if the current time is greater than 6 hour of the process start time for the cloud resource operator metrics.
+	//    * on(job) - matching queries by label job across both metrics
+	alertExp = intstr.FromString(
+		fmt.Sprintf("predict_linear(cro_postgres_free_storage_average{job='%s'}[2h], 4 * 24 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2", job, job))
+
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
+	if err != nil {
+		return err
+	}
+
+	// build and reconcile postgres low storage alert
+	alertName = "PostgresStorageLow"
+	ruleName = "postgres-storage-low"
+	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, storage is currently under 10 percent of its capacity"
+	labels = map[string]string{
+		"severity": "critical",
+	}
+
+	// checking if the percentage of free storage is less than 10% of the current allocated storage
+	alertExp = intstr.FromString("cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100 ) * 10)")
+
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor30Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
