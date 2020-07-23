@@ -27,28 +27,59 @@ type alertManagerConfig struct {
 		SMTPAuthUsername string `yaml:"smtp_auth_username"`
 		SMTPAuthPassword string `yaml:"smtp_auth_password"`
 	} `yaml:"global"`
+
 	Receivers []map[string]interface{} `yaml:"receivers"`
 }
 
 const (
-	fuseAlertName              = "FuseOnlineSyndesisUIInstanceDown"
-	fuseOperatorDeploymentName = "syndesis-operator"
-	fuseUIDeploymentConfigName = "syndesis-ui"
+	fuseOperatorDeploymentName            = "syndesis-operator"
+	fuseUIDeploymentConfigName            = "syndesis-ui"
+	monitoringTimeout                     = time.Minute * 15
+	monitoringRetryInterval               = time.Minute
+	verifyOperatorDeploymentTimeout       = time.Minute * 5
+	verifyOperatorDeploymentRetryInterval = time.Second * 15
 )
+
+var fuseAlertsToTest = map[string]string{
+	"FuseOnlineSyndesisUIInstanceDown":            "none",
+	"RHMIFuseOnlineSyndesisUiServiceEndpointDown": "none",
+}
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
 func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
+
+	originalOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, ctx.KubeClient)
+	if err != nil {
+		t.Errorf("failed to get number of replicas: %s", err)
+	}
+
 	// verify that alert to be tested is not firing before starting the test
-	state, err := getFuseAlertState(ctx)
+	err = getFuseAlertState(ctx)
 	if err != nil {
 		t.Fatal("failed to get fuse alert state", err)
 	}
-	if state != "none" {
-		t.Fatal("fuse alert should not be firing")
+
+	fuseAlertsFiring := false
+
+	for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
+		if fuseAlertState != "none" {
+			fuseAlertsFiring = true
+			t.Errorf("%s alert should not be firing", fuseAlertName)
+		}
+	}
+
+	if fuseAlertsFiring {
+		t.FailNow()
 	}
 
 	// scale down Fuse operator and UI pods and verify that fuse alert is firing
-	err = performTest(t, ctx)
+	err = performTest(t, ctx, originalOperatorReplicas)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// verify the operator has been scaled backup
+	err = checkFuseOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,23 +156,18 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 	return nil
 }
 
-func performTest(t *testing.T, ctx *TestingContext) error {
-	originalOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, ctx.KubeClient)
-	if err != nil {
-		return fmt.Errorf("failed to get number of replicas: %w", err)
-	}
-
+func performTest(t *testing.T, ctx *TestingContext, originalOperatorReplicas int32) error {
 	originalUIReplicas, err := getNumOfReplicasDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, ctx.Client)
 	if err != nil {
-		return fmt.Errorf("failed to get number of replicas: %w", err)
+		t.Errorf("failed to get number of replicas: %s", err)
 	}
 
 	quit1 := make(chan struct{})
 	go repeat(func() {
-		scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, 0, ctx.KubeClient)
+		scaleDeployment(fuseOperatorDeploymentName, 0, ctx.KubeClient)
 	}, quit1)
 	defer close(quit1)
-	defer scaleDeployment(fuseOperatorDeploymentName, FuseOperatorNamespace, originalOperatorReplicas, ctx.KubeClient)
+	defer scaleDeployment(fuseOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
 	quit2 := make(chan struct{})
 	go repeat(func() {
@@ -160,11 +186,11 @@ func performTest(t *testing.T, ctx *TestingContext) error {
 		return err
 	}
 
-	err = checkAlertManager(ctx)
+	err = checkAlertManager(ctx, t)
 	return err
 }
 
-func checkAlertManager(ctx *TestingContext) error {
+func checkAlertManager(ctx *TestingContext, t *testing.T) error {
 	output, err := execToPod("amtool alert --alertmanager.url=http://localhost:9093",
 		"alertmanager-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -174,8 +200,16 @@ func checkAlertManager(ctx *TestingContext) error {
 		return fmt.Errorf("failed to exec to alertmanger pod: %w", err)
 	}
 
-	if !strings.Contains(output, fuseAlertName) {
-		return fmt.Errorf("alert not firing in alertmanager")
+	alertsNotFiringInAlertManager := false
+	for fuseAlertName := range fuseAlertsToTest {
+		if !strings.Contains(output, fuseAlertName) {
+			alertsNotFiringInAlertManager = true
+			t.Errorf("%s alert not firing in alertmanager", fuseAlertName)
+		}
+	}
+
+	if alertsNotFiringInAlertManager {
+		t.FailNow()
 	}
 
 	return nil
@@ -193,68 +227,78 @@ func repeat(function repeatFunc, quit chan struct{}) {
 }
 
 func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing.T) error {
-	monitoringTimeout := 15 * time.Minute
-	monitoringRetryInterval := time.Minute
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		state, err := getFuseAlertState(ctx)
+		err = getFuseAlertState(ctx)
 		if err != nil {
 			t.Log("failed to get fuse alert state:", err)
 			t.Log("waiting 1 minute before retrying")
 			return false, nil
 		}
-		if state == expectedState {
+
+		alertsInExpectedState := true
+		for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
+			if fuseAlertState != expectedState {
+				alertsInExpectedState = false
+				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", fuseAlertName, expectedState, fuseAlertState)
+				t.Log("waiting 1 minute before retrying")
+			}
+		}
+
+		if alertsInExpectedState {
 			return true, nil
 		}
 
-		t.Log("fuse alert is not in expected state ("+expectedState+") yet, current state:", state)
-		t.Log("waiting 1 minute before retrying")
 		return false, nil
 	})
 
 	return err
 }
 
-func getFuseAlertState(ctx *TestingContext) (string, error) {
+func getFuseAlertState(ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
 		"prometheus",
 		ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to exec to prometheus pod: %w", err)
+		return fmt.Errorf("failed to exec to prometheus pod: %w", err)
 	}
 
 	var promAPICallOutput prometheusAPIResponse
 	err = json.Unmarshal([]byte(output), &promAPICallOutput)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal json: %w", err)
+		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
 	var alertsResult prometheusv1.AlertsResult
 	err = json.Unmarshal(promAPICallOutput.Data, &alertsResult)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal json: %w", err)
+		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	state := "none"
+	for fuseAlertName := range fuseAlertsToTest {
+		fuseAlertsToTest[fuseAlertName] = "none"
+	}
 
 	for _, alert := range alertsResult.Alerts {
 		alertName := string(alert.Labels["alertname"])
 
-		if alertName == fuseAlertName {
-			state = string(alert.State)
+		for fuseAlertName := range fuseAlertsToTest {
+			if alertName == fuseAlertName {
+				fuseAlertsToTest[fuseAlertName] = string(alert.State)
+			}
 		}
 	}
 
-	return state, nil
+	return nil
 }
 
-func getNumOfReplicasDeployment(name string, namespace string, kubeClient kubernetes.Interface) (int32, error) {
+func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (int32, error) {
 	deploymentsClient := kubeClient.AppsV1().Deployments(FuseOperatorNamespace)
 
 	result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
 	if getErr != nil {
-		return 0, fmt.Errorf("Failed to get latest version of Deployment: %v", getErr)
+		return 0, fmt.Errorf("failed to get latest version of Deployment: %v", getErr)
 	}
 
 	return *result.Spec.Replicas, nil
@@ -269,19 +313,19 @@ func getNumOfReplicasDeploymentConfig(name string, namespace string, client clie
 	}
 	getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
 	if getErr != nil {
-		return 0, fmt.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
+		return 0, fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
 	}
 
 	return deploymentConfig.Spec.Replicas, nil
 }
 
-func scaleDeployment(name string, namespace string, replicas int32, kubeClient kubernetes.Interface) error {
+func scaleDeployment(name string, replicas int32, kubeClient kubernetes.Interface) error {
 	deploymentsClient := kubeClient.AppsV1().Deployments(FuseOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
 		if getErr != nil {
-			return fmt.Errorf("Failed to get latest version of Deployment: %v", getErr)
+			return fmt.Errorf("failed to get latest version of Deployment: %v", getErr)
 		}
 
 		result.Spec.Replicas = &replicas
@@ -289,7 +333,7 @@ func scaleDeployment(name string, namespace string, replicas int32, kubeClient k
 		return updateErr
 	})
 	if retryErr != nil {
-		return fmt.Errorf("Update failed: %v", retryErr)
+		return fmt.Errorf("update failed: %v", retryErr)
 	}
 
 	return nil
@@ -305,7 +349,7 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 		}
 		getErr := client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
 		if getErr != nil {
-			return fmt.Errorf("Failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
+			return fmt.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, getErr)
 		}
 
 		deploymentConfig.Spec.Replicas = replicas
@@ -313,7 +357,33 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 		return updateErr
 	})
 	if retryErr != nil {
-		return fmt.Errorf("Update failed: %v", retryErr)
+		return fmt.Errorf("update failed: %v", retryErr)
+	}
+
+	return nil
+}
+
+func checkFuseOperatorReplicasAreReady(ctx *TestingContext, t *testing.T, originalOperatorReplicas int32) error {
+	t.Logf("Checking correct number of fuse operator replicas (%d) are set", originalOperatorReplicas)
+	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
+		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, ctx.KubeClient)
+
+		if numberOfOperatorReplicas == originalOperatorReplicas {
+			t.Log("Fuse operator deployment ready")
+			return true, nil
+		}
+
+		if numberOfOperatorReplicas == 0 {
+			t.Log("Fuse operator deployment not yet scaled, waiting 15 seconds before retrying")
+			scaleDeployment(fuseOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+			return false, nil
+		}
+
+		return false, err
+	})
+
+	if err != nil {
+		return err
 	}
 
 	return nil
