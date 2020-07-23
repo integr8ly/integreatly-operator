@@ -233,7 +233,7 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	alertExp := intstr.FromString(
 		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
 	)
-	alertDescription := fmt.Sprintf("The deletion of the Redus instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	alertDescription := fmt.Sprintf("The deletion of the Redis instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
 		"severity":    "critical",
 		"productName": productName,
