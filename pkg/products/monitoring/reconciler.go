@@ -796,7 +796,6 @@ func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8scli
 	return secret, nil
 }
 
-
 func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
 
 	var secret string
