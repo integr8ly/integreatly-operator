@@ -169,11 +169,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 
-			phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				return phase, err
-			}
-
 			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
@@ -908,6 +903,25 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
+	// Check users and clients have been removed before realms are removed
+	// Refresh the user list
+	err = serverClient.List(ctx, users, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(users.Items) > 0 {
+		logrus.Println("rhsso-user deletion of users in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Refresh the clients list
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(clients.Items) > 0 {
+		logrus.Println("rhsso-user deletion of clients in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	// Delete all realms
 	realms := &keycloak.KeycloakRealmList{}
 	err = serverClient.List(ctx, realms, opts)
@@ -927,41 +941,12 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) isKeycloakResourcesDeleted(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	opts := &k8sclient.ListOptions{
-		Namespace: r.Config.GetNamespace(),
-	}
-
-	// Check if users are all gone
-	users := &keycloak.KeycloakUserList{}
-	err := serverClient.List(ctx, users, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(users.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if clients are all gone
-	clients := &keycloak.KeycloakClientList{}
-	err = serverClient.List(ctx, clients, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(clients.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if realms are all gone
-	realms := &keycloak.KeycloakRealmList{}
+	// Refresh the realm list
 	err = serverClient.List(ctx, realms, opts)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
-	}
-	if len(realms.Items) > 0 {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(realms.Items) > 0 {
+		logrus.Println("rhsso-user deletion of realms in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 

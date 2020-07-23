@@ -65,7 +65,6 @@ var (
 			{
 				Name: integreatlyv1alpha1.UninstallProductsStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductCloudResources:      {Name: integreatlyv1alpha1.ProductCloudResources},
 					integreatlyv1alpha1.ProductRHSSO:               {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
 					integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
@@ -84,6 +83,7 @@ var (
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
 				},
 			},
 		},
@@ -167,7 +167,6 @@ var (
 			{
 				Name: integreatlyv1alpha1.UninstallProductsStage,
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
-					integreatlyv1alpha1.ProductCloudResources:      {Name: integreatlyv1alpha1.ProductCloudResources},
 					integreatlyv1alpha1.ProductRHSSO:               {Name: integreatlyv1alpha1.ProductRHSSO},
 					integreatlyv1alpha1.ProductFuse:                {Name: integreatlyv1alpha1.ProductFuse},
 					integreatlyv1alpha1.ProductFuseOnOpenshift:     {Name: integreatlyv1alpha1.ProductFuseOnOpenshift},
@@ -186,6 +185,7 @@ var (
 				Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
 					integreatlyv1alpha1.ProductMonitoring:     {Name: integreatlyv1alpha1.ProductMonitoring},
 					integreatlyv1alpha1.ProductMonitoringSpec: {Name: integreatlyv1alpha1.ProductMonitoringSpec},
+					integreatlyv1alpha1.ProductCloudResources: {Name: integreatlyv1alpha1.ProductCloudResources},
 				},
 			},
 		},

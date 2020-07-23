@@ -86,7 +86,6 @@ var (
 	// Operator image tags
 	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline           OperatorVersion = "1.4"
-<<<<<<< HEAD
 	OperatorVersionMonitoring          OperatorVersion = "1.2.1"
 	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.60"
 	OperatorVersionRHSSO               OperatorVersion = "10.0.0"
