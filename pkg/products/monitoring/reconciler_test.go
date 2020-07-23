@@ -335,7 +335,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Namespace: installation.Namespace,
 		},
 		Data: map[string][]byte{
-			"serviceKey": []byte("test"),
+			"PAGERDUTY_KEY": []byte("test"),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
@@ -376,7 +376,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs,
+				grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret,
+				dmsSecret, alertmanagerRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
@@ -716,7 +718,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			reconciler: func() *Reconciler {
 				return basicReconciler
 			},
-			wantErr: "serviceKey is undefined in pager duty secret",
+			wantErr: "secret key is undefined in pager duty secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
@@ -864,6 +866,121 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if err := tt.wantFn(serverClient); err != nil {
 					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestReconciler_getPagerDutySecret(t *testing.T) {
+	basicScheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	basicLogger := logrus.NewEntry(logrus.StandardLogger())
+	basicReconciler := &Reconciler{
+		installation: basicInstallation(),
+		Logger:       basicLogger,
+		Config: &config.Monitoring{
+			Config: map[string]string{
+				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+			},
+		},
+	}
+
+	installation := basicInstallation()
+
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockPagerdutySecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"PAGERDUTY_KEY": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name         string
+		serverClient func() k8sclient.Client
+		reconciler   func() *Reconciler
+		setup        func() error
+		want         string
+		wantErr      string
+	}{
+		{
+			name: "fails when pager duty secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
+		},
+		{
+			name: "fails when pager duty service key is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
+				emptyPagerdutySecret.Data = map[string][]byte{}
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "secret key is undefined in pager duty secret",
+		},
+
+		{
+			name: "fails when pager duty service key - value is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
+				emptyPagerdutySecret.Data = map[string][]byte{}
+				emptyPagerdutySecret.Data["serviceKey"] = []byte("")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "secret key is undefined in pager duty secret",
+		},
+		{
+			name: "secret read successfully - from pager duty operator secret",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, pagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "test",
+		},
+		{
+			name: "secret read successfully - from cssre pager duty operator secret",
+			serverClient: func() k8sclient.Client {
+				cssrePagerDutySecret := pagerdutySecret.DeepCopy()
+				cssrePagerDutySecret.Data = make(map[string][]byte, 0)
+				cssrePagerDutySecret.Data["serviceKey"] = []byte("cssre-pg-secret")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, cssrePagerDutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "cssre-pg-secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			reconciler := tt.reconciler()
+			serverClient := tt.serverClient()
+
+			got, err := reconciler.getPagerDutySecret(context.TODO(), serverClient)
+			if tt.wantErr != "" && err.Error() != tt.wantErr {
+				t.Errorf("getPagerDutySecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getPagerDutySecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
