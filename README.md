@@ -112,7 +112,91 @@ Once the Oauth application has been registered, navigate to the Openshift consol
 - Once happy that all necessary configurations have been added, click the `Add` button
 - For validation purposes, log into the Openshift console from another browser and check that the Github IDP is listed on the login screen
 
-## Deploying to a Cluster with OLM
+## Deploying to a Cluster with OLM and the Bundle Format
+
+This deployment approach uses a CatalogSource which references an index image. The index
+image contains references to image bundles which specify the specific versions of the RHMI operator. 
+
+### Nomenclature
+
+* _Bundle_: A bundle is a non-runnable docker image containing the operator 
+  manifests for a specific release.
+* _Index_: An index is a docker image exposing a database throgh GRPc, which
+  contains references to many bundles
+
+> **Both bundles and indices are potentially pulled by the cluster, so they must be made public in order to successfully perform the installation**
+
+
+### Prerequisites
+* `opm` is a CLI tool used to automate the generation of bundles and indices.
+  * Information on how to build it can be found [here](https://github.com/operator-framework/operator-registry/blob/master/docs/design/operator-bundle.md#opm-operator-package-manager)
+  * Releases page for direct download: https://github.com/operator-framework/operator-registry/releases
+* Bundle validation requires operator-sdk >= 0.18.2 and above
+
+Make sure to export the variables above (see [local setup](#local-setup)), then run:
+
+```sh
+make cluster/prepare/bundle
+```
+
+For local development, update the ORG and ensure the repositories are publicly accessible.
+Potentially, 3 repositories need to be publicly available, 
+* \<REG>/\<ORG>/integreatly-operator
+* \<REG>/\<ORG>/integreatly-index
+* \<REG>/\<ORG>/integreatly-bundle 
+
+### Variables
+The following variables can prepend the make target below 
+* CHANNEL, default alpha
+* ORG, default integreatly
+* REG, default quay.io
+* BUILD_TOOL, default docker
+
+### Deployment Scenarios
+
+#### Deploy the latest bundle version 
+This assumes no prior installation of the RHMI operator. As such, it will remove the replaces field in the CSV file to 
+prevent the attempted replacement of an existing version of the operator available for installation.
+```sh
+ORG=<YOUR_ORG> make install/olm/bundle 
+```
+
+#### Deploy a specific bundle version
+This will assume not upgrading and remove the replaces field from CSV 2.5.0
+```sh
+ORG=<YOUR_ORG> BUNDLE_VERSIONS="2.5.0" make install/olm/bundle
+```
+
+#### Deploy an upgrade version
+Example shows upgrade from 2.5.0 to 2.4.0. 2.4.0 must already be installed on the cluster.
+2.5.0 must reference 2.4.0 in the CSV replaces field 
+```sh
+ORG=<YOUR_ORG> BUNDLE_VERSIONS="2.5.0,2.4.0" UPGRADE=true make install/olm/bundle 
+```
+
+#### Create a new bundle and deploy
+The SEMVER version should be a logical SEMVER increment of the existing lastest bundle. 
+The latest bundle will be copied and used as a reference for this new release.  
+**NOTE:** If creating a new operator image in your repository, you need to update the CSV with references
+to your image.
+```sh
+ORG=<YOUR_ORG> SEMVER=<X.Y.Z> make release/prepare
+ORG=<YOUR_ORG> TAG=<X.Y.Z> make image/build/push    (create a new operator image if required)
+ORG=<YOUR_ORG> make install/olm/bundle 
+```
+**NOTE:** If creating a new version to replace an existing i.e. upgrade, add both versions to the BUNDLE_VERSIONS VARIABLE
+```sh
+ORG=<YOUR_ORG> BUNDLE_VERSIONS="<NEW-SEMVER>,<OLD-SEMVER>" make install/olm/bundle 
+```
+
+
+
+### Install from OperatorHub
+OLM will created a PackageManifest (integreatly) based on the CatalogSource (rhmi-operators) in the openshift-marketplace namespace. 
+Confirm both and then find the RHMI in the OperatorHub. Verify that the version references the latest version available in the index and click install
+
+
+## Deploying to a Cluster with OLM and OperatorSource (Deprecated)
 Make sure to export the variables above (see [local setup](#local-setup)), then run:
 
 ```sh
