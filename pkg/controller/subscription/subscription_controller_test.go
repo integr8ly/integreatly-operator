@@ -3,7 +3,6 @@ package subscription
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -14,7 +13,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
-	integr8lyversion "github.com/integr8ly/integreatly-operator/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -237,47 +235,6 @@ func TestSubscriptionReconciler(t *testing.T) {
 				}
 			},
 			catalogsourceClient: getCatalogSourceClient(""),
-		},
-		{
-			Name: "subscription controller change targetversion in rhmi configCR",
-			Request: reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: operatorNamespace,
-					Name:      IntegreatlyPackage,
-				},
-			},
-			APISubscription: &v1alpha1.Subscription{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: operatorNamespace,
-					Name:      IntegreatlyPackage,
-				},
-				Spec: &olmv1alpha1.SubscriptionSpec{
-					InstallPlanApproval: olmv1alpha1.ApprovalManual,
-				},
-				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
-						Name:      installPlan.Name,
-						Namespace: installPlan.Namespace,
-					},
-					InstalledCSV: "123",
-					CurrentCSV:   "124",
-				},
-			},
-			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
-				if err != nil {
-					t.Fatalf("unexpected error: %s", err.Error())
-				}
-
-				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
-
-				rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-config", Namespace: operatorNamespace}, rhmiConfig)
-				if rhmiConfig.Status.TargetVersion != sub.Status.CurrentCSV {
-					t.Fatalf("expected TargetVersion to be %s got %s", sub.Status.CurrentCSV, rhmiConfig.Status.TargetVersion)
-				}
-			},
-			catalogsourceClient: getCatalogSourceClient(fmt.Sprintf("%s.v%s", CSVNamePrefix, integr8lyversion.Version)),
 		},
 	}
 

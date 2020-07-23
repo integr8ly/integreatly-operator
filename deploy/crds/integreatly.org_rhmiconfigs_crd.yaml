@@ -78,8 +78,6 @@ spec:
                 duration:
                   type: string
               type: object
-            targetVersion:
-              type: string
             upgrade:
               properties:
                 scheduled:
@@ -91,6 +89,17 @@ spec:
                         scheduled for, in format "2 Jan 2006 15:04"
                       type: string
                   type: object
+              type: object
+            upgradeAvailable:
+              properties:
+                availableAt:
+                  description: 'Time of new update becoming available Format: "DDD
+                    hh:mm" > "sun 23:00". UTC time'
+                  format: date-time
+                  type: string
+                targetVersion:
+                  description: 'target-version: string, version of incoming RHMI Operator'
+                  type: string
               type: object
           type: object
       type: object
