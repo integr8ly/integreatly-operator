@@ -641,13 +641,10 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// handle dead mans snitch credentials
-	dmsSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret, Namespace: rhmiOperatorNs}, dmsSecret); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
-	}
-	if len(dmsSecret.Data["url"]) == 0 {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("url is undefined in dead mans switch secret")
+	//Get dms  credentials
+	dmsSecret, err := r.getDMSSecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	// only set the to address to a real value for managed deployments
@@ -666,7 +663,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"SMTPPassword":        string(smtpSecret.Data["password"]),
 		"SMTPToAddress":       smtpToAddress,
 		"PagerDutyServiceKey": pagerDutySecret,
-		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+		"DeadMansSnitchURL":   dmsSecret,
 	})
 	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
@@ -794,6 +791,32 @@ func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8scli
 
 	if secret == "" {
 		return "", fmt.Errorf("secret key is undefined in pager duty secret")
+	}
+
+	return secret, nil
+}
+
+
+func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
+
+	var secret string
+
+	dmsSecret := &corev1.Secret{}
+	err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret,
+		Namespace: r.installation.Namespace}, dmsSecret)
+
+	if err != nil {
+		return "", fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
+	}
+
+	if len(dmsSecret.Data["SNITCH_URL"]) != 0 {
+		secret = string(dmsSecret.Data["SNITCH_URL"])
+	} else if len(dmsSecret.Data["url"]) != 0 {
+		secret = string(dmsSecret.Data["url"])
+	}
+
+	if secret == "" {
+		return "", fmt.Errorf("url is undefined in dead mans snitch secret")
 	}
 
 	return secret, nil
