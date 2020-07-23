@@ -10,6 +10,7 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
@@ -294,6 +295,7 @@ func TestSubscriptionReconciler(t *testing.T) {
 				catalogSourceClient: scenario.catalogsourceClient,
 				operatorNamespace:   operatorNamespace,
 				webbappNotifier:     &webapp.NoOp{},
+				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
 			}
 			res, err := reconciler.Reconcile(scenario.Request)
 			scenario.Verify(client, res, err, t)

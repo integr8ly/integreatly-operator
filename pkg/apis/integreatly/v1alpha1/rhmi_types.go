@@ -25,8 +25,9 @@ var (
 	PhaseCompleted  StatusPhase = "completed"
 	PhaseFailed     StatusPhase = "failed"
 
-	InstallationTypeWorkshop InstallationType = "workshop"
-	InstallationTypeManaged  InstallationType = "managed"
+	InstallationTypeWorkshop    InstallationType = "workshop"
+	InstallationTypeManaged     InstallationType = "managed"
+	InstallationTypeSelfManaged InstallationType = "self-managed"
 
 	BootstrapStage           StageName = "bootstrap"
 	CloudResourcesStage      StageName = "cloud-resources"

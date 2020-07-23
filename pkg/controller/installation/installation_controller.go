@@ -228,7 +228,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installation.Spec.AlertingEmailAddress = alertingEmailAddress
 		err = r.client.Update(context.TODO(), installation)
 		if err != nil {
-			logrus.Errorf("Error while copying alerting email address to RHMI CR: %w", err)
+			logrus.Errorf("Error while copying alerting email address to RHMI CR: %v", err)
 		}
 	}
 
@@ -287,7 +287,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	// reconciles rhmi installation alerts
 	_, err = r.reconcileRHMIInstallationAlerts(context.TODO(), r.client, installation)
 	if err != nil {
-		logrus.Infof("Error reconciling alerts for the rhmi installation controller: %w", err)
+		logrus.Infof("Error reconciling alerts for the rhmi installation controller: %v", err)
 	}
 
 	// reconciles rhmi installation completion alert in openshift monitoring
