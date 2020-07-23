@@ -986,7 +986,6 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 	}
 }
 
-
 func TestReconciler_getDMSSecret(t *testing.T) {
 	basicScheme, err := getBuildScheme()
 	if err != nil {

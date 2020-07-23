@@ -641,7 +641,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	//Get dms  credentials
+	//Get dms credentials
 	dmsSecret, err := r.getDMSSecret(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -813,9 +813,7 @@ func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Cl
 		secret = string(dmsSecret.Data["SNITCH_URL"])
 	} else if len(dmsSecret.Data["url"]) != 0 {
 		secret = string(dmsSecret.Data["url"])
-	}
-
-	if secret == "" {
+	} else {
 		return "", fmt.Errorf("url is undefined in dead mans snitch secret")
 	}
 
