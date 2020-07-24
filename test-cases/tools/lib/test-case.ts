@@ -1,9 +1,8 @@
 import * as fs from "fs";
 import * as matter from "gray-matter";
 import * as path from "path";
+import { AUTOMATED_TAG, PER_BUILD_TAG, PER_RELEASE_TAG } from "./constants";
 import { extractId } from "./utils";
-import { boolean } from "yargs";
-import { AUTOMATED_TAG } from "./constants";
 
 const TEST_DIR = "./tests";
 const TEST_FILTER = /^.*\.md$/;
@@ -173,4 +172,20 @@ function isAutomated(test: TestCase): boolean {
     return test.tags.includes(AUTOMATED_TAG);
 }
 
-export { loadTestCases, TestCase, filterTests, desiredFileName, isAutomated };
+function isPerBuild(test: TestCase): boolean {
+    return test.tags.includes(PER_BUILD_TAG);
+}
+
+function isPerRelease(test: TestCase): boolean {
+    return test.tags.includes(PER_RELEASE_TAG);
+}
+
+export {
+    loadTestCases,
+    TestCase,
+    filterTests,
+    desiredFileName,
+    isAutomated,
+    isPerBuild,
+    isPerRelease
+};

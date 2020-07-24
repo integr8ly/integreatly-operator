@@ -11,4 +11,8 @@ function extractId(title: string): { id: string; title: string } {
     }
 }
 
-export { extractId };
+function isEmpty(list: any[]): boolean {
+    return !(list.length > 0);
+}
+
+export { extractId, isEmpty };

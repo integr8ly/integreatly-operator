@@ -1,17 +1,20 @@
 import * as path from "path";
-import { CommandModule, env } from "yargs";
-import {
-    desiredFileName,
-    loadTestCases,
-    TestCase,
-    isAutomated
-} from "../lib/test-case";
-import { logger } from "../lib/winston";
+import { CommandModule } from "yargs";
 import {
     AUTOMATED_TAG,
-    PER_RELEASE_TAG,
-    PER_BUILD_TAG
+    PER_BUILD_TAG,
+    PER_RELEASE_TAG
 } from "../lib/constants";
+import {
+    desiredFileName,
+    isAutomated,
+    loadTestCases,
+    TestCase,
+    isPerRelease,
+    isPerBuild
+} from "../lib/test-case";
+import { logger } from "../lib/winston";
+import { isEmpty } from "../lib/utils";
 
 type Linter = (test: TestCase) => error;
 
@@ -138,7 +141,7 @@ function lintStringField(
 ): Linter {
     return (test: TestCase): error => {
         if (l(test[field])) {
-            return `invalid ${field}: ${test[field]} in '${test.file}', ${tip}`;
+            return `the ${field}: ${test[field]} is not valid, ${tip}`;
         }
         return null;
     };
@@ -152,7 +155,7 @@ function lintStringArrayField(
     return (test: TestCase): error => {
         for (const e of test[field]) {
             if (l(e)) {
-                return `invalid ${field}: ${e} in '${test.file}', ${tip}`;
+                return `the ${field}: ${e} is not valid, ${tip}`;
             }
         }
         return null;
@@ -169,9 +172,31 @@ function regex(reg: RegExp): (f: string) => boolean {
 
 function lintMandatoryEnvironment(): Linter {
     return (test: TestCase): error => {
-        if (!isAutomated(test) && test.environments.length === 0) {
-            return `no environment set in '${test.file}', at least one environment must be set for each not automated test cases`;
+        if (!isAutomated(test) && isEmpty(test.environments)) {
+            return `at least one environment must be set for each not automated test cases`;
         }
+        return null;
+    };
+}
+
+function lintOccurrence(): Linter {
+    return (test: TestCase): error => {
+        if (isPerBuild(test) && isPerRelease(test)) {
+            return `can not be per-build and per-release at the same time`;
+        }
+
+        if (isPerBuild(test) && !isEmpty(test.targets)) {
+            return `can not be per-build and have a target version`;
+        }
+
+        if (isPerRelease(test) && !isEmpty(test.targets)) {
+            return `can not be per-release and have a target version`;
+        }
+
+        if (isEmpty(test.targets) && !isPerRelease(test) && !isPerBuild(test)) {
+            return `must have a target version or be a per-release or per-build test case`;
+        }
+
         return null;
     };
 }
@@ -183,9 +208,10 @@ const linters: { [key: string]: Linter } = {
     "duplicate-ids": lintDuplicateIDs(),
     environments: lintEnvironments(),
     "file-names": lintFileNames(),
+    "mandatory-environment": lintMandatoryEnvironment(),
+    occurrence: lintOccurrence(),
     tags: lintTags(),
-    targets: lintTargets(),
-    "mandatory-environment": lintMandatoryEnvironment()
+    targets: lintTargets()
 };
 
 // tslint:disable:object-literal-sort-keys
@@ -203,7 +229,7 @@ const lint: CommandModule<{}, {}> = {
             for (const test of tests) {
                 const err = linters[l](test);
                 if (err !== null) {
-                    logger.error(`${l}: ${err}`);
+                    logger.error(`${l}: ${test.file}: ${err}`);
                     dirty = true;
                 }
             }
