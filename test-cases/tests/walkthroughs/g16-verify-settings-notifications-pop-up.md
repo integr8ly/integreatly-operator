@@ -1,6 +1,6 @@
 ---
 estimate: 15m
-tags:
+targets:
   - 2.6.0
 ---
 
