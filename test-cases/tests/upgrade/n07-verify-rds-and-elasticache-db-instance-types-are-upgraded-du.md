@@ -1,4 +1,6 @@
 ---
+environments:
+  - osd-post-upgrade
 targets:
   - 2.5.0
 ---
