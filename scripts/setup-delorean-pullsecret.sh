@@ -21,8 +21,9 @@ if [ ! -f ${DELOREAN_PULLSECRET} ]; then
   exit 1
 fi
 
-DELOREAN_PASSWORD="$(cat $DELOREAN_PULLSECRET | grep auth\": | tr -d \" | tr -d , | awk -F ' ' '{print $2}' | base64 --decode| awk -F : '{print $2}')"
-DELOREAN_USERNAME="$(cat $DELOREAN_PULLSECRET | grep auth\": | tr -d \" | tr -d , | awk -F ' ' '{print $2}' | base64 --decode| awk -F : '{print $1}')"
+#Assumes the pull secret file contains only one auth entry and it's the one we want
+DELOREAN_PASSWORD="$(jq -r '.auths|to_entries[0].value.auth' $DELOREAN_PULLSECRET | base64 --decode | awk -F : '{print $2}')"
+DELOREAN_USERNAME="$(jq -r '.auths|to_entries[0].value.auth' $DELOREAN_PULLSECRET | base64 --decode | awk -F : '{print $1}')"
 
 oc get secret pull-secret -n openshift-config -o yaml > "$CONFIG_PULLSECRET"
 yq r $CONFIG_PULLSECRET 'data' | awk '{print $2}' | base64 -d > $DECODED_PULLSECRET
