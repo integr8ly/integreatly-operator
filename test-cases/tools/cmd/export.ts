@@ -20,8 +20,7 @@ const csv: CommandModule<{}, CSVArgs> = {
     builder: {
         output: {
             describe: "the name of the file where to write the csv table",
-            type: "string",
-            demand: true
+            type: "string"
         },
         filter: {
             describe: "filter test to create by tags",
@@ -58,20 +57,24 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.category,
                 t.title,
                 t.tags.join(" "),
-                t.environments.join(" ")
+                t.environments.join(" "),
                 t.components.join(" "),
                 t.targets.join(" "),
                 t.estimate,
                 t.require.join(" "),
                 t.automation.join(" "),
-                t.file.link,
+                t.url,
                 runsLink(t.id)
             ].join(",")
         );
 
         rows.push(...data);
 
-        fs.writeFileSync(args.output, rows.join("\n"));
+        if (args.output) {
+            fs.writeFileSync(args.output, rows.join("\n"));
+        } else {
+            rows.forEach(r => console.log(r));
+        }
     }
 };
 
