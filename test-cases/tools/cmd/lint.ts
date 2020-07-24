@@ -7,7 +7,7 @@ type Linter = (test: TestCase) => error;
 
 type error = string | null;
 
-const AUTOMATION = /[A-Z]+-[0-9]+/;
+const AUTOMATION = /^[A-Z]+-[0-9]+$/;
 
 const CATEGORIES = [
     "alerts",
@@ -44,6 +44,10 @@ const ENVIRONMENTS = [
     "external"
 ];
 
+const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
+
+const TAGS = ["per-build", "per-release", "automated"];
+
 function lintFileNames(): Linter {
     return (test: TestCase): error => {
         const desired = desiredFileName(test);
@@ -72,7 +76,7 @@ function lintDuplicateIDs(): Linter {
 function lintCategories(): Linter {
     return lintStringField(
         "category",
-        c => !CATEGORIES.includes(c),
+        includes(CATEGORIES),
         `valid categories are ${CATEGORIES}`
     );
 }
@@ -80,7 +84,7 @@ function lintCategories(): Linter {
 function lintAutomationJiras(): Linter {
     return lintStringArrayField(
         "automation",
-        a => !AUTOMATION.test(a),
+        regex(AUTOMATION),
         `the automation ticket must respect the jira format ${AUTOMATION}`
     );
 }
@@ -88,7 +92,7 @@ function lintAutomationJiras(): Linter {
 function lintComponents(): Linter {
     return lintStringArrayField(
         "components",
-        c => !COMPONENTS.includes(c),
+        includes(COMPONENTS),
         `valid components are ${COMPONENTS}`
     );
 }
@@ -96,8 +100,24 @@ function lintComponents(): Linter {
 function lintEnvironments(): Linter {
     return lintStringArrayField(
         "environments",
-        e => !ENVIRONMENTS.includes(e),
+        includes(ENVIRONMENTS),
         `valid environments are ${ENVIRONMENTS}`
+    );
+}
+
+function lintTargets(): Linter {
+    return lintStringArrayField(
+        "targets",
+        regex(TARGETS),
+        `the target version must respect the this format: ${TARGETS}`
+    );
+}
+
+function lintTags(): Linter {
+    return lintStringArrayField(
+        "tags",
+        includes(TAGS),
+        `valid tags are ${TAGS}`
     );
 }
 
@@ -122,11 +142,19 @@ function lintStringArrayField(
     return (test: TestCase): error => {
         for (const e of test[field]) {
             if (l(e)) {
-                return `invalid environment: ${e} in '${test.file}', ${tip}`;
+                return `invalid ${field}: ${e} in '${test.file}', ${tip}`;
             }
         }
         return null;
     };
+}
+
+function includes(list: string[]): (f: string) => boolean {
+    return f => !list.includes(f);
+}
+
+function regex(reg: RegExp): (f: string) => boolean {
+    return f => !reg.test(f);
 }
 
 const linters: { [key: string]: Linter } = {
@@ -135,7 +163,9 @@ const linters: { [key: string]: Linter } = {
     components: lintComponents(),
     "duplicate-ids": lintDuplicateIDs(),
     environments: lintEnvironments(),
-    "file-names": lintFileNames()
+    "file-names": lintFileNames(),
+    tags: lintTags(),
+    targets: lintTargets()
 };
 
 // tslint:disable:object-literal-sort-keys
