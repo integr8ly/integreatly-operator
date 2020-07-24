@@ -3,7 +3,6 @@ automation:
   - INTLY-7432
 components:
   - product-amq
-  - openshift
 environments:
   - osd-post-upgrade
 estimate: 30m

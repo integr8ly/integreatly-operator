@@ -3,7 +3,6 @@ automation:
   - INTLY-7433
 components:
   - product-fuse
-  - openshift
 environments:
   - osd-post-upgrade
 estimate: 30m

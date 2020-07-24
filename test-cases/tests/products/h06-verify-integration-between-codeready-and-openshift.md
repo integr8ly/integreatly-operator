@@ -3,7 +3,6 @@ automation:
   - INTLY-7434
 components:
   - product-codeready
-  - openshift
 environments:
   - osd-post-upgrade
 estimate: 30m

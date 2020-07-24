@@ -56,8 +56,44 @@ function lintCategories(): Linter {
     };
 }
 
+function lintAutomationJiras(): Linter {
+    return (test: TestCase): error => {
+        for (const a of test.automation) {
+            if (!/[A-Z]+-[0-9]+/.test(a)) {
+                return `invalid automation: ${a} in '${test.file}', the automation ticket must respect the jira format /[A-Z]+-[0-9]+/`;
+            }
+        }
+        return null;
+    };
+}
+
+function lintComponents(): Linter {
+    const components = [
+        "monitoring",
+        "product-ups",
+        "product-codeready",
+        "product-apicurito",
+        "product-amq",
+        "product-3scale",
+        "product-sso",
+        "product-fuse",
+        "product-data-sync"
+    ];
+
+    return (test: TestCase): error => {
+        for (const c of test.components) {
+            if (!components.includes(c)) {
+                return `invalid component: ${c} in '${test.file}', valid components are ${components}`;
+            }
+        }
+        return null;
+    };
+}
+
 const linters: { [key: string]: Linter } = {
+    "automation-jiras": lintAutomationJiras(),
     categories: lintCategories(),
+    components: lintComponents(),
     "duplicate-ids": lintDuplicateIDs(),
     "file-names": lintFileNames()
 };

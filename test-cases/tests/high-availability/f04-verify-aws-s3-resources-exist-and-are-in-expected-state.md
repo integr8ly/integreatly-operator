@@ -2,7 +2,6 @@
 automation:
   - INTLY-6654
 components:
-  - cloud-resource-operator
   - product-3scale
 environments:
   - osd-fresh-install

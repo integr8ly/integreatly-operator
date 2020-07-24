@@ -3,7 +3,6 @@ automation:
   - INTLY-5441
 components:
   - product-3scale
-  - openshift
 environments:
   - osd-post-upgrade
 estimate: 15m
