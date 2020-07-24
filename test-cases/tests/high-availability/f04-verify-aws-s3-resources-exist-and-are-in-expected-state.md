@@ -1,11 +1,12 @@
 ---
-estimate: 15m
+automation:
+  - INTLY-6654
 components:
   - cloud-resource-operator
   - product-3scale
-targets: []
-automation_jiras:
-  - INTLY-6654
+environments:
+  - osd-fresh-install
+estimate: 15m
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state

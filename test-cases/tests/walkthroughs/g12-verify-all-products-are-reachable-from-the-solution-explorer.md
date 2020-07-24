@@ -1,4 +1,6 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
 ---
 

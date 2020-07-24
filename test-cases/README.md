@@ -213,11 +213,11 @@ targets:
 
 ### Automation Jiras
 
-As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation_jiras` in its metadata pointing to the automation jira, e.g.:
+As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation` in its metadata pointing to the automation jira, e.g.:
 
 ```
 ---
-automation_jiras:
+automation:
   - INTLY-7421
 ---
 

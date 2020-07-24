@@ -1,7 +1,9 @@
 ---
-estimate: 15m
-automation_jiras:
+automation:
   - INTLY-7748
+estimate: 15m
+tags:
+  - per-release
 ---
 
 # B03 - Verify RHMI Developer User Permissions are Correct

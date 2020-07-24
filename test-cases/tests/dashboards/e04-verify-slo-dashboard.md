@@ -1,10 +1,13 @@
 ---
-estimate: 30m
+automation:
+  - INTLY-7421
 components:
   - monitoring
-targets: []
-automation_jiras:
-  - INTLY-7421
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.8.0
 ---
 
 # E04 - Verify SLO dashboard

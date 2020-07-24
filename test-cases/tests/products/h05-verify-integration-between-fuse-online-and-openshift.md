@@ -1,11 +1,14 @@
 ---
-estimate: 30m
+automation:
+  - INTLY-7433
 components:
   - product-fuse
   - openshift
-targets: []
-automation_jiras:
-  - INTLY-7433
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.6.0
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift

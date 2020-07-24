@@ -1,10 +1,11 @@
 ---
-estimate: 1h
 components:
   - product-ups
-targets: []
-require:
-  - J03
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.7.0
 ---
 
 # J11 - Verify UPS backup and restore

@@ -1,6 +1,7 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 3h
-targets: []
 ---
 
 # I03 - verify customer facing documentation getting started guide

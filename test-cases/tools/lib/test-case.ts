@@ -15,7 +15,7 @@ interface TestCase {
     tags: string[];
     targets: string[];
     components: string[];
-    automationJiras: string[];
+    automation: string[];
     require: string[];
     file: TestFile;
 }
@@ -147,7 +147,7 @@ function loadTestCases(file: TestFile): TestCase[] {
         }
 
         return {
-            automationJiras: data.automation_jiras || [],
+            automation: data.automation || [],
             category,
             components: data.components || [],
             content,

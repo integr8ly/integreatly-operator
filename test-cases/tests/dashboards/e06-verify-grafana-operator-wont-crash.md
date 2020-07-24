@@ -1,8 +1,11 @@
 ---
 components:
   - monitoring
+environments:
+  - osd-post-upgrade
 targets:
   - 2.3.0
+  - 2.6.0
 ---
 
 # E06 - Verify Grafana operator won't crash

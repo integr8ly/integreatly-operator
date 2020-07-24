@@ -1,7 +1,9 @@
 ---
-estimate: 1h
-automation_jiras:
+automation:
   - INTLY-7748
+estimate: 1h
+tags:
+  - per-release
 ---
 
 # B04 - Verify Dedicated Admin User Permissions are Correct

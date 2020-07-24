@@ -11,7 +11,7 @@ interface Metadata {
     tags: string[];
     estimate: string;
     targets: string[];
-    automation_jiras: string[];
+    automation: string[];
     components: string[];
     require: string[];
 }

@@ -1,22 +1,21 @@
 ---
+automation:
+  - INTLY-6408
 components:
   - product-sso
-targets: []
-automation_jiras:
-  - INTLY-6408
+environments:
+  - osd-post-upgrade
+targets:
+  - 2.8.0
 ---
 
 # B08 - Verify User RHSSO Permissions
-
-**Automated Test**: To be added
 
 ## Steps
 
 The following steps should be tested for both rhmi developer and dedicated admin users
 
 ### Manage Realms in User RHSSO
-
-JIRA: [INTLY-6408](https://issues.redhat.com/browse/INTLY-6408)
 
 1. Log into the User Red Hat Single Sign-On via the Solution Explorer
 2. Hover over the Realm dropdown and Click **Add Realm**

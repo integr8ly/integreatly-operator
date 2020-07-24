@@ -1,5 +1,6 @@
 ---
-targets: []
+environments:
+  - osd-fresh-install
 ---
 
 # I02 - Verify all SOP's

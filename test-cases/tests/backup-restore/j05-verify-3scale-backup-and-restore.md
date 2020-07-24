@@ -1,10 +1,11 @@
 ---
-estimate: 3h
 components:
   - product-3scale
-targets: []
-require:
-  - J03
+environments:
+  - osd-post-upgrade
+estimate: 3h
+targets:
+  - 2.7.0
 ---
 
 # J05 - Verify 3scale backup and restore

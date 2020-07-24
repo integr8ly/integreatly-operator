@@ -1,10 +1,13 @@
 ---
-estimate: 1h
-targets: []
+automation:
+  - INTLY-6123
 components:
   - product-amq
-automation_jiras:
-  - INTLY-6123
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.6.0
 ---
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset

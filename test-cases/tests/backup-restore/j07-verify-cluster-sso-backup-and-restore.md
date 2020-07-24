@@ -1,10 +1,11 @@
 ---
-estimate: 1h
 components:
   - product-sso
-targets: []
-require:
-  - J03
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.6.0
 ---
 
 # J07 - Verify Cluster SSO Backup and Restore

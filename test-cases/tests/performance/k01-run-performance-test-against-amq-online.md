@@ -1,8 +1,11 @@
 ---
-estimate: 4h
 components:
   - product-amq
-targets: []
+environments:
+  - osd-post-upgrade
+estimate: 4h
+targets:
+  - 2.6.0
 ---
 
 # K01 - Run performance test against AMQ Online

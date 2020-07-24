@@ -1,7 +1,10 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
 targets:
   - 2.3.0
+  - 2.6.0
 ---
 
 # G10 - Verify masthead to all solution explorer pages

@@ -1,10 +1,11 @@
 ---
-estimate: 2h
 components:
   - product-amq
-targets: []
-require:
-  - J03
+environments:
+  - osd-post-upgrade
+estimate: 2h
+targets:
+  - 2.6.0
 ---
 
 # J10 - Verify AMQ backup and restore

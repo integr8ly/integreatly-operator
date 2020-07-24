@@ -17,7 +17,7 @@ components:
   - openshift
 targets:
   - 0.0.0
-automation_jiras:
+automation:
   - INTLY-0000
 ---
 

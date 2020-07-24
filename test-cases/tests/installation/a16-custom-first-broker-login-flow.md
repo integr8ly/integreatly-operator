@@ -6,9 +6,11 @@ tags:
 
 # A16 - Custom first broker login flow
 
-The custom first broker login flow is used by both 3Scale and Codeready. This test case guides you through verifying this auth flow via 3Scale. Once this works with 3Scale, it should also work for Codeready as both are using the same flow. No further tests for Codeready is required.
+https://github.com/integr8ly/integreatly-operator/blob/master/test/common/authdelay_first_broker_login.go
 
-**Automated tests**: https://github.com/integr8ly/integreatly-operator/blob/master/test/common/authdelay_first_broker_login.go
+## Description
+
+The custom first broker login flow is used by both 3Scale and Codeready. This test case guides you through verifying this auth flow via 3Scale. Once this works with 3Scale, it should also work for Codeready as both are using the same flow. No further tests for Codeready is required.
 
 ## Prerequisites
 

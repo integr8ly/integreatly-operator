@@ -1,10 +1,11 @@
 ---
-estimate: 1h
 components:
   - product-fuse
-targets: []
-require:
-  - J03
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.8.0
 ---
 
 # J09 - Verify Fuse Backup and Restore

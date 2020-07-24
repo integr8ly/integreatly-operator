@@ -1,10 +1,13 @@
 ---
+environments:
+  - osd-post-upgrade
+estimate: 15m
 targets:
   - 2.3.0
-estimate: 15m
+  - 2.6.0
 ---
 
-# A20 - Verify cluster prometheus has RHMI targets
+# A20 - Verify cluster Prometheus has RHMI targets
 
 ## Steps
 

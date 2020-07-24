@@ -1,9 +1,5 @@
 ---
 estimate: 2h
-require:
-  - N03
-  - N02
-  - H21
 ---
 
 # N04 - Verify customer config reconcile upgrade logic and trigger the RHMI upgrade

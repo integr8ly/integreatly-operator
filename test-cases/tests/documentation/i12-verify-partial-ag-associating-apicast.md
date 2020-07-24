@@ -1,5 +1,6 @@
 ---
-targets: []
+environments:
+  - osd-fresh-install
 ---
 
 # I12 - Verify partial ag associating apicast

@@ -1,5 +1,6 @@
 ---
-targets: []
+environments:
+  - osd-fresh-install
 ---
 
 # I07 - Verify partial ag subscribing solution patterns

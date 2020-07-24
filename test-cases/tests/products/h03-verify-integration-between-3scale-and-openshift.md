@@ -1,11 +1,14 @@
 ---
-estimate: 15m
+automation:
+  - INTLY-5441
 components:
   - product-3scale
   - openshift
-targets: []
-automation_jiras:
-  - INTLY-5441
+environments:
+  - osd-post-upgrade
+estimate: 15m
+targets:
+  - 2.7.0
 ---
 
 # H03 - Verify integration between 3Scale and OpenShift

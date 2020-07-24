@@ -1,6 +1,9 @@
 ---
+environments:
+  - osd-post-upgrade
 estimate: 120m
-targets: []
+targets:
+  - 2.6.0
 ---
 
 # J03 - Verify that namespaces get recreated by the integreatly-operator if deleted

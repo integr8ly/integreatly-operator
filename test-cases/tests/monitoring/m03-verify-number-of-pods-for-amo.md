@@ -1,6 +1,9 @@
 ---
+environments:
+  - osd-post-upgrade
 targets:
   - 2.5.0
+  - 2.7.0
 ---
 
 # M03 - Verify number of pods for AMO

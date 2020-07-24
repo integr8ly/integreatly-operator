@@ -1,5 +1,6 @@
 ---
-targets: []
+environments:
+  - osd-fresh-install
 ---
 
 # I09 - Verify partial gs using solution patterns

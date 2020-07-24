@@ -1,7 +1,9 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
 targets:
-  - 2.3.0
+  - 2.8.0
 ---
 
 # G06 - Verify user access to settings menu

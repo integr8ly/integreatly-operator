@@ -1,16 +1,19 @@
 ---
-estimate: 30m
 components:
   - product-fuse
   - product-amq
-targets: []
+environments:
+  - osd-fresh-install
+estimate: 30m
+targets:
+  - 2.6.0
 ---
 
 # G01 - Verify AMQ Online walkthrough
 
 ## Description
 
-Connecting applicaitons using asynchronous messaging.
+Connecting applications using asynchronous messaging.
 
 ## Steps
 

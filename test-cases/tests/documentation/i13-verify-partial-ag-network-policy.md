@@ -1,5 +1,6 @@
 ---
-targets: []
+environments:
+  - osd-fresh-install
 ---
 
 # I13 - Verify partial ag network policy

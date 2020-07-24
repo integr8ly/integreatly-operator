@@ -1,9 +1,11 @@
 ---
+automation:
+  - INTLY-7413
+environments:
+  - osd-post-upgrade
 estimate: 15m
 tags:
   - per-build
-automation_jiras:
-  - INTLY-7413
 ---
 
 # C05 - Verify that the alerts are exposed via Telementry

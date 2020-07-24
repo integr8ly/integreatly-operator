@@ -1,8 +1,11 @@
 ---
-estimate: 2h
 components:
   - product-sso
-targets: []
+environments:
+  - osd-post-upgrade
+estimate: 2h
+targets:
+  - 2.8.0
 ---
 
 # K03 - Run performance test against RHSSO

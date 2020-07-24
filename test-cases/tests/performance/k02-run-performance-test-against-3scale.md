@@ -1,8 +1,11 @@
 ---
-estimate: 2h
 components:
   - product-3scale
-targets: []
+environments:
+  - osd-post-upgrade
+estimate: 2h
+targets:
+  - 2.7.0
 ---
 
 # K02 - Run performance test against 3Scale

@@ -1,10 +1,13 @@
 ---
-estimate: 15m
+automation:
+  - INTLY-7439
 components:
   - product-3scale
-targets: []
-automation_jiras:
-  - INTLY-7439
+environments:
+  - osd-post-upgrade
+estimate: 15m
+targets:
+  - 2.7.0
 ---
 
 # H11 - Verify 3scale SMTP Configuration

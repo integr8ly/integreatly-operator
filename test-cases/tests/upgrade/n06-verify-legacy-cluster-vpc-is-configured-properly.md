@@ -1,13 +1,11 @@
 ---
 tags:
   - automated
-targets:
-  - 2.5.0
 ---
 
 # N06 - Verify Legacy cluster VPC is configured properly
 
-<https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_legacy_vpc.go>
+https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_legacy_vpc.go
 
 ## Description
 

@@ -1,6 +1,7 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 2h
-targets: []
 ---
 
 # I01 - Verify customer - facing documentation Creating - Solution - Patterns

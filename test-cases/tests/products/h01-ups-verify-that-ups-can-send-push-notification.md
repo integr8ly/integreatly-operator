@@ -1,9 +1,12 @@
 ---
+automation:
+  - INTLY-7430
 components:
   - product-ups
-targets: []
-automation_jiras:
-  - INTLY-7430
+environments:
+  - osd-post-upgrade
+targets:
+  - 2.6.0
 ---
 
 # H01 - UPS: Verify that UPS can send push notification

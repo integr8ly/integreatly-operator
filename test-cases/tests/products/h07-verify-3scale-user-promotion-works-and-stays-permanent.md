@@ -1,10 +1,13 @@
 ---
-estimate: 1h
+automation:
+  - INTLY-7435
 components:
   - product-3scale
-targets: []
-automation_jiras:
-  - INTLY-7435
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.8.0
 ---
 
 # H07 - Verify 3scale User Promotion Works and Stays Permanent

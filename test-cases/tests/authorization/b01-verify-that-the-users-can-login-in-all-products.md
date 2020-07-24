@@ -1,7 +1,9 @@
 ---
-estimate: 15m
-automation_jiras:
+automation:
   - INTLY-7416
+estimate: 15m
+tags:
+  - per-release
 ---
 
 # B01 - Verify that the users can login in all products

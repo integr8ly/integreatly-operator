@@ -1,4 +1,6 @@
 ---
+environments:
+  - osd-post-upgrade
 estimate: 30m
 ---
 

@@ -1,9 +1,12 @@
 ---
-targets: []
+automation:
+  - INTLY-6652
 components:
   - product-codeready
-automation_jiras:
-  - INTLY-6652
+environments:
+  - osd-post-upgrade
+targets:
+  - 2.6.0
 ---
 
 # B05 - Verify Codeready CRUDL Permissions

@@ -1,11 +1,14 @@
 ---
-estimate: 30m
+automation:
+  - INTLY-7434
 components:
   - product-codeready
   - openshift
-targets: []
-automation_jiras:
-  - INTLY-7434
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.7.0
 ---
 
 # H06 - Verify integration between CodeReady and OpenShift

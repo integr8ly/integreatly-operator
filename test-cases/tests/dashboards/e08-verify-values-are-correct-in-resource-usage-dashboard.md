@@ -1,8 +1,11 @@
 ---
 components:
   - monitoring
+environments:
+  - osd-post-upgrade
 targets:
   - 2.4.0
+  - 2.8.0
 ---
 
 # E08 - Verify values are correct in Resource usage dashboard

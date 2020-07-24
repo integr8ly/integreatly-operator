@@ -1,11 +1,14 @@
 ---
-estimate: 30m
+automation:
+  - INTLY-7432
 components:
   - product-amq
   - openshift
-targets: []
-automation_jiras:
-  - INTLY-7432
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.8.0
 ---
 
 # H04 - Verify integration between AMQ Online and OpenShift

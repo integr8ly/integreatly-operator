@@ -1,7 +1,12 @@
 ---
+environments:
+  - osd-post-upgrade
+  - osd-fresh-install
+  - rhpds
+  - osd-private-post-upgrade
 estimate: 15m
 tags:
-  per-build
+  - per-build
 ---
 
 # A17 - Verify the Go functional tests were successful
