@@ -2,6 +2,8 @@ import * as fs from "fs";
 import * as matter from "gray-matter";
 import * as path from "path";
 import { extractId } from "./utils";
+import { boolean } from "yargs";
+import { AUTOMATED_TAG } from "./constants";
 
 const TEST_DIR = "./tests";
 const TEST_FILTER = /^.*\.md$/;
@@ -167,4 +169,8 @@ function desiredFileName(test: TestCase): string {
     return `${name}.md`;
 }
 
-export { loadTestCases, TestCase, filterTests, desiredFileName };
+function isAutomated(test: TestCase): boolean {
+    return test.tags.includes(AUTOMATED_TAG);
+}
+
+export { loadTestCases, TestCase, filterTests, desiredFileName, isAutomated };

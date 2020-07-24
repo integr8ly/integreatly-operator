@@ -1,7 +1,17 @@
 import * as path from "path";
 import { CommandModule, env } from "yargs";
-import { desiredFileName, loadTestCases, TestCase } from "../lib/test-case";
+import {
+    desiredFileName,
+    loadTestCases,
+    TestCase,
+    isAutomated
+} from "../lib/test-case";
 import { logger } from "../lib/winston";
+import {
+    AUTOMATED_TAG,
+    PER_RELEASE_TAG,
+    PER_BUILD_TAG
+} from "../lib/constants";
 
 type Linter = (test: TestCase) => error;
 
@@ -46,7 +56,7 @@ const ENVIRONMENTS = [
 
 const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
-const TAGS = ["per-build", "per-release", "automated"];
+const TAGS = [PER_BUILD_TAG, PER_RELEASE_TAG, AUTOMATED_TAG];
 
 function lintFileNames(): Linter {
     return (test: TestCase): error => {
@@ -157,6 +167,15 @@ function regex(reg: RegExp): (f: string) => boolean {
     return f => !reg.test(f);
 }
 
+function lintMandatoryEnvironment(): Linter {
+    return (test: TestCase): error => {
+        if (!isAutomated(test) && test.environments.length === 0) {
+            return `no environment set in '${test.file}', at least one environment must be set for each not automated test cases`;
+        }
+        return null;
+    };
+}
+
 const linters: { [key: string]: Linter } = {
     "automation-jiras": lintAutomationJiras(),
     categories: lintCategories(),
@@ -165,7 +184,8 @@ const linters: { [key: string]: Linter } = {
     environments: lintEnvironments(),
     "file-names": lintFileNames(),
     tags: lintTags(),
-    targets: lintTargets()
+    targets: lintTargets(),
+    "mandatory-environment": lintMandatoryEnvironment()
 };
 
 // tslint:disable:object-literal-sort-keys
