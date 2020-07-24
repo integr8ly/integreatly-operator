@@ -2,6 +2,8 @@
 environments:
   - external
 estimate: 30m
+tags:
+  - manual-selection
 ---
 
 # N05 - Verify upgrade not approved when another upgrade in progress

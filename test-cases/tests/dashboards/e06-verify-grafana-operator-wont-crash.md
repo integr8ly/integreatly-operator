@@ -15,3 +15,7 @@ targets:
 This is low priority test case.
 
 More info: <https://issues.redhat.com/browse/INTLY-7215>
+
+## Steps
+
+TODO
