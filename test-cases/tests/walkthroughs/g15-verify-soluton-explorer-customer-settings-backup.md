@@ -1,6 +1,6 @@
 ---
 estimate: 15m
-tags:
+targets:
   - 2.6.0
 ---
 
@@ -8,7 +8,7 @@ tags:
 
 Acceptance Criteria:
 
-When logged into solution explorer as a customer-admin
+When logged into solution explorer as a user from the dedicated-admin group for example customer-admin01.
 
 1. Select ? in the top right hand corner to check the Solution Explorer version and confirm that it matches the version obtained via cli: `oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r '.status.stages."solution-explorer".products."solution-explorer".version'`
 2. Select the settings cog in the top right hand corner, it should be active.
