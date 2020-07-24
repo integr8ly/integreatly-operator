@@ -159,7 +159,7 @@ func CreatePostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
