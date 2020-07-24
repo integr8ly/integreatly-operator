@@ -16,5 +16,5 @@ Log into solution explorer in a private browser session as a user from the dedic
 4. Refresh the page and confirm the banner does not reappear.
 5. Close the private browser session.
 6. Open another private browser session and log into Solution Explorer as the same user.
-7. Return to the Solution Explorer settings page. 
+7. Return to the Solution Explorer settings page.
 8. Confirm the banner is again visible at the top of the settings page.
