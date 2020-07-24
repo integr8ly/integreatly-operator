@@ -1,5 +1,5 @@
 import { Issue, Jira, Resolution } from "./jira";
-import { extractId } from "./utils";
+import { extractId } from "./test-case";
 
 type Result = "Passed" | "Failed" | "Blocked" | "Skipped" | "ToDo";
 

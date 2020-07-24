@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import * as matter from "gray-matter";
 import * as path from "path";
 import {
@@ -7,7 +6,7 @@ import {
     PER_BUILD_TAG,
     PER_RELEASE_TAG
 } from "./constants";
-import { extractId } from "./utils";
+import { walk } from "./utils";
 
 const TEST_DIR = "./tests";
 const TEST_FILTER = /^.*\.md$/;
@@ -56,6 +55,19 @@ function extractTitle(content: string): { title: string; content: string } {
     throw Error("title not found");
 }
 
+function extractId(title: string): { id: string; title: string } {
+    // A01 - Title
+    const match = /^(?<id>[A-Z][0-9]{2})\s-\s(?<title>.*)$/.exec(title);
+    if (match) {
+        return {
+            id: match.groups.id,
+            title: match.groups.title
+        };
+    } else {
+        throw new Error(`can not extract the ID from '${title}'`);
+    }
+}
+
 /**
  * Convert estimations in format 1h 2h 30m to a float number where 1 = 1h
  */
@@ -82,27 +94,6 @@ function convertEstimation(estimate: string): number {
 
 function extractCategory(file: string): string {
     return path.basename(path.dirname(file));
-}
-
-/**
- * Recursive search for all files in dir that matches the filter.
- */
-function walk(dir: string, filter: RegExp): string[] {
-    const results: string[] = [];
-
-    for (const file of fs.readdirSync(dir)) {
-        const full = path.join(dir, file);
-
-        const stats = fs.statSync(full);
-
-        if (stats.isDirectory()) {
-            results.push(...walk(full, filter));
-        } else if (filter.test(file)) {
-            results.push(full);
-        }
-    }
-
-    return results;
 }
 
 function loadTestCases(testDirectory?: string): TestCase[] {
@@ -197,5 +188,6 @@ export {
     isAutomated,
     isPerBuild,
     isPerRelease,
-    manualSelectionOnly
+    manualSelectionOnly,
+    extractId
 };
