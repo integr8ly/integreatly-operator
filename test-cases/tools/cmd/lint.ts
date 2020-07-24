@@ -8,13 +8,13 @@ import {
 import {
     desiredFileName,
     isAutomated,
-    loadTestCases,
-    TestCase,
+    isPerBuild,
     isPerRelease,
-    isPerBuild
+    loadTestCases,
+    TestCase
 } from "../lib/test-case";
-import { logger } from "../lib/winston";
 import { isEmpty } from "../lib/utils";
+import { logger } from "../lib/winston";
 
 type Linter = (test: TestCase) => error;
 
