@@ -341,5 +341,4 @@ spec:
   maturity: alpha
   provider:
     name: Integreatly
-  replaces: cloud-resources.v0.16.1
   version: 0.17.0
