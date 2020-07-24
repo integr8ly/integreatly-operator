@@ -41,6 +41,7 @@ const csv: CommandModule<{}, CSVArgs> = {
                 "Category",
                 "Title",
                 "Tags",
+                "Environments",
                 "Components",
                 "Targets",
                 "Estimate",
@@ -57,6 +58,7 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.category,
                 t.title,
                 t.tags.join(" "),
+                t.environments.join(" ")
                 t.components.join(" "),
                 t.targets.join(" "),
                 t.estimate,
