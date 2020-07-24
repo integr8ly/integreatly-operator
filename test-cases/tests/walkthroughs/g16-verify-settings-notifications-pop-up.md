@@ -8,7 +8,7 @@ targets:
 
 Acceptance Criteria:
 
-When logged into solution explorer as a customer-admin
+When logged into solution explorer as a user from the dedicated-admin group for example customer-admin01.
 
 1. Select the settings cog in the top right hand corner, it should be active.
 2. The top of the settings page should have a green dismissable banner at the top.
