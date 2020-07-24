@@ -1,7 +1,7 @@
 ---
 automation:
   - INTLY-7748
-environment:
+environments:
   - osd-post-upgrade
   - osd-fresh-install
 estimate: 15m

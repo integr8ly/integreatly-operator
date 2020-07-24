@@ -1,7 +1,7 @@
 ---
 automation:
   - INTLY-7416
-environment:
+environments:
   - osd-post-upgrade
   - osd-fresh-install
   - rhpds
