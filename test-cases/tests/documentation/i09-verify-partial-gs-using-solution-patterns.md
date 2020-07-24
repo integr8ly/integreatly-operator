@@ -1,4 +1,4 @@
-# i09 - verify partial gs using solution patterns
+# I09 - Verify partial gs using solution patterns
 
 Sprint #20
 

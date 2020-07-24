@@ -1,4 +1,4 @@
-# i14 verify partial ag backup window
+# I14 - Verify partial ag backup window
 
 Sprint #20
 

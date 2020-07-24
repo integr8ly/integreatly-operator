@@ -1,4 +1,4 @@
-# i12 verify partial ag associating apicast
+# I12 - Verify partial ag associating apicast
 
 Sprint #20
 
