@@ -1,10 +1,17 @@
 import * as fs from "fs";
 import { Argv, CommandModule } from "yargs";
-import { filterTests, loadTestCases, stringToFilter } from "../lib/test-case";
+import {
+    filterTests,
+    loadTestCases,
+    releaseFilter,
+    stringToFilter
+} from "../lib/test-case";
 
 interface CSVArgs {
-    output: string;
-    filter: string[];
+    output?: string;
+    environment?: string;
+    target?: string;
+    filter?: string[];
 }
 
 const jql = (id: string) =>
@@ -16,10 +23,21 @@ const runsLink = (id: string) =>
 // tslint:disable:object-literal-sort-keys
 const csv: CommandModule<{}, CSVArgs> = {
     command: "csv",
-    describe: "export all test cases in a csv file",
+    describe:
+        "export all test cases in a csv file or print them to stdout (to pretty print the stdout use `| column -t -s, | bat`)",
     builder: {
         output: {
             describe: "the name of the file where to write the csv table",
+            type: "string"
+        },
+        environment: {
+            describe:
+                "the environment name used from the release filter, if not set the release filter will not be used",
+            type: "string"
+        },
+        target: {
+            describe:
+                "the target version used from the release filter, if not set the release filter will not be used",
             type: "string"
         },
         filter: {
@@ -28,7 +46,20 @@ const csv: CommandModule<{}, CSVArgs> = {
         }
     },
     handler: async args => {
+        if (
+            (args.environment && !args.target) ||
+            (args.target && !args.environment)
+        ) {
+            throw new Error(
+                "if environment is passed also target must be passed and vice versa"
+            );
+        }
+
         let tests = loadTestCases();
+
+        if (args.target || args.environment) {
+            tests = releaseFilter(tests, args.environment, args.target);
+        }
 
         if (args.filter !== undefined) {
             tests = filterTests(tests, stringToFilter(args.filter));
@@ -44,7 +75,6 @@ const csv: CommandModule<{}, CSVArgs> = {
                 "Components",
                 "Targets",
                 "Estimate",
-                "Require",
                 "Automation Jiras",
                 "Link",
                 "Runs"
@@ -61,7 +91,6 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.components.join(" "),
                 t.targets.join(" "),
                 t.estimate,
-                t.require.join(" "),
                 t.automation.join(" "),
                 t.url,
                 runsLink(t.id)

@@ -2,6 +2,7 @@ import * as matter from "gray-matter";
 import * as path from "path";
 import {
     AUTOMATED_TAG,
+    DESTRUCTIVE_TAG,
     MANUAL_SELECTION_TAG,
     PER_BUILD_TAG,
     PER_RELEASE_TAG
@@ -18,7 +19,6 @@ interface Metadata {
     components: string[];
     environments: string[];
     estimate: string;
-    require: string[];
     tags: string[];
     targets: string[];
 }
@@ -29,7 +29,7 @@ interface Filter {
 }
 
 interface Filters {
-    id?: Filter,
+    id?: Filter;
     category?: Filter;
     environments?: Filter;
     tags?: Filter;
@@ -48,7 +48,6 @@ interface TestCase {
     targets: string[];
     components: string[];
     automation: string[];
-    require: string[];
     file: string;
     url: string;
 }
@@ -137,7 +136,6 @@ function loadTestCase(file: string): TestCase {
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
         file,
         id,
-        require: data.require || [],
         tags: data.tags || [],
         targets: data.targets || [],
         title,
@@ -209,6 +207,40 @@ function filterTests(tests: TestCase[], filters: Filters): TestCase[] {
     });
 }
 
+/**
+ * The release filter is the filter applied to the test cases to generate the testing Epic
+ */
+function releaseFilter(
+    tests: TestCase[],
+    environment: string,
+    target: string
+): TestCase[] {
+    return tests.filter(test => {
+        if (isAutomated(test)) {
+            // exclude automated tests
+            return false;
+        }
+
+        if (!test.environments.includes(environment)) {
+            // exclude all tests that are not part of the targeted env
+            return false;
+        }
+
+        if (isPerBuild(test) || isPerRelease(test)) {
+            // include all test that are marked as per-build or per-release
+            return true;
+        }
+
+        if (test.targets.includes(target)) {
+            // include all test with the matched target version
+            return true;
+        }
+
+        // exclude anything else
+        return false;
+    });
+}
+
 function desiredFileName(test: TestCase): string {
     let name = `${test.id} - ${test.title}`;
 
@@ -233,6 +265,10 @@ function isPerRelease(test: TestCase): boolean {
     return test.tags.includes(PER_RELEASE_TAG);
 }
 
+function isDestructive(test: TestCase): boolean {
+    return test.tags.includes(DESTRUCTIVE_TAG);
+}
+
 function manualSelectionOnly(test: TestCase): boolean {
     return test.tags.includes(MANUAL_SELECTION_TAG);
 }
@@ -245,7 +281,9 @@ export {
     isAutomated,
     isPerBuild,
     isPerRelease,
+    isDestructive,
     manualSelectionOnly,
     extractId,
-    stringToFilter
+    stringToFilter,
+    releaseFilter
 };
