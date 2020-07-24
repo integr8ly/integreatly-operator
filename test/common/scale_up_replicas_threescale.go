@@ -215,7 +215,7 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 
 func check3ScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
 
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		for _, name := range threeScaleDeploymentConfigs {
 			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
@@ -233,8 +233,4 @@ func check3ScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas int
 
 		return true, nil
 	})
-	if err != nil {
-		return fmt.Errorf("Number of replicas for threescale replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
-	}
-	return nil
 }
