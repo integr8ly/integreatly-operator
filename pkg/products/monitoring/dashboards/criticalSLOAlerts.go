@@ -337,7 +337,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "0,0",
-			"timeFrom": 28d,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Remaining Error Budget",
 			"type": "singlestat",
@@ -417,7 +417,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -518,7 +518,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -785,7 +785,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1167,7 +1167,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1549,7 +1549,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -1931,7 +1931,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2313,7 +2313,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2507,7 +2507,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": true,
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2568,7 +2568,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			},
 			"seriesOverrides": [],
 			"spaceLength": 10,
-			"stack": false,
+			"stack": false,while true; do   if oc get deployment keycloak-operator -n redhat-rhmi-rhsso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhmi-rhsso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhmi-rhsso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhmi-rhsso;   fi;   sleep 5; done
 			"steppedLine": false,
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
@@ -2690,12 +2690,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -2889,7 +2889,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": true,
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3072,12 +3072,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -3454,12 +3454,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -3719,7 +3719,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": true,
+				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3836,12 +3836,12 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "    sum_over_time(\n        (clamp_max(\n            sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'})\n            , 1\n        ))[28d:10m]\n    ) * (10 * 60 * 1000)",
 				"format": "time_series",
-				"instant": false,
+				"instant": true,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
 			"thresholds": "",
-			"timeFrom": null,
+			"timeFrom": "28d",
 			"timeShift": null,
 			"title": "Firing Time ",
 			"type": "singlestat",
@@ -4212,7 +4212,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			}
 		]
 	},
-	"refresh": "10s"
+	"refresh": "10s",
 	"time": {
 		"from": "now-5m",
 		"to": "now"
