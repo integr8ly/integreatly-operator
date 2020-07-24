@@ -25,14 +25,39 @@ function lintDuplicateIDs(): Linter {
 
     return (test: TestCase): error => {
         if (test.id in parsed) {
-            return `the ID: ${test.id} is duplicated in '${parsed[test.id].file}' and in '${test.file}'`;
+            return `the id: ${test.id} is duplicated in '${parsed[test.id].file}' and in '${test.file}'`;
         }
         parsed[test.id] = test;
         return null;
     };
 }
 
+function lintCategories(): Linter {
+    const categories = [
+        "alerts",
+        "authorization",
+        "backup-restore",
+        "dashboards",
+        "documentation",
+        "high-availability",
+        "installation",
+        "monitoring",
+        "performance",
+        "products",
+        "upgrade",
+        "walkthroughs"
+    ];
+
+    return (test: TestCase): error => {
+        if (!categories.includes(test.category)) {
+            return `invalid category: ${test.category} in '${test.file}', valid categories are ${categories}`;
+        }
+        return null;
+    };
+}
+
 const linters: { [key: string]: Linter } = {
+    categories: lintCategories(),
     "duplicate-ids": lintDuplicateIDs(),
     "file-names": lintFileNames()
 };
