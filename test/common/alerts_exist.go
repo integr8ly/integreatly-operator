@@ -430,6 +430,54 @@ var expectedAWSRules = []alertsTestRule{
 		},
 	},
 	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-threescale-redis-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Threescale-Redis-RhmiRedisResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Threescale-Backend-Redis-RhmiRedisResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-threescale-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Threescale-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-codeready-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Codeready-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-ups-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Ups-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-fuse-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Fuse-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Rhsso-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
+		File: RHMIOperatorNamespace + "resource-deletion-status-phase-failed-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		Rules: []string{
+			"Rhssouser-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
+		},
+	},
+	{
 		File: RHMIOperatorNamespace + "-availability-rule-threescale-postgres-" + InstallationName + ".yaml",
 		Rules: []string{
 			"Threescale-Postgres-RhmiPostgresInstanceUnavailable",
