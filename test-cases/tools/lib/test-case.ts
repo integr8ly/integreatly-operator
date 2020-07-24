@@ -9,12 +9,13 @@ const REPO_URL =
     "https://github.com/integr8ly/integreatly-operator/tree/master/test-cases";
 
 interface Metadata {
-    tags: string[];
-    estimate: string;
-    targets: string[];
     automation: string[];
     components: string[];
+    environments: string[];
+    estimate: string;
     require: string[];
+    tags: string[];
+    targets: string[];
 }
 
 interface TestCase {
