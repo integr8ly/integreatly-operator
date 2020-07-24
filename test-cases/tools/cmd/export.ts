@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import { Argv, CommandModule } from "yargs";
-import { filterTests, loadTestCases } from "../lib/test-case";
+import { filterTests, loadTestCases, stringToFilter } from "../lib/test-case";
 
 interface CSVArgs {
     output: string;
-    filter: string;
+    filter: string[];
 }
 
 const jql = (id: string) =>
@@ -23,15 +23,15 @@ const csv: CommandModule<{}, CSVArgs> = {
             type: "string"
         },
         filter: {
-            describe: "filter test to create by tags",
-            type: "string"
+            describe: "filter test to create by most of the fields",
+            type: "array"
         }
     },
     handler: async args => {
         let tests = loadTestCases();
 
         if (args.filter !== undefined) {
-            tests = filterTests(tests, args.filter.split(","));
+            tests = filterTests(tests, stringToFilter(args.filter));
         }
 
         const rows = [

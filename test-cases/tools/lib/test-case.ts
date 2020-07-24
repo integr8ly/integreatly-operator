@@ -23,6 +23,20 @@ interface Metadata {
     targets: string[];
 }
 
+interface Filter {
+    include: string[];
+    exclude: string[];
+}
+
+interface Filters {
+    id?: Filter,
+    category?: Filter;
+    environments?: Filter;
+    tags?: Filter;
+    targets?: Filter;
+    components?: Filter;
+}
+
 interface TestCase {
     id: string;
     category: string;
@@ -131,19 +145,62 @@ function loadTestCase(file: string): TestCase {
     };
 }
 
-function filterTests(tests: TestCase[], filters: string[]): TestCase[] {
-    return tests.filter(test => {
-        for (let filter of filters) {
-            if (filter.startsWith("^")) {
-                filter = filter.slice(1);
-                if (test.tags.includes(filter)) {
-                    // tests with this tag is not included
-                    return false;
-                }
+function stringToFilter(filters: string[]): Filters {
+    const r: Filters = {};
+
+    for (const fs of filters) {
+        const [n, ff] = fs.split("=");
+
+        r[n] = { include: [], exclude: [] };
+        for (const f of ff.split(",")) {
+            if (f.startsWith("^")) {
+                r[n].exclude.push(f.slice(1));
             } else {
-                if (!test.tags.includes(filter)) {
-                    // tests without this tag is not included
-                    return false;
+                r[n].include.push(f);
+            }
+        }
+    }
+
+    return r;
+}
+
+function filterTests(tests: TestCase[], filters: Filters): TestCase[] {
+    return tests.filter(test => {
+        for (const f of Object.keys(filters)) {
+            const filter: Filter = filters[f];
+            const field: string | string[] = test[f];
+
+            if (filter === undefined) {
+                continue;
+            }
+
+            if (filter.include !== undefined) {
+                for (const include of filter.include) {
+                    // exclude tests that don't contain the include condition
+                    if (Array.isArray(field)) {
+                        if (!field.includes(include)) {
+                            return false;
+                        }
+                    } else {
+                        if (field !== include) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            if (filter.exclude !== undefined) {
+                for (const exclude of filter.exclude) {
+                    // exclude tests that contain the exclude condition
+                    if (Array.isArray(field)) {
+                        if (field.includes(exclude)) {
+                            return false;
+                        }
+                    } else {
+                        if (field === exclude) {
+                            return false;
+                        }
+                    }
                 }
             }
         }
@@ -189,5 +246,6 @@ export {
     isPerBuild,
     isPerRelease,
     manualSelectionOnly,
-    extractId
+    extractId,
+    stringToFilter
 };

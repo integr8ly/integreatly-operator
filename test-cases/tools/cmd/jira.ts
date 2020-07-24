@@ -1,7 +1,12 @@
 import * as markdown2confluence from "markdown2confluence-cws";
 import { CommandModule } from "yargs";
 import { assertEpic, Issue, Jira } from "../lib/jira";
-import { filterTests, loadTestCases, TestCase } from "../lib/test-case";
+import {
+    filterTests,
+    loadTestCases,
+    stringToFilter,
+    TestCase
+} from "../lib/test-case";
 import { loadTestRuns, TestRun } from "../lib/test-run";
 import { logger } from "../lib/winston";
 
@@ -88,7 +93,7 @@ interface Args {
     jiraPassword: string;
     epic: string;
     previousEpic?: string;
-    filter?: string;
+    filter?: string[];
     dryRun: boolean;
     autoResolve: boolean;
 }
@@ -111,8 +116,8 @@ const jira: CommandModule<{}, Args> = {
             type: "string"
         },
         filter: {
-            describe: "filter test to create by tags",
-            type: "string"
+            describe: "filter test to create by most of the fields",
+            type: "array"
         },
         epic: {
             demand: true,
@@ -145,7 +150,7 @@ const jira: CommandModule<{}, Args> = {
         let tests = loadTestCases();
 
         if (args.filter !== undefined) {
-            tests = filterTests(tests, args.filter.split(","));
+            tests = filterTests(tests, stringToFilter(args.filter));
         }
 
         const jiraApi = new Jira(args.jiraUsername, args.jiraPassword);
