@@ -2,9 +2,7 @@ import * as markdown2confluence from "markdown2confluence-cws";
 import { CommandModule } from "yargs";
 import { assertEpic, Issue, Jira } from "../lib/jira";
 import { filterTests, loadTestCases, TestCase } from "../lib/test-case";
-import { loadTestFiles } from "../lib/test-file";
 import { loadTestRuns, TestRun } from "../lib/test-run";
-import { flat } from "../lib/utils";
 import { logger } from "../lib/winston";
 
 const GENERAL_GUIDELINES_URL =
@@ -48,11 +46,7 @@ function toIssue(
     fixBuildId: string,
     priority: string
 ): Issue {
-    let content = prependOriginLink(
-        test.content,
-        test.file.file,
-        test.file.link
-    );
+    let content = prependOriginLink(test.content, test.file, test.url);
 
     content = appendLinkToGeneralGuidelines(content);
 
@@ -148,7 +142,7 @@ const jira: CommandModule<{}, Args> = {
             );
         }
 
-        let tests = flat(loadTestFiles().map(file => loadTestCases(file)));
+        let tests = loadTestCases();
 
         if (args.filter !== undefined) {
             tests = filterTests(tests, args.filter.split(","));

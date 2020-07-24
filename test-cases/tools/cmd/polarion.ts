@@ -2,9 +2,7 @@ import { Argv, CommandModule } from "yargs";
 import { assertEpic, Jira } from "../lib/jira";
 import { uploadToPolarion } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
-import { loadTestFiles } from "../lib/test-file";
 import { loadTestRuns } from "../lib/test-run";
-import { flat } from "../lib/utils";
 import { logger } from "../lib/winston";
 
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
@@ -37,7 +35,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
         }
     },
     handler: async args => {
-        const tests = flat(loadTestFiles().map(file => loadTestCases(file)));
+        const tests = loadTestCases();
 
         // Polarion Test Case Importer: https://mojo.redhat.com/docs/DOC-1075945
         //

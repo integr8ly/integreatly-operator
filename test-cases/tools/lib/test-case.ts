@@ -1,10 +1,21 @@
-import * as clone from "clone";
-import * as merge from "deepmerge";
 import * as fs from "fs";
-import * as handlebars from "handlebars";
+import * as matter from "gray-matter";
 import * as path from "path";
-import { Metadata, TestFile } from "./test-file";
 import { extractId } from "./utils";
+
+const TEST_DIR = "./tests";
+const TEST_FILTER = /^.*\.md$/;
+const REPO_URL =
+    "https://github.com/integr8ly/integreatly-operator/tree/master/test-cases";
+
+interface Metadata {
+    tags: string[];
+    estimate: string;
+    targets: string[];
+    automation: string[];
+    components: string[];
+    require: string[];
+}
 
 interface TestCase {
     id: string;
@@ -17,50 +28,8 @@ interface TestCase {
     components: string[];
     automation: string[];
     require: string[];
-    file: TestFile;
-}
-
-/**
- * Handlebars functions
- */
-handlebars.registerHelper("lowercase", str => str.toLowerCase());
-
-function expandVariants(
-    test: TestFile
-): Array<{ data: Metadata; content: string }> {
-    const result = [];
-
-    if (test.data.variants !== undefined) {
-        const template = handlebars.compile(test.content);
-        for (const variant of test.data.variants) {
-            // clone metadata
-            let data = clone(test.data);
-
-            // remove redundant variants
-            delete data.variants;
-
-            // merge data
-            data = merge(data, variant);
-
-            // render content
-            const content = template(data.vars);
-
-            // remove vars
-            delete data.vars;
-
-            result.push({
-                content,
-                data
-            });
-        }
-    } else {
-        result.push({
-            content: test.content,
-            data: test.data
-        });
-    }
-
-    return result;
+    file: string;
+    url: string;
 }
 
 function extractTitle(content: string): { title: string; content: string } {
@@ -107,59 +76,59 @@ function extractCategory(file: string): string {
     return path.basename(path.dirname(file));
 }
 
-function expandImports(content: string, file: string): string {
-    const { dir } = path.parse(file);
-    const expanded = [];
-    for (const line of content.split("\n")) {
-        // import files when matching @ [Some text](./relative/file.md)
-        // in the content
-        const match = /^@\s*\[.*\]\((?<file>.*)\)\s*$/.exec(line);
-        if (match) {
-            const fileToImport = path.join(dir, match.groups.file);
-            const contentToImport = fs.readFileSync(fileToImport);
-            expanded.push(contentToImport);
-        } else {
-            expanded.push(line);
+/**
+ * Recursive search for all files in dir that matches the filter.
+ */
+function walk(dir: string, filter: RegExp): string[] {
+    const results: string[] = [];
+
+    for (const file of fs.readdirSync(dir)) {
+        const full = path.join(dir, file);
+
+        const stats = fs.statSync(full);
+
+        if (stats.isDirectory()) {
+            results.push(...walk(full, filter));
+        } else if (filter.test(file)) {
+            results.push(full);
         }
     }
 
-    return expanded.join("\n");
+    return results;
 }
 
-function loadTestCases(file: TestFile): TestCase[] {
-    return expandVariants(file).map(({ data, content }) => {
-        const titleExtract = extractTitle(content);
-        let title = titleExtract.title;
-        content = titleExtract.content;
+function loadTestCases(testDirectory?: string): TestCase[] {
+    return walk(testDirectory || TEST_DIR, TEST_FILTER).map(loadTestCase);
+}
 
-        const idExtract = extractId(title);
-        const id = idExtract.id;
-        title = idExtract.title;
+function loadTestCase(file: string): TestCase {
+    const m = matter.read(file);
+    const data = m.data as Metadata;
 
-        const category = extractCategory(file.file);
+    const te = extractTitle(m.content);
+    let title = te.title;
+    const content = te.content;
 
-        content = expandImports(content, file.file);
+    const ie = extractId(title);
+    const id = ie.id;
+    title = ie.title;
 
-        const tags = data.tags || [];
+    const category = extractCategory(file);
 
-        if (data.targets === undefined) {
-            tags.push("per-release");
-        }
-
-        return {
-            automation: data.automation || [],
-            category,
-            components: data.components || [],
-            content,
-            estimate: data.estimate ? convertEstimation(data.estimate) : null,
-            file,
-            id,
-            require: data.require || [],
-            tags,
-            targets: data.targets || [],
-            title
-        };
-    });
+    return {
+        automation: data.automation || [],
+        category,
+        components: data.components || [],
+        content,
+        estimate: data.estimate ? convertEstimation(data.estimate) : null,
+        file,
+        id,
+        require: data.require || [],
+        tags: data.tags || [],
+        targets: data.targets || [],
+        title,
+        url: `${REPO_URL}/${file}`
+    };
 }
 
 function filterTests(tests: TestCase[], filters: string[]): TestCase[] {
@@ -183,4 +152,16 @@ function filterTests(tests: TestCase[], filters: string[]): TestCase[] {
     });
 }
 
-export { loadTestCases, TestCase, extractTitle, filterTests };
+function desiredFileName(test: TestCase): string {
+    let name = `${test.id} - ${test.title}`;
+
+    name = name.toLowerCase();
+    name = name.replace(/[^a-z0-9\s]/g, "");
+    name = name.replace(/\s+/g, "-");
+    name = name.substr(0, 64);
+    name = name.replace(/-$/, "");
+
+    return `${name}.md`;
+}
+
+export { loadTestCases, TestCase, filterTests, desiredFileName };

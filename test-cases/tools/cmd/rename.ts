@@ -1,8 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { CommandModule } from "yargs";
-import { extractTitle } from "../lib/test-case";
-import { desiredFileName, loadTestFiles } from "../lib/test-file";
+import { desiredFileName, loadTestCases } from "../lib/test-case";
 import { logger } from "../lib/winston";
 
 // tslint:disable:object-literal-sort-keys
@@ -11,16 +10,15 @@ const rename: CommandModule<{}, {}> = {
     describe: "rename all test cases files according to the titles",
     builder: {},
     handler: () => {
-        const files = loadTestFiles();
+        const tests = loadTestCases();
 
-        files.forEach(file => {
-            const { title } = extractTitle(file.content);
-            const desired = desiredFileName(title);
+        tests.forEach(test => {
+            const desired = desiredFileName(test);
 
-            const { base: current, dir } = path.parse(file.file);
+            const { base: current, dir } = path.parse(test.file);
 
             if (current !== desired) {
-                fs.renameSync(file.file, path.join(dir, desired));
+                fs.renameSync(test.file, path.join(dir, desired));
                 logger.info(`${current} renamed to ${desired}`);
             }
         });

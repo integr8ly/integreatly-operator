@@ -1,58 +1,41 @@
 import * as path from "path";
-import { CommandModule, string } from "yargs";
-import { extractTitle, loadTestCases, TestCase } from "../lib/test-case";
-import { desiredFileName, loadTestFiles } from "../lib/test-file";
-import { flat } from "../lib/utils";
+import { CommandModule } from "yargs";
+import { desiredFileName, loadTestCases, TestCase } from "../lib/test-case";
 import { logger } from "../lib/winston";
 
-function lintFileNames() {
-    const files = loadTestFiles();
+type Linter = (test: TestCase) => error;
 
-    let dirty = false;
-    files.forEach(file => {
-        const { title } = extractTitle(file.content);
-        const desired = desiredFileName(title);
+type error = string | null;
 
-        const { base: current, dir } = path.parse(file.file);
+function lintFileNames(): Linter {
+    return (test: TestCase): error => {
+        const desired = desiredFileName(test);
+
+        const { base: current } = path.parse(test.file);
 
         if (current !== desired) {
-            dirty = true;
-            logger.warn(`${current} should be renamed to ${desired}`);
+            return `${current} should be renamed to ${desired}`;
         }
-    });
-
-    if (dirty) {
-        logger.error(
-            "some files are not named correctly, use `./tools.sh rename` to fix them all"
-        );
-        process.exit(1);
-    }
+        return null;
+    };
 }
 
-function lintIDs() {
-    const tests = flat(loadTestFiles().map(file => loadTestCases(file)));
-
+function lintDuplicateIDs(): Linter {
     const parsed: { [id: string]: TestCase } = {};
 
-    let dirty = false;
-    tests.forEach(test => {
+    return (test: TestCase): error => {
         if (test.id in parsed) {
-            dirty = true;
-            logger.warn(
-                `the ${test.id} is duplicated in '${parsed[test.id].file.file}' and in '${test.file.file}'`
-            );
-        } else {
-            parsed[test.id] = test;
+            return `the ID: ${test.id} is duplicated in '${parsed[test.id].file}' and in '${test.file}'`;
         }
-    });
-
-    if (dirty) {
-        logger.error(
-            "some IDs are duplicated, you need to select a new ID for the new test cases"
-        );
-        process.exit(1);
-    }
+        parsed[test.id] = test;
+        return null;
+    };
 }
+
+const linters: { [key: string]: Linter } = {
+    "duplicate-ids": lintDuplicateIDs(),
+    "file-names": lintFileNames()
+};
 
 // tslint:disable:object-literal-sort-keys
 const lint: CommandModule<{}, {}> = {
@@ -60,13 +43,27 @@ const lint: CommandModule<{}, {}> = {
     describe: "verify all test cases",
     builder: {},
     handler: () => {
-        logger.info("checking test cases IDs");
-        lintIDs();
+        const tests = loadTestCases();
 
-        logger.info("checking test cases file names");
-        lintFileNames();
+        let dirty = false;
+        for (const l of Object.keys(linters)) {
+            logger.info(`linting: ${l}`);
 
-        logger.info("all test cases are correct");
+            for (const test of tests) {
+                const err = linters[l](test);
+                if (err !== null) {
+                    logger.error(`${l}: ${err}`);
+                    dirty = true;
+                }
+            }
+        }
+
+        if (dirty) {
+            logger.error("linting: some checks failed, see errors above");
+            process.exit(1);
+        }
+
+        logger.info("linting: all checks succeeded");
     }
 };
 

@@ -1,8 +1,6 @@
 import * as fs from "fs";
 import { Argv, CommandModule } from "yargs";
 import { filterTests, loadTestCases } from "../lib/test-case";
-import { loadTestFiles } from "../lib/test-file";
-import { flat } from "../lib/utils";
 
 interface CSVArgs {
     output: string;
@@ -31,7 +29,7 @@ const csv: CommandModule<{}, CSVArgs> = {
         }
     },
     handler: async args => {
-        let tests = flat(loadTestFiles().map(file => loadTestCases(file)));
+        let tests = loadTestCases();
 
         if (args.filter !== undefined) {
             tests = filterTests(tests, args.filter.split(","));
@@ -63,7 +61,7 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.targets.join(" "),
                 t.estimate,
                 t.require.join(" "),
-                t.automationJiras.join(" "),
+                t.automation.join(" "),
                 t.file.link,
                 runsLink(t.id)
             ].join(",")
