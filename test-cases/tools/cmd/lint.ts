@@ -1,11 +1,48 @@
 import * as path from "path";
-import { CommandModule } from "yargs";
+import { CommandModule, env } from "yargs";
 import { desiredFileName, loadTestCases, TestCase } from "../lib/test-case";
 import { logger } from "../lib/winston";
 
 type Linter = (test: TestCase) => error;
 
 type error = string | null;
+
+const AUTOMATION = /[A-Z]+-[0-9]+/;
+
+const CATEGORIES = [
+    "alerts",
+    "authorization",
+    "backup-restore",
+    "dashboards",
+    "documentation",
+    "high-availability",
+    "installation",
+    "monitoring",
+    "performance",
+    "products",
+    "upgrade",
+    "walkthroughs"
+];
+
+const COMPONENTS = [
+    "monitoring",
+    "product-ups",
+    "product-codeready",
+    "product-apicurito",
+    "product-amq",
+    "product-3scale",
+    "product-sso",
+    "product-fuse",
+    "product-data-sync"
+];
+
+const ENVIRONMENTS = [
+    "osd-fresh-install",
+    "osd-post-upgrade",
+    "osd-private-post-upgrade",
+    "rhpds",
+    "external"
+];
 
 function lintFileNames(): Linter {
     return (test: TestCase): error => {
@@ -33,57 +70,59 @@ function lintDuplicateIDs(): Linter {
 }
 
 function lintCategories(): Linter {
-    const categories = [
-        "alerts",
-        "authorization",
-        "backup-restore",
-        "dashboards",
-        "documentation",
-        "high-availability",
-        "installation",
-        "monitoring",
-        "performance",
-        "products",
-        "upgrade",
-        "walkthroughs"
-    ];
-
-    return (test: TestCase): error => {
-        if (!categories.includes(test.category)) {
-            return `invalid category: ${test.category} in '${test.file}', valid categories are ${categories}`;
-        }
-        return null;
-    };
+    return lintStringField(
+        "category",
+        c => !CATEGORIES.includes(c),
+        `valid categories are ${CATEGORIES}`
+    );
 }
 
 function lintAutomationJiras(): Linter {
+    return lintStringArrayField(
+        "automation",
+        a => !AUTOMATION.test(a),
+        `the automation ticket must respect the jira format ${AUTOMATION}`
+    );
+}
+
+function lintComponents(): Linter {
+    return lintStringArrayField(
+        "components",
+        c => !COMPONENTS.includes(c),
+        `valid components are ${COMPONENTS}`
+    );
+}
+
+function lintEnvironments(): Linter {
+    return lintStringArrayField(
+        "environments",
+        e => !ENVIRONMENTS.includes(e),
+        `valid environments are ${ENVIRONMENTS}`
+    );
+}
+
+function lintStringField(
+    field: string,
+    l: (f: string) => boolean,
+    tip: string
+): Linter {
     return (test: TestCase): error => {
-        for (const a of test.automation) {
-            if (!/[A-Z]+-[0-9]+/.test(a)) {
-                return `invalid automation: ${a} in '${test.file}', the automation ticket must respect the jira format /[A-Z]+-[0-9]+/`;
-            }
+        if (l(test[field])) {
+            return `invalid ${field}: ${test[field]} in '${test.file}', ${tip}`;
         }
         return null;
     };
 }
 
-function lintComponents(): Linter {
-    const components = [
-        "monitoring",
-        "product-ups",
-        "product-codeready",
-        "product-apicurito",
-        "product-amq",
-        "product-3scale",
-        "product-sso",
-        "product-fuse",
-        "product-data-sync"
-    ];
-
+function lintStringArrayField(
+    field: string,
+    l: (f: string) => boolean,
+    tip: string
+): Linter {
     return (test: TestCase): error => {
-        for (const c of test.components) {
-            if (!components.includes(c)) {
-                return `invalid component: ${c} in '${test.file}', valid components are ${components}`;
+        for (const e of test[field]) {
+            if (l(e)) {
+                return `invalid environment: ${e} in '${test.file}', ${tip}`;
             }
         }
         return null;
@@ -95,6 +134,7 @@ const linters: { [key: string]: Linter } = {
     categories: lintCategories(),
     components: lintComponents(),
     "duplicate-ids": lintDuplicateIDs(),
+    environments: lintEnvironments(),
     "file-names": lintFileNames()
 };
 

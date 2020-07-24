@@ -23,6 +23,7 @@ interface TestCase {
     category: string;
     title: string;
     content: string;
+    environments: string[];
     estimate: number;
     tags: string[];
     targets: string[];
@@ -121,6 +122,7 @@ function loadTestCase(file: string): TestCase {
         category,
         components: data.components || [],
         content,
+        environments: data.environments || [],
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
         file,
         id,
