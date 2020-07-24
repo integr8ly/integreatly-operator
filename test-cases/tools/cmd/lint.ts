@@ -2,9 +2,10 @@ import * as path from "path";
 import { CommandModule } from "yargs";
 import {
     AUTOMATED_TAG,
+    DESTRUCTIVE_TAG,
     PER_BUILD_TAG,
     PER_RELEASE_TAG,
-    DESTRUCTIVE_TAG
+    STEPS_SECTION
 } from "../lib/constants";
 import {
     desiredFileName,
@@ -62,6 +63,8 @@ const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
 const TAGS = [PER_BUILD_TAG, PER_RELEASE_TAG, AUTOMATED_TAG, DESTRUCTIVE_TAG];
 
+const SECTIONS = [STEPS_SECTION, "Description", "Prerequisites"];
+
 function lintFileNames(): Linter {
     return (test: TestCase): error => {
         const desired = desiredFileName(test);
@@ -91,7 +94,7 @@ function lintCategories(): Linter {
     return lintStringField(
         "category",
         includes(CATEGORIES),
-        `valid categories are ${CATEGORIES}`
+        `valid categories are: ${CATEGORIES}`
     );
 }
 
@@ -99,7 +102,7 @@ function lintAutomationJiras(): Linter {
     return lintStringArrayField(
         "automation",
         regex(AUTOMATION),
-        `the automation ticket must respect the jira format ${AUTOMATION}`
+        `the automation ticket must respect the jira format: ${AUTOMATION}`
     );
 }
 
@@ -107,7 +110,7 @@ function lintComponents(): Linter {
     return lintStringArrayField(
         "components",
         includes(COMPONENTS),
-        `valid components are ${COMPONENTS}`
+        `valid components are: ${COMPONENTS}`
     );
 }
 
@@ -115,7 +118,7 @@ function lintEnvironments(): Linter {
     return lintStringArrayField(
         "environments",
         includes(ENVIRONMENTS),
-        `valid environments are ${ENVIRONMENTS}`
+        `valid environments are: ${ENVIRONMENTS}`
     );
 }
 
@@ -131,7 +134,7 @@ function lintTags(): Linter {
     return lintStringArrayField(
         "tags",
         includes(TAGS),
-        `valid tags are ${TAGS}`
+        `valid tags are: ${TAGS}`
     );
 }
 
@@ -142,7 +145,7 @@ function lintStringField(
 ): Linter {
     return (test: TestCase): error => {
         if (l(test[field])) {
-            return `the ${field}: ${test[field]} is not valid, ${tip}`;
+            return `invalid ${field}: ${test[field]}, ${tip}`;
         }
         return null;
     };
@@ -156,7 +159,7 @@ function lintStringArrayField(
     return (test: TestCase): error => {
         for (const e of test[field]) {
             if (l(e)) {
-                return `the ${field}: ${e} is not valid, ${tip}`;
+                return `invalid ${field}: ${e}, ${tip}`;
             }
         }
         return null;
@@ -202,6 +205,32 @@ function lintOccurrence(): Linter {
     };
 }
 
+function lintSections(): Linter {
+    return (test: TestCase): error => {
+        const sections = [];
+
+        const lines = test.content.split("\n");
+        for (const line of lines) {
+            const match = /^\s*#{2}(?!#)\s+(?<section>.*)\s*$/.exec(line);
+            if (match) {
+                sections.push(match.groups.section);
+            }
+        }
+
+        for (const section of sections) {
+            if (!SECTIONS.includes(section)) {
+                return `invalid section: ${section}, valid sections are: ${SECTIONS}`;
+            }
+        }
+
+        if (!sections.includes(STEPS_SECTION)) {
+            return `the ${STEPS_SECTION} section is not defined`;
+        }
+
+        return null;
+    };
+}
+
 const linters: { [key: string]: Linter } = {
     "automation-jiras": lintAutomationJiras(),
     categories: lintCategories(),
@@ -211,6 +240,7 @@ const linters: { [key: string]: Linter } = {
     "file-names": lintFileNames(),
     "mandatory-environment": lintMandatoryEnvironment(),
     occurrence: lintOccurrence(),
+    sections: lintSections(),
     tags: lintTags(),
     targets: lintTargets()
 };
