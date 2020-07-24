@@ -9,6 +9,9 @@
 //  * Redis Connectivity Alerts (per product)
 //  * Redis Resource Status Phase Pending (per product)
 //  * Redis Resource Status Phase Failed (per product)
+//  * Redis will run out of memory in 4 days (per 3scale redis)
+//  * Redis will run out of memory in 4 hours (per 3scale redis)
+//  * Redis high memory usage for the last hour (per 3scale redis)
 //  * Postgres will run out of space in 4 days (per product)
 //  * Postgres will run out of space in 4 hours (per product)
 //
@@ -38,12 +41,13 @@ const (
 	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0 once it is possible to update to that version
 	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
 	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
-
-	alertFor5Mins  = "5m"
-	alertFor15Mins = "15m"
-	alertFor20Mins = "20m"
-	alertFor30Mins = "30m"
-	alertFor60Mins = "60m"
+	alertFor5Mins                     = "5m"
+	alertFor15Mins                    = "15m"
+	alertFor10Mins                    = "10m"
+	alertFor20Mins                    = "20m"
+	alertFor30Mins                    = "30m"
+	alertFor60Mins                    = "60m"
+	alertPercentage                   = "90"
 )
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
@@ -393,6 +397,76 @@ func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 		return err
 	}
 	return nil
+}
+
+// CreateRedisMemoryUsageHighAlert creates a PrometheusRule alert to watch for High Memory usage
+// of a Redis cache
+func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
+		return nil, nil
+	}
+	productName := cr.Labels["productName"]
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+
+	alertName := redisCRName + "RedisMemoryUsageHigh"
+	ruleName := fmt.Sprintf("redis-memory-usage-high-rule-%s", cr.Name)
+	alertExp := intstr.FromString(fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} >= %s", "cro_redis_memory_usage_percentage_average", cr.Namespace, cr.Name, productName, alertPercentage))
+	alertDescription := fmt.Sprintf("Redis Memory is %s percent or higher for the last %s. Redis Custom Resource: %s in namespace %s, strategy: %s for the product: %s", alertPercentage, alertFor60Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	labels := map[string]string{
+		"severity":    "critical",
+		"productName": productName,
+	}
+	// create the rule
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
+	if err != nil {
+		return nil, err
+	}
+
+	// job to check time that the operator metrics are exposed
+	job := "cloud-resource-operator-metrics"
+
+	alertName = redisCRName + "RedisMemoryWillFillIn4Hours"
+	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-hours-rule-%s", cr.Name)
+	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
+	//    * [1h] - one hour data points
+	//    * , 4 * 3600 - multiplying data points by 4 hours
+	// and matching by label `job` if the current time is greater than 1 hour of the process start time for the cloud resource operator metrics.
+	//    * on(job) - matching queries by label job across both metrics
+	alertExp = intstr.FromString(
+		fmt.Sprintf("predict_linear(cro_redis_freeable_memory_average{job='%s'}[1h], 4 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 1", job, job))
+
+	alertDescription = fmt.Sprintf("Redis free memory is predicted to fill with in four hours. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	labels = map[string]string{
+		"severity":    "critical",
+		"productName": productName,
+	}
+	// create the rule
+	pr, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor10Mins, alertExp, labels)
+	if err != nil {
+		return nil, err
+	}
+
+	alertName = redisCRName + "RedisMemoryWillFillIn4Days"
+	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-days-rule-%s", cr.Name)
+	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
+	//    * [6h] - six hour data points
+	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
+	// and matching by label `job` if the current time is greater than 6 hour of the process start time for the cloud resource operator metrics.
+	//    * on(job) - matching queries by label job across both metrics
+	fmt.Sprintf("predict_linear(cro_redis_freeable_memory_average{job='%s'}[6h], 4 * 24 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 6", job, job)
+	alertDescription = fmt.Sprintf("Redis free memory is predicted to fill with in four days. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	labels = map[string]string{
+		"severity":    "warning",
+		"productName": productName,
+	}
+	// create the rule
+	pr, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor10Mins, alertExp, labels)
+	if err != nil {
+		return nil, err
+	}
+
+	return pr, nil
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object

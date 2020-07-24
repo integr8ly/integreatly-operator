@@ -11,6 +11,7 @@ const (
 	sopUrlRedisResourceStatusPhasePending    = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_resource_status_phase_pending.asciidoc"
 	sopUrlRedisResourceStatusPhaseFailed     = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_resource_status_phase_failed.asciidoc"
 	sopUrlPostgresWillFill                   = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/postgres_storage_alerts.asciidoc"
+	sopUrlRedisMemoryUsageHigh               = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/redis_memory_usage_high.asciidoc"
 	SopUrlEndpointAvailableAlert             = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc"
 	SopUrlAlertsAndTroubleshooting           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md"
 	sopUrlCloudResourceDeletionStatusFailed  = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/clean_up_cloud_resources_failed_teardown.asciidoc"
