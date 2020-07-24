@@ -2568,7 +2568,7 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			},
 			"seriesOverrides": [],
 			"spaceLength": 10,
-			"stack": false,while true; do   if oc get deployment keycloak-operator -n redhat-rhmi-rhsso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhmi-rhsso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhmi-rhsso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhmi-rhsso;   fi;   sleep 5; done
+			"stack": false,
 			"steppedLine": false,
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
