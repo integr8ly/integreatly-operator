@@ -384,3 +384,13 @@ rules:
       - update
       - delete
   # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
+
+  # Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+  - verbs:
+      - get
+    apiGroups:
+      - ''
+    resources:
+      - configmaps
+  # END Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+  

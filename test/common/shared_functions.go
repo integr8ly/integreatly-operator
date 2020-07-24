@@ -297,3 +297,17 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 		t.Errorf("failed to close response body: %s", err)
 	}
 }
+
+//Detect profile based on CR type
+func IsManaged(client dynclient.Client) (bool, error) {
+	rhmi := &integreatlyv1alpha1.RHMI{}
+	err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
+	if err != nil {
+		return true, fmt.Errorf("error getting RHMI CR: %v", err)
+	}
+
+	if rhmi.Spec.Type == "managed" {
+		return true, nil
+	}
+	return false, nil
+}

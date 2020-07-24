@@ -1,4 +1,4 @@
-# i07 verify partial ag subscribing solution patterns
+# I07 - Verify partial ag subscribing solution patterns
 
 Sprint #20
 

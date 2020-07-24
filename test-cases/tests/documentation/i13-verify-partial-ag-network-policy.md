@@ -1,4 +1,4 @@
-# i13 verify partial ag network policy
+# I13 - Verify partial ag network policy
 
 Sprint #20
 

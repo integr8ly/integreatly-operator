@@ -1,4 +1,4 @@
-# i15 verify partial ag accessing solution explorer
+# I15 - Verify partial ag accessing solution explorer
 
 Sprint #20
 

@@ -272,7 +272,7 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 			return false, err
 		}
 
-		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[integreatlyv1alpha1.StageName(phase)])
+		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[integreatlyv1alpha1.StageName(phase)].Phase)
 		if strings.Contains(phaseStatus, "completed") {
 			return true, nil
 		}
