@@ -3,7 +3,8 @@ import { CommandModule } from "yargs";
 import {
     AUTOMATED_TAG,
     PER_BUILD_TAG,
-    PER_RELEASE_TAG
+    PER_RELEASE_TAG,
+    DESTRUCTIVE_TAG
 } from "../lib/constants";
 import {
     desiredFileName,
@@ -59,7 +60,7 @@ const ENVIRONMENTS = [
 
 const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
-const TAGS = [PER_BUILD_TAG, PER_RELEASE_TAG, AUTOMATED_TAG];
+const TAGS = [PER_BUILD_TAG, PER_RELEASE_TAG, AUTOMATED_TAG, DESTRUCTIVE_TAG];
 
 function lintFileNames(): Linter {
     return (test: TestCase): error => {
