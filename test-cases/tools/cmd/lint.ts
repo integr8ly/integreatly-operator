@@ -223,7 +223,7 @@ function lintSections(): Linter {
             }
         }
 
-        if (!sections.includes(STEPS_SECTION)) {
+        if (!isAutomated(test) && !sections.includes(STEPS_SECTION)) {
             return `the ${STEPS_SECTION} section is not defined`;
         }
 
