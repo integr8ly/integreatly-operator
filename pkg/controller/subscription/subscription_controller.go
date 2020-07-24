@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"reflect"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
@@ -245,36 +244,20 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 
 	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV)
 
-	if isServiceAffecting {
-
+	if isServiceAffecting && !latestRHMIInstallPlan.Spec.Approved && config.Status.UpgradeAvailable == nil {
 		newUpgradeAvailable := &integreatlyv1alpha1.UpgradeAvailable{
 			TargetVersion: rhmiSubscription.Status.CurrentCSV,
 			AvailableAt:   latestRHMIInstallPlan.CreationTimestamp,
 		}
 
-		if !reflect.DeepEqual(newUpgradeAvailable, config.Status.UpgradeAvailable) {
-
-			config.Status.UpgradeAvailable = newUpgradeAvailable
-			if err := r.client.Status().Update(context.TODO(), config); err != nil {
-				return reconcile.Result{}, err
-			}
-			return reconcile.Result{
-				Requeue:      true,
-				RequeueAfter: 10 * time.Second,
-			}, nil
-		}
-
+		config.Status.UpgradeAvailable = newUpgradeAvailable
 		if err := r.client.Status().Update(context.TODO(), config); err != nil {
 			return reconcile.Result{}, err
 		}
-
-		phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		if phase == integreatlyv1alpha1.PhaseInProgress {
-			logrus.Infof("WebApp instance not found yet, skipping upgrade addition")
-		}
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: 10 * time.Second,
+		}, nil
 	}
 
 	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config, installation)
@@ -293,10 +276,11 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	if !isServiceAffecting || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
 
-		config.Status.UpgradeAvailable = nil
-
-		if err := r.client.Status().Update(context.TODO(), config); err != nil {
-			return reconcile.Result{}, err
+		if config.Status.UpgradeAvailable != nil && config.Status.UpgradeAvailable.TargetVersion == rhmiSubscription.Status.CurrentCSV {
+			config.Status.UpgradeAvailable = nil
+			if err := r.client.Status().Update(context.TODO(), config); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, installation, latestRHMIInstallPlan, r.csvLocator, eventRecorder)

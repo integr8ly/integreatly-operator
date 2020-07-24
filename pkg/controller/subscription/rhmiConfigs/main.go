@@ -78,6 +78,11 @@ func CanUpgradeNow(config *integreatlyv1alpha1.RHMIConfig, installation *integre
 		return false, nil
 	}
 
+	// If the upgrade schedule hasn't been calculated
+	if config.Status.Upgrade.Scheduled == nil {
+		return false, nil
+	}
+
 	var duration int
 	// Upgrade window taken either from the maintenance window or, by default
 	// from the WINDOW constant

@@ -130,9 +130,15 @@ func TestUpdateStatus(t *testing.T) {
 						WaitForMaintenance: boolPtr(false),
 					},
 				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
+						TargetVersion: targetVersion,
+						AvailableAt:   kubeNow(0),
+					},
+				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: nowOffset(-2).Format(integreatlyv1alpha1.DateFormat),
+				For: kubeNow(0).Format(integreatlyv1alpha1.DateFormat),
 			},
 		}),
 		makeScheduleScenario(&scheduleScenario{
@@ -145,6 +151,12 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						NotBeforeDays:      intPtr(0),
 						WaitForMaintenance: boolPtr(true),
+					},
+				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
+						TargetVersion: targetVersion,
+						AvailableAt:   kubeNow(0),
 					},
 				},
 			},
@@ -169,6 +181,12 @@ func TestUpdateStatus(t *testing.T) {
 						NotBeforeDays:      intPtr(3),
 					},
 				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
+						TargetVersion: targetVersion,
+						AvailableAt:   kubeNow(0),
+					},
+				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
 				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(6 * 24 * time.Hour).
@@ -189,6 +207,12 @@ func TestUpdateStatus(t *testing.T) {
 						NotBeforeDays:      intPtr(6),
 					},
 				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
+						TargetVersion: targetVersion,
+						AvailableAt:   kubeNow(0),
+					},
+				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
 				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(10 * 24 * time.Hour).
@@ -204,6 +228,12 @@ func TestUpdateStatus(t *testing.T) {
 						WaitForMaintenance: boolPtr(false),
 					},
 				},
+				Status: integreatlyv1alpha1.RHMIConfigStatus{
+					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
+						TargetVersion: targetVersion,
+						AvailableAt:   kubeNow(-2),
+					},
+				},
 			},
 			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
 				For: nowOffset(-2).Add(3 * 24 * time.Hour).Format(integreatlyv1alpha1.DateFormat),
@@ -214,7 +244,7 @@ func TestUpdateStatus(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(buildScheme(), scenario.Config)
-			err := UpdateStatus(scenario.Config)
+			err := UpdateStatus(context.TODO(), client, scenario.Config)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
 			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
 			scenario.Validate(t, err, updatedConfig)
@@ -271,6 +301,12 @@ func buildScheme() *runtime.Scheme {
 func nowOffset(hours int) time.Time {
 	now := now()
 	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
+}
+
+func kubeNow(addHours int) metav1.Time {
+	t := metav1.Time{}
+	t.Time = now().Add(time.Duration(addHours) * time.Hour)
+	return t
 }
 
 func now() time.Time {

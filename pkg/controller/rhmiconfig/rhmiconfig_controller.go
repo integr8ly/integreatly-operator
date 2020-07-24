@@ -116,21 +116,19 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 
 	//	Checks if there is an upgrade available, if there is upgrade available upgrades the status of RHMIConfig
 	if rhmiConfig.Status.UpgradeAvailable != nil {
-		if reschedule, ok := rhmiConfig.Annotations[integreatlyv1alpha1.RecalculateScheduleAnnotation]; ok && reschedule == "true" {
-			err = helpers.UpdateStatus(context.TODO(), r.client, rhmiConfig)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
+		err = helpers.UpdateStatus(context.TODO(), r.client, rhmiConfig)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 
-			rhmiConfig.Annotations[integreatlyv1alpha1.RecalculateScheduleAnnotation] = ""
-			err = r.client.Update(context.TODO(), rhmiConfig)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
+		rhmiConfig.Annotations[integreatlyv1alpha1.RecalculateScheduleAnnotation] = ""
+		err = r.client.Update(context.TODO(), rhmiConfig)
+		if err != nil {
+			return reconcile.Result{}, err
 		}
 	} else {
 		rhmiConfig.Status.Upgrade = integreatlyv1alpha1.RHMIConfigStatusUpgrade{}
-		err = r.client.Update(context.TODO(), rhmiConfig)
+		err = r.client.Status().Update(context.TODO(), rhmiConfig)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

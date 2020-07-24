@@ -24,13 +24,19 @@ func UpdateStatus(ctx context.Context, client k8sclient.Client, config *integrea
 		config.Status.Maintenance.Duration = strconv.Itoa(WINDOW) + "hrs"
 	}
 
-
 	client.Status().Update(ctx, config)
 
 	// Calculate the upgrade schedule based on the spec:
 	// We can assume there's no error parsing the value as it was validated
-	notBeforeDays := *config.Spec.Upgrade.NotBeforeDays
-	waitForMaintenance := *config.Spec.Upgrade.WaitForMaintenance
+	notBeforeDays := integreatlyv1alpha1.DefaultNotBeforeDays
+	if config.Spec.Upgrade.NotBeforeDays != nil {
+		notBeforeDays = *config.Spec.Upgrade.NotBeforeDays
+	}
+
+	waitForMaintenance := integreatlyv1alpha1.DefaultWaitForMaintenance
+	if config.Spec.Upgrade.WaitForMaintenance != nil {
+		waitForMaintenance = *config.Spec.Upgrade.WaitForMaintenance
+	}
 
 	upgradeSchedule := config.Status.UpgradeAvailable.AvailableAt.
 		Add(daysDuration(notBeforeDays))
