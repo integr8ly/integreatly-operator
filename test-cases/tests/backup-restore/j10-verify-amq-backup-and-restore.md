@@ -10,13 +10,17 @@ targets:
 
 # J10 - Verify AMQ backup and restore
 
+## Description
+
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 
-## Postgres
+## Steps
+
+### Postgres
 
 1. Follow PostgreSQL [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/amq_online_backup.md#amq-online-backup-and-restoration-rhmi-on-2x) section
 
-## Brokered Queue PV
+### Brokered Queue PV
 
 1. Create some data in order to have something to verify.
 
@@ -28,7 +32,7 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 3. Verify that the above data items are restored
 
-## AMQ Resources
+### AMQ Resources
 
 1. Create some data in order to have something to verify.
 

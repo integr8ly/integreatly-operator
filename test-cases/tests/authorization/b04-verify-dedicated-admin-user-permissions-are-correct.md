@@ -1,6 +1,9 @@
 ---
 automation:
   - INTLY-7748
+environment:
+  - osd-post-upgrade
+  - osd-fresh-install
 estimate: 1h
 tags:
   - per-release

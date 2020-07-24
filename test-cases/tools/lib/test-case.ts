@@ -1,7 +1,12 @@
 import * as fs from "fs";
 import * as matter from "gray-matter";
 import * as path from "path";
-import { AUTOMATED_TAG, PER_BUILD_TAG, PER_RELEASE_TAG } from "./constants";
+import {
+    AUTOMATED_TAG,
+    MANUAL_SELECTION_TAG,
+    PER_BUILD_TAG,
+    PER_RELEASE_TAG
+} from "./constants";
 import { extractId } from "./utils";
 
 const TEST_DIR = "./tests";
@@ -180,6 +185,10 @@ function isPerRelease(test: TestCase): boolean {
     return test.tags.includes(PER_RELEASE_TAG);
 }
 
+function manualSelectionOnly(test: TestCase): boolean {
+    return test.tags.includes(MANUAL_SELECTION_TAG);
+}
+
 export {
     loadTestCases,
     TestCase,
@@ -187,5 +196,6 @@ export {
     desiredFileName,
     isAutomated,
     isPerBuild,
-    isPerRelease
+    isPerRelease,
+    manualSelectionOnly
 };

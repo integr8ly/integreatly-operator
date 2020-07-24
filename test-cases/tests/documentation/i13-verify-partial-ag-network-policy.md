@@ -1,6 +1,8 @@
 ---
 environments:
   - osd-fresh-install
+tags:
+  - manual-selection
 ---
 
 # I13 - Verify partial ag network policy
@@ -16,7 +18,7 @@ Improve and correct network policy content per QE review
 * Staging doc link: N/A
   > **NOTE:** The _Staging doc link_ is not to the Customer Portal. The formatting will not match what is on the Customer Portal; however, the steps should be the same.
 
-## Acceptance Criteria
+Acceptance Criteria
 
 . Test docs/modules/admin-guide/proc_disabling-communication-between-managed-services-project.adoc
 . Test docs/modules/admin-guide/proc_enabling-communication-between-managed-services-customer-applications.adoc
@@ -26,3 +28,7 @@ Improve and correct network policy content per QE review
 . Steps in procedure are clear.
 . The flow of instructions makes sense.
 . All links are accessible.
+
+## Steps
+
+TODO

@@ -1,6 +1,8 @@
 ---
 environments:
   - osd-fresh-install
+tags:
+  - manual-selection
 ---
 
 # I09 - Verify partial gs using solution patterns
@@ -23,6 +25,7 @@ Procedure for creating cloud-native, integrated applications using Solution Patt
    > Verify that the list of solution patterns is correct.
 
 3. Test 3.2 Creating cloud-native, integrated applications using Solution Patterns.
+
    > Prerequisites are correct.
    > Steps are clear.
    > Names of Solution Patterns are correct.

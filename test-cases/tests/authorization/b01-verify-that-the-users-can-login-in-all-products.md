@@ -1,6 +1,10 @@
 ---
 automation:
   - INTLY-7416
+environment:
+  - osd-post-upgrade
+  - osd-fresh-install
+  - rhpds
 estimate: 15m
 tags:
   - per-release

@@ -3,6 +3,7 @@ import { CommandModule } from "yargs";
 import {
     AUTOMATED_TAG,
     DESTRUCTIVE_TAG,
+    MANUAL_SELECTION_TAG,
     PER_BUILD_TAG,
     PER_RELEASE_TAG,
     STEPS_SECTION
@@ -13,6 +14,7 @@ import {
     isPerBuild,
     isPerRelease,
     loadTestCases,
+    manualSelectionOnly,
     TestCase
 } from "../lib/test-case";
 import { isEmpty } from "../lib/utils";
@@ -61,7 +63,13 @@ const ENVIRONMENTS = [
 
 const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
-const TAGS = [PER_BUILD_TAG, PER_RELEASE_TAG, AUTOMATED_TAG, DESTRUCTIVE_TAG];
+const TAGS = [
+    PER_BUILD_TAG,
+    PER_RELEASE_TAG,
+    AUTOMATED_TAG,
+    DESTRUCTIVE_TAG,
+    MANUAL_SELECTION_TAG
+];
 
 const SECTIONS = [STEPS_SECTION, "Description", "Prerequisites"];
 
@@ -185,6 +193,10 @@ function lintMandatoryEnvironment(): Linter {
 
 function lintOccurrence(): Linter {
     return (test: TestCase): error => {
+        if (isAutomated(test) || manualSelectionOnly(test)) {
+            return null;
+        }
+
         if (isPerBuild(test) && isPerRelease(test)) {
             return `can not be per-build and per-release at the same time`;
         }

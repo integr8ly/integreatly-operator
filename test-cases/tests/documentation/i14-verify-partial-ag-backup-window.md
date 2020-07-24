@@ -1,6 +1,8 @@
 ---
 environments:
   - osd-fresh-install
+tags:
+  - manual-selection
 ---
 
 # I14 - Verify partial ag backup window
@@ -16,10 +18,14 @@ As a user with the dedicated-admin role, you can edit your RHMI cluster schedule
 * Staging doc link: N/A
   > **NOTE:** The _Staging doc link_ is not to the Customer Portal. The formatting will not match what is on the Customer Portal; however, the steps should be the same.
 
-## Acceptance Criteria
+Acceptance Criteria
 
 1. Test docs/modules/admin-guide/proc_scheduling-backups.adoc
 2. Test docs/modules/admin-guide/proc_scheduling-maintenance-windows.adoc
 3. Correct prerequisites and permissions are identified.
 4. Steps in procedure are clear.
 5. The flow of instructions makes sense.
+
+## Steps
+
+TODO

@@ -10,9 +10,13 @@ targets:
 
 # J05 - Verify 3scale backup and restore
 
+## Description
+
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 
-## Postgres
+## Steps
+
+### Postgres
 
 1. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
 
@@ -26,13 +30,13 @@ $ select * from accounts;
 3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres)
 4. Verify the same data exist in postgres follow `Step 2.`
 
-## Redis
+### Redis
 
-### Backend Redis
+#### Backend Redis
 
 1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#backend-redis)
 
-### System Redis
+#### System Redis
 
 1. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#system-redis)
 

@@ -9,7 +9,7 @@ targets:
 
 # G08 - Verify addition of breadcrumbs to solution explorer
 
-Acceptance Criteria:
+## Steps
 
 When in a soluton pattern the breadcrumbs should look like
 

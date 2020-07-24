@@ -20,7 +20,7 @@ Login must be carried out with a user that has never logged into a testing clust
 
 Integreatly-operator needs to be running
 
-## Steps:
+## Steps
 
 1. Open the 3Scale console "https://3scale-admin.apps.\<cluster-subdomain>"
 

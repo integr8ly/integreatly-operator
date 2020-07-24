@@ -12,7 +12,7 @@ targets:
 
 # H11 - Verify 3scale SMTP Configuration
 
-## Acceptance Criteria
+## Description
 
 Verify that Customer-admin can invite new users to 3scale via email by following the steps below and verify you have received an invitation email.
 

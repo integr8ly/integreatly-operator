@@ -5,8 +5,6 @@ tags:
 
 # A21 - Verify maintenance and backup windows
 
-## Automated
-
 https://github.com/integr8ly/integreatly-operator/blob/master/test/common/rhmi_config_cro_strategy_override.go
 
 https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_strategy_override.go

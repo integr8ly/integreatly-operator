@@ -12,7 +12,7 @@ targets:
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset
 
-## Acceptance Criteria
+## Description
 
 Verify that fields in the AMQ Online CRs not reconciled by the RHMI Operator can be modified and don't get reset by the RHMI Operator.
 

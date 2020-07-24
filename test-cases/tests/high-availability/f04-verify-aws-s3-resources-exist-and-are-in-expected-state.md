@@ -6,6 +6,8 @@ components:
 environments:
   - osd-fresh-install
 estimate: 15m
+targets:
+  - 2.8.0
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state

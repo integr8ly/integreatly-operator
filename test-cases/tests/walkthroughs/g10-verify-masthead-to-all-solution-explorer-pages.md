@@ -9,6 +9,7 @@ targets:
 
 # G10 - Verify masthead to all solution explorer pages
 
-Acceptance Criteria :
+## Steps
 
-Sign into solution-explorer. The masthead should be available in parts of all solution-patterns. It was previously just there in the solution-pattern description.
+1. Sign into solution-explorer.
+   > The masthead should be available in parts of all solution-patterns. It was previously just there in the solution-pattern description.

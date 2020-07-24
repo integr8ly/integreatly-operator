@@ -1,13 +1,18 @@
 ---
 environments:
   - osd-fresh-install
+tags:
+  - manual-selection
 ---
 
 # I02 - Verify all SOP's
 
-**NOTE! All manual SOP's will be tested by CSSRE team**
+## Description
 
-Acceptance Criteria:
+Note: All manual SOP's will be tested by CSSRE team
 
-1. All the steps in the SOP can be done
-2. Following the SOP has the expected result
+## Steps
+
+1. Verify all SOPs
+   > All the steps in the SOP can be done
+   > Following the SOP has the expected result

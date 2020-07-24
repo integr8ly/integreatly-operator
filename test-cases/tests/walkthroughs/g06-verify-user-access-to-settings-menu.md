@@ -8,7 +8,7 @@ targets:
 
 # G06 - Verify user access to settings menu
 
-Acceptance Criteria:
+## Steps
 
 When logged into solution-explorer as a developer
 
