@@ -41,6 +41,7 @@ const CATEGORIES = [
     "walkthroughs"
 ];
 
+// Update the README.md too
 const COMPONENTS = [
     "monitoring",
     "product-ups",
@@ -53,6 +54,7 @@ const COMPONENTS = [
     "product-data-sync"
 ];
 
+// Update the README.md too
 const ENVIRONMENTS = [
     "osd-fresh-install",
     "osd-post-upgrade",
@@ -63,6 +65,7 @@ const ENVIRONMENTS = [
 
 const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
 
+// Update the README.md too
 const TAGS = [
     PER_BUILD_TAG,
     PER_RELEASE_TAG,
@@ -71,6 +74,7 @@ const TAGS = [
     MANUAL_SELECTION_TAG
 ];
 
+// Update the test-template.md to
 const SECTIONS = [STEPS_SECTION, "Description", "Prerequisites"];
 
 function lintFileNames(): Linter {

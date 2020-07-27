@@ -1,24 +1,20 @@
 ---
 # See the metatadata section in the README.md for details on the
 # allowed fields and values
-estimate: 1h
-tags:
-  - automated
-  - per-build
+automation:
+  - INTLY-0000
 components:
   - product-3scale
   - product-amq
-  - product-fuse
-  - product-codeready
-  - product-sso
-  - product-ups
-  - product-data-sync
-  - monitoring
-  - openshift
+environemnts:
+  - osd-fresh-install
+  - rhpds
+estimate: 1h
 targets:
   - 0.0.0
-automation:
-  - INTLY-0000
+tags:
+  - automated
+  - destructive
 ---
 
 # [ID] - [Title]
@@ -36,7 +32,15 @@ automation:
 [List here the the steps that the tester need to perform, the expected result of the step is quoted after the step]
 
 1. [Step 1]
+
    > [Expected result]
+
 2. [Step 2 without expected result]
+
 3. [Step 3]
+
+   ```bash
+   some help cmd
+   ```
+
    > [Expected result]
