@@ -23,6 +23,10 @@ import (
 const (
 	alertFor20Mins = "20m"
 	alertFor5Mins  = "5m"
+	// TODO: these Metric names should be imported from github.com/integr8ly/cloud-resource-operator/pkg/resources v0.18.0
+	// once it is possible to update to that version
+	DefaultPostgresDeletionMetricName = "cro_postgres_deletion_timestamp"
+	DefaultRedisDeletionMetricName    = "cro_redis_deletion_timestamp"
 )
 
 // CreatePostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
@@ -136,6 +140,32 @@ func CreatePostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 	return pr, nil
 }
 
+// CreatePostgresResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Postgres CRs
+func CreatePostgresResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (*prometheusv1.PrometheusRule, error) {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping postgres state alert creation, useClusterStorage is true")
+		return nil, nil
+	}
+	productName := cr.Labels["productName"]
+	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
+	alertName := postgresCRName + "PostgresResourceDeletionStatusPhaseFailed"
+	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
+	alertExp := intstr.FromString(
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultPostgresDeletionMetricName, cr.Namespace, cr.Name, productName),
+	)
+	alertDescription := fmt.Sprintf("The deletion of the Postgres instance has been failing longer than %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	labels := map[string]string{
+		"severity":    "warning",
+		"productName": productName,
+	}
+	// create the rule
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
+	if err != nil {
+		return nil, err
+	}
+	return pr, nil
+}
+
 // CreateRedisResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Redis CR state
 func CreateRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
@@ -184,6 +214,32 @@ func CreateRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 	}
 	// create the rule
 	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisResourceStatusPhaseFailed, alertFor5Mins, alertExp, labels)
+	if err != nil {
+		return nil, err
+	}
+	return pr, nil
+}
+
+// CreateRedisResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Redis CRs
+func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping redis state alert creation, useClusterStorage is true")
+		return nil, nil
+	}
+	productName := cr.Labels["productName"]
+	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
+	alertName := redisCRName + "RedisResourceDeletionStatusPhaseFailed"
+	ruleName := fmt.Sprintf("resource-deletion-status-phase-failed-rule-%s", cr.Name)
+	alertExp := intstr.FromString(
+		fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s',statusPhase='failed'}", DefaultRedisDeletionMetricName, cr.Namespace, cr.Name, productName),
+	)
+	alertDescription := fmt.Sprintf("The deletion of the Redis instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	labels := map[string]string{
+		"severity":    "warning",
+		"productName": productName,
+	}
+	// create the rule
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlCloudResourceDeletionStatusFailed, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}

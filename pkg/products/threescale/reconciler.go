@@ -703,6 +703,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
 	}
 
+	// redis cr returning a failed state during deletion
+	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
+	}
+
 	// get the secret created by the cloud resources operator
 	// containing backend redis connection details
 	credSec := &corev1.Secret{}
@@ -756,6 +762,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
+	}
+
+	// redis cr returning a failed state during deletion
+	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, systemRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
 	}
 
 	// get the secret created by the cloud resources operator
@@ -812,6 +824,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
+	}
+
+	// create the prometheus deletion rule
+	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for threescale: %s", err)
 	}
 
 	// get the secret containing redis credentials

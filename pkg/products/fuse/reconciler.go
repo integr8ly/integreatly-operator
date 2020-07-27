@@ -296,7 +296,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 	// create prometheus failed rule
 	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, client, rhmi, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for fuse: %w", err)
 	}
 
 	// postgres provisioning is still in progress
@@ -307,17 +307,22 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 	// create prometheus pending rule
 	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, rhmi, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for fuse: %w", err)
 	}
 
 	// create the prometheus availability rule
 	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, client, rhmi, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for fuse: %w", err)
 	}
 
 	// create the prometheus connectivity rule
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, client, rhmi, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for rhsso : %s", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for fuse: %s", err)
+	}
+
+	// create the prometheus deletion rule
+	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, client, rhmi, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for fuse: %s", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

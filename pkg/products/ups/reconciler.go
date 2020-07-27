@@ -200,7 +200,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// create prometheus failed rule
 	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, client, installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for ups: %w", err)
 	}
 
 	// wait for the postgres instance to reconcile
@@ -211,7 +211,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	// create the prometheus pending rule
 	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, client, installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for ups: %w", err)
 	}
 
 	// create the prometheus availability rule
@@ -221,7 +221,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// create the prometheus connectivity rule
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, client, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus rule: %s", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus rule for ups: %s", err)
+	}
+
+	// create the prometheus deletion rule
+	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, client, installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for ups: %s", err)
 	}
 
 	// get the secret created by the cloud resources operator

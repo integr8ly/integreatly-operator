@@ -226,6 +226,11 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for codeready: %s", err)
 	}
 
+	// create the prometheus deletion rule
+	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for codeready: %s", err)
+	}
+
 	// get the secret created by the cloud resources operator
 	croSec := &corev1.Secret{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: postgres.Status.SecretRef.Name, Namespace: postgres.Status.SecretRef.Namespace}, croSec)
