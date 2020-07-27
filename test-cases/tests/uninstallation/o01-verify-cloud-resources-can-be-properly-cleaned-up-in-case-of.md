@@ -59,7 +59,6 @@ oc delete rhmi rhmi -n redhat-rhmi-operator
 open "https://$(oc get routes alertmanager-route -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
-> Verify that PostgresResourceDeletionStatusPhaseFailed and RedisResourceDeletionStatusPhaseFailed alerts are firing
-> (It should take around 5 minutes for these alerts to start firing. If they are not firing yet, wait for couple of minutes and refresh the browser page)
+> Verify that PostgresResourceDeletionStatusPhaseFailed and RedisResourceDeletionStatusPhaseFailed alerts go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
 
 6. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)
