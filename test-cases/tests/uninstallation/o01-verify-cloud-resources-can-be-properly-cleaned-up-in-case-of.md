@@ -53,12 +53,18 @@ oc patch configmap cloud-resources-aws-strategies -n redhat-rhmi-operator --type
 oc delete rhmi rhmi -n redhat-rhmi-operator
 ```
 
-5. Go to alert manager
+5. Trigger Redis CR deletion (Note: this step won't be necessary after https://issues.redhat.com/browse/INTLY-9101 is resolved)
+
+```bash
+oc delete redis --all -n redhat-rhmi-operator
+```
+
+6. Go to alert manager
 
 ```bash
 open "https://$(oc get routes alertmanager-route -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
-> Verify that PostgresResourceDeletionStatusPhaseFailed and RedisResourceDeletionStatusPhaseFailed alerts go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
+> Verify that all Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed and Redis-RhmiRedisResourceDeletionStatusPhaseFailed alerts (8 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
 
-6. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)
+7. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)
