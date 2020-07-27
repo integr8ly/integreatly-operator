@@ -117,11 +117,69 @@ const release: CommandModule<{}, ReleaseArgs> = {
     }
 };
 
+interface ForArgs {
+    target: string;
+    component: string;
+    dryRun: boolean;
+}
+
+// tslint:disable:object-literal-sort-keys
+const forcmd: CommandModule<{}, ForArgs> = {
+    command: "for",
+    describe:
+        "automatically assign the target version to the test cases with the passed component",
+    builder: {
+        target: {
+            demand: true,
+            describe: "the version to set to the test cases",
+            type: "string"
+        },
+        component: {
+            demand: true,
+            describe: "all the test cases with this component will be updated",
+            type: "string"
+        },
+        "dry-run": {
+            type: "boolean"
+        }
+    },
+    handler: args => {
+        const tests = loadTestCases();
+
+        for (const test of tests) {
+            // skip all test cases that are automated, per-release, per-build or marked as manual-selection
+            if (
+                isAutomated(test) ||
+                isPerRelease(test) ||
+                isPerBuild(test) ||
+                manualSelectionOnly(test)
+            ) {
+                continue;
+            }
+
+            if (
+                test.components.includes(args.component) &&
+                !test.targets.includes(args.target)
+            ) {
+                const targets = test.targets;
+                targets.push(args.target);
+
+                logger.info(
+                    `add target ${args.target} to ${test.id} - ${test.title} | ${test.file}`
+                );
+                if (!args.dryRun) {
+                    updateTargets(test, targets);
+                }
+            }
+        }
+    }
+};
+
 const plan: CommandModule = {
     command: "plan",
     describe: "automatically assign the target version to the test cases",
     builder: (args: Argv): Argv => {
-        return args.command(release);
+        return args.command(release).command(forcmd);
     },
     handler: () => {
         // nothing
