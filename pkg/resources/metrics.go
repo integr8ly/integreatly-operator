@@ -155,7 +155,7 @@ func CreatePostgresResourceDeletionStatusFailedAlert(ctx context.Context, client
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Postgres instance has been failing longer than %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
@@ -235,7 +235,7 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	)
 	alertDescription := fmt.Sprintf("The deletion of the Redis instance has been failing longer than %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
