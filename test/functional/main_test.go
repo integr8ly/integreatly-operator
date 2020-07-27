@@ -99,6 +99,18 @@ func teeOutput(f func()) string {
 		panic(err)
 	}
 
+	wg.Wait()
+
+	err = stdoutReader.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	err = stderrReader.Close()
+	if err != nil {
+		panic(err)
+	}
+
 	return output.String()
 }
 
