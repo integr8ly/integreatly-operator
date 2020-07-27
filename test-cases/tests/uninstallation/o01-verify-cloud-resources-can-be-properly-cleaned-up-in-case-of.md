@@ -1,5 +1,7 @@
 ---
 estimate: 30m
+targets:
+  - 2.6.0
 ---
 
 # O01 - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
