@@ -4,15 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	resourcesowner "github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/sirupsen/logrus"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	ownerutil "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +23,7 @@ const (
 
 //go:generate moq -out MarketplaceManager_moq.go . MarketplaceInterface
 type MarketplaceInterface interface {
-	InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
+	InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error
 	GetSubscriptionInstallPlans(ctx context.Context, serverClient k8sclient.Client, subName, ns string) (*coreosv1alpha1.InstallPlanList, *coreosv1alpha1.Subscription, error)
 }
 
@@ -44,7 +39,7 @@ type Target struct {
 	Channel string
 }
 
-func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
+func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Client, t Target, operatorGroupNamespaces []string, approvalStrategy coreosv1alpha1.Approval, catalogSourceReconciler CatalogSourceReconciler) error {
 	sub := &coreosv1alpha1.Subscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: t.Namespace,
@@ -57,12 +52,6 @@ func (m *Manager) InstallOperator(ctx context.Context, serverClient k8sclient.Cl
 		Package:                t.Pkg,
 		CatalogSourceNamespace: t.Namespace,
 	}
-
-	metaOwner, err := meta.Accessor(owner)
-	if err != nil {
-		return err
-	}
-	resourcesowner.AddIntegreatlyOwnerAnnotations(sub, metaOwner)
 
 	res, err := catalogSourceReconciler.Reconcile(ctx)
 	if res.Requeue {
