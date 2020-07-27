@@ -6,6 +6,8 @@ components:
 environments:
   - osd-post-upgrade
 estimate: 30m
+tags:
+  - destructive
 targets:
   - 2.8.0
 ---

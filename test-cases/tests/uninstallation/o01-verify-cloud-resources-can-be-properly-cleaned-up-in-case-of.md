@@ -2,6 +2,8 @@
 environments:
   - osd-fresh-install
 estimate: 30m
+tags:
+  - destructive
 targets:
   - 2.6.0
 ---

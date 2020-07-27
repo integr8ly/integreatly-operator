@@ -2,6 +2,8 @@
 environments:
   - osd-post-upgrade
 estimate: 120m
+tags:
+  - destructive
 targets:
   - 2.6.0
 ---
