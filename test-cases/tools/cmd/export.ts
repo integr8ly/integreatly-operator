@@ -23,8 +23,7 @@ const runsLink = (id: string) =>
 // tslint:disable:object-literal-sort-keys
 const csv: CommandModule<{}, CSVArgs> = {
     command: "csv",
-    describe:
-        "export all test cases in a csv file or print them to stdout",
+    describe: "export all test cases in a csv file or print them to stdout",
     builder: {
         output: {
             describe: "the name of the file where to write the csv table",
