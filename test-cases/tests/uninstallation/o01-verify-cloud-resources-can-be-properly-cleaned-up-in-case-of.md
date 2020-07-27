@@ -1,4 +1,6 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 30m
 targets:
   - 2.6.0

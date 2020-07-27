@@ -38,7 +38,8 @@ const CATEGORIES = [
     "performance",
     "products",
     "upgrade",
-    "walkthroughs"
+    "walkthroughs",
+    "uninstallation"
 ];
 
 // Update the README.md too
