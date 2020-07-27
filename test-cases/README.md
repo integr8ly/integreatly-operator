@@ -156,6 +156,24 @@ to pretty print the csv output on the terminal:
 ./tools.sh export csv | column -t -s, | less -S
 ```
 
+## Bulk update the target version on the test cases
+
+> Attention: all changes are applied locally and need to be manually pushed to the integreatly-operator repo
+
+To automatically add the target version to all test cases which target version is older then 3 releases use:
+
+```
+./tools.sh plan release --target TARGET_VERSION
+```
+
+> For example if we set the TARGET_VERSION to `2.8.0` than all test cases which latest target version for the same major release is equal or minor to `2.5.0` will receive the target `2.8.0` and therefore included in the `2.8.0` release
+
+To automatically add the target version to all test cases with a specific component:
+
+```
+./tools.sh plan for --target TARGET_VERSION --component COMPONENT
+```
+
 ## How to upload all test case to Polarion
 
 This command will automatically upload all test cases to Polarion:
