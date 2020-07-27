@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as matter from "gray-matter";
 import * as path from "path";
 import {
@@ -50,6 +51,7 @@ interface TestCase {
     automation: string[];
     file: string;
     url: string;
+    matter: matter.GrayMatterFile<string>;
 }
 
 function extractTitle(content: string): { title: string; content: string } {
@@ -136,11 +138,18 @@ function loadTestCase(file: string): TestCase {
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
         file,
         id,
+        matter: m,
         tags: data.tags || [],
         targets: data.targets || [],
         title,
         url: `${REPO_URL}/${file}`,
     };
+}
+
+function updateTargets(test: TestCase, targets: string[]): void {
+    test.matter.data.targets = targets;
+    const out = test.matter.stringify("");
+    fs.writeFileSync(test.file, out);
 }
 
 function stringToFilter(filters: string[]): Filters {
@@ -286,4 +295,5 @@ export {
     extractId,
     stringToFilter,
     releaseFilter,
+    updateTargets,
 };
