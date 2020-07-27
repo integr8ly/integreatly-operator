@@ -11,6 +11,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"github.com/integr8ly/integreatly-operator/version"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
 	usersv1 "github.com/openshift/api/user/v1"
@@ -28,6 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -285,15 +288,9 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// reconciles rhmi installation alerts
-	_, err = r.reconcileRHMIInstallationAlerts(context.TODO(), r.client, installation)
+	_, err = r.newAlertsReconciler(logrus.NewEntry(logrus.StandardLogger()), installation).ReconcileAlerts(context.TODO(), r.client)
 	if err != nil {
-		logrus.Infof("Error reconciling alerts for the rhmi installation controller: %v", err)
-	}
-
-	// reconciles rhmi installation completion alert in openshift monitoring
-	_, err = r.reconcileRHMIInstallationAlertsOpenshiftMonitoring(context.TODO(), r.client, installation)
-	if err != nil {
-		logrus.Info("Error reconciling alerts for completion of rhmi installation in openshift monitoring :%w", err)
+		logrus.Infof("Error reconciling alerts for the rhmi installation: %v", err)
 	}
 
 	// Reconcile the webhooks
@@ -396,6 +393,33 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 	configManager, err := config.NewManager(context.TODO(), r.client, installation.Namespace, installationCfgMap, installation)
 	if err != nil {
 		return reconcile.Result{}, err
+	}
+
+	// Get the PrometheusRules with the integreatly label
+	// and delete them to ensure no alerts are firing during
+	// installation
+	//
+	// We have to use unstructured instead of the typed
+	// structs as the Items field contains pointers and there's
+	// a bug on the client library:
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/656
+	alerts := &unstructured.UnstructuredList{}
+	alerts.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "monitoring.coreos.com",
+		Kind:    "PrometheusRule",
+		Version: "v1",
+	})
+	ls, _ := labels.Parse("integreatly=yes")
+	if err := r.client.List(context.TODO(), alerts, &k8sclient.ListOptions{
+		LabelSelector: ls,
+	}); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	for _, alert := range alerts.Items {
+		if err := r.client.Delete(context.TODO(), &alert); err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	// Set metrics status to unavailable
