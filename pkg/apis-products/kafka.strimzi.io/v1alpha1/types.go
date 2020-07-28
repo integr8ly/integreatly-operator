@@ -80,6 +80,22 @@ type KafkaList struct {
 	Items           []Kafka `json:"items"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// KafkaTopic defines a Kafka topic
+type KafkaTopic struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              KafkaTopicSpec `json:"spec"`
+}
+
+// KafkaTopicSpec defines the desired state of the Kafka topic
+type KafkaTopicSpec struct {
+	Partitions int               `json:"partitions"`
+	Replicas   int               `json:"replicas"`
+	Config     map[string]string `json:"config"`
+}
+
 func init() {
-	SchemeBuilder.Register(&Kafka{}, &KafkaList{})
+	SchemeBuilder.Register(&Kafka{}, &KafkaList{}, &KafkaTopic{})
 }

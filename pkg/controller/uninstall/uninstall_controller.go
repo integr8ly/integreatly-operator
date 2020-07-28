@@ -129,7 +129,7 @@ func (r *ReconcileUninstall) Reconcile(request reconcile.Request) (reconcile.Res
 				logrus.Info("Deleting RHMI CR")
 				err := r.client.Delete(r.context, rhmi)
 				if err != nil {
-					logrus.Errorf("failed to delete RHMI CR: %w", err)
+					logrus.Errorf("failed to delete RHMI CR: %v", err)
 				}
 			}
 		}

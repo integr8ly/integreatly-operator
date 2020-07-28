@@ -3,6 +3,7 @@ package constants
 const (
 	AMQOnlineSubscriptionName        = "rhmi-amq-online"
 	AMQStreamsSubscriptionName       = "rhmi-amq-streams"
+	ApicurioRegistrySubscriptionName = "rhmi-apicurio-registry"
 	ApicuritoSubscriptionName        = "rhmi-apicurito"
 	CloudResourceSubscriptionName    = "rhmi-cloud-resources"
 	CodeReadySubscriptionName        = "rhmi-codeready-workspaces"

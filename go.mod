@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/3scale/3scale-operator v0.5.0
+	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200604085617-be91f2b38134
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
@@ -32,7 +33,7 @@ require (
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
 	github.com/operator-framework/operator-marketplace v0.0.0-20191105191618-530c85d41ce7
 	github.com/operator-framework/operator-registry v1.5.7-0.20200121213444-d8e2ec52c19a
-	github.com/operator-framework/operator-sdk v0.15.2
+	github.com/operator-framework/operator-sdk v0.17.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.3.0
 	github.com/sirupsen/logrus v1.6.0
@@ -44,11 +45,11 @@ require (
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.0
-	k8s.io/apiextensions-apiserver v0.17.0
-	k8s.io/apimachinery v0.17.2
+	k8s.io/apiextensions-apiserver v0.17.2
+	k8s.io/apimachinery v0.17.4
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
-	sigs.k8s.io/controller-runtime v0.4.0
+	sigs.k8s.io/controller-runtime v0.5.2
 )
 
 // Pinned to kubernetes-1.16.2
@@ -80,6 +81,12 @@ replace (
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.2
 )
 
-replace github.com/openshift/api => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
+// Pinned to operator-sdk v0.15.1
+replace (
+	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.15.1
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.4.0
+)
+
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20190924102528-32369d4db2ad // Required until https://github.com/operator-framework/operator-lifecycle-manager/pull/1241 is resolved
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
