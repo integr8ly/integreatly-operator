@@ -45,7 +45,7 @@ func CreatePostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
 			croResources.DefaultPostgresAvailMetricName, cr.Namespace, cr.Name, productName),
 	)
-	alertDescription := fmt.Sprintf("Postgres instance: '%s' (strategy: %s) for product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
+	alertDescription := fmt.Sprintf("Postgres instance: '%s' (strategy: %s) for product: %s is unavailable. Instance status is: {{ $labels.status }}", cr.Name, cr.Status.Strategy, productName)
 	labels := map[string]string{
 		"severity":    "critical",
 		"productName": cr.Labels["productName"],
@@ -261,7 +261,7 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
 			croResources.DefaultRedisAvailMetricName, cr.Namespace, cr.Name, productName),
 	)
-	alertDescription := fmt.Sprintf("Redis instance: '%s' (strategy: %s) for the product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
+	alertDescription := fmt.Sprintf("Redis instance: '%s' (strategy: %s) for the product: %s is unavailable. Instance status is: {{ $labels.status }}", cr.Name, cr.Status.Strategy, productName)
 	labels := map[string]string{
 		"severity":    "critical",
 		"productName": productName,
