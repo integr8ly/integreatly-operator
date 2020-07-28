@@ -21,13 +21,13 @@ import (
 	"go/token"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
-	"golang.org/x/tools/internal/gocommand"
 )
 
 // Options is golang.org/x/tools/imports.Options with extra internal-only options.
@@ -155,10 +155,12 @@ func initialize(filename string, src []byte, opt *Options) ([]byte, *Options, er
 			GOSUMDB:     os.Getenv("GOSUMDB"),
 		}
 	}
-	// Set the gocmdRunner if the user has not provided it.
-	if opt.Env.GocmdRunner == nil {
-		opt.Env.GocmdRunner = &gocommand.Runner{}
+
+	// Set the logger if the user has not provided it.
+	if opt.Env.Logf == nil {
+		opt.Env.Logf = log.Printf
 	}
+
 	if src == nil {
 		b, err := ioutil.ReadFile(filename)
 		if err != nil {

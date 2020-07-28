@@ -99,7 +99,7 @@ var expectedRoutes = map[string][]ExpectedRoute{
 	"rhsso": []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
-			isTLS: false,
+			isTLS: true,
 		},
 		ExpectedRoute{
 			Name:  "keycloak-edge",
@@ -124,7 +124,7 @@ var expectedRoutes = map[string][]ExpectedRoute{
 	"user-sso": []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
-			isTLS: false,
+			isTLS: true,
 		},
 		ExpectedRoute{
 			Name:  "keycloak-edge",
