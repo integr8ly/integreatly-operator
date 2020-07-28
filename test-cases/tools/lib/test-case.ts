@@ -155,8 +155,8 @@ function updateTargets(test: TestCase, targets: string[]): void {
 function stringToFilter(filters: string[]): Filters {
     const r: Filters = {};
 
-    for (const fs of filters) {
-        const [n, ff] = fs.split("=");
+    for (const filter of filters) {
+        const [n, ff] = filter.split("=");
 
         r[n] = { include: [], exclude: [] };
         for (const f of ff.split(",")) {

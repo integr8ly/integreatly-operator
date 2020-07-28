@@ -5,7 +5,7 @@ import {
     isPerRelease,
     loadTestCases,
     manualSelectionOnly,
-    updateTargets
+    updateTargets,
 } from "../lib/test-case";
 import { logger } from "../lib/winston";
 
@@ -27,7 +27,7 @@ function stringToVersion(version: string): Version {
     return {
         major: parseInt(match.groups.ma, 10),
         minor: parseInt(match.groups.mi, 10),
-        patch: parseInt(match.groups.pa, 10)
+        patch: parseInt(match.groups.pa, 10),
     };
 }
 
@@ -49,13 +49,13 @@ const release: CommandModule<{}, ReleaseArgs> = {
         target: {
             demand: true,
             describe: "the version to check against and set to the test cases",
-            type: "string"
+            type: "string",
         },
         "dry-run": {
-            type: "boolean"
-        }
+            type: "boolean",
+        },
     },
-    handler: args => {
+    handler: (args) => {
         const version = stringToVersion(args.target);
         if (version.patch !== 0) {
             logger.error(
@@ -114,7 +114,7 @@ const release: CommandModule<{}, ReleaseArgs> = {
                 }
             }
         }
-    }
+    },
 };
 
 interface ForArgs {
@@ -132,18 +132,18 @@ const forcmd: CommandModule<{}, ForArgs> = {
         target: {
             demand: true,
             describe: "the version to set to the test cases",
-            type: "string"
+            type: "string",
         },
         component: {
             demand: true,
             describe: "all the test cases with this component will be updated",
-            type: "string"
+            type: "string",
         },
         "dry-run": {
-            type: "boolean"
-        }
+            type: "boolean",
+        },
     },
-    handler: args => {
+    handler: (args) => {
         const tests = loadTestCases();
 
         for (const test of tests) {
@@ -172,7 +172,7 @@ const forcmd: CommandModule<{}, ForArgs> = {
                 }
             }
         }
-    }
+    },
 };
 
 const plan: CommandModule = {
@@ -183,7 +183,7 @@ const plan: CommandModule = {
     },
     handler: () => {
         // nothing
-    }
+    },
 };
 
 export { plan };
