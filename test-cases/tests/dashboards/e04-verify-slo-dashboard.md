@@ -9,7 +9,7 @@ estimate: 30m
 tags:
   - destructive
 targets:
-  - 2.8.0
+  - 2.6.0
 ---
 
 # E04 - Verify SLO dashboard
