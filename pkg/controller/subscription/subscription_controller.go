@@ -13,7 +13,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
 
@@ -95,14 +94,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	err = c.Watch(&source.Kind{Type: &operatorsv1alpha1.Subscription{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-
-	err = c.Watch(&source.Kind{Type: &integreatlyv1alpha1.RHMIConfig{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &operatorsv1alpha1.Subscription{},
-	})
 	if err != nil {
 		return err
 	}
@@ -253,24 +244,20 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 
 	isServiceAffecting := rhmiConfigs.IsUpgradeServiceAffecting(latestRHMICSV)
 
-	// checks if there is changes in the rhmiconfig cr and recalculate the status
-	if reschedule, ok := config.Annotations[v1alpha1.RecalculateScheduleAnnotation]; ok && reschedule == "true" {
-		err = rhmiConfigs.UpdateStatus(ctx, r.client, config, latestRHMIInstallPlan, rhmiSubscription.Status.CurrentCSV)
-		if err != nil {
-			return reconcile.Result{}, err
+	if isServiceAffecting && !latestRHMIInstallPlan.Spec.Approved && config.Status.UpgradeAvailable == nil {
+		newUpgradeAvailable := &integreatlyv1alpha1.UpgradeAvailable{
+			TargetVersion: rhmiSubscription.Status.CurrentCSV,
+			AvailableAt:   latestRHMIInstallPlan.CreationTimestamp,
 		}
 
-		config.Annotations[v1alpha1.RecalculateScheduleAnnotation] = ""
-		err = r.client.Update(ctx, config)
-		if err != nil {
+		config.Status.UpgradeAvailable = newUpgradeAvailable
+		if err := r.client.Status().Update(context.TODO(), config); err != nil {
 			return reconcile.Result{}, err
 		}
-
-	} else if isServiceAffecting && rhmiSubscription.Status.CurrentCSV != config.Status.TargetVersion {
-		err = rhmiConfigs.UpdateStatus(ctx, r.client, config, latestRHMIInstallPlan, rhmiSubscription.Status.CurrentCSV)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
+		return reconcile.Result{
+			Requeue:      true,
+			RequeueAfter: 10 * time.Second,
+		}, nil
 	}
 
 	canUpgradeNow, err := rhmiConfigs.CanUpgradeNow(config, installation)
@@ -289,6 +276,13 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	if !isServiceAffecting || canUpgradeNow {
 		eventRecorder := r.mgr.GetEventRecorderFor("RHMI Upgrade")
 
+		if config.Status.UpgradeAvailable != nil && config.Status.UpgradeAvailable.TargetVersion == rhmiSubscription.Status.CurrentCSV {
+			config.Status.UpgradeAvailable = nil
+			if err := r.client.Status().Update(context.TODO(), config); err != nil {
+				return reconcile.Result{}, err
+			}
+		}
+
 		err = rhmiConfigs.ApproveUpgrade(ctx, r.client, installation, latestRHMIInstallPlan, r.csvLocator, eventRecorder)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -300,7 +294,6 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 			RequeueAfter: 10 * time.Second,
 		}, nil
 	}
-	logrus.Infof("not automatically upgrading a Service Affecting Release")
 	return reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Minute,

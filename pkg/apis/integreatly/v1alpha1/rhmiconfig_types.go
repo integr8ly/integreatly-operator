@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -61,9 +62,9 @@ type RHMIConfigStatus struct {
 	//			duration: "6hrs"
 	//		upgrade:
 	//			window: "3 Jan 1980 - 17 Jan 1980"
-	Maintenance   RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
-	Upgrade       RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
-	TargetVersion string                      `json:"targetVersion,omitempty"`
+	Maintenance      RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
+	Upgrade          RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
+	UpgradeAvailable *UpgradeAvailable           `json:"upgradeAvailable,omitempty"`
 }
 
 type RHMIConfigStatusMaintenance struct {
@@ -117,6 +118,15 @@ type Backup struct {
 	// apply-on: string, day time.
 	// Format: "DDD hh:mm" > "wed 20:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
+}
+
+type UpgradeAvailable struct {
+	// Time of new update becoming available
+	// Format: "DDD hh:mm" > "sun 23:00". UTC time
+	AvailableAt v1.Time `json:"availableAt,omitempty" protobuf:"bytes,8,opt,name=availableAt"`
+
+	// target-version: string, version of incoming RHMI Operator
+	TargetVersion string `json:"targetVersion,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
