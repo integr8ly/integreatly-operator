@@ -350,7 +350,7 @@ func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	// job to check time that the operator metrics are exposed
 	job := "cloud-resource-operator-metrics"
 
-	alertName = redisCRName + "RedisMemoryUsageWillFillIn4Hours"
+	alertName = redisCRName + "RedisMemoryWillFillIn4Hours"
 	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-hours-rule-%s", cr.Name)
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [1h] - one hour data points
@@ -371,7 +371,7 @@ func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 		return nil, err
 	}
 
-	alertName = redisCRName + "RedisMemoryUsageWillFillIn4Days"
+	alertName = redisCRName + "RedisMemoryWillFillIn4Days"
 	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-days-rule-%s", cr.Name)
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [6h] - six hour data points
