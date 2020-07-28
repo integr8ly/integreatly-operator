@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	url2 "net/url"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
+	"testing"
+
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -14,6 +16,7 @@ const (
 	ThreeScaleProductCreateUrl = "%v/apiconfig/services"
 	ThreeScaleProductDeleteUrl = "%v/apiconfig/services/%v"
 	ThreeScaleClient           = "3scale"
+	ThreeScaleUserInviteUrl    = "%v/p/admin/account/invitations/"
 )
 
 type ThreeScaleAPIClient interface {
@@ -22,6 +25,7 @@ type ThreeScaleAPIClient interface {
 	Login3Scale(clientSecret string) error
 	CreateProduct(name string) (string, error)
 	DeleteProduct(href string) error
+	SendUserInvitation(name string, t *testing.T) (string, error)
 }
 
 type ThreeScaleAPIClientImpl struct {
@@ -202,4 +206,47 @@ func (r *ThreeScaleAPIClientImpl) CreateProduct(name string) (string, error) {
 
 	id := strings.Split(href, "/")
 	return id[len(id)-1], nil
+}
+
+// Create a 3Scale user invite
+func (r *ThreeScaleAPIClientImpl) SendUserInvitation(name string, t *testing.T) (string, error) {
+
+	url := fmt.Sprintf(ThreeScaleUserInviteUrl, r.host)
+	formUrl := fmt.Sprintf("%v/p/admin/account/invitations/new", r.host)
+
+	t.Log(formUrl)
+	t.Log(name)
+	// First try to get the CRSF token by requesting the form
+	csrf, err := requestCRSFToken(r.client, formUrl)
+	if err != nil {
+		return "", err
+	}
+
+	formValues := url2.Values{
+		"invitation[email]": []string{name},
+		//"service[system_name]": []string{fmt.Sprintf("%v-system", name)},
+		//"service[description]": []string{fmt.Sprintf("%v dummy service", name)},
+		"commit":             []string{"Send"},
+		"authenticity_token": []string{csrf},
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(formValues.Encode()))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", r.token))
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(fmt.Sprintf("expected 200 but got %v", resp.StatusCode))
+	}
+
+	return "Completed", nil
 }
