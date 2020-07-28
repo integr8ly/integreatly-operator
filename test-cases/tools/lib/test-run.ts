@@ -32,7 +32,7 @@ function resolutionToResult(resolution: Resolution): Result {
 async function loadTestRuns(jira: Jira, filter: string): Promise<TestRun[]> {
     const issues = await jira.searchIssues(filter);
 
-    return issues.issues.map(i => {
+    return issues.issues.map((i) => {
         const { id } = extractId(i.fields.summary);
         const link = `https://issues.redhat.com/browse/${i.key}`;
         const result = resolutionToResult(i.fields.resolution);
@@ -42,7 +42,7 @@ async function loadTestRuns(jira: Jira, filter: string): Promise<TestRun[]> {
             issue: i,
             link,
             result,
-            title: i.fields.summary
+            title: i.fields.summary,
         };
     });
 }

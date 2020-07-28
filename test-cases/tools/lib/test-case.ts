@@ -5,7 +5,7 @@ import {
     DESTRUCTIVE_TAG,
     MANUAL_SELECTION_TAG,
     PER_BUILD_TAG,
-    PER_RELEASE_TAG
+    PER_RELEASE_TAG,
 } from "./constants";
 import { walk } from "./utils";
 
@@ -60,7 +60,7 @@ function extractTitle(content: string): { title: string; content: string } {
         if (match) {
             return {
                 content: lines.join("\n"),
-                title: match.groups.title
+                title: match.groups.title,
             };
         }
     }
@@ -74,7 +74,7 @@ function extractId(title: string): { id: string; title: string } {
     if (match) {
         return {
             id: match.groups.id,
-            title: match.groups.title
+            title: match.groups.title,
         };
     } else {
         throw new Error(`can not extract the ID from '${title}'`);
@@ -139,7 +139,7 @@ function loadTestCase(file: string): TestCase {
         tags: data.tags || [],
         targets: data.targets || [],
         title,
-        url: `${REPO_URL}/${file}`
+        url: `${REPO_URL}/${file}`,
     };
 }
 
@@ -163,7 +163,7 @@ function stringToFilter(filters: string[]): Filters {
 }
 
 function filterTests(tests: TestCase[], filters: Filters): TestCase[] {
-    return tests.filter(test => {
+    return tests.filter((test) => {
         for (const f of Object.keys(filters)) {
             const filter: Filter = filters[f];
             const field: string | string[] = test[f];
@@ -215,7 +215,7 @@ function releaseFilter(
     environment: string,
     target: string
 ): TestCase[] {
-    return tests.filter(test => {
+    return tests.filter((test) => {
         if (isAutomated(test)) {
             // exclude automated tests
             return false;
@@ -285,5 +285,5 @@ export {
     manualSelectionOnly,
     extractId,
     stringToFilter,
-    releaseFilter
+    releaseFilter,
 };

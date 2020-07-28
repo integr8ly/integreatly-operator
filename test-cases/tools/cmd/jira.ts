@@ -6,7 +6,7 @@ import {
     isPerBuild,
     loadTestCases,
     releaseFilter,
-    TestCase
+    TestCase,
 } from "../lib/test-case";
 import { loadTestRuns, TestRun } from "../lib/test-run";
 import { logger } from "../lib/winston";
@@ -74,15 +74,15 @@ function toIssue(
             labels: ["test-case"],
             priority: { name: priority },
             project: { key: projectKey },
-            summary: title
-        }
+            summary: title,
+        },
     };
 }
 
 function toIssueLink(run: TestRun) {
     return {
         outwardIssue: { key: run.issue.key },
-        type: { name: "Sequence" }
+        type: { name: "Sequence" },
     };
 }
 
@@ -104,35 +104,35 @@ const jira: CommandModule<{}, Args> = {
             demand: true,
             default: process.env.JIRA_USERNAME,
             describe: "Jira username or set JIRA_USERNAME",
-            type: "string"
+            type: "string",
         },
         "jira-password": {
             demand: true,
             default: process.env.JIRA_PASSWORD,
             describe: "Jira password or set JIRA_PASSWORD",
-            type: "string"
+            type: "string",
         },
         environment: {
             demand: true,
             describe: "the environment name used to filter out the test cases",
-            type: "string"
+            type: "string",
         },
         epic: {
             demand: true,
             describe: "key of the epic to use as parent of all new tasks",
-            type: "string"
+            type: "string",
         },
         "previous-epic": {
             describe: "link the new taks to a previous epic",
-            type: "string"
+            type: "string",
         },
         "dry-run": {
             describe: "print test cases that will be create",
             type: "boolean",
-            default: false
-        }
+            default: false,
+        },
     },
-    handler: async args => {
+    handler: async (args) => {
         const jiraApi = new Jira(args.jiraUsername, args.jiraPassword);
 
         const epic = await jiraApi.findIssue(args.epic);
@@ -169,7 +169,7 @@ const jira: CommandModule<{}, Args> = {
         tests = releaseFilter(tests, args.environment, fixVersion.name);
 
         for (const test of tests) {
-            const previousRun = previousRuns.find(run => run.id === test.id);
+            const previousRun = previousRuns.find((run) => run.id === test.id);
 
             const issue = toIssue(
                 test,
@@ -208,7 +208,7 @@ const jira: CommandModule<{}, Args> = {
                 }
             }
         }
-    }
+    },
 };
 
 export { jira };
