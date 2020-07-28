@@ -227,7 +227,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{severity='critical', alertstate='firing'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -669,7 +668,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -982,7 +980,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1049,7 +1046,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1432,7 +1428,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -1815,7 +1810,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2198,7 +2192,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2514,7 +2507,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2581,7 +2573,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2897,7 +2888,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "clamp_max(\n    sum_over_time(\n        (clamp_max(\n            sum(absent(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}))\n            , 1\n        ))[28d:10m]\n    ) / (28 * 24 * 6) > 0, 1\n)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -2964,7 +2954,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3347,7 +3336,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
@@ -3730,7 +3718,6 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"targets": [{
 				"expr": "sum(ALERTS{alertname=~\"[[product]].*\",alertstate = 'firing',severity = 'critical'} or ALERTS{namespace=~\"[[product]]donotmatch\",alertstate = 'firing',severity = 'critical'}) or vector(0)",
 				"format": "time_series",
-				"instant": false,
 				"intervalFactor": 1,
 				"refId": "A"
 			}],
