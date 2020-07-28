@@ -1,7 +1,13 @@
 ---
-estimate: 15m
-automation_jiras:
+automation:
   - INTLY-6654
+components:
+  - product-3scale
+environments:
+  - osd-fresh-install
+estimate: 15m
+targets:
+  - 2.8.0
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state

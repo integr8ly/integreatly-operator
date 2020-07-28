@@ -1,7 +1,12 @@
 ---
-estimate: 15m
-automation_jiras:
+automation:
   - INTLY-7748
+environments:
+  - osd-post-upgrade
+  - osd-fresh-install
+estimate: 15m
+tags:
+  - per-release
 ---
 
 # B03 - Verify RHMI Developer User Permissions are Correct

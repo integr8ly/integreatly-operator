@@ -1,6 +1,11 @@
 ---
+components:
+  - monitoring
+environments:
+  - osd-post-upgrade
 targets:
   - 2.4.0
+  - 2.7.0
 ---
 
 # E07 - Verify drill down links

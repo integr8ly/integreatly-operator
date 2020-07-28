@@ -1,7 +1,15 @@
 ---
-estimate: 30m
-automation_jiras:
+automation:
   - INTLY-7421
+components:
+  - monitoring
+environments:
+  - osd-post-upgrade
+estimate: 30m
+tags:
+  - destructive
+targets:
+  - 2.8.0
 ---
 
 # E04 - Verify SLO dashboard

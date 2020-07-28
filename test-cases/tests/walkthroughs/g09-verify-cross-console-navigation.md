@@ -1,11 +1,13 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
-tag:
-  - nottesting
+targets:
+  - 2.8.0
 ---
 
 # G09 - Verify cross console navigation
 
-Acceptance Criteria:
+## Steps
 
-TBC
+TODO

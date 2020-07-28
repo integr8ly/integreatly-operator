@@ -1,9 +1,7 @@
 ---
-tags:
-  - happy-path
-  - automated
-
 estimate: 15m
+tags:
+  - automated
 ---
 
 # H10 - Verify Solution Explorer URL

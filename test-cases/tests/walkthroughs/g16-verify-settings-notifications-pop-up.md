@@ -1,4 +1,6 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
 targets:
   - 2.6.0
@@ -6,7 +8,7 @@ targets:
 
 # G16 - Verify settings notifications pop up
 
-Acceptance Criteria:
+## Steps
 
 Log into solution explorer in a private browser session as a user from the dedicated-admin group for example customer-admin01.
 

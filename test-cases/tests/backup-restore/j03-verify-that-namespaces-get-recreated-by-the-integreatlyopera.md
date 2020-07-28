@@ -1,18 +1,24 @@
 ---
+environments:
+  - osd-post-upgrade
 estimate: 120m
+tags:
+  - destructive
+targets:
+  - 2.6.0
 ---
 
 # J03 - Verify that namespaces get recreated by the integreatly-operator if deleted
 
-Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
-
 https://github.com/integr8ly/integreatly-operator/blob/master/test/common/namespace_restoration.go
 
-**All but `3scale` namespaces has been automated as pipeline tests due to known bug with 3scale**
+## Description
 
-Acceptance Criteria:
+Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 
-All namespace should be automatically recreated by the integreatly-operator
+Note: All but `3scale` namespaces has been automated as pipeline tests due to known bug with 3scale
+
+Test that all namespace will be automatically recreated by the integreatly-operator
 
 Namespaces for manual deletion:
 
@@ -21,7 +27,7 @@ Namespaces for manual deletion:
 
 **Note known bug:** 3scale is being stucked in "in progress" state after ns deletion - workaround: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/restore_namespace.md#3scale
 
-**Steps:**
+## Steps
 
 1. By default, this test is not run as part of the functional test suite. To run the test as part of the functional test suite, run the following `makefile` command from the RHMI operator repo against a target cluster:
 

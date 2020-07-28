@@ -1,8 +1,7 @@
 ---
-tags:
-  - happy-path
-  - automated
 estimate: 15m
+tags:
+  - automated
 ---
 
 # A02 - All specific products specified under the stages in the integreatly-operator CR have reported completed

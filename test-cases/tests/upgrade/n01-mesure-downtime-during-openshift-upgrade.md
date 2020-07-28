@@ -1,5 +1,9 @@
 ---
+environments:
+  - external
 estimate: 2h
+tags:
+  - manual-selection
 ---
 
 # N01 - Mesure downtime during OpenShift upgrade

@@ -1,14 +1,18 @@
 ---
-estimate: 1h
-tags:
-  - happy-path
-automation_jiras:
+automation:
   - INTLY-6123
+components:
+  - product-amq
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.6.0
 ---
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset
 
-## Acceptance Criteria
+## Description
 
 Verify that fields in the AMQ Online CRs not reconciled by the RHMI Operator can be modified and don't get reset by the RHMI Operator.
 

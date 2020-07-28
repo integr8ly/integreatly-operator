@@ -1,9 +1,13 @@
 ---
-estimate: 1h
-tags:
-  - happy-path
-automation_jiras:
+automation:
   - INTLY-7435
+components:
+  - product-3scale
+environments:
+  - osd-post-upgrade
+estimate: 1h
+targets:
+  - 2.8.0
 ---
 
 # H07 - Verify 3scale User Promotion Works and Stays Permanent

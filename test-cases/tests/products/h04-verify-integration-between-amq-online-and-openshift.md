@@ -1,9 +1,13 @@
 ---
-estimate: 30m
-tags:
-  - happy-path
-automation_jiras:
+automation:
   - INTLY-7432
+components:
+  - product-amq
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.8.0
 ---
 
 # H04 - Verify integration between AMQ Online and OpenShift

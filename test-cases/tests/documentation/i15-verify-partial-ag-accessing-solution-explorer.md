@@ -1,6 +1,11 @@
-# I15 - Verify partial ag accessing solution explorer
+---
+environments:
+  - osd-fresh-install
+tags:
+  - manual-selection
+---
 
-Sprint #20
+# I15 - Verify partial ag accessing solution explorer
 
 ## Description
 
@@ -13,8 +18,12 @@ After the a cluster is created, you can log into {webapp} and access all of your
 * Staging doc link: N/A
   > **NOTE:** The _Staging doc link_ is not to the Customer Portal. The formatting will not match what is on the Customer Portal; however, the steps should be the same.
 
-## Acceptance Criteria
+Acceptance Criteria
 
 1. Correct prerequisites and permissions are identified.
 2. Steps in procedure are clear.
 3. The flow of instructions makes sense.
+
+## Steps
+
+TODO

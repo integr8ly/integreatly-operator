@@ -1,4 +1,8 @@
 ---
+environments:
+  - osd-post-upgrade
+targets:
+  - 2.6.0
 ---
 
 # C12 - Verify no critical alerts have fired on cluster during lifespan of cluster

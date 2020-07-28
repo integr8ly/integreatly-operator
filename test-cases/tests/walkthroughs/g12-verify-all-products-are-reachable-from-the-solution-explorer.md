@@ -1,5 +1,9 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
+tags:
+  - per-release
 ---
 
 # G12 - Verify all products are reachable from the Solution Explorer

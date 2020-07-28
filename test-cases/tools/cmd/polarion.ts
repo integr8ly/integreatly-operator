@@ -2,9 +2,7 @@ import { Argv, CommandModule } from "yargs";
 import { assertEpic, Jira } from "../lib/jira";
 import { uploadToPolarion } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
-import { loadTestFiles } from "../lib/test-file";
 import { loadTestRuns } from "../lib/test-run";
-import { flat } from "../lib/utils";
 import { logger } from "../lib/winston";
 
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
@@ -23,26 +21,26 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
             describe: "Jira username or set POLARION_USERNAME",
             default: process.env.POLARION_USERNAME,
             type: "string",
-            demand: true
+            demand: true,
         },
         polarionPassword: {
             describe: "Jira password or set POLARION_PASSWORD",
             default: process.env.POLARION_PASSWORD,
             type: "string",
-            demand: true
+            demand: true,
         },
         "dump-only": {
             default: false,
-            type: "boolean"
-        }
+            type: "boolean",
+        },
     },
-    handler: async args => {
-        const tests = flat(loadTestFiles().map(file => loadTestCases(file)));
+    handler: async (args) => {
+        const tests = loadTestCases();
 
         // Polarion Test Case Importer: https://mojo.redhat.com/docs/DOC-1075945
         //
         // prepare the testcases xml document
-        const testcases = tests.map(t => ({
+        const testcases = tests.map((t) => ({
             $: { id: t.id },
             title: `${t.id} - ${t.category} - ${t.title}`,
             description: t.file.link,
@@ -67,12 +65,12 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
                         {
                             $: {
                                 content: "automated",
-                                id: "caseautomation"
-                            }
-                        }
-                    ]
-                }
-            ]
+                                id: "caseautomation",
+                            },
+                        },
+                    ],
+                },
+            ],
         }));
 
         const document = {
@@ -81,12 +79,12 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
                 properties: [
                     {
                         property: [
-                            { $: { name: "lookup-method", value: "custom" } }
-                        ]
-                    }
+                            { $: { name: "lookup-method", value: "custom" } },
+                        ],
+                    },
                 ],
-                testcase: testcases
-            }
+                testcase: testcases,
+            },
         };
 
         await uploadToPolarion(
@@ -96,7 +94,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
             args.polarionPassword,
             args.dumpOnly
         );
-    }
+    },
 };
 
 interface TestRunArgs {
@@ -116,37 +114,37 @@ const testRun: CommandModule<{}, TestRunArgs> = {
             describe: "Jira username or set POLARION_USERNAME",
             default: process.env.POLARION_USERNAME,
             type: "string",
-            demand: true
+            demand: true,
         },
         polarionPassword: {
             describe: "Jira password or set POLARION_PASSWORD",
             default: process.env.POLARION_PASSWORD,
             type: "string",
-            demand: true
+            demand: true,
         },
         jiraUsername: {
             describe: "Jira username or set JIRA_USERNAME",
             default: process.env.JIRA_USERNAME,
             type: "string",
-            demand: true
+            demand: true,
         },
         jiraPassword: {
             describe: "Jira password or set JIRA_PASSWORD",
             default: process.env.JIRA_PASSWORD,
             type: "string",
-            demand: true
+            demand: true,
         },
         epic: {
             describe: "the key of the epic containing all manual tests",
             type: "string",
-            demand: true
+            demand: true,
         },
         "dump-only": {
             default: false,
-            type: "boolean"
-        }
+            type: "boolean",
+        },
     },
-    handler: async args => {
+    handler: async (args) => {
         const jira = new Jira(args.jiraUsername, args.jiraPassword);
 
         const epic = await jira.findIssue(args.epic);
@@ -155,15 +153,15 @@ const testRun: CommandModule<{}, TestRunArgs> = {
         const runs = await loadTestRuns(jira, `"Epic Link" = ${epic.key}`);
 
         const testcases = runs
-            .filter(r => r.result !== "Skipped")
-            .map(r => {
+            .filter((r) => r.result !== "Skipped")
+            .map((r) => {
                 const testcase: any = {
                     $: { name: r.title },
                     properties: {
                         property: {
-                            $: { name: "polarion-testcase-id", value: r.id }
-                        }
-                    }
+                            $: { name: "polarion-testcase-id", value: r.id },
+                        },
+                    },
                 };
 
                 switch (r.result) {
@@ -188,28 +186,28 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                         {
                             $: {
                                 name: "polarion-project-id",
-                                value: POLARION_PROJECT_ID
-                            }
+                                value: POLARION_PROJECT_ID,
+                            },
                         },
                         {
                             $: {
                                 name: "polarion-testrun-title",
-                                value: epic.fields.summary
-                            }
+                                value: epic.fields.summary,
+                            },
                         },
                         {
                             $: {
                                 name: "polarion-lookup-method",
-                                value: "custom"
-                            }
-                        }
-                    ]
+                                value: "custom",
+                            },
+                        },
+                    ],
                 },
                 testsuite: {
                     $: { tests: 1 },
-                    testcase: testcases
-                }
-            }
+                    testcase: testcases,
+                },
+            },
         };
 
         await uploadToPolarion(
@@ -223,7 +221,7 @@ const testRun: CommandModule<{}, TestRunArgs> = {
         logger.warn(
             "Remember to set the Planned In version to the created Test Run"
         );
-    }
+    },
 };
 
 const polarion: CommandModule = {
@@ -234,7 +232,7 @@ const polarion: CommandModule = {
     },
     handler: () => {
         // nothing
-    }
+    },
 };
 
 export { polarion };

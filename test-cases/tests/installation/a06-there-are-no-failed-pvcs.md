@@ -1,8 +1,7 @@
 ---
-tags:
-  - happy-path
-  - automated
 estimate: 15m
+tags:
+  - automated
 ---
 
 # A06 - There are no failed PVCs

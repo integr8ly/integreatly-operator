@@ -1,7 +1,9 @@
 ---
-tags:
-  - happy-path
+environments:
+  - osd-post-upgrade
 estimate: 30m
+tags:
+  - per-release
 ---
 
 # N03 - Verify that the minimal CIDR block is configured correctly

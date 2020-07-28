@@ -1,5 +1,13 @@
 ---
+components:
+  - product-sso
+environments:
+  - osd-post-upgrade
 estimate: 2h
+tags:
+  - destructive
+targets:
+  - 2.8.0
 ---
 
 # K03 - Run performance test against RHSSO

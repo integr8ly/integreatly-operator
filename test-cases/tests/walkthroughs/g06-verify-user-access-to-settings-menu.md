@@ -1,12 +1,14 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
-tags:
-  - 2.3.0
+targets:
+  - 2.8.0
 ---
 
 # G06 - Verify user access to settings menu
 
-Acceptance Criteria:
+## Steps
 
 When logged into solution-explorer as a developer
 

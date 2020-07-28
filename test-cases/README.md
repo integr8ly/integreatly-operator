@@ -8,10 +8,6 @@
 - The `./tools.sh` script requires Nodejs >= 10.
 - Try to write test cases using the standard syntax described in the [test-template.md](./fixtures/test-template.md).
 - General guidelines in `common/general-guidelines.md` are imported on the bottom of every test case.
-- Tags can be added to test cases using metadata, see the section below.
-- A test case can be manual or automated
-- A manual test case contains also the manual steps to perform
-- An automated test case is an empty file that links to the automated test script
 
 ## How to create a test case
 
@@ -29,6 +25,9 @@ and edit the test case following the template structure.
 Once your done ensure the file name and the markdown format are correct:
 
 ```bash
+# to verify the test cases
+npm run lint
+
 # to fix the name
 npm run rename
 
@@ -36,7 +35,7 @@ npm run rename
 npm run prettier
 ```
 
-Commit everything and open a new MR.
+Commit everything and open a new PR.
 
 ## How to estimate a test case
 
@@ -44,10 +43,11 @@ Each manual test case should have a rough estimation of the time (in hours) requ
 
 The estimation should be set in the test case metadata like this
 
-```yaml
+```
 ---
 estimate: 2h
 ---
+
 # Z00 - My test
 ```
 
@@ -76,13 +76,10 @@ estimate: 2h
    > If the automated test does not completely cover the manual test then the test case should be
    > split and the part that is not automated should become a new manual test
 
-4. Once the automated test is working and running as part of the nightly pipeline the related test
-   case should be:
+4. Once the automated test is working and running as part of the nightly pipeline the related test case should be:
 
-   - flagged as automated by setting the `automated` tag
-   - the **Steps** and **Prerequisites** section should be removed because new changes should be done
-     directly to the automated test
-   - and add the link to to the automated test in the test case
+   - Flag the test cases as automated by setting the `automated` tag
+   - Add the link to to the automated test in the test case
 
 Example: [MR!63](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases/merge_requests/63)
 
@@ -92,31 +89,29 @@ Prerequisites:
 
 - Nodejs >= 10
 
-**!! Please Read !! :**
+> Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jira tasks during the release testing
 
-- Always refer to the [2.X Release Testing Workflow](https://github.com/RHCloudServices/integreatly-help/blob/master/qe-guides/2.x-release-testing-workflow.md) on how to create the Jirat tasks during the release testing
+To crate the Jira tasks for the test cases you need first to create an Epic in Jira with the `fixVersion` that you want to target. Only test cases with the same target version or marked as `per-release` or `per-build` will be created in the Epic.
 
-- Use the `--help` flags to get the full documentation of all avialble flags ([Command-line interface Built-in usage help](https://en.wikipedia.org/wiki/Command-line_interface#Built-in_usage_help))
-
-  ```bash
-  /tools.sh jira --help
-  ```
-
-Run:
+To see the list of test cases that will be created in the Epic you can use the `export` cmd:
 
 ```bash
-./tools.sh jira --jira-username yourusername --jira-password yourpassword --epic EPICKEY-00
+./tools.sh export csv --target VERSION --environment ENVIRONMENT | column -t -s,
 ```
 
-this will create a task for each test case in Jira under the passed epic.
-
-If you need to link the new tasks to the task of a previous test round use the `previousEpic` option:
+Use the `jira` cmd to create the Jira tasks for the test cases and add them to the Epic
 
 ```bash
-./tools.sh jira --jira-username yourusername --jira-password yourpassword --epic EPICKEY-01 --previousEpic EPICKEY-00
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --environment ENVIRONMENT
 ```
 
-> The `previousEpic` option will link each new task to the task in the previous epic with the same ID and it
+If you need to link the new tasks to the task of a previous test round use the `previous-epic` option:
+
+```bash
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00
+```
+
+> The `previous-epic` option will link each new task to the task in the previous epic with the same ID and it
 > will set the Priority of the new task depending on the Resolution of the previous task.
 >
 > Resolution -> Priority:
@@ -126,28 +121,40 @@ If you need to link the new tasks to the task of a previous test round use the `
 > - [New Test] -> Major
 > - Won't Do -> Minor
 > - Done -> Optional
-
-To automatically close as **Won't Do** all tests marked as **Won't Do** or **Done** in the previous Epic use the `--auto-resolve` option:
-
-```bash
-./tools.sh jira --epic EPICKEY-01 --previousEpic EPICKEY-00 --auto-resolve
-```
+>
+> And automatically close as **Won't Do** all tests marked as **Won't Do** or **Done** in the previous Epic
 
 It is also possible to set the Jira username and password in environment variables:
 
 ```
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00
+ ./tools.sh jira --epic EPICKEY-00
 ```
 
-To create only some test cases you can use the option `--filter` to filter
-the test cases by tags:
+## List and export the test cases
 
-```bash
-./tools.sh jira --jira-username yourusername --jira-password yourpassword --epic EPICKEY-00 --filter per-build,^automated
+Use the `export csv` cmd to list and export the test cases in csv:
+
+```
+./tools.sh export csv
 ```
 
-this will create a task for each test case with the tag `per-build` and not with the tag `automate`.
-`^` stands for **not**. Multiple tags can be combined using `,` but they will be always in **and** relation.
+use the `--output` option to save it to file
+
+```
+./tools.sh export csv --output /tmp/alltests.csv
+```
+
+to export only specific test cases use the `--filter` option:
+
+```
+./tools.sh export csv --filter components=product-3scale tags=^automated
+```
+
+to pretty print the csv output on the terminal:
+
+```
+./tools.sh export csv | column -t -s, | less -S
+```
 
 ## How to upload all test case to Polarion
 
@@ -167,20 +174,87 @@ This command will read all test results from Jira, and upload them to Polarion.
 JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390
 ```
 
-## Tags
+## Test Case Metadata
 
-Tags can be added for each test case inside the metadata section in the header. Tags can be defined globally
-or specifically for each variant.
+## Environments
 
-Supported tags:
+The environment field specify against wich environment/setup the test need to be executed.
 
-- `draft` Indicates that this test case is uncompleted and should not be executed.
+- `osd-post-upgrade` This is the environment where most of the tests will be executed and also the **default** choice for most of the tests. It consist in a BYOC OSD on AWS cluster installed with the previous version using addon-flow and upgraded to the version to test.
+- `osd-fresh-install` This environment should be used for tests that are for sure not affected from the upgrade. It consist in a BYOC OSD on AWS cluster installed with the version to test using the addon-flow.
+- `osd-private-post-upgrade` This is a special environment and should be used only for tests that are specifically targeting it, the only difference with the pervious environments, is that this environment resides behind a VPN
+- `rhpds` This is the RHMI demo environment and should be used only for tests that are specifically targeting it.
+- `external` This is a special tag that is used to identify tests that needs a special environment or a stand-alone one, the test in this case would have to specify how to setup the cluster.
+
+### Tags
+
+Tags are used to define specific characteristics of a test case.
+
 - `automated` Indicates that this test case is already automated and that it doesn't need to be executed manually
-- `obsolete` Indicates that this test case is obsolete and that it must be updated as soon as possible
+- `per-build` Indicates that this test case should be executed on each build even if passed in the previous one
+- `per-release` Indicates that this test case should be executed on each release but can be skip if passed in the previous build
+- `manual-selection` Indicates that this test case is excluded from the standard test recycle and therefore it will not be retested every tree releases
+- `destructive` Indicates that the test case may conflict with other tests and therefore can't be executed in parallel with other tests, all destructive tests must be executed sequentially
+
+E.g.:
+
+```
+---
+tags:
+  - per-build
+---
+
+# Z00 - Verify
+```
+
+### Components
+
+The component field is used to decide which tests should be added in the next release.
+
+- `product-3scale` 3Scale minor or major product upgrades
+- `product-amq` AMQ minor or major product upgrades
+- `product-fuse` Fuse minor or major product upgrades
+- `product-apicurito` Apicurito minor or major product upgrades
+- `product-codeready` CodeReady minor or major product upgrades
+- `product-sso` SSO minor or major product upgrades
+- `product-ups` UPS minor or major product upgrades
+- `product-data-sync` Data Sync minor or major product upgrades
+- `monitoring` Monitoring stack changes or upgrade
+
+### Targets
+
+Targets version defines against which release the test case is going to be executed next time. This is useful to include or exclude the test cases form a specific release.
+
+All test cases need to define at least a `targets` version or set the `per-release`, `per-build` or `manual-selection` tag.
+
+In this example the test case `Z00` would be included in the `2.7.0` and `2.9.0` releases but excluded from any other release:
+
+```
+---
+targets:
+  - 2.7.0
+  - 2.9.0
+---
+
+# Z00 - Verify
+```
+
+### Automation Jiras
+
+As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation` in its metadata pointing to the automation jira, e.g.:
+
+```
+---
+automation:
+  - INTLY-7421
+---
+
+# Z00 - Verify
+```
 
 ## Prettier
 
-> All of the test cases must be prettify before being committed
+> All of the test cases must be prettified before being committed
 
 You can prettify the test cases using the command line:
 
@@ -190,22 +264,10 @@ npm run prettier
 
 Or using the VS Code extension: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
 
-## Export to CSV
+## How to export the test cases to CSV
 
 Run the `./tools.sh export csv` script to export all test cases in a CSV table:
 
 ```
 ./tools.sh export csv --output testcases.csv
-```
-
-## Automation for test cases
-
-As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation_jiras` in its metadata pointing to the automation jira, e.g.:
-
-```yaml
----
-automation_jiras:
-  - INTLY-7421
----
-
 ```

@@ -1,9 +1,13 @@
 ---
+automation:
+  - INTLY-7416
+environments:
+  - osd-post-upgrade
+  - osd-fresh-install
+  - rhpds
 estimate: 15m
 tags:
-  - happy-path
-automation_jiras:
-  - INTLY-7416
+  - per-release
 ---
 
 # B01 - Verify that the users can login in all products

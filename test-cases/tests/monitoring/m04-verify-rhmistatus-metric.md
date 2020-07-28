@@ -1,8 +1,6 @@
 ---
 tags:
   - automated
-targets:
-  - 2.4.0
 ---
 
 # M04 - Verify rhmi_status metric

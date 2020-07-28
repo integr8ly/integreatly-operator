@@ -1,10 +1,13 @@
 ---
+environments:
+  - osd-post-upgrade
+estimate: 15m
 targets:
   - 2.3.0
-estimate: 15m
+  - 2.6.0
 ---
 
-# A20 - Verify cluster prometheus has RHMI targets
+# A20 - Verify cluster Prometheus has RHMI targets
 
 ## Steps
 
@@ -25,14 +28,14 @@ estimate: 15m
      "3scale-apicast-pods",
      "blackbox",
      "redhat-rhmi-rhsso/keycloak-pod-monitor",
-     "redhat-rhmi-user-sso/keycloak-pod-monitor"
+     "redhat-rhmi-user-sso/keycloak-pod-monitor",
    ];
 
    const summarize = (prev, curr) => {
      if (!prev[curr.labels.job]) {
        prev[curr.labels.job] = {
          num: 0,
-         upNum: 0
+         upNum: 0,
        };
      }
      prev[curr.labels.job].num++;

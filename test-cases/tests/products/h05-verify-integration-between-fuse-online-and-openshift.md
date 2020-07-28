@@ -1,9 +1,13 @@
 ---
-estimate: 30m
-tags:
-  - happy-path
-automation_jiras:
+automation:
   - INTLY-7433
+components:
+  - product-fuse
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.6.0
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift

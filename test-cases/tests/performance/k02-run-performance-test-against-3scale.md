@@ -1,5 +1,13 @@
 ---
+components:
+  - product-3scale
+environments:
+  - osd-post-upgrade
 estimate: 2h
+tags:
+  - destructive
+targets:
+  - 2.7.0
 ---
 
 # K02 - Run performance test against 3Scale

@@ -1,7 +1,11 @@
 ---
+components:
+  - product-sso
+environments:
+  - osd-fresh-install
 estimate: 30m
-require:
-  - G01
+targets:
+  - 2.7.0
 ---
 
 # G02 - Verify SSO walkthrough

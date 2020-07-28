@@ -1,6 +1,11 @@
-# I10 - Align docs with changes to Solution Explorer UI text
+---
+environments:
+  - osd-fresh-install
+tags:
+  - manual-selection
+---
 
-- Sprint #20
+# I10 - Align docs with changes to Solution Explorer UI text
 
 ## Description
 
@@ -17,10 +22,14 @@ Task to ensure that references to the UI in the docs are correct
   https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/73fb467398672b2b2668e2792995a8773f7edd9a/docs/modules/getting-started/proc_creating-using-solution-patterns_.adoc
   https://gitlab.cee.redhat.com/RedHatManagedIntegration-documentation/rhmi-docs/-/blob/73fb467398672b2b2668e2792995a8773f7edd9a/docs/modules/getting-started/proc_giving-developers-admin-3scale.adoc
 
-## Acceptance Criteria
+Acceptance Criteria
 
 1. Correct prerequisites and permissions are identified.
 2. Steps in procedure are clear.
 3. The flow of instructions makes sense.
 4. All links are accessible.
 5. Instructions in the docs that refer to the user interface are correct.
+
+## Steps
+
+TODO

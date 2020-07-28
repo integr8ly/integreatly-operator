@@ -1,12 +1,15 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
 targets:
+  - 2.5.0
   - 2.6.0
 ---
 
 # G15 - Verify soluton explorer customer settings backup
 
-Acceptance Criteria:
+## Steps
 
 When logged into solution explorer as a user from the dedicated-admin group for example customer-admin01.
 

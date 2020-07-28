@@ -1,7 +1,11 @@
 ---
+components:
+  - product-fuse
+environments:
+  - osd-fresh-install
 estimate: 45m
-require:
-  - G03
+targets:
+  - 2.6.0
 ---
 
 # G04 - Verify API management walkthrough

@@ -1,5 +1,11 @@
 ---
+components:
+  - product-apicurito
+environments:
+  - osd-fresh-install
 estimate: 1h
+targets:
+  - 2.8.0
 ---
 
 # G03 - Verify API development walkthrough

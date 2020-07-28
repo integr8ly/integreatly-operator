@@ -1,14 +1,11 @@
 ---
 tags:
-  - happy-path
   - automated
-targets:
-  - 2.5.0
 ---
 
 # A25 - Verify standalone RHMI VPC exists and is configured properly
 
-<https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_standalone_vpc.go>
+https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aws_standalone_vpc.go
 
 ## Description
 

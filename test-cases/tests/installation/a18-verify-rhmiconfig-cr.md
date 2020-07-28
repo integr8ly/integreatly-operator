@@ -1,5 +1,4 @@
 ---
-# see the Tags section in the README for the list of tags that we use
 tags:
   - automated
 ---

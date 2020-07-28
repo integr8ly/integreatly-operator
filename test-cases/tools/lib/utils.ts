@@ -1,20 +1,29 @@
-export function flat<T>(array: T[][]): T[] {
-    let result = [];
-    array.forEach(item => {
-        result = result.concat(item);
-    });
-    return result;
+import * as fs from "fs";
+import * as path from "path";
+
+function isEmpty(list: any[]): boolean {
+    return !(list.length > 0);
 }
 
-export function extractId(title: string): { id: string; title: string } {
-    // A01 - Title
-    const match = /^(?<id>[A-Z][0-9]{2})\s-\s(?<title>.*)$/.exec(title);
-    if (match) {
-        return {
-            id: match.groups.id,
-            title: match.groups.title
-        };
-    } else {
-        throw new Error(`can not extract the id from '${title}'`);
+/**
+ * Recursive search for all files in dir that matches the filter.
+ */
+function walk(dir: string, filter: RegExp): string[] {
+    const results: string[] = [];
+
+    for (const file of fs.readdirSync(dir)) {
+        const full = path.join(dir, file);
+
+        const stats = fs.statSync(full);
+
+        if (stats.isDirectory()) {
+            results.push(...walk(full, filter));
+        } else if (filter.test(file)) {
+            results.push(full);
+        }
     }
+
+    return results;
 }
+
+export { isEmpty, walk };

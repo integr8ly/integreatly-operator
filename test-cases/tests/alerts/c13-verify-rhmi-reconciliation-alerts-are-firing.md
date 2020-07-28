@@ -1,9 +1,11 @@
 ---
+environments:
+  - osd-post-upgrade
 targets:
   - 2.5.0
 ---
 
-# C12 - Verify RHMI reconciliation alerts are firing
+# C13 - Verify RHMI reconciliation alerts are firing
 
 ## Description
 

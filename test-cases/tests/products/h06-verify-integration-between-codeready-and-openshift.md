@@ -1,9 +1,13 @@
 ---
-tags:
-  - happy-path
-estimate: 30m
-automation_jiras:
+automation:
   - INTLY-7434
+components:
+  - product-codeready
+environments:
+  - osd-post-upgrade
+estimate: 30m
+targets:
+  - 2.7.0
 ---
 
 # H06 - Verify integration between CodeReady and OpenShift

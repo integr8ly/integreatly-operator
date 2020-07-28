@@ -1,14 +1,24 @@
 ---
+components:
+  - product-sso
+environments:
+  - osd-post-upgrade
 estimate: 1h
-require:
-  - J03
+tags:
+  - destructive
+targets:
+  - 2.6.0
 ---
 
 # J07 - Verify Cluster SSO Backup and Restore
 
+## Description
+
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 
-## Postgres
+## Steps
+
+### Postgres
 
 1. Verify Clients and Realms exist in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace.
 

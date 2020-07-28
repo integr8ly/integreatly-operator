@@ -1,12 +1,15 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
-tags:
+targets:
   - 2.3.0
+  - 2.7.0
 ---
 
 # G08 - Verify addition of breadcrumbs to solution explorer
 
-Acceptance Criteria:
+## Steps
 
 When in a soluton pattern the breadcrumbs should look like
 

@@ -1,10 +1,14 @@
 import * as markdown2confluence from "markdown2confluence-cws";
 import { CommandModule } from "yargs";
 import { assertEpic, Issue, Jira } from "../lib/jira";
-import { filterTests, loadTestCases, TestCase } from "../lib/test-case";
-import { loadTestFiles } from "../lib/test-file";
+import {
+    isDestructive,
+    isPerBuild,
+    loadTestCases,
+    releaseFilter,
+    TestCase,
+} from "../lib/test-case";
 import { loadTestRuns, TestRun } from "../lib/test-run";
-import { flat } from "../lib/utils";
 import { logger } from "../lib/winston";
 
 const GENERAL_GUIDELINES_URL =
@@ -48,15 +52,15 @@ function toIssue(
     fixBuildId: string,
     priority: string
 ): Issue {
-    let content = prependOriginLink(
-        test.content,
-        test.file.file,
-        test.file.link
-    );
+    let content = prependOriginLink(test.content, test.file, test.url);
 
     content = appendLinkToGeneralGuidelines(content);
 
-    const title = `${test.id} - ${test.category} - ${test.title}`;
+    let title = `${test.category} - ${test.title}`;
+    if (isDestructive(test)) {
+        title = `[DESTRUCTIVE] - ${title}`;
+    }
+    title = `${test.id} - ${title}`;
 
     return {
         fields: {
@@ -70,22 +74,15 @@ function toIssue(
             labels: ["test-case"],
             priority: { name: priority },
             project: { key: projectKey },
-            summary: title
-        }
+            summary: title,
+        },
     };
 }
 
 function toIssueLink(run: TestRun) {
     return {
         outwardIssue: { key: run.issue.key },
-        type: { name: "Sequence" }
-    };
-}
-
-function toBlockedByLink(run: string) {
-    return {
-        outwardIssue: { key: run },
-        type: { name: "Dependency" }
+        type: { name: "Sequence" },
     };
 }
 
@@ -94,9 +91,8 @@ interface Args {
     jiraPassword: string;
     epic: string;
     previousEpic?: string;
-    filter?: string;
+    environment: string;
     dryRun: boolean;
-    autoResolve: boolean;
 }
 
 // tslint:disable:object-literal-sort-keys
@@ -104,56 +100,39 @@ const jira: CommandModule<{}, Args> = {
     command: "jira",
     describe: "create Jira task for each test case",
     builder: {
-        jiraUsername: {
+        "jira-username": {
             demand: true,
             default: process.env.JIRA_USERNAME,
             describe: "Jira username or set JIRA_USERNAME",
-            type: "string"
+            type: "string",
         },
-        jiraPassword: {
+        "jira-password": {
             demand: true,
             default: process.env.JIRA_PASSWORD,
             describe: "Jira password or set JIRA_PASSWORD",
-            type: "string"
+            type: "string",
         },
-        filter: {
-            describe: "filter test to create by tags",
-            type: "string"
+        environment: {
+            demand: true,
+            describe: "the environment name used to filter out the test cases",
+            type: "string",
         },
         epic: {
             demand: true,
             describe: "key of the epic to use as parent of all new tasks",
-            type: "string"
+            type: "string",
         },
-        previousEpic: {
+        "previous-epic": {
             describe: "link the new taks to a previous epic",
-            type: "string"
+            type: "string",
         },
         "dry-run": {
             describe: "print test cases that will be create",
             type: "boolean",
-            default: false
+            default: false,
         },
-        "auto-resolve": {
-            describe:
-                "tasks that passed [Done] or were skipped [Won't Do] in previous epic will be resolved (Requires --previousEpic)",
-            type: "boolean",
-            default: false
-        }
     },
-    handler: async args => {
-        if (!args.previousEpic && args.autoResolve) {
-            throw new Error(
-                "--auto-resolve can only be used when a previous epic is included"
-            );
-        }
-
-        let tests = flat(loadTestFiles().map(file => loadTestCases(file)));
-
-        if (args.filter !== undefined) {
-            tests = filterTests(tests, args.filter.split(","));
-        }
-
+    handler: async (args) => {
         const jiraApi = new Jira(args.jiraUsername, args.jiraPassword);
 
         const epic = await jiraApi.findIssue(args.epic);
@@ -185,10 +164,12 @@ const jira: CommandModule<{}, Args> = {
 
         const project = epic.fields.project.key;
 
-        const idKeyMap = new Map<string, string>();
+        let tests = loadTestCases();
+
+        tests = releaseFilter(tests, args.environment, fixVersion.name);
 
         for (const test of tests) {
-            const previousRun = previousRuns.find(run => run.id === test.id);
+            const previousRun = previousRuns.find((run) => run.id === test.id);
 
             const issue = toIssue(
                 test,
@@ -208,7 +189,6 @@ const jira: CommandModule<{}, Args> = {
                 logger.info(
                     `created task '${result.key}' '${issue.fields.summary}'`
                 );
-                idKeyMap.set(test.id, result.key);
 
                 if (previousRun) {
                     await jiraApi.addLinkToIssue(
@@ -217,48 +197,18 @@ const jira: CommandModule<{}, Args> = {
                     );
                     logger.info(`   linked to '${previousRun.issue.key}'`);
 
-                    if (args.autoResolve) {
-                        if (
-                            previousRun.result === "Passed" ||
-                            previousRun.result === "Skipped"
-                        ) {
-                            await jiraApi.resolveIssue(result.key);
-                            logger.info(
-                                ` '${result.key}' automatically resolved as "Won't Do"`
-                            );
-                        }
+                    if (
+                        !isPerBuild(test) &&
+                        (previousRun.result === "Passed" ||
+                            previousRun.result === "Skipped")
+                    ) {
+                        await jiraApi.resolveIssue(result.key);
+                        logger.info(`   automatically resolved as "Won't Do"`);
                     }
                 }
             }
         }
-
-        for (const test of tests) {
-            const currentTest = idKeyMap.get(test.id);
-            for (const requireId of test.require) {
-                if (args.dryRun) {
-                    logger.info(
-                        `will link test '${test.id}' to test '${requireId}`
-                    );
-                    continue;
-                }
-
-                if (!idKeyMap.has(requireId)) {
-                    throw new Error(
-                        ` Can't link '${test.id}' to '${requireId}' because '${requireId}' isn't a valid test case`
-                    );
-                }
-
-                const blockerTest = idKeyMap.get(requireId);
-                await jiraApi.addLinkToIssue(
-                    currentTest,
-                    toBlockedByLink(blockerTest)
-                );
-                logger.info(
-                    ` '${currentTest}' linked to '${blockerTest}' as blocked by`
-                );
-            }
-        }
-    }
+    },
 };
 
 export { jira };

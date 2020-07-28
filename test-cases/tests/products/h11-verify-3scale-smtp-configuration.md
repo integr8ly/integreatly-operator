@@ -1,12 +1,18 @@
 ---
-estimate: 15m
-automation_jiras:
+automation:
   - INTLY-7439
+components:
+  - product-3scale
+environments:
+  - osd-post-upgrade
+estimate: 15m
+targets:
+  - 2.7.0
 ---
 
 # H11 - Verify 3scale SMTP Configuration
 
-## Acceptance Criteria
+## Description
 
 Verify that Customer-admin can invite new users to 3scale via email by following the steps below and verify you have received an invitation email.
 

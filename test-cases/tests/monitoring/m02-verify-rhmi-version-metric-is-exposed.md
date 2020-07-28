@@ -1,8 +1,10 @@
 ---
-tags:
-  - 2.3.0
-
+environments:
+  - osd-post-upgrade
 estimate: 15m
+targets:
+  - 2.3.0
+  - 2.7.0
 ---
 
 # M02 - Verify RHMI version metric is exposed
