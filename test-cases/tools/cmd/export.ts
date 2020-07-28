@@ -4,7 +4,7 @@ import {
     filterTests,
     loadTestCases,
     releaseFilter,
-    stringToFilter
+    stringToFilter,
 } from "../lib/test-case";
 
 interface CSVArgs {
@@ -27,24 +27,24 @@ const csv: CommandModule<{}, CSVArgs> = {
     builder: {
         output: {
             describe: "the name of the file where to write the csv table",
-            type: "string"
+            type: "string",
         },
         environment: {
             describe:
                 "the environment name used from the release filter, if not set the release filter will not be used",
-            type: "string"
+            type: "string",
         },
         target: {
             describe:
                 "the target version used from the release filter, if not set the release filter will not be used",
-            type: "string"
+            type: "string",
         },
         filter: {
             describe: "filter test to create by most of the fields",
-            type: "array"
-        }
+            type: "array",
+        },
     },
-    handler: async args => {
+    handler: async (args) => {
         if (
             (args.environment && !args.target) ||
             (args.target && !args.environment)
@@ -76,11 +76,11 @@ const csv: CommandModule<{}, CSVArgs> = {
                 "Estimate",
                 "Automation Jiras",
                 "Link",
-                "Runs"
-            ].join(",")
+                "Runs",
+            ].join(","),
         ];
 
-        const data = tests.map(t =>
+        const data = tests.map((t) =>
             [
                 t.id,
                 t.category,
@@ -92,7 +92,7 @@ const csv: CommandModule<{}, CSVArgs> = {
                 t.estimate,
                 t.automation.join(" "),
                 t.url,
-                runsLink(t.id)
+                runsLink(t.id),
             ].join(",")
         );
 
@@ -101,9 +101,9 @@ const csv: CommandModule<{}, CSVArgs> = {
         if (args.output) {
             fs.writeFileSync(args.output, rows.join("\n"));
         } else {
-            rows.forEach(r => console.log(r));
+            rows.forEach((r) => console.log(r));
         }
-    }
+    },
 };
 
 const expor: CommandModule = {
@@ -114,7 +114,7 @@ const expor: CommandModule = {
     },
     handler: () => {
         // nothing
-    }
+    },
 };
 
 export { expor };
