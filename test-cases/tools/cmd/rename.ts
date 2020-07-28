@@ -12,7 +12,7 @@ const rename: CommandModule<{}, {}> = {
     handler: () => {
         const tests = loadTestCases();
 
-        tests.forEach((test) => {
+        tests.forEach(test => {
             const desired = desiredFileName(test);
 
             const { base: current, dir } = path.parse(test.file);
@@ -22,7 +22,7 @@ const rename: CommandModule<{}, {}> = {
                 logger.info(`${current} renamed to ${desired}`);
             }
         });
-    },
+    }
 };
 
 export { rename };

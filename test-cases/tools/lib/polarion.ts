@@ -36,19 +36,19 @@ export async function uploadToPolarion(
         auth: { username, password },
         baseURL: POLARION_IMPORTER_URL,
         httpsAgent: new https.Agent({
-            rejectUnauthorized: false,
-        }),
+            rejectUnauthorized: false
+        })
     });
 
     logger.info("uploading testcases to polarion");
     const form = new FormData();
     form.append("file", xml, {
         contentType: "text/xml",
-        filename: "file.xml",
+        filename: "file.xml"
     });
 
     const result = await importer.post(type, form, {
-        headers: form.getHeaders(),
+        headers: form.getHeaders()
     });
 
     // console.log(result.data);
@@ -63,11 +63,11 @@ export async function uploadToPolarion(
 
     wait: while (true) {
         // wait 2s
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 2000));
 
         const status = await importer.get(`${type}-queue`, {
             headers: { Accept: "application/json" },
-            params: { jobIds: jobId },
+            params: { jobIds: jobId }
         });
 
         const job = status.data.jobs[0];

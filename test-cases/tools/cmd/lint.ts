@@ -6,7 +6,7 @@ import {
     MANUAL_SELECTION_TAG,
     PER_BUILD_TAG,
     PER_RELEASE_TAG,
-    STEPS_SECTION,
+    STEPS_SECTION
 } from "../lib/constants";
 import {
     desiredFileName,
@@ -15,7 +15,7 @@ import {
     isPerRelease,
     loadTestCases,
     manualSelectionOnly,
-    TestCase,
+    TestCase
 } from "../lib/test-case";
 import { isEmpty } from "../lib/utils";
 import { logger } from "../lib/winston";
@@ -39,7 +39,7 @@ const CATEGORIES = [
     "products",
     "upgrade",
     "walkthroughs",
-    "uninstallation",
+    "uninstallation"
 ];
 
 // Update the README.md too
@@ -52,7 +52,7 @@ const COMPONENTS = [
     "product-3scale",
     "product-sso",
     "product-fuse",
-    "product-data-sync",
+    "product-data-sync"
 ];
 
 // Update the README.md too
@@ -61,7 +61,7 @@ const ENVIRONMENTS = [
     "osd-post-upgrade",
     "osd-private-post-upgrade",
     "rhpds",
-    "external",
+    "external"
 ];
 
 const TARGETS = /^[0-9]+\.[0-9]+\.[0-9]+$/;
@@ -72,7 +72,7 @@ const TAGS = [
     PER_RELEASE_TAG,
     AUTOMATED_TAG,
     DESTRUCTIVE_TAG,
-    MANUAL_SELECTION_TAG,
+    MANUAL_SELECTION_TAG
 ];
 
 // Update the test-template.md to
@@ -96,9 +96,7 @@ function lintDuplicateIDs(): Linter {
 
     return (test: TestCase): error => {
         if (test.id in parsed) {
-            return `the id: ${test.id} is duplicated in '${
-                parsed[test.id].file
-            }' and in '${test.file}'`;
+            return `the id: ${test.id} is duplicated in '${parsed[test.id].file}' and in '${test.file}'`;
         }
         parsed[test.id] = test;
         return null;
@@ -182,11 +180,11 @@ function lintStringArrayField(
 }
 
 function includes(list: string[]): (f: string) => boolean {
-    return (f) => !list.includes(f);
+    return f => !list.includes(f);
 }
 
 function regex(reg: RegExp): (f: string) => boolean {
-    return (f) => !reg.test(f);
+    return f => !reg.test(f);
 }
 
 function lintMandatoryEnvironment(): Linter {
@@ -261,7 +259,7 @@ const linters: { [key: string]: Linter } = {
     occurrence: lintOccurrence(),
     sections: lintSections(),
     tags: lintTags(),
-    targets: lintTargets(),
+    targets: lintTargets()
 };
 
 // tslint:disable:object-literal-sort-keys
@@ -291,7 +289,7 @@ const lint: CommandModule<{}, {}> = {
         }
 
         logger.info("linting: all checks succeeded");
-    },
+    }
 };
 
 export { lint };
