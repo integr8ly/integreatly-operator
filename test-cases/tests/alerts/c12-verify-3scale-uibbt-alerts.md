@@ -1,6 +1,7 @@
 ---
 environments:
   - osd-post-upgrade
+  - osd-fresh-install
 targets:
   - 2.6.0
 ---
