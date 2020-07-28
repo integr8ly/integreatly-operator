@@ -21,6 +21,7 @@ const (
 	jUnitOutputFilename  = "junit-integreatly-operator.xml"
 	addonMetadataName    = "addon-metadata.json"
 	testOutputFileName   = "test-output.txt"
+	testSuiteName        = "integreatly-operator"
 )
 
 func teeOutput(f func()) string {
@@ -119,7 +120,7 @@ func writeOutputToFile(output string, filepath string) error {
 }
 
 func writeJunitReportFile(output string, junitReportPath string) error {
-	report, err := parser.Parse(strings.NewReader(output), "")
+	report, err := parser.Parse(strings.NewReader(output), testSuiteName)
 	if err != nil {
 		return err
 	}
