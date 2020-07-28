@@ -704,6 +704,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
+	}
 	// create Redis CPU Usage High alert
 	_, err = resources.CreateRedisMemoryUsageAlerts(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
@@ -768,7 +769,8 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
-	// create system redis connectivity alert
+	}
+	// create redis memory usage alerts
 	_, err = resources.CreateRedisMemoryUsageAlerts(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus memory usage high alerts for threescale: %s", err)
