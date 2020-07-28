@@ -1,10 +1,12 @@
-# cloud.google.com/go v0.38.0
+# cloud.google.com/go v0.46.3
 cloud.google.com/go/compute/metadata
 # github.com/3scale/3scale-operator v0.5.0
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
 github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
 github.com/3scale/3scale-operator/version
+# github.com/Apicurio/apicurio-registry-operator v0.0.0-20200604085617-be91f2b38134
+github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
@@ -383,7 +385,7 @@ github.com/json-iterator/go
 # github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 github.com/jstemmer/go-junit-report/formatter
 github.com/jstemmer/go-junit-report/parser
-# github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465 => github.com/integr8ly/keycloak-operator-rhmi v0.0.0-20200505143708-9f0afbb299cd
+# github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common
 github.com/keycloak/keycloak-operator/pkg/model
@@ -442,7 +444,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830 => github.com/opencontainers/runc v1.0.0-rc8
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
-# github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
+# github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v0.0.0-20190924102528-32369d4db2ad
 github.com/openshift/api/apps/v1
 github.com/openshift/api/authorization/v1
 github.com/openshift/api/config/v1
@@ -504,7 +506,7 @@ github.com/operator-framework/operator-registry/pkg/lib/bundle
 github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/sqlite
 github.com/operator-framework/operator-registry/pkg/sqlite/migrations
-# github.com/operator-framework/operator-sdk v0.15.2
+# github.com/operator-framework/operator-sdk v0.17.0 => github.com/operator-framework/operator-sdk v0.15.1
 github.com/operator-framework/operator-sdk/cmd/operator-sdk
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/add
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/alpha
@@ -677,9 +679,6 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/mod v0.2.0
-golang.org/x/mod/module
-golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -720,7 +719,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200416214402-fc959738d646
+# golang.org/x/tools v0.0.0-20200130002326-2f3ba24bd6e7
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/inspect
 golang.org/x/tools/go/ast/astutil
@@ -733,13 +732,12 @@ golang.org/x/tools/go/packages
 golang.org/x/tools/go/types/objectpath
 golang.org/x/tools/go/types/typeutil
 golang.org/x/tools/imports
-golang.org/x/tools/internal/analysisinternal
 golang.org/x/tools/internal/fastwalk
-golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
+golang.org/x/tools/internal/module
 golang.org/x/tools/internal/packagesinternal
-golang.org/x/tools/internal/telemetry/event
+golang.org/x/tools/internal/semver
 # golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
@@ -902,7 +900,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.17.0 => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
+# k8s.io/apiextensions-apiserver v0.17.2 => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install
@@ -920,7 +918,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextension
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/features
-# k8s.io/apimachinery v0.17.2 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
+# k8s.io/apimachinery v0.17.4 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -1164,7 +1162,7 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# sigs.k8s.io/controller-runtime v0.4.0
+# sigs.k8s.io/controller-runtime v0.5.2 => sigs.k8s.io/controller-runtime v0.4.0
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
 sigs.k8s.io/controller-runtime/pkg/cache

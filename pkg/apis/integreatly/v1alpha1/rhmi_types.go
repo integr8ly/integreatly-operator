@@ -48,6 +48,7 @@ var (
 	ProductFuseOnOpenshift     ProductName = "fuse-on-openshift"
 	Product3Scale              ProductName = "3scale"
 	ProductUps                 ProductName = "ups"
+	ProductApicurioRegistry    ProductName = "apicurio-registry"
 	ProductApicurito           ProductName = "apicurito"
 	ProductMonitoring          ProductName = "middleware-monitoring"
 	ProductCloudResources      ProductName = "cloud-resources"
@@ -58,6 +59,7 @@ var (
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionAMQOnline           ProductVersion = "1.4"
+	VersionApicurioRegistry    ProductVersion = "1.2.3.final"
 	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
@@ -68,10 +70,10 @@ var (
 	VersionCloudResources      ProductVersion = "0.18.0"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "7.3"
-	VersionRHSSOUser           ProductVersion = "7.3"
+	VersionRHSSO               ProductVersion = "7.4"
+	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
-	VersionSolutionExplorer    ProductVersion = "2.26.3"
+	VersionSolutionExplorer    ProductVersion = "2.27.0"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -85,17 +87,19 @@ var (
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline           OperatorVersion = "1.4"
-	OperatorVersionMonitoring          OperatorVersion = "1.2.1"
-	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.60"
-	OperatorVersionRHSSO               OperatorVersion = "9.0.2"
-	OperatorVersionRHSSOUser           OperatorVersion = "9.0.2"
+	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
+	OperatorVersionAMQOnline        OperatorVersion = "1.4"
+	OperatorVersionMonitoring       OperatorVersion = "1.2.1"
+	OperatorVersionSolutionExplorer OperatorVersion = "0.0.61"
+	OperatorVersionRHSSO            OperatorVersion = "10.0.0"
+	OperatorVersionRHSSOUser        OperatorVersion = "10.0.0"
+
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.5.4"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
 	OperatorVersionCloudResources      OperatorVersion = "0.18.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
+	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 

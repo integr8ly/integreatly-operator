@@ -169,10 +169,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
-	if len(postgresInstances.Items) > 0 {
-		r.logger.Info("deletion of postgres instances in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
 
 	// ensure redis instances are cleaned up
 	redisInstances := &crov1alpha1.RedisList{}
@@ -187,10 +183,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 		if err := client.Delete(ctx, &redisInst); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-	}
-	if len(redisInstances.Items) > 0 {
-		r.logger.Info("deletion of redis instances in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	// ensure blob storage instances are cleaned up
@@ -207,6 +199,17 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
+
+	if len(postgresInstances.Items) > 0 {
+		r.logger.Info("deletion of postgres instances in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	if len(redisInstances.Items) > 0 {
+		r.logger.Info("deletion of redis instances in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	if len(blobStorages.Items) > 0 {
 		r.logger.Info("deletion of blob storage instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil

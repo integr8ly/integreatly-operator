@@ -15,6 +15,7 @@ var (
 	lockConfigReadWriterMockGetOperatorNamespace        sync.RWMutex
 	lockConfigReadWriterMockReadAMQOnline               sync.RWMutex
 	lockConfigReadWriterMockReadAMQStreams              sync.RWMutex
+	lockConfigReadWriterMockReadApicurioRegistry        sync.RWMutex
 	lockConfigReadWriterMockReadApicurito               sync.RWMutex
 	lockConfigReadWriterMockReadCloudResources          sync.RWMutex
 	lockConfigReadWriterMockReadCodeReady               sync.RWMutex
@@ -60,6 +61,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadAMQStreamsFunc: func() (*AMQStreams, error) {
 // 	               panic("mock out the ReadAMQStreams method")
+//             },
+//             ReadApicurioRegistryFunc: func() (*ApicurioRegistry, error) {
+// 	               panic("mock out the ReadApicurioRegistry method")
 //             },
 //             ReadApicuritoFunc: func() (*Apicurito, error) {
 // 	               panic("mock out the ReadApicurito method")
@@ -134,6 +138,9 @@ type ConfigReadWriterMock struct {
 	// ReadAMQStreamsFunc mocks the ReadAMQStreams method.
 	ReadAMQStreamsFunc func() (*AMQStreams, error)
 
+	// ReadApicurioRegistryFunc mocks the ReadApicurioRegistry method.
+	ReadApicurioRegistryFunc func() (*ApicurioRegistry, error)
+
 	// ReadApicuritoFunc mocks the ReadApicurito method.
 	ReadApicuritoFunc func() (*Apicurito, error)
 
@@ -201,6 +208,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadAMQStreams holds details about calls to the ReadAMQStreams method.
 		ReadAMQStreams []struct {
+		}
+		// ReadApicurioRegistry holds details about calls to the ReadApicurioRegistry method.
+		ReadApicurioRegistry []struct {
 		}
 		// ReadApicurito holds details about calls to the ReadApicurito method.
 		ReadApicurito []struct {
@@ -412,6 +422,32 @@ func (mock *ConfigReadWriterMock) ReadAMQStreamsCalls() []struct {
 	lockConfigReadWriterMockReadAMQStreams.RLock()
 	calls = mock.calls.ReadAMQStreams
 	lockConfigReadWriterMockReadAMQStreams.RUnlock()
+	return calls
+}
+
+// ReadApicurioRegistry calls ReadApicurioRegistryFunc.
+func (mock *ConfigReadWriterMock) ReadApicurioRegistry() (*ApicurioRegistry, error) {
+	if mock.ReadApicurioRegistryFunc == nil {
+		panic("ConfigReadWriterMock.ReadApicurioRegistryFunc: method is nil but ConfigReadWriter.ReadApicurioRegistry was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadApicurioRegistry.Lock()
+	mock.calls.ReadApicurioRegistry = append(mock.calls.ReadApicurioRegistry, callInfo)
+	lockConfigReadWriterMockReadApicurioRegistry.Unlock()
+	return mock.ReadApicurioRegistryFunc()
+}
+
+// ReadApicurioRegistryCalls gets all the calls that were made to ReadApicurioRegistry.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadApicurioRegistryCalls())
+func (mock *ConfigReadWriterMock) ReadApicurioRegistryCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadApicurioRegistry.RLock()
+	calls = mock.calls.ReadApicurioRegistry
+	lockConfigReadWriterMockReadApicurioRegistry.RUnlock()
 	return calls
 }
 

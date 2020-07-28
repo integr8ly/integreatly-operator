@@ -3,9 +3,8 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	"strings"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -63,6 +62,7 @@ const (
 	developersGroupName         = "rhmi-developers"
 	dedicatedAdminsGroupName    = "dedicated-admins"
 	realmManagersGroupName      = "realm-managers"
+	fullRealmManagersGroupPath  = dedicatedAdminsGroupName + "/" + realmManagersGroupName
 	viewRealmRoleName           = "view-realm"
 	createRealmRoleName         = "create-realm"
 	manageRealmRoleName         = "manage-realm"
@@ -165,11 +165,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
 			phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				return phase, err
-			}
-
-			phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -444,12 +439,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 	}
 
-	// Reconcile dedicated-admin group members based on the openshift users
-	phase, err = r.reconcileDedicatedAdminUsers(serverClient, ctx, kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile dedicated-admins members: %v", err)
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -632,7 +621,7 @@ func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.
 					"manage-users",
 				},
 			},
-			Groups: []string{dedicatedAdminsGroupName, realmManagersGroupName},
+			Groups: []string{dedicatedAdminsGroupName, fullRealmManagersGroupPath},
 		})
 	}
 	return keycloakUsers
@@ -663,7 +652,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					if group == dedicatedAdminsGroupName {
 						hasDedicatedAdminGroup = true
 					}
-					if group == realmManagersGroupName {
+					if group == fullRealmManagersGroupPath {
 						hasRealmManagerGroup = true
 					}
 				}
@@ -671,7 +660,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					allUsers[i].Groups = append(allUsers[i].Groups, dedicatedAdminsGroupName)
 				}
 				if !hasRealmManagerGroup {
-					allUsers[i].Groups = append(allUsers[i].Groups, realmManagersGroupName)
+					allUsers[i].Groups = append(allUsers[i].Groups, fullRealmManagersGroupPath)
 				}
 
 				break
@@ -698,7 +687,7 @@ func demoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, demoted []keycloak
 				// Remove the dedicated-admins group from the user groups list
 				groups := []string{}
 				for _, group := range allUsers[i].Groups {
-					if (group != dedicatedAdminsGroupName) && (group != realmManagersGroupName) {
+					if (group != dedicatedAdminsGroupName) && (group != fullRealmManagersGroupPath) {
 						groups = append(groups, group)
 					}
 				}
@@ -919,6 +908,25 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
+	// Check users and clients have been removed before realms are removed
+	// Refresh the user list
+	err = serverClient.List(ctx, users, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(users.Items) > 0 {
+		logrus.Println("rhsso-user deletion of users in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Refresh the clients list
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(clients.Items) > 0 {
+		logrus.Println("rhsso-user deletion of clients in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	// Delete all realms
 	realms := &keycloak.KeycloakRealmList{}
 	err = serverClient.List(ctx, realms, opts)
@@ -938,41 +946,12 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) isKeycloakResourcesDeleted(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	opts := &k8sclient.ListOptions{
-		Namespace: r.Config.GetNamespace(),
-	}
-
-	// Check if users are all gone
-	users := &keycloak.KeycloakUserList{}
-	err := serverClient.List(ctx, users, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(users.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if clients are all gone
-	clients := &keycloak.KeycloakClientList{}
-	err = serverClient.List(ctx, clients, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(clients.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if realms are all gone
-	realms := &keycloak.KeycloakRealmList{}
+	// Refresh the realm list
 	err = serverClient.List(ctx, realms, opts)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
-	}
-	if len(realms.Items) > 0 {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(realms.Items) > 0 {
+		logrus.Println("rhsso-user deletion of realms in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -1312,116 +1291,6 @@ func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integ
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, err
-}
-
-// Reconcile the members of the dedicated-admin and realm-managers groups. Gets
-// the dedicated admin users from Openshift and compares them with the current
-// members of the groups, adding or removing them from the groups.
-// NOTE: The Keyclock operator does not reconcile the KeycloakUser.Spec.user.groups
-//       array, that's why this is done manually. If the operator is updated to
-//		 reconcile this field, this function will become redundant, as the membership
-//       could be declared in the CR spec.
-func (r *Reconciler) reconcileDedicatedAdminUsers(serverClient k8sclient.Client, ctx context.Context, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
-	// Get Keycloak client
-	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	openshiftUsers := &usersv1.UserList{}
-	err = serverClient.List(ctx, openshiftUsers)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	openshiftGroups := &usersv1.GroupList{}
-	err = serverClient.List(ctx, openshiftGroups)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Get OS dedicated-admin users
-	dedicatedAdminUsers := getDedicatedAdmins(*openshiftUsers, *openshiftGroups)
-
-	// Reconcile their membership to the dedicated-admins and realm-managers
-	// groups
-	for _, groupName := range []string{dedicatedAdminsGroupName, realmManagersGroupName} {
-		err = reconcileDedicatedAdminsMembership(kcClient, dedicatedAdminUsers, groupName)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func reconcileDedicatedAdminsMembership(kcClient keycloakCommon.KeycloakInterface, dedicatedAdminUsers []usersv1.User, groupName string) error {
-	group, err := kcClient.FindGroupByName(groupName, masterRealmName)
-	if err != nil {
-		return err
-	}
-
-	groupMembers, err := kcClient.ListUsersInGroup(masterRealmName, group.ID)
-	if err != nil {
-		return err
-	}
-
-	// Look for the users in OS that are not members of the group and add
-	// them to it
-	for _, osDedicatedAdmin := range dedicatedAdminUsers {
-		// Search for the user in the group members list
-		ssoUserID := ""
-		for _, groupMember := range groupMembers {
-			if osDedicatedAdmin.Name == groupMember.UserName {
-				ssoUserID = groupMember.ID
-				break
-			}
-		}
-
-		// If the user is found, skip it
-		if ssoUserID != "" {
-			continue
-		}
-
-		// Look for the user in the keycloak API. If the user is not found,
-		// skip it, as it might not have been reconciled yet
-		kcUser, err := kcClient.FindUserByUsername(osDedicatedAdmin.Name, masterRealmName)
-		if err != nil {
-			return err
-		}
-		if kcUser == nil {
-			logrus.Infof("Openshift dedicated-admin %s not found in User SSO, skipping...", osDedicatedAdmin.Name)
-			continue
-		}
-
-		// Add the user to the group
-		err = kcClient.AddUserToGroup(masterRealmName, kcUser.ID, group.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Look for the users in the group that are not dedicated admins in OS
-	// and remove them from the group
-	for _, groupMember := range groupMembers {
-		found := false
-		for _, osDedicatedAdmin := range dedicatedAdminUsers {
-			if osDedicatedAdmin.Name == groupMember.UserName {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			continue
-		}
-
-		err = kcClient.DeleteUserFromGroup(masterRealmName, groupMember.ID, group.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, clientID, roleName string) error {

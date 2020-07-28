@@ -30,7 +30,7 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 		"rhmi-operator",
 		ctx)
 	if err != nil {
-		t.Fatalf("failed to exec to prometheus pod: %w", err)
+		t.Fatalf("failed to exec to prometheus pod: %v", err)
 	}
 
 	// check if rhmi_status is present
