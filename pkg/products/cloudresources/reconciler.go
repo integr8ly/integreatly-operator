@@ -204,6 +204,7 @@ func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *i
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
