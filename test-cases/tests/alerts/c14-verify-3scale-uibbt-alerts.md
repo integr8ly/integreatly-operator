@@ -6,7 +6,7 @@ targets:
   - 2.6.0
 ---
 
-# C12 - Verify 3scale UIBBT alerts
+# C14 - Verify 3scale UIBBT alerts
 
 ## Description
 

@@ -6,7 +6,7 @@ targets:
   - 2.6.0
 ---
 
-# C13 - Verify PVC alerts
+# C15 - Verify PVC alerts
 
 ## Description
 

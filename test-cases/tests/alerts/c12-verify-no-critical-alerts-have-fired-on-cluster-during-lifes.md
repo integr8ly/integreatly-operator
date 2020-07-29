@@ -5,7 +5,7 @@ targets:
   - 2.6.0
 ---
 
-# C14 - Verify no critical alerts have fired on cluster during lifespan of cluster
+# C12 - Verify no critical alerts have fired on cluster during lifespan of cluster
 
 ## Prerequisites
 
