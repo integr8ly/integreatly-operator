@@ -336,5 +336,4 @@ spec:
     name: mysql-57-rhel7
   - image: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
     name: postgresql-10-rhel7
-  replaces: 3scale-operator.v0.5.2
   version: 0.5.4
