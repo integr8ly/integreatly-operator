@@ -3,12 +3,10 @@ package marketplace
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,26 +66,23 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx contex
 		},
 	}
 
-	err := r.Client.Get(ctx, k8sclient.ObjectKey{Name: configMap.Name, Namespace: configMap.Namespace}, configMap)
-
-	if err != nil && !k8serr.IsNotFound(err) {
-		return "", fmt.Errorf("Failed to get config map %s from %s namespace: %w", configMap.Name, configMap.Namespace, err)
-	} else if k8serr.IsNotFound(err) {
+	or, err := controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
 		configMap.Data = configMapData
-		if err := r.Client.Create(ctx, configMap); err != nil {
-			return "", fmt.Errorf("Failed to create configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
-		}
+		return nil
+	})
+	if err != nil {
+		return configMapName, fmt.Errorf("Failed to create/update configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
+	}
 
+	switch or {
+	case controllerutil.OperationResultCreated:
 		logrus.Infof("Created registry config map for namepsace %s", r.Namespace)
-	} else {
-		if !reflect.DeepEqual(configMap.Data, configMapData) {
-			configMap.Data = configMapData
-			if err := r.Client.Update(ctx, configMap); err != nil {
-				return "", fmt.Errorf("Failed to update configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
-			}
-
-			logrus.Infof("Updated config map %s in namspace %s", configMapName, r.Namespace)
-		}
+	case controllerutil.OperationResultUpdated:
+		logrus.Infof("Updated config map %s in namspace %s", configMapName, r.Namespace)
+	case controllerutil.OperationResultNone:
+		break
+	default:
+		return configMapName, fmt.Errorf("Unknown controllerutil.OperationResult '%v'", or)
 	}
 
 	logrus.Infof("Successfully reconciled registry config map for namespace %s", r.Namespace)
