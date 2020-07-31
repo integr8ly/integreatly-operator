@@ -11,8 +11,8 @@ import (
 func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "RHSSO User",
-		Installation: r.installation,
-		Logger:       r.logger,
+		Installation: r.Installation,
+		Logger:       r.Logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "ksm-endpoint-alerts",

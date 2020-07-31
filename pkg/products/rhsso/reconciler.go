@@ -3,27 +3,17 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	"strings"
-
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/version"
 
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	"github.com/sirupsen/logrus"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
-
-	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -31,15 +21,12 @@ import (
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	"github.com/keycloak/keycloak-operator/pkg/common"
 
-	appsv1 "github.com/openshift/api/apps/v1"
-	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -52,9 +39,10 @@ var (
 	idpAlias                  = "openshift-v4"
 	githubIdpAlias            = "github"
 	authFlowAlias             = "authdelay"
-	manifestPackage           = "integreatly-rhsso"
 	adminCredentialSecretName = "credential-" + keycloakName
 	numberOfReplicas          = 2
+	ssoType                   = "rhsso"
+	postgresResourceName      = "rhsso-postgres-rhmi"
 )
 
 const (
@@ -64,58 +52,25 @@ const (
 )
 
 type Reconciler struct {
-	Config        *config.RHSSO
-	ConfigManager config.ConfigReadWriter
-	extraParams   map[string]string
-	mpm           marketplace.MarketplaceInterface
-	installation  *integreatlyv1alpha1.RHMI
-	logger        *logrus.Entry
-	oauthv1Client oauthClient.OauthV1Interface
-	APIURL        string
-	*resources.Reconciler
-	recorder              record.EventRecorder
-	keycloakClientFactory keycloakCommon.KeycloakClientFactory
+	Config *config.RHSSO
+	*rhssocommon.Reconciler
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, oauthv1Client oauthClient.OauthV1Interface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, APIURL string, keycloakClientFactory keycloakCommon.KeycloakClientFactory) (*Reconciler, error) {
 	config, err := configManager.ReadRHSSO()
+
 	if err != nil {
 		return nil, err
 	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(installation.Spec.NamespacePrefix + defaultOperandNamespace)
-	}
-	if config.GetOperatorNamespace() == "" {
-		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
-		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
-		}
-	}
+
+	rhssocommon.SetNameSpaces(installation, config.RHSSOCommon, defaultOperandNamespace)
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
-		Config:                config,
-		ConfigManager:         configManager,
-		mpm:                   mpm,
-		installation:          installation,
-		logger:                logger,
-		oauthv1Client:         oauthv1Client,
-		Reconciler:            resources.NewReconciler(mpm),
-		recorder:              recorder,
-		APIURL:                APIURL,
-		keycloakClientFactory: keycloakClientFactory,
+		Config:     config,
+		Reconciler: rhssocommon.NewReconciler(configManager, mpm, installation, logger, oauthv1Client, recorder, APIURL, keycloakClientFactory),
 	}, nil
-}
-
-func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
-	return &appsv1.DeploymentConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sso",
-			Namespace: ns,
-		},
-	}
 }
 
 func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
@@ -135,7 +90,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
-			phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
+			phase, err := r.CleanupKeycloakResources(ctx, installation, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -152,7 +107,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, err
 			}
 		}
-		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(r.Oauthv1Client, r.GetOAuthClientName(r.Config))
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -166,71 +121,76 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
 	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
+		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
+		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
 	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
+	phase, err = r.ReconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace, postgresResourceName)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
+		events.HandleError(r.Recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOSubscriptionName), err)
 		return phase, err
 	}
 
-	phase, err = r.createKeycloakRoute(ctx, serverClient)
+	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to handle in progress phase", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileCloudResources(ctx, installation, serverClient)
+	phase, err = r.ReconcileCloudResources(constants.RHSSOPostgresPrefix, defaultOperandNamespace, ssoType, r.Config.RHSSOCommon, ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile cloud resources", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile cloud resources", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
 	}
 
-	phase, err = r.handleProgressPhase(ctx, serverClient)
+	phase, err = r.HandleProgressPhase(ctx, serverClient, keycloakName, keycloakRealmName, r.Config, r.Config.RHSSOCommon, string(integreatlyv1alpha1.VersionRHSSO), string(integreatlyv1alpha1.OperatorVersionRHSSO))
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, err
 	}
 
-	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhsso cluster reconciler: %w", err)
+	}
+
+	phase, err = r.ReconcileBlackboxTargets(ctx, installation, serverClient, "integreatly-rhsso", r.Config.GetHost(), "rhsso-ui")
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
 	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
 		return phase, err
 	}
 
 	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
 
@@ -238,223 +198,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
-	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.AuthenticationStage, r.Config.GetProductName())
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if inst.DeletionTimestamp == nil {
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	opts := &k8sclient.ListOptions{
-		Namespace: r.Config.GetNamespace(),
-	}
-
-	// Delete all users
-	users := &keycloak.KeycloakUserList{}
-	err := serverClient.List(ctx, users, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	for _, user := range users.Items {
-		err = serverClient.Delete(ctx, &user)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	// Delete all clients
-	clients := &keycloak.KeycloakClientList{}
-	err = serverClient.List(ctx, clients, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	for _, client := range clients.Items {
-		err = serverClient.Delete(ctx, &client)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	// Check users and clients have been removed before realms are removed
-	// Refresh the user list
-	err = serverClient.List(ctx, users, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(users.Items) > 0 {
-		logrus.Println("rhsso deletion of users in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Refresh the clients list
-	err = serverClient.List(ctx, clients, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(clients.Items) > 0 {
-		logrus.Println("rhsso deletion of clients in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Delete all realms
-	realms := &keycloak.KeycloakRealmList{}
-	err = serverClient.List(ctx, realms, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
-	}
-	for _, realm := range realms.Items {
-		err = serverClient.Delete(ctx, &realm)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	// Refresh the realm list
-	err = serverClient.List(ctx, realms, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	} else if len(realms.Items) > 0 {
-		logrus.Println("rhsso deletion of realms in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-// CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
-	if r.extraParams == nil {
-		r.extraParams = map[string]string{}
-	}
-	r.extraParams = map[string]string{}
-	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
-	r.extraParams["Namespace"] = r.Config.GetNamespace()
-
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
-	resource, err := templateHelper.CreateResource(resourceName)
-
-	if err != nil {
-		return nil, fmt.Errorf("createResource failed: %w", err)
-	}
-
-	err = serverClient.Create(ctx, resource)
-	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("error creating resource: %w", err)
-		}
-	}
-
-	return resource, nil
-}
-
-// workaround: the keycloak operator creates a route with TLS passthrough config
-// this should use the same valid certs as the cluster itself but for some reason the
-// signing operator gives out self signed certs
-// to circumvent this we create another keycloak route with edge termination
-func (r *Reconciler) createKeycloakRoute(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// We need a route with edge termination to serve the correct cluster certificate
-	edgeRoute := &routev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keycloak-edge",
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
-		host := edgeRoute.Spec.Host
-		edgeRoute.Spec = routev1.RouteSpec{
-			Host: host,
-			To: routev1.RouteTargetReference{
-				Kind: "Service",
-				Name: "keycloak",
-			},
-			Port: &routev1.RoutePort{
-				TargetPort: intstr.FromString("keycloak"),
-			},
-			TLS: &routev1.TLSConfig{
-				Termination: routev1.TLSTerminationReencrypt,
-			},
-			WildcardPolicy: routev1.WildcardPolicyNone,
-		}
-		return nil
-	})
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating keycloak edge route: %w", err)
-	}
-	r.logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
-
-	if edgeRoute.Spec.Host == "" {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Override the keycloak host to the host of the edge route (instead of the
-	// operator generated route)
-	r.Config.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
-	err = r.ConfigManager.WriteConfig(r.Config)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhssouser reconciler: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("Reconciling Keycloak external database instance")
-
-	postgresName := fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installation.Name)
-	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultOperandNamespace)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning rhsso: %w", err)
-	}
-
-	// at this point it should be ok to create the failed alert.
-	if postgres != nil {
-		// create prometheus phase failed rule
-		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for rhsso: %w", err)
-		}
-
-		// create the prometheus deletion rule
-		if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for rhsso: %s", err)
-		}
-
-		// create prometheus pending rule only when CR has completed for the first time.
-		if postgres.Status.Phase == types.PhaseComplete {
-
-			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for rhsso: %w", err)
-			}
-		}
-	}
-
-	// postgres provisioning is still in progress
-	if credentialSec == nil {
-		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
-	}
-
-	// create the prometheus availability rule
-	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
-	}
-
-	// create the prometheus connectivity rule
-	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for rhsso : %s", err)
-	}
-
-	// create the prometheus free storage alert rules
-	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for rhsso: %s", err)
-	}
+	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.AuthenticationStage, r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("Reconciling Keycloak components")
+	r.Logger.Info("Reconciling Keycloak components")
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
@@ -483,11 +232,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	host := r.Config.GetHost()
 	if host == "" {
-		r.logger.Infof("URL for Keycloak not yet available")
+		r.Logger.Infof("URL for Keycloak not yet available")
 		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("Host for Keycloak not yet available")
 	}
 
-	r.logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
+	r.Logger.Infof("The operation result for keycloak %s was %s", kc.Name, or)
 	kcr := &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakRealmName,
@@ -523,7 +272,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		// The identity providers need to be set up before the realm CR gets
 		// created because the Keycloak operator does not allow updates to
 		// the realms
-		err = r.setupOpenshiftIDP(ctx, installation, kcr, serverClient, host)
+		redirectUris := []string{r.Config.GetHost() + "/auth/realms/openshift/broker/openshift-v4/endpoint"}
+		err = r.SetupOpenshiftIDP(ctx, serverClient, installation, r.Config, kcr, redirectUris)
 		if err != nil {
 			return fmt.Errorf("failed to setup Openshift IDP: %w", err)
 		}
@@ -538,10 +288,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update keycloak realm: %w", err)
 	}
-	r.logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
+	r.Logger.Infof("The operation result for keycloakrealm %s was %s", kcr.Name, or)
 
 	// create keycloak authentication delay flow and adds to openshift idp
-	authenticated, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
+	authenticated, err := r.KeycloakClientFactory.AuthenticatedClient(*kc)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to authenticate client in keycloak api %w", err)
 	}
@@ -550,7 +300,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create and add keycloak authentication flow: %w", err)
 	}
-	r.logger.Infof("Authentication flow added to %s IDP", idpAlias)
+	r.Logger.Infof("Authentication flow added to %s IDP", idpAlias)
 
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
@@ -570,151 +320,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update the customer admin user: %w", err)
 		}
-		r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
+		r.Logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 
 	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	kc := &keycloak.Keycloak{}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	// The keycloak operator does not set the product version currently - should fetch from KeyCloak.Status.Version when fixed
-	r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionRHSSO))
-	// The Keycloak Operator doesn't currently set the operator version
-	r.Config.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionRHSSO))
-	err = r.ConfigManager.WriteConfig(r.Config)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	r.logger.Info("checking ready status for rhsso")
-	kcr := &keycloak.KeycloakRealm{}
-
-	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakRealmName, Namespace: r.Config.GetNamespace()}, kcr)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get keycloak realm custom resource: %w", err)
-	}
-
-	if kcr.Status.Phase == keycloak.PhaseReconciling {
-		err = r.exportConfig(ctx, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to write rhsso config: %w", err)
-		}
-
-		logrus.Infof("Keycloak has successfully processed the keycloakRealm")
-		return integreatlyv1alpha1.PhaseCompleted, nil
-	}
-
-	r.logger.Infof("KeycloakRealm status phase is: %s", kcr.Status.Phase)
-	return integreatlyv1alpha1.PhaseInProgress, nil
-}
-
-func (r *Reconciler) exportConfig(ctx context.Context, serverClient k8sclient.Client) error {
-	kc := &keycloak.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakName,
-			Namespace: r.Config.GetNamespace(),
-		},
-	}
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: keycloakName, Namespace: r.Config.GetNamespace()}, kc)
-	if err != nil {
-		return fmt.Errorf("could not retrieve keycloak custom resource for keycloak config: %w", err)
-	}
-
-	r.Config.SetRealm(keycloakRealmName)
-
-	err = r.ConfigManager.WriteConfig(r.Config)
-	if err != nil {
-		return fmt.Errorf("could not update keycloak config: %w", err)
-	}
-	return nil
-}
-
-func (r *Reconciler) setupOpenshiftIDP(ctx context.Context, installation *integreatlyv1alpha1.RHMI, kcr *keycloak.KeycloakRealm, serverClient k8sclient.Client, host string) error {
-	oauthClientSecrets := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.ConfigManager.GetOauthClientsSecretName(),
-		},
-	}
-
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
-	if err != nil {
-		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
-	}
-
-	clientSecretBytes, ok := oauthClientSecrets.Data[string(r.Config.GetProductName())]
-	if !ok {
-		return fmt.Errorf("Could not find %s key in %s Secret: %w", string(r.Config.GetProductName()), oauthClientSecrets.Name, err)
-	}
-	clientSecret := string(clientSecretBytes)
-
-	redirectUris := []string{
-		host + "/auth/realms/openshift/broker/openshift-v4/endpoint",
-	}
-
-	oauthClient := &oauthv1.OAuthClient{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.getOAuthClientName(),
-		},
-		Secret:       clientSecret,
-		RedirectURIs: redirectUris,
-		GrantMethod:  oauthv1.GrantHandlerAuto,
-	}
-
-	_, err = r.ReconcileOauthClient(ctx, installation, oauthClient, serverClient)
-	if err != nil {
-		return err
-	}
-
-	if !containsIdentityProvider(kcr.Spec.Realm.IdentityProviders, idpAlias) {
-		logrus.Infof("Adding keycloak realm client")
-		if kcr.Spec.Realm.IdentityProviders == nil {
-			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
-		}
-		kcr.Spec.Realm.IdentityProviders = append(kcr.Spec.Realm.IdentityProviders, &keycloak.KeycloakIdentityProvider{
-			Alias:                     idpAlias,
-			ProviderID:                "openshift-v4",
-			Enabled:                   true,
-			TrustEmail:                true,
-			StoreToken:                true,
-			AddReadTokenRoleOnCreate:  true,
-			FirstBrokerLoginFlowAlias: "first broker login",
-			Config: map[string]string{
-				"hideOnLoginPage": "",
-				"baseUrl":         "https://" + strings.Replace(r.installation.Spec.RoutingSubdomain, "apps", "api", 1) + ":6443",
-				"clientId":        r.getOAuthClientName(),
-				"disableUserInfo": "",
-				"clientSecret":    clientSecret,
-				"defaultScope":    "user:full",
-				"useJwksUrl":      "true",
-			},
-		})
-	}
-	return nil
-}
-
-func (r *Reconciler) getOAuthClientName() string {
-	return r.installation.Spec.NamespacePrefix + string(r.Config.GetProductName())
-}
-
-func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	cfg, err := r.ConfigManager.ReadMonitoring()
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config: %w", err)
-	}
-
-	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-rhsso", monitoringv1alpha1.BlackboxtargetData{
-		Url:     r.Config.GetHost(),
-		Service: "rhsso-ui",
-	}, cfg, installation, client)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating rhsso blackbox target: %w", err)
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -726,7 +334,7 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 		return err
 	}
 
-	if !containsIdentityProvider(kcr.Spec.Realm.IdentityProviders, githubIdpAlias) {
+	if !rhssocommon.ContainsIdentityProvider(kcr.Spec.Realm.IdentityProviders, githubIdpAlias) {
 		logrus.Infof("Adding github identity provider to the keycloak realm")
 		if kcr.Spec.Realm.IdentityProviders == nil {
 			kcr.Spec.Realm.IdentityProviders = []*keycloak.KeycloakIdentityProvider{}
@@ -786,27 +394,6 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	return nil
 }
 
-func (r *Reconciler) preUpgradeBackupsExecutor() backup.BackupExecutor {
-	if r.installation.Spec.UseClusterStorage != "false" {
-		return backup.NewNoopBackupExecutor()
-	}
-
-	return backup.NewAWSBackupExecutor(
-		r.installation.Namespace,
-		"rhsso-postgres-rhmi",
-		backup.PostgresSnapshotType,
-	)
-}
-
-func containsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, alias string) bool {
-	for _, p := range providers {
-		if p.Alias == alias {
-			return true
-		}
-	}
-	return false
-}
-
 func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []usersv1.User, groups *usersv1.GroupList) (added []usersv1.User, deleted []keycloak.KeycloakAPIUser) {
 	for _, osUser := range openshiftUsers {
 		if !kcContainsOsUser(keycloakUsers, osUser) && !userHelper.UserInExclusionGroup(osUser, groups) {
@@ -815,7 +402,7 @@ func getUserDiff(keycloakUsers []keycloak.KeycloakAPIUser, openshiftUsers []user
 	}
 
 	for _, kcUser := range keycloakUsers {
-		if !OsUserInKc(openshiftUsers, kcUser) {
+		if !rhssocommon.OsUserInKc(openshiftUsers, kcUser) {
 			deleted = append(deleted, kcUser)
 		}
 	}
@@ -838,7 +425,7 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 
 	added, deletedUsers := getUserDiff(keycloakUsers, openshiftUsers.Items, groups)
 
-	keycloakUsers, err = deleteKeycloakUsers(keycloakUsers, deletedUsers, ns, ctx, serverClient)
+	keycloakUsers, err = rhssocommon.DeleteKeycloakUsers(keycloakUsers, deletedUsers, ns, ctx, serverClient)
 	if err != nil {
 		return nil, err
 	}
@@ -882,48 +469,9 @@ func syncronizeWithOpenshiftUsers(ctx context.Context, keycloakUsers []keycloak.
 	return keycloakUsers, nil
 }
 
-func deleteKeycloakUsers(allKcUsers []keycloak.KeycloakAPIUser, deletedUsers []keycloak.KeycloakAPIUser, ns string, ctx context.Context, serverClient k8sclient.Client) ([]keycloak.KeycloakAPIUser, error) {
-
-	for _, delUser := range deletedUsers {
-		// Remove from all users list
-		for i, user := range allKcUsers {
-			// ID is not populated, have to use UserName. Should be unique on master Realm
-			if delUser.UserName == user.UserName {
-				allKcUsers[i] = allKcUsers[len(allKcUsers)-1]
-				allKcUsers = allKcUsers[:len(allKcUsers)-1]
-				break
-			}
-		}
-
-		// Delete the CR
-		kcUser := &keycloak.KeycloakUser{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      userHelper.GetValidGeneratedUserName(delUser),
-				Namespace: ns,
-			},
-		}
-		err := serverClient.Delete(ctx, kcUser)
-		if err != nil {
-			return nil, fmt.Errorf("failed to delete keycloak user: %w", err)
-		}
-	}
-
-	return allKcUsers, nil
-}
-
 func kcContainsOsUser(kcUsers []keycloak.KeycloakAPIUser, osUser usersv1.User) bool {
 	for _, kcu := range kcUsers {
 		if kcu.UserName == osUser.Name {
-			return true
-		}
-	}
-
-	return false
-}
-
-func OsUserInKc(osUsers []usersv1.User, kcUser keycloak.KeycloakAPIUser) bool {
-	for _, osu := range osUsers {
-		if osu.Name == kcUser.UserName {
 			return true
 		}
 	}
@@ -1035,26 +583,4 @@ func GetInstanceLabels() map[string]string {
 	return map[string]string{
 		SSOLabelKey: SSOLabelValue,
 	}
-}
-
-func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	target := marketplace.Target{
-		Pkg:       constants.RHSSOSubscriptionName,
-		Namespace: operatorNamespace,
-		Channel:   marketplace.IntegreatlyChannel,
-	}
-	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
-		manifestPackage,
-		serverClient,
-		operatorNamespace,
-		marketplace.CatalogSourceName,
-	)
-	return r.Reconciler.ReconcileSubscription(
-		ctx,
-		target,
-		[]string{productNamespace},
-		r.preUpgradeBackupsExecutor(),
-		serverClient,
-		catalogSourceReconciler,
-	)
 }
