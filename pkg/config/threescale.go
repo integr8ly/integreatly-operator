@@ -3,8 +3,9 @@ package config
 import (
 	"errors"
 
+	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -20,8 +21,8 @@ func NewThreeScale(config ProductConfig) *ThreeScale {
 func (t *ThreeScale) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
 		&threescalev1alpha1.APIManager{
-			TypeMeta: v1.TypeMeta{
-				Kind:       "APIManager",
+			TypeMeta: metav1.TypeMeta{
+				Kind:       threescaleapps.APIManagerKind,
 				APIVersion: threescalev1alpha1.SchemeGroupVersion.String(),
 			},
 		},
@@ -58,13 +59,6 @@ func (t *ThreeScale) SetOperatorNamespace(newNamespace string) {
 
 func (t *ThreeScale) GetLabelSelector() string {
 	return "middleware"
-}
-
-func (t *ThreeScale) GetTemplateList() []string {
-	templateList := []string{
-		"kube_state_metrics_3scale_alerts.yaml",
-	}
-	return templateList
 }
 
 func (t *ThreeScale) SetNamespace(newNamespace string) {

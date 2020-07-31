@@ -3,7 +3,7 @@ package config
 import (
 	"errors"
 
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -20,10 +20,10 @@ type Fuse struct {
 
 func (f *Fuse) GetWatchableCRDs() []runtime.Object {
 	return []runtime.Object{
-		&syndesisv1alpha1.Syndesis{
+		&syndesisv1beta1.Syndesis{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Syndesis",
-				APIVersion: syndesisv1alpha1.SchemeGroupVersion.String(),
+				APIVersion: syndesisv1beta1.SchemeGroupVersion.String(),
 			},
 		},
 	}
@@ -44,6 +44,12 @@ func (f *Fuse) GetOperatorNamespace() string {
 func (f *Fuse) SetOperatorNamespace(newNamespace string) {
 	f.config["OPERATOR_NAMESPACE"] = newNamespace
 }
+func (f *Fuse) GetBlackboxTargetPath() string {
+	return f.config["BLACKBOX_TARGET_PATH"]
+}
+func (f *Fuse) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	f.config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
+}
 
 func (f *Fuse) GetHost() string {
 	return f.config["HOST"]
@@ -63,7 +69,18 @@ func (f *Fuse) GetLabelSelector() string {
 
 func (r *Fuse) GetTemplateList() []string {
 	templateList := []string{
-		"kube_state_metrics_fuse_online_alerts.yaml",
+		"fuseonline/addon-ops-api-dashboard.yml",
+		"fuseonline/addon-ops-home-dashboard.yml",
+		"fuseonline/addon-ops-integrations-alerting-rules.yml",
+		"fuseonline/addon-ops-integrations-camel-dashboard.yml",
+		"fuseonline/addon-ops-integrations-home-dashboard.yml",
+		"fuseonline/addon-ops-integrations-jvm-dashboard.yml",
+		"fuseonline/addon-ops-integrations-service.yml",
+		"fuseonline/addon-ops-integrations-servicemonitor.yml",
+		"fuseonline/addon-ops-jvm-dashboard.yml",
+		"fuseonline/addon-ops-meta-alerting-rules.yml",
+		"fuseonline/addon-ops-server-alerting-rules.yml",
+		"fuseonline/addon-ops-servicemonitor.yml",
 	}
 	return templateList
 }

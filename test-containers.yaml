@@ -1,0 +1,20 @@
+---
+tests:
+  - name: codeready-test
+    image: quay.io/crw/osd-e2e
+    timeout: 3600
+    envVars:
+      - name: CODEREADY_NAMESPACE
+        value: redhat-rhmi-codeready-workspaces
+  - name: 3scale-test
+    image: quay.io/integreatly/3scale-py-testsuite:2.9
+    timeout: 3600
+    envVars:
+      - name: NAMESPACE
+        value: redhat-rhmi-3scale
+  - name: amq-test
+    image: quay.io/enmasse/enmasse-test-container:0.31.2
+    timeout: 3600
+    envVars:
+      - name: KUBERNETES_NAMESPACE
+        value: redhat-rhmi-amq-online

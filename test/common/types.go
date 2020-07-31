@@ -17,16 +17,28 @@ const (
 	NamespacePrefix                   = "redhat-rhmi-"
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
+	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
-	ApicuritoOperatorNamespace        = NamespacePrefix + "apicurito-operator"
+	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
+	ApicurioRegistryOperatorNamespace = ApicurioRegistryProductNamespace + "-operator"
+	ApicuritoProductNamespace         = NamespacePrefix + "apicurito"
+	ApicuritoOperatorNamespace        = ApicuritoProductNamespace + "-operator"
 	CloudResourceOperatorNamespace    = NamespacePrefix + "cloud-resources-operator"
-	CodeReadyOperatorNamespace        = NamespacePrefix + "codeready-workspaces-operator"
-	FuseOperatorNamespace             = NamespacePrefix + "fuse-operator"
-	RHSSOUserOperatorNamespace        = NamespacePrefix + "user-sso-operator"
-	RHSSOOperatorNamespace            = NamespacePrefix + "rhsso-operator"
-	SolutionExplorerOperatorNamespace = NamespacePrefix + "solution-explorer-operator"
-	ThreeScaleOperatorNamespace       = NamespacePrefix + "3scale-operator"
-	UPSOperatorNamespace              = NamespacePrefix + "ups-operator"
+	CodeReadyProductNamespace         = NamespacePrefix + "codeready-workspaces"
+	CodeReadyOperatorNamespace        = CodeReadyProductNamespace + "-operator"
+	FuseProductNamespace              = NamespacePrefix + "fuse"
+	FuseOperatorNamespace             = FuseProductNamespace + "-operator"
+	RHSSOUserProductOperatorNamespace = NamespacePrefix + "user-sso"
+	RHSSOUserOperatorNamespace        = RHSSOUserProductOperatorNamespace + "-operator"
+	RHSSOProductNamespace             = NamespacePrefix + "rhsso"
+	RHSSOOperatorNamespace            = RHSSOProductNamespace + "-operator"
+	SolutionExplorerProductNamespace  = NamespacePrefix + "solution-explorer"
+	SolutionExplorerOperatorNamespace = SolutionExplorerProductNamespace + "-operator"
+	ThreeScaleProductNamespace        = NamespacePrefix + "3scale"
+	ThreeScaleOperatorNamespace       = ThreeScaleProductNamespace + "-operator"
+	UPSProductNamespace               = NamespacePrefix + "ups"
+	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
+	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
 )
 
 type TestingContext struct {
@@ -81,4 +93,9 @@ type ExpectedRoute struct {
 type SubscriptionCheck struct {
 	Name      string
 	Namespace string
+}
+
+type PersistentVolumeClaim struct {
+	Namespace                  string
+	PersistentVolumeClaimNames []string
 }

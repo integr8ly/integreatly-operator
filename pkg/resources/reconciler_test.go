@@ -88,7 +88,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 		{
 			Name: "test reconcile subscription creates a new subscription  completes successfully ",
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 
 					return nil
 				},
@@ -112,7 +112,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			Name:   "test reconcile subscription recreates subscription when installation plan not found completes successfully ",
 			client: fakeclient.NewFakeClientWithScheme(scheme),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy alpha1.Approval, catalgSourceReconciler marketplace.CatalogSourceReconciler) error {
 
 					return nil
 				},
@@ -152,7 +152,10 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 				tc.FakeMPM,
 			)
 
-			status, err := reconciler.ReconcileSubscription(context.TODO(), tc.Installation, marketplace.Target{Namespace: "test-ns", Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{"test-ns"}, backup.NewNoopBackupExecutor(), tc.client)
+			testNamespace := "test-ns"
+			manifestsDirectory := "fakemanifestsdirectory"
+			cfgMapCsReconciler := marketplace.NewConfigMapCatalogSourceReconciler(manifestsDirectory, tc.client, testNamespace, marketplace.CatalogSourceName)
+			status, err := reconciler.ReconcileSubscription(context.TODO(), marketplace.Target{Namespace: testNamespace, Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{testNamespace}, backup.NewNoopBackupExecutor(), tc.client, cfgMapCsReconciler)
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}
@@ -178,8 +181,8 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 
 	defPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      DefaultOriginPullSecretName,
-			Namespace: DefaultOriginPullSecretNamespace,
+			Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+			Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 		},
 		Data: map[string][]byte{
 			"test": {'t', 'e', 's', 't'},
@@ -215,7 +218,7 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 			Config: basicConfigMock(),
 			Validate: func(c k8sclient.Client) error {
 				s := &corev1.Secret{}
-				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}, s)
+				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: integreatlyv1alpha1.DefaultOriginPullSecretName, Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace}, s)
 				if err != nil {
 					return err
 				}

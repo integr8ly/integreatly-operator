@@ -7,12 +7,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/sirupsen/logrus"
 
@@ -53,6 +55,14 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductDataSync],
+		string(integreatlyv1alpha1.VersionDataSync),
+		"",
+	)
+}
+
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	config, err := configManager.ReadDataSync()
 	if err != nil {
@@ -69,6 +79,8 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	var httpClient http.Client
+	httpClient.Timeout = time.Second * 10
+	httpClient.Transport = &http.Transport{DisableKeepAlives: true, IdleConnTimeout: time.Second * 10}
 
 	return &Reconciler{
 		ConfigManager: configManager,
@@ -102,6 +114,7 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get file contents of %s: %w", templateFn, err)
 		}
+		defer fileData.Close()
 
 		content, err := ioutil.ReadAll(fileData)
 		if err != nil {

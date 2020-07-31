@@ -22,12 +22,14 @@ type InfraConfigAdmin struct {
 type InfraConfigBroker struct {
 	Resources         InfraConfigResources `json:"resources"`
 	AddressFullPolicy string               `json:"addressFullPolicy"`
+	MaxUnavailable    int                  `json:"maxUnavailable,omitempty"`
 }
 
 type InfraConfigRouter struct {
-	MinReplicas  int                  `json:"minReplicas"`
-	Resources    InfraConfigResources `json:"resources"`
-	LinkCapacity int                  `json:"linkCapacity"`
+	MinReplicas    int                  `json:"minReplicas"`
+	Resources      InfraConfigResources `json:"resources"`
+	LinkCapacity   int                  `json:"linkCapacity"`
+	MaxUnavailable int                  `json:"maxUnavailable,omitempty"`
 }
 
 type InfraConfigResources struct {

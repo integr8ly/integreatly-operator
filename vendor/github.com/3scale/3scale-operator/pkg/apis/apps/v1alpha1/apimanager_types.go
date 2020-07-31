@@ -20,6 +20,20 @@ const (
 	OperatorVersionAnnotation   = "apps.3scale.net/threescale-operator-version"
 )
 
+const (
+	defaultAppLabel                    = "3scale-api-management"
+	defaultTenantName                  = "3scale"
+	defaultImageStreamImportInsecure   = false
+	defaultResourceRequirementsEnabled = true
+)
+
+const (
+	defaultApicastManagementAPI = "status"
+	defaultApicastOpenSSLVerify = false
+	defaultApicastResponseCodes = true
+	defaultApicastRegistryURL   = "http://apicast-staging:8090/policies"
+)
+
 // APIManagerSpec defines the desired state of APIManager
 // +k8s:openapi-gen=true
 type APIManagerSpec struct {
@@ -33,7 +47,9 @@ type APIManagerSpec struct {
 	// +optional
 	Zync *ZyncSpec `json:"zync,omitempty"`
 	// +optional
-	HighAvailability *HighAvailabilitySpec `json:"highAvailability,omitempty"`
+	HighAvailability    *HighAvailabilitySpec    `json:"highAvailability,omitempty"`
+	// +optional
+	PodDisruptionBudget *PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty"`
 }
 
 // APIManagerStatus defines the observed state of APIManager
@@ -180,6 +196,7 @@ type SystemSpec struct {
 	// something)
 
 	// +optional
+
 	FileStorageSpec *SystemFileStorageSpec `json:"fileStorage,omitempty"`
 
 	// TODO should union fields be optional?
@@ -206,7 +223,10 @@ type SystemFileStorageSpec struct {
 	// +optional
 	PVC *SystemPVCSpec `json:"persistentVolumeClaim,omitempty"`
 	// +optional
-	S3 *SystemS3Spec `json:"amazonSimpleStorageService,omitempty"`
+	// Deprecated
+	DeprecatedS3 *DeprecatedSystemS3Spec `json:"amazonSimpleStorageService,omitempty"`
+	// +optional
+	S3 *SystemS3Spec `json:"simpleStorageService,omitempty"`
 }
 
 type SystemPVCSpec struct {
@@ -214,10 +234,17 @@ type SystemPVCSpec struct {
 	StorageClassName *string `json:"storageClassName,omitempty"`
 }
 
-type SystemS3Spec struct {
-	AWSBucket      string                  `json:"awsBucket"`
-	AWSRegion      string                  `json:"awsRegion"`
+type DeprecatedSystemS3Spec struct {
+	// Deprecated
+	AWSBucket string `json:"awsBucket"`
+	// Deprecated
+	AWSRegion string `json:"awsRegion"`
+	// Deprecated
 	AWSCredentials v1.LocalObjectReference `json:"awsCredentialsSecret"`
+}
+
+type SystemS3Spec struct {
+	ConfigurationSecretRef v1.LocalObjectReference `json:"configurationSecretRef"`
 }
 
 type SystemDatabaseSpec struct {
@@ -262,6 +289,10 @@ type ZyncQueSpec struct {
 }
 
 type HighAvailabilitySpec struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type PodDisruptionBudgetSpec struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -323,29 +354,29 @@ func (apimanager *APIManager) setApicastSpecDefaults() bool {
 	changed := false
 	spec := &apimanager.Spec
 
-	defaultApicastManagementAPI := "status"
-	defaultApicastOpenSSLVerify := false
-	defaultApicastResponseCodes := true
-	defaultApicastRegistryURL := "http://apicast-staging:8090/policies"
+	tmpDefaultApicastManagementAPI := defaultApicastManagementAPI
+	tmpDefaultApicastOpenSSLVerify := defaultApicastOpenSSLVerify
+	tmpDefaultApicastResponseCodes := defaultApicastResponseCodes
+	tmpDefaultApicastRegistryURL := defaultApicastRegistryURL
 	if spec.Apicast == nil {
 		spec.Apicast = &ApicastSpec{}
 		changed = true
 	}
 
 	if spec.Apicast.ApicastManagementAPI == nil {
-		spec.Apicast.ApicastManagementAPI = &defaultApicastManagementAPI
+		spec.Apicast.ApicastManagementAPI = &tmpDefaultApicastManagementAPI
 		changed = true
 	}
 	if spec.Apicast.OpenSSLVerify == nil {
-		spec.Apicast.OpenSSLVerify = &defaultApicastOpenSSLVerify
+		spec.Apicast.OpenSSLVerify = &tmpDefaultApicastOpenSSLVerify
 		changed = true
 	}
 	if spec.Apicast.IncludeResponseCodes == nil {
-		spec.Apicast.IncludeResponseCodes = &defaultApicastResponseCodes
+		spec.Apicast.IncludeResponseCodes = &tmpDefaultApicastResponseCodes
 		changed = true
 	}
 	if spec.Apicast.RegistryURL == nil {
-		spec.Apicast.RegistryURL = &defaultApicastRegistryURL
+		spec.Apicast.RegistryURL = &tmpDefaultApicastRegistryURL
 		changed = true
 	}
 
@@ -423,28 +454,28 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 	changed := false
 	spec := &apimanager.Spec
 
-	defaultAppLabel := "3scale-api-management"
-	defaultTenantName := "3scale"
-	defaultImageStreamTagImportInsecure := false
-	defaultResourceRequirementsEnabled := true
+	tmpDefaultAppLabel := defaultAppLabel
+	tmpDefaultTenantName := defaultTenantName
+	tmpDefaultImageStreamTagImportInsecure := defaultImageStreamImportInsecure
+	tmpDefaultResourceRequirementsEnabled := defaultResourceRequirementsEnabled
 
 	if spec.AppLabel == nil {
-		spec.AppLabel = &defaultAppLabel
+		spec.AppLabel = &tmpDefaultAppLabel
 		changed = true
 	}
 
 	if spec.TenantName == nil {
-		spec.TenantName = &defaultTenantName
+		spec.TenantName = &tmpDefaultTenantName
 		changed = true
 	}
 
 	if spec.ImageStreamTagImportInsecure == nil {
-		spec.ImageStreamTagImportInsecure = &defaultImageStreamTagImportInsecure
+		spec.ImageStreamTagImportInsecure = &tmpDefaultImageStreamTagImportInsecure
 		changed = true
 	}
 
 	if spec.ResourceRequirementsEnabled == nil {
-		spec.ResourceRequirementsEnabled = &defaultResourceRequirementsEnabled
+		spec.ResourceRequirementsEnabled = &tmpDefaultResourceRequirementsEnabled
 		changed = true
 	}
 
@@ -455,7 +486,6 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 }
 
 func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
-	// TODO fix how should be shown
 	changed := false
 	spec := &apimanager.Spec
 
@@ -500,55 +530,34 @@ func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
 }
 
 func (apimanager *APIManager) setSystemFileStorageSpecDefaults() (bool, error) {
-	changed := false
 	systemSpec := apimanager.Spec.System
 
-	defaultFileStorageSpec := &SystemFileStorageSpec{
-		PVC: &SystemPVCSpec{
-			StorageClassName: nil,
-		},
+	if systemSpec.FileStorageSpec != nil &&
+		systemSpec.FileStorageSpec.PVC != nil &&
+		systemSpec.FileStorageSpec.S3 != nil {
+		return true, fmt.Errorf("Only one FileStorage can be chosen at the same time")
 	}
 
-	if systemSpec.FileStorageSpec == nil {
-		systemSpec.FileStorageSpec = defaultFileStorageSpec
-		changed = true
-		return changed, nil
-	}
-
-	if systemSpec.FileStorageSpec.PVC != nil && systemSpec.FileStorageSpec.S3 != nil {
-		return changed, fmt.Errorf("Only one FileStorage can be chosen at the same time")
-	}
-
-	if systemSpec.FileStorageSpec.PVC == nil && systemSpec.FileStorageSpec.S3 == nil {
-		systemSpec.FileStorageSpec.PVC = defaultFileStorageSpec.PVC
-		changed = true
-	}
-
-	return changed, nil
+	return false, nil
 }
 
 func (apimanager *APIManager) setSystemDatabaseSpecDefaults() (bool, error) {
 	changed := false
 	systemSpec := apimanager.Spec.System
 
-	defaultDatabaseSpec := &SystemDatabaseSpec{
-		MySQL: &SystemMySQLSpec{
-			Image: nil,
-		},
-	}
-
-	if systemSpec.DatabaseSpec == nil {
-		systemSpec.DatabaseSpec = defaultDatabaseSpec
-		changed = true
+	if apimanager.IsExternalDatabaseEnabled() {
+		if systemSpec.DatabaseSpec != nil {
+			systemSpec.DatabaseSpec = nil
+			changed = true
+		}
 		return changed, nil
 	}
 
-	if systemSpec.DatabaseSpec.MySQL != nil && systemSpec.DatabaseSpec.PostgreSQL != nil {
+	// databases managed internally
+	if systemSpec.DatabaseSpec != nil &&
+		systemSpec.DatabaseSpec.MySQL != nil &&
+		systemSpec.DatabaseSpec.PostgreSQL != nil {
 		return changed, fmt.Errorf("Only one System Database can be chosen at the same time")
-	}
-
-	if systemSpec.DatabaseSpec.MySQL == nil && systemSpec.DatabaseSpec.PostgreSQL == nil {
-		systemSpec.DatabaseSpec.MySQL = defaultDatabaseSpec.MySQL
 	}
 
 	return changed, nil
@@ -583,4 +592,12 @@ func (apimanager *APIManager) setZyncDefaults() bool {
 	}
 
 	return changed
+}
+
+func (apimanager *APIManager) IsExternalDatabaseEnabled() bool {
+	return apimanager.Spec.HighAvailability != nil && apimanager.Spec.HighAvailability.Enabled
+}
+
+func (apimanager *APIManager) IsPDBEnabled() bool {
+	return apimanager.Spec.PodDisruptionBudget != nil && apimanager.Spec.PodDisruptionBudget.Enabled
 }

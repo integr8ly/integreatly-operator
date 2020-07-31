@@ -7,9 +7,9 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
+	"testing"
 
 	"github.com/PuerkitoBio/goquery"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,9 +28,10 @@ type CodereadyLoginClient struct {
 	IdpName    string
 	Username   string
 	Password   string
+	Logger     SimpleLogger
 }
 
-func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, masterUrl, idp, username, password string) *CodereadyLoginClient {
+func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, masterUrl, idp, username, password string, logger SimpleLogger) *CodereadyLoginClient {
 	return &CodereadyLoginClient{
 		HttpClient: httpClient,
 		Client:     client,
@@ -38,13 +39,14 @@ func NewCodereadyLoginClient(httpClient *http.Client, client k8sclient.Client, m
 		IdpName:    idp,
 		Username:   username,
 		Password:   password,
+		Logger:     logger,
 	}
 }
 
 // Login user to openshift and wait for the user to be reconciled to the openshift realm in keycloak
 func (c *CodereadyLoginClient) OpenshiftLogin(namespacePrefix string) error {
 	authUrl := fmt.Sprintf("%s/auth/login", c.MasterUrl)
-	if err := DoAuthOpenshiftUser(authUrl, c.Username, c.Password, c.HttpClient, c.IdpName); err != nil {
+	if err := DoAuthOpenshiftUser(authUrl, c.Username, c.Password, c.HttpClient, c.IdpName, c.Logger); err != nil {
 		return err
 	}
 
@@ -56,8 +58,10 @@ func (c *CodereadyLoginClient) OpenshiftLogin(namespacePrefix string) error {
 }
 
 // Log user into codeready. Returns an access token to be used for codeready API calls
-func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) (string, error) {
+func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string, t *testing.T) (string, error) {
 	u := fmt.Sprintf(codereadySSOAuthEndpoint, keycloakHost, clientId, redirectUrl)
+	t.Logf("SSO Auth endpoint url: %s", u)
+
 	response, err := c.HttpClient.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("failed to get %v: %v", u, err)
@@ -88,7 +92,7 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 	if err != nil {
 		return "", err
 	}
-
+	t.Logf("Resolved relative url: %s", u)
 	response, err = c.HttpClient.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("failed to get %v: %v", u, err)
@@ -96,9 +100,11 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 	if response.StatusCode != http.StatusOK {
 		return "", errorWithResponseDump(response, fmt.Errorf("the request to %s failed with code %d", u, response.StatusCode))
 	}
-
+	t.Logf("Response: raw query = %s", response.Request.URL.RawQuery)
 	code := strings.Split(response.Request.URL.RawQuery, "&")[1]
 	tokenUrl := fmt.Sprintf(codereadySSOTokenEndpoint, keycloakHost)
+	t.Logf("Received code: %s", code)
+	t.Logf("Token url: %s", tokenUrl)
 
 	formValues := url.Values{
 		"grant_type":   []string{"authorization_code"},
@@ -109,7 +115,7 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 
 	response, err = c.HttpClient.PostForm(tokenUrl, formValues)
 	if err != nil {
-		return "", fmt.Errorf("failed to request %s: %s", u, err)
+		return "", fmt.Errorf("failed to request %s: %s", tokenUrl, err)
 	}
 
 	postBody, err := ioutil.ReadAll(response.Body)
@@ -127,32 +133,6 @@ func (c *CodereadyLoginClient) CodereadyLogin(keycloakHost, redirectUrl string) 
 		return "", fmt.Errorf("failed to get access token: %v", string(postBody))
 	}
 	return tokenResponse.AccessToken, nil
-}
-
-func dumpResponse(r *http.Response) string {
-	msg := "> Request\n"
-	bytes, err := httputil.DumpRequestOut(r.Request, false)
-	if err != nil {
-		msg += fmt.Sprintf("failed to dump the request: %s", err)
-	} else {
-		msg += string(bytes)
-	}
-	msg += "\n"
-
-	msg += "< Response\n"
-	bytes, err = httputil.DumpResponse(r, true)
-	if err != nil {
-		msg += fmt.Sprintf("failed to dump the response: %s", err)
-	} else {
-		msg += string(bytes)
-	}
-	msg += "\n"
-
-	return msg
-}
-
-func errorWithResponseDump(r *http.Response, err error) error {
-	return fmt.Errorf("%s\n\n%s", err, dumpResponse(r))
 }
 
 func parseResponse(r *http.Response) (*goquery.Document, error) {
@@ -174,40 +154,4 @@ func parseResponse(r *http.Response) (*goquery.Document, error) {
 	})
 
 	return d, nil
-}
-
-func resolveRelativeURL(r *http.Response, relativeURL string) (string, error) {
-	u, err := url.Parse(relativeURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse the url %s: %s", relativeURL, err)
-	}
-
-	u = r.Request.URL.ResolveReference(u)
-
-	return u.String(), nil
-}
-
-func findElement(d *goquery.Document, selector string) (*goquery.Selection, error) {
-	e := d.Find(selector)
-	if e.Length() == 0 {
-		return nil, fmt.Errorf("failed to find an element matching the selector %s", selector)
-	}
-	if e.Length() > 1 {
-		return nil, fmt.Errorf("multiple element founded matching the selector %s", selector)
-	}
-
-	return e, nil
-}
-
-func getAttribute(element *goquery.Selection, name string) (string, error) {
-	v, ok := element.Attr(name)
-	if !ok {
-		e, err := element.Html()
-		if err != nil {
-			e = fmt.Sprintf("failed to get the html content: %s", err)
-		}
-
-		return "", fmt.Errorf("the element '%s' doesn't have the %s attribute", e, name)
-	}
-	return v, nil
 }

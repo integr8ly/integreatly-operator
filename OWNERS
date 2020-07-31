@@ -7,6 +7,9 @@ approvers:
 - davidffrench
 - matskiv
 - david-martin
+- aidenkeating
+- wei-lee
+- grdryn
 
 reviewers:
 - mikenairn
@@ -27,3 +30,5 @@ reviewers:
 - pawelpaszki
 - grdryn
 - briangallagher
+- darahayes
+- wei-lee

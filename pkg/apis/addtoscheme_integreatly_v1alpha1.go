@@ -12,11 +12,12 @@ import (
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 
-	grafanav1alpha1 "github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 
+	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	syndesisv1alpha1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1"
+	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	enmasseAdmin "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
@@ -59,7 +60,7 @@ func init() {
 		kafkav1alpha1.SchemeBuilder.AddToScheme,
 		keycloak.SchemeBuilder.AddToScheme,
 		chev1.SchemeBuilder.AddToScheme,
-		syndesisv1alpha1.SchemeBuilder.AddToScheme,
+		syndesisv1beta1.SchemeBuilder.AddToScheme,
 		enmasse.SchemeBuilder.AddToScheme,
 		enmassev1beta2.SchemeBuilder.AddToScheme,
 		enmassev1beta1.SchemeBuilder.AddToScheme,
@@ -68,6 +69,7 @@ func init() {
 		solutionExplorerv1alpha1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
+		apicurioregistry.SchemeBuilder.AddToScheme,
 		apicurito.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 		monitoring.SchemeBuilder.AddToScheme,

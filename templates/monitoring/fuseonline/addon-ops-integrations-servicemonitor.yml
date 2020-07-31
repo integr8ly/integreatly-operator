@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: syndesis-integrations
+  namespace: {{ index .Params "Namespace" }}
+  labels:
+    app: syndesis
+    syndesis.io/app: syndesis
+    syndesis.io/component: service-monitor
+    syndesis.io/type: infrastructure
+    monitoring-key: middleware
+spec:
+  endpoints:
+  - port: metrics
+  selector:
+    matchLabels:
+      syndesis.io/app: syndesis
+      syndesis.io/component: integration

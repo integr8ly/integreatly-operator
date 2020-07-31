@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,14 +21,11 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/resources"
-
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,7 +33,6 @@ import (
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +43,6 @@ const (
 	defaultInstallationNamespace = "amq-online"
 	defaultConsoleSvcName        = "console"
 	manifestPackage              = "integreatly-amq-online"
-	postgresTier                 = "production"
 )
 
 type Reconciler struct {
@@ -96,15 +94,27 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	product := installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductAMQOnline]
+	return version.VerifyProductAndOperatorVersion(
+		product,
+		string(integreatlyv1alpha1.VersionAMQOnline),
+		string(integreatlyv1alpha1.OperatorVersionAMQOnline),
+	)
+}
+
 // Reconcile reads that state of the cluster for amq online and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
+
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -115,26 +125,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
 	ns := r.Config.GetNamespace()
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.AMQOnlineSubscriptionName, Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, ManifestPackage: manifestPackage}, []string{ns}, r.preUpgradeBackupExecutor(), serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQOnlineSubscriptionName), err)
 		return phase, err
@@ -188,22 +192,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
-		return phase, err
-	}
-
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcilePrometheusRule(ctx, serverClient)
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile prometheus rules", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline alerts", err)
 		return phase, err
 	}
 
@@ -255,19 +252,6 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	)
 }
 
-func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	// Interate over template_list
-	for _, template := range r.Config.GetTemplateList() {
-		// create it
-		_, err := r.createResource(ctx, template, serverClient)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
-		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
 func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling default auth services")
 
@@ -302,7 +286,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 		serverClient,
 		defaultInstallationNamespace,
 		"workshop", // workshop here so that it creates in-cluster postgresql
-		postgresTier,
+		croUtil.TierProduction,
 		postgresqlName,
 		r.inst.Namespace,
 		postgresqlName,
@@ -312,13 +296,12 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 			return nil
 		},
 	)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
+	}
 
 	if postgres.Status.Phase != cro1types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create postgresql for standard auth service: %w", err)
 	}
 
 	// Read the CRO secret, to get values to copy to enmasse namespace.
@@ -583,6 +566,11 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 				Type:     "enmasse_pv",
 				Schedule: r.Config.GetBackupSchedule(),
 			},
+			{
+				Name:     "resources-backup",
+				Type:     "amq_online_resources",
+				Schedule: r.Config.GetBackupSchedule(),
+			},
 		},
 	}
 
@@ -611,63 +599,24 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcilePrometheusRule(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	monitoringConfig := config.NewMonitoring(config.ProductConfig{})
-	keycloakServicePortCount := 2
-	rule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmi-amq-online-slo",
-			Namespace: r.Config.GetNamespace(),
-		},
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.AMQOnlineSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
 	}
-
-	rules := []monitoringv1.Rule{
-		{
-			Alert: fmt.Sprintf("AMQOnlineConsoleAvailable"),
-			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("AMQ-SLO-1.1: AMQ Online console is not available in namespace '%s'", r.Config.GetNamespace()),
-			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='console',namespace='%s'}==2)", r.Config.GetNamespace())),
-			For:    "300s",
-			Labels: map[string]string{"severity": "critical"},
-		},
-		{
-			Alert: fmt.Sprintf("AMQOnlineKeycloakAvailable"),
-			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("AMQ-SLO-1.4: Keycloak is not available in namespace %s", r.Config.GetNamespace()),
-			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_endpoint_address_available{endpoint='standard-authservice',namespace='%s'}==%v)", r.Config.GetNamespace(), keycloakServicePortCount)),
-			For:    "300s",
-			Labels: map[string]string{"severity": "critical"},
-		},
-		{
-			Alert: fmt.Sprintf("AMQOnlineOperatorAvailable"),
-			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-				"message": fmt.Sprintf("AMQ-SLO-1.5: amq-online(enmasse) operator is not available in namespace %s", r.Config.GetNamespace()),
-			},
-			Expr:   intstr.FromString(fmt.Sprintf("absent(kube_pod_status_ready{condition='true',namespace='%s',pod=~'enmasse-operator-.*'}==1)", r.Config.GetNamespace())),
-			For:    "300s",
-			Labels: map[string]string{"severity": "critical"},
-		}}
-
-	_, err := controllerutil.CreateOrUpdate(ctx, client, rule, func() error {
-		rule.ObjectMeta.Labels = map[string]string{"integreatly": "yes", monitoringConfig.GetLabelSelectorKey(): monitoringConfig.GetLabelSelector()}
-		rule.Spec = monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
-				{
-					Name:  "amqonline.rules",
-					Rules: rules,
-				},
-			},
-		}
-		return nil
-	})
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating enmasse PrometheusRule: %w", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		r.preUpgradeBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }

@@ -1,4 +1,4 @@
 packageName: rhmi-rhsso
 channels:
   - name: rhmi
-    currentCSV: keycloak-operator.v8.0.1
+    currentCSV: keycloak-operator.v10.0.0

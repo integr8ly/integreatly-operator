@@ -43,6 +43,14 @@ func (m *Monitoring) SetNamespace(newNamespace string) {
 	m.Config["NAMESPACE"] = newNamespace
 }
 
+func (m *Monitoring) GetFederationNamespace() string {
+	return m.Config["FEDERATION_NAMESPACE"]
+}
+
+func (m *Monitoring) SetFederationNamespace(newNamespace string) {
+	m.Config["FEDERATION_NAMESPACE"] = newNamespace
+}
+
 func (m *Monitoring) GetOperatorNamespace() string {
 	return m.Config["OPERATOR_NAMESPACE"]
 }
@@ -115,17 +123,15 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 	return "50Gi"
 }
 
-func (m *Monitoring) GetTemplateList() []string {
+func (m *Monitoring) GetDashboards() []string {
 	templateList := []string{
-		"kube_state_metrics_alerts.yaml",
-		"kube_state_metrics_monitoring_alerts.yaml",
-		"endpointsdetailed.yaml",
-		"endpointsreport.yaml",
-		"endpointssummary.yaml",
-		"resources-by-namespace.yaml",
-		"resources-by-pod.yaml",
-		"cluster-resources.yaml",
-		"backup-monitoring-alerts.yaml",
+		"endpointsdetailed",
+		"endpointsreport",
+		"endpointssummary",
+		"resources-by-namespace",
+		"resources-by-pod",
+		"cluster-resources",
+		"critical-slo-alerts",
 	}
 	return templateList
 }

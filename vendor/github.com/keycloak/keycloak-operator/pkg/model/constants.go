@@ -8,18 +8,16 @@ const (
 	PostgresqlPersistentVolumeName       = ApplicationName + "-postgresql-claim"
 	PostgresqlBackupPersistentVolumeName = ApplicationName + "-backup"
 	PostgresqlDeploymentName             = ApplicationName + "-postgresql"
+	KeycloakProbesName                   = ApplicationName + "-probes"
 	PostgresqlDeploymentComponent        = "database"
 	PostgresqlServiceName                = ApplicationName + "-postgresql"
-	PostgresqlImage                      = "postgres:11.5"
-	KeycloakImage                        = "quay.io/keycloak/keycloak:7.0.1"
-	KeycloakInitContainerImage           = "quay.io/keycloak/keycloak-init-container:master"
-	RHSSOImage                           = "registry.access.redhat.com/redhat-sso-7/sso73-openshift:1.0-15"
-	BackupImage                          = "quay.io/integreatly/backup-container:1.0.10"
 	KeycloakDiscoveryServiceName         = ApplicationName + "-discovery"
 	KeycloakDeploymentName               = ApplicationName
 	KeycloakDeploymentComponent          = "keycloak"
 	PostgresqlBackupComponent            = "database-backup"
 	PostgresqlDatabase                   = "root"
+	PostgresqlUsername                   = ApplicationName
+	PostgresqlPasswordLength             = 32
 	PostgresqlPersistentVolumeCapacity   = "1Gi"
 	DatabaseSecretUsernameProperty       = "POSTGRES_USERNAME" // nolint
 	DatabaseSecretPasswordProperty       = "POSTGRES_PASSWORD" // nolint
@@ -28,14 +26,18 @@ const (
 	// Required by the Integreately Backup Image
 	DatabaseSecretDatabaseProperty = "POSTGRES_DATABASE" // nolint
 	// Required by the Integreately Backup Image
-	DatabaseSecretSuperuserProperty       = "POSTGRES_SUPERUSER"        // nolint
+	DatabaseSecretVersionProperty         = "POSTGRES_VERSION"          // nolint
 	DatabaseSecretExternalAddressProperty = "POSTGRES_EXTERNAL_ADDRESS" // nolint
 	DatabaseSecretExternalPortProperty    = "POSTGRES_EXTERNAL_PORT"    // nolint
 	KeycloakServicePort                   = 8443
+	PostgresDefaultPort                   = 5432
 	AdminUsernameProperty                 = "ADMIN_USERNAME"        // nolint
 	AdminPasswordProperty                 = "ADMIN_PASSWORD"        // nolint
 	ServingCertSecretName                 = "sso-x509-https-secret" // nolint
+	LivenessProbeProperty                 = "liveness_probe.sh"
+	ReadinessProbeProperty                = "readiness_probe.sh"
 	RouteLoadBalancingStrategy            = "source"
+	IngressDefaultHost                    = "keycloak.local"
 	PostgresqlBackupServiceAccountName    = "keycloak-operator"
 	KeycloakExtensionEnvVar               = "KEYCLOAK_EXTENSIONS"
 	KeycloakExtensionPath                 = "/opt/jboss/keycloak/providers"

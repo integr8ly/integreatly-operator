@@ -1,0 +1,18 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: rhmi-deploy
+objects:
+  - apiVersion: operators.coreos.com/v1alpha1
+    kind: CatalogSource
+    metadata:
+      name: rhmi-operators
+      namespace: openshift-marketplace
+    spec:
+      sourceType: grpc
+      image: ${INDEX_IMAGE}
+parameters:
+  - description: Index Image
+    displayName: Index Image
+    name: INDEX_IMAGE
+    value: redhat-rhmi-operator

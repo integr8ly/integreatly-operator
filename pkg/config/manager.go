@@ -53,19 +53,36 @@ type ConfigReadWriter interface {
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
+	ReadApicurioRegistry() (*ApicurioRegistry, error)
 	ReadApicurito() (*Apicurito, error)
 	ReadCloudResources() (*CloudResources, error)
 	ReadDataSync() (*DataSync, error)
+	ReadMonitoringSpec() (*MonitoringSpec, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
 type ConfigReadable interface {
+	//Read is used by the configManager to convert your config to yaml and store it in the configmap.
 	Read() ProductConfig
+
+	//GetProductName returns the value of the globally defined ProductName
 	GetProductName() integreatlyv1alpha1.ProductName
+
+	//GetProductVersion returns the value of the globally defined ProductVersion
 	GetProductVersion() integreatlyv1alpha1.ProductVersion
+
+	//GetOperatorVersion returns the value of the globally defined OperatorVersion
 	GetOperatorVersion() integreatlyv1alpha1.OperatorVersion
+
+	//GetHost returns a URL that can be used to access the product, either an API, or console, or blank if not applicable.
 	GetHost() string
+
+	//GetWatchableCRDs should return an array of CRDs that should be watched by the integreatly-operator, if a change of one of these CRDs
+	//in any namespace is detected, it will trigger a full reconcile of the integreatly-operator. This usually returns all of
+	//the CRDs the new products operator watches.
 	GetWatchableCRDs() []runtime.Object
+
+	//GetNamespace should return the namespace that the product will be installed into.
 	GetNamespace() string
 }
 
@@ -99,6 +116,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadSolutionExplorer()
 	case integreatlyv1alpha1.ProductUps:
 		return m.ReadUps()
+	case integreatlyv1alpha1.ProductApicurioRegistry:
+		return m.ReadApicurioRegistry()
 	case integreatlyv1alpha1.ProductApicurito:
 		return m.ReadApicurito()
 	case integreatlyv1alpha1.ProductCloudResources:
@@ -107,6 +126,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadMonitoring()
 	case integreatlyv1alpha1.ProductDataSync:
 		return m.ReadDataSync()
+	case integreatlyv1alpha1.ProductMonitoringSpec:
+		return m.ReadMonitoringSpec()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
@@ -206,6 +227,22 @@ func (m *Manager) ReadMonitoring() (*Monitoring, error) {
 		return nil, err
 	}
 	return NewMonitoring(config), nil
+}
+
+func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMonitoringSpec)
+	if err != nil {
+		return nil, err
+	}
+	return NewMonitoringSpec(config), nil
+}
+
+func (m *Manager) ReadApicurioRegistry() (*ApicurioRegistry, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurioRegistry)
+	if err != nil {
+		return nil, err
+	}
+	return NewApicurioRegistry(config), nil
 }
 
 func (m *Manager) ReadApicurito() (*Apicurito, error) {

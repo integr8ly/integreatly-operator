@@ -10,11 +10,11 @@ import (
 )
 
 type Apicurito struct {
-	Config ProductConfig
+	config ProductConfig
 }
 
 func NewApicurito(config ProductConfig) *Apicurito {
-	return &Apicurito{Config: config}
+	return &Apicurito{config: config}
 }
 
 //GetWatchableCRDs to trigger a reconcile of the integreatly installation when these are updated
@@ -30,19 +30,29 @@ func (r *Apicurito) GetWatchableCRDs() []runtime.Object {
 }
 
 func (r *Apicurito) GetNamespace() string {
-	return r.Config["NAMESPACE"]
+	return r.config["NAMESPACE"]
 }
 
 func (r *Apicurito) SetNamespace(newNamespace string) {
-	r.Config["NAMESPACE"] = newNamespace
+	r.config["NAMESPACE"] = newNamespace
+}
+func (r *Apicurito) GetBlackboxTargetPath() string {
+	return r.config["BLACKBOX_TARGET_PATH"]
+}
+func (r *Apicurito) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	r.config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
 }
 
 func (r *Apicurito) GetOperatorNamespace() string {
-	return r.Config["NAMESPACE"] + "-operator"
+	return r.config["NAMESPACE"] + "-operator"
+}
+
+func (r *Apicurito) SetOperatorNamespace(newNamespace string) {
+	r.config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (r *Apicurito) Read() ProductConfig {
-	return r.Config
+	return r.config
 }
 
 func (r *Apicurito) GetProductName() integreatlyv1alpha1.ProductName {
@@ -50,27 +60,19 @@ func (r *Apicurito) GetProductName() integreatlyv1alpha1.ProductName {
 }
 
 func (r *Apicurito) GetProductVersion() integreatlyv1alpha1.ProductVersion {
-	return integreatlyv1alpha1.ProductVersion(r.Config["VERSION"])
+	return integreatlyv1alpha1.VersionApicurito
 }
 
 func (r *Apicurito) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 	return integreatlyv1alpha1.OperatorVersionApicurito
 }
 
-func (r *Apicurito) SetProductVersion(version string) {
-	r.Config["VERSION"] = version
-}
-
-func (r *Apicurito) SetOperatorVersion(operator string) {
-	r.Config["OPERATOR"] = operator
-}
-
 func (c *Apicurito) GetHost() string {
-	return c.Config["HOST"]
+	return c.config["HOST"]
 }
 
 func (c *Apicurito) SetHost(newHost string) {
-	c.Config["HOST"] = newHost
+	c.config["HOST"] = newHost
 }
 
 func (r *Apicurito) Validate() error {

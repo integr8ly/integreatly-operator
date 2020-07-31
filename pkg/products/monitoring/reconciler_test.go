@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "github.com/openshift/api/route/v1"
-	"github.com/sirupsen/logrus"
-	"os"
 	"testing"
 
+	v1 "github.com/openshift/api/route/v1"
+	"github.com/sirupsen/logrus"
+
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -24,10 +25,10 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,9 +40,10 @@ import (
 )
 
 const (
-	mockSMTPSecretName      = "test-smtp"
-	mockPagerdutySecretName = "test-pd"
-	mockDMSSecretName       = "test-dms"
+	mockSMTPSecretName       = "test-smtp"
+	mockPagerdutySecretName  = "test-pd"
+	mockDMSSecretName        = "test-dms"
+	mockAlertingEmailAddress = "noreply-test@rhmi-redhat.com"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -61,6 +63,12 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			DeadMansSnitchSecret: mockDMSSecretName,
 		},
 	}
+}
+
+func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
+	installation := basicInstallation()
+	installation.Spec.AlertingEmailAddress = mockAlertingEmailAddress
+	return installation
 }
 
 func basicConfigMock() *config.ConfigReadWriterMock {
@@ -103,6 +111,13 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	if err := v1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
+	if err := rbac.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := grafanav1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+
 	return scheme, nil
 }
 
@@ -155,7 +170,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:    true,
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return errors.New("dummy")
 				},
 			},
@@ -284,6 +299,18 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			"prometheus.yaml": []byte("{\"datasources\":[{\"basicAuthUser\":\"testuser\",\"basicAuthPassword\":\"testpass\"}]}"),
 		},
 	}
+	federationNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-federate",
+			Labels: map[string]string{
+				resources.OwnerLabelKey:           string(basicInstallation().GetUID()),
+				"openshift.io/cluster-monitoring": "true",
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
 
 	installation := basicInstallation()
 
@@ -307,7 +334,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Namespace: installation.Namespace,
 		},
 		Data: map[string][]byte{
-			"serviceKey": []byte("test"),
+			"PAGERDUTY_KEY": []byte("test"),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
@@ -318,7 +345,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Namespace: installation.Namespace,
 		},
 		Data: map[string][]byte{
-			"url": []byte("https://example.com"),
+			"SNITCH_URL": []byte("https://example.com"),
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
@@ -348,7 +375,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:           "test successful reconcile",
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute),
+			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs,
+				grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret,
+				dmsSecret, alertmanagerRoute),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
@@ -366,7 +395,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				},
 			},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
@@ -418,6 +447,15 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			if status != tc.ExpectedStatus {
 				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
 			}
+
+			//Verify that grafana dashboards are created
+			for _, dashboard := range reconciler.Config.GetDashboards() {
+				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
+				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashboard, Namespace: defaultInstallationNamespace}, grafanaDB)
+				if err != nil {
+					t.Fatalf("expected no error but got one: %v", err)
+				}
+			}
 		})
 	}
 }
@@ -452,6 +490,19 @@ func TestReconciler_testPhases(t *testing.T) {
 		},
 	}
 
+	federationNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultInstallationNamespace + "-federate",
+			Labels: map[string]string{
+				resources.OwnerLabelKey:           string(basicInstallation().GetUID()),
+				"openshift.io/cluster-monitoring": "true",
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectedStatus integreatlyv1alpha1.StatusPhase
@@ -473,10 +524,10 @@ func TestReconciler_testPhases(t *testing.T) {
 				Status: corev1.NamespaceStatus{
 					Phase: corev1.NamespaceTerminating,
 				},
-			}, operatorNS, basicInstallation()),
+			}, operatorNS, federationNs, basicInstallation()),
 			FakeConfig: basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plan *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
@@ -490,10 +541,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test subscription creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
@@ -507,10 +558,10 @@ func TestReconciler_testPhases(t *testing.T) {
 			Name:           "test components creating returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			Installation:   basicInstallation(),
-			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, basicInstallation()),
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs, basicInstallation()),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, sub string, ns string) (*operatorsv1alpha1.InstallPlanList, *operatorsv1alpha1.Subscription, error) {
@@ -646,17 +697,6 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		wantErr      string
 	}{
 		{
-			name: "fails when smtp secret cannot be found",
-			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(basicScheme, alertmanagerRoute)
-			},
-			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			wantErr: "could not obtain smtp credentials secret: secrets \"test-smtp\" not found",
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
 			name: "fails when pager duty secret cannot be found",
 			serverClient: func() k8sclient.Client {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
@@ -677,7 +717,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			reconciler: func() *Reconciler {
 				return basicReconciler
 			},
-			wantErr: "serviceKey is undefined in pager duty secret",
+			wantErr: "secret key is undefined in pager duty secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
@@ -701,7 +741,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 			reconciler: func() *Reconciler {
 				return basicReconciler
 			},
-			wantErr: "url is undefined in dead mans switch secret",
+			wantErr: "url is undefined in dead mans snitch secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
 		},
 		{
@@ -775,10 +815,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
-			},
-			setup: func() error {
-				return os.Setenv(alertmanagerAlertAddressEnv, "test")
+				reconciler := basicReconciler
+				reconciler.installation = basicInstallationWithAlertEmailAddress()
+				return reconciler
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -794,7 +833,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPPassword":        string(smtpSecret.Data["password"]),
 					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-					"SMTPToAddress":       "test",
+					"SMTPToAddress":       mockAlertingEmailAddress,
 				})
 
 				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -810,12 +849,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.setup != nil {
-				err = tt.setup()
-				if err != nil {
-					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
-				}
-			}
+
 			reconciler := tt.reconciler()
 			serverClient := tt.serverClient()
 
@@ -831,6 +865,236 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				if err := tt.wantFn(serverClient); err != nil {
 					t.Errorf("reconcileAlertManagerConfigSecret() error = %v", err)
 				}
+			}
+		})
+	}
+}
+
+func TestReconciler_getPagerDutySecret(t *testing.T) {
+	basicScheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	basicLogger := logrus.NewEntry(logrus.StandardLogger())
+	basicReconciler := &Reconciler{
+		installation: basicInstallation(),
+		Logger:       basicLogger,
+		Config: &config.Monitoring{
+			Config: map[string]string{
+				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+			},
+		},
+	}
+
+	installation := basicInstallation()
+
+	pagerdutySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockPagerdutySecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"PAGERDUTY_KEY": []byte("test"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name         string
+		serverClient func() k8sclient.Client
+		reconciler   func() *Reconciler
+		setup        func() error
+		want         string
+		wantErr      string
+	}{
+		{
+			name: "fails when pager duty secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
+		},
+		{
+			name: "fails when pager duty service key is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
+				emptyPagerdutySecret.Data = map[string][]byte{}
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "secret key is undefined in pager duty secret",
+		},
+
+		{
+			name: "fails when pager duty service key - value is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyPagerdutySecret := pagerdutySecret.DeepCopy()
+				emptyPagerdutySecret.Data = map[string][]byte{}
+				emptyPagerdutySecret.Data["serviceKey"] = []byte("")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyPagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "secret key is undefined in pager duty secret",
+		},
+		{
+			name: "secret read successfully - from pager duty operator secret",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, pagerdutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "test",
+		},
+		{
+			name: "secret read successfully - from cssre pager duty operator secret",
+			serverClient: func() k8sclient.Client {
+				cssrePagerDutySecret := pagerdutySecret.DeepCopy()
+				cssrePagerDutySecret.Data = make(map[string][]byte, 0)
+				cssrePagerDutySecret.Data["serviceKey"] = []byte("cssre-pg-secret")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, cssrePagerDutySecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "cssre-pg-secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			reconciler := tt.reconciler()
+			serverClient := tt.serverClient()
+
+			got, err := reconciler.getPagerDutySecret(context.TODO(), serverClient)
+			if tt.wantErr != "" && err.Error() != tt.wantErr {
+				t.Errorf("getPagerDutySecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getPagerDutySecret() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReconciler_getDMSSecret(t *testing.T) {
+	basicScheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+	basicLogger := logrus.NewEntry(logrus.StandardLogger())
+	basicReconciler := &Reconciler{
+		installation: basicInstallation(),
+		Logger:       basicLogger,
+		Config: &config.Monitoring{
+			Config: map[string]string{
+				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+			},
+		},
+	}
+
+	installation := basicInstallation()
+
+	dmsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mockDMSSecretName,
+			Namespace: installation.Namespace,
+		},
+		Data: map[string][]byte{
+			"SNITCH_URL": []byte("https://example.com"),
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	tests := []struct {
+		name         string
+		serverClient func() k8sclient.Client
+		reconciler   func() *Reconciler
+		setup        func() error
+		want         string
+		wantErr      string
+	}{
+		{
+			name: "fails when dead man switch secret cannot be found",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
+		},
+		{
+			name: "fails when dead man switch secret url is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyDMSSecret := dmsSecret.DeepCopy()
+				emptyDMSSecret.Data = map[string][]byte{}
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyDMSSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "url is undefined in dead mans snitch secret",
+		},
+
+		{
+			name: "fails when dead man switch secret SNITCHH_URL - value is not defined",
+			serverClient: func() k8sclient.Client {
+				emptyDMSSecret := dmsSecret.DeepCopy()
+				emptyDMSSecret.Data = map[string][]byte{}
+				emptyDMSSecret.Data["SNITCH_URL"] = []byte("")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, emptyDMSSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			wantErr: "url is undefined in dead mans snitch secret",
+		},
+		{
+			name: "secret read successfully - from dead man switch operator secret",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(basicScheme, dmsSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "https://example.com",
+		},
+		{
+			name: "secret read successfully - from cssre dead man switch operator secret",
+			serverClient: func() k8sclient.Client {
+				cssreDMSSecret := dmsSecret.DeepCopy()
+				cssreDMSSecret.Data = make(map[string][]byte, 0)
+				cssreDMSSecret.Data["url"] = []byte("https://example-cssredms-secret.com")
+				return fakeclient.NewFakeClientWithScheme(basicScheme, cssreDMSSecret)
+			},
+			reconciler: func() *Reconciler {
+				return basicReconciler
+			},
+			want: "https://example-cssredms-secret.com",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			reconciler := tt.reconciler()
+			serverClient := tt.serverClient()
+
+			got, err := reconciler.getDMSSecret(context.TODO(), serverClient)
+			if tt.wantErr != "" && err.Error() != tt.wantErr {
+				t.Errorf("getDMSSecret() error = %v, wantErr %v", err.Error(), tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getDMSSecret() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

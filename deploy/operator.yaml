@@ -13,13 +13,28 @@ spec:
         name: rhmi-operator
     spec:
       serviceAccountName: rhmi-operator
+      volumes:
+      - name: webhook-certs
+        emptyDir: {}
       containers:
         - name: rhmi-operator
           # Replace this with the built image name
-          image: quay.io/integreatly/integreatly-operator:v2.0.0-rc1
+          image: quay.io/integreatly/integreatly-operator:master
+          ports:
+            - containerPort: 8090
           command:
           - rhmi-operator
           imagePullPolicy: Always
+          resources:
+            limits:
+              memory: 1536Mi
+              cpu: 150m
+            requests:
+              memory: 64Mi
+              cpu: 100m
+          volumeMounts:
+          - name: webhook-certs
+            mountPath: "/etc/ssl/certs/webhook"
           env:
             - name: WATCH_NAMESPACE
               valueFrom:

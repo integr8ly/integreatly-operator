@@ -120,6 +120,13 @@ func (r *RHSSOUser) GetDevelopersGroupConfigured() (bool, error) {
 	return strconv.ParseBool(r.Config["DEVELOPERS_GROUP_CONFIGURED"])
 }
 
+func (r *RHSSOUser) GetBlackboxTargetPath() string {
+	return r.Config["BLACKBOX_TARGET_PATH"]
+}
+func (r *RHSSOUser) SetBlackboxTargetPath(newBlackboxTargetPath string) {
+	r.Config["BLACKBOX_TARGET_PATH"] = newBlackboxTargetPath
+}
+
 func (r *RHSSOUser) Validate() error {
 	if r.GetProductName() == "" {
 		return errors.New("config product name is not defined")

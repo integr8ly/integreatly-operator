@@ -12,4 +12,5 @@
 ## Checklist
 - [ ] This change requires a documentation update <!-- Update JIRA with Affects -> Documentation -->
 - [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] I have added a test case that will be used to verify my changes 
 - [ ] Verified independently on a cluster by reviewer

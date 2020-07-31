@@ -25,7 +25,7 @@ var webappCR = &solutionExplorerv1alpha1.WebApp{
 var webappRoute = &routev1.Route{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      defaultRouteName,
-		Namespace: defaultName,
+		Namespace: DefaultName,
 	},
 }
 
@@ -83,7 +83,7 @@ var installation = &integreatlyv1alpha1.RHMI{
 
 var webappNS = &corev1.Namespace{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: defaultName,
+		Name: DefaultName,
 		Labels: map[string]string{
 			resources.OwnerLabelKey: string(installation.GetUID()),
 		},
@@ -95,7 +95,7 @@ var webappNS = &corev1.Namespace{
 
 var operatorNS = &corev1.Namespace{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: defaultName + "-operator",
+		Name: DefaultName + "-operator",
 		Labels: map[string]string{
 			resources.OwnerLabelKey: string(installation.GetUID()),
 		},
