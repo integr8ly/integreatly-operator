@@ -121,7 +121,6 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 			return reconcile.Result{}, err
 		}
 
-		rhmiConfig.Annotations[integreatlyv1alpha1.RecalculateScheduleAnnotation] = ""
 		err = r.client.Update(context.TODO(), rhmiConfig)
 		if err != nil {
 			return reconcile.Result{}, err
