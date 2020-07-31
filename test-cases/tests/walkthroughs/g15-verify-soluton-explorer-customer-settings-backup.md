@@ -26,7 +26,7 @@ targets:
    ```
    oc get rhmiconfig rhmi-config -n redhat-rhmi-operator -o yaml
    ```
-   > Verify that the changes you made in previous steps habe been applied correctlly to the CR
+   > Verify that the changes you made in previous steps have been applied correctly to the CR
    >
    > Example:
    >
