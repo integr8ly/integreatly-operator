@@ -48,7 +48,7 @@ JIRA: [INTLY-5434](https://issues.redhat.com/browse/INTLY-5434)
 
 JIRA: [INTLY-7792](https://issues.redhat.com/browse/INTLY-7792)
 
-1. Navigate to the console & log in as an RHMI developer user (eg. a test user).
+1. Navigate to the console & log in as an RHMI developer user (e.g. as a test-userXX)
 2. Go to **Home** > **Search**
 3. Select **RHMI** from the custom resource dropdown
    > Verify that you are not be able to view any RHMI custom resources
