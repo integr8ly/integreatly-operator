@@ -108,7 +108,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
-	pagerduty := string(res.Data["serviceKey"])
+	pagerduty := string(res.Data["PAGERDUTY_KEY"])
 
 	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-smtp", metav1.GetOptions{})
 	if err != nil {
