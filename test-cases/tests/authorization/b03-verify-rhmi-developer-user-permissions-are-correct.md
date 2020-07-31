@@ -41,7 +41,7 @@ JIRA: [INTLY-5434](https://issues.redhat.com/browse/INTLY-5434)
 9. Click **Next**
 10. Click **Finish**
     > Verify that you are able to see the address you have just created. Once ready, the `Status` field of your address should be set to `Active` (this may take up to ~3mins).
-11. Login as a different RHMI developer user to the AMQ Online Console (eg. a test user)
+11. Login as a different RHMI developer user to the AMQ Online Console (e.g. as a test-userXX)
     > Verify that you cannot see any address spaces and addresses created by the previous user
 
 ### No Access to RHMI Custom Resource
