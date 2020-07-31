@@ -82,7 +82,7 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx contex
 	case controllerutil.OperationResultNone:
 		break
 	default:
-		return configMapName, fmt.Errorf("Unknown controllerutil.OperationResult '%v'", or)
+		logrus.Infof("Unknown controllerutil.OperationResult '%v'", or)
 	}
 
 	logrus.Infof("Successfully reconciled registry config map for namespace %s", r.Namespace)
