@@ -37,6 +37,7 @@ rules:
       - watch
       - create
       - update
+      - delete
   - apiGroups:
       - monitoring.coreos.com
     resources:
@@ -48,15 +49,18 @@ rules:
       - apps
     resources:
       - deployments/finalizers
+      - replicasets
     verbs:
       - update
+      - get
   # END For monitoring functions by operator-sdk
-      
+
   # Our own Subscription needs to be switched into Manual mode after initial installation
   - apiGroups:
       - operators.coreos.com
     resources:
       - subscriptions
+      - subscriptions/status
     verbs:
       - get
       - list
@@ -74,6 +78,7 @@ rules:
       - create
       - update
       - delete
+      - watch
   # Adding a role and rolebinding to allow GitHub Secret management by dedicated-admins
   - apiGroups:
       - rbac.authorization.k8s.io
@@ -87,6 +92,31 @@ rules:
       - create
       - update
       - delete
+
+  # Allow operator to approve its own install plan
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - installplans
+    verbs:
+      - get
+      - update
+      - list
+      - watch
+      - delete
+
+  # Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - services
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  # END Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -113,13 +143,13 @@ rules:
       - delete
   # We are using ProjectRequests API to create namespaces where we automatically become admins
   - apiGroups:
-      - ''
+      - ""
       - project.openshift.io
     resources:
       - projectrequests
     verbs:
       - create
-  
+
   # Preflights check for existing installations of products
   - apiGroups:
       - ""
@@ -152,7 +182,7 @@ rules:
       - route.openshift.io
     resources:
       - routes
-    resourceNames: 
+    resourceNames:
       - console
     verbs:
       - get
@@ -177,13 +207,13 @@ rules:
       - delete
       - update
   # END Reconciling Fuse templates and image streams
-  
+
   # Registry pull secret needs to be read to be then copied into some RHMI namespaces
   - apiGroups:
       - ""
     resources:
       - secrets
-    resourceNames: 
+    resourceNames:
       - samples-registry-credentials
     verbs:
       - get
@@ -193,12 +223,12 @@ rules:
       - ""
     resources:
       - secrets
-    resourceNames: 
+    resourceNames:
       - grafana-datasources
     verbs:
       - get
 
-  # OAuthClients are used for login into products with OpenShift User identity 
+  # OAuthClients are used for login into products with OpenShift User identity
   - apiGroups:
       - oauth.openshift.io
     resources:
@@ -230,7 +260,7 @@ rules:
       - user.openshift.io
     resources:
       - groups
-    resourceNames: 
+    resourceNames:
       - rhmi-developers
     verbs:
       - update
@@ -250,7 +280,7 @@ rules:
       - samples.operator.openshift.io
     resources:
       - configs
-    resourceNames: 
+    resourceNames:
       - cluster
     verbs:
       - get
@@ -274,6 +304,8 @@ rules:
       - operatorgroups
     verbs:
       - create
+      - list
+      - get
   - apiGroups:
       - operators.coreos.com
     resources:
@@ -307,13 +339,26 @@ rules:
       - monitoring.coreos.com
     resources:
       - prometheusrules
+      - servicemonitors
     verbs:
       - get
       - list
       - create
       - update
       - delete
-      
+
+  # Adding a rolebinding to the monitoring federation namespace
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - delete
+
   # END Permissions needed for our namespaces, but not given by "admin" role
 
   # Permission to fetch identity to get email for created Keycloak users in openshift realm
@@ -324,3 +369,28 @@ rules:
     verbs:
       - get
   # END Permission to fetch identity to get email for created Keycloak users in openshift realm
+
+  # Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - validatingwebhookconfigurations
+      - mutatingwebhookconfigurations
+    verbs:
+      - get
+      - watch
+      - list
+      - create
+      - update
+      - delete
+  # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
+
+  # Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+  - verbs:
+      - get
+    apiGroups:
+      - ''
+    resources:
+      - configmaps
+  # END Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+  

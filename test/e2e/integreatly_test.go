@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	goctx "context"
 	"fmt"
@@ -25,18 +24,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/remotecommand"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	retryInterval                = time.Second * 5
 	timeout                      = time.Second * 75
 	deploymentRetryInterval      = time.Second * 30
-	deploymentTimeout            = time.Minute * 20
+	deploymentTimeout            = time.Minute * 25
 	cleanupRetryInterval         = time.Second * 1
 	cleanupTimeout               = time.Second * 5
 	namespaceLabel               = "integreatly"
@@ -96,11 +92,21 @@ func TestIntegreatly(t *testing.T) {
 			})
 		}
 
+		var err error
 		t.Run("Cluster", func(t *testing.T) {
-			IntegreatlyCluster(t, f, ctx)
+			err = IntegreatlyCluster(t, f, ctx)
+			if err != nil {
+				t.Log(err)
+				t.Fail()
+			}
 		})
 
-		for _, test := range common.AFTER_INSTALL_TESTS {
+		if err != nil {
+			t.Log("cluster not in a testable state, quiting test run")
+			t.FailNow()
+		}
+
+		for _, test := range common.HAPPY_PATH_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
 				testingContext, err = common.NewTestingContext(f.KubeConfig)
 				if err != nil {
@@ -108,6 +114,23 @@ func TestIntegreatly(t *testing.T) {
 				}
 				test.Test(t, testingContext)
 			})
+		}
+
+		// Do not execute these tests unless DESTRUCTIVE is set to true
+		if os.Getenv("DESTRUCTIVE") == "true" {
+			t.Run("Integreatly Destructive Tests", func(t *testing.T) {
+				for _, test := range common.DESTRUCTIVE_TESTS {
+					t.Run(test.Description, func(t *testing.T) {
+						testingContext, err = common.NewTestingContext(f.KubeConfig)
+						if err != nil {
+							t.Fatal("failed to create testing context", err)
+						}
+						test.Test(t, testingContext)
+					})
+				}
+			})
+		} else {
+			t.Skip("Skipping Destructive tests as DESTRUCTIVE env var is not set to true")
 		}
 	})
 
@@ -138,6 +161,9 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	start := time.Now()
 	err := e2eutil.WaitForDeployment(t, f.KubeClient, namespace, deploymentName, 1, deploymentRetryInterval, deploymentTimeout)
 	if err != nil {
+		end := time.Now()
+		elapsed := end.Sub(start)
+		t.Logf("%s:%s down , Timed out after %d :", namespace, deploymentName, elapsed)
 		return err
 	}
 
@@ -146,65 +172,6 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 
 	t.Logf("%s:%s up, waited %d", namespace, deploymentName, elapsed)
 	return nil
-}
-
-func execToPod(command string, podname string, namespace string, container string, f *framework.Framework) (string, error) {
-	req := f.KubeClient.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Name(podname).
-		Namespace(namespace).
-		SubResource("exec").
-		Param("container", container)
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return "", fmt.Errorf("error adding to scheme: %v", err)
-	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
-	req.VersionedParams(&corev1.PodExecOptions{
-		Container: container,
-		Command:   strings.Fields(command),
-		Stdin:     false,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       false,
-	}, parameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(f.KubeConfig, "POST", req.URL())
-	if err != nil {
-		return "", fmt.Errorf("error while creating Executor: %v", err)
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  nil,
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Tty:    false,
-	})
-	if err != nil {
-		return "", fmt.Errorf("error in Stream: %v", err)
-	}
-
-	return stdout.String(), nil
-}
-
-func getConfigMap(name string, namespace string, f *framework.Framework) (map[string]string, error) {
-	configmap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	key := k8sclient.ObjectKey{
-		Name:      configmap.GetName(),
-		Namespace: configmap.GetNamespace(),
-	}
-	err := f.Client.Get(goctx.TODO(), key, configmap)
-	if err != nil {
-		return map[string]string{}, fmt.Errorf("could not get configmap: %configmapname", err)
-	}
-
-	return configmap.Data, nil
 }
 
 func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
@@ -290,193 +257,6 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// check namespaces labelled correctly
-	expectedNamespaces := []string{
-		"3scale",
-		"3scale-operator",
-		"amq-online",
-		"apicurito",
-		"apicurito-operator",
-		"codeready-workspaces",
-		"codeready-workspaces-operator",
-		"fuse",
-		"fuse-operator",
-		"middleware-monitoring-operator",
-		"rhsso",
-		"rhsso-operator",
-		"solution-explorer",
-		"solution-explorer-operator",
-		"ups",
-		"ups-operator",
-		"user-sso",
-		"user-sso-operator",
-	}
-	err = checkIntegreatlyNamespaceLabels(t, f, expectedNamespaces, namespaceLabel)
-	if err != nil {
-		return err
-	}
-
-	// check auth stage operator versions
-	authOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.OperatorVersionRHSSO),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperators)
-	if err != nil {
-		return err
-	}
-
-	// check cloud resources stage operator versions
-	resouceOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.OperatorVersionCloudResources),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperators)
-	if err != nil {
-		return err
-	}
-
-	// check monitoring stage operator versions
-	monitoringOperators := map[string]string{
-		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.OperatorVersionMonitoring),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperators)
-	if err != nil {
-		return err
-	}
-
-	// check products stage operator versions
-	productOperators := map[string]string{
-		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.OperatorVersion3Scale),
-		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.OperatorVersionAMQOnline),
-		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.OperatorVersionApicurito),
-		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.OperatorVersionCodeReadyWorkspaces),
-		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.OperatorVersionFuse),
-		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.OperatorVersionUPS),
-		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
-	}
-	err = checkOperatorVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperators)
-	if err != nil {
-		return err
-	}
-
-	// check authentication stage operand versions
-	authOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductRHSSO): string(integreatlyv1alpha1.VersionRHSSO),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.AuthenticationStage, authOperands)
-	if err != nil {
-		return err
-	}
-
-	// check cloud resources stage operand versions
-	resouceOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductCloudResources): string(integreatlyv1alpha1.VersionCloudResources),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.CloudResourcesStage, resouceOperands)
-	if err != nil {
-		return err
-	}
-
-	// check monitoring stage operand versions
-	monitoringOperands := map[string]string{
-		string(integreatlyv1alpha1.ProductMonitoring): string(integreatlyv1alpha1.VersionMonitoring),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.MonitoringStage, monitoringOperands)
-	if err != nil {
-		return err
-	}
-
-	// check products stage operands versions
-	productOperands := map[string]string{
-		string(integreatlyv1alpha1.Product3Scale):              string(integreatlyv1alpha1.Version3Scale),
-		string(integreatlyv1alpha1.ProductAMQOnline):           string(integreatlyv1alpha1.VersionAMQOnline),
-		string(integreatlyv1alpha1.ProductApicurito):           string(integreatlyv1alpha1.VersionApicurito),
-		string(integreatlyv1alpha1.ProductCodeReadyWorkspaces): string(integreatlyv1alpha1.VersionCodeReadyWorkspaces),
-		string(integreatlyv1alpha1.ProductFuseOnOpenshift):     string(integreatlyv1alpha1.VersionFuseOnOpenshift),
-		string(integreatlyv1alpha1.ProductUps):                 string(integreatlyv1alpha1.VersionUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser):           string(integreatlyv1alpha1.VersionRHSSOUser),
-	}
-	err = checkOperandVersions(t, f, namespace, integreatlyv1alpha1.ProductsStage, productOperands)
-	if err != nil {
-		return err
-	}
-
-	// check no failed PVCs
-	pvcNamespaces := []string{
-		string(integreatlyv1alpha1.Product3Scale),
-		string(integreatlyv1alpha1.ProductFuse),
-		string(integreatlyv1alpha1.ProductRHSSO),
-		string(integreatlyv1alpha1.ProductSolutionExplorer),
-		string(integreatlyv1alpha1.ProductUps),
-		string(integreatlyv1alpha1.ProductRHSSOUser),
-	}
-	err = checkPvcs(t, f, namespace, pvcNamespaces)
-	return err
-}
-
-func checkIntegreatlyNamespaceLabels(t *testing.T, f *framework.Framework, namespaces []string, label string) error {
-	for _, namespaceName := range namespaces {
-		namespace := &corev1.Namespace{}
-		err := f.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: common.NamespacePrefix + namespaceName}, namespace)
-		if err != nil {
-			return fmt.Errorf("Error getting namespace: %v from cluster: %w", namespaceName, err)
-		}
-		value, ok := namespace.Labels[label]
-		if !ok || value != "true" {
-			return fmt.Errorf("Incorrect %v label on integreatly namespace: %v. Expected: true. Got: %v", label, namespaceName, value)
-		}
-	}
-	return nil
-}
-
-func checkOperatorVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operatorVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.RHMI{}
-
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
-	if err != nil {
-		return fmt.Errorf("Error getting installation CR from cluster when checking operator versions: %w", err)
-	}
-
-	for product, version := range operatorVersions {
-		clusterVersion := installation.Status.Stages[stage].Products[integreatlyv1alpha1.ProductName(product)].OperatorVersion
-		if clusterVersion != integreatlyv1alpha1.OperatorVersion(version) {
-			return fmt.Errorf("Error with version of %s operator deployed on cluster. Expected %s. Got %s", product, version, clusterVersion)
-		}
-	}
-
-	return nil
-}
-
-func checkOperandVersions(t *testing.T, f *framework.Framework, namespace string, stage integreatlyv1alpha1.StageName, operandVersions map[string]string) error {
-	installation := &integreatlyv1alpha1.RHMI{}
-
-	err := f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
-	if err != nil {
-		return fmt.Errorf("Error getting installation CR from cluster when checking operand versions: %w", err)
-	}
-
-	for product, version := range operandVersions {
-		clusterVersion := installation.Status.Stages[stage].Products[integreatlyv1alpha1.ProductName(product)].Version
-		if clusterVersion != integreatlyv1alpha1.ProductVersion(version) {
-			return fmt.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s", product, version, clusterVersion)
-		}
-	}
-
-	return nil
-}
-
-func checkPvcs(t *testing.T, f *framework.Framework, s string, pvcNamespaces []string) error {
-	for _, pvcNamespace := range pvcNamespaces {
-		pvcs := &corev1.PersistentVolumeClaimList{}
-		err := f.Client.List(goctx.TODO(), pvcs, &k8sclient.ListOptions{Namespace: common.NamespacePrefix + pvcNamespace})
-		if err != nil {
-			return fmt.Errorf("Error getting PVCs for namespace: %v. %w", pvcNamespace, err)
-		}
-		for _, pvc := range pvcs.Items {
-			if pvc.Status.Phase != "Bound" {
-				return fmt.Errorf("Error with pvc: %v. Status: %v", pvc.Name, pvc.Status.Phase)
-			}
-		}
-	}
 	return nil
 }
 
@@ -492,12 +272,15 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 			return false, err
 		}
 
-		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[integreatlyv1alpha1.StageName(phase)])
+		phaseStatus := fmt.Sprintf("%#v", installation.Status.Stages[integreatlyv1alpha1.StageName(phase)].Phase)
 		if strings.Contains(phaseStatus, "completed") {
 			return true, nil
 		}
 
 		t.Logf("Waiting for completion of %s\n", phase)
+		if installation.Status.LastError != "" {
+			t.Logf("Last Error: %s\n", installation.Status.LastError)
+		}
 		return false, nil
 	})
 	if err != nil {
@@ -507,12 +290,13 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
-func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) {
+func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
 	namespace, err := ctx.GetNamespace()
 	// Create SMTP Secret
 	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")
 	if !found {
-		t.Fatal("INSTALLATION_PREFIX env var is not set")
+		err := fmt.Errorf("INSTALLATION_PREFIX env var is not set")
+		return err
 	}
 
 	var smtpSec = &corev1.Secret{
@@ -530,7 +314,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), smtpSec, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create SMTP Secret: %w", err)
 	}
 
 	// create pagerduty secret
@@ -546,7 +330,7 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), pagerdutySecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create pagerduty secret: %w", err)
 	}
 
 	// create dead mans snitch secret
@@ -562,17 +346,20 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	}
 	err = f.Client.Create(context.TODO(), dmsSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		t.Fatal(err)
+		return fmt.Errorf("create dead mans snitch secret : %w", err)
 	}
 
 	// wait for integreatly-operator to be ready
 	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "rhmi-operator", 1, retryInterval, timeout)
 	if err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("wait for integreatly-operator to be ready: %w", err)
+
 	}
 	//TODO: split them into their own test cases
 	// check that all of the operators deploy and all of the installation phases complete
 	if err = integreatlyManagedTest(t, f, ctx); err != nil {
-		t.Fatal(err)
+		return fmt.Errorf("error in fuction integreatlyManagedTest: %w", err)
 	}
+
+	return nil
 }

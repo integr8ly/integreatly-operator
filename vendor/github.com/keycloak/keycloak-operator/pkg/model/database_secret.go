@@ -17,12 +17,12 @@ func DatabaseSecret(cr *v1alpha1.Keycloak) *v1.Secret {
 			},
 		},
 		StringData: map[string]string{
-			DatabaseSecretUsernameProperty: cr.ObjectMeta.Name + "-" + RandStringRunes(4),
-			DatabaseSecretPasswordProperty: cr.ObjectMeta.Name + "-" + RandStringRunes(4),
+			DatabaseSecretUsernameProperty: PostgresqlUsername,
+			DatabaseSecretPasswordProperty: cr.ObjectMeta.Name + "-" + GenerateRandomString(PostgresqlPasswordLength),
 			// The 3 entries below are not used by the Operator itself but rather by the Backup container
-			DatabaseSecretDatabaseProperty:  PostgresqlDatabase,
-			DatabaseSecretSuperuserProperty: "true",
-			DatabaseSecretHostProperty:      PostgresqlServiceName,
+			DatabaseSecretDatabaseProperty: PostgresqlDatabase,
+			DatabaseSecretHostProperty:     PostgresqlServiceName,
+			DatabaseSecretVersionProperty:  "10",
 		},
 	}
 }
@@ -38,19 +38,19 @@ func DatabaseSecretReconciled(cr *v1alpha1.Keycloak, currentState *v1.Secret) *v
 	reconciled := currentState.DeepCopy()
 	// K8s automatically converts StringData to Data when getting the resource
 	if _, ok := reconciled.Data[DatabaseSecretUsernameProperty]; !ok {
-		reconciled.StringData[DatabaseSecretUsernameProperty] = cr.ObjectMeta.Name + "-" + RandStringRunes(4)
+		reconciled.StringData[DatabaseSecretUsernameProperty] = PostgresqlUsername
 	}
 	if _, ok := reconciled.Data[DatabaseSecretPasswordProperty]; !ok {
-		reconciled.StringData[DatabaseSecretPasswordProperty] = cr.ObjectMeta.Name + "-" + RandStringRunes(4)
+		reconciled.StringData[DatabaseSecretPasswordProperty] = cr.ObjectMeta.Name + "-" + GenerateRandomString(PostgresqlPasswordLength)
 	}
 	if _, ok := reconciled.Data[DatabaseSecretDatabaseProperty]; !ok {
 		reconciled.StringData[DatabaseSecretDatabaseProperty] = PostgresqlDatabase
 	}
-	if _, ok := reconciled.Data[DatabaseSecretSuperuserProperty]; !ok {
-		reconciled.StringData[DatabaseSecretSuperuserProperty] = "true"
-	}
 	if _, ok := reconciled.Data[DatabaseSecretHostProperty]; !ok {
 		reconciled.StringData[DatabaseSecretHostProperty] = PostgresqlServiceName
+	}
+	if _, ok := reconciled.Data[DatabaseSecretVersionProperty]; !ok {
+		reconciled.StringData[DatabaseSecretVersionProperty] = "10"
 	}
 	return reconciled
 }

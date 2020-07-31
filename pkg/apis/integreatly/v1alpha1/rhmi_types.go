@@ -25,15 +25,18 @@ var (
 	PhaseCompleted  StatusPhase = "completed"
 	PhaseFailed     StatusPhase = "failed"
 
-	InstallationTypeWorkshop InstallationType = "workshop"
-	InstallationTypeManaged  InstallationType = "managed"
+	InstallationTypeWorkshop    InstallationType = "workshop"
+	InstallationTypeManaged     InstallationType = "managed"
+	InstallationTypeSelfManaged InstallationType = "self-managed"
 
-	BootstrapStage        StageName = "bootstrap"
-	CloudResourcesStage   StageName = "cloud-resources"
-	MonitoringStage       StageName = "monitoring"
-	AuthenticationStage   StageName = "authentication"
-	ProductsStage         StageName = "products"
-	SolutionExplorerStage StageName = "solution-explorer"
+	BootstrapStage           StageName = "bootstrap"
+	CloudResourcesStage      StageName = "cloud-resources"
+	MonitoringStage          StageName = "monitoring"
+	AuthenticationStage      StageName = "authentication"
+	ProductsStage            StageName = "products"
+	SolutionExplorerStage    StageName = "solution-explorer"
+	UninstallProductsStage   StageName = "uninstall - products"
+	UninstallMonitoringStage StageName = "uninstall - monitoring"
 
 	ProductAMQStreams          ProductName = "amqstreams"
 	ProductAMQOnline           ProductName = "amqonline"
@@ -45,50 +48,69 @@ var (
 	ProductFuseOnOpenshift     ProductName = "fuse-on-openshift"
 	Product3Scale              ProductName = "3scale"
 	ProductUps                 ProductName = "ups"
+	ProductApicurioRegistry    ProductName = "apicurio-registry"
 	ProductApicurito           ProductName = "apicurito"
 	ProductMonitoring          ProductName = "middleware-monitoring"
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
+	ProductMonitoringSpec      ProductName = "monitoring-spec"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
 	// Follow up Jira: https://issues.redhat.com/browse/INTLY-5946
 	VersionAMQOnline           ProductVersion = "1.4"
-	VersionApicurito           ProductVersion = "7.5"
+	VersionApicurioRegistry    ProductVersion = "1.2.3.final"
+	VersionApicurito           ProductVersion = "7.6"
 	VersionAMQStreams          ProductVersion = "1.1.0"
-	VersionCodeReadyWorkspaces ProductVersion = "2.0.0"
-	VersionFuseOnOpenshift     ProductVersion = "master"
-	VersionMonitoring          ProductVersion = "1.1.4"
-	Version3Scale              ProductVersion = "2.7"
+	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
+	VersionFuseOnOpenshift     ProductVersion = "7.6"
+	VersionMonitoring          ProductVersion = "1.2.1"
+	Version3Scale              ProductVersion = "2.8"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.13.1"
-	VersionFuseOnline          ProductVersion = "7.5"
+	VersionCloudResources      ProductVersion = "0.18.0"
+	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
-	VersionRHSSO               ProductVersion = "7.3"
-	VersionRHSSOUser           ProductVersion = "7.3"
+	VersionRHSSO               ProductVersion = "7.4"
+	VersionRHSSOUser           ProductVersion = "7.4"
+	VersionMonitoringSpec      ProductVersion = "1.0"
+	VersionSolutionExplorer    ProductVersion = "2.27.0"
+
+	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
+	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
+	// The need for the below tag references is due to the nature of installing which is documented here: (for 7.6)
+	// https://access.redhat.com/documentation/en-us/red_hat_fuse/7.6/html-single/fuse_on_openshift_guide/index#install-fuse-on-openshift4
+	TagFuseOnOpenShiftCore        string = "application-templates-2.1.0.fuse-760043-redhat-00001"
+	TagFuseOnOpenShiftSpringBoot2 string = "application-templates-2.1.0.fuse-sb2-760039-redhat-00001"
 
 	PreflightInProgress PreflightStatus = ""
 	PreflightSuccess    PreflightStatus = "successful"
 	PreflightFail       PreflightStatus = "failed"
 
 	// Operator image tags
-	OperatorVersionAMQStreams          OperatorVersion = "1.1.0"
-	OperatorVersionAMQOnline           OperatorVersion = "1.4"
-	OperatorVersionMonitoring          OperatorVersion = "1.1.4"
-	OperatorVersionSolutionExplorer    OperatorVersion = "0.0.46"
-	OperatorVersionRHSSO               OperatorVersion = "8.0.1"
-	OperatorVersionRHSSOUser           OperatorVersion = "8.0.1"
-	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.0"
-	OperatorVersionFuse                OperatorVersion = "1.5.0"
-	OperatorVersion3Scale              OperatorVersion = "0.4.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.13.1"
+	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
+	OperatorVersionAMQOnline        OperatorVersion = "1.4"
+	OperatorVersionMonitoring       OperatorVersion = "1.2.1"
+	OperatorVersionSolutionExplorer OperatorVersion = "0.0.61"
+	OperatorVersionRHSSO            OperatorVersion = "10.0.0"
+	OperatorVersionRHSSOUser        OperatorVersion = "10.0.0"
+
+	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
+	OperatorVersion3Scale              OperatorVersion = "0.5.4"
+	OperatorVersionFuse                OperatorVersion = "1.6.0"
+	OperatorVersionCloudResources      OperatorVersion = "0.18.0"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
-	OperatorVersionApicurito           OperatorVersion = "1.5.0"
+	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
+	OperatorVersionApicurito           OperatorVersion = "1.6.0"
+	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
 	EventInstallationCompleted string = "InstallationCompleted"
 	EventPreflightCheckPassed  string = "PreflightCheckPassed"
+	EventUpgradeApproved       string = "UpgradeApproved"
+
+	DefaultOriginPullSecretName      = "samples-registry-credentials"
+	DefaultOriginPullSecretNamespace = "openshift"
 )
 
 // RHMISpec defines the desired state of Installation
@@ -97,13 +119,14 @@ type RHMISpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type              string         `json:"type"`
-	RoutingSubdomain  string         `json:"routingSubdomain,omitempty"`
-	MasterURL         string         `json:"masterURL,omitempty"`
-	NamespacePrefix   string         `json:"namespacePrefix"`
-	SelfSignedCerts   bool           `json:"selfSignedCerts,omitempty"`
-	PullSecret        PullSecretSpec `json:"pullSecret,omitempty"`
-	UseClusterStorage string         `json:"useClusterStorage,omitempty"`
+	Type                 string         `json:"type"`
+	RoutingSubdomain     string         `json:"routingSubdomain,omitempty"`
+	MasterURL            string         `json:"masterURL,omitempty"`
+	NamespacePrefix      string         `json:"namespacePrefix"`
+	SelfSignedCerts      bool           `json:"selfSignedCerts,omitempty"`
+	PullSecret           PullSecretSpec `json:"pullSecret,omitempty"`
+	UseClusterStorage    string         `json:"useClusterStorage,omitempty"`
+	AlertingEmailAddress string         `json:"alertingEmailAddress,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product
@@ -157,6 +180,8 @@ type RHMIStatus struct {
 	LastError          string                        `json:"lastError"`
 	GitHubOAuthEnabled bool                          `json:"gitHubOAuthEnabled,omitempty"`
 	SMTPEnabled        bool                          `json:"smtpEnabled,omitempty"`
+	Version            string                        `json:"version,omitempty"`
+	ToVersion          string                        `json:"toVersion,omitempty"`
 }
 
 type RHMIStageStatus struct {
@@ -181,6 +206,7 @@ type RHMIProductStatus struct {
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=rhmis,scope=Namespaced
+// +operator-sdk:gen-csv:customresourcedefinitions.displayName="RHMI Installation"
 type RHMI struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -197,6 +223,14 @@ func (i *RHMI) GetProductStatusObject(product ProductName) *RHMIProductStatus {
 	}
 	return &RHMIProductStatus{
 		Name: product,
+	}
+}
+
+func (i *RHMI) GetPullSecretSpec() *PullSecretSpec {
+	if i.Spec.PullSecret.Name != "" && i.Spec.PullSecret.Namespace != "" {
+		return &(i.Spec.PullSecret)
+	} else {
+		return &PullSecretSpec{Name: DefaultOriginPullSecretName, Namespace: DefaultOriginPullSecretNamespace}
 	}
 }
 

@@ -1,10 +1,7 @@
 package common
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net/http"
-	"net/http/cookiejar"
 	"testing"
 	"time"
 
@@ -12,7 +9,6 @@ import (
 
 	keycloakv1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	userv1 "github.com/openshift/api/user/v1"
-	"golang.org/x/net/publicsuffix"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,21 +25,7 @@ const (
 //
 // Verify that the email address is generated as <username>@rhmi.io
 func TestDefaultUserEmail(t *testing.T, ctx *TestingContext) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: ctx.SelfSignedCerts},
-	}
-
-	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
-	if err != nil {
-		t.Fatalf("error occurred creating a new cookie jar: %v", err)
-	}
-
-	httpClient := &http.Client{
-		Transport: tr,
-		Jar:       jar,
-	}
-
-	err = createTestingIDP(goctx.TODO(), ctx.Client, httpClient, ctx.SelfSignedCerts)
+	err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts)
 	if err != nil {
 		t.Fatalf("Error occurred creating testing IDP: %v", err)
 	}

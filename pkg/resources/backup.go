@@ -129,6 +129,16 @@ func reconcileRole(ctx context.Context, serverClient k8sclient.Client, config Ba
 				APIGroups: []string{""},
 				Resources: []string{"pods", "secrets"},
 				Verbs:     []string{"get", "list"},
+			}, {
+				APIGroups: []string{"admin.enmasse.io"},
+				Resources: []string{
+					"addressplans",
+					"addressspaceplans",
+					"authenticationservices",
+					"brokeredinfraconfigs",
+					"standardinfraconfigs",
+				},
+				Verbs: []string{"get", "list"},
 			},
 			{
 				APIGroups: []string{""},
@@ -210,7 +220,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:   config.Name,
-							Labels: map[string]string{"integreatly": "yes", "cronjob-name": component.Name},
+							Labels: map[string]string{"integreatly": "yes", "cronjob-name": component.Name, "monitoring_key": "middleware"},
 						},
 						Spec: corev1.PodSpec{
 							ServiceAccountName: BackupServiceAccountName,
@@ -218,7 +228,7 @@ func reconcileCronjob(ctx context.Context, serverClient k8sclient.Client, config
 							Containers: []corev1.Container{
 								{
 									Name:            "backup-cronjob",
-									Image:           "quay.io/integreatly/backup-container:1.0.13",
+									Image:           "quay.io/integreatly/backup-container:1.0.15",
 									ImagePullPolicy: "Always",
 									Command: []string{
 										"/opt/intly/tools/entrypoint.sh",
@@ -285,7 +295,7 @@ func reconcileCronjobAlerts(ctx context.Context, serverClient k8sclient.Client, 
 		rules = append(rules, monitoringv1.Rule{
 			Alert: "CronJobExists_" + config.Namespace + "_" + component.Name,
 			Annotations: map[string]string{
-				"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
+				"sop_url": SopUrlAlertsAndTroubleshooting,
 				"message": "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} does not exist",
 			},
 			Expr:   intstr.FromString("absent(kube_cronjob_info{cronjob=\"" + component.Name + "\", namespace=\"" + config.Namespace + "\"})"),

@@ -8,6 +8,7 @@ const (
 	RHSSOPostgresPrefix          = "rhsso-postgres-"
 	RHSSOUserProstgresPrefix     = "rhssouser-postgres-"
 	UPSPostgresPrefix            = "ups-postgres-"
+	FusePostgresPrefix           = "fuse-postgres-"
 	AMQAuthServicePostgres       = "standard-authservice-postgresql"
 	ThreeScaleBlobStoragePrefix  = "threescale-blobstorage-"
 	BackupsBlobStoragePrefix     = "backups-blobstorage-"

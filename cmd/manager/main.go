@@ -19,23 +19,25 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
 	integreatlymetrics "github.com/integr8ly/integreatly-operator/pkg/metrics"
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	customMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 )
 
@@ -44,7 +46,6 @@ var (
 	metricsHost               = "0.0.0.0"
 	metricsPort         int32 = 8383
 	operatorMetricsPort int32 = 8686
-	products            []string
 )
 
 var log = logf.Log.WithName("cmd")
@@ -53,6 +54,10 @@ func init() {
 	// Register custom metrics with the global prometheus registry
 	customMetrics.Registry.MustRegister(integreatlymetrics.OperatorVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatusAvailable)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIInfo)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIVersion)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatus)
+	integreatlymetrics.OperatorVersion.Add(1)
 }
 
 func printVersion() {
@@ -70,9 +75,6 @@ func main() {
 	// Add flags registered by imported packages (e.g. glog and
 	// controller-runtime)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-
-	pflag.StringSliceVarP(&products, "products", "p", []string{"all"}, "--products=rhsso,fuse")
-
 	pflag.Parse()
 	// Use a zap logr.Logger implementation. If none of the zap
 	// flags are configured (or if the zap flag set is not being
@@ -111,7 +113,7 @@ func main() {
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
-		MapperProvider:     restmapper.NewDynamicRESTMapper,
+		MapperProvider:     apiutil.NewDiscoveryRESTMapper,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
 	})
 	if err != nil {
@@ -134,7 +136,7 @@ func main() {
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr, products); err != nil {
+	if err := controller.AddToManager(mgr); err != nil {
 		log.Error(err, "")
 		os.Exit(1)
 	}
@@ -166,6 +168,11 @@ func main() {
 		}
 	}
 
+	// Start up the wehook server
+	if err := setupWebhooks(mgr); err != nil {
+		log.Error(err, "Error setting up webhook server")
+	}
+
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd
@@ -193,5 +200,44 @@ func serveCRMetrics(cfg *rest.Config) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func setupWebhooks(mgr manager.Manager) error {
+	rhmiConfigRegister, err := webhooks.WebhookRegisterFor(&integreatlyv1alpha1.RHMIConfig{})
+	if err != nil {
+		return err
+	}
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name:     "rhmiconfig",
+		Register: rhmiConfigRegister,
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForCreate().
+			ForUpdate().
+			NamespacedScope(),
+	})
+
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name: "rhmiconfig-mutate",
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmiconfigs").
+			ForCreate().
+			ForUpdate().
+			NamespacedScope(),
+		Register: webhooks.AdmissionWebhookRegister{
+			Type: webhooks.MutatingType,
+			Path: "/mutate-rhmiconfig",
+			Hook: &admission.Webhook{
+				Handler: integreatlyv1alpha1.NewRHMIConfigMutatingHandler(),
+			},
+		},
+	})
+
+	if err := webhooks.Config.SetupServer(mgr); err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -2,13 +2,16 @@ package installation
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -17,8 +20,13 @@ func buildScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
 	return scheme
+}
+
+func setupRecorder() record.EventRecorder {
+	return record.NewFakeRecorder(50)
 }
 
 const (
@@ -86,14 +94,81 @@ func testCreateInstallationCR_useClusterStorage(t *testing.T, envValue string, a
 
 	// Get the created installation and perform the assertion on it's
 	// .Spec.UseClusterStorage value
-	installation, err := getInstallationCR(ctx, mockClient, t)
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
 	assertCRValue(installation.Spec.UseClusterStorage)
 
 	return nil
 }
 
+func TestCreateInstallationCR_alertingEmailAddressIsPresent(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	email := "noreply-test@rhmi-redhat.com"
+	os.Setenv("ALERTING_EMAIL_ADDRESS", email)
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("ALERTING_EMAIL_ADDRESS")
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.AlertingEmailAddress != email {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddress to be %s, instead got %s",
+			email,
+			installation.Spec.AlertingEmailAddress,
+		)
+	}
+}
+
+func TestCreateInstallationCR_alertingEmailAddressIsNotPresent(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.AlertingEmailAddress != "" {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddress to be empty, instead got %s",
+			installation.Spec.AlertingEmailAddress,
+		)
+	}
+}
+
 // Utility function to retrieve the Installation CR
-func getInstallationCR(ctx context.Context, serverClient k8sclient.Client, t *testing.T) (*integreatlyv1alpha1.RHMI, error) {
+func getInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	namespace, err := k8sutil.GetWatchNamespace()
 
 	if err != nil {
@@ -113,8 +188,7 @@ func getInstallationCR(ctx context.Context, serverClient k8sclient.Client, t *te
 	if len(installationList.Items) == 0 {
 		return nil, nil
 	} else if len(installationList.Items) > 1 {
-		t.Fatal("More than one installation found")
-		return nil, nil
+		return nil, fmt.Errorf("More than one installation found")
 	}
 
 	return &installationList.Items[0], nil

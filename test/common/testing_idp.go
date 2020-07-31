@@ -2,7 +2,8 @@ package common
 
 import (
 	"fmt"
-	"net/http"
+	"k8s.io/client-go/rest"
+	"testing"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -38,7 +39,7 @@ type TestUser struct {
 }
 
 // creates testing idp
-func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *http.Client, hasSelfSignedCerts bool) error {
+func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
 	rhmiCR, err := getRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
@@ -57,7 +58,6 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := client.Get(ctx, types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Openshift Oauth Route: %w ", err)
 	}
-
 	// create keycloak client secret
 	if err := createClientSecret(ctx, client, []byte(defaultSecret)); err != nil {
 		return fmt.Errorf("error occurred while setting up testing idp client secret: %w", err)
@@ -67,7 +67,6 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := createKeycloakRealm(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
-
 	// create keycloak client
 	keycloakClientName := fmt.Sprintf("%s-client", TestingIDPRealm)
 	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
@@ -100,15 +99,25 @@ func createTestingIDP(ctx context.Context, client dynclient.Client, httpClient *
 	if err := waitForOauthDeployment(ctx, client); err != nil {
 		return fmt.Errorf("error occurred while waiting for oauth deployment: %w", err)
 	}
-
 	// ensure the IDP is available in OpenShift
-	err = wait.PollImmediate(time.Second*10, time.Minute*3, func() (done bool, err error) {
-		return resources.OpenshiftIDPCheck(fmt.Sprintf("https://%s/auth/login", masterURL), httpClient, TestingIDPRealm)
+	err = wait.PollImmediate(time.Second*10, time.Minute*5, func() (done bool, err error) {
+		// Use a temporary HTTP client to avoid polluting testing client
+		tempHTTPClient, err := NewTestingHTTPClient(kubeConfig)
+		if err != nil {
+			return false, fmt.Errorf("failed to create temporary client for idp setup: %w", err)
+		}
+
+		dedicatedAdminUsername := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins-1)
+		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
+		if authErr != nil {
+			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
+			return false, nil
+		}
+		return true, nil
 	})
 	if err != nil {
 		return fmt.Errorf("failed to check for openshift idp: %w", err)
 	}
-
 	return nil
 }
 
@@ -131,10 +140,6 @@ func waitForOauthDeployment(ctx context.Context, client dynclient.Client) error 
 
 // add users to dedicated admin users
 func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, numberOfAdmins int) error {
-	dedicatedAdminGroup := &userv1.Group{}
-	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
-		return fmt.Errorf("error occurred while getting dedicated admin group")
-	}
 
 	// populate admin users
 	var adminUsers []string
@@ -143,6 +148,20 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 		user := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, postfix)
 		adminUsers = append(adminUsers, user)
 		postfix++
+	}
+
+	err := createOrUpdateDedicatedAdminGroupCR(ctx, client, adminUsers)
+	if err != nil {
+		return fmt.Errorf("error occurred while creating or updating dedicated admin group: %w", err)
+	}
+
+	return nil
+}
+
+func createOrUpdateDedicatedAdminGroupCR(ctx context.Context, client dynclient.Client, adminUsers []string) error {
+	dedicatedAdminGroup := &userv1.Group{}
+	if err := client.Get(ctx, types.NamespacedName{Name: "dedicated-admins"}, dedicatedAdminGroup); err != nil {
+		return fmt.Errorf("error occurred while getting dedicated admin group")
 	}
 
 	// add admin users to group
@@ -154,8 +173,9 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("error occurred while creating or updating dedicated admin group: %w", err)
+		return err
 	}
+
 	return nil
 }
 
@@ -308,6 +328,15 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 		postfix++
 	}
 
+	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers)
+	if err != nil {
+		return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
+	}
+
+	return nil
+}
+
+func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser) error {
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
 		keycloakUser := &v1alpha1.KeycloakUser{
@@ -316,7 +345,8 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
 			},
 		}
-		if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
+
+		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -324,6 +354,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 					},
 				},
 				User: v1alpha1.KeycloakAPIUser{
+					ID:        keycloakUser.Spec.User.ID,
 					FirstName: user.FirstName,
 					LastName:  user.LastName,
 					UserName:  user.UserName,
@@ -348,8 +379,9 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 				},
 			}
 			return nil
-		}); err != nil {
-			return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
+		})
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -499,6 +531,9 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakClient, func() error {
+		if keycloakClient.Spec.Client != nil && keycloakClient.Spec.Client.Secret != "" {
+			keycloakSpec.Client.Secret = keycloakClient.Spec.Client.Secret
+		}
 		keycloakClient.Spec = keycloakSpec
 		return nil
 	}); err != nil {

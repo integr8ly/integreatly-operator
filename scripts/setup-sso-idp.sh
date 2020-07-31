@@ -4,9 +4,11 @@ set -o pipefail
 
 PASSWORD="${PASSWORD:-$(openssl rand -base64 12)}"
 REALM="${REALM:-testing-idp}"
+REALM_DISPLAY_NAME="${REALM_DISPLAY_NAME:-Testing IDP}"
 INSTALLATION_PREFIX="${INSTALLATION_PREFIX:-$(oc get RHMIs --all-namespaces -o json | jq -r .items[0].spec.namespacePrefix)}"
 INSTALLATION_PREFIX=${INSTALLATION_PREFIX%-} # remove trailing dash
 ADMIN_USERNAME="${ADMIN_USERNAME:-customer-admin}"
+DEDICATED_ADMIN_PASSWORD="${DEDICATED_ADMIN_PASSWORD:-$(openssl rand -base64 12)}"
 NUM_ADMIN="${NUM_ADMIN:-3}"
 REGULAR_USERNAME="${REGULAR_USERNAME:-test-user}"
 NUM_REGULAR_USER="${NUM_REGULAR_USER:-10}"
@@ -41,7 +43,7 @@ create_dedicated_admins() {
   echo "Creating dedicated admin users"
   for ((i = 1; i <= NUM_ADMIN; i++)); do
     format_user_name $i "$ADMIN_USERNAME"
-    oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Customer" -p LASTNAME="Admin ${USER_NUM}" -f "${BASH_SOURCE%/*}/admin-template.yml" | oc apply -f -
+    oc process -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p PASSWORD="$DEDICATED_ADMIN_PASSWORD" -p USERNAME="$USERNAME" -p FIRSTNAME="Customer" -p LASTNAME="Admin ${USER_NUM}" -f "${BASH_SOURCE%/*}/admin-template.yml" | oc apply -f -
     add_user_to_dedicated_admin_group "$USERNAME"
   done
 }
@@ -66,7 +68,7 @@ create_users() {
 }
 
 echo "User password set to \"${PASSWORD}\""
-
+echo "Dedciated Admin password set to \"${DEDICATED_ADMIN_PASSWORD}\""
 CLIENT_SECRET=$(openssl rand -base64 20)
 OAUTH_URL=https://$(oc get route oauth-openshift -n openshift-authentication -o json | jq -r .spec.host)
 KEYCLOAK_URL=https://$(oc get route keycloak-edge -n "$INSTALLATION_PREFIX-rhsso" -o json | jq -r .spec.host)
@@ -76,7 +78,7 @@ echo "Keycloak realm: $REALM"
 
 # If CLUSTER_ID is not passed, find out ID based on currently targeted server
 set +e # ignore errors in environments without ocm command
-CLUSTER_ID="${CLUSTER_ID:-$(ocm get /api/clusters_mgmt/v1/clusters/ 2>/dev/null | jq -r ".items[] | select(.api.url == \"$(oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*')\") | .id ")}"
+CLUSTER_ID="${CLUSTER_ID:-$(ocm get /api/clusters_mgmt/v1/clusters/ --parameter "search=managed='true'" 2>/dev/null | jq -r ".items[] | select(.api.url == \"$(oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*')\") | .id ")}"
 set -e
 
 if [[ ${CLUSTER_ID} ]]; then
@@ -91,7 +93,7 @@ if [[ ${CLUSTER_ID} ]]; then
     echo "To delete IDP execute: ocm delete \"/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers/$IDP_ID\""
   else
 
-    oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
+    oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
 
     sed "s|REALM|$REALM|g; s|KEYCLOAK_URL|$KEYCLOAK_URL|g; s|CLIENT_SECRET|$CLIENT_SECRET|g" "${BASH_SOURCE%/*}/ocm-idp-template.json" | ocm post "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers"
     echo "$REALM IDP added into OCM configuration"
@@ -115,7 +117,7 @@ else
   fi
 
   # apply KeycloakRealm and KeycloakClient from a template
-  oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
+  oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
   # create KeycloakUsers
   create_users
 
@@ -147,7 +149,7 @@ else
 fi
 
 echo "Waiting for new configuration to propagate to OpenShift OAuth pods."
-sleep 10 # give the oauth-openshift deployment a chance to start rollout of new pods
+sleep 10 # give the oauth-openshift deployment a chance to start rollout of new pods
 until ! oc get deployment oauth-openshift -n openshift-authentication -o yaml | grep -q -e unavailableReplicas; do
   echo "\"oauth-openshift\" deployment is still updating, trying again in 10s"
   sleep 10s

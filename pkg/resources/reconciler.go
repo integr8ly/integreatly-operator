@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 
+	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
 
-	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -54,7 +54,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 
 	if err := apiClient.Get(ctx, k8sclient.ObjectKey{Name: client.Name}, client); err != nil {
 		if k8serr.IsNotFound(err) {
-			PrepareObject(client, inst)
+			PrepareObject(client, inst, true, false)
 			if err := apiClient.Create(ctx, client); err != nil {
 				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create oauth client: %s. %w", client.Name, err)
 			}
@@ -63,7 +63,7 @@ func (r *Reconciler) ReconcileOauthClient(ctx context.Context, inst *integreatly
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get oauth client: %s. %w", client.Name, err)
 	}
 
-	PrepareObject(client, inst)
+	PrepareObject(client, inst, true, false)
 	client.RedirectURIs = redirectUris
 	client.GrantMethod = grantMethod
 	client.Secret = secret
@@ -89,7 +89,7 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 	return ns, err
 }
 
-func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (*v1.Namespace, error) {
+func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, addRHMIMonitoringLabels bool, addClusterMonitoringLabel bool) (*v1.Namespace, error) {
 	projectRequest := &projectv1.ProjectRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
@@ -106,7 +106,7 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 		return nil, fmt.Errorf("could not retrieve %s namespace: %v", ns.Name, err)
 	}
 
-	PrepareObject(ns, inst)
+	PrepareObject(ns, inst, addRHMIMonitoringLabels, addClusterMonitoringLabel)
 	if err := client.Update(ctx, ns); err != nil {
 		return nil, fmt.Errorf("failed to update the %s namespace definition: %v", ns.Name, err)
 	}
@@ -123,7 +123,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve namespace: %s. %w", namespace, err)
 		}
 
-		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst)
+		ns, err = CreateNSWithProjectRequest(ctx, namespace, client, inst, true, false)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create %s namespace: %v", namespace, err)
 		}
@@ -131,7 +131,14 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
-	PrepareObject(ns, inst)
+	if inst.Spec.PullSecret.Name != "" {
+		_, err := r.ReconcilePullSecret(ctx, namespace, inst.Spec.PullSecret.Name, inst, client)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to reconcile %s pull secret", inst.Spec.PullSecret.Name)
+		}
+	}
+
+	PrepareObject(ns, inst, true, false)
 	if err := client.Update(ctx, ns); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the ns definition: %w", err)
 	}
@@ -169,10 +176,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 
 			// Remove the finalizer to allow for deletion of the installation cr
 			logrus.Infof("Removing finalizer: %s", finalizer)
-			err = RemoveProductFinalizer(ctx, inst, client, productName)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, err
-			}
+			inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 		}
 		// Don't continue reconciling the product
 		return integreatlyv1alpha1.PhaseNone, nil
@@ -180,23 +184,18 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcilePullSecret(ctx context.Context, namespace, secretName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	pullSecretName := DefaultOriginPullSecretName
-	if secretName != "" {
-		pullSecretName = secretName
-	}
-
-	err := CopyDefaultPullSecretToNameSpace(ctx, namespace, pullSecretName, inst, client)
+func (r *Reconciler) ReconcilePullSecret(ctx context.Context, destSecretNamespace, destSecretName string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	err := CopySecret(ctx, client, inst.Spec.PullSecret.Name, inst.Spec.PullSecret.Namespace, destSecretName, destSecretNamespace)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", pullSecretName, namespace, err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating/updating secret '%s' in namespace: '%s': %w", destSecretName, destSecretNamespace, err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.Owner, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, catalogSourceReconciler marketplace.CatalogSourceReconciler) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, marketplace.IntegreatlyChannel, target.Namespace)
-	err := r.mpm.InstallOperator(ctx, client, owner, target, operandNS, operatorsv1alpha1.ApprovalManual)
+	err := r.mpm.InstallOperator(ctx, client, target, operandNS, operatorsv1alpha1.ApprovalManual, catalogSourceReconciler)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create subscription in namespace: %s: %w", target.Namespace, err)
@@ -233,16 +232,25 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, owner ownerutil.
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI) {
+func PrepareObject(ns metav1.Object, install *integreatlyv1alpha1.RHMI, addRHMIMonitoringLabels bool, addClusterMonitoringLabel bool) {
 	labels := ns.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
+	if addRHMIMonitoringLabels {
+		labels["monitoring-key"] = "middleware"
+		monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
+		labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
+	} else {
+		delete(labels, "monitoring-key")
+	}
+	if addClusterMonitoringLabel {
+		labels["openshift.io/cluster-monitoring"] = "true"
+	} else {
+		delete(labels, "openshift.io/cluster-monitoring")
+	}
 	labels["integreatly"] = "true"
-	labels["monitoring-key"] = "middleware"
 	labels[OwnerLabelKey] = string(install.GetUID())
-	monitoringConfig := productsConfig.NewMonitoring(productsConfig.ProductConfig{})
-	labels[monitoringConfig.GetLabelSelectorKey()] = monitoringConfig.GetLabelSelector()
 	ns.SetLabels(labels)
 }
 

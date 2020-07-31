@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/headzoo/surf/errors"
+	"github.com/headzoo/surf"
+	"github.com/headzoo/surf/browser"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
-	"gopkg.in/headzoo/surf.v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,6 +21,10 @@ import (
 const (
 	OpenshiftAuthenticationNamespace = "openshift-authentication"
 	OpenshiftOAuthRouteName          = "oauth-openshift"
+
+	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
+	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
+	PathFusePods        = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
 )
 
 // User used to create url user query
@@ -43,7 +47,7 @@ type CallbackOptions struct {
 }
 
 // doAuthOpenshiftUser this function expects users and IDP to be created via `./scripts/setup-sso-idp.sh`
-func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client, idp string) error {
+func DoAuthOpenshiftUser(authPageURL string, username string, password string, httpClient *http.Client, idp string, l SimpleLogger) error {
 	parsedURL, err := url.Parse(authPageURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse url %s: %w", authPageURL, err)
@@ -51,28 +55,21 @@ func DoAuthOpenshiftUser(authPageURL string, username string, password string, h
 	if parsedURL.Scheme == "" {
 		authPageURL = fmt.Sprintf("https://%s", authPageURL)
 	}
-	if err := openshiftClientSetup(authPageURL, username, password, httpClient, idp); err != nil {
+	l.Log("Performing OpenShift HTTP client setup with URL", authPageURL)
+
+	//follow the oauth proxy flow
+	browser := surf.NewBrowser()
+	browser.SetCookieJar(httpClient.Jar)
+	browser.SetTransport(httpClient.Transport)
+
+	if err := browser.Open(authPageURL); err != nil {
+		return fmt.Errorf("failed to open browser url: %w", err)
+	}
+
+	if err := OpenshiftClientSubmitForm(browser, username, password, idp, l); err != nil {
 		return fmt.Errorf("error occurred during oauth login: %w", err)
 	}
 	return nil
-}
-
-func OpenshiftIDPCheck(url string, client *http.Client, idp string) (bool, error) {
-	browser := surf.NewBrowser()
-	browser.SetTransport(client.Transport)
-	if err := browser.Open(url); err != nil {
-		return false, fmt.Errorf("failed to open browser url: %w", err)
-	}
-	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
-		selection.SetHtml(selection.Text())
-	})
-	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		if _, ok := err.(errors.ElementNotFound); ok {
-			return false, nil
-		}
-		return false, fmt.Errorf("failed to get idp anchor tag element: %w", err)
-	}
-	return true, nil
 }
 
 /*
@@ -115,26 +112,23 @@ func OpenshiftUserReconcileCheck(openshiftClient *OpenshiftClient, k8sclient dyn
 }
 
 //openshiftOAuthProxyLogin Retrieve a cookie by logging in through the OpenShift OAuth Proxy
-func openshiftClientSetup(url, username, password string, client *http.Client, idp string) error {
+func OpenshiftClientSubmitForm(browser *browser.Browser, username, password string, idp string, l SimpleLogger) error {
 	//oauth proxy-specific constants
 	const (
-		openshiftOauthSubdomain = "oauth-openshift."
+		openshiftConsoleSubdomain = "oauth-openshift."
 	)
-	//follow the oauth proxy flow
-	browser := surf.NewBrowser()
-	browser.SetCookieJar(client.Jar)
-	browser.SetTransport(client.Transport)
-	if err := browser.Open(url); err != nil {
-		return fmt.Errorf("failed to open browser url: %w", err)
-	}
+
 	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
 		selection.SetHtml(selection.Text())
 	})
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
+		l.Log("Error clicking IDP link", browser.Url().Host, browser.Body())
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
+
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {
+		l.Log("Error filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
 		return fmt.Errorf("failed to get login form from oauth proxy screen: %w", err)
 	}
 	if err = loginForm.Input("username", username); err != nil {
@@ -147,9 +141,11 @@ func openshiftClientSetup(url, username, password string, client *http.Client, i
 		return fmt.Errorf("failed to submit login form on oauth proxy screen: %w", err)
 	}
 	//sometimes we'll reach an accept permissions page for the user if they haven't accepted these scope requests before.
-	if strings.Contains(browser.Url().Host, openshiftOauthSubdomain) {
+	//refactored, this approach assumes that if the redirected page is not the console then it looks for an approve action, previous approach would cause e2e test flakes
+	if strings.Contains(browser.Url().Host, openshiftConsoleSubdomain) {
 		permissionsForm, err := browser.Form("[action=approve]")
 		if err != nil {
+			l.Log("Error looking for permissions form on page", browser.Url().Host, browser.Body())
 			return fmt.Errorf("failed to get permissions form: %w", err)
 		}
 		if err = permissionsForm.Submit(); err != nil {

@@ -3,7 +3,12 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	"strings"
+
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
@@ -48,6 +53,7 @@ var (
 	manifestPackage           = "integreatly-rhsso"
 	masterRealmName           = "master"
 	adminCredentialSecretName = "credential-" + keycloakName
+	numberOfReplicas          = 2
 )
 
 const (
@@ -56,6 +62,7 @@ const (
 	developersGroupName         = "rhmi-developers"
 	dedicatedAdminsGroupName    = "dedicated-admins"
 	realmManagersGroupName      = "realm-managers"
+	fullRealmManagersGroupPath  = dedicatedAdminsGroupName + "/" + realmManagersGroupName
 	viewRealmRoleName           = "view-realm"
 	createRealmRoleName         = "create-realm"
 	manageRealmRoleName         = "manage-realm"
@@ -106,6 +113,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	if config.GetNamespace() == "" {
 		config.SetNamespace(installation.Spec.NamespacePrefix + defaultRhssoNamespace)
 	}
+
 	if config.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
 			config.SetOperatorNamespace(config.GetNamespace())
@@ -139,32 +147,37 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	}
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductRHSSOUser],
+		string(integreatlyv1alpha1.VersionRHSSOUser),
+		string(integreatlyv1alpha1.OperatorVersionRHSSOUser),
+	)
+}
+
 // Reconcile reads that state of the cluster for rhsso and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
 			phase, err := r.cleanupKeycloakResources(ctx, installation, serverClient)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 
-			phase, err = r.isKeycloakResourcesDeleted(ctx, serverClient)
-			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				return phase, err
-			}
-
-			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 		}
 
-		_, err = resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
+		_, err = resources.GetNS(ctx, operatorNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -181,32 +194,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
 
-	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToProductNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credentials secret", err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetNamespace()), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	preUpgradeBackupsExecutor := r.preUpgradeBackupsExecutor()
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.RHSSOUserSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackupsExecutor, serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.RHSSOUserSubscriptionName), err)
 		return phase, err
@@ -236,9 +242,20 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, r.Config.GetNamespace())
+	phase, err = resources.ReconcileSecretToRHMIOperatorNamespace(ctx, serverClient, r.ConfigManager, adminCredentialSecretName, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile admin credential secret to RHMI operator namespace", err)
+		return phase, err
+	}
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
+		return phase, err
+	}
+
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
 
@@ -257,8 +274,31 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, r.Config.GetNamespace(), defaultRhssoNamespace)
 
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning user sso for user rhsso: %w", err)
 	}
+
+	// at this point it should be ok to create the failed alert.
+	if postgres != nil {
+		// create prometheus failed rule
+		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for user rhsso: %w", err)
+		}
+
+		// create the prometheus deletion rule
+		if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for user rhsso: %s", err)
+		}
+
+		// create prometheus pending rule only when CR has completed for the first time.
+		if postgres.Status.Phase == types.PhaseComplete {
+			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for user rhsso: %w", err)
+			}
+		}
+	}
+
 	// postgres provisioning is still in progress
 	if credentialSec == nil {
 		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
@@ -266,12 +306,12 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, installation *
 
 	// create the prometheus availability rule
 	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for user rhsso: %w", err)
 	}
 
 	// create the prometheus connectivity rule
 	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for rhsso : %s", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for user rhsso : %s", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -287,11 +327,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, kc, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(kc, installation)
 		kc.Spec.Extensions = []string{
-			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/1.0.4/keycloak-metrics-spi-1.0.4.jar",
+			"https://github.com/aerogear/keycloak-metrics-spi/releases/download/2.0.1/keycloak-metrics-spi-2.0.1.jar",
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()
-		kc.Spec.Instances = 2
+		if kc.Spec.Instances < numberOfReplicas {
+			kc.Spec.Instances = numberOfReplicas
+		}
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
@@ -395,12 +437,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		} else {
 			r.logger.Infof("The operation result for keycloakuser %s was %s", user.UserName, or)
 		}
-	}
-
-	// Reconcile dedicated-admin group members based on the openshift users
-	phase, err = r.reconcileDedicatedAdminUsers(serverClient, ctx, kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile dedicated-admins members: %v", err)
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -585,7 +621,7 @@ func addKeycloakUsers(keycloakUsers []keycloak.KeycloakAPIUser, added []usersv1.
 					"manage-users",
 				},
 			},
-			Groups: []string{dedicatedAdminsGroupName, realmManagersGroupName},
+			Groups: []string{dedicatedAdminsGroupName, fullRealmManagersGroupPath},
 		})
 	}
 	return keycloakUsers
@@ -616,7 +652,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					if group == dedicatedAdminsGroupName {
 						hasDedicatedAdminGroup = true
 					}
-					if group == realmManagersGroupName {
+					if group == fullRealmManagersGroupPath {
 						hasRealmManagerGroup = true
 					}
 				}
@@ -624,7 +660,7 @@ func promoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, promoted []keyclo
 					allUsers[i].Groups = append(allUsers[i].Groups, dedicatedAdminsGroupName)
 				}
 				if !hasRealmManagerGroup {
-					allUsers[i].Groups = append(allUsers[i].Groups, realmManagersGroupName)
+					allUsers[i].Groups = append(allUsers[i].Groups, fullRealmManagersGroupPath)
 				}
 
 				break
@@ -651,7 +687,7 @@ func demoteKeycloakUsers(allUsers []keycloak.KeycloakAPIUser, demoted []keycloak
 				// Remove the dedicated-admins group from the user groups list
 				groups := []string{}
 				for _, group := range allUsers[i].Groups {
-					if (group != dedicatedAdminsGroupName) && (group != realmManagersGroupName) {
+					if (group != dedicatedAdminsGroupName) && (group != fullRealmManagersGroupPath) {
 						groups = append(groups, group)
 					}
 				}
@@ -872,6 +908,25 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
+	// Check users and clients have been removed before realms are removed
+	// Refresh the user list
+	err = serverClient.List(ctx, users, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(users.Items) > 0 {
+		logrus.Println("rhsso-user deletion of users in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	// Refresh the clients list
+	err = serverClient.List(ctx, clients, opts)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(clients.Items) > 0 {
+		logrus.Println("rhsso-user deletion of clients in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	// Delete all realms
 	realms := &keycloak.KeycloakRealmList{}
 	err = serverClient.List(ctx, realms, opts)
@@ -891,41 +946,12 @@ func (r *Reconciler) cleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) isKeycloakResourcesDeleted(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	opts := &k8sclient.ListOptions{
-		Namespace: r.Config.GetNamespace(),
-	}
-
-	// Check if users are all gone
-	users := &keycloak.KeycloakUserList{}
-	err := serverClient.List(ctx, users, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(users.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if clients are all gone
-	clients := &keycloak.KeycloakClientList{}
-	err = serverClient.List(ctx, clients, opts)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	if len(clients.Items) > 0 {
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
-
-	// Check if realms are all gone
-	realms := &keycloak.KeycloakRealmList{}
+	// Refresh the realm list
 	err = serverClient.List(ctx, realms, opts)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, nil
-	}
-	if len(realms.Items) > 0 {
+		return integreatlyv1alpha1.PhaseFailed, err
+	} else if len(realms.Items) > 0 {
+		logrus.Println("rhsso-user deletion of realms in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -1267,116 +1293,6 @@ func (r *Reconciler) reconcileDedicatedAdminsGroup(kc *keycloak.Keycloak) (integ
 	return integreatlyv1alpha1.PhaseCompleted, err
 }
 
-// Reconcile the members of the dedicated-admin and realm-managers groups. Gets
-// the dedicated admin users from Openshift and compares them with the current
-// members of the groups, adding or removing them from the groups.
-// NOTE: The Keyclock operator does not reconcile the KeycloakUser.Spec.user.groups
-//       array, that's why this is done manually. If the operator is updated to
-//		 reconcile this field, this function will become redundant, as the membership
-//       could be declared in the CR spec.
-func (r *Reconciler) reconcileDedicatedAdminUsers(serverClient k8sclient.Client, ctx context.Context, kc *keycloak.Keycloak) (integreatlyv1alpha1.StatusPhase, error) {
-	// Get Keycloak client
-	kcClient, err := r.keycloakClientFactory.AuthenticatedClient(*kc)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	openshiftUsers := &usersv1.UserList{}
-	err = serverClient.List(ctx, openshiftUsers)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	openshiftGroups := &usersv1.GroupList{}
-	err = serverClient.List(ctx, openshiftGroups)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	// Get OS dedicated-admin users
-	dedicatedAdminUsers := getDedicatedAdmins(*openshiftUsers, *openshiftGroups)
-
-	// Reconcile their membership to the dedicated-admins and realm-managers
-	// groups
-	for _, groupName := range []string{dedicatedAdminsGroupName, realmManagersGroupName} {
-		err = reconcileDedicatedAdminsMembership(kcClient, dedicatedAdminUsers, groupName)
-		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func reconcileDedicatedAdminsMembership(kcClient keycloakCommon.KeycloakInterface, dedicatedAdminUsers []usersv1.User, groupName string) error {
-	group, err := kcClient.FindGroupByName(groupName, masterRealmName)
-	if err != nil {
-		return err
-	}
-
-	groupMembers, err := kcClient.ListUsersInGroup(masterRealmName, group.ID)
-	if err != nil {
-		return err
-	}
-
-	// Look for the users in OS that are not members of the group and add
-	// them to it
-	for _, osDedicatedAdmin := range dedicatedAdminUsers {
-		// Search for the user in the group members list
-		ssoUserID := ""
-		for _, groupMember := range groupMembers {
-			if osDedicatedAdmin.Name == groupMember.UserName {
-				ssoUserID = groupMember.ID
-				break
-			}
-		}
-
-		// If the user is found, skip it
-		if ssoUserID != "" {
-			continue
-		}
-
-		// Look for the user in the keycloak API. If the user is not found,
-		// skip it, as it might not have been reconciled yet
-		kcUser, err := kcClient.FindUserByUsername(osDedicatedAdmin.Name, masterRealmName)
-		if err != nil {
-			return err
-		}
-		if kcUser == nil {
-			logrus.Infof("Openshift dedicated-admin %s not found in User SSO, skipping...", osDedicatedAdmin.Name)
-			continue
-		}
-
-		// Add the user to the group
-		err = kcClient.AddUserToGroup(masterRealmName, kcUser.ID, group.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Look for the users in the group that are not dedicated admins in OS
-	// and remove them from the group
-	for _, groupMember := range groupMembers {
-		found := false
-		for _, osDedicatedAdmin := range dedicatedAdminUsers {
-			if osDedicatedAdmin.Name == groupMember.UserName {
-				found = true
-				break
-			}
-		}
-
-		if found {
-			continue
-		}
-
-		err = kcClient.DeleteUserFromGroup(masterRealmName, groupMember.ID, group.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func mapClientRoleToGroup(kcClient keycloakCommon.KeycloakInterface, realmName, groupID, clientID, roleName string) error {
 	return mapRoleToGroupByName(roleName,
 		func() ([]*keycloak.KeycloakUserRole, error) {
@@ -1607,6 +1523,22 @@ func reconcileGroupRealmRoles(kcClient keycloakCommon.KeycloakInterface, groupID
 	return nil
 }
 
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("errror reading monitoring config: %w", err)
+	}
+
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-rhssouser", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		Service: "rhssouser-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rhssouser blackbox target: %w", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
 // Query the clients in a realm and return a map where the key is the client name
 // (`ClientID` field) and the value is the struct with the client information
 func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName string) (map[string]*keycloak.KeycloakAPIClient, error) {
@@ -1622,4 +1554,26 @@ func listClientsByName(kcClient keycloakCommon.KeycloakInterface, realmName stri
 	}
 
 	return clientsByID, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.RHSSOSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		r.preUpgradeBackupsExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }

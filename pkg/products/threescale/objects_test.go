@@ -40,15 +40,15 @@ var configManagerConfigMap = &corev1.ConfigMap{
 
 var OpenshiftDockerSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      resources.DefaultOriginPullSecretName,
-		Namespace: resources.DefaultOriginPullSecretNamespace,
+		Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+		Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 	},
 }
 
 var ComponentDockerSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      resources.DefaultOriginPullSecretName,
-		Namespace: resources.DefaultOriginPullSecretNamespace,
+		Name:      integreatlyv1alpha1.DefaultOriginPullSecretName,
+		Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace,
 	},
 }
 
@@ -251,6 +251,7 @@ var threescaleRoute1 = &v1.Route{
 	},
 }
 
+// Have two system-developer routes, the reconcile should pick up on 3scale.
 var threescaleRoute2 = &v1.Route{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "3scale-system-developer-route",
@@ -266,6 +267,20 @@ var threescaleRoute2 = &v1.Route{
 
 var threescaleRoute3 = &v1.Route{
 	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-developer-route-2",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-developer",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "3scale.system-developer",
+	},
+}
+
+// Have two system-provider routes, the reconcile should pick up on 3scale-admin.
+var threescaleRoute4 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
 		Name:      "3scale-system-provider-route",
 		Namespace: "3scale",
 		Labels: map[string]string{
@@ -274,6 +289,19 @@ var threescaleRoute3 = &v1.Route{
 	},
 	Spec: v1.RouteSpec{
 		Host: "system-provider",
+	},
+}
+
+var threescaleRoute5 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-provider-route-2",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "system-provider",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "3scale-admin.system-provider",
 	},
 }
 
@@ -415,6 +443,8 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		threescaleRoute1,
 		threescaleRoute2,
 		threescaleRoute3,
+		threescaleRoute4,
+		threescaleRoute5,
 		postgres,
 		postgresSec,
 		redis,

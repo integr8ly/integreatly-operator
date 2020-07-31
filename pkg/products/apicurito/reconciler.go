@@ -5,26 +5,29 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/version"
+
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+
+	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 
 	v1 "k8s.io/api/apps/v1"
 
 	apicuritov1alpha1 "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +40,7 @@ const (
 	manifestPackage              = "integreatly-apicurito"
 	apicuritoName                = "apicurito"
 	defaultApicuritoPullSecret   = "apicurito-pull-secret"
+	size                         = 2
 )
 
 type Reconciler struct {
@@ -51,18 +55,24 @@ type Reconciler struct {
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	apicuritoConfig, err := configManager.ReadApicurito()
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not retrieve apicurito config : %w", err)
 	}
 
 	if apicuritoConfig.GetNamespace() == "" {
 		apicuritoConfig.SetNamespace(installation.Spec.NamespacePrefix + defaultInstallationNamespace)
-		apicuritoConfig.SetOperatorVersion(string(integreatlyv1alpha1.OperatorVersionApicurito))
-		apicuritoConfig.SetProductVersion(string(integreatlyv1alpha1.VersionApicurito))
+		configManager.WriteConfig(apicuritoConfig)
 	}
+	if apicuritoConfig.GetOperatorNamespace() == "" {
+		if installation.Spec.OperatorsInProductNamespace {
+			apicuritoConfig.SetOperatorNamespace(apicuritoConfig.GetOperatorNamespace())
+		}
+		configManager.WriteConfig(apicuritoConfig)
+	}
+	apicuritoConfig.SetBlackboxTargetPath("/oauth/healthz")
+
+	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		Config:        apicuritoConfig,
@@ -80,28 +90,38 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
+func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool {
+	return version.VerifyProductAndOperatorVersion(
+		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductApicurito],
+		string(integreatlyv1alpha1.VersionApicurito),
+		string(integreatlyv1alpha1.OperatorVersionApicurito),
+	)
+}
+
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 		}
-		_, err = resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
+		_, err = resources.GetNS(ctx, operatorNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 		}
 
 		//if both namespaces are deleted, return complete
-		_, operatorNSErr := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
-		_, nsErr := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+		_, operatorNSErr := resources.GetNS(ctx, operatorNamespace, serverClient)
+		_, nsErr := resources.GetNS(ctx, productNamespace, serverClient)
 		if k8serr.IsNotFound(operatorNSErr) && k8serr.IsNotFound(nsErr) {
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
@@ -120,34 +140,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
 	}
 	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetNamespace(), defaultApicuritoPullSecret, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
-		return phase, err
-	}
-
-	phase, err = r.ReconcilePullSecret(ctx, r.Config.GetOperatorNamespace(), defaultApicuritoPullSecret, installation, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
-		return phase, err
-	}
-
-	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
+	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), productNamespace, defaultApicuritoPullSecret, serverClient)
 	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ApicuritoSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, backup.NewNoopBackupExecutor(), serverClient)
+	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), operatorNamespace, defaultApicuritoPullSecret, serverClient)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s pull secret", defaultApicuritoPullSecret), err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ApicuritoSubscriptionName), err)
 		return phase, err
@@ -156,6 +170,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileComponents(ctx, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
@@ -186,9 +212,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, apicuritoCR, func() error {
-		// Specify 2 pods to provide HA
-		apicuritoCR.Spec.Size = 2
-		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.5"
+		// Ideally the operator would set the Image field but it currently (operator v1.6) does not - review on upgrades
+		apicuritoCR.Spec.Image = "registry.redhat.io/fuse7/fuse-apicurito:1.6"
+		// Specify a minimum of 2 pods to provide HA
+		if apicuritoCR.Spec.Size < size {
+			apicuritoCR.Spec.Size = size
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -244,12 +274,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return phase, err
 	}
 
-	err = r.reconcilePodCountAlert(ctx, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, phase, "Failed to CreateOrUpdate PrometheusRule for Apicurito", err)
-		return phase, err
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -271,7 +295,7 @@ func (r *Reconciler) createDeployConfigForGenerator(ctx context.Context, client 
 		dc.Spec.Template = &corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{{
-					Image: "registry.redhat.io/fuse7/fuse-apicurito-generator:1.5",
+					Image: "registry.redhat.io/fuse7/fuse-apicurito-generator:1.6",
 					Name:  "fuse-apicurito-generator",
 				},
 				},
@@ -503,44 +527,41 @@ func (r *Reconciler) updateDeploymentWithConfigMapVolume(ctx context.Context, cl
 	return nil
 }
 
-func (r *Reconciler) reconcilePodCountAlert(ctx context.Context, client k8sclient.Client) error {
-	const apicuritoPodCountExpected int = 3
-	ns := r.Config.GetNamespace()
-	prometheusRule := &monitoringv1.PrometheusRule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ksm-apicurito-alerts",
-			Namespace: ns,
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(ctx, client, prometheusRule, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(prometheusRule, r.installation)
-
-		prometheusRule.Spec = monitoringv1.PrometheusRuleSpec{
-			Groups: []monitoringv1.RuleGroup{
-				{
-					Name: "apicurito.rules",
-					Rules: []monitoringv1.Rule{
-						{
-							Alert: "ApicuritoPodCount",
-							Annotations: map[string]string{
-								"sop_url": "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md",
-								"message": fmt.Sprintf("Pod count for namespace %s is %s. Expected exactly %d pods.", "{{ $labels.namespace }}", "{{  printf \"%.0f\" $value }}", apicuritoPodCountExpected),
-							},
-							Expr: intstr.FromString(
-								fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true', namespace='%s'})) or sum(kube_pod_status_ready{condition='true', namespace='%s'}) != %d", ns, ns, apicuritoPodCountExpected)),
-							For:    "5m",
-							Labels: map[string]string{"severity": "critical"},
-						},
-					},
-				},
-			},
-		}
-		return nil
-	})
+func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cfg, err := r.ConfigManager.ReadMonitoring()
 	if err != nil {
-		return fmt.Errorf("error creating Apicurito PrometheusRule: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reading monitoring config : %w", err)
 	}
 
-	return nil
+	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-apicurito", monitoringv1alpha1.BlackboxtargetData{
+		Url:     r.Config.GetHost() + r.Config.GetBlackboxTargetPath(),
+		Service: "apicurito-ui",
+	}, cfg, installation, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating apicurito blackbox target: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.ApicuritoSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		backup.NewNoopBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }

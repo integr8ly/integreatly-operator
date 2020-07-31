@@ -1,9 +1,12 @@
 # cloud.google.com/go v0.46.3
 cloud.google.com/go/compute/metadata
-# github.com/3scale/3scale-operator v0.4.0
+# github.com/3scale/3scale-operator v0.5.0
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
+github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
 github.com/3scale/3scale-operator/version
+# github.com/Apicurio/apicurio-registry-operator v0.0.0-20200604085617-be91f2b38134
+github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
@@ -65,6 +68,55 @@ github.com/andybalholm/cascadia
 github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1
 # github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 github.com/asaskevich/govalidator
+# github.com/aws/aws-sdk-go v1.25.50
+github.com/aws/aws-sdk-go/aws
+github.com/aws/aws-sdk-go/aws/arn
+github.com/aws/aws-sdk-go/aws/awserr
+github.com/aws/aws-sdk-go/aws/awsutil
+github.com/aws/aws-sdk-go/aws/client
+github.com/aws/aws-sdk-go/aws/client/metadata
+github.com/aws/aws-sdk-go/aws/corehandlers
+github.com/aws/aws-sdk-go/aws/credentials
+github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds
+github.com/aws/aws-sdk-go/aws/credentials/endpointcreds
+github.com/aws/aws-sdk-go/aws/credentials/processcreds
+github.com/aws/aws-sdk-go/aws/credentials/stscreds
+github.com/aws/aws-sdk-go/aws/csm
+github.com/aws/aws-sdk-go/aws/defaults
+github.com/aws/aws-sdk-go/aws/ec2metadata
+github.com/aws/aws-sdk-go/aws/endpoints
+github.com/aws/aws-sdk-go/aws/request
+github.com/aws/aws-sdk-go/aws/session
+github.com/aws/aws-sdk-go/aws/signer/v4
+github.com/aws/aws-sdk-go/internal/ini
+github.com/aws/aws-sdk-go/internal/s3err
+github.com/aws/aws-sdk-go/internal/sdkio
+github.com/aws/aws-sdk-go/internal/sdkmath
+github.com/aws/aws-sdk-go/internal/sdkrand
+github.com/aws/aws-sdk-go/internal/sdkuri
+github.com/aws/aws-sdk-go/internal/shareddefaults
+github.com/aws/aws-sdk-go/private/protocol
+github.com/aws/aws-sdk-go/private/protocol/ec2query
+github.com/aws/aws-sdk-go/private/protocol/eventstream
+github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi
+github.com/aws/aws-sdk-go/private/protocol/json/jsonutil
+github.com/aws/aws-sdk-go/private/protocol/query
+github.com/aws/aws-sdk-go/private/protocol/query/queryutil
+github.com/aws/aws-sdk-go/private/protocol/rest
+github.com/aws/aws-sdk-go/private/protocol/restxml
+github.com/aws/aws-sdk-go/private/protocol/xml/xmlutil
+github.com/aws/aws-sdk-go/service/ec2
+github.com/aws/aws-sdk-go/service/ec2/ec2iface
+github.com/aws/aws-sdk-go/service/elasticache
+github.com/aws/aws-sdk-go/service/elasticache/elasticacheiface
+github.com/aws/aws-sdk-go/service/rds
+github.com/aws/aws-sdk-go/service/rds/rdsiface
+github.com/aws/aws-sdk-go/service/s3
+github.com/aws/aws-sdk-go/service/s3/internal/arn
+github.com/aws/aws-sdk-go/service/s3/s3iface
+github.com/aws/aws-sdk-go/service/s3/s3manager
+github.com/aws/aws-sdk-go/service/sts
+github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
@@ -87,7 +139,7 @@ github.com/containerd/containerd/remotes/docker
 github.com/containerd/containerd/remotes/docker/schema1
 github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
-# github.com/containerd/continuity v0.0.0-20181203112020-004b46473808
+# github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
 github.com/containerd/continuity/pathdriver
 # github.com/coreos/go-semver v0.3.0
 github.com/coreos/go-semver/semver
@@ -201,7 +253,7 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/loads
 # github.com/go-openapi/runtime v0.19.0
 github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.19.5-0.20191022081736-744796356cda
+# github.com/go-openapi/spec v0.19.6
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.19.0
 github.com/go-openapi/strfmt
@@ -275,7 +327,7 @@ github.com/gosuri/uitable/util/wordwrap
 # github.com/gregjones/httpcache v0.0.0-20190203031600-7a902570cb17
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
-# github.com/hashicorp/golang-lru v0.5.3
+# github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hashicorp/hcl v1.0.0
@@ -290,6 +342,7 @@ github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
 # github.com/headzoo/surf v1.0.0
+github.com/headzoo/surf
 github.com/headzoo/surf/agent
 github.com/headzoo/surf/browser
 github.com/headzoo/surf/errors
@@ -307,17 +360,21 @@ github.com/imdario/mergo
 github.com/inconshreveable/mousetrap
 # github.com/integr8ly/application-monitoring-operator v1.1.1
 github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1
-# github.com/integr8ly/cloud-resource-operator v0.11.0
+# github.com/integr8ly/cloud-resource-operator v0.16.1
+github.com/integr8ly/cloud-resource-operator/pkg/annotations
 github.com/integr8ly/cloud-resource-operator/pkg/apis/config/v1
 github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1
 github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types
+github.com/integr8ly/cloud-resource-operator/pkg/client
+github.com/integr8ly/cloud-resource-operator/pkg/providers
+github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
 github.com/integr8ly/cloud-resource-operator/pkg/resources
-# github.com/integr8ly/grafana-operator v1.3.1
-github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/keycloak-client v0.1.1
+# github.com/integr8ly/keycloak-client v0.1.2
 github.com/integr8ly/keycloak-client/pkg/common
+# github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
+github.com/jmespath/go-jmespath
 # github.com/jmoiron/sqlx v1.2.0
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
@@ -328,11 +385,11 @@ github.com/json-iterator/go
 # github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024
 github.com/jstemmer/go-junit-report/formatter
 github.com/jstemmer/go-junit-report/parser
-# github.com/keycloak/keycloak-operator v0.0.0-20200207072807-b527c8b26465
+# github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
 github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1
 github.com/keycloak/keycloak-operator/pkg/common
 github.com/keycloak/keycloak-operator/pkg/model
-# github.com/konsorten/go-windows-terminal-sequences v1.0.2
+# github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/lib/pq v1.3.0
 github.com/lib/pq
@@ -353,7 +410,7 @@ github.com/matryer/moq
 github.com/matryer/moq/pkg/moq
 # github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 github.com/mattbaird/jsonpatch
-# github.com/mattn/go-isatty v0.0.8
+# github.com/mattn/go-isatty v0.0.9
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.4
 github.com/mattn/go-runewidth
@@ -384,10 +441,10 @@ github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830
+# github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830 => github.com/opencontainers/runc v1.0.0-rc8
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
-# github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v3.9.1-0.20190904142825-922d36944de3+incompatible
+# github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible => github.com/openshift/api v0.0.0-20190924102528-32369d4db2ad
 github.com/openshift/api/apps/v1
 github.com/openshift/api/authorization/v1
 github.com/openshift/api/config/v1
@@ -413,6 +470,8 @@ github.com/openshift/client-go/oauth/clientset/versioned/fake
 github.com/openshift/client-go/oauth/clientset/versioned/scheme
 github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1
 github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1/fake
+# github.com/openshift/cloud-credential-operator v0.0.0-20190812222907-ec6f38d73a79
+github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
 # github.com/operator-framework/api v0.0.0-20200120235816-80fd2f1a09c9
@@ -440,12 +499,14 @@ github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1
 github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2
 # github.com/operator-framework/operator-registry v1.5.7-0.20200121213444-d8e2ec52c19a
 github.com/operator-framework/operator-registry/pkg/api
+github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
+github.com/operator-framework/operator-registry/pkg/client
 github.com/operator-framework/operator-registry/pkg/containertools
 github.com/operator-framework/operator-registry/pkg/lib/bundle
 github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/sqlite
 github.com/operator-framework/operator-registry/pkg/sqlite/migrations
-# github.com/operator-framework/operator-sdk v0.15.1
+# github.com/operator-framework/operator-sdk v0.17.0 => github.com/operator-framework/operator-sdk v0.15.1
 github.com/operator-framework/operator-sdk/cmd/operator-sdk
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/add
 github.com/operator-framework/operator-sdk/cmd/operator-sdk/alpha
@@ -524,17 +585,16 @@ github.com/operator-framework/operator-sdk/pkg/leader
 github.com/operator-framework/operator-sdk/pkg/log/zap
 github.com/operator-framework/operator-sdk/pkg/metrics
 github.com/operator-framework/operator-sdk/pkg/predicate
-github.com/operator-framework/operator-sdk/pkg/restmapper
 github.com/operator-framework/operator-sdk/pkg/test
 github.com/operator-framework/operator-sdk/pkg/test/e2eutil
 github.com/operator-framework/operator-sdk/version
 # github.com/pborman/uuid v1.2.0
 github.com/pborman/uuid
-# github.com/pelletier/go-toml v1.3.0
+# github.com/pelletier/go-toml v1.2.0
 github.com/pelletier/go-toml
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -565,7 +625,7 @@ github.com/rubenv/sql-migrate/sqlparse
 github.com/russross/blackfriday
 # github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
-# github.com/sirupsen/logrus v1.4.2
+# github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
 # github.com/spf13/afero v1.2.2
 github.com/spf13/afero
@@ -580,11 +640,11 @@ github.com/spf13/jwalterweatherman
 github.com/spf13/pflag
 # github.com/spf13/viper v1.4.0
 github.com/spf13/viper
-# github.com/stretchr/testify v1.4.0
+# github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/syndesisio/syndesis/install/operator v0.0.0-20191213102841-4a0767cba149
-github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1alpha1
+# github.com/syndesisio/syndesis/install/operator v0.0.0-20200406175937-7e2945a5ee43
+github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1
 # github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
 github.com/xeipuuv/gojsonpointer
 # github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
@@ -619,7 +679,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+# golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -659,7 +719,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200207224406-61798d64f025
+# golang.org/x/tools v0.0.0-20200130002326-2f3ba24bd6e7
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/inspect
 golang.org/x/tools/go/ast/astutil
@@ -734,11 +794,9 @@ google.golang.org/grpc/tap
 gopkg.in/fsnotify.v1
 # gopkg.in/gorp.v1 v1.7.2
 gopkg.in/gorp.v1
-# gopkg.in/headzoo/surf.v1 v1.0.0
-gopkg.in/headzoo/surf.v1
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.4
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # helm.sh/helm/v3 v3.0.1
 helm.sh/helm/v3/internal/experimental/registry
@@ -800,7 +858,7 @@ honnef.co/go/tools/staticcheck/vrp
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# k8s.io/api v0.17.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
+# k8s.io/api v0.18.0 => k8s.io/api v0.0.0-20191016110408-35e52d86657a
 k8s.io/api/admission/v1
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -842,7 +900,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.17.0 => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
+# k8s.io/apiextensions-apiserver v0.17.2 => k8s.io/apiextensions-apiserver v0.0.0-20191016113550-5357c4baaf65
 k8s.io/apiextensions-apiserver/pkg/apihelpers
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install
@@ -860,7 +918,7 @@ k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextension
 k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1
 k8s.io/apiextensions-apiserver/pkg/features
-# k8s.io/apimachinery v0.17.0 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
+# k8s.io/apimachinery v0.17.4 => k8s.io/apimachinery v0.0.0-20191004115801-a2eda9f80ab8
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -1034,7 +1092,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.0.0 => k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
+# k8s.io/code-generator v0.17.1 => k8s.io/code-generator v0.0.0-20191004115455-8e001e5d1894
 k8s.io/code-generator/cmd/deepcopy-gen/args
 # k8s.io/component-base v0.0.0 => k8s.io/component-base v0.0.0-20191016111319-039242c015a9
 k8s.io/component-base/featuregate
@@ -1104,7 +1162,7 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# sigs.k8s.io/controller-runtime v0.4.0
+# sigs.k8s.io/controller-runtime v0.5.2 => sigs.k8s.io/controller-runtime v0.4.0
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
 sigs.k8s.io/controller-runtime/pkg/cache

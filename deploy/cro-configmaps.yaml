@@ -13,6 +13,8 @@ objects:
         {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
       workshop: >
         {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
+      self-managed: >
+        {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
 parameters:
   - name: INSTALLATION_NAMESPACE
     required: true

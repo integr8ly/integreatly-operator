@@ -3,6 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
 
@@ -16,7 +18,6 @@ import (
 
 const (
 	expectedRhmiDeveloperProjectCount = 1
-	expectedFusePodCount              = 6
 )
 
 // struct used to create query string for fuse logs endpoint
@@ -27,7 +28,7 @@ type LogOptions struct {
 }
 
 func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
-	if err := createTestingIDP(goctx.TODO(), ctx.Client, ctx.HttpClient, ctx.SelfSignedCerts); err != nil {
+	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
@@ -37,21 +38,24 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	masterURL := rhmi.Spec.MasterURL
+	t.Logf("retrieved console master URL %v", masterURL)
 
 	// get oauth route
 	oauthRoute := &v1.Route{}
 	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: resources.OpenshiftOAuthRouteName, Namespace: resources.OpenshiftAuthenticationNamespace}, oauthRoute); err != nil {
 		t.Fatal("error getting Openshift Oauth Route: ", err)
 	}
+	t.Log("retrieved openshift-Oauth route")
 
 	// get rhmi developer user tokens
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm); err != nil {
+	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "test-user-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
 		t.Fatalf("error occured trying to get token : %v", err)
 	}
-
+	t.Log("retrieved rhmi developer user tokens")
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// test rhmi developer projects are as expected
+	t.Log("testing rhmi developer projects")
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
 	if err := testRHMIDeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
 		t.Fatalf("test failed - %v", err)
@@ -61,17 +65,6 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	podlist, err := openshiftClient.ListPods(fuseNamespace)
 	if err != nil {
 		t.Fatalf("error occured while getting pods : %v", err)
-	}
-
-	// check if six pods are running
-	runningCount := 0
-	for _, p := range podlist.Items {
-		if p.Status.Phase == "Running" {
-			runningCount++
-		}
-	}
-	if runningCount != expectedFusePodCount {
-		t.Fatalf("test-failed - expected fuse pod count : %d found fuse pod count: %d", expectedFusePodCount, runningCount)
 	}
 
 	// log through rhmi developer fuse podlist
@@ -93,6 +86,26 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 			}
 		}
 	}
+
+	// Verify RHMI Developer permissions around RHMI Config
+	verifyRHMIDeveloperRHMIConfigPermissions(t, openshiftClient)
+
+	verifyRHMIDeveloper3ScaleRoutePermissions(t, openshiftClient)
+}
+
+// Verify that a dedicated admin can edit routes in the 3scale namespace
+func verifyRHMIDeveloper3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
+	ns := "redhat-rhmi-3scale"
+	route := "backend"
+
+	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
+	resp, err := client.DoOpenshiftGetRequest(path)
+	if err != nil {
+		t.Errorf("Failed to get route : %s", err)
+	}
+	if resp.StatusCode != 403 {
+		t.Errorf("RHMI Developer was incorrectly able to get route : %v", resp)
+	}
 }
 
 func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
@@ -112,7 +125,12 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount, err)
+		if rhmiDevfoundProjects != nil {
+			return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedRhmiDeveloperProjectCount, err)
+		} else {
+			return fmt.Errorf("unexpected error occurred when retrieving projects list - %w", err)
+		}
+
 	}
 
 	foundNamespace := rhmiDevfoundProjects.Items[0].Name
@@ -121,4 +139,30 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 	}
 
 	return nil
+}
+
+func verifyRHMIDeveloperRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+	t.Log("Verifying RHMI Developer permissions for RHMIConfig Resource")
+
+	expectedPermission := ExpectedPermissions{
+		ExpectedCreateStatusCode: 403,
+		ExpectedReadStatusCode:   403,
+		ExpectedUpdateStatusCode: 403,
+		ExpectedDeleteStatusCode: 403,
+		ExpectedListStatusCode:   403,
+		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
+		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
+		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-rhmi-config",
+				Namespace: RHMIOperatorNamespace,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1alpha1",
+				Kind:       "RHMIConfig",
+			},
+		},
+	}
+
+	verifyCRUDLPermissions(t, openshiftClient, expectedPermission)
 }

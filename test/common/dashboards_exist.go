@@ -41,9 +41,6 @@ var expectedDashboards = []dashboardsTestRule{
 		Title: "Syndesis - Infra - API",
 	},
 	{
-		Title: "Syndesis - Infra - DB",
-	},
-	{
 		Title: "Syndesis - Infra - Home",
 	},
 	{
@@ -63,6 +60,21 @@ var expectedDashboards = []dashboardsTestRule{
 	},
 	{
 		Title: "UnifiedPush Server",
+	},
+	{
+		Title: "Critical SLO summary",
+	},
+	{
+		Title: "AMQ Online",
+	},
+	{
+		Title: "EnMasse Brokers",
+	},
+	{
+		Title: "EnMasse Console",
+	},
+	{
+		Title: "EnMasse Routers",
 	},
 }
 
