@@ -21,7 +21,7 @@ The following steps are still not automated in [user_rhmi_developer_permissions.
 
 JIRA: [INTLY-5434](https://issues.redhat.com/browse/INTLY-5434)
 
-1. Log into AMQ Online via Solution Explorer as a RHMI developer user (eg as a test user)
+1. Log into AMQ Online via Solution Explorer as a RHMI developer user (e.g. as a test-userXX)
 2. Click **Create Address Space** (If **Create Address Space** button is not visible, click the home link, **Red Hat AMQ**. Top left).
 3. Enter the following details in the configuration form:
    - Namespace: Select the namespace with the format `<username>-shar-<uid>`
