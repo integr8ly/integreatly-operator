@@ -91,7 +91,7 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 	}
 
 	// verify alertmanager-application-monitoring secret
-	err := verifySecrets(ctx.KubeClient)
+	err = verifySecrets(ctx.KubeClient)
 	if err != nil {
 		t.Fatal("failed to verify alertmanager-application-monitoring secret", err)
 	}
