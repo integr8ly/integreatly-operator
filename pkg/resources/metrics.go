@@ -348,12 +348,12 @@ func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	}
 
 	// building a predict_linear query using 2 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
-	//    * [2h] - one hour data points
-	//    * , 4 * 3600 - multiplying data points by 4 hours
+	//    * [1h] - one hour data points
+	//    * , 5 * 3600 - multiplying data points by 5 hour, to allow 1 hour of pending before firing the alert
 	// and matching by label `job` if the current time is greater than 1 hour of the process start time for the cloud resource operator metrics.
 	//    * on(job) - matching queries by label job across both metrics
 	alertExp := intstr.FromString(
-		fmt.Sprintf("predict_linear(cro_postgres_free_storage_average{job='%s'}[2h], 4 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2", job, job))
+		fmt.Sprintf("(predict_linear(cro_postgres_free_storage_average{job='%s'}[1h], 5 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2) and (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))", job, job))
 
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
 	if err != nil {
@@ -374,7 +374,7 @@ func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	// and matching by label `job` if the current time is greater than 6 hour of the process start time for the cloud resource operator metrics.
 	//    * on(job) - matching queries by label job across both metrics
 	alertExp = intstr.FromString(
-		fmt.Sprintf("predict_linear(cro_postgres_free_storage_average{job='%s'}[2h], 4 * 24 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2", job, job))
+		fmt.Sprintf("(predict_linear(cro_postgres_free_storage_average{job='%s'}[6h], 4 * 24 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2 ) and (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))", job, job))
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
 	if err != nil {
@@ -401,72 +401,66 @@ func ReconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 
 // CreateRedisMemoryUsageHighAlert creates a PrometheusRule alert to watch for High Memory usage
 // of a Redis cache
-func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) error {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
-		return nil, nil
+		return nil
 	}
-	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 
-	alertName := redisCRName + "RedisMemoryUsageHigh"
-	ruleName := fmt.Sprintf("redis-memory-usage-high-rule-%s", cr.Name)
-	alertExp := intstr.FromString(fmt.Sprintf("%s{exported_namespace='%s',resourceID='%s',productName='%s'} >= %s", "cro_redis_memory_usage_percentage_average", cr.Namespace, cr.Name, productName, alertPercentage))
-	alertDescription := fmt.Sprintf("Redis Memory is %s percent or higher for the last %s. Redis Custom Resource: %s in namespace %s, strategy: %s for the product: %s", alertPercentage, alertFor60Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
+	alertName := "RedisMemoryUsageHigh"
+	ruleName := "redis-memory-usage-high"
+	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity":    "critical",
-		"productName": productName,
+		"severity": "critical",
 	}
-	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
+
+	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
+
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// job to check time that the operator metrics are exposed
 	job := "cloud-resource-operator-metrics"
 
-	alertName = redisCRName + "RedisMemoryWillFillIn4Hours"
-	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-hours-rule-%s", cr.Name)
+	alertName = "RedisMemoryUsageMaxIn4Hours"
+	ruleName = "redis-memory-usage-will-max-in-4-hours"
+	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
+	labels = map[string]string{
+		"severity": "critical",
+	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [1h] - one hour data points
 	//    * , 4 * 3600 - multiplying data points by 4 hours
 	// and matching by label `job` if the current time is greater than 1 hour of the process start time for the cloud resource operator metrics.
 	//    * on(job) - matching queries by label job across both metrics
-	alertExp = intstr.FromString(
-		fmt.Sprintf("predict_linear(cro_redis_freeable_memory_average{job='%s'}[1h], 4 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 1", job, job))
+	alertExp = intstr.FromString(fmt.Sprintf("predict_linear(cro_redis_memory_usage_percentage_average{job='%s'}[1h], 5 * 3600) >= 100 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 1", job, job))
 
-	alertDescription = fmt.Sprintf("Redis free memory is predicted to fill with in four hours. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
-	labels = map[string]string{
-		"severity":    "critical",
-		"productName": productName,
-	}
-	// create the rule
-	pr, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor10Mins, alertExp, labels)
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	alertName = redisCRName + "RedisMemoryWillFillIn4Days"
-	ruleName = fmt.Sprintf("redis-memory-usage-will-fill-in-4-days-rule-%s", cr.Name)
+	alertName = "RedisMemoryUsageMaxIn4Days"
+	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days")
+	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
+	labels = map[string]string{
+		"severity": "warning",
+	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [6h] - six hour data points
 	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
 	// and matching by label `job` if the current time is greater than 6 hour of the process start time for the cloud resource operator metrics.
 	//    * on(job) - matching queries by label job across both metrics
-	fmt.Sprintf("predict_linear(cro_redis_freeable_memory_average{job='%s'}[6h], 4 * 24 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 6", job, job)
-	alertDescription = fmt.Sprintf("Redis free memory is predicted to fill with in four days. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
-	labels = map[string]string{
-		"severity":    "warning",
-		"productName": productName,
-	}
-	// create the rule
-	pr, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor10Mins, alertExp, labels)
+	alertExp = intstr.FromString(fmt.Sprintf("predict_linear(cro_redis_memory_usage_percentage_average{job='%s'}[6h], 4 * 24 * 3600) >= 100 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 1", job, job))
+
+	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return pr, nil
+	return nil
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
