@@ -657,6 +657,24 @@ var expectedAWSRules = []alertsTestRule{
 			"PostgresStorageLow",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-high.yaml",
+		Rules: []string{
+			"RedisMemoryUsageHigh",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-will-max-in-4-hours.yaml",
+		Rules: []string{
+			"RedisMemoryUsageMaxIn4Hours",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-max-fill-in-4-days.yaml",
+		Rules: []string{
+			"RedisMemoryUsageMaxIn4Days",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
