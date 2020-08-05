@@ -28,14 +28,14 @@ targets:
      "3scale-apicast-pods",
      "blackbox",
      "redhat-rhmi-rhsso/keycloak-pod-monitor",
-     "redhat-rhmi-user-sso/keycloak-pod-monitor",
+     "redhat-rhmi-user-sso/keycloak-pod-monitor"
    ];
 
    const summarize = (prev, curr) => {
      if (!prev[curr.labels.job]) {
        prev[curr.labels.job] = {
          num: 0,
-         upNum: 0,
+         upNum: 0
        };
      }
      prev[curr.labels.job].num++;
