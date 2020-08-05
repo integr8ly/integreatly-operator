@@ -183,7 +183,6 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						For:    "15m",
 						Labels: map[string]string{"severity": "critical"},
 					},
-
 					{
 						Alert: "PersistentVolumeErrors",
 						Annotations: map[string]string{
@@ -193,6 +192,12 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Expr:   intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "15m",
 						Labels: map[string]string{"severity": "critical"},
+					},
+					{
+						Alert:       "TargetDown",
+						Annotations: map[string]string{"message": " Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 300 seconds"},
+						Expr:        intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} > 10 "),
+						Labels:      map[string]string{"severity": "warning"},
 					},
 				},
 			},

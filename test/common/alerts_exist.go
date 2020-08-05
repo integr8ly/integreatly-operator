@@ -92,6 +92,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: "redhat-rhmi-middleware-monitoring-operator-ksm-alerts.yaml",
 		Rules: []string{
+			"TargetDown",
 			"KubePodCrashLooping",
 			"KubePodNotReady",
 			"KubePodImagePullBackOff",
