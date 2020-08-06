@@ -62,6 +62,23 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 					},
 				},
 			},
+			{
+				AlertName: "rhmi-upgrade-alerts",
+				Namespace: "openshift-monitoring",
+				GroupName: "rhmi-upgrade.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "RHMIUpgradeExpectedDurationExceeded",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"message": "RHMI operator upgrade is taking more than 10 minutes",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf(`absent((rhmi_version * on(version) csv_succeeded{exported_namespace=~"%s"}) or absent(rhmi_version))`, installation.Namespace)),
+						For:    "10m",
+						Labels: map[string]string{"severity": "critical"},
+					},
+				},
+			},
 		},
 	}
 }
