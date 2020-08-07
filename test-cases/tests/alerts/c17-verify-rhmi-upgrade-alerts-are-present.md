@@ -9,7 +9,7 @@ tags:
   - destructive
 ---
 
-# C14 - Verify RHMI Upgrade alerts are present
+# C17 - Verify RHMI Upgrade alerts are present
 
 ## Description
 

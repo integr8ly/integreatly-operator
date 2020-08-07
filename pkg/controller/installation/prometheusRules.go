@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
@@ -47,7 +48,7 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 			},
 			{
 				AlertName: "rhmi-installation-alerts",
-				Namespace: "openshift-monitoring",
+				Namespace: monitoring.OpenshiftMonitoringNamespace,
 				GroupName: "rhmi-installation.rules",
 				Rules: []monitoringv1.Rule{
 					{
@@ -64,7 +65,7 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 			},
 			{
 				AlertName: "rhmi-upgrade-alerts",
-				Namespace: "openshift-monitoring",
+				Namespace: monitoring.OpenshiftMonitoringNamespace,
 				GroupName: "rhmi-upgrade.rules",
 				Rules: []monitoringv1.Rule{
 					{

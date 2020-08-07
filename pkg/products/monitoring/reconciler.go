@@ -45,7 +45,7 @@ const (
 	defaultInstallationNamespace = "middleware-monitoring"
 	defaultMonitoringName        = "middleware-monitoring"
 	packageName                  = "monitoring"
-	openshiftMonitoringNamespace = "openshift-monitoring"
+	OpenshiftMonitoringNamespace = "openshift-monitoring"
 	grafanaDataSourceSecretName  = "grafana-datasources"
 	grafanaDataSourceSecretKey   = "prometheus.yaml"
 	defaultBlackboxModule        = "http_2xx"
@@ -568,7 +568,7 @@ func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, ser
 	secret := &corev1.Secret{}
 
 	selector := k8sclient.ObjectKey{
-		Namespace: openshiftMonitoringNamespace,
+		Namespace: OpenshiftMonitoringNamespace,
 		Name:      grafanaDataSourceSecretName,
 	}
 
@@ -608,7 +608,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 
 	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
 	r.extraParams["namespace-prefix"] = r.installation.Spec.NamespacePrefix
-	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
+	r.extraParams["openshift_monitoring_namespace"] = OpenshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
