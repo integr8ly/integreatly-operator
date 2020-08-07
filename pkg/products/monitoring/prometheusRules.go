@@ -287,6 +287,22 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					},
 				},
 			},
+			{
+				AlertName: "general-monitoring-alerts",
+				Namespace: r.Config.GetOperatorNamespace(),
+				GroupName: "general.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "TargetDown",
+						Annotations: map[string]string{
+							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.	",
+						},
+						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) on  (namespace=~\"redhat-rhmi-.*\") > 10"),
+						For:    "5m",
+						Labels: map[string]string{"severity": "warning"},
+					},
+				},
+			},
 		},
 	}
 }
