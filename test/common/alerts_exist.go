@@ -658,6 +658,12 @@ var expectedAWSRules = []alertsTestRule{
 		},
 	},
 	{
+		File: "redhat-rhmi-operator-postgres-memory-usage-high.yaml",
+		Rules: []string{
+			"PostgresMemoryUsageHigh",
+		},
+	},
+	{
 		File: "redhat-rhmi-operator-redis-memory-usage-high.yaml",
 		Rules: []string{
 			"RedisMemoryUsageHigh",

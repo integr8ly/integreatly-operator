@@ -749,7 +749,7 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 func (r *ReconcileInstallation) handleCROConfigDeletion(rhmi integreatlyv1alpha1.RHMI) error {
 	// get cloud resource config map
 	croConf := &corev1.ConfigMap{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: DefaultCloudResourceConfigName}, croConf)
+			err := r.client.Get(context.TODO(), types.NamespacedName{Namespace: rhmi.Namespace, Name: DefaultCloudResourceConfigName}, croConf)
 	if err != nil {
 		return err
 	}

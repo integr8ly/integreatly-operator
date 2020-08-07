@@ -300,6 +300,7 @@ func (r *Reconciler) reconcileCloudResources(ctx context.Context, rhmi *integrea
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, nil
 	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

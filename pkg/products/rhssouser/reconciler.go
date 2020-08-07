@@ -227,7 +227,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.Logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
