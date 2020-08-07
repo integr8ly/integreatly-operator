@@ -229,6 +229,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for ups: %s", err)
 	}
 
+	// create the prometheus free storage alert rules
+	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, client, installation, postgres); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for ups: %s", err)
+	}
+
 	// get the secret created by the cloud resources operator
 	// containing postgres connection details
 	connSec := &corev1.Secret{}

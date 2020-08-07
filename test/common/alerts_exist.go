@@ -639,6 +639,42 @@ var expectedAWSRules = []alertsTestRule{
 			"Codeready-Postgres-RhmiPostgresResourceStatusPhasePending",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-postgres-storage-will-fill-in-4-hours.yaml",
+		Rules: []string{
+			"PostgresStorageWillFillIn4Hours",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-postgres-storage-will-fill-in-4-days.yaml",
+		Rules: []string{
+			"PostgresStorageWillFillIn4Days",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-postgres-storage-low.yaml",
+		Rules: []string{
+			"PostgresStorageLow",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-high.yaml",
+		Rules: []string{
+			"RedisMemoryUsageHigh",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-will-max-in-4-hours.yaml",
+		Rules: []string{
+			"RedisMemoryUsageMaxIn4Hours",
+		},
+	},
+	{
+		File: "redhat-rhmi-operator-redis-memory-usage-max-fill-in-4-days.yaml",
+		Rules: []string{
+			"RedisMemoryUsageMaxIn4Days",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
