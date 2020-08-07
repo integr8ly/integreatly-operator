@@ -11,12 +11,18 @@ targets:
 
 ## Steps
 
-1. Get targets from RHMI prometheus API (in `redhat-rhmi-middleware-monitoring-operator` namespace)
-   - e.g. <https://prometheus-route-redhat-rhmi-middleware-monitoring-operator.apps...s1.devshift.org/api/v1/targets>
-   - save it to `targetsA.json` file
-2. Get targets from cluster prometheus API (in `openshift-monitoring` namespace)
-   - e.g. <https://prometheus-k8s-openshift-monitoring.apps...s1.devshift.org/api/v1/targets>
-   - save it to `targetsB.json` file
+1. Get targets from RHMI prometheus API (in `redhat-rhmi-middleware-monitoring-operator` namespace) and save it to `targetsA.json` file
+
+   ```
+   echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')/api/v1/targets"
+   ```
+
+2. Get targets from cluster prometheus API (in `openshift-monitoring` namespace) and save it to `targetsB.json` file
+
+   ```
+   echo "https://$(oc get route prometheus-k8s -n openshift-monitoring -o=jsonpath='{.spec.host}')/api/v1/targets"
+   ```
+
 3. Use this nodejs script to compare targets:
 
    ```js
