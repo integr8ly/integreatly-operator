@@ -11,6 +11,6 @@ targets:
 
 ## Steps
 
-1. Login to the Solution Explorer as a developer and then as an admin user
+1. Login to the Solution Explorer as a developer and in a different browser/ incognito window as an admin user
 2. Select the drop down menu in the right side of the masthead
    > The drop down should show the user information determining if the user is a developer or an admin user.
