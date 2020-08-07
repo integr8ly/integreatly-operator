@@ -807,42 +807,13 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalRedisSecretName, err)
 	}
 
-	// cr returning a failed state
-	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
+	// reconcile postgres alerts
+	phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts: %w", err)
 	}
-
-	// wait for the postgres cr to reconcile
-	if postgres.Status.Phase != types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// create prometheus pending rule
-	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
-	}
-	// create postgres connectivity alert
-	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
-	}
-
-	// create the prometheus deletion rule
-	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for threescale: %s", err)
-	}
-
-	// create the prometheus free storage alert rules
-	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for threescale: %s", err)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
 
 	// get the secret containing redis credentials

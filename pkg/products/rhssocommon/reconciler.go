@@ -3,6 +3,8 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -29,7 +31,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 )
 
 var (
