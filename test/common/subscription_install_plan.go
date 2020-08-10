@@ -40,7 +40,7 @@ var (
 			Namespace: MonitoringOperatorNamespace,
 		},
 		{
-			Name:      constants.RHSSOUserSubscriptionName,
+			Name:      constants.RHSSOSubscriptionName,
 			Namespace: RHSSOUserOperatorNamespace,
 		},
 		{

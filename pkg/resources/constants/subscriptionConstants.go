@@ -10,7 +10,6 @@ const (
 	FuseSubscriptionName             = "rhmi-syndesis"
 	MonitoringSubscriptionName       = "rhmi-monitoring"
 	RHSSOSubscriptionName            = "rhmi-rhsso"
-	RHSSOUserSubscriptionName        = "rhmi-rhsso"
 	SolutionExplorerSubscriptionName = "rhmi-solution-explorer"
 	ThreeScaleSubscriptionName       = "rhmi-3scale"
 	UPSSubscriptionName              = "rhmi-unifiedpush"
