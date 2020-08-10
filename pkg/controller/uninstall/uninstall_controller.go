@@ -18,18 +18,24 @@ package uninstall
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -38,7 +44,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_uninstall")
+var (
+	log           = logf.Log.WithName("controller_uninstall")
+	namespace     = "redhat-rhmi-operator"
+	configMapName = "cloud-resources-aws-strategies"
+)
+
+//  patchStringValue specifies a patch operation for a string.
+type patchStringValue struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
+}
+
+type network struct {
+	Production struct {
+		CreateStrategy struct {
+			CidrBlock string
+		}
+	}
+}
 
 // Add creates a new Uninstall Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -53,7 +78,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := namespace
 
 	return &ReconcileUninstall{
 		mgr:               mgr,
@@ -110,7 +135,9 @@ func (r *ReconcileUninstall) Reconcile(request reconcile.Request) (reconcile.Res
 		if err != nil {
 			logrus.Errorf("could not retrieve %s namespace: %v", ns.Name, err)
 		}
-		if CheckLabel(ns) {
+		label, value := CheckLabel(ns)
+
+		if label == "uninstall" {
 			logrus.Info("Uninstall label has been set")
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err := r.client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi", Namespace: request.NamespacedName.Name}, rhmi)
@@ -133,9 +160,70 @@ func (r *ReconcileUninstall) Reconcile(request reconcile.Request) (reconcile.Res
 				}
 			}
 		}
+
+		if label == "cidr" {
+			logrus.Infof("Cidr value : %v, passed in as a namespace label", value)
+			cfgMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      configMapName,
+					Namespace: namespace,
+				},
+			}
+
+			err := r.client.Get(context.TODO(), k8sclient.ObjectKey{Name: configMapName, Namespace: request.NamespacedName.Name}, cfgMap)
+			if err == nil {
+				data := []byte(cfgMap.Data["_network"])
+
+				var cfgMapData network
+
+				// Unmarshal or Decode the JSON to the interface.
+				err := json.Unmarshal([]byte(data), &cfgMapData)
+				if err != nil {
+					logrus.Error(err)
+				}
+
+				cidr := cfgMapData.Production.CreateStrategy.CidrBlock
+
+				if cidr == "" {
+
+					newCidr := strings.Replace(value, "-", "/", -1)
+					logrus.Infof("No cidr has been set in configmap yet, Setting cidr from namespace label : %v", newCidr)
+
+					config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+						clientcmd.NewDefaultClientConfigLoadingRules(),
+						&clientcmd.ConfigOverrides{CurrentContext: ""}).ClientConfig()
+					if err != nil {
+						logrus.Error(err)
+					}
+
+					// Creates the clientset
+					clientset, err := kubernetes.NewForConfig(config)
+					if err != nil {
+						logrus.Error(err)
+					}
+
+					dataValue := fmt.Sprintf("{ \"production\": { \"createStrategy\": { \"CidrBlock\": \"%v\" } } }", newCidr)
+
+					payload := []patchStringValue{{
+						Op:    "add",
+						Path:  "/data/_network",
+						Value: dataValue,
+					}}
+
+					payloadBytes, _ := json.Marshal(payload)
+					_, err = clientset.
+						CoreV1().
+						ConfigMaps(namespace).
+						Patch(configMapName, types.JSONPatchType, payloadBytes)
+
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
+			}
+		}
 		logrus.Info("Reconciling Uninstall completed")
 	}
-
 	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
 }
 
@@ -155,11 +243,16 @@ func GetNS(ctx context.Context, namespace string, client k8sclient.Client) (*cor
 }
 
 // CheckLabel Checks namespace for deletion label based on label decided in https://issues.redhat.com/browse/SDA-2434
-func CheckLabel(o metav1.Object) bool {
+func CheckLabel(o metav1.Object) (string, string) {
 	for k, v := range o.GetLabels() {
 		if k == "api.openshift.com/addon-rhmi-operator-delete" && v == "true" {
-			return true
+			return "uninstall", "true"
+		}
+
+		if k == "cidr" {
+
+			return "cidr", v
 		}
 	}
-	return false
+	return "", ""
 }
