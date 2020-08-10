@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -41,8 +41,6 @@ const (
 
 	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
 	MaxUpgradeDays = 14
-
-	RecalculateScheduleAnnotation = "recalculateSchedule"
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -241,10 +239,6 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		oldUpgradeSpec.NotBeforeDays,
 		defaultUpgradeSpec.NotBeforeDays,
 	).(*int)
-
-	if !reflect.DeepEqual(oldUpgradeSpec, &rhmiConfig.Spec.Upgrade) {
-		rhmiConfig.Annotations[RecalculateScheduleAnnotation] = "true"
-	}
 
 	marshalled, err := json.Marshal(rhmiConfig)
 	if err != nil {
