@@ -6,11 +6,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/Masterminds/semver"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	apiextensionv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
 const (
@@ -36,7 +41,7 @@ func GenerateRegistryConfigMapFromManifest(manifestPackageName string) (map[stri
 		return nil, err
 	}
 
-	crdStringList, err := GetFilesFromManifestAsStringList(manifestDir, "^*.crd.yaml$", packageStringList)
+	crdStringList, err := GetCRDsFromManifestAsStringList(manifestDir, "^*.crd.yaml$", packageStringList, manifestPackageName)
 	if err != nil {
 		logrus.Fatalf("Error proccessing crds from %s with error: %s", manifestPackageName, err)
 		return nil, err
@@ -47,6 +52,152 @@ func GenerateRegistryConfigMapFromManifest(manifestPackageName string) (map[stri
 	configMapData["packages"] = packageStringList
 
 	return configMapData, nil
+}
+
+func GetCRDsFromManifestAsStringList(dir string, regex string, packageYaml string, manifestPackageName string) (string, error) {
+	var stringList strings.Builder
+	libRegEx, e := regexp.Compile(regex)
+	if packageYaml != "" {
+		if e != nil {
+			logrus.Fatalf("Error compiling regex for registry file: %s", e)
+		}
+
+		var folders []string
+
+		// Get a list of fodlers in the manifest/<product> folder
+		e = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() && info.Name() != manifestPackageName {
+				//folder := strings.Split(path, "/")
+				folders = append(folders, info.Name())
+			}
+			return nil
+		})
+
+		// Get Version number from list of folders
+		// We can't sort/reverse folders correctly since they are lexicographically sorted
+		// meaning 2 would be greater than 10
+		vs := make([]*semver.Version, len(folders))
+		for i, r := range folders {
+			v, err := semver.NewVersion(r)
+			if err != nil {
+				logrus.Errorf("Error parsing version: %s", err)
+			}
+
+			vs[i] = v
+		}
+
+		sort.Sort(semver.Collection(vs))
+
+		err := ReverseSlice(vs)
+		if err != nil {
+			logrus.Error("ReverseSlice erorr %w", err)
+		}
+
+		var currentVersion string
+
+		// Get current version from package Yaml
+		if packageYaml != "" {
+			currentVersion, err = GetCurrentCSVFromManifest(packageYaml)
+		}
+		if err != nil {
+			logrus.Fatal("Error")
+		}
+
+		// iterate through all folders
+		for _, folder := range vs {
+
+			currentFolder := dir + string(os.PathSeparator) + folder.Original()
+			// add current version crds
+			if strings.Contains(currentFolder, currentVersion) {
+				e = filepath.Walk(currentFolder, func(path string, info os.FileInfo, err error) error {
+					if err == nil && libRegEx.MatchString(info.Name()) && strings.Contains(path, currentVersion) {
+						return ProcessYamlFile(path, &stringList)
+					}
+					return nil
+				})
+
+			} else {
+				// iterate all other versions look for crds that don't exist in the current version
+				// and add them to the stringlist for building the config map
+				files, err := ioutil.ReadDir(currentFolder)
+				if err == nil {
+					for _, f := range files {
+						// iterate through all fils in the folder
+						if libRegEx.MatchString(f.Name()) {
+							crdConfig := &apiextensionv1beta1.CustomResourceDefinition{}
+
+							GetCrdDetails(crdConfig, currentFolder, f)
+							found := CheckFoldersForMatch(dir, vs, currentFolder, crdConfig, libRegEx)
+							if !found {
+								// if match isn't found, add file contents to stringlist
+								ProcessYamlFile(currentFolder+string(os.PathSeparator)+f.Name(), &stringList)
+							}
+
+						}
+					}
+				}
+			}
+
+		}
+	}
+	return stringList.String(), e
+}
+
+// CheckFoldersForMatch searchs other folders for a crd with the same APIVersion, group and kind
+func CheckFoldersForMatch(dir string, folders []*semver.Version, currentFolder string, crdConfig *apiextensionv1beta1.CustomResourceDefinition, libRegEx *regexp.Regexp) bool {
+
+	found := false
+	for _, cfolder := range folders {
+		cfolder := dir + string(os.PathSeparator) + cfolder.Original()
+
+		if cfolder == currentFolder {
+			break
+		} else {
+			files, err := ioutil.ReadDir(cfolder)
+			if err == nil {
+				for _, f := range files {
+					if libRegEx.MatchString(f.Name()) {
+						needleCrd := &apiextensionv1beta1.CustomResourceDefinition{}
+						GetCrdDetails(needleCrd, cfolder, f)
+
+						if crdConfig.APIVersion == needleCrd.APIVersion &&
+							crdConfig.Spec.Group == needleCrd.Spec.Group &&
+							crdConfig.Spec.Names.Kind == needleCrd.Spec.Names.Kind {
+							found = true
+
+						}
+					}
+				}
+			}
+		}
+	}
+	return found
+}
+
+// GetCrdDetails reads the crd file
+func GetCrdDetails(crdConfig *apiextensionv1beta1.CustomResourceDefinition, currentFolder string, f os.FileInfo) {
+	yamlFile, err := ioutil.ReadFile(currentFolder + string(os.PathSeparator) + f.Name())
+
+	err = yaml.Unmarshal(yamlFile, &crdConfig)
+	if err != nil {
+		fmt.Printf("Error parsing YAML file: %s\n", err)
+	}
+}
+
+// ReverseSlice reverses the order of the folders list
+func ReverseSlice(data interface{}) error {
+	value := reflect.ValueOf(data)
+	if value.Kind() != reflect.Slice {
+		return (errors.New("data must be a slice type"))
+	}
+	valueLen := value.Len()
+	for i := 0; i <= int((valueLen-1)/2); i++ {
+		reverseIndex := valueLen - 1 - i
+		tmp := value.Index(reverseIndex).Interface()
+		value.Index(reverseIndex).Set(value.Index(i))
+		value.Index(i).Set(reflect.ValueOf(tmp))
+	}
+	return nil
 }
 
 // Get manifest files from a directory recursively matching a regex and return as a yaml string list
