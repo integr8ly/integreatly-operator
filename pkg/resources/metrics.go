@@ -5,7 +5,6 @@
 //  * Postgres Connectivity Alerts (per product)
 //  * Postgres Resource Status Phase Pending (per product)
 //  * Postgres Resource Status Phase Failed (per product)
-//	* Postgres Memory Usage High (per product)
 //  * Redis Availability Alerts (per product)
 //  * Redis Connectivity Alerts (per product)
 //  * Redis Resource Status Phase Pending (per product)
@@ -15,7 +14,9 @@
 //  * Redis high memory usage for the last hour (per 3scale redis)
 //  * Postgres will run out of space in 4 days (per product)
 //  * Postgres will run out of space in 4 hours (per product)
-//
+//	* Postgres Memory Usage High (per product)
+
+
 package resources
 
 import (
@@ -108,6 +109,51 @@ func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst 
 
 	return v1alpha1.PhaseCompleted, nil
 }
+
+func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (v1alpha1.StatusPhase, error) {
+
+	// redis cr returning a failed state
+	_, err := createRedisResourceStatusPhaseFailedAlert(ctx, client, inst, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis failure alert %s: %w", cr.Name, err)
+	}
+
+	// redis cr returning a failed state during deletion
+	_, err = createRedisResourceDeletionStatusFailedAlert(ctx, client, inst, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for %s: %w", cr.Name, err)
+	}
+
+	if cr.Status.Phase != cro1types.PhaseComplete {
+		return v1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// create prometheus pending rule
+	_, err = createRedisResourceStatusPhasePendingAlert(ctx, client, inst, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis pending alert %s: %w", cr.Name, err)
+	}
+
+	// create the prometheus availability rule
+	_, err = createRedisAvailabilityAlert(ctx, client, inst, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus alert for %s: %w", cr.Name, err)
+	}
+	// create backend connectivity alert
+	_, err = createRedisConnectivityAlert(ctx, client, inst, cr)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus connectivity alert for %s: %w", cr.Name, err)
+	}
+
+	// create Redis CPU Usage High alert
+	if err = createRedisMemoryUsageAlerts(ctx, client, inst, cr); err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus memory usage high alerts for %s: %w", cr.Name, err)
+	}
+
+	return v1alpha1.PhaseCompleted, nil
+}
+
+
 
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
@@ -345,8 +391,8 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 	return nil
 }
 
-// CreateRedisResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Redis CR state
-func CreateRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+// createRedisResourceStatusPhasePendingAlert creates a PrometheusRule alert to watch for Redis CR state
+func createRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -374,7 +420,7 @@ func CreateRedisResourceStatusPhasePendingAlert(ctx context.Context, client k8sc
 
 // CreateRedisMemoryUsageHighAlert creates a PrometheusRule alert to watch for High Memory usage
 // of a Redis cache
-func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) error {
+func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) error {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
 		return nil
@@ -436,8 +482,8 @@ func CreateRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	return nil
 }
 
-// CreateRedisResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Redis CR state
-func CreateRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+// createRedisResourceStatusPhaseFailedAlert creates a PrometheusRule alert to watch for Redis CR state
+func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -463,8 +509,8 @@ func CreateRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 	return pr, nil
 }
 
-// CreateRedisResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Redis CRs
-func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+// createRedisResourceDeletionStatusFailedAlert creates a PrometheusRule alert that watches for failed deletions of Redis CRs
+func createRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis state alert creation, useClusterStorage is true")
 		return nil, nil
@@ -489,9 +535,9 @@ func CreateRedisResourceDeletionStatusFailedAlert(ctx context.Context, client k8
 	return pr, nil
 }
 
-// CreateRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
+// createRedisAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Redis cache
-func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis alert creation, useClusterStorage is true")
 		return nil, nil
@@ -517,9 +563,9 @@ func CreateRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	return pr, nil
 }
 
-// CreateRedisConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
+// createRedisConnectivityAlert creates a PrometheusRule alert to watch for the connectivity
 // of a Redis cache
-func CreateRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
+func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) (*prometheusv1.PrometheusRule, error) {
 	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
 		logrus.Info("skipping redis connectivity alert creation, useClusterStorage is true")
 		return nil, nil

@@ -677,37 +677,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	// redis cr returning a failed state
-	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, backendRedis)
+	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient,r.installation, backendRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
-
-	// create prometheus pending rule
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
-	}
-	// create backend connectivity alert
-	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
-	}
-
-	// redis cr returning a failed state during deletion
-	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
-	}
-	// create Redis CPU Usage High alert
-	if err = resources.CreateRedisMemoryUsageAlerts(ctx, serverClient, r.installation, backendRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus memory usage high alerts for threescale: %s", err)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
@@ -741,39 +716,13 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
-	// create prometheus failure rule
-	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, systemRedis)
+	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient,r.installation, systemRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
-
-	// create prometheus pending rule
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis pending alert: %w", err)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
-	}
-	// create system redis connectivity alert
-	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
-	}
-
-	// redis cr returning a failed state during deletion
-	_, err = resources.CreateRedisResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis deletion failure alert for threescale: %w", err)
-	}
-	// create redis memory usage alerts
-	if err = resources.CreateRedisMemoryUsageAlerts(ctx, serverClient, r.installation, systemRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus memory usage high alerts for threescale: %s", err)
-	}
-
 	// wait for the system redis cr to reconcile
 	if systemRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
@@ -808,7 +757,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// reconcile postgres alerts
-	phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
+	phase, err = resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts: %w", err)
 	}
