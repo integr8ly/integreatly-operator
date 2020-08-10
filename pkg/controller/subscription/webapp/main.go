@@ -8,6 +8,7 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -98,7 +99,7 @@ func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.R
 		Name:      webapp.Name,
 		Namespace: webapp.Namespace,
 	}, webapp); err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -132,7 +133,7 @@ func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 		k8sclient.ObjectKey{Name: webapp.Name, Namespace: webapp.Namespace},
 		webapp,
 	); err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			return nil
 		}
 		return err
