@@ -2,8 +2,11 @@ package cloudresources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -14,9 +17,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go/service/rds"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -25,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -93,8 +100,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
+
+			// overrides cro default deletion strategy to delete resources snapshots
+			phase, err := r.createDeletionStrategy(ctx, installation, client)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+
 			// ensure resources are cleaned up before deleting the namespace
-			phase, err := r.cleanupResources(ctx, installation, client)
+			phase, err = r.cleanupResources(ctx, installation, client)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -149,6 +163,48 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.CloudResourcesStage, r.Config.GetProductName())
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	if strings.ToLower(installation.Spec.UseClusterStorage) == "false" {
+		croStrategyConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cloud-resources-aws-strategies",
+				Namespace: installation.Namespace,
+			},
+		}
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, croStrategyConfig, func() error {
+			forceBucketDeletion := true
+			skipFinalSnapshot := true
+			finalSnapshotIdentifier := ""
+			tier := "production"
+			resources := map[string]interface{}{
+				"blobstorage": aws.S3DeleteStrat{
+					ForceBucketDeletion: &forceBucketDeletion,
+				},
+				"postgres": rds.DeleteDBClusterInput{
+					SkipFinalSnapshot: &skipFinalSnapshot,
+				},
+				"redis": elasticache.DeleteCacheClusterInput{
+					FinalSnapshotIdentifier: &finalSnapshotIdentifier,
+				},
+			}
+			for resource, deleteStrategy := range resources {
+				err := overrideStrategyConfig(resource, tier, croStrategyConfig, deleteStrategy)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -256,4 +312,27 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		serverClient,
 		catalogSourceReconciler,
 	)
+}
+
+func overrideStrategyConfig(resourceType string, tier string, croStrategyConfig *corev1.ConfigMap, deleteStrategy interface{}) error {
+	resource := croStrategyConfig.Data[resourceType]
+	strategyConfig := map[string]*aws.StrategyConfig{}
+	if err := json.Unmarshal([]byte(resource), &strategyConfig); err != nil {
+		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
+	}
+
+	deleteStrategyJSON, err := json.Marshal(deleteStrategy)
+	if err != nil {
+		return err
+	}
+
+	strategyConfig[tier].DeleteStrategy = json.RawMessage(deleteStrategyJSON)
+
+	strategyConfigJSON, err := json.Marshal(strategyConfig)
+	if err != nil {
+		return err
+	}
+	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
+
+	return nil
 }
