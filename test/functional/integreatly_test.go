@@ -1,6 +1,7 @@
 package functional
 
 import (
+	"k8s.io/client-go/rest"
 	"os"
 	"testing"
 
@@ -10,6 +11,10 @@ import (
 
 func TestIntegreatly(t *testing.T) {
 	config, err := runtimeConfig.GetConfig()
+	config.Impersonate = rest.ImpersonationConfig{
+		UserName: "system:admin",
+		Groups:   []string{"system:authenticated"},
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
