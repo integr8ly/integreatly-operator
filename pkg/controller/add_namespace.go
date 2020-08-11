@@ -16,11 +16,9 @@ limitations under the License.
 
 package controller
 
-import (
-	"github.com/integr8ly/integreatly-operator/pkg/controller/uninstall"
-)
+import "github.com/integr8ly/integreatly-operator/pkg/controller/namespacelabel"
 
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
-	AddToManagerFuncs = append(AddToManagerFuncs, uninstall.Add)
+	AddToManagerFuncs = append(AddToManagerFuncs, namespacelabel.Add)
 }
