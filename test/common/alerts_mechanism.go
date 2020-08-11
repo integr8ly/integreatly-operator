@@ -98,17 +98,31 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 }
 
 func verifySecrets(kubeClient kubernetes.Interface) error {
+	var pagerdutyKey, dmsURL string
 	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
-	dms := string(res.Data["url"])
+	if len(res.Data["SNITCH_URL"]) != 0 {
+		dmsURL = string(res.Data["SNITCH_URL"])
+	} else if len(res.Data["url"]) != 0 {
+		dmsURL = string(res.Data["url"])
+	} else {
+		return fmt.Errorf("url is undefined in dead mans snitch secret")
+	}
 
 	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-pagerduty", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
-	pagerduty := string(res.Data["serviceKey"])
+
+	if len(res.Data["PAGERDUTY_KEY"]) != 0 {
+		pagerdutyKey = string(res.Data["PAGERDUTY_KEY"])
+	} else if len(res.Data["serviceKey"]) != 0 {
+		pagerdutyKey = string(res.Data["serviceKey"])
+	} else {
+		return fmt.Errorf("secret key is undefined in pager duty secret")
+	}
 
 	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-smtp", metav1.GetOptions{})
 	if err != nil {
@@ -142,12 +156,12 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		switch receiver["name"] {
 		case "critical":
 			configs := receiver["pagerduty_configs"].([]interface{})
-			if configs[0].(map[interface{}]interface{})["service_key"] != pagerduty {
+			if configs[0].(map[interface{}]interface{})["service_key"] != pagerdutyKey {
 				return fmt.Errorf("pagerduty service_key not set correctly")
 			}
 		case "deadmansswitch":
 			configs := receiver["webhook_configs"].([]interface{})
-			if configs[0].(map[interface{}]interface{})["url"] != dms {
+			if configs[0].(map[interface{}]interface{})["url"] != dmsURL {
 				return fmt.Errorf("dms url not set correctly")
 			}
 		}
