@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	Version            = "2.6.0"
-	IntegreatlyVersion = "2.6.0"
+	Version            = "2.6.1"
+	IntegreatlyVersion = "2.6.1"
 )
 
 func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStatus, expectedProductVersion string, expectedOpVersion string) bool {
