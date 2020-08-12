@@ -183,12 +183,6 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						For:    "15m",
 						Labels: map[string]string{"severity": "critical"},
 					},
-					{
-						Alert:       "TargetDown",
-						Annotations: map[string]string{"message": " Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 300 seconds"},
-						Expr:        intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} > 10 "),
-						Labels:      map[string]string{"severity": "warning"},
-					},
 				},
 			},
 
@@ -295,10 +289,10 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					{
 						Alert: "TargetDown",
 						Annotations: map[string]string{
-							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.	",
+							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.",
 						},
-						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) on  (namespace=~\"redhat-rhmi-.*\") > 10"),
-						For:    "5m",
+						Expr:   intstr.FromString(fmt.Sprintf("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) * on (namespace) group_left kube_namespace_labels{namespace=~\"%s.*\"} > 10", r.Config.GetNamespacePrefix())),
+						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
 				},
