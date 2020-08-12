@@ -271,7 +271,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
-	if installation.Status.Version == "" && installation.Status.ToVersion == "" {
+	if manualUpgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
 		installation.Status.ToVersion = version.IntegreatlyVersion
 		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.IntegreatlyVersion)
 		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
@@ -339,7 +339,7 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	metrics.SetRHMIStatus(installation)
 
 	// Check if the version needs to be updated
-	if (isFirstInstallReconcile(installation) || isUpgradeReconcile(installation)) && allProductsReconciled {
+	if (firstInstallInProgress(installation) || upgradeInProgress(installation)) && allProductsReconciled {
 		installation.Status.Version = installation.Status.ToVersion
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
@@ -523,11 +523,23 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 	return retryRequeue, err
 }
 
-func isFirstInstallReconcile(installation *integreatlyv1alpha1.RHMI) bool {
+func firstInstallInProgress(installation *integreatlyv1alpha1.RHMI) bool {
 	return installation.Status.Version == ""
 }
 
-func isUpgradeReconcile(installation *integreatlyv1alpha1.RHMI) bool {
+func firstInstallFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
+	status := installation.Status
+	return status.Version == "" && status.ToVersion == ""
+}
+
+// A manual upgrade is one in which the install plan was manually approved.
+// In which case the toVersion field has not been set
+func manualUpgradeFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
+	status := installation.Status
+	return status.Version != "" && status.ToVersion == "" && status.Version != version.IntegreatlyVersion
+}
+
+func upgradeInProgress(installation *integreatlyv1alpha1.RHMI) bool {
 	status := installation.Status
 	if status.ToVersion != "" {
 		return true
