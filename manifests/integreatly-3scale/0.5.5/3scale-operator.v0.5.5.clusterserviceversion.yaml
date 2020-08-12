@@ -31,15 +31,15 @@ spec:
   replaces: 3scale-operator.v0.5.4
   relatedImages:
   - name: apicast-gateway-rhel8
-    image: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
+    image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
   - name: backend-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:bd626295c55a7815a816d7049fba1febdec6a3305dee2a3292e92a26d56036b0
+    image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:bd626295c55a7815a816d7049fba1febdec6a3305dee2a3292e92a26d56036b0
   - name: system-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:29836068f71f53f88b75345055808106cb4620bf3d488bd458709936d716377f
+    image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:29836068f71f53f88b75345055808106cb4620bf3d488bd458709936d716377f
   - name: zync-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:f46b47b84450a81cb463b66dc86b91baf0dd60bdca275192925f6924b90a57bf
+    image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:f46b47b84450a81cb463b66dc86b91baf0dd60bdca275192925f6924b90a57bf
   - name: memcached-rhel7
-    image: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
+    image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
   - name: redis-32-rhel7
     value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
   - name: mysql-57-rhel7
@@ -178,15 +178,15 @@ spec:
                 - name: OPERATOR_NAME
                   value: threescale-operator
                 - name: BACKEND_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:bd626295c55a7815a816d7049fba1febdec6a3305dee2a3292e92a26d56036b0
+                  value: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:bd626295c55a7815a816d7049fba1febdec6a3305dee2a3292e92a26d56036b0
                 - name: APICAST_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
+                  value: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:3023b37ccfc902bfafd2c344dc5595295369a2dc00ea38b27c193ca5b138942b
                 - name: SYSTEM_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:29836068f71f53f88b75345055808106cb4620bf3d488bd458709936d716377f
+                  value: registry.redhat.io/3scale-amp2/system-rhel7@sha256:29836068f71f53f88b75345055808106cb4620bf3d488bd458709936d716377f
                 - name: ZYNC_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:f46b47b84450a81cb463b66dc86b91baf0dd60bdca275192925f6924b90a57bf
+                  value: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:f46b47b84450a81cb463b66dc86b91baf0dd60bdca275192925f6924b90a57bf
                 - name: SYSTEM_MEMCACHED_IMAGE
-                  value: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
+                  value: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:2be57d773843135c0677e31d34b0cd24fa9dafc4ef1367521caa2bab7c6122e6
                 - name: BACKEND_REDIS_IMAGE
                   value: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
                 - name: SYSTEM_REDIS_IMAGE
@@ -197,7 +197,7 @@ spec:
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
                 - name: ZYNC_POSTGRESQL_IMAGE
                   value: registry.redhat.io/rhscl/postgresql-10-rhel7@sha256:de3ab628b403dc5eed986a7f392c34687bddafee7bdfccfd65cecf137ade3dfd
-                image: registry.stage.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ba6ec8ed984a011796bbe1eafabb2791957f58ed66ec4a484c024dd96eaf427
+                image: registry.redhat.io/3scale-amp2/3scale-rhel7-operator@sha256:1ba6ec8ed984a011796bbe1eafabb2791957f58ed66ec4a484c024dd96eaf427
                 name: 3scale-operator
                 resources: {}
               serviceAccountName: 3scale-operator
