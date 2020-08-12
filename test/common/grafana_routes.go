@@ -8,7 +8,6 @@ import (
 	"net/http/httputil"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/test/resources"
 	v1 "github.com/openshift/api/route/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -49,10 +48,6 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
-	//reconcile idp setup
-	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Fatal("failed to reconcile testing idp", err)
-	}
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
@@ -62,14 +57,14 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to create testing http client", err)
 	}
-	//retrieve an openshift oauth proxy cookie
-	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, httpClient, TestingIDPRealm, t); err != nil {
-		t.Fatal("failed to login through openshift oauth proxy", err)
-	}
 	//get dashboards for grafana from the external route
 	grafanaDashboardsUrl := fmt.Sprintf("%s/api/search", grafanaRootHostname)
-	dashboardResp, err := httpClient.Get(grafanaDashboardsUrl)
+	req, err := http.NewRequest("GET", grafanaDashboardsUrl, nil)
+	if err != nil {
+		t.Fatal("failed to create request for grafana", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ctx.KubeConfig.BearerToken))
+	dashboardResp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
 	}
@@ -78,8 +73,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	if dashboardResp.StatusCode != http.StatusOK {
 		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
 		t.Logf("dumpResp: %q", dumpResp)
-		t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-6738, got status : %v", dashboardResp.StatusCode)
-		// t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
+		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
 	}
 
 	var dashboards []interface{}
