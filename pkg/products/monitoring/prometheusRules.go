@@ -38,16 +38,6 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Labels: map[string]string{"severity": "critical"},
 					},
 					{
-						Alert: "CronJobSuspended",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": " CronJob {{ $labels.namespace  }} / {{ $labels.cronjob }} is suspended",
-						},
-						Expr:   intstr.FromString("kube_cronjob_labels{ label_monitoring_key='middleware' } * ON (cronjob) GROUP_RIGHT() kube_cronjob_spec_suspend > 0 "),
-						For:    "60s",
-						Labels: map[string]string{"severity": "critical"},
-					},
-					{
 						Alert: "CronJobNotRunInThreshold",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,

@@ -42,7 +42,6 @@ var expectedRules = []alertsTestRule{
 		Rules: []string{
 			"JobRunningTimeExceeded",
 			"JobRunningTimeExceeded",
-			"CronJobSuspended",
 			"CronJobsFailed",
 			"CronJobNotRunInThreshold",
 		},
