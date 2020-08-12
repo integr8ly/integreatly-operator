@@ -15,4 +15,4 @@ FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
 
 COPY --from=builder /go/src/github.com/integr8ly/integreatly-operator/integreatly-operator-test-harness.test integreatly-operator-test-harness.test
 
-ENTRYPOINT [ "/integreatly-operator-test-harness.test" ]
+ENTRYPOINT [ "/integreatly-operator-test-harness.test", "-test.v" ]
