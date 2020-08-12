@@ -291,7 +291,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Annotations: map[string]string{
 							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) * on (namespace) group_left kube_namespace_labels{namespace=~\"%s.*\"} > 10", r.Config.GetNamespacePrefix())),
+						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) > 10"),
 						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
