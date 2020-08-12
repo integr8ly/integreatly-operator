@@ -134,7 +134,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 	case integreatlyv1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "")
 	case integreatlyv1alpha1.ProductAMQOnline:
 		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
