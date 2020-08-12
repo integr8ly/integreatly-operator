@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/3scale/3scale-operator v0.5.0
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200604085617-be91f2b38134
+	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v0.0.0-20200107144857-313dbcf0e3bd
 	github.com/aerogear/unifiedpush-operator v0.5.0
