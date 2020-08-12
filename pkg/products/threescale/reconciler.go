@@ -684,6 +684,12 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, nil
 	}
+
+	// create Redis Cpu Usage High alert
+	err = resources.CreateRedisCpuUsageAlerts(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus Cpu usage high alerts for threescale: %s", err)
+	}
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
