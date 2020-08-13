@@ -6,7 +6,7 @@ components:
 environments:
   - osd-post-upgrade
 targets:
-  - 2.6.0
+  - 2.7.0
 ---
 
 # H01 - UPS: Verify that UPS can send push notification

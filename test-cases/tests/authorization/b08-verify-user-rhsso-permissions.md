@@ -6,7 +6,7 @@ components:
 environments:
   - osd-post-upgrade
 targets:
-  - 2.8.0
+  - 2.6.0
 ---
 
 # B08 - Verify User RHSSO Permissions

@@ -7,7 +7,7 @@ environments:
   - osd-post-upgrade
 estimate: 1h
 targets:
-  - 2.6.0
+  - 2.7.0
 ---
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset

@@ -5,7 +5,7 @@ environments:
   - osd-fresh-install
 estimate: 30m
 targets:
-  - 2.7.0
+  - 2.6.0
 ---
 
 # G02 - Verify SSO walkthrough
