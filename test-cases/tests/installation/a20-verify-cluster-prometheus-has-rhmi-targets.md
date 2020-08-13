@@ -3,8 +3,7 @@ environments:
   - osd-post-upgrade
 estimate: 15m
 targets:
-  - 2.3.0
-  - 2.6.0
+  - 2.4.0
 ---
 
 # A20 - Verify cluster Prometheus has RHMI targets

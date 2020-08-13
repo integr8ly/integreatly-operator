@@ -5,6 +5,7 @@ components:
   - product-sso
 environments:
   - osd-post-upgrade
+estimate: 15m
 targets:
   - 2.8.0
 ---
