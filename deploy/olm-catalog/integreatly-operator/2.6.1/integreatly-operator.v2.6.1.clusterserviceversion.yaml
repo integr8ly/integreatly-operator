@@ -47,6 +47,7 @@ metadata:
     support: RHMI
   name: integreatly-operator.v2.6.1
   namespace: placeholder
+  olm.skipRange: '>=2.4.0 <2.6.1'
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
