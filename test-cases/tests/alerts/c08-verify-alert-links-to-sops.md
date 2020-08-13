@@ -1,6 +1,7 @@
 ---
 environments:
   - osd-post-upgrade
+estimate: 15m
 targets:
   - 2.3.0
   - 2.4.0
