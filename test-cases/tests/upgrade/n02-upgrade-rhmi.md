@@ -48,32 +48,25 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    ```
    git clone https://github.com/integr8ly/workload-web-app
    cd workload-web-app
+   export GRAFANA_DASHBOARD=true
    make local/deploy
    ```
 
-   See step 14 and 15, you might want to do these pre-upgrade as well.
+   See step 10 and 11, you might want to do these pre-upgrade as well.
 
-5. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the `measure-downtime.js` script:
-
-   ```bash
-   git clone https://github.com/integr8ly/delorean
-   cd delorean/scripts/ocm
-   node measure-downtime.js
-   ```
-
-6. Edit RHMIConfig in the `redhat-rhmi-operator` config again to start the upgrade
+5. Edit RHMIConfig in the `redhat-rhmi-operator` config again to start the upgrade
 
    ```
    oc edit RHMIConfig rhmi-config -n redhat-rhmi-operator
    ```
 
-7. Edit following fields in the **rhmi-config** and save:
+6. Edit following fields in the **rhmi-config** and save:
 
    - spec.upgrade.alwaysImmediately: `true`
 
    > The upgrade should start automatically
 
-8. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
+7. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
 
    ```bash
    watch -n 60 " oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHMI Upgrade completed\!'"
@@ -83,37 +76,27 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    >
    > Once it's finished, it should print out "Upgrade completed!"
 
-9. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
+8. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
-10. Run the following command to generate a downtime report using the delorean cli:
+9. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
 
-    ```
-    cd delorean
-    make build/cli
-    ./delorean pipeline query-report --config-file ./configurations/downtime-report.yaml -o <output_dir>
-    ```
+   ```
+   cd delorean
+   make build/cli
+   ./delorean pipeline query-report --config-file ./configurations/downtime-report-config.yaml -o <output_dir>
+   ```
 
-    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue.
+   There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-11. Terminate the process for measuring the downtime of components in terminal window #1
-
-    > It takes couple of seconds until all results are collected
-    >
-    > The results will be written down to the file `downtime.json`
-
-12. Upload that file to the JIRA ticket
-
-13. Upload all reports to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
-
-14. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+10. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
 
 ```bash
 echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
-15. Select the **Workload App** dashboard
+11. Select the **Workload App** dashboard
 
 > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
@@ -122,4 +105,4 @@ echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-
 >
 > Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
 
-16. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+12. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
