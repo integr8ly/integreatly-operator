@@ -5,9 +5,14 @@ import (
 	"errors"
 	"fmt"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"net/http"
+	"net/http/httptest"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"strings"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
@@ -18,7 +23,6 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	samplesv1 "github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
@@ -40,6 +44,8 @@ type FuseOnOpenShiftScenario struct {
 	Installation   *integreatlyv1alpha1.RHMI
 	Product        *integreatlyv1alpha1.RHMIProductStatus
 	Recorder       record.EventRecorder
+	Client         *http.Client
+	Url            string
 }
 
 func getFakeConfig() *config.ConfigReadWriterMock {
@@ -51,6 +57,30 @@ func getFakeConfig() *config.ConfigReadWriterMock {
 			return config.NewFuseOnOpenshift(config.ProductConfig{}), nil
 		},
 	}
+}
+
+func getFakeServer(t *testing.T) *httptest.Server {
+
+	var arr []byte
+	var err error
+
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if strings.Contains(req.URL.String(), "fis-image-streams") {
+			arr, _ = ioutil.ReadFile("./testtemplates/fis-image-streams.json")
+		} else {
+			arr, _ = ioutil.ReadFile("./testtemplates/test_template.json")
+		}
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(200)
+		_, err = rw.Write(arr)
+		if err != nil {
+			t.Fatal("Failed to write file")
+		}
+	}))
+
+	return server
 }
 
 func setupRecorder() record.EventRecorder {
@@ -104,6 +134,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 		},
 	}
 
+	server := getFakeServer(t)
+
 	cases := []FuseOnOpenShiftScenario{
 		{
 			Name:           "test error on failed config read",
@@ -119,6 +151,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
+			Client:   server.Client(),
+			Url:      server.URL + "/",
 		},
 		{
 			Name:           "test error on invalid image stream file content",
@@ -133,6 +167,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Client:     server.Client(),
+			Url:        server.URL + "/",
 		},
 		{
 			Name:           "test error on invalid image stream",
@@ -147,6 +183,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Client:     server.Client(),
+			Url:        server.URL + "/",
 		},
 		{
 			Name:           "test pass on invalid template file content set to required state",
@@ -165,6 +203,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Client:     server.Client(),
+			Url:        server.URL + "/",
 		},
 		{
 			Name:           "test pass on invalid template object set to required state",
@@ -178,13 +218,15 @@ func TestFuseOnOpenShift(t *testing.T) {
 				Data: map[string]string{
 					"fis-image-streams.json": `{ "items": [] }`,
 					"fuse-console-cluster-os4.json": `{
-                      "name": "invalid-template"
-                  }`,
+		             "name": "invalid-template"
+				}`,
 				},
 			}),
 			FakeConfig: getFakeConfig(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Client:     server.Client(),
+			Url:        server.URL + "/",
 		},
 		{
 			Name:           "test successful reconcile when resource already exists",
@@ -194,6 +236,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Client:         server.Client(),
+			Url:            server.URL + "/",
 		},
 		{
 			Name:           "test successful reconcile without sample cluster operator installed",
@@ -204,6 +248,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Client:         server.Client(),
+			Url:            server.URL + "/",
 		},
 		{
 			Name:           "test successful reconcile with sample cluster operator installed",
@@ -214,6 +260,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			FakeConfig:     getFakeConfig(),
 			Product:        &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:       setupRecorder(),
+			Client:         server.Client(),
+			Url:            server.URL + "/",
 		},
 	}
 
@@ -224,6 +272,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.Client,
+				tc.Url,
 			)
 
 			if err != nil && err.Error() != tc.ExpectedError {
