@@ -1,6 +1,8 @@
 package functional
 
 import (
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"os"
 	"testing"
@@ -10,6 +12,13 @@ import (
 )
 
 func TestIntegreatly(t *testing.T) {
+
+	args := os.Args[1:]
+	if resources.Contains(args, "cleanup") {
+		logrus.Info("ending test for cleanup")
+		os.Exit(0)
+	}
+
 	config, err := runtimeConfig.GetConfig()
 	config.Impersonate = rest.ImpersonationConfig{
 		UserName: "system:admin",

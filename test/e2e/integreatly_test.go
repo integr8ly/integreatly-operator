@@ -4,6 +4,8 @@ import (
 	"context"
 	goctx "context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path"
@@ -46,6 +48,13 @@ const (
 )
 
 func TestIntegreatly(t *testing.T) {
+
+	args := os.Args[1:]
+	if resources.Contains(args, "cleanup") {
+		logrus.Info("ending test for cleanup")
+		os.Exit(0)
+	}
+
 	err := framework.AddToFrameworkScheme(apis.AddToScheme, &integreatlyv1alpha1.RHMIList{})
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
