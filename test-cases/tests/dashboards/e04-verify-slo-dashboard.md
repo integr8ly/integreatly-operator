@@ -18,7 +18,7 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ## Steps
 
-1. Make sure that there is at least one active alert for every panel in SLO dasboard (e.g. pod_down)
+1. Make sure that there is at least one active alert for every panel in Grafana SLO dasboard (e.g. pod_down)
    1. Make sure rhmi-operator pod is scaled down to 0 pods
    2. Make sure all rhmi product operator pods are scaled down to 0, you can use code #1 below
    3. Make sure all keycloak stateful sets are scaled down to 0, you can use code #2 and #3 below
@@ -30,6 +30,10 @@ Note: this test should only be performed at a time it will not affect other ongo
    > redhat-rhmi-codeready-workspaces -> Workloads -> Deployments -> Scale to 1
    > redhat-rhmi-solution-explorer -> Workloads -> Deployment Configs -> Scale to 1
    > redhat-rhmi-ups -> Workloads -> Deployments -> Scale to 1
+
+Execute the scripts below in a separate terminal tab/window and keep them running. It will keep scaling down resources and prevent from automatic scale up by the operator(s).
+
+Bringing resources up might not be so simple. Make sure you have access to the terminal output of the scripts to see how many pods (replicas) were there originally and manually change that back if some alerts don't stop firing.
 
 ### Code #1
 
