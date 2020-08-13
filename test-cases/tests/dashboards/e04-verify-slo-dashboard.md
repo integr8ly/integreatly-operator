@@ -33,7 +33,7 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 Execute the scripts below in a separate terminal tab/window and keep them running. It will keep scaling down resources and prevent from automatic scale up by the operator(s).
 
-Bringing things up might not be so simple. Make sure you have access to the terminal output of the scripts to see how many pods (replicas) were there originally and manually change that back if some alerts don't stop firing.
+Bringing resources up might not be so simple. Make sure you have access to the terminal output of the scripts to see how many pods (replicas) were there originally and manually change that back if some alerts don't stop firing.
 
 ### Code #1
 
