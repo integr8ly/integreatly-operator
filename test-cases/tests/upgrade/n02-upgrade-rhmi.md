@@ -51,6 +51,8 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    make local/deploy
    ```
 
+   See step 14 and 15, you might want to do these pre-upgrade as well.
+
 5. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the `measure-downtime.js` script:
 
    ```bash
@@ -71,15 +73,7 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
 
    > The upgrade should start automatically
 
-8. In a separate terminal, login to the ocm staging environment and get the ID of the cluster that is going to be upgraded:
-
-   ```bash
-   # Get the token at https://qaprodauth.cloud.redhat.com/openshift/token
-   ocm login --url=https://api.stage.openshift.com --token=<YOUR-TOKEN>
-   CLUSTER_ID=$(ocm cluster list | grep <CLUSTER-NAME> | awk '{print $1}')
-   ```
-
-9. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
+8. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
 
    ```bash
    watch -n 60 " oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHMI Upgrade completed\!'"
@@ -89,11 +83,11 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    >
    > Once it's finished, it should print out "Upgrade completed!"
 
-10. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
+9. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
 
-    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
+   > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
-11. Run the following command to generate a downtime report using the delorean cli:
+10. Run the following command to generate a downtime report using the delorean cli:
 
     ```
     cd delorean
@@ -103,14 +97,29 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
 
     There will be a yaml file generated in the output directory. Upload the file to the JIRA issue.
 
-12. Terminate the process for measuring the downtime of components in terminal window #1
+11. Terminate the process for measuring the downtime of components in terminal window #1
 
     > It takes couple of seconds until all results are collected
     >
     > The results will be written down to the file `downtime.json`
 
-13. Upload that file to the JIRA ticket
+12. Upload that file to the JIRA ticket
 
-14. Upload all reports to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
+13. Upload all reports to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-15. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+14. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+
+```bash
+echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+```
+
+15. Select the **Workload App** dashboard
+
+> Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph.
+> Take the screenshot of the dashboard and attach it to this ticket
+>
+> Note: when testing the RHMI upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues (also make sure that the screenshot of the dashboard post-upgrade is attached to this Jira)
+>
+> Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
+
+16. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
