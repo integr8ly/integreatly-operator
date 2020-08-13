@@ -677,7 +677,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient,r.installation, backendRedis)
+	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
@@ -716,7 +716,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
-	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient,r.installation, systemRedis)
+	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
@@ -758,8 +758,9 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// reconcile postgres alerts
 	phase, err = resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
+	productName := postgres.Labels["productName"]
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
 	}
 	if phase != integreatlyv1alpha1.PhaseCompleted {
 		return phase, nil

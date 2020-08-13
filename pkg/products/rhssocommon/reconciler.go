@@ -308,8 +308,9 @@ func (r *Reconciler) ReconcileCloudResources(dbPRefix string, defaultNamespace s
 	if postgres != nil {
 		// reconcile postgres alerts
 		phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, installation, postgres)
+		productName := postgres.Labels["productName"]
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
 		}
 		if phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, nil

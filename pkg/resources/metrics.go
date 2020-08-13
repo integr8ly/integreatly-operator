@@ -14,8 +14,6 @@
 //  * Redis high memory usage for the last hour (per 3scale redis)
 //  * Postgres will run out of space in 4 days (per product)
 //  * Postgres will run out of space in 4 hours (per product)
-//	* Postgres Memory Usage High (per product)
-
 
 package resources
 
@@ -51,8 +49,6 @@ const (
 	alertFor30Mins                    = "30m"
 	alertFor60Mins                    = "60m"
 	alertPercentage                   = "90"
-	//100mb in bytes
-	alertLowStorageThreshold = 100 * 1000 * 1000
 )
 
 func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (v1alpha1.StatusPhase, error) {
@@ -102,11 +98,6 @@ func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst 
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres cpu utilization prometheus alerts for %s: %w", cr.Name, err)
 	}
 
-	//create the prometheus postgres high memory usage alert rule
-	if err = reconcilePostgresMemoryUsageAlerts(ctx, client, inst, cr); err != nil {
-		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres high memory usage alert for %s: %w", cr.Name, err)
-	}
-
 	return v1alpha1.PhaseCompleted, nil
 }
 
@@ -152,8 +143,6 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 
 	return v1alpha1.PhaseCompleted, nil
 }
-
-
 
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
@@ -377,14 +366,14 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 
 	alertName := "PostgresCPUHigh"
 	ruleName := "postgres-cpu-high"
-	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for longer than 1hour"
+	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for longer than 5 minutes"
 	labels := map[string]string{
 		"severity": "warning",
 	}
 
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")
 
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -589,29 +578,6 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, err
 	}
 	return pr, nil
-}
-
-func reconcilePostgresMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) error {
-	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
-		logrus.Info("skipping postgres memory usage high alert creation, useClusterStorage is true")
-		return nil
-	}
-
-	alertName := "PostgresMemoryUsageHigh"
-	ruleName := "postgres-memory-usage-high"
-	alertDescription := "Available Postgres Memory for instance {{ $labels.instanceID }} is less than 100mb for over 5 minutes. Postgres Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
-	labels := map[string]string{
-		"severity": "warning",
-	}
-
-	alertExp := intstr.FromString(fmt.Sprintf("cro_postgres_freeable_memory_average < %d", alertLowStorageThreshold))
-
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresMemoryUsageHigh, alertFor5Mins, alertExp, labels)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
