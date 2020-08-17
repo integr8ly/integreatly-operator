@@ -7,7 +7,8 @@ estimate: 2h
 tags:
   - destructive
 targets:
-  - 2.6.0
+  - 2.4.0
+  - 2.7.0
 ---
 
 # J10 - Verify AMQ backup and restore

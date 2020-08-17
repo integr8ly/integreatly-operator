@@ -39,6 +39,8 @@ const (
 	UPSProductNamespace               = NamespacePrefix + "ups"
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
 	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
+	OpenShiftConsoleRoute             = "console"
+	OpenShiftConsoleNamespace         = "openshift-console"
 )
 
 type TestingContext struct {

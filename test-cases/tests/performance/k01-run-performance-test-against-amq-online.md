@@ -7,7 +7,8 @@ estimate: 4h
 tags:
   - destructive
 targets:
-  - 2.6.0
+  - 2.4.0
+  - 2.7.0
 ---
 
 # K01 - Run performance test against AMQ Online

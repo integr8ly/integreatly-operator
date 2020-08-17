@@ -5,7 +5,7 @@ estimate: 30m
 tags:
   - destructive
 targets:
-  - 2.6.0
+  - 2.7.0
 ---
 
 # O01 - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
