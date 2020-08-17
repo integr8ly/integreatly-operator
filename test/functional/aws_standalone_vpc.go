@@ -145,7 +145,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	// from the _network key
 	strategyMap := &v1.ConfigMap{}
 	err = testingCtx.Client.Get(ctx, types.NamespacedName{
-		Namespace: awsCredsNamespace,
+		Namespace: common.RHMIOperatorNamespace,
 		Name:      strategyMapName,
 	}, strategyMap)
 	if err != nil {
