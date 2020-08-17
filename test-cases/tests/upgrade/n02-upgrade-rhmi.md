@@ -15,6 +15,8 @@ Mesure the downtime of the RHMI components during the RHMI upgrade (not to be co
 
 Note: This test includes all steps to prepare the cluster before the upgrade, trigger the upgrade and collect downtime reports
 
+Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/master/test-cases/tests/upgrade/n09-verify-that-upgrades-rollout-can-be-paused.md) is scheduled to be verified for the release, it might be good to do it first (once the pre-upgrade cluster is ready for the upgrade - after the step 2)
+
 ## Prerequisites
 
 - Node.js installed locally
@@ -29,21 +31,7 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    oc login --token=<TOKEN> --server=https://api.CLUSTER_NAME.s1.devshift.org:6443
    ```
 
-2. Edit RHMIConfig in the `redhat-rhmi-operator` config to prevent the available upgrade from being applied
-
-   ```
-   oc edit RHMIConfig rhmi-config -n redhat-rhmi-operator
-   ```
-
-3. Edit following fields in the **rhmi-config** and save:
-
-   - spec.upgrade.alwaysImmediately: `false`
-   - spec.upgrade.duringNextMaintenance: `false`
-   - spec.maintenance.applyOn: `""`
-
-   > The upgrade should not be applied automatically with the settings described above
-
-4. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repo and run the following command:
+2. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repo and run the following command:
 
    ```
    git clone https://github.com/integr8ly/workload-web-app
@@ -52,21 +40,28 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    make local/deploy
    ```
 
-   See step 10 and 11, you might want to do these pre-upgrade as well.
+   There should be no errors in the command output and product (AMQ, 3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 
-5. Edit RHMIConfig in the `redhat-rhmi-operator` config again to start the upgrade
+3. Edit RHMIConfig in the `redhat-rhmi-operator` config to start the upgrade
 
    ```
    oc edit RHMIConfig rhmi-config -n redhat-rhmi-operator
    ```
 
-6. Edit following fields in the **rhmi-config** and save:
+4. Edit following fields in the **rhmi-config** and save:
 
-   - spec.upgrade.alwaysImmediately: `true`
+   - spec.upgrade.notBeforeDays: 0
+   - spec.upgrade.waitForMaintenance: `false`
 
-   > The upgrade should start automatically
+   > The upgrade should start shortly. Have a look at `status.upgrade.scheduled.for`. In rare situations it might get scheduled more that 6 hours in past, in that case upgrade won't be triggered. Play with the `spec.maintenance.*` and `spec.upgrade.*` values to get it scheduled some other time.
 
-7. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
+   Use the command below to check whether the installPlan exists and is approved. The operator should approve the installPlan based on **rhmi-config**. If the installPlan is not approved shortly, restart the rhmi-operator (delete the pod or scale down to 0 and then scale back up to 1).
+
+   ```
+   oc get installplans -n redhat-rhmi-operator
+   ```
+
+5. Poll cluster to check when the RHMI upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
 
    ```bash
    watch -n 60 " oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHMI Upgrade completed\!'"
@@ -76,11 +71,11 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
    >
    > Once it's finished, it should print out "Upgrade completed!"
 
-8. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
+6. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
-9. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
+7. Clone [delorean](https://github.com/integr8ly/delorean) repo and run the following command to generate a downtime report using the delorean cli:
 
    ```
    cd delorean
@@ -90,13 +85,13 @@ Note: This test includes all steps to prepare the cluster before the upgrade, tr
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-10. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+8. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
 
 ```bash
 echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
-11. Select the **Workload App** dashboard
+9. Select the **Workload App** dashboard
 
 > Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
@@ -105,4 +100,4 @@ echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-
 >
 > Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
 
-12. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
+10. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
