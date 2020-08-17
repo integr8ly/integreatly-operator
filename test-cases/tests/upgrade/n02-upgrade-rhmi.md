@@ -55,7 +55,7 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    > The upgrade should start shortly. Have a look at `status.upgrade.scheduled.for`. In rare situations it might get scheduled more that 6 hours in past, in that case upgrade won't be triggered. Play with the `spec.maintenance.*` and `spec.upgrade.*` values to get it scheduled some other time.
 
-   Use the command below to check whether the installPlan exists and is approved. The operator should approve the installPlan based on **rhmi-config**. If the installPlan is not approved shortly, restart the rhmi-operator (delete the pod or scale down to 0 and then scale back up to 1).
+   Use the command below to check whether the installPlan exists and is approved. The operator should approve the installPlan based on **rhmi-config**. The installPlan should not be approved manually - if the installPlan is not approved shortly, restart the rhmi-operator (delete the pod or scale down to 0 and then scale back up to 1).
 
    ```
    oc get installplans -n redhat-rhmi-operator
