@@ -41,11 +41,11 @@ metadata:
     capabilities: Basic Install
     categories: RHMI integration
     certified: "false"
-    containerImage: quay.io/integreatly/integreatly-operator:v2.6.1-rc2
+    containerImage: quay.io/integreatly/integreatly-operator:v2.6.1-rc3
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
-    support: RHMI
     olm.skipRange: '>=2.4.0 <2.6.1'
+    support: RHMI
   name: integreatly-operator.v2.6.1
   namespace: placeholder
 spec:
@@ -312,7 +312,7 @@ spec:
                   value: rhmi-operator
                 - name: USE_CLUSTER_STORAGE
                   value: "true"
-                image: quay.io/integreatly/integreatly-operator:v2.6.1-rc2
+                image: quay.io/integreatly/integreatly-operator:v2.6.1-rc3
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
