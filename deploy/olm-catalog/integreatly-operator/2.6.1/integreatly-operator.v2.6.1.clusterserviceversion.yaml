@@ -45,9 +45,9 @@ metadata:
     createdAt: "2019-10-15 10:39:00"
     description: RHMI integration suite of tools
     support: RHMI
+    olm.skipRange: '>=2.4.0 <2.6.1'
   name: integreatly-operator.v2.6.1
   namespace: placeholder
-  olm.skipRange: '>=2.4.0 <2.6.1'
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
