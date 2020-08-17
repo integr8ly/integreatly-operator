@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/rhmiConfigs"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
@@ -205,6 +206,17 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		csvFromCatalogSource, err = r.catalogSourceClient.GetLatestCSV(objectKey, rhmiSubscription.Spec.Package, rhmiSubscription.Spec.Channel)
 		if err != nil {
 			return reconcile.Result{}, fmt.Errorf("Error getting the csv from catalogsource %w", err)
+		}
+
+		if skipRangeStr, ok := csvFromCatalogSource.GetAnnotations()["olm.skipRange"]; ok {
+			v, err := semver.Parse(csvFromCatalogSource.Spec.Version.String())
+			expectedRange, err := semver.ParseRange(skipRangeStr)
+			if err != nil {
+				return reconcile.Result{}, fmt.Errorf("Error getting the version from the csv %w", err)
+			}
+			if expectedRange(v) {
+				csvFromCatalogSource = latestRHMICSV
+			}
 		}
 	}
 
