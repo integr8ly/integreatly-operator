@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/version"
 

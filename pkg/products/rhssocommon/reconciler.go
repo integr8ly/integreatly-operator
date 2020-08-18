@@ -3,8 +3,9 @@ package rhssocommon
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
-	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
@@ -29,7 +30,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 )
 
 var (
@@ -298,7 +298,7 @@ func ContainsIdentityProvider(providers []*keycloak.KeycloakIdentityProvider, al
 func (r *Reconciler) ReconcileCloudResources(dbPRefix string, defaultNamespace string, ssoType string, config *config.RHSSOCommon, ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Keycloak external database instance")
 	postgresName := fmt.Sprintf("%s%s", dbPRefix, installation.Name)
-	postgres, credentialSec, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, config.GetNamespace(), defaultNamespace)
+	postgres, err := resources.ReconcileRHSSOPostgresCredentials(ctx, installation, serverClient, postgresName, config.GetNamespace(), defaultNamespace)
 
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile database credentials secret while provisioning %s: %w", ssoType, err)
@@ -306,47 +306,20 @@ func (r *Reconciler) ReconcileCloudResources(dbPRefix string, defaultNamespace s
 
 	// at this point it should be ok to create the failed alert.
 	if postgres != nil {
-		// create prometheus failed rule
-		_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, installation, postgres)
+		// reconcile postgres alerts
+		phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, installation, postgres)
+		productName := postgres.Labels["productName"]
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert for %s: %w", ssoType, err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
 		}
-
-		// create the prometheus deletion rule
-		if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, installation, postgres); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for %s: %s", ssoType, err)
+		if phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, nil
 		}
-
-		// create prometheus pending rule only when CR has completed for the first time.
-		if postgres.Status.Phase == types.PhaseComplete {
-			_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, installation, postgres)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert for %s: %w", ssoType, err)
-			}
-		}
+		return integreatlyv1alpha1.PhaseCompleted, nil
 	}
 
 	// postgres provisioning is still in progress
-	if credentialSec == nil {
-		return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
-	}
-
-	// create the prometheus availability rule
-	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for : %s %w", ssoType, err)
-	}
-
-	// create the prometheus connectivity rule
-	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for %s: %s", ssoType, err)
-	}
-
-	// create the prometheus free storage alert rules
-	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for rhsso: %s", err)
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
+	return integreatlyv1alpha1.PhaseAwaitingCloudResources, nil
 }
 
 func (r *Reconciler) PreUpgradeBackupsExecutor(resourceName string) backup.BackupExecutor {

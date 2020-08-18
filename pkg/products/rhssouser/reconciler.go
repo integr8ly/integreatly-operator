@@ -3,8 +3,9 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"strings"
+
+	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -226,7 +227,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.Logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

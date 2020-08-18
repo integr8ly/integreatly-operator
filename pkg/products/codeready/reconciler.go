@@ -17,7 +17,6 @@ import (
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
-	cro1types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
@@ -201,40 +200,14 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres: %w", err)
 	}
 
-	// create prometheus failed rule
-	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
+	// reconcile postgres alerts
+	phase, err := resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
+	productName := postgres.Labels["productName"]
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
 	}
-
-	if postgres.Status.Phase != cro1types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// create the prometheus pending rule
-	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	if _, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for codeready: %w", err)
-	}
-
-	// create the prometheus connectivity rule
-	if _, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres connectivity prometheus alert for codeready: %s", err)
-	}
-
-	// create the prometheus deletion rule
-	if _, err = resources.CreatePostgresResourceDeletionStatusFailedAlert(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres deletion prometheus alert for codeready: %s", err)
-	}
-
-	// create the prometheus free storage alert rules
-	if err = resources.ReconcilePostgresFreeStorageAlerts(ctx, serverClient, r.installation, postgres); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for codeready: %s", err)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
 
 	// get the secret created by the cloud resources operator
