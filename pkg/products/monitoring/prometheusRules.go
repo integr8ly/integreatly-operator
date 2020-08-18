@@ -292,6 +292,22 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					},
 				},
 			},
+			{
+				AlertName: "install-upgrade-alerts",
+				Namespace: r.Config.GetOperatorNamespace(),
+				GroupName: "general.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "RHMIChildOperatorCSVAbnormal",
+						Annotations: map[string]string{
+							"message": "RHMI Operator CSV is missing or incorrect",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf(`count(csv_abnormal{name=~"lib-bucket-provisioner.*", reason="RequirementsNotMet", phase=~"Pending|Failed"}) >= 1`)),
+						For:    "1m",
+						Labels: map[string]string{"severity": "warning"},
+					},
+				},
+			},
 		},
 	}
 }
