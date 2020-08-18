@@ -366,14 +366,14 @@ func reconcilePostgresCPUUtilizationAlerts(ctx context.Context, client k8sclient
 
 	alertName := "PostgresCPUHigh"
 	ruleName := "postgres-cpu-high"
-	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for longer than 5 minutes"
+	alertDescription := "the postgres instance {{ $labels.instanceID }} for product {{ $labels.productName }} has been using {{ $value }}% of available CPU for 15 minutes or more"
 	labels := map[string]string{
 		"severity": "warning",
 	}
 
 	alertExp := intstr.FromString("cro_postgres_cpu_utilization_average > 90")
 
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor5Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresCpuUsageHigh, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
