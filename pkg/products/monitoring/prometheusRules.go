@@ -302,7 +302,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Annotations: map[string]string{
 							"message": "RHMI Operator CSV is missing or incorrect",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf(`count(csv_abnormal{name=~"lib-bucket-provisioner.*", reason="RequirementsNotMet", phase=~"Pending|Failed"}) >= 1`)),
+						Expr:   intstr.FromString(fmt.Sprintf(`csv_abnormal{reason="RequirementsNotMet",phase="Pending"} or csv_abnormal{reason="RequirementsNotMet",phase="Failed"}`)),
 						For:    "1m",
 						Labels: map[string]string{"severity": "warning"},
 					},
