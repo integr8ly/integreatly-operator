@@ -2,14 +2,19 @@ package common
 
 import (
 	"context"
+	goctx "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"testing"
 
+	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -48,6 +53,52 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
+	const (
+		serviceAccountName = "test"
+		bindingName        = "test"
+		grafanaNamespace   = "redhat-rhmi-middleware-monitoring-operator"
+	)
+
+	//create service account - its token will be used to call grafana api
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: grafanaNamespace,
+			Name:      serviceAccountName,
+		},
+	}
+	ctx.Client.Create(goctx.TODO(), serviceAccount)
+	defer ctx.Client.Delete(goctx.TODO(), serviceAccount)
+	binding := &v12.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+		Subjects: []corev1.ObjectReference{
+			{
+				Kind:       "ServiceAccount",
+				APIVersion: "rbac.authorization.k8s.io/v1",
+				Name:       serviceAccountName,
+				Namespace:  grafanaNamespace,
+			},
+		},
+		RoleRef: corev1.ObjectReference{
+			Kind:       "ClusterRole",
+			Name:       "cluster-admin",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+	}
+	ctx.Client.Create(goctx.TODO(), binding)
+	defer ctx.Client.Delete(goctx.TODO(), binding)
+	ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
+	secretName := serviceAccount.Secrets[0].Name
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: grafanaNamespace,
+		},
+	}
+	ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
+	token := string(secret.Data["token"])
+
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
@@ -63,7 +114,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatal("failed to create request for grafana", err)
 	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ctx.KubeConfig.BearerToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	dashboardResp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
