@@ -420,9 +420,9 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 		return nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
-	alertName := redisCRName+"RedisMemoryUsageHigh"
-	ruleName := fmt.Sprintf("redis-memory-usage-high-%s", cr.Name)
+
+	alertName := "RedisMemoryUsageHigh"
+	ruleName := fmt.Sprintf("redis-memory-usage-high")
 	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
 		"severity": "critical",
@@ -439,8 +439,8 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	// job to check time that the operator metrics are exposed
 	job := "cloud-resource-operator-metrics"
 
-	alertName = redisCRName+"RedisMemoryUsageMaxIn4Hours"
-	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours-%s", cr.Name)
+	alertName = "RedisMemoryUsageMaxIn4Hours"
+	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
 		"severity": "critical",
@@ -458,8 +458,8 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 		return err
 	}
 
-	alertName = redisCRName+"RedisMemoryUsageMaxIn4Days"
-	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days-%s", cr.Name)
+	alertName = "RedisMemoryUsageMaxIn4Days"
+	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days")
 	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
 		"severity": "warning",
@@ -597,9 +597,8 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 		return nil
 	}
 	productName := cr.Labels["productName"]
-	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
-	alertName := redisCRName+"RedisCpuUsageHigh"
-	ruleName := fmt.Sprintf("redis-cpu-usage-high-%s", cr.Name)
+	alertName := "RedisCpuUsageHigh"
+	ruleName := fmt.Sprintf("redis-cpu-usage-high")
 	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
 		"severity": "critical",
