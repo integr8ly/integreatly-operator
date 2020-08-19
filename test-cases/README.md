@@ -160,7 +160,7 @@ to pretty print the csv output on the terminal:
 
 > Attention: all changes are applied locally and need to be manually pushed to the integreatly-operator repo
 
-To automatically add the target version to all test cases which target version is older then 3 releases use:
+To automatically add the target version to all test cases with a target version older than 3 releases, use the following command:
 
 ```
 ./tools.sh plan release --target TARGET_VERSION
