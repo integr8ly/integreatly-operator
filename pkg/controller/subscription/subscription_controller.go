@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/blang/semver"
@@ -209,12 +210,19 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		}
 
 		if skipRangeStr, ok := csvFromCatalogSource.GetAnnotations()["olm.skipRange"]; ok {
-			v, err := semver.Parse(csvFromCatalogSource.Spec.Version.String())
+			regex := regexp.MustCompile(`(?m)integreatly\-operator\.v(.*)$`)
+			rhmiPreviousVersion := regex.FindAllStringSubmatch(csvFromCatalogSource.Spec.Replaces, -1)[0][1]
+
+			if rhmiPreviousVersion == "" {
+				return reconcile.Result{}, fmt.Errorf("Error getting the version from replace field %w", err)
+			}
+
+			v, err := semver.Parse(rhmiPreviousVersion)
 			expectedRange, err := semver.ParseRange(skipRangeStr)
 			if err != nil {
 				return reconcile.Result{}, fmt.Errorf("Error getting the version from the csv %w", err)
 			}
-			if expectedRange(v) {
+			if expectedRange(v) && csvFromCatalogSource.Spec.Replaces != latestRHMICSV.Spec.Replaces {
 				csvFromCatalogSource = latestRHMICSV
 			}
 		}
