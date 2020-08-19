@@ -298,11 +298,11 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 				GroupName: "general.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIChildOperatorCSVAbnormal",
+						Alert: "RHMICSVAbnormal",
 						Annotations: map[string]string{
-							"message": "RHMI Operator CSV is missing or incorrect",
+							"message": "An abnormal CSV was found, possibly preventing an operator from installing/upgrading",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf(`csv_abnormal{reason="RequirementsNotMet",phase="Pending"} or csv_abnormal{reason="RequirementsNotMet",phase="Failed"}`)),
+						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{reason='RequirementsNotMet',phase='Pending'} or csv_abnormal{reason='RequirementsNotMet',phase='Failed'}")),
 						For:    "1m",
 						Labels: map[string]string{"severity": "warning"},
 					},
