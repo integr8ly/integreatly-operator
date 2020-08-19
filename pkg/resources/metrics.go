@@ -136,9 +136,14 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus connectivity alert for %s: %w", cr.Name, err)
 	}
 
-	// create Redis CPU Usage High alert
+	// create Redis Memory Usage High alert
 	if err = createRedisMemoryUsageAlerts(ctx, client, inst, cr); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus memory usage high alerts for %s: %w", cr.Name, err)
+	}
+
+	// create Redis Cpu Usage High Alert
+	if err = CreateRedisCpuUsageAlerts(ctx, client, inst, cr); err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus cpu usage high alerts for %s: %w", cr.Name, err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
