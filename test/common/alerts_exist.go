@@ -396,6 +396,12 @@ var expectedRules = []alertsTestRule{
 			"RHMIInstallationControllerStoppedReconciling",
 		},
 	},
+	{
+		File: "install-upgrade-alerts.yaml",
+		Rules: []string{
+			"RHMICSVAbnormal",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{

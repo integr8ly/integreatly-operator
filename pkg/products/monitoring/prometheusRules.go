@@ -298,12 +298,12 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 				GroupName: "general.rules",
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMICSVAbnormal",
+						Alert: "RHMICSVRequirementsNotMet",
 						Annotations: map[string]string{
-							"message": "An abnormal CSV was found, possibly preventing an operator from installing/upgrading",
+							"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.namespace}}'. Phase is {{$labels.phase}}",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{reason='RequirementsNotMet',phase='Pending'} or csv_abnormal{reason='RequirementsNotMet',phase='Failed'}")),
-						For:    "1m",
+						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{reason='RequirementsNotMet', phase=~'Pending|Failed',exported_namespace=~'redhat-rhmi-.*'}")),
+						For:    "15m",
 						Labels: map[string]string{"severity": "warning"},
 					},
 				},
