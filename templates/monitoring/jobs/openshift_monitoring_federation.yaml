@@ -30,6 +30,10 @@
     source_labels:
     - __meta_kubernetes_service_label_prometheus
     regex: k8s
+  - action: keep
+    source_labels:
+    - __meta_kubernetes_service_port_name
+    regex: web
   metric_relabel_configs:
   - action: labeldrop
     regex: prometheus_replica
