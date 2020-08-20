@@ -425,7 +425,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName := fmt.Sprintf("redis-memory-usage-high")
 	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity": "critical",
+		"severity":    "critical",
 		"productName": productName,
 	}
 
@@ -443,7 +443,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity": "critical",
+		"severity":    "critical",
 		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -462,7 +462,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days")
 	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity": "warning",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -601,7 +601,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	ruleName := fmt.Sprintf("redis-cpu-usage-high")
 	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity": "critical",
+		"severity":    "critical",
 		"productName": productName,
 	}
 
