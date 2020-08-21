@@ -90,6 +90,9 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	defer ctx.Client.Delete(goctx.TODO(), binding)
 	ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
 	secretName := serviceAccount.Secrets[0].Name
+	if secretName == serviceAccount.ImagePullSecrets[0].Name {
+		secretName = serviceAccount.Secrets[1].Name
+	}
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
