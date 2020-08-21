@@ -399,7 +399,7 @@ var expectedRules = []alertsTestRule{
 	{
 		File: "install-upgrade-alerts.yaml",
 		Rules: []string{
-			"RHMICSVAbnormal",
+			"RHMICSVRequirementsNotMet",
 		},
 	},
 }
