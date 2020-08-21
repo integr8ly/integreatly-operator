@@ -271,18 +271,16 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	// If no current or target version is set this is the first installation of rhmi.
-	if manualUpgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
+	if upgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
 		installation.Status.ToVersion = version.IntegreatlyVersion
 		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.IntegreatlyVersion)
 		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
 			return reconcile.Result{}, err
 		}
+		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
 
-	// It's important to set the metric values at this point to account for the upgrade scenario. The ToVersion
-	// is set on the CR when the install plan is approved, however, the operator pod is terminated shortly
-	// after this point which may not be enough time for prometheus to scrape the metric.
-	// needs to add check for stage complete to avoid setting the metric when installation is happening
+	// Check for stage complete to avoid setting the metric when installation is happening
 	if string(installation.Status.Stage) == "complete" {
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
@@ -532,9 +530,9 @@ func firstInstallFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	return status.Version == "" && status.ToVersion == ""
 }
 
-// A manual upgrade is one in which the install plan was manually approved.
+// An upgrade is one in which the install plan was manually approved.
 // In which case the toVersion field has not been set
-func manualUpgradeFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
+func upgradeFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	status := installation.Status
 	return status.Version != "" && status.ToVersion == "" && status.Version != version.IntegreatlyVersion
 }
