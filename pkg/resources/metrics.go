@@ -136,9 +136,14 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus connectivity alert for %s: %w", cr.Name, err)
 	}
 
-	// create Redis CPU Usage High alert
+	// create Redis Memory Usage High alert
 	if err = createRedisMemoryUsageAlerts(ctx, client, inst, cr); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus memory usage high alerts for %s: %w", cr.Name, err)
+	}
+
+	// create Redis Cpu Usage High Alert
+	if err = CreateRedisCpuUsageAlerts(ctx, client, inst, cr); err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create redis prometheus cpu usage high alerts for %s: %w", cr.Name, err)
 	}
 
 	return v1alpha1.PhaseCompleted, nil
@@ -414,12 +419,14 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 		logrus.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
 		return nil
 	}
+	productName := cr.Labels["productName"]
 
 	alertName := "RedisMemoryUsageHigh"
-	ruleName := "redis-memory-usage-high"
+	ruleName := fmt.Sprintf("redis-memory-usage-high")
 	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity": "critical",
+		"severity":    "critical",
+		"productName": productName,
 	}
 
 	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_memory_usage_percentage_average > %s", alertPercentage))
@@ -433,10 +440,11 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	job := "cloud-resource-operator-metrics"
 
 	alertName = "RedisMemoryUsageMaxIn4Hours"
-	ruleName = "redis-memory-usage-will-max-in-4-hours"
+	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity": "critical",
+		"severity":    "critical",
+		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [1h] - one hour data points
@@ -454,7 +462,8 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = fmt.Sprintf("redis-memory-usage-max-fill-in-4-days")
 	alertDescription = "Redis Memory Usage is predicted to max in four days for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity": "warning",
+		"severity":    "warning",
+		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [6h] - six hour data points
@@ -578,6 +587,31 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		return nil, err
 	}
 	return pr, nil
+}
+
+// CreateRedisCpuUsageAlerts creates a PrometheusRule alerts to watch for High Cpu usage
+// of a Redis cache
+func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Redis) error {
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping redis memory usage high alert creation, useClusterStorage is true")
+		return nil
+	}
+	productName := cr.Labels["productName"]
+	alertName := "RedisCpuUsageHigh"
+	ruleName := fmt.Sprintf("redis-cpu-usage-high")
+	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
+	labels := map[string]string{
+		"severity":    "critical",
+		"productName": productName,
+	}
+
+	alertExp := intstr.FromString(fmt.Sprintf("cro_redis_engine_cpu_utilization_average > %s", alertPercentage))
+
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisCpuUsageHigh, alertFor15Mins, alertExp, labels)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // reconcilePrometheusRule will create a PrometheusRule object
