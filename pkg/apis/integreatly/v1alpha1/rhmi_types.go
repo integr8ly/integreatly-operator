@@ -110,8 +110,8 @@ var (
 	EventPreflightCheckPassed  string = "PreflightCheckPassed"
 	EventUpgradeApproved       string = "UpgradeApproved"
 
-	DefaultOriginPullSecretName      = "samples-registry-credentials"
-	DefaultOriginPullSecretNamespace = "openshift"
+	DefaultOriginPullSecretName      = "pull-secret"
+	DefaultOriginPullSecretNamespace = "openshift-config"
 )
 
 // RHMISpec defines the desired state of Installation
