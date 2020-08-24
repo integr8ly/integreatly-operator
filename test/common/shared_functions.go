@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	routev1 "github.com/openshift/api/route/v1"
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	cached "k8s.io/client-go/discovery/cached"
 	cgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -120,6 +121,17 @@ func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	return rhmi, nil
 }
 
+func getConsoleRoute(client dynclient.Client) (*string, error) {
+	route := &routev1.Route{}
+	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: OpenShiftConsoleRoute, Namespace: OpenShiftConsoleNamespace}, route); err != nil {
+		return nil, err
+	}
+	if len(route.Status.Ingress) > 0 {
+		return &route.Status.Ingress[0].Host, nil
+	}
+	return nil, nil
+}
+
 func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 	kubeclient, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
@@ -151,7 +163,17 @@ func NewTestingContext(kubeConfig *rest.Config) (*TestingContext, error) {
 		return nil, fmt.Errorf("failed to build the dynamic client: %v", err)
 	}
 
-	selfSignedCerts, err := HasSelfSignedCerts(kubeConfig.Host, http.DefaultClient)
+	urlToCheck := kubeConfig.Host
+	consoleUrl, err := getConsoleRoute(dynClient)
+	if err != nil {
+		return nil, err
+	}
+	if consoleUrl != nil {
+		// use the console url if we can as when the tests are executed inside a pod, the kubeConfig.Host value is the ip address of the pod
+		urlToCheck = *consoleUrl
+	}
+
+	selfSignedCerts, err := HasSelfSignedCerts(fmt.Sprintf("https://%s", urlToCheck), http.DefaultClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine self-signed certs status on cluster: %w", err)
 	}
