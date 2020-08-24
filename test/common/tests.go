@@ -43,6 +43,7 @@ var (
 		{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 		{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 		{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
+		{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 		{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 		{"F06 - Verify Replicas Scale correctly in Apicurito", TestReplicasInApicurito},
 		{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
