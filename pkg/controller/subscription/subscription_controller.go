@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/rhmiConfigs"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
@@ -205,6 +207,24 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		csvFromCatalogSource, err = r.catalogSourceClient.GetLatestCSV(objectKey, rhmiSubscription.Spec.Package, rhmiSubscription.Spec.Channel)
 		if err != nil {
 			return reconcile.Result{}, fmt.Errorf("Error getting the csv from catalogsource %w", err)
+		}
+
+		if skipRangeStr, ok := csvFromCatalogSource.GetAnnotations()["olm.skipRange"]; ok {
+			regex := regexp.MustCompile(`(?m)integreatly\-operator\.v(.*)$`)
+			rhmiPreviousVersion := regex.FindAllStringSubmatch(csvFromCatalogSource.Spec.Replaces, -1)[0][1]
+
+			if rhmiPreviousVersion == "" {
+				return reconcile.Result{}, fmt.Errorf("Error getting the version from replace field %w", err)
+			}
+
+			v, err := semver.Parse(rhmiPreviousVersion)
+			expectedRange, err := semver.ParseRange(skipRangeStr)
+			if err != nil {
+				return reconcile.Result{}, fmt.Errorf("Error getting the version from the csv %w", err)
+			}
+			if expectedRange(v) && csvFromCatalogSource.Spec.Replaces != latestRHMICSV.Spec.Replaces {
+				csvFromCatalogSource = latestRHMICSV
+			}
 		}
 	}
 
