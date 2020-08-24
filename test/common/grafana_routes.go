@@ -66,7 +66,10 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 			Name:      serviceAccountName,
 		},
 	}
-	ctx.Client.Create(goctx.TODO(), serviceAccount)
+	err := ctx.Client.Create(goctx.TODO(), serviceAccount)
+	if err != nil {
+		t.Fatal("failed to create serviceAccount", err)
+	}
 	defer ctx.Client.Delete(goctx.TODO(), serviceAccount)
 	binding := &v12.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -86,56 +89,78 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 	}
-	ctx.Client.Create(goctx.TODO(), binding)
+	err = ctx.Client.Create(goctx.TODO(), binding)
+	if err != nil {
+		t.Fatal("failed to create clusterRoleBinding", err)
+	}
 	defer ctx.Client.Delete(goctx.TODO(), binding)
-	ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
-	secretName := serviceAccount.Secrets[0].Name
-	if secretName == serviceAccount.ImagePullSecrets[0].Name {
-		secretName = serviceAccount.Secrets[1].Name
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
+	if err != nil {
+		t.Fatal("failed to get serviceAccount", err)
 	}
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: grafanaNamespace,
-		},
-	}
-	ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
-	token := string(secret.Data["token"])
 
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
-	//create new http client
-	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
-	if err != nil {
-		t.Fatal("failed to create testing http client", err)
-	}
-	//get dashboards for grafana from the external route
-	grafanaDashboardsUrl := fmt.Sprintf("%s/api/search", grafanaRootHostname)
-	req, err := http.NewRequest("GET", grafanaDashboardsUrl, nil)
-	if err != nil {
-		t.Fatal("failed to create request for grafana", err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	dashboardResp, err := httpClient.Do(req)
-	if err != nil {
-		t.Fatal("failed to perform test request to grafana", err)
-	}
-	defer dashboardResp.Body.Close()
-	//there is an existing dashboard check, so confirm a valid response structure
-	if dashboardResp.StatusCode != http.StatusOK {
-		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
-		t.Logf("dumpResp: %q", dumpResp)
-		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
+
+	// there are more secrets associated with a serviceAccount, one of them should be token that can be used to authenticate
+	// try one by one until the request is successful
+	var statusCodeErr error
+	for _, secret := range serviceAccount.Secrets {
+		statusCodeErr = nil
+
+		secretName := secret.Name
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: grafanaNamespace,
+			},
+		}
+		err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
+		if err != nil {
+			t.Fatal("failed to get secret", err)
+		}
+		token := string(secret.Data["token"])
+
+		//create new http client
+		httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+		if err != nil {
+			t.Fatal("failed to create testing http client", err)
+		}
+		//get dashboards for grafana from the external route
+		grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRootHostname)
+		req, err := http.NewRequest("GET", grafanaDashboardsURL, nil)
+		if err != nil {
+			t.Fatal("failed to create request for grafana", err)
+		}
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		dashboardResp, err := httpClient.Do(req)
+		if err != nil {
+			t.Fatal("failed to perform test request to grafana", err)
+		}
+		defer dashboardResp.Body.Close()
+		//there is an existing dashboard check, so confirm a valid response structure
+		if dashboardResp.StatusCode != http.StatusOK {
+			dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
+			t.Logf("dumpResp: %q", dumpResp)
+			statusCodeErr = fmt.Errorf("unexpected status code on success request, got=%+v", dashboardResp)
+			continue
+		}
+
+		var dashboards []interface{}
+		if err := json.NewDecoder(dashboardResp.Body).Decode(&dashboards); err != nil {
+			t.Fatal("failed to decode grafana dashboards response", err)
+		}
+		if len(dashboards) == 0 {
+			t.Fatal("no grafana dashboards returned from grafana api")
+		}
+
+		break
 	}
 
-	var dashboards []interface{}
-	if err := json.NewDecoder(dashboardResp.Body).Decode(&dashboards); err != nil {
-		t.Fatal("failed to decode grafana dashboards response", err)
-	}
-	if len(dashboards) == 0 {
-		t.Fatal("no grafana dashboards returned from grafana api")
+	if statusCodeErr != nil {
+		t.Fatal(statusCodeErr)
 	}
 }
 
