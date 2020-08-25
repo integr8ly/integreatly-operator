@@ -71,9 +71,8 @@ var (
 				FuseOperatorNamespace,
 				RHSSOUserProductOperatorNamespace,
 				RHSSOUserOperatorNamespace,
-				// Removing 3scale product ns from test as "bundle exec rake zync:resync:domains" needs to be executed in system-app pod terminal to restore properly
-				// ThreeScaleProductNamespace,
-				// ThreeScaleOperatorNamespace,
+				ThreeScaleProductNamespace,
+				ThreeScaleOperatorNamespace,
 				UPSProductNamespace,
 				UPSOperatorNamespace,
 			},
