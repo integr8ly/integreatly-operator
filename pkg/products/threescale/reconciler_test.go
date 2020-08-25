@@ -40,6 +40,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	consolev1 "github.com/openshift/api/console/v1"
 )
 
 var (
@@ -64,6 +65,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = projectv1.AddToScheme(scheme)
 	err = appsv1.AddToScheme(scheme)
 	err = monitoringv1.AddToScheme(scheme)
+	err = consolev1.AddToScheme(scheme)
 	return scheme, err
 }
 
