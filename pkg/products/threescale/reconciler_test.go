@@ -34,13 +34,13 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 
+	consolev1 "github.com/openshift/api/console/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	consolev1 "github.com/openshift/api/console/v1"
 )
 
 var (
