@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"testing"
 
 	v12 "github.com/openshift/api/authorization/v1"
@@ -104,63 +105,58 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("failed to get grafana route", err)
 	}
 
-	// there are more secrets associated with a serviceAccount, one of them should be token that can be used to authenticate
-	// try one by one until the request is successful
-	var statusCodeErr error
+	secretName := ""
 	for _, secret := range serviceAccount.Secrets {
-		statusCodeErr = nil
-
-		secretName := secret.Name
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: grafanaNamespace,
-			},
+		if strings.Contains(secret.Name, "token") {
+			secretName = secret.Name
 		}
-		err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
-		if err != nil {
-			t.Fatal("failed to get secret", err)
-		}
-		token := string(secret.Data["token"])
-
-		//create new http client
-		httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
-		if err != nil {
-			t.Fatal("failed to create testing http client", err)
-		}
-		//get dashboards for grafana from the external route
-		grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRootHostname)
-		req, err := http.NewRequest("GET", grafanaDashboardsURL, nil)
-		if err != nil {
-			t.Fatal("failed to create request for grafana", err)
-		}
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-		dashboardResp, err := httpClient.Do(req)
-		if err != nil {
-			t.Fatal("failed to perform test request to grafana", err)
-		}
-		defer dashboardResp.Body.Close()
-		//there is an existing dashboard check, so confirm a valid response structure
-		if dashboardResp.StatusCode != http.StatusOK {
-			dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
-			t.Logf("dumpResp: %q", dumpResp)
-			statusCodeErr = fmt.Errorf("unexpected status code on success request, got=%+v", dashboardResp)
-			continue
-		}
-
-		var dashboards []interface{}
-		if err := json.NewDecoder(dashboardResp.Body).Decode(&dashboards); err != nil {
-			t.Fatal("failed to decode grafana dashboards response", err)
-		}
-		if len(dashboards) == 0 {
-			t.Fatal("no grafana dashboards returned from grafana api")
-		}
-
-		break
+	}
+	if secretName == "" {
+		t.Fatal("failed to find token for serviceAccount")
 	}
 
-	if statusCodeErr != nil {
-		t.Fatal(statusCodeErr)
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: grafanaNamespace,
+		},
+	}
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
+	if err != nil {
+		t.Fatal("failed to get secret", err)
+	}
+	token := string(secret.Data["token"])
+
+	//create new http client
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal("failed to create testing http client", err)
+	}
+	//get dashboards for grafana from the external route
+	grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRootHostname)
+	req, err := http.NewRequest("GET", grafanaDashboardsURL, nil)
+	if err != nil {
+		t.Fatal("failed to create request for grafana", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	dashboardResp, err := httpClient.Do(req)
+	if err != nil {
+		t.Fatal("failed to perform test request to grafana", err)
+	}
+	defer dashboardResp.Body.Close()
+	//there is an existing dashboard check, so confirm a valid response structure
+	if dashboardResp.StatusCode != http.StatusOK {
+		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
+		t.Logf("dumpResp: %q", dumpResp)
+		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
+	}
+
+	var dashboards []interface{}
+	if err := json.NewDecoder(dashboardResp.Body).Decode(&dashboards); err != nil {
+		t.Fatal("failed to decode grafana dashboards response", err)
+	}
+	if len(dashboards) == 0 {
+		t.Fatal("no grafana dashboards returned from grafana api")
 	}
 }
 
