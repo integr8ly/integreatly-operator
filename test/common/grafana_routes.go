@@ -2,15 +2,20 @@ package common
 
 import (
 	"context"
+	goctx "context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"testing"
 
-	"github.com/integr8ly/integreatly-operator/test/resources"
+	v12 "github.com/openshift/api/authorization/v1"
 	v1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -49,27 +54,92 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
-	//reconcile idp setup
-	if err := createTestingIDP(t, context.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Fatal("failed to reconcile testing idp", err)
+	const (
+		serviceAccountName = "test"
+		bindingName        = "test"
+		grafanaNamespace   = "redhat-rhmi-middleware-monitoring-operator"
+	)
+
+	//create service account - its token will be used to call grafana api
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: grafanaNamespace,
+			Name:      serviceAccountName,
+		},
 	}
+	err := ctx.Client.Create(goctx.TODO(), serviceAccount)
+	if err != nil {
+		t.Fatal("failed to create serviceAccount", err)
+	}
+	defer ctx.Client.Delete(goctx.TODO(), serviceAccount)
+	binding := &v12.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+		Subjects: []corev1.ObjectReference{
+			{
+				Kind:       "ServiceAccount",
+				APIVersion: "rbac.authorization.k8s.io/v1",
+				Name:       serviceAccountName,
+				Namespace:  grafanaNamespace,
+			},
+		},
+		RoleRef: corev1.ObjectReference{
+			Kind:       "ClusterRole",
+			Name:       "cluster-admin",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+	}
+	err = ctx.Client.Create(goctx.TODO(), binding)
+	if err != nil {
+		t.Fatal("failed to create clusterRoleBinding", err)
+	}
+	defer ctx.Client.Delete(goctx.TODO(), binding)
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
+	if err != nil {
+		t.Fatal("failed to get serviceAccount", err)
+	}
+
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
+
+	secretName := ""
+	for _, secret := range serviceAccount.Secrets {
+		if strings.Contains(secret.Name, "token") {
+			secretName = secret.Name
+		}
+	}
+	if secretName == "" {
+		t.Fatal("failed to find token for serviceAccount")
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: grafanaNamespace,
+		},
+	}
+	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
+	if err != nil {
+		t.Fatal("failed to get secret", err)
+	}
+	token := string(secret.Data["token"])
+
 	//create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
 		t.Fatal("failed to create testing http client", err)
 	}
-	//retrieve an openshift oauth proxy cookie
-	grafanaOauthHostname := fmt.Sprintf("%s/oauth/start", grafanaRootHostname)
-	if err = resources.DoAuthOpenshiftUser(grafanaOauthHostname, grafanaCredsUsername, grafanaCredsPassword, httpClient, TestingIDPRealm, t); err != nil {
-		t.Fatal("failed to login through openshift oauth proxy", err)
-	}
 	//get dashboards for grafana from the external route
-	grafanaDashboardsUrl := fmt.Sprintf("%s/api/search", grafanaRootHostname)
-	dashboardResp, err := httpClient.Get(grafanaDashboardsUrl)
+	grafanaDashboardsURL := fmt.Sprintf("%s/api/search", grafanaRootHostname)
+	req, err := http.NewRequest("GET", grafanaDashboardsURL, nil)
+	if err != nil {
+		t.Fatal("failed to create request for grafana", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	dashboardResp, err := httpClient.Do(req)
 	if err != nil {
 		t.Fatal("failed to perform test request to grafana", err)
 	}
@@ -78,8 +148,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	if dashboardResp.StatusCode != http.StatusOK {
 		dumpResp, _ := httputil.DumpResponse(dashboardResp, true)
 		t.Logf("dumpResp: %q", dumpResp)
-		t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-6738, got status : %v", dashboardResp.StatusCode)
-		// t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
+		t.Fatalf("unexpected status code on success request, got=%+v", dashboardResp)
 	}
 
 	var dashboards []interface{}
