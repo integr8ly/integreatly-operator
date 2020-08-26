@@ -680,6 +680,12 @@ var expectedAWSRules = []alertsTestRule{
 			"RedisMemoryUsageMaxIn4Days",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-redis-cpu-usage-high.yaml",
+		Rules: []string{
+			"RedisCpuUsageHigh",
+		},
+	},
 }
 
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
