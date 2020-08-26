@@ -6,7 +6,7 @@ automation:
 components:
   - product-3scale
   - product-amq
-environemnts:
+environments:
   - osd-fresh-install
   - rhpds
 estimate: 1h
