@@ -260,8 +260,8 @@ func TestReconciler_handleProgress(t *testing.T) {
 func getSecret() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "samples-registry-credentials",
-			Namespace: "openshift",
+			Name:      "pull-secret",
+			Namespace: "openshift-config",
 		},
 		Data: map[string][]byte{
 			"credentialKeyID":     []byte("test"),

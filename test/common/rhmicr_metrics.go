@@ -89,7 +89,7 @@ func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
 		return nil, fmt.Errorf("error listing rhmi-operator pod: %v", err)
 	}
 
-	if len(rhmiOperatorPod.Items) < 0 {
+	if len(rhmiOperatorPod.Items) == 0 {
 		return nil, fmt.Errorf("rhmi-operator pod doesn't exist: %v", err)
 	}
 

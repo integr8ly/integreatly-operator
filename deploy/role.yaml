@@ -214,7 +214,7 @@ rules:
     resources:
       - secrets
     resourceNames:
-      - samples-registry-credentials
+      - pull-secret
     verbs:
       - get
 

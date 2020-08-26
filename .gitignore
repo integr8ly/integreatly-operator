@@ -3,6 +3,7 @@ scripts/htpasswd
 htpasswd
 .DS_Store
 router-ca.tmp
+TMP_SA_KUBECONFIG
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
 cmd/manager/debug

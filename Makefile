@@ -17,6 +17,7 @@ INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= "test-results"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
+CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -65,25 +66,24 @@ setup/service_account:
 	@-oc new-project $(NAMESPACE)
 	@oc project $(NAMESPACE)
 	@oc replace --force -f deploy/role.yaml
-	@oc replace --force -f deploy/service_account.yaml -n $(NAMESPACE)
+	@-oc create -f deploy/service_account.yaml -n $(NAMESPACE)
 	@cat deploy/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
 	git config core.hooksPath .githooks
 
 .PHONY: code/run
-code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty
-	@$(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
+code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
+	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
 
 .PHONY: code/rerun
-code/rerun:
-	@$(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
+code/rerun: setup/service_account
+	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
-code/run/service_account: setup/service_account
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE})
-	$(MAKE) code/run
+code/run/service_account: code/run
 
 .PHONY: code/run/delorean
 code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/integreatly-rhmi-cr.yml code/run/service_account
