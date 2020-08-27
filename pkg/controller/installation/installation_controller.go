@@ -51,6 +51,7 @@ const (
 	DefaultInstallationPrefix        = "redhat-rhmi-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
+	installTypeEnvName               = "INSTALLATION_TYPE"
 )
 
 var (
@@ -148,8 +149,13 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
+		installType, _ := os.LookupEnv(installTypeEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
+
+		if installType == "" {
+			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
+		}
 
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
@@ -157,7 +163,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
-				Type:                        string(integreatlyv1alpha1.InstallationTypeManaged),
+				Type:                        installType,
 				NamespacePrefix:             DefaultInstallationPrefix,
 				SelfSignedCerts:             false,
 				SMTPSecret:                  DefaultInstallationPrefix + "smtp",

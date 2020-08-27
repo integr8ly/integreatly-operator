@@ -167,6 +167,72 @@ func TestCreateInstallationCR_alertingEmailAddressIsNotPresent(t *testing.T) {
 	}
 }
 
+func TestCreateInstallationCR_installationTypeInEnvVar(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	installationType := "test"
+	os.Setenv("INSTALLATION_TYPE", installationType)
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("INSTALLATION_TYPE")
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.Type != installationType {
+		t.Fatalf(
+			"Expected installationType value of Installation.Spec.Type to be %s, instead got %s",
+			installationType,
+			installation.Spec.Type,
+		)
+	}
+}
+
+func TestCreateInstallationCR_installationTypeDefault(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	installationType := "managed"
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.Type != installationType {
+		t.Fatalf(
+			"Expected installationType value of Installation.Spec.Type to be %s, instead got %s",
+			installationType,
+			installation.Spec.Type,
+		)
+	}
+}
+
 // Utility function to retrieve the Installation CR
 func getInstallationCR(ctx context.Context, serverClient k8sclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 	namespace, err := k8sutil.GetWatchNamespace()
