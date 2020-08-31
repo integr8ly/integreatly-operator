@@ -61,7 +61,7 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 
 	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, ctx.HttpClient)
 	if err != nil {
-		dumpAuthResources(ctx.Client)
+		dumpAuthResources(ctx.Client, t)
 		t.Fatalf("[%s] error logging in to three scale: %v", getTimeStampPrefix(), err)
 	}
 }

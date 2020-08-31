@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -43,6 +44,10 @@ import (
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	cached "k8s.io/client-go/discovery/cached"
 	cgoscheme "k8s.io/client-go/kubernetes/scheme"
+)
+
+const (
+	artifactsDirEnv = "ARTIFACT_DIR"
 )
 
 func execToPod(command string, podName string, namespace string, container string, ctx *TestingContext) (string, error) {
@@ -339,7 +344,7 @@ func IsManaged(client dynclient.Client) (bool, error) {
 	return false, nil
 }
 
-func saveResourceList(client dynclient.Client, filename string, gvk schema.GroupVersionKind, namespaces ...string) {
+func saveResourceList(client dynclient.Client, t *testing.T, filename string, gvk schema.GroupVersionKind, namespaces ...string) {
 	namespaceNames := namespaces
 	if len(namespaceNames) == 0 {
 		namespaceNames[0] = ""
@@ -349,17 +354,26 @@ func saveResourceList(client dynclient.Client, filename string, gvk schema.Group
 		u.SetGroupVersionKind(gvk)
 		_ = client.List(context.Background(), u, dynclient.InNamespace(namespace))
 		marshaledBytes, _ := json.Marshal(u)
+		artifactsDir := os.Getenv(artifactsDirEnv)
+		out := ""
 		timestamp := getTimeStampPrefix()
-		ioutil.WriteFile(fmt.Sprintf("../%s_%s_%s.json", filename, namespace, timestamp), marshaledBytes, os.FileMode(0644))
+		resName := fmt.Sprintf("%s_%s_%s.json", filename, namespace, timestamp)
+		if artifactsDir != "" {
+			out = path.Join(artifactsDir, resName)
+		} else {
+			out = fmt.Sprintf("../%s", resName)
+		}
+		t.Logf("Writing %s to %s file", filename, out)
+		ioutil.WriteFile(out, marshaledBytes, os.FileMode(0644))
 	}
 }
 
-func dumpAuthResources(client dynclient.Client) {
-	saveResourceList(client, "cluster_oauth", schema.GroupVersionKind{Group: "config.openshift.io", Version: "v1", Kind: "OAuth"}, "")
-	saveResourceList(client, "oauthClient", schema.GroupVersionKind{Group: "oauth.openshift.io", Version: "v1", Kind: "OAuthClient"}, "")
-	saveResourceList(client, "keycloakClient", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakClient"}, "")
-	saveResourceList(client, "keycloakUser", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakUser"}, "")
-	saveResourceList(client, "user", schema.GroupVersionKind{Group: "user.openshift.io", Version: "v1", Kind: "User"}, "")
+func dumpAuthResources(client dynclient.Client, t *testing.T) {
+	saveResourceList(client, t, "cluster_oauth", schema.GroupVersionKind{Group: "config.openshift.io", Version: "v1", Kind: "OAuth"}, "")
+	saveResourceList(client, t, "oauthClient", schema.GroupVersionKind{Group: "oauth.openshift.io", Version: "v1", Kind: "OAuthClient"}, "")
+	saveResourceList(client, t, "keycloakClient", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakClient"}, "")
+	saveResourceList(client, t, "keycloakUser", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakUser"}, "")
+	saveResourceList(client, t, "user", schema.GroupVersionKind{Group: "user.openshift.io", Version: "v1", Kind: "User"}, "")
 }
 
 func getTimeStampPrefix() string {
