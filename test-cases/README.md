@@ -9,6 +9,21 @@
 - Try to write test cases using the standard syntax described in the [test-template.md](./fixtures/test-template.md).
 - General guidelines in `common/general-guidelines.md` are imported on the bottom of every test case.
 
+## Index
+
+- [How to create a test case](#How-to-create-a-test-case)
+- [How to include a manual test case in the next release](#How-to-include-a-manual-test-case-in-the-next-release)
+- [How to bulk update the target version on the test cases](#How-to-bulk-update-the-target-version-on-the-test-cases)
+- [How to estimate a test case](#How-to-estimate-a-test-case)
+- [How to automate a test case and link it back](#How-to-automate-a-test-case-and-link-it-back)
+- [How to create Jira tasks for the manual tests](#How-to-create-Jira-tasks-for-the-manual-tests)
+- [List and export the test cases](#List-and-export-the-test-cases)
+- [How to upload all test case to Polarion](#How-to-upload-all-test-case-to-Polarion)
+- [How to report the results of the manual tests to Polarion](#How-to-report-the-results-of-the-manual-tests-to-Polarion)
+- [Test Case Metadata](#Test-Case-Metadata)
+- [Prettier](#Prettier)
+- [How to export the test cases to CSV](#How-to-export-the-test-cases-to-CSV)
+
 ## How to create a test case
 
 Copy the test template to a category inside the `tests/` directory:
@@ -36,6 +51,43 @@ npm run prettier
 ```
 
 Commit everything and open a new PR.
+
+## How to include a manual test case in the next release
+
+> Attention: all changes need to be manually pushed to master or to the release branch
+
+By default we don't execute all manual tests on each release, therefore if we know we have made a change to a component and a specific test should be executed to verify the change or prevent regressions we must manually add the test case to the next release.
+
+To do that the next version needs to be added to the `targets`, for example if the last released version was `2.7.0` then the next release version would be `2.8.0`.
+
+```
+---
+targets:
+  - 2.8.0
+---
+
+# Z00 - Verify
+```
+
+If need to update multiple test cases by component read: [How to bulk update the target version on the test cases](#how-to-bulk-update-the-target-version-on-the-test-cases)
+
+## How to bulk update the target version on the test cases
+
+> Attention: all changes are applied locally and need to be manually pushed to master or to the release branch
+
+To automatically add the target version to all test cases with a target version older than 3 releases, use the following command:
+
+```
+./tools.sh plan release --target TARGET_VERSION
+```
+
+> For example if we set the TARGET_VERSION to `2.8.0` than all test cases which latest target version for the same major release is equal or minor to `2.5.0` will receive the target `2.8.0` and therefore included in the `2.8.0` release
+
+To automatically add the target version to all test cases with a specific component:
+
+```
+./tools.sh plan for --target TARGET_VERSION --component COMPONENT
+```
 
 ## How to estimate a test case
 
@@ -154,24 +206,6 @@ to pretty print the csv output on the terminal:
 
 ```
 ./tools.sh export csv | column -t -s, | less -S
-```
-
-## Bulk update the target version on the test cases
-
-> Attention: all changes are applied locally and need to be manually pushed to the integreatly-operator repo
-
-To automatically add the target version to all test cases with a target version older than 3 releases, use the following command:
-
-```
-./tools.sh plan release --target TARGET_VERSION
-```
-
-> For example if we set the TARGET_VERSION to `2.8.0` than all test cases which latest target version for the same major release is equal or minor to `2.5.0` will receive the target `2.8.0` and therefore included in the `2.8.0` release
-
-To automatically add the target version to all test cases with a specific component:
-
-```
-./tools.sh plan for --target TARGET_VERSION --component COMPONENT
 ```
 
 ## How to upload all test case to Polarion
