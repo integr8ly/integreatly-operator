@@ -58,7 +58,7 @@ Commit everything and open a new PR.
 
 By default we don't execute all manual tests on each release, therefore if we know we have made a change to a component and a specific test should be executed to verify the change or prevent regressions we must manually add the test case to the next release.
 
-To do that the next version needs to added to the `targets`, for example if the last released version was `2.7.0` then the next release version would be `2.8.0`.
+To do that the next version needs to be added to the `targets`, for example if the last released version was `2.7.0` then the next release version would be `2.8.0`.
 
 ```
 ---
