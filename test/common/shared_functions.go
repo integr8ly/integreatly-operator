@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	goctx "context"
 	"crypto/tls"
 	"crypto/x509"
@@ -11,7 +12,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
@@ -29,7 +32,9 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
 
@@ -332,4 +337,34 @@ func IsManaged(client dynclient.Client) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func saveResourceList(client dynclient.Client, filename string, gvk schema.GroupVersionKind, namespaces ...string) {
+	namespaceNames := namespaces
+	if len(namespaceNames) == 0 {
+		namespaceNames[0] = ""
+	}
+	for _, namespace := range namespaceNames {
+		u := &unstructured.UnstructuredList{}
+		u.SetGroupVersionKind(gvk)
+		_ = client.List(context.Background(), u, dynclient.InNamespace(namespace))
+		marshaledBytes, _ := json.Marshal(u)
+		timestamp := getTimeStampPrefix()
+		ioutil.WriteFile(fmt.Sprintf("../%s_%s_%s.json", filename, namespace, timestamp), marshaledBytes, os.FileMode(0644))
+	}
+}
+
+func dumpAuthResources(client dynclient.Client) {
+	saveResourceList(client, "cluster_oauth", schema.GroupVersionKind{Group: "config.openshift.io", Version: "v1", Kind: "OAuth"}, "")
+	saveResourceList(client, "oauthClient", schema.GroupVersionKind{Group: "oauth.openshift.io", Version: "v1", Kind: "OAuthClient"}, "")
+	saveResourceList(client, "keycloakClient", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakClient"}, "")
+	saveResourceList(client, "keycloakUser", schema.GroupVersionKind{Group: "keycloak.org", Version: "v1alpha1", Kind: "KeycloakUser"}, "")
+	saveResourceList(client, "user", schema.GroupVersionKind{Group: "user.openshift.io", Version: "v1", Kind: "User"}, "")
+}
+
+func getTimeStampPrefix() string {
+	t := time.Now().UTC()
+	return fmt.Sprintf("%d_%02d_%02dT%02d_%02d_%02d",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
 }
