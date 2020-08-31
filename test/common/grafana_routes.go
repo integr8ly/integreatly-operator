@@ -95,37 +95,39 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("failed to create clusterRoleBinding", err)
 	}
 	defer ctx.Client.Delete(goctx.TODO(), binding)
-	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: serviceAccountName, Namespace: grafanaNamespace}, serviceAccount)
-	if err != nil {
-		t.Fatal("failed to get serviceAccount", err)
-	}
 
 	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
 
-	secretName := ""
-	for _, secret := range serviceAccount.Secrets {
-		if strings.Contains(secret.Name, "token") {
-			secretName = secret.Name
+	token := ""
+	secrets, err := ctx.KubeClient.CoreV1().Secrets(grafanaNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		t.Fatal("failed to get secrets", err)
+	}
+	for _, secretsItem := range secrets.Items {
+		if strings.HasPrefix(secretsItem.Name, "test-token-") {
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      secretsItem.Name,
+					Namespace: grafanaNamespace,
+				},
+			}
+			err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretsItem.Name, Namespace: grafanaNamespace}, secret)
+			if err != nil {
+				t.Fatal("failed to get secret", err)
+			}
+
+			if _, ok := secret.Annotations["kubernetes.io/created-by"]; !ok {
+				token = string(secret.Data["token"])
+				break
+			}
 		}
 	}
-	if secretName == "" {
+	if token == "" {
 		t.Fatal("failed to find token for serviceAccount")
 	}
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: grafanaNamespace,
-		},
-	}
-	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretName, Namespace: grafanaNamespace}, secret)
-	if err != nil {
-		t.Fatal("failed to get secret", err)
-	}
-	token := string(secret.Data["token"])
 
 	//create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
