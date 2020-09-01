@@ -102,28 +102,32 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
-		cloudConfig := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       DefaultCloudResourceConfigName,
-				Namespace:  r.installation.Namespace,
-				Finalizers: []string{deletionFinalizer},
-			},
-		}
+	cloudConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       DefaultCloudResourceConfigName,
+			Namespace:  r.installation.Namespace,
+			Finalizers: []string{deletionFinalizer},
+		},
+	}
 
-		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
-			if cloudConfig.Data == nil {
-				cloudConfig.Data = map[string]string{}
-			}
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
+		if cloudConfig.Data == nil {
+			cloudConfig.Data = map[string]string{}
+		}
+		if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
 			cloudConfig.Data["managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
 			cloudConfig.Data["self-managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
-			return nil
-		})
-
-		if err != nil {
-			return integreatlyv1alpha1.PhaseInProgress, err
+			cloudConfig.Data["managed-3scale"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+		} else {
+			cloudConfig.Data["managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["self-managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			cloudConfig.Data["managed-3scale"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
 		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
