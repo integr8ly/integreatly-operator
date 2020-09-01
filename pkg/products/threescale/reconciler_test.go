@@ -386,7 +386,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 					Id:   1,
 					Role: memberRole,
 					// User is in OS admin group. Should be promoted
-					Username: "user1",
+					Username: "User1",
 				},
 			},
 			&User{
@@ -395,7 +395,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 					Role: adminRole,
 					// User is in OS admin group and admin in 3scale. Should
 					// be ignored
-					Username: "user2",
+					Username: "User2",
 				},
 			},
 			&User{
@@ -404,7 +404,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 					Role: adminRole,
 					// User is not in OS admin group but is already admin.
 					// Should NOT be demoted
-					Username: "user3",
+					Username: "User3",
 				},
 			},
 		},
