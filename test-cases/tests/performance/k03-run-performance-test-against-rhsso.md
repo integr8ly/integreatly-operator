@@ -63,6 +63,8 @@ In case you are receiving 404 errors or SSL handshake issues, you might need to 
 
    - **NOTE:** `-Djackson.version=2.10.1` is a workaround for RHSSO 7.4 only. Please remove this param from the test case when we upgrade to RHSSO 7.5
 
+   - **NOTE:** Setting the JKS truststore should not be required for this command. In case of 404 errors try to use 9.0.3 tag of keycloak repository, see [KEYCLOAK-15409](https://issues.redhat.com/browse/KEYCLOAK-15409).
+
 9. Execute single performance test
 
    `mvn verify -Ptest -Ddataset=1r_10c_100u`
