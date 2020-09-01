@@ -28,8 +28,11 @@ const (
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return scheme, err
+	}
+	err = v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -117,7 +120,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription: %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalManual {
 					t.Fatalf("expected Manual but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -146,7 +152,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: "other-ns"}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: "other-ns"}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription : %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -175,7 +184,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: "other-package", Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: "other-package", Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription: %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -229,7 +241,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 				}
 
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
+				}
 				if sub.Status.InstalledCSV != sub.Status.CurrentCSV {
 					t.Fatalf("expected installedCSV %s to be the same as currentCSV  %s", sub.Status.InstalledCSV, sub.Status.CurrentCSV)
 				}

@@ -7,10 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
-	"github.com/integr8ly/integreatly-operator/pkg/metrics"
-	"github.com/sirupsen/logrus"
-
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/client-go/tools/record"
 
@@ -125,7 +121,7 @@ func IsUpgradeServiceAffecting(csv *olmv1alpha1.ClusterServiceVersion) bool {
 	return serviceAffectingUpgrade
 }
 
-func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, csvLocator csvlocator.CSVLocator, eventRecorder record.EventRecorder) error {
+func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, installPlan *olmv1alpha1.InstallPlan, eventRecorder record.EventRecorder) error {
 
 	if installPlan.Status.Phase == olmv1alpha1.InstallPlanPhaseInstalling {
 		return nil
@@ -139,21 +135,6 @@ func ApproveUpgrade(ctx context.Context, client k8sclient.Client, installation *
 	if err != nil {
 		return err
 	}
-
-	csv, err := csvLocator.GetCSV(ctx, client, installPlan)
-	if err != nil {
-		return err
-	}
-
-	version := csv.Spec.Version.String()
-	logrus.Infof("Update approved, setting rhmi version to install %s", version)
-	installation.Status.ToVersion = version
-	err = client.Status().Update(ctx, installation)
-	if err != nil {
-		return err
-	}
-
-	metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 
 	return nil
 }
