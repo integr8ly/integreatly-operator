@@ -1,24 +1,22 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	goctx "context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-	routev1 "github.com/openshift/api/route/v1"
+	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	goctx "context"
 )
 
 const (
@@ -223,37 +221,13 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 // a customer admin in the testing IDP and performing an update to the RHMIConfig
 // instance, and checking that the webhooks adds the correct annotations
 func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
-	// Create the testing IdP
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Errorf("Error when creating testing IdP: %v", err)
+	currentUser := &userv1.User{}
+	if err := ctx.Client.Get(goctx.TODO(), dynclient.ObjectKey{
+		Name: "~",
+	}, currentUser); err != nil {
+		t.Errorf("Error getting the current user: %v", err)
 		return
 	}
-
-	rhmi, err := getRHMI(ctx.Client)
-	if err != nil {
-		t.Errorf("Error getting RHMI CR: %v", err)
-		return
-	}
-
-	masterURL := rhmi.Spec.MasterURL
-
-	oauthRoute := &routev1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{
-		Name:      resources.OpenshiftOAuthRouteName,
-		Namespace: resources.OpenshiftAuthenticationNamespace,
-	}, oauthRoute); err != nil {
-		t.Errorf("Error getting Openshift OAuth Route: %v", err)
-		return
-	}
-
-	// Get customer admin tokens
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
-		t.Errorf("[%s] error ocurred trying to get token : %v", getTimeStampPrefix(), err)
-		dumpAuthResources(ctx.Client, t)
-		return
-	}
-	t.Log("Retrieved customer admin tokens")
-	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// Get the current RHMIConfig instance
 	rhmiConfig := &v1alpha1.RHMIConfig{}
@@ -267,26 +241,10 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 	}
 
 	// Update a value in the instance
-	// The `TypeMeta` field has to be set explicitely in order to send the
-	// marshalled RHMIConfig directly to the API
-	rhmiConfig.TypeMeta = v1.TypeMeta{
-		APIVersion: "integreatly.org/v1alpha1",
-		Kind:       "RHMIConfig",
-	}
 	*rhmiConfig.Spec.Upgrade.WaitForMaintenance = false
-	rhmiConfigChange, err := json.Marshal(rhmiConfig)
-	if err != nil {
-		t.Errorf("Error marshalling rhmiConfig: %v", err)
-		return
-	}
-
-	path := fmt.Sprintf("/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs/%s",
-		RHMIOperatorNamespace,
-		RHMIConfigCRName,
-	)
 
 	// Update the RHMIConfig instance as the customer-admin user
-	if _, err := openshiftClient.DoOpenshiftPutRequest(path, rhmiConfigChange); err != nil {
+	if err := ctx.Client.Update(goctx.TODO(), rhmiConfig); err != nil {
 		t.Errorf("Error updating RHMIConfig instance: %v", err)
 		return
 	}
@@ -302,8 +260,9 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 	}
 
 	// Verify the username is set in the annotations
-	if rhmiConfig.Annotations["lastEditUsername"] != "customer-admin-1" {
-		t.Errorf("Expected mutating webhook to add lastEditUsername annotation to RHMIConfig. Got %s instead",
+	if rhmiConfig.Annotations["lastEditUsername"] != currentUser.Name {
+		t.Errorf("Expected mutating webhook to add \"%s\" lastEditUsername annotation to RHMIConfig. Got %s instead",
+			currentUser.Name,
 			rhmiConfig.Annotations["lastEditUsername"])
 	}
 
