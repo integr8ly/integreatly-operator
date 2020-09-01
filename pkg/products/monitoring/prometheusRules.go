@@ -289,9 +289,9 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					{
 						Alert: "TargetDown",
 						Annotations: map[string]string{
-							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }}/{{ $labels.service }} targets in {{ $labels.namespace }} namespace are down.",
+							"message": "{{ printf \"%.4g\" $value }}% of the {{ $labels.job }} targets in the {{ $labels.namespace }} namespace are down.",
 						},
-						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up) BY (job, namespace, service)) > 10"),
+						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up{job!=\"blackbox\"}) BY (job, namespace, service)) > 10"),
 						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
