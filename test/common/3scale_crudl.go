@@ -40,7 +40,8 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		// t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-8433")
-		t.Fatal(err)
+		dumpAuthResources(ctx.Client, t)
+		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
 
 	// Make sure 3Scale is available
