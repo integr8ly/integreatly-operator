@@ -396,9 +396,10 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
-		File: NamespacePrefix + "middleware-monitoring-operator-general-monitoring-alerts.yaml",
+		File: NamespacePrefix + "middleware-monitoring-operator-target-down-alerts.yaml",
 		Rules: []string{
 			"TargetDown",
+			"BlackboxTargetDown",
 		},
 	},
 }
