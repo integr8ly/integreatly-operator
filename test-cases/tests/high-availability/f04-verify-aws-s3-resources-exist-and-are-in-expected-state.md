@@ -8,6 +8,7 @@ environments:
 estimate: 15m
 targets:
   - 2.8.0
+  - 2.7.0
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state
