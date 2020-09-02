@@ -5,7 +5,7 @@ estimate: 30m
 tags:
   - destructive
 targets:
-  - 2.7.0
+  - 2.8.0
 ---
 
 # O02 - Verify if CRO operator removes remaining snapshots for RDS, Elasticache and S3 after the deletion of RHMI operator has finished

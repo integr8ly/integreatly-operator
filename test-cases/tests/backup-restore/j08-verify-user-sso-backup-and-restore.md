@@ -7,7 +7,7 @@ estimate: 1h
 tags:
   - destructive
 targets:
-  - 2.7.0
+  - 2.8.0
 ---
 
 # J08 - Verify User SSO Backup and Restore

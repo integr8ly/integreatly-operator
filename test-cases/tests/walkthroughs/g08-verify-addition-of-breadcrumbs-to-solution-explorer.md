@@ -4,7 +4,7 @@ environments:
 estimate: 15m
 targets:
   - 2.3.0
-  - 2.7.0
+  - 2.8.0
 ---
 
 # G08 - Verify addition of breadcrumbs to solution explorer

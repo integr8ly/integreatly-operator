@@ -7,7 +7,7 @@ environments:
   - osd-post-upgrade
 targets:
   - 2.4.0
-  - 2.7.0
+  - 2.8.0
 ---
 
 # B05 - Verify Codeready CRUDL Permissions

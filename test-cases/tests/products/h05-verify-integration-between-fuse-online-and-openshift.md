@@ -7,7 +7,7 @@ environments:
   - osd-post-upgrade
 estimate: 30m
 targets:
-  - 2.7.0
+  - 2.8.0
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift
