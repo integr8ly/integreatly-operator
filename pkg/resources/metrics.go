@@ -378,7 +378,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	ruleName := "postgres-freeable-memory-low"
 	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 10 percent of its capacity"
 	labels := map[string]string{
-		"severity": "critical",
+		"severity": "warning",
 	}
 
 	// checking if the percentage of freeable memory is less than 10% of the max memory
@@ -386,7 +386,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// conversion formula is MiB = bytes / (1024^2)
 	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average / (1024*1024)) < ((cro_postgres_max_memory / 100 ) * 10)")
 
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor5Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor15Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
