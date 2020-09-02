@@ -298,9 +298,9 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					{
 						Alert: "BlackboxTargetDown",
 						Annotations: map[string]string{
-							"message": "The {{ $labels.service }} blackbox target is down.",
+							"message": "The {{ $labels.service }} blackbox probe for the endpoint {{ $labels.instance }} is failing.",
 						},
-						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, namespace, service) / count(up{job=\"blackbox\"}) BY (job, namespace, service)) > 10"),
+						Expr:   intstr.FromString("100 * (count(up == 0) BY (job, instance, service) / count(up{job=\"blackbox\"}) BY (job, instance, service)) > 10"),
 						For:    "10m",
 						Labels: map[string]string{"severity": "warning"},
 					},
