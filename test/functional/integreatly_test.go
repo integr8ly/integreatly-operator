@@ -1,10 +1,12 @@
 package functional
 
 import (
-	"k8s.io/client-go/rest"
 	"os"
 	"testing"
 
+	"k8s.io/client-go/rest"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/common"
 	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
@@ -28,7 +30,21 @@ func TestIntegreatly(t *testing.T) {
 				test.Test(t, testingContext)
 			})
 		}
-		for _, test := range common.HAPPY_PATH_TESTS {
+
+		testCases := []common.TestCase{}
+		installType := os.Getenv("INSTALLATION_TYPE")
+		if installType == "" {
+			installType = string(v1alpha1.InstallationTypeManaged)
+		}
+		for _, testSuite := range common.HAPPY_PATH_TESTS {
+			for _, tsInstallType := range testSuite.InstallType {
+				if string(tsInstallType) == installType {
+					testCases = append(testCases, testSuite.TestCases...)
+				}
+			}
+		}
+
+		for _, test := range testCases {
 			t.Run(test.Description, func(t *testing.T) {
 				testingContext, err := common.NewTestingContext(config)
 				if err != nil {
@@ -37,6 +53,7 @@ func TestIntegreatly(t *testing.T) {
 				test.Test(t, testingContext)
 			})
 		}
+
 		for _, test := range FUNCTIONAL_TESTS {
 			t.Run(test.Description, func(t *testing.T) {
 				testingContext, err := common.NewTestingContext(config)

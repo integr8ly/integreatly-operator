@@ -15,6 +15,7 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -106,7 +107,20 @@ func TestIntegreatly(t *testing.T) {
 			t.FailNow()
 		}
 
-		for _, test := range common.HAPPY_PATH_TESTS {
+		testCases := []common.TestCase{}
+		installType := os.Getenv("INSTALLATION_TYPE")
+		if installType == "" {
+			installType = string(v1alpha1.InstallationTypeManaged)
+		}
+		for _, testSuite := range common.HAPPY_PATH_TESTS {
+			for _, tsInstallType := range testSuite.InstallType {
+				if string(tsInstallType) == installType {
+					testCases = append(testCases, testSuite.TestCases...)
+				}
+			}
+		}
+
+		for _, test := range testCases {
 			t.Run(test.Description, func(t *testing.T) {
 				testingContext, err = common.NewTestingContext(f.KubeConfig)
 				if err != nil {

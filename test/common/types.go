@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -55,6 +56,11 @@ type TestingContext struct {
 type TestCase struct {
 	Description string
 	Test        func(t *testing.T, ctx *TestingContext)
+}
+
+type TestSuite struct {
+	TestCases   []TestCase
+	InstallType []integreatlyv1alpha1.InstallationType
 }
 
 type prometheusAPIResponse struct {
