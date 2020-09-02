@@ -8,7 +8,7 @@ tags:
   - destructive
 targets:
   - 2.4.0
-  - 2.7.0
+  - 2.8.0
 ---
 
 # J10 - Verify AMQ backup and restore

@@ -5,7 +5,7 @@ environments:
   - osd-fresh-install
 estimate: 1h
 targets:
-  - 2.7.0
+  - 2.8.0
 ---
 
 # G05 - Verify Data Sync walkthrough

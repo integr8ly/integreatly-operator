@@ -7,7 +7,7 @@ estimate: 1h
 tags:
   - destructive
 targets:
-  - 2.7.0
+  - 2.8.0
 ---
 
 # J11 - Verify UPS backup and restore
