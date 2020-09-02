@@ -27,11 +27,12 @@ Note: this test should only be performed at a time it will not affect other ongo
 2. Prepare VM in OpenStack or AWS
    - for OpenStack you can use integreatly-qe jenkins slave (there should be few already running), if you do not have access contact integreatly-qe for VM IPs:
      1. Login to [OpenStack](https://rhos-d.infra.prod.upshift.rdu2.redhat.com/)
-     2. Open `Instances` tab
-     3. Choose one of `upshift-rhel-...` instances and copy its IP address
-     4. Clone [integreatly-qe repo](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-qe)
-     5. `ssh -i /path/to/integreatly-qe/infra/integr8ly jenkins@<IP_ADDRESS>`
-     6. In the VM run:
+     2. In the top right click `Projects` dropdown and choose `integreatly-qe` project
+     3. Open `Instances` tab
+     4. Choose one of `upshift-rhel-...` instances and copy its IP address
+     5. Clone [integreatly-qe repo](https://gitlab.cee.redhat.com/integreatly-qe/integreatly-qe)
+     6. `ssh -i /path/to/integreatly-qe/infra/integr8ly jenkins@<IP_ADDRESS>`
+     7. In the VM run:
         1. `sudo su`
         2. `setenforce 0`
         3. `exit`
