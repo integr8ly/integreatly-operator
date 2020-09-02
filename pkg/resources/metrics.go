@@ -386,7 +386,7 @@ func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.
 	// conversion formula is MiB = bytes / (1024^2)
 	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average / (1024*1024)) < ((cro_postgres_max_memory / 100 ) * 10)")
 
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor15Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
