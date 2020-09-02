@@ -1,7 +1,6 @@
 ---
 environments:
   - osd-post-upgrade
-  - osd-fresh-install
 estimate: 15m
 targets:
   - 2.6.0
