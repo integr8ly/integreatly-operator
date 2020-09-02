@@ -1,6 +1,8 @@
 ---
 environments:
   - external
+tags:
+  - manual-selection
 targets:
   - 2.6.0
 ---
