@@ -149,6 +149,26 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 	return v1alpha1.PhaseCompleted, nil
 }
 
+// createSmtpSecretExists creates a PrometheusRule to alert if the rhmi-smtp-secret is present
+// the ocm sendgrid service creates a secret automatically this is a check for when that service fails
+func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error){
+	alertName := "SendgridSmtpSecretExists"
+	ruleName := "sendgrid-smtp-secrets-exists-rule"
+	alertExp := intstr.FromString(
+		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='redhat-rhmi-smtp'} == 1)",cr.Namespace ),
+	)
+	alertDescription := fmt.Sprintf("The Sendgrid SMTP secret has not been created in the %s namespace and may need to be created manualy", cr.Namespace)
+	labels := map[string]string{
+		"severity":    "warning",
+	}
+	// create the rule
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlSendGridSmptSecretExists, alertFor10Mins, alertExp, labels)
+	if err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
+	}
+	return v1alpha1.PhaseCompleted, nil
+}
+
 // createPostgresAvailabilityAlert creates a PrometheusRule alert to watch for the availability
 // of a Postgres instance
 func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) (*prometheusv1.PrometheusRule, error) {
