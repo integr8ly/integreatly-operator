@@ -153,7 +153,7 @@ func ReconcileRedisAlerts(ctx context.Context, client k8sclient.Client, inst *v1
 // the ocm sendgrid service creates a secret automatically this is a check for when that service fails
 func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1alpha1.RHMI) (v1alpha1.StatusPhase, error) {
 	alertName := "SendgridSmtpSecretExists"
-	ruleName := "sendgrid-smtp-secrets-exists-rule"
+	ruleName := "sendgrid-smtp-secret-exists-rule"
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='redhat-rhmi-smtp'} == 1)", cr.Namespace),
 	)
