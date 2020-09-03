@@ -29,5 +29,12 @@ $ select * from clients;
 $ select * from realms;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/user_sso_backup.md)
-4. Verify the same clients and realms exist in postgres follow `Step 2.`
+3. Run the backup and restore script
+
+```sh
+cd test/scripts/backup-restore
+./j08-verify-user-sso-backup-and-restore.sh | tee test-output.txt
+```
+
+4. Wait for the script to finish without errors
+5. Verify in the `test-output.txt` log that the test finished successfully.
