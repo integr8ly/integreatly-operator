@@ -382,3 +382,42 @@ func getTimeStampPrefix() string {
 		t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute(), t.Second())
 }
+
+func GetInstallType(config *rest.Config) (string, error) {
+
+	context, err := NewTestingContext(config)
+	if err != nil {
+		return "", fmt.Errorf("failed to create testing context %s", err)
+	}
+	rhmi := &integreatlyv1alpha1.RHMI{}
+
+	if err := context.Client.Get(goctx.TODO(), types.NamespacedName{Name: "rhmi", Namespace: "redhat-rhmi-operator"}, rhmi); err != nil {
+		return "", fmt.Errorf("error getting RHMI CR: %w", err)
+	}
+
+	return rhmi.Spec.Type, nil
+}
+
+func RunTestCases(testCases []TestCase, t *testing.T, config *rest.Config) {
+	for _, test := range testCases {
+		t.Run(test.Description, func(t *testing.T) {
+			testingContext, err := NewTestingContext(config)
+			if err != nil {
+				t.Fatal("failed to create testing context", err)
+			}
+			test.Test(t, testingContext)
+		})
+	}
+}
+
+func GetHappyPathTestCases(installType string) []TestCase {
+	testCases := []TestCase{}
+	for _, testSuite := range HAPPY_PATH_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
