@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
@@ -47,7 +48,7 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 			},
 			{
 				AlertName: "rhmi-installation-alerts",
-				Namespace: "openshift-monitoring",
+				Namespace: monitoring.OpenshiftMonitoringNamespace,
 				GroupName: "rhmi-installation.rules",
 				Rules: []monitoringv1.Rule{
 					{
@@ -58,6 +59,23 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 						},
 						Expr:   intstr.FromString(fmt.Sprint("absent(rhmi_status{stage='complete'} == 1)")),
 						For:    "120m",
+						Labels: map[string]string{"severity": "critical"},
+					},
+				},
+			},
+			{
+				AlertName: "rhmi-upgrade-alerts",
+				Namespace: monitoring.OpenshiftMonitoringNamespace,
+				GroupName: "rhmi-upgrade.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "RHMIUpgradeExpectedDurationExceeded",
+						Annotations: map[string]string{
+							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"message": "RHMI operator upgrade is taking more than 10 minutes",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf(`absent((rhmi_version * on(version) csv_succeeded{exported_namespace=~"%s"}) or absent(rhmi_version))`, installation.Namespace)),
+						For:    "10m",
 						Labels: map[string]string{"severity": "critical"},
 					},
 				},

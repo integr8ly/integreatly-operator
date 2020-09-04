@@ -291,8 +291,12 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
 	}
 
+	alertsClient, err := k8sclient.New(r.mgr.GetConfig(), k8sclient.Options{})
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("error creating client for alerts: %v", err)
+	}
 	// reconciles rhmi installation alerts
-	_, err = r.newAlertsReconciler(logrus.NewEntry(logrus.StandardLogger()), installation).ReconcileAlerts(context.TODO(), r.client)
+	_, err = r.newAlertsReconciler(logrus.NewEntry(logrus.StandardLogger()), installation).ReconcileAlerts(context.TODO(), alertsClient)
 	if err != nil {
 		logrus.Infof("Error reconciling alerts for the rhmi installation: %v", err)
 	}
