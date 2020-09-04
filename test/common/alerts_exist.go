@@ -401,6 +401,12 @@ var expectedRules = []alertsTestRule{
 			"RHMICSVRequirementsNotMet",
 		},
 	},
+	{
+		File: "redhat-rhmi-operator-sendgrid-smtp-secret-exists-rule.yaml",
+		Rules: []string{
+			"SendgridSmtpSecretExists",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
