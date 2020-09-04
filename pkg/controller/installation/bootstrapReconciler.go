@@ -314,31 +314,6 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 }
 
 func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	configRole := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmiconfig-dedicated-admins-role",
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRole, func() error {
-		configRole.Rules = []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"integreatly.org"},
-				Resources: []string{"rhmiconfigs"},
-				Verbs:     []string{"update", "get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{"integreatly.org"},
-				Resources: []string{"rhmis"},
-				Verbs:     []string{"watch", "get", "list"},
-			},
-		}
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role: %w", err)
-	}
-
 	configRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmiconfig-dedicated-admins-role-binding",
@@ -346,22 +321,24 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRoleBinding, func() error {
-		configRoleBinding.RoleRef = rbacv1.RoleRef{
-			Name: configRole.GetName(),
-			Kind: "Role",
+	// Get the dedicated admins role binding. If it's not found, return
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      "rhmiconfig-dedicated-admins-role-binding",
+		Namespace: r.ConfigManager.GetOperatorNamespace(),
+	}, configRoleBinding); err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		configRoleBinding.Subjects = []rbacv1.Subject{
-			{
-				Name: "dedicated-admins",
-				Kind: "Group",
-			},
-		}
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role binding: %w", err)
+
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	logrus.Info("Created RHMI config dedicated admin Role and Role Binding successfully reconciled")
+
+	logrus.Info("Found and deleted rhmiconfig-dedicated-admins-role-binding")
+
+	// Delete the role binding
+	if err := serverClient.Delete(ctx, configRoleBinding); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
