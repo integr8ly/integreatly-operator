@@ -397,7 +397,7 @@ var expectedRules = []alertsTestRule{
 		},
 	},
 	{
-		File: "redhat-rhmi-middleware-monitoring-operator-install-upgrade-alerts.yaml",
+		File: MonitoringOperatorNamespace + "-install-upgrade-alerts.yaml",
 		Rules: []string{
 			"RHMICSVRequirementsNotMet",
 		},
