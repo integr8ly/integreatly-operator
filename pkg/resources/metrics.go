@@ -162,7 +162,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 		"severity": "warning",
 	}
 	// create the rule
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlSendGridSmptSecretExists, alertFor10Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlSendGridSmtpSecretExists, alertFor10Mins, alertExp, labels)
 	if err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create sendgrid smtp exists rule err: %s", err)
 	}
