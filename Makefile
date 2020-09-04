@@ -177,6 +177,11 @@ test/products:
 	mkdir -p $(TEST_RESULTS_DIR)
 	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
+.PHONY: test/managedapis/products
+test/managedapis/products:
+	mkdir -p $(TEST_RESULTS_DIR)
+	delorean pipeline product-tests --test-config ./test-containers-managed-api.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
+
 .PHONY: install/olm
 install/olm: cluster/cleanup/olm cluster/cleanup/crds cluster/prepare cluster/prepare/olm/subscription deploy/integreatly-rhmi-cr.yml cluster/check/operator/deployment cluster/prepare/dms cluster/prepare/pagerduty
 
