@@ -302,7 +302,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Annotations: map[string]string{
 							"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.namespace}}'. Phase is {{$labels.phase}}",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{reason='RequirementsNotMet', phase=~'Pending|Failed',exported_namespace=~'%s.*'}", r.Config.GetNamespacePrefix())),
+						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{phase=~'Pending|Failed',exported_namespace=~'%s.*'}", r.Config.GetNamespacePrefix())),
 						For:    "15m",
 						Labels: map[string]string{"severity": "warning"},
 					},
