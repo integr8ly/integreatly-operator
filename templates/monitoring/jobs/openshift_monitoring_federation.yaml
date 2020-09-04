@@ -19,6 +19,7 @@
     - '{{ "{" }} __name__=~"instance:.*" {{ "}" }}'
     - '{{ "{" }} __name__=~"container_memory_.*" {{ "}" }}'
     - '{{ "{" }} __name__=~":node_memory_.*" {{ "}" }}'
+    - '{{ "{" }} __name__=~"csv_.*" {{ "}" }}'
   scheme: https
   tls_config:
     insecure_skip_verify: true

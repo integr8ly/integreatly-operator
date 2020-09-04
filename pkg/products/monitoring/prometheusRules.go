@@ -282,6 +282,22 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					},
 				},
 			},
+			{
+				AlertName: "install-upgrade-alerts",
+				Namespace: r.Config.GetOperatorNamespace(),
+				GroupName: "general.rules",
+				Rules: []monitoringv1.Rule{
+					{
+						Alert: "RHMICSVRequirementsNotMet",
+						Annotations: map[string]string{
+							"message": "RequirementsNotMet for CSV '{{$labels.name}}' in namespace '{{$labels.namespace}}'. Phase is {{$labels.phase}}",
+						},
+						Expr:   intstr.FromString(fmt.Sprintf("csv_abnormal{phase=~'Pending|Failed',exported_namespace=~'%s.*'}", r.Config.GetNamespacePrefix())),
+						For:    "15m",
+						Labels: map[string]string{"severity": "warning"},
+					},
+				},
+			},
 		},
 	}
 }

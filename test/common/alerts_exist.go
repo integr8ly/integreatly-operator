@@ -395,6 +395,12 @@ var expectedRules = []alertsTestRule{
 			"RHMIInstallationControllerStoppedReconciling",
 		},
 	},
+	{
+		File: MonitoringOperatorNamespace + "-install-upgrade-alerts.yaml",
+		Rules: []string{
+			"RHMICSVRequirementsNotMet",
+		},
+	},
 }
 
 var expectedAWSRules = []alertsTestRule{
