@@ -45,8 +45,7 @@ func TestProductVersions(t *testing.T, ctx *TestingContext) {
 			productStatus := rhmi.Status.Stages[stage].Products[productName]
 			clusterVersion := productStatus.Version
 			if clusterVersion != productVersion {
-				t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-8390, Error with version of %s deployed on cluster. Expected %s. Got %s\nProduct status: %v", productName, productVersion, clusterVersion, productStatus)
-				//t.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s\nProduct status: %v", productName, productVersion, clusterVersion, productStatus)
+				t.Errorf("Error with version of %s deployed on cluster. Expected %s. Got %s\nProduct status: %v", productName, productVersion, clusterVersion, productStatus)
 			}
 		}
 
