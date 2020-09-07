@@ -912,7 +912,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
-		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
+		res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
@@ -1228,7 +1228,7 @@ func (r *Reconciler) getUserDiff(kcUsers []keycloak.KeycloakAPIUser, tsUsers []*
 
 func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
-		if kcu.UserName == tsUser.UserDetails.Username {
+		if strings.EqualFold(kcu.UserName, tsUser.UserDetails.Username) {
 			return true
 		}
 	}
@@ -1238,7 +1238,7 @@ func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 
 func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
-		if tsu.UserDetails.Username == kcUser.UserName {
+		if strings.EqualFold(tsu.UserDetails.Username, kcUser.UserName) {
 			return true
 		}
 	}
@@ -1248,7 +1248,7 @@ func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 
 func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	for _, userName := range adminGroup.Users {
-		if tsUser.UserDetails.Username == userName {
+		if strings.EqualFold(tsUser.UserDetails.Username, userName) {
 			return true
 		}
 	}
