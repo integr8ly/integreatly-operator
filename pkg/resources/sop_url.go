@@ -17,4 +17,5 @@ const (
 	SopUrlEndpointAvailableAlert             = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/service_endpoint_down.asciidoc"
 	SopUrlAlertsAndTroubleshooting           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/alerts_and_troubleshooting.md"
 	sopUrlCloudResourceDeletionStatusFailed  = "https://github.com/RHCloudServices/integreatly-help/tree/master/sops/2.x/alerts/clean_up_cloud_resources_failed_teardown.asciidoc"
+	sopUrlSendGridSmtpSecretExists           = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/sendgrid_smtp_secret_not_present.asciidoc"
 )

@@ -574,7 +574,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 	}
 
 	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
-		requiredSecrets := []string{installation.Spec.SMTPSecret, installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
+		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {
 			secret := &corev1.Secret{
