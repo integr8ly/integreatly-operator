@@ -151,7 +151,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 		installType, _ := os.LookupEnv(installTypeEnvName)
 
-		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", string(integreatlyv1alpha1.InstallationTypeManaged), useClusterStorage, namespace)
+		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
 			installType = string(integreatlyv1alpha1.InstallationTypeManaged)

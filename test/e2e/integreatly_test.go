@@ -4,7 +4,6 @@ import (
 	"context"
 	goctx "context"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -62,36 +60,13 @@ func TestIntegreatly(t *testing.T) {
 	// get global framework variables
 	f := framework.Global
 
-	apiextensions, err := clientset.NewForConfig(f.KubeConfig)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	selfSignedCerts, err := common.HasSelfSignedCerts(f.KubeConfig.Host, http.DefaultClient)
-	if err != nil {
-		t.Fatal("failed to determine self signed cert status", err)
-	}
-
-	testingContext := &common.TestingContext{
-		Client:          f.Client.Client,
-		KubeConfig:      f.KubeConfig,
-		KubeClient:      f.KubeClient,
-		ExtensionClient: apiextensions,
-		SelfSignedCerts: selfSignedCerts,
-	}
-
 	// run subtests
 	t.Run("integreatly", func(t *testing.T) {
-		for _, test := range common.ALL_TESTS {
-			t.Run(test.Description, func(t *testing.T) {
-				testingContext, err = common.NewTestingContext(f.KubeConfig)
-				if err != nil {
-					t.Fatal("failed to create testing context", err)
-				}
-				test.Test(t, testingContext)
-			})
-		}
 
+		// running ALL_TESTS test cases
+		common.RunTestCases(common.ALL_TESTS, t, f.KubeConfig)
+
+		// create the cluster
 		var err error
 		t.Run("Cluster", func(t *testing.T) {
 			err = IntegreatlyCluster(t, f, ctx)
@@ -100,38 +75,31 @@ func TestIntegreatly(t *testing.T) {
 				t.Fail()
 			}
 		})
-
 		if err != nil {
 			t.Log("cluster not in a testable state, quiting test run")
 			t.FailNow()
 		}
 
-		for _, test := range common.HAPPY_PATH_TESTS {
-			t.Run(test.Description, func(t *testing.T) {
-				testingContext, err = common.NewTestingContext(f.KubeConfig)
-				if err != nil {
-					t.Fatal("failed to create testing context", err)
-				}
-				test.Test(t, testingContext)
-			})
+		installType, err := common.GetInstallType(f.KubeConfig)
+		if err != nil {
+			t.Fatalf("failed to get install type, err: %s", installType)
 		}
 
-		// Do not execute these tests unless DESTRUCTIVE is set to true
-		if os.Getenv("DESTRUCTIVE") == "true" {
-			t.Run("Integreatly Destructive Tests", func(t *testing.T) {
-				for _, test := range common.DESTRUCTIVE_TESTS {
-					t.Run(test.Description, func(t *testing.T) {
-						testingContext, err = common.NewTestingContext(f.KubeConfig)
-						if err != nil {
-							t.Fatal("failed to create testing context", err)
-						}
-						test.Test(t, testingContext)
-					})
-				}
-			})
-		} else {
-			t.Skip("Skipping Destructive tests as DESTRUCTIVE env var is not set to true")
-		}
+		// get happy path test cases according to the install type
+		happyPathTestCases := common.GetHappyPathTestCases(installType)
+
+		// running HAPPY_PATH_TESTS tests cases
+		common.RunTestCases(happyPathTestCases, t, f.KubeConfig)
+
+		t.Run("Integreatly Destructive Tests", func(t *testing.T) {
+			// Do not execute these tests unless DESTRUCTIVE is set to true
+			if os.Getenv("DESTRUCTIVE") != "true" {
+				t.Skip("Skipping Destructive tests as DESTRUCTIVE env var is not set to true")
+			}
+
+			common.RunTestCases(common.DESTRUCTIVE_TESTS, t, f.KubeConfig)
+		})
+
 	})
 
 	artifactsDir := os.Getenv(artifactsDirEnv)
@@ -175,6 +143,12 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 }
 
 func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+
+	installType, err := common.GetInstallType(f.KubeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get install type, err: %s", installType)
+	}
+
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %deploymentName", err)
@@ -232,6 +206,13 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"ups":                  "unifiedpush-operator",
 		"apicurito":            "apicurito-operator",
 	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		products = map[string]string{
+			"3scale": "3scale-operator",
+		}
+	}
+
 	for product, deploymentName := range products {
 		err = waitForProductDeployment(t, f, ctx, product, deploymentName)
 		if err != nil {
@@ -245,16 +226,18 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	// wait for solution-explorer operator to deploy
-	err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductSolutionExplorer), "tutorial-web-app-operator")
-	if err != nil {
-		return err
-	}
+	if installType != string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		// wait for solution-explorer operator to deploy
+		err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductSolutionExplorer), "tutorial-web-app-operator")
+		if err != nil {
+			return err
+		}
 
-	// wait for solution-explorer phase to complete (10 minutes timeout)
-	err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, solutionExplorerStageTimeout, string(integreatlyv1alpha1.SolutionExplorerStage))
-	if err != nil {
-		return err
+		// wait for solution-explorer phase to complete (10 minutes timeout)
+		err = waitForInstallationStageCompletion(t, f, namespace, deploymentRetryInterval, solutionExplorerStageTimeout, string(integreatlyv1alpha1.SolutionExplorerStage))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
