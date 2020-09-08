@@ -3,6 +3,8 @@ environments:
   - osd-fresh-install
 tags:
   - manual-selection
+targets:
+  - 2.7.0
 ---
 
 # I16 - Verify partial ag rhmi config
