@@ -75,7 +75,7 @@ var (
 	VersionRHSSO               ProductVersion = "7.4"
 	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
-	VersionSolutionExplorer    ProductVersion = "2.27.0"
+	VersionSolutionExplorer    ProductVersion = "2.28.0"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -92,7 +92,7 @@ var (
 	OperatorVersionAMQStreams       OperatorVersion = "1.1.0"
 	OperatorVersionAMQOnline        OperatorVersion = "1.4"
 	OperatorVersionMonitoring       OperatorVersion = "1.2.1"
-	OperatorVersionSolutionExplorer OperatorVersion = "0.0.61"
+	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
 	OperatorVersionRHSSO            OperatorVersion = "10.0.0"
 	OperatorVersionRHSSOUser        OperatorVersion = "10.0.0"
 
