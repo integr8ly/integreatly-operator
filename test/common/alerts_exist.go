@@ -675,6 +675,12 @@ var expectedAWSRules = []alertsTestRule{
 		},
 	},
 	{
+		File: "redhat-rhmi-operator-postgres-freeable-memory-low.yaml",
+		Rules: []string{
+			"PostgresFreeableMemoryLow",
+		},
+	},
+	{
 		File: "redhat-rhmi-operator-redis-memory-usage-high.yaml",
 		Rules: []string{
 			"RedisMemoryUsageHigh",

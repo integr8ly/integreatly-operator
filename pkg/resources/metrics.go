@@ -93,6 +93,10 @@ func ReconcilePostgresAlerts(ctx context.Context, client k8sclient.Client, inst 
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres free storage prometheus alerts for %s: %w", cr.Name, err)
 	}
 
+	if err = reconcilePostgresFreeableMemoryAlert(ctx, client, inst, cr); err != nil {
+		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres freeable memory alert for %s: %w", cr.Name, err)
+	}
+
 	// create the prometheus high cpu alert rule
 	if err = reconcilePostgresCPUUtilizationAlerts(ctx, client, inst, cr); err != nil {
 		return v1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres cpu utilization prometheus alerts for %s: %w", cr.Name, err)
@@ -376,6 +380,33 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertExp = intstr.FromString("cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100 ) * 10)")
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor30Mins, alertExp, labels)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func reconcilePostgresFreeableMemoryAlert(ctx context.Context, client k8sclient.Client, inst *v1alpha1.RHMI, cr *crov1.Postgres) error {
+	// dont create the alert if we are using in cluster storage
+	if strings.ToLower(inst.Spec.UseClusterStorage) == "true" {
+		logrus.Info("skipping postgres free storage alert creation, useClusterStorage is true")
+		return nil
+	}
+
+	// build and reconcile postgres low freeable memory alert
+	alertName := "PostgresFreeableMemoryLow"
+	ruleName := "postgres-freeable-memory-low"
+	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, freeable memory is currently under 10 percent of its capacity"
+	labels := map[string]string{
+		"severity": "warning",
+	}
+
+	// checking if the percentage of freeable memory is less than 10% of the max memory
+	// cro_postgres_max_memory is in MiB so cro_postgres_freeable_memory_average needs to be converted from bytes to MiB
+	// conversion formula is MiB = bytes / (1024^2)
+	alertExp := intstr.FromString("(cro_postgres_freeable_memory_average / (1024*1024)) < ((cro_postgres_max_memory / 100 ) * 10)")
+
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresFreeableMemoryLow, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
