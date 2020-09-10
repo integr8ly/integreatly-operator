@@ -34,52 +34,52 @@ targets:
       --resource-type-filters s3
    ```
 2. You should see 2 buckets listed when the command is finished running. You should also be able to see the tags for each of the bucket. One of these tags should be `integreatly.org/product-name`. One bucket should have value `cloud-resources` for this tag, and the other should have `3scale` for this tag. The following is an example output:
+
    ```json
    {
-       "ResourceTagMappingList": [
+     "ResourceTagMappingList": [
+       {
+         "ResourceARN": "arn:aws:s3:::addonflow2576sjdqredhatrhmioperator-ptkh",
+         "Tags": [
            {
-               "ResourceARN": "arn:aws:s3:::addonflow2576sjdqredhatrhmioperator-ptkh",
-               "Tags": [
-                   {
-                       "Key": "integreatly.org/clusterID",
-                       "Value": "addon-flow-257-6sjdq"
-                   },
-                   {
-                       "Key": "integreatly.org/product-name",
-                       "Value": "3scale"
-                   },
-                   {
-                       "Key": "integreatly.org/resource-name",
-                       "Value": "threescale-blobstorage-rhmi"
-                   },
-                   {
-                       "Key": "integreatly.org/resource-type",
-                       "Value": "managed"
-                   }
-               ]
+             "Key": "integreatly.org/clusterID",
+             "Value": "addon-flow-257-6sjdq"
            },
            {
-               "ResourceARN": "arn:aws:s3:::addonflow2576sjdqredhatrhmioperator-hy2s",
-               "Tags": [
-                   {
-                       "Key": "integreatly.org/clusterID",
-                       "Value": "addon-flow-257-6sjdq"
-                   },
-                   {
-                       "Key": "integreatly.org/product-name",
-                       "Value": "cloud-resources"
-                   },
-                   {
-                       "Key": "integreatly.org/resource-name",
-                       "Value": "backups-blobstorage-rhmi"
-                   },
-                   {
-                       "Key": "integreatly.org/resource-type",
-                       "Value": "managed"
-                   }
-               ]
+             "Key": "integreatly.org/product-name",
+             "Value": "3scale"
+           },
+           {
+             "Key": "integreatly.org/resource-name",
+             "Value": "threescale-blobstorage-rhmi"
+           },
+           {
+             "Key": "integreatly.org/resource-type",
+             "Value": "managed"
            }
-       ]
+         ]
+       },
+       {
+         "ResourceARN": "arn:aws:s3:::addonflow2576sjdqredhatrhmioperator-hy2s",
+         "Tags": [
+           {
+             "Key": "integreatly.org/clusterID",
+             "Value": "addon-flow-257-6sjdq"
+           },
+           {
+             "Key": "integreatly.org/product-name",
+             "Value": "cloud-resources"
+           },
+           {
+             "Key": "integreatly.org/resource-name",
+             "Value": "backups-blobstorage-rhmi"
+           },
+           {
+             "Key": "integreatly.org/resource-type",
+             "Value": "managed"
+           }
+         ]
+       }
+     ]
    }
-
    ```
