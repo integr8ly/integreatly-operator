@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"os"
 	"regexp"
 	"time"
@@ -151,18 +152,16 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	// TODO: investigate a better approach to getting RHMI rather than hardcoding values
-	installation := &integreatlyv1alpha1.RHMI{}
-	err = r.client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi", Namespace: request.NamespacedName.Namespace}, installation)
+	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request. Return and don't requeue
-			return reconcile.Result{}, nil
-		}
 		return reconcile.Result{}, err
 	}
+	if rhmiCr == nil {
+		// Request object not found, could have been deleted after reconcile request. Return and don't requeue
+		return reconcile.Result{}, nil
+	}
 
-	return r.HandleUpgrades(context.TODO(), subscription, installation)
+	return r.HandleUpgrades(context.TODO(), subscription, rhmiCr)
 }
 
 func (r *ReconcileSubscription) shouldReconcileSubscription(request reconcile.Request) bool {

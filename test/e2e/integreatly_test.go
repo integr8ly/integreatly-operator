@@ -207,7 +207,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		"apicurito":            "apicurito-operator",
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		products = map[string]string{
 			"3scale": "3scale-operator",
 		}
@@ -226,7 +226,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 
-	if installType != string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installType != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		// wait for solution-explorer operator to deploy
 		err = waitForProductDeployment(t, f, ctx, string(integreatlyv1alpha1.ProductSolutionExplorer), "tutorial-web-app-operator")
 		if err != nil {
