@@ -17,6 +17,10 @@ func TestSendgridCredentialsAreValid(t *testing.T, ctx *TestingContext) {
 
 	username, password, host := string(smtpSecret.Data["username"]), string(smtpSecret.Data["password"]), string(smtpSecret.Data["host"])
 
+	if host != "smtp.sendgrid.net" {
+		t.Skip("Skipping the test, because the credentials were not set by a Sendgrid service")
+	}
+
 	// Test if SMTP credentials are valid using smtp.Auth method
 	auth := smtp.PlainAuth("", username, password, host)
 	client, err := smtp.Dial(host + ":587")
