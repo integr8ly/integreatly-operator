@@ -36,9 +36,17 @@ import (
 
 const (
 	// IntegreatlyPackage - package name is used for Subsription name
-	IntegreatlyPackage = "integreatly"
-	CSVNamePrefix      = "integreatly-operator"
+	IntegreatlyPackage          = "integreatly"
+	CSVNamePrefix               = "integreatly-operator"
+	RHMIAddonSubscription       = "addon-rhmi"
+	ManagedAPIAddonSubscription = "addon-managed-api-service"
 )
+
+var subscriptionsToReconcile []string = []string{
+	IntegreatlyPackage,
+	RHMIAddonSubscription,
+	ManagedAPIAddonSubscription,
+}
 
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -120,8 +128,7 @@ type ReconcileSubscription struct {
 // In a namespaced installation of integreatly operator it will only reconcile Subscription of the integreatly operator itself
 func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
-	if request.Namespace != r.operatorNamespace ||
-		(request.Name != IntegreatlyPackage && request.Name != "addon-rhmi") {
+	if !r.shouldReconcileSubscription(request) {
 		logrus.Infof("not our subscription: %+v, %s", request, r.operatorNamespace)
 		return reconcile.Result{}, nil
 	}
@@ -156,6 +163,20 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	return r.HandleUpgrades(context.TODO(), subscription, installation)
+}
+
+func (r *ReconcileSubscription) shouldReconcileSubscription(request reconcile.Request) bool {
+	if request.Namespace != r.operatorNamespace {
+		return false
+	}
+
+	for _, reconcileable := range subscriptionsToReconcile {
+		if request.Name == reconcileable {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
