@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -14,27 +15,8 @@ const (
 )
 
 var (
-	subscriptionsToCheck = []SubscriptionCheck{
-		{
-			Name:      constants.AMQOnlineSubscriptionName,
-			Namespace: AMQOnlineOperatorNamespace,
-		},
-		{
-			Name:      constants.ApicuritoSubscriptionName,
-			Namespace: ApicuritoOperatorNamespace,
-		},
-		{
-			Name:      constants.CloudResourceSubscriptionName,
-			Namespace: CloudResourceOperatorNamespace,
-		},
-		{
-			Name:      constants.CodeReadySubscriptionName,
-			Namespace: CodeReadyOperatorNamespace,
-		},
-		{
-			Name:      constants.FuseSubscriptionName,
-			Namespace: FuseOperatorNamespace,
-		},
+	// applicable to all install types including managed api
+	commonSubscriptionsToCheck = []SubscriptionCheck{
 		{
 			Name:      constants.MonitoringSubscriptionName,
 			Namespace: MonitoringOperatorNamespace,
@@ -48,21 +30,51 @@ var (
 			Namespace: RHSSOOperatorNamespace,
 		},
 		{
-			Name:      constants.SolutionExplorerSubscriptionName,
-			Namespace: SolutionExplorerOperatorNamespace,
-		},
-		{
 			Name:      constants.ThreeScaleSubscriptionName,
 			Namespace: ThreeScaleOperatorNamespace,
+		},
+		{
+			Name:      constants.CloudResourceSubscriptionName,
+			Namespace: CloudResourceOperatorNamespace,
+		},
+	}
+	// Applicable to rhmi 2 install types
+	rhmi2SubscriptionsToCheck = []SubscriptionCheck{
+		{
+			Name:      constants.AMQOnlineSubscriptionName,
+			Namespace: AMQOnlineOperatorNamespace,
+		},
+		{
+			Name:      constants.ApicuritoSubscriptionName,
+			Namespace: ApicuritoOperatorNamespace,
+		},
+		{
+			Name:      constants.CodeReadySubscriptionName,
+			Namespace: CodeReadyOperatorNamespace,
+		},
+		{
+			Name:      constants.FuseSubscriptionName,
+			Namespace: FuseOperatorNamespace,
 		},
 		{
 			Name:      constants.UPSSubscriptionName,
 			Namespace: UPSOperatorNamespace,
 		},
+		{
+			Name:      constants.SolutionExplorerSubscriptionName,
+			Namespace: SolutionExplorerOperatorNamespace,
+		},
 	}
 )
 
 func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
+
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("failed to get the RHMI: %s", err)
+	}
+	subscriptionsToCheck := getSubscriptionsToCheck(rhmi.Spec.Type)
+
 	for _, subscription := range subscriptionsToCheck {
 		// Check subscription install plan approval strategy
 		sub := &coreosv1alpha1.Subscription{}
@@ -98,5 +110,13 @@ func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
 				t.Errorf("Expected %s approval for install plan in %s namespace but got %s", expectedApprovalStrategy, subscription.Namespace, installPlan.Spec.Approval)
 			}
 		}
+	}
+}
+
+func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonSubscriptionsToCheck
+	} else {
+		return append(commonSubscriptionsToCheck, rhmi2SubscriptionsToCheck...)
 	}
 }

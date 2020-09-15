@@ -22,9 +22,21 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var productNamespaces = []string{
+// Common to all install types including managed api
+var commonNamespaces = []string{
 	"3scale",
 	"3scale-operator",
+	"middleware-monitoring",
+	"middleware-monitoring-operator",
+	"operator",
+	"rhsso",
+	"rhsso-operator",
+	"user-sso",
+	"user-sso-operator",
+}
+
+// Applicable to install types used in 2.X
+var rhmi2NamespacesPermissions = []string{
 	"amq-online",
 	"amq-online-operator",
 	"apicurito",
@@ -34,17 +46,10 @@ var productNamespaces = []string{
 	"codeready-workspaces-operator",
 	"fuse",
 	"fuse-operator",
-	"middleware-monitoring",
-	"middleware-monitoring-operator",
-	"operator",
-	"rhsso",
-	"rhsso-operator",
 	"solution-explorer",
 	"solution-explorer-operator",
 	"ups",
 	"ups-operator",
-	"user-sso",
-	"user-sso-operator",
 }
 
 type ExpectedPermissions struct {
@@ -95,30 +100,33 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// Verify Dedicated admins permissions around secrets
-	verifyDedicatedAdminSecretPermissions(t, openshiftClient)
+	verifyDedicatedAdminSecretPermissions(t, openshiftClient, rhmi.Spec.Type)
 
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around StandardInfraConfig
-	verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
+	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
 
-	// Verify dedicated admin permissions around BrokeredInfraConfig
-	verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around StandardInfraConfig
+		verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AddressSpacePlan
-	verifyDedicatedAdminAddressSpacePlanPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around BrokeredInfraConfig
+		verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AddressPlan
-	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around AddressSpacePlan
+		verifyDedicatedAdminAddressSpacePlanPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AuthenticationService
-	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around AddressPlan
+		verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
 
-	// Verify dedicated admin Role / Role binding for AMQ Online resources
-	verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
+		// Verify dedicated admin permissions around AuthenticationService
+		verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+
+		// Verify dedicated admin Role / Role binding for AMQ Online resources
+		verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
+	}
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
@@ -169,8 +177,10 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
 }
 
-func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, installType string) {
 	t.Log("Verifying Dedicated admin permissions for Secrets Resource")
+
+	productNamespaces := getProductNamespaces(installType)
 
 	// build array of rhmi namespaces
 	var rhmiNamespaces []string
@@ -199,6 +209,14 @@ func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resour
 
 	if resp.StatusCode != 200 {
 		t.Errorf("test-failed - status code found : %d expected status code : 200 - RHMI dedicated admin should have access to github oauth secret in %s", resp.StatusCode, RHMIOperatorNamespace)
+	}
+}
+
+func getProductNamespaces(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonNamespaces
+	} else {
+		return append(commonNamespaces, rhmi2NamespacesPermissions...)
 	}
 }
 

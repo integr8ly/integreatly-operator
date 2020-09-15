@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	productOperatorVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion{
+	rhmiProductOperatorVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion{
 		integreatlyv1alpha1.AuthenticationStage: {
 			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.OperatorVersionRHSSO,
 		},
@@ -29,18 +29,38 @@ var (
 			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.OperatorVersionSolutionExplorer,
 		},
 	}
+	managedApiProductOperatorVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion{
+		integreatlyv1alpha1.AuthenticationStage: {
+			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.OperatorVersionRHSSO,
+		},
+		integreatlyv1alpha1.MonitoringStage: {
+			integreatlyv1alpha1.ProductMonitoring: integreatlyv1alpha1.OperatorVersionMonitoring,
+		},
+		integreatlyv1alpha1.CloudResourcesStage: {
+			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.OperatorVersionCloudResources,
+		},
+		integreatlyv1alpha1.ProductsStage: {
+			integreatlyv1alpha1.Product3Scale:    integreatlyv1alpha1.OperatorVersion3Scale,
+			integreatlyv1alpha1.ProductRHSSOUser: integreatlyv1alpha1.OperatorVersionRHSSOUser,
+		},
+
+		integreatlyv1alpha1.SolutionExplorerStage: {
+			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.OperatorVersionSolutionExplorer,
+		},
+	}
 )
 
 func TestProductOperatorVersions(t *testing.T, ctx *TestingContext) {
 
 	rhmi, err := getRHMI(ctx.Client)
-
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 
-	for stage := range productOperatorVersions {
-		for productName, operatorVersion := range productOperatorVersions[stage] {
+	operatorVersions := getOperatorVersions(rhmi.Spec.Type)
+
+	for stage := range operatorVersions {
+		for productName, operatorVersion := range operatorVersions[stage] {
 			clusterVersion := rhmi.Status.Stages[stage].Products[productName].OperatorVersion
 			if clusterVersion != operatorVersion {
 				t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-8390, Error with version of %s operator deployed on cluster. Expected %s. Got %s", productName, operatorVersion, clusterVersion)
@@ -48,5 +68,14 @@ func TestProductOperatorVersions(t *testing.T, ctx *TestingContext) {
 			}
 		}
 
+	}
+}
+
+func getOperatorVersions(installType string) map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.OperatorVersion {
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return managedApiProductOperatorVersions
+	} else {
+		return rhmiProductOperatorVersions
 	}
 }

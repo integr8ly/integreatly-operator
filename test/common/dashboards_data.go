@@ -4,6 +4,7 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"net/url"
 	"regexp"
 	"strings"
@@ -52,20 +53,22 @@ type prometheusQueryResponse struct {
 }
 
 var (
-	expectedServices = [...]string{
+	commonExpectedServices = []string{
 		"3scale-admin-ui",
 		"3scale-developer-console-ui",
-		"apicurito-ui",
-		"codeready-ui",
-		"amq-service-broker",
 		"rhsso-ui",
 		"rhssouser-ui",
 		"3scale-system-admin-ui",
+	}
+	rhmi2ExpectedServices = []string{
+		"apicurito-ui",
+		"codeready-ui",
+		"amq-service-broker",
 		"webapp-ui",
 		"syndesis-ui",
 		"ups-ui",
 	}
-	dashboardsNames = [...]string{
+	dashboardsNames = []string{
 		"Endpoints Summary",
 		"Endpoints Detailed",
 		"Endpoints Report",
@@ -91,7 +94,7 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 	monitoringTimeout := 10 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err = wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		expressions, err := getDashboardExpressions(grafanaPodName, prometheusPodName, ctx)
+		expressions, err := getDashboardExpressions(grafanaPodName, prometheusPodName, ctx, t)
 		if err != nil {
 			return false, fmt.Errorf("failed to get dashboard expressions: %w", err)
 		}
@@ -145,7 +148,15 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getDashboardExpressions(grafanaPodName string, prometheusPodName string, ctx *TestingContext) ([]string, error) {
+func getDashboardExpressions(grafanaPodName string, prometheusPodName string, ctx *TestingContext, t *testing.T) ([]string, error) {
+
+	// get console master url
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+	expectedServices := getExpectedServices(rhmi.Spec.Type)
+
 	rhmiNamespaces, err := getRHMINamespaces(prometheusPodName, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get RHMI namespaces: %w", err)
@@ -203,6 +214,14 @@ func getDashboardExpressions(grafanaPodName string, prometheusPodName string, ct
 	}
 
 	return expressionsSlice, nil
+}
+
+func getExpectedServices(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonExpectedServices
+	} else {
+		return append(commonExpectedServices, rhmi2ExpectedServices...)
+	}
 }
 
 func getRHMIPods(namespaces []string, prometheusPodName string, ctx *TestingContext) (map[string][]string, error) {

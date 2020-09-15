@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -17,11 +18,16 @@ const (
 )
 
 var (
-	postgresToCheck = []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, InstallationName),
+	// Common to all install types including managed api
+	commonPostgresToCheck = []string{
 		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, InstallationName),
 		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, InstallationName),
 		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, InstallationName),
+	}
+
+	// Applicable to install types used in 2.X
+	rhmi2PostgresToCheck = []string{
+		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, InstallationName),
 		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, InstallationName),
 		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
 		constants.AMQAuthServicePostgres,
@@ -38,6 +44,13 @@ var (
 
 func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 	originalStrategy := getResourceStrategy(t, ctx)
+
+	// get console master url
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+	postgresToCheck := getPostgresToCheck(rhmi.Spec.Type)
 
 	for _, postgresName := range postgresToCheck {
 		// AMQAuthService postgres is always in cluster
@@ -57,6 +70,14 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 		if postgres.Status.Phase != croTypes.PhaseComplete && postgres.Status.Strategy != strategy {
 			t.Errorf("%s Postgres not ready with phase: %s, message: %s, provider, %s", postgresName, postgres.Status.Phase, postgres.Status.Message, postgres.Status.Provider)
 		}
+	}
+}
+
+func getPostgresToCheck(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonPostgresToCheck
+	} else {
+		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
 	}
 }
 

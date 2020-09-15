@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -12,96 +13,116 @@ import (
 )
 
 var (
-	deployments = []Namespace{
-		{
-			Name: ThreeScaleOperatorNamespace,
-			Products: []Product{
-				Product{Name: "3scale-operator", ExpectedReplicas: 1},
-			},
-		},
-		{
-			Name: AMQOnlineOperatorNamespace,
-			Products: []Product{
-				Product{Name: "address-space-controller", ExpectedReplicas: 1},
-				Product{Name: "console", ExpectedReplicas: 1},
-				Product{Name: "enmasse-operator", ExpectedReplicas: 1},
-				Product{Name: "none-authservice", ExpectedReplicas: 1},
-				Product{Name: "standard-authservice", ExpectedReplicas: 1},
-			},
-		},
-		{
-			Name: CloudResourceOperatorNamespace,
-			Products: []Product{
-				Product{Name: "cloud-resource-operator", ExpectedReplicas: 1},
-			},
-		},
-		{
-			Name: CodeReadyOperatorNamespace,
-			Products: []Product{
-				Product{Name: "codeready-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: "redhat-rhmi-codeready-workspaces",
-			Products: []Product{
-				Product{Name: "codeready", ExpectedReplicas: 1},
-				Product{Name: "devfile-registry", ExpectedReplicas: 1},
-				Product{Name: "plugin-registry", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: FuseOperatorNamespace,
-			Products: []Product{
-				Product{Name: "syndesis-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: MonitoringOperatorNamespace,
-			Products: []Product{
-				Product{Name: "application-monitoring-operator", ExpectedReplicas: 1},
-				Product{Name: "grafana-deployment", ExpectedReplicas: 1},
-				Product{Name: "grafana-operator", ExpectedReplicas: 1},
-				Product{Name: "prometheus-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: RHMIOperatorNamespace,
-			Products: []Product{
-				Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: RHSSOOperatorNamespace,
-			Products: []Product{
-				Product{Name: "keycloak-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: SolutionExplorerOperatorNamespace,
-			Products: []Product{
-				Product{Name: "tutorial-web-app-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: UPSOperatorNamespace,
-			Products: []Product{
-				Product{Name: "unifiedpush-operator", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: "redhat-rhmi-ups",
-			Products: []Product{
-				Product{Name: "ups", ExpectedReplicas: 1},
-			},
-		},
-		Namespace{
-			Name: RHSSOUserOperatorNamespace,
-			Products: []Product{
-				Product{Name: "keycloak-operator", ExpectedReplicas: 1},
-			},
+	threeScaleDeployment = Namespace{
+		Name: ThreeScaleOperatorNamespace,
+		Products: []Product{
+			Product{Name: "3scale-operator", ExpectedReplicas: 1},
 		},
 	}
-	clusterStorageDeployments = []Namespace{
+	aMQOnlineOperatorDeployment = Namespace{
+		Name: AMQOnlineOperatorNamespace,
+		Products: []Product{
+			Product{Name: "address-space-controller", ExpectedReplicas: 1},
+			Product{Name: "console", ExpectedReplicas: 1},
+			Product{Name: "enmasse-operator", ExpectedReplicas: 1},
+			Product{Name: "none-authservice", ExpectedReplicas: 1},
+			Product{Name: "standard-authservice", ExpectedReplicas: 1},
+		},
+	}
+	cloudResourceOperatorDeployment = Namespace{
+		Name: CloudResourceOperatorNamespace,
+		Products: []Product{
+			Product{Name: "cloud-resource-operator", ExpectedReplicas: 1},
+		},
+	}
+	codeReadyOperatorDeployment = Namespace{
+		Name: CodeReadyOperatorNamespace,
+		Products: []Product{
+			Product{Name: "codeready-operator", ExpectedReplicas: 1},
+		},
+	}
+	codereadyWorkspacesDeployment = Namespace{
+		Name: "redhat-rhmi-codeready-workspaces",
+		Products: []Product{
+			Product{Name: "codeready", ExpectedReplicas: 1},
+			Product{Name: "devfile-registry", ExpectedReplicas: 1},
+			Product{Name: "plugin-registry", ExpectedReplicas: 1},
+		},
+	}
+	fuseOperatorDeployment = Namespace{
+		Name: FuseOperatorNamespace,
+		Products: []Product{
+			Product{Name: "syndesis-operator", ExpectedReplicas: 1},
+		},
+	}
+	monitoringOperatorDeployment = Namespace{
+		Name: MonitoringOperatorNamespace,
+		Products: []Product{
+			Product{Name: "application-monitoring-operator", ExpectedReplicas: 1},
+			Product{Name: "grafana-deployment", ExpectedReplicas: 1},
+			Product{Name: "grafana-operator", ExpectedReplicas: 1},
+			Product{Name: "prometheus-operator", ExpectedReplicas: 1},
+		},
+	}
+	rhmiOperatorDeployment = Namespace{
+		Name: RHMIOperatorNamespace,
+		Products: []Product{
+			Product{Name: "standard-authservice-postgresql", ExpectedReplicas: 1},
+		},
+	}
+	rhssoOperatorDeployment = Namespace{
+		Name: RHSSOOperatorNamespace,
+		Products: []Product{
+			Product{Name: "keycloak-operator", ExpectedReplicas: 1},
+		},
+	}
+	solutionExplorerOperatorDeployment = Namespace{
+		Name: SolutionExplorerOperatorNamespace,
+		Products: []Product{
+			Product{Name: "tutorial-web-app-operator", ExpectedReplicas: 1},
+		},
+	}
+	upsOperatorDeployment = Namespace{
+		Name: UPSOperatorNamespace,
+		Products: []Product{
+			Product{Name: "unifiedpush-operator", ExpectedReplicas: 1},
+		},
+	}
+	upsDeployment = Namespace{
+		Name: "redhat-rhmi-ups",
+		Products: []Product{
+			Product{Name: "ups", ExpectedReplicas: 1},
+		},
+	}
+	rhssoUserOperatorDeployment = Namespace{
+		Name: RHSSOUserOperatorNamespace,
+		Products: []Product{
+			Product{Name: "keycloak-operator", ExpectedReplicas: 1},
+		},
+	}
+
+	// Applicable to install types used in 2.X
+	rhmi2Deployments = []Namespace{
+		aMQOnlineOperatorDeployment,
+		codeReadyOperatorDeployment,
+		codereadyWorkspacesDeployment,
+		fuseOperatorDeployment,
+		solutionExplorerOperatorDeployment,
+		upsOperatorDeployment,
+		upsDeployment,
+	}
+
+	// Common to all install types including managed api
+	commonApiDeployments = []Namespace{
+		threeScaleDeployment,
+		cloudResourceOperatorDeployment,
+		monitoringOperatorDeployment,
+		rhmiOperatorDeployment,
+		rhssoOperatorDeployment,
+		rhssoUserOperatorDeployment,
+	}
+
+	rhmi2ClusterStorageDeployments = []Namespace{
 		{
 			Name: "redhat-rhmi-operator",
 			Products: []Product{
@@ -116,42 +137,60 @@ var (
 			},
 		},
 	}
-	deploymentConfigs = []Namespace{
+	managedApiClusterStorageDeployments = []Namespace{
 		{
-			Name: "redhat-rhmi-3scale",
+			Name: "redhat-rhmi-operator",
 			Products: []Product{
-				Product{Name: "apicast-production", ExpectedReplicas: 2},
-				Product{Name: "apicast-staging", ExpectedReplicas: 2},
-				Product{Name: "backend-cron", ExpectedReplicas: 2},
-				Product{Name: "backend-listener", ExpectedReplicas: 2},
-				Product{Name: "backend-worker", ExpectedReplicas: 2},
-				Product{Name: "system-app", ExpectedReplicas: 2},
-				Product{Name: "system-memcache", ExpectedReplicas: 1},
-				Product{Name: "system-sidekiq", ExpectedReplicas: 2},
-				Product{Name: "system-sphinx", ExpectedReplicas: 1},
-				Product{Name: "zync", ExpectedReplicas: 2},
-				Product{Name: "zync-database", ExpectedReplicas: 1},
-				Product{Name: "zync-que", ExpectedReplicas: 2},
-			},
-		},
-		{
-			Name: "redhat-rhmi-fuse",
-			Products: []Product{
-				Product{Name: "syndesis-meta", ExpectedReplicas: 1},
-				Product{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
-				Product{Name: "syndesis-prometheus", ExpectedReplicas: 1},
-				Product{Name: "syndesis-server", ExpectedReplicas: 1},
-				Product{Name: "syndesis-ui", ExpectedReplicas: 1},
-				Product{Name: "broker-amq", ExpectedReplicas: 1},
-			},
-		},
-		{
-			Name: "redhat-rhmi-solution-explorer",
-			Products: []Product{
-				Product{Name: "tutorial-web-app", ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScalePostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOPostgresPrefix + InstallationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOUserProstgresPrefix + InstallationName, ExpectedReplicas: 1},
 			},
 		},
 	}
+
+	threeScaleDeploymentConfig = Namespace{
+		Name: "redhat-rhmi-3scale",
+		Products: []Product{
+			Product{Name: "apicast-production", ExpectedReplicas: 2},
+			Product{Name: "apicast-staging", ExpectedReplicas: 2},
+			Product{Name: "backend-cron", ExpectedReplicas: 2},
+			Product{Name: "backend-listener", ExpectedReplicas: 2},
+			Product{Name: "backend-worker", ExpectedReplicas: 2},
+			Product{Name: "system-app", ExpectedReplicas: 2},
+			Product{Name: "system-memcache", ExpectedReplicas: 1},
+			Product{Name: "system-sidekiq", ExpectedReplicas: 2},
+			Product{Name: "system-sphinx", ExpectedReplicas: 1},
+			Product{Name: "zync", ExpectedReplicas: 2},
+			Product{Name: "zync-database", ExpectedReplicas: 1},
+			Product{Name: "zync-que", ExpectedReplicas: 2},
+		},
+	}
+
+	fuseDeploymentConfig = Namespace{
+		Name: "redhat-rhmi-fuse",
+		Products: []Product{
+			Product{Name: "syndesis-meta", ExpectedReplicas: 1},
+			Product{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
+			Product{Name: "syndesis-prometheus", ExpectedReplicas: 1},
+			Product{Name: "syndesis-server", ExpectedReplicas: 1},
+			Product{Name: "syndesis-ui", ExpectedReplicas: 1},
+			Product{Name: "broker-amq", ExpectedReplicas: 1},
+		},
+	}
+
+	solutionExplorerDeploymentConfig = Namespace{
+		Name: "redhat-rhmi-solution-explorer",
+		Products: []Product{
+			Product{Name: "tutorial-web-app", ExpectedReplicas: 1},
+		},
+	}
+
+	rhmi2Dcs = []Namespace{threeScaleDeploymentConfig, fuseDeploymentConfig, solutionExplorerDeploymentConfig}
+
+	managedApiDcs = []Namespace{threeScaleDeploymentConfig}
+
 	statefulSets = []Namespace{
 		{
 			Name: MonitoringOperatorNamespace,
@@ -176,7 +215,13 @@ var (
 )
 
 func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
-	deployments := deployments
+
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+	deployments := getDeployments(rhmi.Spec.Type)
+	clusterStorageDeployments := getClusterStorageDeployments(rhmi.Spec.Type)
 
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
@@ -225,7 +270,29 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	}
 }
 
+func getDeployments(installType string) []Namespace {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonApiDeployments
+	} else {
+		return append(commonApiDeployments, rhmi2Deployments...)
+	}
+}
+
+func getClusterStorageDeployments(installType string) []Namespace {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return managedApiClusterStorageDeployments
+	} else {
+		return rhmi2ClusterStorageDeployments
+	}
+}
+
 func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	deploymentConfigs := getDeploymentConfigs(rhmi.Spec.Type)
 
 	for _, namespace := range deploymentConfigs {
 		for _, product := range namespace.Products {
@@ -262,6 +329,14 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 				continue
 			}
 		}
+	}
+}
+
+func getDeploymentConfigs(installType string) []Namespace {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return managedApiDcs
+	} else {
+		return rhmi2Dcs
 	}
 }
 

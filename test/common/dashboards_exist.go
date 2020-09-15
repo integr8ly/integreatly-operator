@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"encoding/json"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"strings"
 	"testing"
 
@@ -15,7 +16,8 @@ type dashboardsTestRule struct {
 	Title string `json:"title"`
 }
 
-var expectedDashboards = []dashboardsTestRule{
+// Common to all install types including managed api
+var commonExpectedDashboards = []dashboardsTestRule{
 	{
 		Title: "Endpoints Detailed",
 	},
@@ -37,6 +39,13 @@ var expectedDashboards = []dashboardsTestRule{
 	{
 		Title: "Resource Usage for Cluster",
 	},
+	{
+		Title: "Critical SLO summary",
+	},
+}
+
+// Applicable to install types used in 2.X
+var rhmi2ExpectedDashboards = []dashboardsTestRule{
 	{
 		Title: "Syndesis - Infra - API",
 	},
@@ -62,9 +71,6 @@ var expectedDashboards = []dashboardsTestRule{
 		Title: "UnifiedPush Server",
 	},
 	{
-		Title: "Critical SLO summary",
-	},
-	{
 		Title: "AMQ Online",
 	},
 	{
@@ -85,7 +91,13 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		k8sclient.MatchingLabels{"app": "grafana"},
 	}
 
-	err := ctx.Client.List(goctx.TODO(), pods, opts...)
+	// get console master url
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	err = ctx.Client.List(goctx.TODO(), pods, opts...)
 	if err != nil {
 		t.Fatal("failed to list pods", err)
 	}
@@ -112,6 +124,8 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("no grafana dashboards were found : %w", grafanaApiCallOutput)
 	}
 
+	expectedDashboards := getExpectedDashboard(rhmi.Spec.Type)
+
 	var expectedDashboardTitles []string
 	for _, dashboard := range expectedDashboards {
 		expectedDashboardTitles = append(expectedDashboardTitles, dashboard.Title)
@@ -134,5 +148,13 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 
 	if len(dashboardDiffUnexpected) > 0 || len(dashboardDiffMissing) > 0 {
 		t.Fatal("missing or too many dashboards found")
+	}
+}
+
+func getExpectedDashboard(installType string) []dashboardsTestRule {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonExpectedDashboards
+	} else {
+		return append(commonExpectedDashboards, rhmi2ExpectedDashboards...)
 	}
 }

@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
-	expectedStageProducts = map[string][]string{
+	rhmi2ExpectedStageProducts = map[string][]string{
 		"authentication": {
 			"rhsso",
 		},
@@ -41,6 +42,27 @@ var (
 			"solution-explorer",
 		},
 	}
+
+	managedApiExpectedStageProducts = map[string][]string{
+		"authentication": {
+			"rhsso",
+		},
+
+		"bootstrap": {},
+
+		"cloud-resources": {
+			"cloud-resources",
+		},
+
+		"monitoring": {
+			"middleware-monitoring",
+		},
+
+		"products": {
+			"rhssouser",
+			"3scale",
+		},
+	}
 )
 
 func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
@@ -52,6 +74,8 @@ func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
 		if err != nil {
 			return false, fmt.Errorf("error getting RHMI CR: %v", err)
 		}
+
+		expectedStageProducts := getExpectedStageProducts(rhmi.Spec.Type)
 
 		//iterate stages and check their status
 		for stageName, productNames := range expectedStageProducts {
@@ -97,6 +121,14 @@ func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
 
 	if err != nil {
 		t.Error(err)
+	}
+}
+
+func getExpectedStageProducts(installType string) map[string][]string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return managedApiExpectedStageProducts
+	} else {
+		return rhmi2ExpectedStageProducts
 	}
 }
 

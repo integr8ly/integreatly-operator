@@ -32,60 +32,60 @@ type alertManagerConfig struct {
 }
 
 const (
-	fuseOperatorDeploymentName            = "syndesis-operator"
-	fuseUIDeploymentConfigName            = "syndesis-ui"
-	monitoringTimeout                     = time.Minute * 15
-	monitoringRetryInterval               = time.Minute
-	verifyOperatorDeploymentTimeout       = time.Minute * 5
-	verifyOperatorDeploymentRetryInterval = time.Second * 15
+	threescaleOperatorDeploymentName          = "3scale-operator"
+	threescaleApicastProdDeploymentConfigName = "apicast-production"
+	monitoringTimeout                         = time.Minute * 15
+	monitoringRetryInterval                   = time.Minute
+	verifyOperatorDeploymentTimeout           = time.Minute * 5
+	verifyOperatorDeploymentRetryInterval     = time.Second * 15
 )
 
-var fuseAlertsToTest = map[string]string{
-	"FuseOnlineSyndesisUIInstanceDown":            "none",
-	"RHMIFuseOnlineSyndesisUiServiceEndpointDown": "none",
+var threescaleAlertsToTest = map[string]string{
+	"RHMIThreeScaleApicastProductionServiceEndpointDown": "none",
+	"ThreeScaleApicastProductionPod":                     "none",
 }
 
 // TestIntegreatlyAlertsMechanism verifies that alert mechanism works
 func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 
-	originalOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, ctx.KubeClient)
+	originalOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)
 	if err != nil {
 		t.Errorf("failed to get number of replicas: %s", err)
 	}
 
 	// verify that alert to be tested is not firing before starting the test
-	err = getFuseAlertState(ctx)
+	err = getThreescaleAlertState(ctx)
 	if err != nil {
-		t.Fatal("failed to get fuse alert state", err)
+		t.Fatal("failed to get threescale alert state", err)
 	}
 
-	fuseAlertsFiring := false
+	threescaleAlertsFiring := false
 
-	for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
-		if fuseAlertState != "none" {
-			fuseAlertsFiring = true
-			t.Errorf("%s alert should not be firing", fuseAlertName)
+	for threescaleAlertName, threescaleAlertState := range threescaleAlertsToTest {
+		if threescaleAlertState != "none" {
+			threescaleAlertsFiring = true
+			t.Errorf("%s alert should not be firing", threescaleAlertName)
 		}
 	}
 
-	if fuseAlertsFiring {
+	if threescaleAlertsFiring {
 		t.FailNow()
 	}
 
-	// scale down Fuse operator and UI pods and verify that fuse alert is firing
+	// scale down Threescale operator and UI pods and verify that threescale alert is firing
 	err = performTest(t, ctx, originalOperatorReplicas)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// verify the operator has been scaled backup
-	err = checkFuseOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
+	err = checkThreescaleOperatorReplicasAreReady(ctx, t, originalOperatorReplicas)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// verify that fuse alert is not firing
-	err = waitForFuseAlertState("none", ctx, t)
+	// verify that threescale alert is not firing
+	err = waitForThreescaleAlertState("none", ctx, t)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,31 +171,31 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 }
 
 func performTest(t *testing.T, ctx *TestingContext, originalOperatorReplicas int32) error {
-	originalUIReplicas, err := getNumOfReplicasDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, ctx.Client)
+	originalUIReplicas, err := getNumOfReplicasDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, ctx.Client)
 	if err != nil {
 		t.Errorf("failed to get number of replicas: %s", err)
 	}
 
 	quit1 := make(chan struct{})
 	go repeat(func() {
-		scaleDeployment(fuseOperatorDeploymentName, 0, ctx.KubeClient)
+		scaleDeployment(threescaleOperatorDeploymentName, 0, ctx.KubeClient)
 	}, quit1)
 	defer close(quit1)
-	defer scaleDeployment(fuseOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+	defer scaleDeployment(threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 
 	quit2 := make(chan struct{})
 	go repeat(func() {
-		scaleDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, 0, ctx.Client)
+		scaleDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, 0, ctx.Client)
 	}, quit2)
 	defer close(quit2)
-	defer scaleDeploymentConfig(fuseUIDeploymentConfigName, FuseProductNamespace, originalUIReplicas, ctx.Client)
+	defer scaleDeploymentConfig(threescaleApicastProdDeploymentConfigName, ThreeScaleProductNamespace, originalUIReplicas, ctx.Client)
 
-	err = waitForFuseAlertState("pending", ctx, t)
+	err = waitForThreescaleAlertState("pending", ctx, t)
 	if err != nil {
 		return err
 	}
 
-	err = waitForFuseAlertState("firing", ctx, t)
+	err = waitForThreescaleAlertState("firing", ctx, t)
 	if err != nil {
 		return err
 	}
@@ -215,10 +215,10 @@ func checkAlertManager(ctx *TestingContext, t *testing.T) error {
 	}
 
 	alertsNotFiringInAlertManager := false
-	for fuseAlertName := range fuseAlertsToTest {
-		if !strings.Contains(output, fuseAlertName) {
+	for threescaleAlertName := range threescaleAlertsToTest {
+		if !strings.Contains(output, threescaleAlertName) {
 			alertsNotFiringInAlertManager = true
-			t.Errorf("%s alert not firing in alertmanager", fuseAlertName)
+			t.Errorf("%s alert not firing in alertmanager", threescaleAlertName)
 		}
 	}
 
@@ -240,20 +240,20 @@ func repeat(function repeatFunc, quit chan struct{}) {
 	}
 }
 
-func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing.T) error {
+func waitForThreescaleAlertState(expectedState string, ctx *TestingContext, t *testing.T) error {
 	err := wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		err = getFuseAlertState(ctx)
+		err = getThreescaleAlertState(ctx)
 		if err != nil {
-			t.Log("failed to get fuse alert state:", err)
+			t.Log("failed to get threescale alert state:", err)
 			t.Log("waiting 1 minute before retrying")
 			return false, nil
 		}
 
 		alertsInExpectedState := true
-		for fuseAlertName, fuseAlertState := range fuseAlertsToTest {
-			if fuseAlertState != expectedState {
+		for threescaleAlertName, threescaleAlertState := range threescaleAlertsToTest {
+			if threescaleAlertState != expectedState {
 				alertsInExpectedState = false
-				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", fuseAlertName, expectedState, fuseAlertState)
+				t.Logf("%s alert is not in expected state (%s) yet, current state: %s", threescaleAlertName, expectedState, threescaleAlertState)
 				t.Log("waiting 1 minute before retrying")
 			}
 		}
@@ -268,7 +268,7 @@ func waitForFuseAlertState(expectedState string, ctx *TestingContext, t *testing
 	return err
 }
 
-func getFuseAlertState(ctx *TestingContext) error {
+func getThreescaleAlertState(ctx *TestingContext) error {
 	output, err := execToPod("curl localhost:9090/api/v1/alerts",
 		"prometheus-application-monitoring-0",
 		MonitoringOperatorNamespace,
@@ -290,16 +290,16 @@ func getFuseAlertState(ctx *TestingContext) error {
 		return fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
-	for fuseAlertName := range fuseAlertsToTest {
-		fuseAlertsToTest[fuseAlertName] = "none"
+	for threescaleAlertName := range threescaleAlertsToTest {
+		threescaleAlertsToTest[threescaleAlertName] = "none"
 	}
 
 	for _, alert := range alertsResult.Alerts {
 		alertName := string(alert.Labels["alertname"])
 
-		for fuseAlertName := range fuseAlertsToTest {
-			if alertName == fuseAlertName {
-				fuseAlertsToTest[fuseAlertName] = string(alert.State)
+		for threescaleAlertName := range threescaleAlertsToTest {
+			if alertName == threescaleAlertName {
+				threescaleAlertsToTest[threescaleAlertName] = string(alert.State)
 			}
 		}
 	}
@@ -308,7 +308,7 @@ func getFuseAlertState(ctx *TestingContext) error {
 }
 
 func getNumOfReplicasDeployment(name string, kubeClient kubernetes.Interface) (int32, error) {
-	deploymentsClient := kubeClient.AppsV1().Deployments(FuseOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
 
 	result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
 	if getErr != nil {
@@ -334,7 +334,7 @@ func getNumOfReplicasDeploymentConfig(name string, namespace string, client clie
 }
 
 func scaleDeployment(name string, replicas int32, kubeClient kubernetes.Interface) error {
-	deploymentsClient := kubeClient.AppsV1().Deployments(FuseOperatorNamespace)
+	deploymentsClient := kubeClient.AppsV1().Deployments(ThreeScaleOperatorNamespace)
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(name, metav1.GetOptions{})
@@ -377,19 +377,19 @@ func scaleDeploymentConfig(name string, namespace string, replicas int32, client
 	return nil
 }
 
-func checkFuseOperatorReplicasAreReady(ctx *TestingContext, t *testing.T, originalOperatorReplicas int32) error {
-	t.Logf("Checking correct number of fuse operator replicas (%d) are set", originalOperatorReplicas)
+func checkThreescaleOperatorReplicasAreReady(ctx *TestingContext, t *testing.T, originalOperatorReplicas int32) error {
+	t.Logf("Checking correct number of threescale operator replicas (%d) are set", originalOperatorReplicas)
 	err := wait.Poll(verifyOperatorDeploymentRetryInterval, verifyOperatorDeploymentTimeout, func() (done bool, err error) {
-		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(fuseOperatorDeploymentName, ctx.KubeClient)
+		numberOfOperatorReplicas, err := getNumOfReplicasDeployment(threescaleOperatorDeploymentName, ctx.KubeClient)
 
 		if numberOfOperatorReplicas == originalOperatorReplicas {
-			t.Log("Fuse operator deployment ready")
+			t.Log("Threescale operator deployment ready")
 			return true, nil
 		}
 
 		if numberOfOperatorReplicas == 0 {
-			t.Log("Fuse operator deployment not yet scaled, waiting 15 seconds before retrying")
-			scaleDeployment(fuseOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
+			t.Log("Threescale operator deployment not yet scaled, waiting 15 seconds before retrying")
+			scaleDeployment(threescaleOperatorDeploymentName, originalOperatorReplicas, ctx.KubeClient)
 			return false, nil
 		}
 

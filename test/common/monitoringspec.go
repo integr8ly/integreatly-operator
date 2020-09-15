@@ -2,6 +2,7 @@ package common
 
 import (
 	goctx "context"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -19,8 +20,8 @@ const (
 	roleRefName                    = "rhmi-prometheus-k8s"
 )
 
-//Defines an list of expected service monitor names
-var expectedServicemonitors = []string{
+// Specific to rmhi install type
+var rhmi2ExpectedServiceMonitors = []string{
 	"redhat-rhmi-amq-online-enmasse-address-space-controller",
 	"redhat-rhmi-amq-online-enmasse-admin",
 	"redhat-rhmi-amq-online-enmasse-broker",
@@ -28,15 +29,19 @@ var expectedServicemonitors = []string{
 	"redhat-rhmi-amq-online-enmasse-iot",
 	"redhat-rhmi-amq-online-enmasse-operator-metrics",
 	"redhat-rhmi-amq-online-enmasse-router",
-	"redhat-rhmi-cloud-resources-operator-cloud-resource-operator-metrics",
 	"redhat-rhmi-fuse-syndesis-infra",
 	"redhat-rhmi-fuse-syndesis-integrations",
+	"redhat-rhmi-ups-operator-unifiedpush-operator-metrics",
+	"redhat-rhmi-ups-unifiedpush",
+}
+
+// Common to all install types
+var commonExpectedServiceMonitors = []string{
+	"redhat-rhmi-cloud-resources-operator-cloud-resource-operator-metrics",
 	"redhat-rhmi-middleware-monitoring-operator-application-monitoring-operator-metrics",
 	"redhat-rhmi-middleware-monitoring-operator-grafana-servicemonitor",
 	"redhat-rhmi-middleware-monitoring-operator-prometheus-servicemonitor",
 	"redhat-rhmi-rhsso-keycloak-service-monitor",
-	"redhat-rhmi-ups-operator-unifiedpush-operator-metrics",
-	"redhat-rhmi-ups-unifiedpush",
 	"redhat-rhmi-user-sso-keycloak-service-monitor",
 }
 
@@ -45,6 +50,12 @@ var expectedServicemonitors = []string{
 // Verifies the rolebindings exist
 // Verifies if there are any stale service monitors in the monitoring namespace
 func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingContext) {
+	rhmi, err := getRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("failed to get the RHMI: %s", err)
+	}
+	expectedServiceMonitors := getExpectedServiceMonitors(rhmi.Spec.Type)
+
 	//Get list of service monitors in the monitoring namespace
 	monSermonMap, err := getServiceMonitors(ctx, MonitoringSpecNamespace)
 	if err != nil {
@@ -54,7 +65,7 @@ func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingCont
 		t.Fatal("No servicemonitors present in monitoring namespace")
 	}
 	//Validate the servicemonitors against the list
-	for _, sm := range expectedServicemonitors {
+	for _, sm := range expectedServiceMonitors {
 		if _, ok := monSermonMap[sm]; !ok {
 			t.Fatal("Error - Servicemonitor(s) not found in monitoring namespace", sm)
 		}
@@ -150,4 +161,12 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 	role := &rbac.Role{}
 	err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, role)
 	return err
+}
+
+func getExpectedServiceMonitors(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+		return commonExpectedServiceMonitors
+	} else {
+		return append(commonExpectedServiceMonitors, rhmi2ExpectedServiceMonitors...)
+	}
 }
