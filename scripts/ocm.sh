@@ -75,12 +75,15 @@ create_cluster() {
     printf "Console URL: %s\nLogin credentials: \n%s\n" "$(jq -r .console.url < "${CLUSTER_DETAILS_FILE}")" "$(jq -r < "${CLUSTER_CREDENTIALS_FILE}")"
 }
 
-install_rhmi() {
+install_addon() {
+    addon_id=$1
+    completion_phase=$2
+
     local cluster_id
     local rhmi_name
     cluster_id=$(get_cluster_id)
 
-    echo '{"addon":{"id":"rhmi"}}' | ocm post "/api/clusters_mgmt/v1/clusters/${cluster_id}/addons"
+    echo "{\"addon\":{\"id\":\"${addon_id}\"}}" | ocm post "/api/clusters_mgmt/v1/clusters/${cluster_id}/addons"
 
     wait_for "oc --kubeconfig ${CLUSTER_KUBECONFIG_FILE} get rhmi -n ${RHMI_OPERATOR_NAMESPACE} | grep -q NAME" "installation CR created" "10m" "30"
 
@@ -99,8 +102,16 @@ install_rhmi() {
     oc --kubeconfig "${CLUSTER_KUBECONFIG_FILE}" create secret generic redhat-rhmi-deadmanssnitch -n ${RHMI_OPERATOR_NAMESPACE} \
         --from-literal=url=https://dms.example.com
 
-    wait_for "oc --kubeconfig ${CLUSTER_KUBECONFIG_FILE} get rhmi ${rhmi_name} -n ${RHMI_OPERATOR_NAMESPACE} -o json | jq -r .status.stages.\\\"solution-explorer\\\".phase | grep -q completed" "rhmi installation" "90m" "300"
+    wait_for "oc --kubeconfig ${CLUSTER_KUBECONFIG_FILE} get rhmi ${rhmi_name} -n ${RHMI_OPERATOR_NAMESPACE} -o json | jq -r ${completion_phase} | grep -q completed" "rhmi installation" "90m" "300"
     oc --kubeconfig "${CLUSTER_KUBECONFIG_FILE}" get rhmi "${rhmi_name}" -n ${RHMI_OPERATOR_NAMESPACE} -o json | jq -r '.status.stages'
+}
+
+install_rhmi() {
+    install_addon rhmi ".status.stages.\\\"solution-explorer\\\".phase"
+}
+
+install_managed_api() {
+    install_addon "managed-api-service" ".status.stages.products.phase"
 }
 
 delete_cluster() {
@@ -233,6 +244,8 @@ Optional exported variables:
 create_cluster                    - spin up OSD cluster
 ==========================================================================================
 install_rhmi                      - install RHMI using addon-type installation
+==========================================================================================
+install_managed_api               - install Managed API Service using addon-type installation
 ------------------------------------------------------------------------------------------
 Optional exported variables:
 - USE_CLUSTER_STORAGE               true/false - use OpenShift/AWS storage (default: true)
@@ -268,6 +281,10 @@ main() {
             ;;
         install_rhmi)
             install_rhmi
+            exit 0
+            ;;
+        install_managed_api)
+            install_managed_api
             exit 0
             ;;
         delete_cluster)
