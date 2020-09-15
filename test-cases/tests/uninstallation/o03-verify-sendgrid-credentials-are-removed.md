@@ -1,11 +1,12 @@
 ---
 automation:
-  - INTLY-9950
+  - INTLY-9992
 environments:
   - osd-fresh-install
 estimate: 30m
 tags:
   - per-release
+  - automated
 ---
 
 # O03 - Verify SendGrid credentials are removed

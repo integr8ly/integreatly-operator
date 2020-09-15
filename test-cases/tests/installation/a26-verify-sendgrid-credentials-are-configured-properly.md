@@ -1,11 +1,12 @@
 ---
 automation:
-  - INTLY-9950
+  - INTLY-9992
 environments:
   - osd-fresh-install
 estimate: 30m
 tags:
   - per-release
+  - automated
 ---
 
 # A26 - Verify SendGrid credentials are configured properly

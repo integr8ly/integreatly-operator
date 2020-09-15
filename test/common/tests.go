@@ -1,6 +1,8 @@
 package common
 
-import "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+import (
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+)
 
 // All tests are be linked[1] to the integreatly-test-cases[2] repo by using the same ID
 // 1. https://gitlab.cee.redhat.com/integreatly-qe/integreatly-test-cases#how-to-automate-a-test-case-and-link-it-back
@@ -39,6 +41,7 @@ var (
 				{"A09 - Verify Subscription Install Plan Strategy", TestSubscriptionInstallPlanType},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
+				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged},
 		},
