@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -44,6 +45,7 @@ import (
 	extscheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	cached "k8s.io/client-go/discovery/cached"
 	cgoscheme "k8s.io/client-go/kubernetes/scheme"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -109,9 +111,7 @@ func difference(sliceSource, sliceTarget []string) []string {
 
 // Is the cluster using on cluster or external storage
 func isClusterStorage(ctx *TestingContext) (bool, error) {
-	rhmi := &integreatlyv1alpha1.RHMI{}
-	// get the RHMI custom resource to check what storage type is being used
-	err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		return true, fmt.Errorf("error getting RHMI CR: %v", err)
 	}
@@ -123,12 +123,25 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 }
 
 // returns rhmi
-func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
-	rhmi := &integreatlyv1alpha1.RHMI{}
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi); err != nil {
-		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
+func GetRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
+	logrus.Infof("Looking for rhmi CR in %s namespace", namespace)
+
+	installationList := &integreatlyv1alpha1.RHMIList{}
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(namespace),
 	}
-	return rhmi, nil
+	err := client.List(goctx.TODO(), installationList, listOpts...)
+	if err != nil {
+		return nil, err
+	}
+	if len(installationList.Items) == 0 {
+		return nil, nil
+	}
+	if len(installationList.Items) != 1 {
+		return nil, fmt.Errorf("Unexpected number of rhmi CRs: %w", err)
+	}
+	return &installationList.Items[0], nil
+
 }
 
 func getConsoleRoute(client dynclient.Client) (*string, error) {
@@ -247,7 +260,7 @@ func writeObjToYAMLFile(obj interface{}, out string) error {
 }
 
 func WriteRHMICRToFile(client dynclient.Client, file string) error {
-	if rhmi, err := getRHMI(client); err != nil {
+	if rhmi, err := GetRHMI(client); err != nil {
 		return err
 	} else {
 		return writeObjToYAMLFile(rhmi, file)
@@ -332,8 +345,7 @@ func verifyCRUDLPermissions(t *testing.T, openshiftClient *resources.OpenshiftCl
 
 //Detect profile based on CR type
 func IsManaged(client dynclient.Client) (bool, error) {
-	rhmi := &integreatlyv1alpha1.RHMI{}
-	err := client.Get(goctx.TODO(), types.NamespacedName{Name: InstallationName, Namespace: RHMIOperatorNamespace}, rhmi)
+	rhmi, err := GetRHMI(client)
 	if err != nil {
 		return true, fmt.Errorf("error getting RHMI CR: %v", err)
 	}
@@ -389,10 +401,10 @@ func GetInstallType(config *rest.Config) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi := &integreatlyv1alpha1.RHMI{}
+	rhmi, err := GetRHMI(context.Client)
 
-	if err := context.Client.Get(goctx.TODO(), types.NamespacedName{Name: "rhmi", Namespace: "redhat-rhmi-operator"}, rhmi); err != nil {
-		return "", fmt.Errorf("error getting RHMI CR: %w", err)
+	if err != nil {
+		return "", err
 	}
 
 	return rhmi.Spec.Type, nil

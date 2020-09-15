@@ -70,7 +70,7 @@ func TestIntegreatlyStagesStatus(t *testing.T, ctx *TestingContext) {
 		done := true
 
 		//get RHMI
-		rhmi, err := getRHMI(ctx.Client)
+		rhmi, err := GetRHMI(ctx.Client)
 		if err != nil {
 			return false, fmt.Errorf("error getting RHMI CR: %v", err)
 		}

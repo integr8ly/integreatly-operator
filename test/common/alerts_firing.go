@@ -166,7 +166,7 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 func podLogs(t *testing.T, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}

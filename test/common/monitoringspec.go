@@ -50,7 +50,7 @@ var commonExpectedServiceMonitors = []string{
 // Verifies the rolebindings exist
 // Verifies if there are any stale service monitors in the monitoring namespace
 func TestServiceMonitorsCloneAndRolebindingsExist(t *testing.T, ctx *TestingContext) {
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}

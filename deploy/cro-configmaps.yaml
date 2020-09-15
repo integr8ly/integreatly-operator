@@ -15,7 +15,7 @@ objects:
         {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
       self-managed: >
         {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
-      managed-3scale: >
+      managed-api: >
         {"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}
 parameters:
   - name: INSTALLATION_NAMESPACE

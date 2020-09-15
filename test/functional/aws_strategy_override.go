@@ -118,8 +118,14 @@ func CROStrategyOverrideAWSResourceTest(t *testing.T, testingContext *common.Tes
 	If there is an error we return the list as an error
 */
 func verifyRDSMaintenanceBackupWindows(ctx context.Context, client client.Client, expectedBackupWindow, expectedMaintenanceWindow string) error {
+
+	rhmi, err := common.GetRHMI(client)
+	if err != nil {
+		return err
+	}
+
 	// build an array of postgres resources to check and an array of test errors
-	rdsResourceIDs, testErrors := GetRDSResourceIDs(ctx, client)
+	rdsResourceIDs, testErrors := GetRDSResourceIDs(ctx, client, rhmi)
 
 	// check for errors from getting rds resource ids
 	// if there is any errors we return as we can not continue the test with out all expected resources
@@ -169,8 +175,13 @@ func verifyRDSMaintenanceBackupWindows(ctx context.Context, client client.Client
 	If there is an error we return the list as an error
 */
 func verifyElasticacheMaintenanceBackupWindows(ctx context.Context, client client.Client, expectedBackupWindow, expectedMaintenanceWindow string) error {
+	rhmi, err := common.GetRHMI(client)
+	if err != nil {
+		return err
+	}
+
 	// build an array of redis resources to check and test error array
-	elasticacheResourceIDs, testErrors := GetElasticacheResourceIDs(ctx, client)
+	elasticacheResourceIDs, testErrors := GetElasticacheResourceIDs(ctx, client, rhmi)
 
 	// check for errors from getting rds resource ids
 	// if there is any errors we return as we can not continue the test with out all expected resources

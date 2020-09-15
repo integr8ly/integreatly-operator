@@ -143,7 +143,7 @@ func TestNamespaceRestoration(t *testing.T, ctx *TestingContext) {
 // Wait for the product stage to be a specific status
 func waitForProductStageStatusInRHMI(t *testing.T, ctx *TestingContext, stage integreatlyv1alpha1.StageName, status integreatlyv1alpha1.StatusPhase) error {
 	err := wait.Poll(stageRetryInterval, stageRestorationTimeOut, func() (done bool, err error) {
-		rhmi, err := getRHMI(ctx.Client)
+		rhmi, err := GetRHMI(ctx.Client)
 		if err != nil {
 			t.Logf("Got an error getting rhmi cr: %v", err)
 			return false, err

@@ -14,7 +14,7 @@ import (
 
 func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}

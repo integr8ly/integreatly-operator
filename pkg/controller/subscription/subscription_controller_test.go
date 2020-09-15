@@ -275,6 +275,85 @@ func TestSubscriptionReconciler(t *testing.T) {
 	}
 }
 
+func TestShouldReconcileSubscription(t *testing.T) {
+	scenarios := []struct {
+		Name           string
+		Namespace      string
+		Request        reconcile.Request
+		ExpectedResult bool
+	}{
+		{
+			Name:      "Non matching namespace",
+			Namespace: "redhat-rhmi-operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "integreatly",
+					Namespace: "another",
+				},
+			},
+			ExpectedResult: false,
+		},
+		{
+			Name:      "Not in reconcile name list",
+			Namespace: "redhat-rhmi-operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "another",
+					Namespace: "redhat-rhmi-operator",
+				},
+			},
+			ExpectedResult: false,
+		},
+		{
+			Name:      "\"integreatly\" subscription",
+			Namespace: "redhat-rhmi-operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "integreatly",
+					Namespace: "redhat-rhmi-operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+		{
+			Name:      "RHMI Addon subscription",
+			Namespace: "redhat-rhmi-operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "addon-rhmi",
+					Namespace: "redhat-rhmi-operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+		{
+			Name:      "Managed API Addon subscription",
+			Namespace: "redhat-rhmi-operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "addon-managed-api-service",
+					Namespace: "redhat-rhmi-operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			reconciler := &ReconcileSubscription{
+				operatorNamespace: scenario.Namespace,
+			}
+
+			result := reconciler.shouldReconcileSubscription(scenario.Request)
+
+			if result != scenario.ExpectedResult {
+				t.Errorf("Unexpected result. Expected %v, got %v", scenario.ExpectedResult, result)
+			}
+		})
+	}
+}
+
 func getCatalogSourceClient(replaces string) catalogsourceClient.CatalogSourceClientInterface {
 	return &catalogsourceClient.CatalogSourceClientInterfaceMock{
 		GetLatestCSVFunc: func(catalogSourceKey types.NamespacedName, packageName, channelName string) (*v1alpha1.ClusterServiceVersion, error) {

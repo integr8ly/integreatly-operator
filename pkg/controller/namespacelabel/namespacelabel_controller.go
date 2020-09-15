@@ -19,6 +19,7 @@ package namespacelabel
 import (
 	"context"
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"strings"
 	"time"
 
@@ -27,13 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
-	k8sErr "k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -186,22 +184,22 @@ func CheckLabel(o metav1.Object, request reconcile.Request, r *ReconcileNamespac
 func Uninstall(request reconcile.Request, r *ReconcileNamespaceLabel) error {
 
 	logrus.Info("Uninstall label has been set")
-	rhmi := &integreatlyv1alpha1.RHMI{}
-	err := r.client.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi", Namespace: request.NamespacedName.Name}, rhmi)
+
+	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
 	if err != nil {
-		if k8sErr.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return nil
-		}
 		// Error reading the object - requeue the request.
 		return err
 	}
+	if rhmiCr == nil {
+		// Request object not found, could have been deleted after reconcile request.
+		// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+		// Return and don't requeue
+		return nil
+	}
 
-	if rhmi.DeletionTimestamp == nil {
+	if rhmiCr.DeletionTimestamp == nil {
 		logrus.Info("Deleting RHMI CR")
-		err := r.client.Delete(r.context, rhmi)
+		err := r.client.Delete(r.context, rhmiCr)
 		if err != nil {
 			logrus.Errorf("failed to delete RHMI CR: %v", err)
 		}

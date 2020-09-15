@@ -40,7 +40,7 @@ type TestUser struct {
 
 // creates testing idp
 func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
-	rhmiCR, err := getRHMI(client)
+	rhmiCR, err := GetRHMI(client)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
 	}

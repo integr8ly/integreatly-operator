@@ -43,7 +43,7 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting test user: %v", err)
 	}
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}

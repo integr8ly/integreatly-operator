@@ -17,40 +17,52 @@ const (
 	externalProvider  = "aws"
 )
 
-var (
+func getPostgres(installType string, installationName string) []string {
 	// Common to all install types including managed api
-	commonPostgresToCheck = []string{
-		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, InstallationName),
+	commonPostgresToCheck := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
 	}
 
 	// Applicable to install types used in 2.X
-	rhmi2PostgresToCheck = []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, InstallationName),
+	rhmi2PostgresToCheck := []string{
+		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
 		// TODO - Add check for Fuse postgres here when task for supporting external resources is done - https://issues.redhat.com/browse/INTLY-3239
 		constants.AMQAuthServicePostgres,
 	}
-	redisToCheck = []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, InstallationName),
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return commonPostgresToCheck
+	} else {
+		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
 	}
-	blobStorageToCheck = []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, InstallationName),
+}
+
+func getRedisToCheck(installationName string) []string {
+	return []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
 	}
-)
+}
+
+func getBlobStorageToCheck(installationName string) []string {
+	return []string{
+		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+}
 
 func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 	originalStrategy := getResourceStrategy(t, ctx)
 
 	// get console master url
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
-	postgresToCheck := getPostgresToCheck(rhmi.Spec.Type)
+	postgresToCheck := getPostgres(rhmi.Name, rhmi.Spec.Type)
 
 	for _, postgresName := range postgresToCheck {
 		// AMQAuthService postgres is always in cluster
@@ -73,16 +85,14 @@ func TestCROPostgresSuccessfulState(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getPostgresToCheck(installType string) []string {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
-		return commonPostgresToCheck
-	} else {
-		return append(commonPostgresToCheck, rhmi2PostgresToCheck...)
-	}
-}
-
 func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
 	strategy := getResourceStrategy(t, ctx)
+
+	rhmi, err := GetRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+	redisToCheck := getRedisToCheck(rhmi.Name)
 
 	for _, redisName := range redisToCheck {
 		redis := &crov1.Redis{}
@@ -101,6 +111,12 @@ func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
 
 func TestCROBlobStorageSuccessfulState(t *testing.T, ctx *TestingContext) {
 	strategy := getResourceStrategy(t, ctx)
+
+	rhmi, err := GetRHMI(ctx.Client)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+	blobStorageToCheck := getBlobStorageToCheck(rhmi.Name)
 
 	for _, blobStorageName := range blobStorageToCheck {
 		blobStorage := &crov1.BlobStorage{}

@@ -122,34 +122,6 @@ var (
 		rhssoUserOperatorDeployment,
 	}
 
-	rhmi2ClusterStorageDeployments = []Namespace{
-		{
-			Name: "redhat-rhmi-operator",
-			Products: []Product{
-				Product{Name: constants.CodeReadyPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScalePostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleSystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.UPSPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOUserProstgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.AMQAuthServicePostgres, ExpectedReplicas: 1},
-			},
-		},
-	}
-	managedApiClusterStorageDeployments = []Namespace{
-		{
-			Name: "redhat-rhmi-operator",
-			Products: []Product{
-				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScalePostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleSystemRedisPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOPostgresPrefix + InstallationName, ExpectedReplicas: 1},
-				Product{Name: constants.RHSSOUserProstgresPrefix + InstallationName, ExpectedReplicas: 1},
-			},
-		},
-	}
-
 	threeScaleDeploymentConfig = Namespace{
 		Name: "redhat-rhmi-3scale",
 		Products: []Product{
@@ -214,14 +186,51 @@ var (
 	}
 )
 
+func getClusterStorageDeployments(installationName string, installType string) []Namespace {
+
+	rhmi2ClusterStorageDeployments := []Namespace{
+		{
+			Name: "redhat-rhmi-operator",
+			Products: []Product{
+				Product{Name: constants.CodeReadyPostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.UPSPostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.AMQAuthServicePostgres, ExpectedReplicas: 1},
+			},
+		},
+	}
+	managedApiClusterStorageDeployments := []Namespace{
+		{
+			Name: "redhat-rhmi-operator",
+			Products: []Product{
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
+			},
+		},
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return managedApiClusterStorageDeployments
+	} else {
+		return rhmi2ClusterStorageDeployments
+	}
+}
+
 func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 	deployments := getDeployments(rhmi.Spec.Type)
-	clusterStorageDeployments := getClusterStorageDeployments(rhmi.Spec.Type)
+	clusterStorageDeployments := getClusterStorageDeployments(rhmi.Name, rhmi.Spec.Type)
 
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
@@ -271,23 +280,15 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 }
 
 func getDeployments(installType string) []Namespace {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return commonApiDeployments
 	} else {
 		return append(commonApiDeployments, rhmi2Deployments...)
 	}
 }
 
-func getClusterStorageDeployments(installType string) []Namespace {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
-		return managedApiClusterStorageDeployments
-	} else {
-		return rhmi2ClusterStorageDeployments
-	}
-}
-
 func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -333,7 +334,7 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 }
 
 func getDeploymentConfigs(installType string) []Namespace {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return managedApiDcs
 	} else {
 		return rhmi2Dcs

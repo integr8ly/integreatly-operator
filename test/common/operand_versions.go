@@ -53,7 +53,7 @@ var (
 
 func TestProductVersions(t *testing.T, ctx *TestingContext) {
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)

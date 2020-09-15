@@ -102,7 +102,7 @@ func TestCodereadyCrudlPermisssions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// Get the master, codeready and keycloak url from the rhmi status
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client)
 	if err != nil {
 		t.Fatalf("failed to get RHMI CR: %v", err)
 	}
