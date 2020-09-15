@@ -113,7 +113,7 @@ func checkHostAddressIsReady(ctx *TestingContext, t *testing.T, retryInterval, t
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		// get console master url
-		rhmi, err := getRHMI(ctx.Client)
+		rhmi, err := GetRHMI(ctx.Client, true)
 		if err != nil {
 			t.Fatalf("error getting RHMI CR: %v", err)
 		}
@@ -232,7 +232,7 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 	// get console master url
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}

@@ -20,7 +20,12 @@ const (
 func TestAWSs3BlobStorageResourcesExist(t *testing.T, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
-	s3ResourceIDs, testErrors := GetS3BlobStorageResourceIDs(goContext, ctx.Client)
+	rhmi, err := common.GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	s3ResourceIDs, testErrors := GetS3BlobStorageResourceIDs(goContext, ctx.Client, rhmi)
 
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro blob storage exists failed with the following errors : %s", testErrors)

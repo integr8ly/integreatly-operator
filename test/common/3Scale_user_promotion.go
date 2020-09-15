@@ -22,7 +22,7 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get console master url
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}

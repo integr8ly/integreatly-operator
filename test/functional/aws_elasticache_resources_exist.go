@@ -12,8 +12,13 @@ import (
 func AWSElasticacheResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
+	rhmi, err := common.GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
 	// build an array of redis resources to check and test error array
-	elasticacheResourceIDs, testErrors := GetElasticacheResourceIDs(goContext, ctx.Client)
+	elasticacheResourceIDs, testErrors := GetElasticacheResourceIDs(goContext, ctx.Client, rhmi)
 
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro redis exists failed with the following errors : %s", testErrors)

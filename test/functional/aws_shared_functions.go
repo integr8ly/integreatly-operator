@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -26,38 +27,44 @@ const (
 	awsCredsSecretName = "aws-creds"
 )
 
-var (
+func getExpectedPostgres(installationName string) []string {
 	// expected postgres resources provisioned per product
-	expectedPostgres = []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.FusePostgresPrefix, common.InstallationName),
+	return []string{
+		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
 	}
+}
 
+func getExpectedRedis(installationName string) []string {
 	// expected redis resources provisioned per product
-	expectedRedis = []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, common.InstallationName),
+	return []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
 	}
+}
 
+func getExpectedBlobStorage(installationName string) []string {
 	// expected blob storage
-	expectedBlobStorage = []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, common.InstallationName),
+	return []string{
+		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
 	}
-)
+}
 
 /*
 	Each resource provisioned contains an annotation with the resource ID
 	This function iterates over a list of expected resource CR's
 	Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
-func GetElasticacheResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string
+
+	expectedRedis := getExpectedRedis(rhmi.Name)
 
 	for _, r := range expectedRedis {
 		// get elasticache cr
@@ -85,9 +92,11 @@ func GetElasticacheResourceIDs(ctx context.Context, client client.Client) ([]str
 	This function iterates over a list of expected resource CR's
 	Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
-func GetRDSResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string
+
+	expectedPostgres := getExpectedPostgres(rhmi.Name)
 
 	for _, r := range expectedPostgres {
 		// get rds cr
@@ -110,9 +119,11 @@ func GetRDSResourceIDs(ctx context.Context, client client.Client) ([]string, []s
 	return foundResourceIDs, foundErrors
 }
 
-func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string
+
+	expectedBlobStorage := getExpectedPostgres(rhmi.Name)
 
 	for _, r := range expectedBlobStorage {
 		// get rds cr
