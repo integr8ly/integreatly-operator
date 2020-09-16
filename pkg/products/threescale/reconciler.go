@@ -341,31 +341,6 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-// CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
-	if r.extraParams == nil {
-		r.extraParams = map[string]string{}
-	}
-	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
-	r.extraParams["Namespace"] = r.Config.GetNamespace()
-
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
-	resource, err := templateHelper.CreateResource(resourceName)
-
-	if err != nil {
-		return nil, fmt.Errorf("createResource failed: %w", err)
-	}
-
-	err = serverClient.Create(ctx, resource)
-	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("error creating resource: %w", err)
-		}
-	}
-
-	return resource, nil
-}
-
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
 	oauthClientSecrets := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -462,6 +437,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
 	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -564,13 +540,80 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
 		} else if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		// Its not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
+		exist, err := r.routesExist(ctx, serverClient)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if exist {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		} else {
+			// If the system-provider route does not exist at this point (i.e. when Deployments are ready)
+			// we can force a resync of routes. see below for more details on why this is required:
+			// https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.7/html/operating_3scale/backup-restore#creating_equivalent_zync_routes
+			// This scenario will manifest during a backup and restore and also if the product ns was accidentially deleted.
+			return r.resyncRoutes(ctx, serverClient)
 		}
 	}
 
 	return integreatlyv1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Client) (bool, error) {
+	expectedRoutes := 6
+	opts := k8sclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	routes := routev1.RouteList{}
+	err := serverClient.List(ctx, &routes, &opts)
+	if err != nil {
+		return false, err
+	}
+
+	if len(routes.Items) >= expectedRoutes {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	ns := r.Config.GetNamespace()
+	podname := ""
+
+	pods := &corev1.PodList{}
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-sidekiq"}),
+	}
+	err := client.List(ctx, pods, listOpts...)
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == "Running" {
+			podname = pod.ObjectMeta.Name
+			break
+		}
+	}
+
+	if podname == "" {
+		logrus.Info("Waiting on system-sidekiq pod to start, 3Scale install in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	stdout, stderr, err := resources.ExecuteRemoteCommand(ns, podname, "bundle exec rake zync:resync:domains")
+	if err != nil {
+		logrus.Errorf("Failed to resync 3Scale routes %v", err)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else if stderr != "" {
+		logrus.Errorf("Error attempting to resync 3Scale routes %s", stderr)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else {
+		logrus.Infof("Resync 3Scale routes result: %s", stdout)
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
 }
 
 func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

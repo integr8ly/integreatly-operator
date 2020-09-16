@@ -305,6 +305,19 @@ var threescaleRoute5 = &v1.Route{
 	},
 }
 
+var threescaleRoute6 = &v1.Route{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "3scale-system-provider-route-6",
+		Namespace: "3scale",
+		Labels: map[string]string{
+			"zync.3scale.net/route-to": "backend",
+		},
+	},
+	Spec: v1.RouteSpec{
+		Host: "3scale-admin.backend",
+	},
+}
+
 var postgres = &crov1.Postgres{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "threescale-postgres-test-installation",
@@ -445,6 +458,7 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		threescaleRoute3,
 		threescaleRoute4,
 		threescaleRoute5,
+		threescaleRoute6,
 		postgres,
 		postgresSec,
 		redis,

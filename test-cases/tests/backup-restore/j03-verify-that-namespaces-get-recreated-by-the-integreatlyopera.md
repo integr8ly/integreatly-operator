@@ -25,8 +25,6 @@ Namespaces for manual deletion:
 - redhat-rhmi-3scale
 - redhat-rhmi-3scale-operator
 
-**Note known bug:** 3scale is being stucked in "in progress" state after ns deletion - workaround: https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/restore_namespace.md#3scale
-
 ## Steps
 
 1. By default, this test is not run as part of the functional test suite. To run the test as part of the functional test suite, run the following `makefile` command from the RHMI operator repo against a target cluster:
