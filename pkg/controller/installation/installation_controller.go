@@ -49,7 +49,7 @@ const (
 	DefaultInstallationName          = "rhmi"
 	ManagedApiInstallationName       = "managed-api"
 	DefaultInstallationConfigMapName = "installation-config"
-	DefaultInstallationPrefix        = "redhat-rhmi-"
+	DefaultInstallationPrefix        = "redhat-managed-api-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"

@@ -338,7 +338,7 @@ func IsManaged(client dynclient.Client) (bool, error) {
 		return true, fmt.Errorf("error getting RHMI CR: %v", err)
 	}
 
-	if rhmi.Spec.Type == "managed" {
+	if rhmi.Spec.Type == "managed" || rhmi.Spec.Type == "managed-api" {
 		return true, nil
 	}
 	return false, nil

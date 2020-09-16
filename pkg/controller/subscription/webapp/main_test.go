@@ -73,7 +73,7 @@ func TestNotifyUpgrade(t *testing.T) {
 			webapp: &solutionExplorerv1alpha1.WebApp{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      solutionexplorer.DefaultName,
-					Namespace: "redhat-rhmi-solution-explorer",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "solution-explorer",
 				},
 				Spec: solutionExplorerv1alpha1.WebAppSpec{
 					Template: solutionExplorerv1alpha1.WebAppTemplate{
@@ -185,7 +185,7 @@ func TestClearNotification(t *testing.T) {
 			webapp: &solutionExplorerv1alpha1.WebApp{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      solutionexplorer.DefaultName,
-					Namespace: "redhat-rhmi-solution-explorer",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "solution-explorer",
 				},
 				Spec: solutionExplorerv1alpha1.WebAppSpec{
 					Template: solutionExplorerv1alpha1.WebAppTemplate{

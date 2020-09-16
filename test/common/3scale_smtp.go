@@ -54,7 +54,7 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 		t.Logf("%v", err)
 	}
 
-	t.Log("Patch redhat-rhmi-smtp with new details")
+	t.Log("Patch " + NamespacePrefix + "smtp with new details")
 	_, err = patchSecret(ctx, t)
 	if err != nil {
 		t.Log(err)
@@ -288,7 +288,7 @@ func patchReplicationController(ctx *TestingContext, t *testing.T) error {
 	request := ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 		Resource("deploymentconfigs").
 		Name("system-app").
-		Namespace("redhat-rhmi-3scale").
+		Namespace(NamespacePrefix + "3scale").
 		RequestURI("/apis/apps.openshift.io/v1").Body(replicaBytes).Do()
 	_, err := request.Raw()
 
@@ -299,7 +299,7 @@ func patchReplicationController(ctx *TestingContext, t *testing.T) error {
 	request = ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 		Resource("deploymentconfigs").
 		Name("system-sidekiq").
-		Namespace("redhat-rhmi-3scale").
+		Namespace(NamespacePrefix + "3scale").
 		RequestURI("/apis/apps.openshift.io/v1").Body(replicaBytes).Do()
 	_, err = request.Raw()
 
@@ -320,8 +320,8 @@ func resetSecret(ctx *TestingContext, t *testing.T) (string, error) {
 
 	secret = v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "redhat-rhmi-smtp",
-			Namespace: "redhat-rhmi-operator",
+			Name:      NamespacePrefix + "smtp",
+			Namespace: NamespacePrefix + "operator",
 		},
 		Data: map[string][]byte{},
 	}
@@ -353,8 +353,8 @@ func patchSecret(ctx *TestingContext, t *testing.T) (string, error) {
 
 	secret = v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "redhat-rhmi-smtp",
-			Namespace: "redhat-rhmi-operator",
+			Name:      NamespacePrefix + "smtp",
+			Namespace: NamespacePrefix + "operator",
 		},
 		Data: map[string][]byte{},
 	}
@@ -374,7 +374,7 @@ func patchSecret(ctx *TestingContext, t *testing.T) (string, error) {
 func getSecret(ctx *TestingContext) (v1.Secret, error) {
 
 	secret := &v1.Secret{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "redhat-rhmi-smtp", Namespace: "redhat-rhmi-operator"}, secret); err != nil {
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: NamespacePrefix + "smtp", Namespace: NamespacePrefix + "operator"}, secret); err != nil {
 		return *secret, err
 	}
 	return *secret, nil
@@ -383,7 +383,7 @@ func getSecret(ctx *TestingContext) (v1.Secret, error) {
 func get3scaleSecret(ctx *TestingContext) (v1.Secret, error) {
 
 	secret := &v1.Secret{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "system-smtp", Namespace: "redhat-rhmi-3scale"}, secret); err != nil {
+	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{Name: "system-smtp", Namespace: NamespacePrefix + "3scale"}, secret); err != nil {
 		return *secret, err
 	}
 	return *secret, nil

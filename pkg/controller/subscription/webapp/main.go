@@ -92,7 +92,7 @@ func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.R
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(notifier.ctx, k8sclient.ObjectKey{
@@ -125,7 +125,7 @@ func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(

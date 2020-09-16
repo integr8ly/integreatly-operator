@@ -284,7 +284,7 @@ func TestShouldReconcileSubscription(t *testing.T) {
 	}{
 		{
 			Name:      "Non matching namespace",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
@@ -295,44 +295,44 @@ func TestShouldReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:      "Not in reconcile name list",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "another",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: false,
 		},
 		{
 			Name:      "\"integreatly\" subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "RHMI Addon subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "Managed API Addon subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-managed-api-service",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,

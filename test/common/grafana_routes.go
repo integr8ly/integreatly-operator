@@ -54,10 +54,10 @@ func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
 }
 
 func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
-	const (
+	var (
 		serviceAccountName = "test"
 		bindingName        = "test"
-		grafanaNamespace   = "redhat-rhmi-middleware-monitoring-operator"
+		grafanaNamespace   = NamespacePrefix + "middleware-monitoring-operator"
 	)
 
 	//create service account - its token will be used to call grafana api
@@ -163,9 +163,9 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 }
 
 func getGrafanaRoute(c client.Client) (string, error) {
-	const (
+	var (
 		routeGrafanaName      = "grafana-route"
-		routeGrafanaNamespace = "redhat-rhmi-middleware-monitoring-operator"
+		routeGrafanaNamespace = NamespacePrefix + "middleware-monitoring-operator"
 	)
 	testCtx := context.TODO()
 	//get grafana openshift route

@@ -13,14 +13,17 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	rhssoNamespace   = NamespacePrefix + "rhsso"
+	userSSONamespace = NamespacePrefix + "user-sso"
+)
+
 const (
 	numberOfRhssoReplicas  int = 2
 	scaleUpRhssoReplicas   int = 3
 	scaleDownRhssoReplicas int = 1
 	rhssoName                  = "rhsso"
-	rhssoNamespace             = "redhat-rhmi-rhsso"
 	userSSOName                = "rhssouser"
-	userSSONamespace           = "redhat-rhmi-user-sso"
 	requestURLSSO              = "/apis/keycloak.org/v1alpha1"
 	kindSSO                    = "Keycloaks"
 )

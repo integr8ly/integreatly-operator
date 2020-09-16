@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -75,7 +76,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + "operator"
 
 	return &ReconcileNamespaceLabel{
 		mgr:               mgr,

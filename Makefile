@@ -1,7 +1,7 @@
 include ./make/*.mk
 
 ORG ?= integreatly
-NAMESPACE=redhat-rhmi-operator
+NAMESPACE=redhat-managed-api-operator
 PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
@@ -43,9 +43,9 @@ else
 endif
 
 export SELF_SIGNED_CERTS   ?= true
-export INSTALLATION_TYPE   ?= managed
+export INSTALLATION_TYPE   ?= managed-api
 export INSTALLATION_NAME   ?= rhmi
-export INSTALLATION_PREFIX ?= redhat-rhmi
+export INSTALLATION_PREFIX ?= redhat-managed-api
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
@@ -65,9 +65,9 @@ setup/moq:
 setup/service_account:
 	@-oc new-project $(NAMESPACE)
 	@oc project $(NAMESPACE)
-	@oc replace --force -f deploy/role.yaml
+	@oc replace --force -f deploy/role.yaml -n ${NAMESPACE}
 	@-oc create -f deploy/service_account.yaml -n $(NAMESPACE)
-	@cat deploy/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
+	@cat deploy/$(INSTALLATION_PREFIX)/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
 	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG
 
 .PHONY: setup/git/hooks
@@ -234,7 +234,7 @@ cluster/prepare/crd:
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/croaws
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
-	@oc create -f deploy/role_binding.yaml
+	@oc create -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
 
 .PHONY: cluster/prepare/olm/subscription
 cluster/prepare/olm/subscription:
@@ -283,15 +283,15 @@ cluster/cleanup:
 	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete -f deploy/role.yaml
-	@-oc delete -f deploy/role_binding.yaml
+	@-oc delete -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
 
 .PHONY: cluster/cleanup/serviceaccount
 cluster/cleanup/serviceaccount:
 	@-oc delete serviceaccount ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
 	@-oc delete role ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
 	@-oc delete rolebinding ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
-	@-oc delete clusterrole ${TEMP_SERVICEACCOUNT_NAME}
-	@-oc delete clusterrolebinding ${TEMP_SERVICEACCOUNT_NAME}
+	@-oc delete clusterrole ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
+	@-oc delete clusterrolebinding ${TEMP_SERVICEACCOUNT_NAME} -n ${NAMESPACE}
 
 .PHONY: cluster/cleanup/olm
 cluster/cleanup/olm: cluster/cleanup

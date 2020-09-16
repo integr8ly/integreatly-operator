@@ -14,12 +14,15 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	apicuritoNamespace = NamespacePrefix + "apicurito"
+)
+
 const (
 	numberOfApicuritoReplicas  = 2 //size in reconciler
 	scaleUpApicuritoReplicas   = 3
 	scaleDownApicuritoReplicas = 1
 	apicuritoName              = "apicurito"
-	apicuritoNamespace         = "redhat-rhmi-apicurito"
 	retryIntervalApicurito     = time.Second * 20
 	timeoutApicurito           = time.Minute * 7
 	requestURLApicturito       = "/apis/apicur.io/v1alpha1"

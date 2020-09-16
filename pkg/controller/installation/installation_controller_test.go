@@ -29,8 +29,8 @@ func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 )
 
 // Test that the installation CR spec value for UseClusterStorage is true when the

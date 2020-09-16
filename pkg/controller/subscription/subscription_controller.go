@@ -60,7 +60,7 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + "operator"
 
 	restConfig := controllerruntime.GetConfigOrDie()
 	restConfig.Timeout = time.Second * 10

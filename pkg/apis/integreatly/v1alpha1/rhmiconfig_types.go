@@ -202,7 +202,9 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Annotations = map[string]string{}
 	}
 
-	if request.UserInfo.Username != "system:serviceaccount:redhat-rhmi-operator:rhmi-operator" {
+	account := "system:serviceaccount:" + RHMISpec{}.NamespacePrefix + "operator:rhmi-operator"
+
+	if request.UserInfo.Username != "system:serviceaccount:"+account+"operator:rhmi-operator" {
 		rhmiConfig.Annotations["lastEditUsername"] = request.UserInfo.Username
 		rhmiConfig.Annotations["lastEditTimestamp"] = time.Now().UTC().Format(DateFormat)
 	}

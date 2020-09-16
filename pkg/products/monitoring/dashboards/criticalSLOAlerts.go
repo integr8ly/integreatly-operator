@@ -1,6 +1,10 @@
 package monitoring
 
-const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
+import (
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+)
+
+var MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 	"annotations": {
 		"list": [{
 			"builtIn": 1,
@@ -444,8 +448,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-3scale|ThreeScale",
-					"value": "redhat-rhmi-3scale|ThreeScale"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 				}
 			},
 			"title": "$product",
@@ -505,8 +509,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-3scale|ThreeScale",
-					"value": "redhat-rhmi-3scale|ThreeScale"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -590,8 +594,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-3scale|ThreeScale",
-					"value": "redhat-rhmi-3scale|ThreeScale"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -657,8 +661,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-3scale|ThreeScale",
-					"value": "redhat-rhmi-3scale|ThreeScale"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 				}
 			},
 			"seriesOverrides": [],
@@ -767,8 +771,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-3scale|ThreeScale",
-					"value": "redhat-rhmi-3scale|ThreeScale"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -814,8 +818,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-amq-online|AMQ",
-					"value": "redhat-rhmi-amq-online|AMQ"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 				}
 			},
 			"title": "$product",
@@ -878,8 +882,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-amq-online|AMQ",
-					"value": "redhat-rhmi-amq-online|AMQ"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -966,8 +970,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-amq-online|AMQ",
-					"value": "redhat-rhmi-amq-online|AMQ"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -1035,8 +1039,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-amq-online|AMQ",
-					"value": "redhat-rhmi-amq-online|AMQ"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 				}
 			},
 			"seriesOverrides": [],
@@ -1148,8 +1152,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-amq-online|AMQ",
-					"value": "redhat-rhmi-amq-online|AMQ"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -1195,8 +1199,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-fuse|Fuse",
-					"value": "redhat-rhmi-fuse|Fuse"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 				}
 			},
 			"title": "$product",
@@ -1259,8 +1263,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-fuse|Fuse",
-					"value": "redhat-rhmi-fuse|Fuse"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1347,8 +1351,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-fuse|Fuse",
-					"value": "redhat-rhmi-fuse|Fuse"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1417,8 +1421,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-fuse|Fuse",
-					"value": "redhat-rhmi-fuse|Fuse"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 				}
 			},
 			"seriesOverrides": [],
@@ -1530,8 +1534,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-fuse|Fuse",
-					"value": "redhat-rhmi-fuse|Fuse"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1577,8 +1581,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-rhsso|Keycloak",
-					"value": "redhat-rhmi-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 				}
 			},
 			"title": "$product",
@@ -1641,8 +1645,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-rhsso|Keycloak",
-					"value": "redhat-rhmi-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1729,8 +1733,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-rhsso|Keycloak",
-					"value": "redhat-rhmi-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1799,8 +1803,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-rhsso|Keycloak",
-					"value": "redhat-rhmi-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 				}
 			},
 			"seriesOverrides": [],
@@ -1912,8 +1916,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-rhsso|Keycloak",
-					"value": "redhat-rhmi-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1959,8 +1963,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-user-rhsso|Keycloak",
-					"value": "redhat-rhmi-user-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 				}
 			},
 			"title": "$product",
@@ -2023,8 +2027,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-user-rhsso|Keycloak",
-					"value": "redhat-rhmi-user-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2111,8 +2115,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-user-rhsso|Keycloak",
-					"value": "redhat-rhmi-user-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2181,8 +2185,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-user-rhsso|Keycloak",
-					"value": "redhat-rhmi-user-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 				}
 			},
 			"seriesOverrides": [],
@@ -2294,8 +2298,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-user-rhsso|Keycloak",
-					"value": "redhat-rhmi-user-rhsso|Keycloak"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2341,8 +2345,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-					"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"title": "$product",
@@ -2405,8 +2409,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-					"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2493,8 +2497,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-					"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2562,8 +2566,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-					"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"seriesOverrides": [],
@@ -2675,8 +2679,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-					"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2722,8 +2726,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-solution-explorer|Solution",
-					"value": "redhat-rhmi-solution-explorer|Solution"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 				}
 			},
 			"title": "$product",
@@ -2786,8 +2790,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-solution-explorer|Solution",
-					"value": "redhat-rhmi-solution-explorer|Solution"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -2874,8 +2878,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-solution-explorer|Solution",
-					"value": "redhat-rhmi-solution-explorer|Solution"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -2943,8 +2947,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-solution-explorer|Solution",
-					"value": "redhat-rhmi-solution-explorer|Solution"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 				}
 			},
 			"seriesOverrides": [],
@@ -3056,8 +3060,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-solution-explorer|Solution",
-					"value": "redhat-rhmi-solution-explorer|Solution"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -3103,8 +3107,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-apicurito|Apicurito",
-					"value": "redhat-rhmi-apicurito|Apicurito"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 				}
 			},
 			"title": "$product",
@@ -3167,8 +3171,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-apicurito|Apicurito",
-					"value": "redhat-rhmi-apicurito|Apicurito"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3255,8 +3259,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-apicurito|Apicurito",
-					"value": "redhat-rhmi-apicurito|Apicurito"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3325,8 +3329,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-apicurito|Apicurito",
-					"value": "redhat-rhmi-apicurito|Apicurito"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 				}
 			},
 			"seriesOverrides": [],
@@ -3438,8 +3442,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-apicurito|Apicurito",
-					"value": "redhat-rhmi-apicurito|Apicurito"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3485,8 +3489,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-ups|UnifiedPush",
-					"value": "redhat-rhmi-ups|UnifiedPush"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 				}
 			},
 			"title": "$product",
@@ -3549,8 +3553,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-ups|UnifiedPush",
-					"value": "redhat-rhmi-ups|UnifiedPush"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3637,8 +3641,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-ups|UnifiedPush",
-					"value": "redhat-rhmi-ups|UnifiedPush"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3707,8 +3711,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-ups|UnifiedPush",
-					"value": "redhat-rhmi-ups|UnifiedPush"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 				}
 			},
 			"seriesOverrides": [],
@@ -3820,8 +3824,8 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "redhat-rhmi-ups|UnifiedPush",
-					"value": "redhat-rhmi-ups|UnifiedPush"
+					"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+					"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3979,103 +3983,103 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 				"name": "namespace",
 				"options": [{
 						"selected": false,
-						"text": "redhat-rhmi-3scale",
-						"value": "redhat-rhmi-3scale"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-3scale-operator",
-						"value": "redhat-rhmi-3scale-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-amq-online",
-						"value": "redhat-rhmi-amq-online"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-apicurito",
-						"value": "redhat-rhmi-apicurito"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-apicurito-operator",
-						"value": "redhat-rhmi-apicurito-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-cloud-resources-operator",
-						"value": "redhat-rhmi-cloud-resources-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `cloud-resources-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `cloud-resources-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-codeready-workspaces",
-						"value": "redhat-rhmi-codeready-workspaces"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-codeready-workspaces-operator",
-						"value": "redhat-rhmi-codeready-workspaces-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-fuse",
-						"value": "redhat-rhmi-fuse"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-fuse-operator",
-						"value": "redhat-rhmi-fuse-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-middleware-monitoring-operator",
-						"value": "redhat-rhmi-middleware-monitoring-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `middleware-monitoring-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `middleware-monitoring-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-operator",
-						"value": "redhat-rhmi-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-rhsso",
-						"value": "redhat-rhmi-rhsso"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-rhsso-operator",
-						"value": "redhat-rhmi-rhsso-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-solution-explorer",
-						"value": "redhat-rhmi-solution-explorer"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-solution-explorer-operator",
-						"value": "redhat-rhmi-solution-explorer-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-ups",
-						"value": "redhat-rhmi-ups"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-ups-operator",
-						"value": "redhat-rhmi-ups-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups-operator"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-user-sso",
-						"value": "redhat-rhmi-user-sso"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-sso",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-sso"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-user-sso-operator",
-						"value": "redhat-rhmi-user-sso-operator"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-sso-operator",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-sso-operator"
 					}
 				],
 				"query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
@@ -4108,36 +4112,36 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-3scale",
-						"value": "redhat-rhmi-3scale"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-amq-online",
-						"value": "redhat-rhmi-amq-online"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-fuse",
-						"value": "redhat-rhmi-fuse"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-rhsso",
-						"value": "redhat-rhmi-rhsso"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-codeready-workspaces",
-						"value": "redhat-rhmi-codeready-workspaces"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-solution-explorer",
-						"value": "redhat-rhmi-solution-explorer"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer"
 					}
 				],
-				"query": "redhat-rhmi-3scale, redhat-rhmi-amq-online, redhat-rhmi-fuse, redhat-rhmi-rhsso, redhat-rhmi-codeready-workspaces, redhat-rhmi-solution-explorer",
+				"query": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer",
 				"skipUrlSync": false,
 				"type": "custom"
 			},
@@ -4160,51 +4164,51 @@ const MonitoringGrafanaDBCriticalSLOAlertsJSON = `{
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-3scale|ThreeScale",
-						"value": "redhat-rhmi-3scale|ThreeScale"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-amq-online|AMQ",
-						"value": "redhat-rhmi-amq-online|AMQ"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-fuse|Fuse",
-						"value": "redhat-rhmi-fuse|Fuse"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-rhsso|Keycloak",
-						"value": "redhat-rhmi-rhsso|Keycloak"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-user-rhsso|Keycloak",
-						"value": "redhat-rhmi-user-rhsso|Keycloak"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-codeready-workspaces|CodeReady",
-						"value": "redhat-rhmi-codeready-workspaces|CodeReady"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-solution-explorer|Solution",
-						"value": "redhat-rhmi-solution-explorer|Solution"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-apicurito|Apicurito",
-						"value": "redhat-rhmi-apicurito|Apicurito"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito"
 					},
 					{
 						"selected": false,
-						"text": "redhat-rhmi-ups|UnifiedPush",
-						"value": "redhat-rhmi-ups|UnifiedPush"
+						"text": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
+						"value": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush"
 					}
 				],
-				"query": "redhat-rhmi-3scale|ThreeScale, redhat-rhmi-amq-online|AMQ, redhat-rhmi-fuse|Fuse, redhat-rhmi-rhsso|Keycloak, redhat-rhmi-user-rhsso|Keycloak, redhat-rhmi-codeready-workspaces|CodeReady, redhat-rhmi-solution-explorer|Solution, redhat-rhmi-apicurito|Apicurito, redhat-rhmi-ups|UnifiedPush",
+				"query": "` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `3scale|ThreeScale, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `amq-online|AMQ, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `fuse|Fuse, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `rhsso|Keycloak, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `user-rhsso|Keycloak, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `codeready-workspaces|CodeReady, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `solution-explorer|Solution, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `apicurito|Apicurito, ` + integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + `ups|UnifiedPush",
 				"skipUrlSync": false,
 				"type": "custom"
 			}
