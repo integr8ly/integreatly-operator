@@ -64,7 +64,7 @@ var (
 				{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 				{"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 			},
-			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManaged3scale},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},
 	}
 

@@ -47,6 +47,7 @@ import (
 const (
 	deletionFinalizer                = "finalizer/configmaps"
 	DefaultInstallationName          = "rhmi"
+	ManagedApiInstallationName       = "managed-api"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultInstallationPrefix        = "redhat-rhmi-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
@@ -159,7 +160,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      DefaultInstallationName,
+				Name:      getCrName(installType),
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
@@ -186,6 +187,14 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	}
 
 	return nil
+}
+
+func getCrName(installType string) string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return ManagedApiInstallationName
+	} else {
+		return DefaultInstallationName
+	}
 }
 
 var _ reconcile.Reconciler = &ReconcileInstallation{}
@@ -573,7 +582,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 		return result, nil
 	}
 
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {

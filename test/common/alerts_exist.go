@@ -411,145 +411,145 @@ var expectedRules = []alertsTestRule{
 
 var expectedAWSRules = []alertsTestRule{
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Redis-RhmiRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-backend-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Backend-Redis-RhmiRedisCacheConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-threescale-postgres-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-threescale-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Redis-RhmiRedisCacheUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-backend-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Backend-Redis-RhmiRedisCacheUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Redis-RhmiRedisResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-backend-redis-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-backend-redis-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Backend-Redis-RhmiRedisResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-threescale-postgres-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-codeready-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-codeready-postgres-rhmi.yaml",
 		Rules: []string{
 			"Codeready-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-ups-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-ups-postgres-rhmi.yaml",
 		Rules: []string{
 			"Ups-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-fuse-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-fuse-postgres-rhmi.yaml",
 		Rules: []string{
 			"Fuse-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-rhsso-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhsso-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-resource-deletion-status-phase-failed-rule-rhssouser-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhssouser-Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-threescale-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-threescale-postgres-rhmi.yaml",
 		Rules: []string{
 			"Threescale-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-ups-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-ups-postgres-rhmi.yaml",
 		Rules: []string{
 			"Ups-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-ups-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-ups-postgres-rhmi.yaml",
 		Rules: []string{
 			"Ups-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-codeready-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-codeready-postgres-rhmi.yaml",
 		Rules: []string{
 			"Codeready-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-codeready-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-codeready-postgres-rhmi.yaml",
 		Rules: []string{
 			"Codeready-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-rhssouser-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhssouser-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-rhssouser-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-rhssouser-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhssouser-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-rhsso-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhsso-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-rhsso-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-rhsso-postgres-rhmi.yaml",
 		Rules: []string{
 			"Rhsso-Postgres-RhmiPostgresInstanceUnavailable",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-connectivity-rule-fuse-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-connectivity-rule-fuse-postgres-rhmi.yaml",
 		Rules: []string{
 			"Fuse-Postgres-RhmiPostgresConnectionFailed",
 		},
 	},
 	{
-		File: RHMIOperatorNamespace + "-availability-rule-fuse-postgres-" + InstallationName + ".yaml",
+		File: RHMIOperatorNamespace + "-availability-rule-fuse-postgres-rhmi.yaml",
 		Rules: []string{
 			"Fuse-Postgres-RhmiPostgresInstanceUnavailable",
 		},
