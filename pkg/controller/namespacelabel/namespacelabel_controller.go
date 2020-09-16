@@ -77,7 +77,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := integreatlyv1alpha1.RHMISpec{}.NamespacePrefix + "operator"
 
 	return &ReconcileNamespaceLabel{
 		mgr:               mgr,

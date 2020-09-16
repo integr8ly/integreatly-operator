@@ -159,7 +159,7 @@ func CreateSmtpSecretExists(ctx context.Context, client k8sclient.Client, cr *v1
 	alertName := "SendgridSmtpSecretExists"
 	ruleName := "sendgrid-smtp-secret-exists-rule"
 	alertExp := intstr.FromString(
-		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='redhat-rhmi-smtp'} == 1)", cr.Namespace),
+		fmt.Sprintf("absent(kube_secret_info{namespace='%s',secret='"+cr.Spec.NamespacePrefix+"smtp'} == 1)", cr.Namespace),
 	)
 	alertDescription := fmt.Sprintf("The Sendgrid SMTP secret has not been created in the %s namespace and may need to be created manualy", cr.Namespace)
 	labels := map[string]string{

@@ -322,7 +322,7 @@ func TypeFactory(installationType string) (*Type, error) {
 		return newWorkshopType(), nil
 	case string(integreatlyv1alpha1.InstallationTypeManaged):
 		return newManagedType(), nil
-	case string(integreatlyv1alpha1.InstallationTypeManaged3scale):
+	case string(integreatlyv1alpha1.InstallationTypeManagedApi):
 		return newManaged3scaleType(), nil
 	case string(integreatlyv1alpha1.InstallationTypeSelfManaged):
 		return newSelfManagedType(), nil

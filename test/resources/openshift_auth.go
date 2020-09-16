@@ -18,13 +18,16 @@ import (
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	PathFusePods = "/api/kubernetes/api/v1/namespaces/" + integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "fuse/pods"
+)
+
 const (
 	OpenshiftAuthenticationNamespace = "openshift-authentication"
 	OpenshiftOAuthRouteName          = "oauth-openshift"
 
 	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
 	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
-	PathFusePods        = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
 )
 
 // User used to create url user query

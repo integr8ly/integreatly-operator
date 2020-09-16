@@ -13,9 +13,9 @@ import (
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	InstallationName                  = "rhmi"
-	NamespacePrefix                   = "redhat-rhmi-"
+	NamespacePrefix                   = integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"

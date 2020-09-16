@@ -42,7 +42,7 @@ var (
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-codeready-workspaces",
+			Name: NamespacePrefix + "codeready-workspaces",
 			Products: []Product{
 				Product{Name: "codeready", ExpectedReplicas: 1},
 				Product{Name: "devfile-registry", ExpectedReplicas: 1},
@@ -89,7 +89,7 @@ var (
 			},
 		},
 		Namespace{
-			Name: "redhat-rhmi-ups",
+			Name: NamespacePrefix + "ups",
 			Products: []Product{
 				Product{Name: "ups", ExpectedReplicas: 1},
 			},
@@ -103,7 +103,7 @@ var (
 	}
 	clusterStorageDeployments = []Namespace{
 		{
-			Name: "redhat-rhmi-operator",
+			Name: NamespacePrefix + "operator",
 			Products: []Product{
 				Product{Name: constants.CodeReadyPostgresPrefix + InstallationName, ExpectedReplicas: 1},
 				Product{Name: constants.ThreeScaleBackendRedisPrefix + InstallationName, ExpectedReplicas: 1},
@@ -118,7 +118,7 @@ var (
 	}
 	deploymentConfigs = []Namespace{
 		{
-			Name: "redhat-rhmi-3scale",
+			Name: NamespacePrefix + "3scale",
 			Products: []Product{
 				Product{Name: "apicast-production", ExpectedReplicas: 2},
 				Product{Name: "apicast-staging", ExpectedReplicas: 2},
@@ -135,7 +135,7 @@ var (
 			},
 		},
 		{
-			Name: "redhat-rhmi-fuse",
+			Name: NamespacePrefix + "fuse",
 			Products: []Product{
 				Product{Name: "syndesis-meta", ExpectedReplicas: 1},
 				Product{Name: "syndesis-oauthproxy", ExpectedReplicas: 1},
@@ -146,7 +146,7 @@ var (
 			},
 		},
 		{
-			Name: "redhat-rhmi-solution-explorer",
+			Name: NamespacePrefix + "solution-explorer",
 			Products: []Product{
 				Product{Name: "tutorial-web-app", ExpectedReplicas: 1},
 			},
@@ -161,13 +161,13 @@ var (
 			},
 		},
 		{
-			Name: "redhat-rhmi-rhsso",
+			Name: NamespacePrefix + "rhsso",
 			Products: []Product{
 				Product{Name: "keycloak", ExpectedReplicas: 2},
 			},
 		},
 		{
-			Name: "redhat-rhmi-user-sso",
+			Name: NamespacePrefix + "user-sso",
 			Products: []Product{
 				Product{Name: "keycloak", ExpectedReplicas: 2},
 			},

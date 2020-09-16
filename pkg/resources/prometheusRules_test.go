@@ -34,14 +34,14 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-test",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 				},
 			},
 			Alerts: []AlertConfiguration{
 				{
 					AlertName: "test-alert",
 					GroupName: "test-group",
-					Namespace: "redhat-rhmi-test",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 					Rules:     rules,
 				},
 			},
@@ -58,7 +58,7 @@ func TestReconcileAlerts(t *testing.T) {
 				rule := &monitoringv1.PrometheusRule{}
 				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
 					Name:      "test-alert",
-					Namespace: "redhat-rhmi-test",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 				}, rule); err != nil {
 					return fmt.Errorf("error retrieving rule: %v", err)
 				}
@@ -84,7 +84,7 @@ func TestReconcileAlerts(t *testing.T) {
 				{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "test-alert",
-						Namespace: "redhat-rhmi-test",
+						Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 					},
 					Spec: monitoringv1.PrometheusRuleSpec{
 						Groups: []monitoringv1.RuleGroup{
@@ -100,7 +100,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:              "rhmi",
-					Namespace:         "redhat-rhmi-test",
+					Namespace:         integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 					DeletionTimestamp: now(),
 				},
 			},
@@ -108,7 +108,7 @@ func TestReconcileAlerts(t *testing.T) {
 				{
 					AlertName: "test-alert",
 					GroupName: "test-group",
-					Namespace: "redhat-rhmi-test",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 					Rules:     rules,
 				},
 			},
@@ -127,7 +127,7 @@ func TestReconcileAlerts(t *testing.T) {
 				deletedRule := &monitoringv1.PrometheusRule{}
 				err = client.Get(context.TODO(), k8sclient.ObjectKey{
 					Name:      "test-alert",
-					Namespace: "redhat-rhmi-test",
+					Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "test",
 				}, deletedRule)
 				if err == nil {
 					return fmt.Errorf("expected an error retrieving deleted rule")
@@ -208,7 +208,7 @@ var (
 	existingRules = &monitoringv1.PrometheusRule{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "existing-rules",
-			Namespace: "redhat-rhmi-other",
+			Namespace: integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "other",
 		},
 		Spec: monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{

@@ -2,15 +2,17 @@ package common
 
 import (
 	"crypto/tls"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/smtp"
 	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestSendgridCredentialsAreValid(t *testing.T, ctx *TestingContext) {
 	// Get SMTP secret from rhmi-operator namespace
 	kc := ctx.KubeClient
-	smtpSecret, err := kc.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-smtp", metav1.GetOptions{})
+	smtpSecret, err := kc.CoreV1().Secrets(RHMIOperatorNamespace).Get(integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix+"smtp", metav1.GetOptions{})
 	if err != nil {
 		t.Fatal("Failed to get an SMTP secret", err)
 	}

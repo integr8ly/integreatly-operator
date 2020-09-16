@@ -99,7 +99,7 @@ func TestIntegreatlyAlertsMechanism(t *testing.T, ctx *TestingContext) {
 
 func verifySecrets(kubeClient kubernetes.Interface) error {
 	var pagerdutyKey, dmsURL string
-	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-deadmanssnitch", metav1.GetOptions{})
+	res, err := kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"deadmanssnitch", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -111,7 +111,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("url is undefined in dead mans snitch secret")
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-pagerduty", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"pagerduty", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}
@@ -124,7 +124,7 @@ func verifySecrets(kubeClient kubernetes.Interface) error {
 		return fmt.Errorf("secret key is undefined in pager duty secret")
 	}
 
-	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get("redhat-rhmi-smtp", metav1.GetOptions{})
+	res, err = kubeClient.CoreV1().Secrets(RHMIOperatorNamespace).Get(NamespacePrefix+"smtp", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get secret: %w", err)
 	}

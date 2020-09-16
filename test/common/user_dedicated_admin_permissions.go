@@ -123,7 +123,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
 func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
-	ns := "redhat-rhmi-3scale"
+	ns := NamespacePrefix + "3scale"
 	route := "backend"
 
 	path := fmt.Sprintf(resources.PathGetRoute, ns, route)

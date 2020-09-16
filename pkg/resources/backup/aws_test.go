@@ -12,6 +12,7 @@ import (
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,7 +25,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -72,7 +73,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -120,7 +121,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -176,7 +177,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)

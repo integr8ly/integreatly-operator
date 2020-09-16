@@ -29,8 +29,8 @@ func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = integreatlyv1alpha1.RHMI{}.Spec.NamespacePrefix + "operator"
 )
 
 // Test that the installation CR spec value for UseClusterStorage is true when the
@@ -206,7 +206,7 @@ func TestCreateInstallationCR_installationTypeDefault(t *testing.T) {
 	mockClient := fake.NewFakeClientWithScheme(buildScheme())
 	ctx := context.TODO()
 
-	installationType := "managed"
+	installationType := "managed-3scale"
 	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
 
 	// Defer unsetting the environment variables regardless of test results

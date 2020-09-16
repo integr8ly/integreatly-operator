@@ -389,12 +389,11 @@ func GetInstallType(config *rest.Config) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create testing context %s", err)
 	}
-	rhmi := &integreatlyv1alpha1.RHMI{}
+	rhmi, err := getRHMI(context.Client)
 
-	if err := context.Client.Get(goctx.TODO(), types.NamespacedName{Name: "rhmi", Namespace: "redhat-rhmi-operator"}, rhmi); err != nil {
-		return "", fmt.Errorf("error getting RHMI CR: %w", err)
+	if err != nil {
+		return "", err
 	}
-
 	return rhmi.Spec.Type, nil
 }
 

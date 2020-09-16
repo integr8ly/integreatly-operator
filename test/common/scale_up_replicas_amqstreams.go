@@ -14,12 +14,15 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	amqstreamsNamespace = NamespacePrefix + "amq-streams"
+)
+
 const (
 	numberOfAmqstreamsReplicas  = 2 //size in reconciler
 	scaleUpAmqstreamsReplicas   = 1
 	scaleDownAmqstreamsReplicas = 1
 	amqstreamsName              = "rhmi-cluster"
-	amqstreamsNamespace         = "redhat-rhmi-amq-streams"
 	retryIntervalAmqstreams     = time.Second * 20
 	timeoutAmqstreams           = time.Minute * 7
 )

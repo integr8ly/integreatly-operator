@@ -14,12 +14,15 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	namespace = NamespacePrefix + "3scale"
+)
+
 const (
 	numberOfReplicas  int64 = 2
 	scaleUpReplicas   int64 = 3
 	scaleDownReplicas int64 = 1
 	name                    = "3scale"
-	namespace               = "redhat-rhmi-3scale"
 	retryInterval           = time.Second * 20
 	timeout                 = time.Minute * 7
 	requestURL3scale        = "/apis/apps.3scale.net/v1alpha1"

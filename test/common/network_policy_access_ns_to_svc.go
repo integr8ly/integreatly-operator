@@ -19,13 +19,16 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	projectName         = "project-test-e2e"
-	serviceName         = "testing-curl"
-	podName             = "testing-curl"
-	containerName       = "testing-curl"
+var (
 	threescaleNamespace = NamespacePrefix + "3scale"
-	podEndpoitResponse  = "success"
+)
+
+const (
+	projectName        = "project-test-e2e"
+	serviceName        = "testing-curl"
+	podName            = "testing-curl"
+	containerName      = "testing-curl"
+	podEndpoitResponse = "success"
 )
 
 func TestNetworkPolicyAccessNSToSVC(t *testing.T, ctx *TestingContext) {

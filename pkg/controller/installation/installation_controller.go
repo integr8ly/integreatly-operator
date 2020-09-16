@@ -48,7 +48,7 @@ const (
 	deletionFinalizer                = "finalizer/configmaps"
 	DefaultInstallationName          = "rhmi"
 	DefaultInstallationConfigMapName = "installation-config"
-	DefaultInstallationPrefix        = "redhat-rhmi-"
+	DefaultInstallationPrefix        = "redhat-managed-api-"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"
@@ -154,7 +154,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
-			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
+			installType = string(integreatlyv1alpha1.InstallationTypeManagedApi)
 		}
 
 		installation = &integreatlyv1alpha1.RHMI{
@@ -573,7 +573,7 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 		return result, nil
 	}
 
-	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged3scale) {
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) || installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		requiredSecrets := []string{installation.Spec.PagerDutySecret, installation.Spec.DeadMansSnitchSecret}
 
 		for _, secretName := range requiredSecrets {

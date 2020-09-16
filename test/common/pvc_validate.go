@@ -14,7 +14,7 @@ var (
 	pvcNamespaces = []PersistentVolumeClaim{
 		{
 
-			Namespace: "redhat-rhmi-fuse",
+			Namespace: NamespacePrefix + "fuse",
 			PersistentVolumeClaimNames: []string{
 				"syndesis-meta",
 				"syndesis-prometheus",
@@ -23,7 +23,7 @@ var (
 
 		{
 
-			Namespace: "redhat-rhmi-middleware-monitoring-operator",
+			Namespace: NamespacePrefix + "middleware-monitoring-operator",
 			PersistentVolumeClaimNames: []string{
 				"prometheus-application-monitoring-db-prometheus-application-monitoring-0",
 			},
@@ -31,14 +31,14 @@ var (
 
 		{
 
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: NamespacePrefix + "solution-explorer",
 			PersistentVolumeClaimNames: []string{
 				"user-walkthroughs",
 			},
 		},
 		{
 
-			Namespace: "redhat-rhmi-operator",
+			Namespace: NamespacePrefix + "operator",
 			PersistentVolumeClaimNames: []string{
 				"standard-authservice-postgresql",
 			},
