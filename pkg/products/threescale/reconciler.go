@@ -3,9 +3,10 @@ package threescale
 import (
 	"context"
 	"fmt"
-	consolev1 "github.com/openshift/api/console/v1"
 	"net/http"
 	"strings"
+
+	consolev1 "github.com/openshift/api/console/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 
@@ -1514,17 +1515,20 @@ func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sc
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "rhmi-3scale-console-link",
 		},
-		Spec: consolev1.ConsoleLinkSpec{
-			ApplicationMenu: &consolev1.ApplicationMenuSpec{},
-		},
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
-		cl.Spec.ApplicationMenu.ImageURL = threeScaleIcon
-		cl.Spec.ApplicationMenu.Section = "Red Hat Applications"
-		cl.Spec.Href = fmt.Sprintf("%v/auth/rhsso/bounce", r.Config.GetHost())
-		cl.Spec.Location = consolev1.ApplicationMenu
-		cl.Spec.Text = "3Scale API Management"
+		cl.Spec = consolev1.ConsoleLinkSpec{
+			ApplicationMenu: &consolev1.ApplicationMenuSpec{
+				ImageURL: threeScaleIcon,
+				Section:  "OpenShift Managed Services",
+			},
+			Link: consolev1.Link{
+				Href: fmt.Sprintf("%v/auth/rhsso/bounce", r.Config.GetHost()),
+				Text: "API Management",
+			},
+			Location: consolev1.ApplicationMenu,
+		}
 		return nil
 	})
 	if err != nil {
