@@ -19,17 +19,20 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 
+	"github.com/operator-framework/operator-sdk/internal/olm"
 	olmresourceclient "github.com/operator-framework/operator-sdk/internal/olm/client"
 	opinternal "github.com/operator-framework/operator-sdk/internal/olm/operator/internal"
 	"github.com/operator-framework/operator-sdk/internal/util/k8sutil"
-	"github.com/operator-framework/operator-sdk/internal/util/yamlutil"
 
-	manifests "github.com/operator-framework/api/pkg/manifests"
+	"github.com/operator-framework/api/pkg/manifests"
 	valerrors "github.com/operator-framework/api/pkg/validation/errors"
 	olmapiv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	olmapiv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	registry "github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
+	"github.com/operator-framework/operator-registry/pkg/registry"
 	log "github.com/sirupsen/logrus"
 	apiextinstall "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/install"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +40,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/yaml"
 )
 
 const defaultNamespace = "default"
@@ -51,7 +55,10 @@ func init() {
 }
 
 type operatorManager struct {
-	client        *olmresourceclient.Client
+	client *olmresourceclient.Client
+	// olmNamespace is the namespace where olm is installed
+	// and operator registry server resources are created
+	olmNamespace  string
 	version       string
 	namespace     string
 	forceRegistry bool
@@ -68,6 +75,13 @@ func (c *OLMCmd) newManager() (*operatorManager, error) {
 		version:       c.OperatorVersion,
 		forceRegistry: c.ForceRegistry,
 	}
+
+	// Namespace in which OLM is deployed.
+	if m.olmNamespace = c.OLMNamespace; m.olmNamespace == "" {
+		m.olmNamespace = olm.DefaultOLMNamespace
+	}
+
+	// Cluster and operator namespace info.
 	rc, ns, err := k8sutil.GetKubeconfigAndNamespace(c.KubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get namespace from kubeconfig %s: %w", c.KubeconfigPath, err)
@@ -84,6 +98,8 @@ func (c *OLMCmd) newManager() (*operatorManager, error) {
 			return nil, fmt.Errorf("failed to create SDK OLM client: %w", err)
 		}
 	}
+
+	// Parse k8s objects.
 	for _, path := range c.IncludePaths {
 		if path != "" {
 			objs, err := readObjectsFromFile(path)
@@ -101,7 +117,10 @@ func (c *OLMCmd) newManager() (*operatorManager, error) {
 	if hasSub || hasCatSrc && !(hasSub && hasCatSrc) {
 		return nil, errors.New("both a CatalogSource and Subscription must be supplied if one is supplied")
 	}
-	pkg, bundles, results := manifests.GetManifestsDir(c.ManifestsDir)
+
+	// Operator bundles and metadata.
+	var results []valerrors.ManifestResult
+	m.pkg, m.bundles, results = manifests.GetManifestsDir(c.ManifestsDir)
 	if len(results) != 0 {
 		badResults := []valerrors.ManifestResult{}
 		for _, result := range results {
@@ -113,7 +132,17 @@ func (c *OLMCmd) newManager() (*operatorManager, error) {
 			return nil, fmt.Errorf("bundle dir had errors: %s", badResults)
 		}
 	}
-	m.pkg, m.bundles = pkg, bundles
+	// Prefer annotations over a package manifest, which is now deprecated.
+	if annotations, err := findAnnotations(c.ManifestsDir); err == nil {
+		m.pkg = translateAnnotationsToPackage(annotations, fmt.Sprintf("%s.v%s", annotations.GetName(), m.version))
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("error finding annotations: %v", err)
+	}
+	if m.pkg.PackageName == "" {
+		return nil, errors.New("no package metadata found")
+	}
+
+	// Handle installModes.
 	if c.InstallMode == "" {
 		// Default to OwnNamespace.
 		m.installMode = olmapiv1alpha1.InstallModeTypeOwnNamespace
@@ -127,15 +156,51 @@ func (c *OLMCmd) newManager() (*operatorManager, error) {
 	if err := m.installModeCompatible(m.installMode); err != nil {
 		return nil, err
 	}
+
 	return m, nil
+}
+
+// findAnnotations returns annotations metadata from '<dir>/metadata/annotations.yaml'.
+func findAnnotations(dir string) (annotations registry.AnnotationsFile, err error) {
+	annotationsPath := filepath.Join(dir, bundle.MetadataDir, bundle.AnnotationsFile)
+	b, err := ioutil.ReadFile(annotationsPath)
+	if err != nil {
+		return annotations, err
+	}
+	if err = yaml.Unmarshal(b, &annotations); err != nil {
+		return annotations, err
+	}
+	return annotations, nil
+}
+
+// translateAnnotationsToPackage creates a package manifest from an annotations
+// file. We use this workaround because registry-server will not populate the
+// database directory from an annotations.yaml file. This is what an index image
+// build does:
+// https://github.com/operator-framework/operator-registry/blob/v1.9.0/pkg/registry/populator.go#L285
+func translateAnnotationsToPackage(annotations registry.AnnotationsFile, csvName string) registry.PackageManifest {
+	pkg := registry.PackageManifest{
+		PackageName:        annotations.GetName(),
+		DefaultChannelName: annotations.GetDefaultChannelName(),
+	}
+
+	for _, channel := range annotations.GetChannels() {
+		pkg.Channels = append(pkg.Channels, registry.PackageChannel{
+			Name:           channel,
+			CurrentCSVName: csvName,
+		})
+	}
+
+	return pkg
 }
 
 func (m *operatorManager) run(ctx context.Context) (err error) {
 	// Ensure OLM is installed.
-	olmVer, err := m.client.GetInstalledVersion(ctx)
+	olmVer, err := m.client.GetInstalledVersion(ctx, m.olmNamespace)
 	if err != nil {
 		return fmt.Errorf("error getting installed OLM version: %w", err)
 	}
+
 	pkgName := m.pkg.PackageName
 	bundle, err := getBundleForVersion(m.bundles, m.version)
 	if err != nil {
@@ -145,6 +210,7 @@ func (m *operatorManager) run(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("error getting CSV from bundle: %w", err)
 	}
+
 	// Only check CSV here, since other deployed operators/versions may be
 	// running with shared CRDs.
 	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(csv)
@@ -159,12 +225,13 @@ func (m *operatorManager) run(ctx context.Context) (err error) {
 		return fmt.Errorf("an operator with name %q is present and has resource errors\n%s", pkgName, status)
 	}
 
-	if err = m.registryUp(ctx, olmresourceclient.OLMNamespace); err != nil {
+	if err = m.registryUp(ctx, m.olmNamespace); err != nil {
 		return fmt.Errorf("error creating registry resources: %w", err)
 	}
+
 	log.Info("Creating resources")
 	if !m.hasCatalogSource() {
-		registryGRPCAddr := opinternal.GetRegistryServiceAddr(pkgName, olmresourceclient.OLMNamespace)
+		registryGRPCAddr := opinternal.GetRegistryServiceAddr(pkgName, m.olmNamespace)
 		catsrc := newCatalogSource(pkgName, m.namespace, withGRPC(registryGRPCAddr))
 		m.olmObjects = append(m.olmObjects, catsrc)
 	}
@@ -198,6 +265,7 @@ func (m *operatorManager) run(ctx context.Context) (err error) {
 	if err = m.client.DoCreate(ctx, objects...); err != nil {
 		return fmt.Errorf("error creating operator resources: %w", err)
 	}
+
 	// BUG(estroz): if m.namespace is not contained in m.installModeNamespaces,
 	// DoCSVWait will fail.
 	nn := types.NamespacedName{
@@ -213,7 +281,7 @@ func (m *operatorManager) run(ctx context.Context) (err error) {
 	if installed, err := status.HasInstalledResources(); !installed {
 		return fmt.Errorf("operator %s did not install successfully\n%s", pkgName, status)
 	} else if err != nil {
-		return fmt.Errorf("operator %qhas resource errors\n%s", pkgName, status)
+		return fmt.Errorf("operator %q has resource errors\n%s", pkgName, status)
 	}
 	log.Infof("Successfully installed %q on OLM version %q", csv.GetName(), olmVer)
 	fmt.Print(status)
@@ -223,10 +291,11 @@ func (m *operatorManager) run(ctx context.Context) (err error) {
 
 func (m *operatorManager) cleanup(ctx context.Context) (err error) {
 	// Ensure OLM is installed.
-	olmVer, err := m.client.GetInstalledVersion(ctx)
+	olmVer, err := m.client.GetInstalledVersion(ctx, m.olmNamespace)
 	if err != nil {
 		return fmt.Errorf("error getting installed OLM version: %w", err)
 	}
+
 	pkgName := m.pkg.PackageName
 	bundle, err := getBundleForVersion(m.bundles, m.version)
 	if err != nil {
@@ -237,9 +306,10 @@ func (m *operatorManager) cleanup(ctx context.Context) (err error) {
 		return fmt.Errorf("error getting CSV from bundle: %w", err)
 	}
 
-	if err = m.registryDown(ctx, olmresourceclient.OLMNamespace); err != nil {
+	if err = m.registryDown(ctx, m.olmNamespace); err != nil {
 		return fmt.Errorf("error removing registry resources: %w", err)
 	}
+
 	log.Info("Deleting resources")
 	if !m.hasCatalogSource() {
 		m.olmObjects = append(m.olmObjects, newCatalogSource(pkgName, m.namespace))
@@ -280,29 +350,28 @@ func (m operatorManager) registryUp(ctx context.Context, namespace string) error
 		Pkg:     m.pkg,
 		Bundles: m.bundles,
 	}
-	registryStale, err := rr.IsManifestDataStale(ctx, namespace)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
+
+	if exists, err := rr.IsRegistryExist(ctx, namespace); err != nil {
+		return fmt.Errorf("error checking registry existence: %v", err)
+	} else if exists {
+		if isRegistryStale, err := rr.IsRegistryDataStale(ctx, namespace); err == nil {
+			if !isRegistryStale {
+				log.Infof("%s registry data is current", m.pkg.PackageName)
+				return nil
+			}
+			log.Infof("A stale %s registry exists, deleting", m.pkg.PackageName)
+			if err = rr.DeletePackageManifestsRegistry(ctx, namespace); err != nil {
+				return fmt.Errorf("error deleting registered bundle: %w", err)
+			}
+		} else if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("error checking registry data: %w", err)
 		}
-		// ConfigMap doesn't exist yet, so create it as usual.
-		log.Info("Creating registry")
-		if err = rr.CreateRegistryManifests(ctx, namespace); err != nil {
-			return fmt.Errorf("error registering bundle: %w", err)
-		}
-		return nil
 	}
-	if !registryStale {
-		log.Printf("Registry data is current")
-		return nil
-	}
-	log.Printf("Registry data stale. Recreating registry")
-	if err = rr.DeleteRegistryManifests(ctx, namespace); err != nil {
-		return fmt.Errorf("error deleting registered bundle: %w", err)
-	}
-	if err = rr.CreateRegistryManifests(ctx, namespace); err != nil {
+	log.Infof("Creating %s registry", m.pkg.PackageName)
+	if err := rr.CreatePackageManifestsRegistry(ctx, namespace); err != nil {
 		return fmt.Errorf("error registering bundle: %w", err)
 	}
+
 	return nil
 }
 
@@ -312,12 +381,14 @@ func (m *operatorManager) registryDown(ctx context.Context, namespace string) er
 		Pkg:     m.pkg,
 		Bundles: m.bundles,
 	}
+
 	if m.forceRegistry {
-		log.Printf("Deleting registry")
-		if err := rr.DeleteRegistryManifests(ctx, namespace); err != nil {
+		log.Print("Deleting registry")
+		if err := rr.DeletePackageManifestsRegistry(ctx, namespace); err != nil {
 			return fmt.Errorf("error deleting registered bundle: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -358,10 +429,14 @@ func readObjectsFromFile(path string) (objs []*unstructured.Unstructured, err er
 	if err != nil {
 		return nil, err
 	}
-	scanner := yamlutil.NewYAMLScanner(b)
+	scanner := k8sutil.NewYAMLScanner(b)
 	for scanner.Scan() {
+		b, err := yaml.YAMLToJSON(scanner.Bytes())
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert YAML to JSON before decode: %v", err)
+		}
 		u := &unstructured.Unstructured{}
-		if err := u.UnmarshalJSON(scanner.Bytes()); err != nil {
+		if err := u.UnmarshalJSON(b); err != nil {
 			return nil, fmt.Errorf("failed to decode object from manifest %s: %w", path, err)
 		}
 		objs = append(objs, u)
