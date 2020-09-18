@@ -45,6 +45,7 @@ type ConfigReadWriter interface {
 	ReadRHSSOUser() (*RHSSOUser, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
+	ReadMarin3r() (*Marin3r, error)
 	ReadFuse() (*Fuse, error)
 	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
@@ -128,6 +129,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadDataSync()
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		return m.ReadMonitoringSpec()
+	case integreatlyv1alpha1.ProductMarin3r:
+		return m.ReadMarin3r()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
@@ -277,6 +280,14 @@ func (m *Manager) ReadDataSync() (*DataSync, error) {
 		return nil, err
 	}
 	return NewDataSync(config), nil
+}
+
+func (m *Manager) ReadMarin3r() (*Marin3r, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMarin3r)
+	if err != nil {
+		return nil, err
+	}
+	return NewMarin3r(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {
