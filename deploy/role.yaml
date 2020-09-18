@@ -118,6 +118,18 @@ rules:
       - watch
   # END Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
 
+  - apiGroups:
+      - marin3r.3scale.net
+    resources:
+      - envoyconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -393,4 +405,16 @@ rules:
     resources:
       - configmaps
   # END Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+
+  - apiGroups:
+      - marin3r.3scale.net
+    resources:
+      - envoyconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
   

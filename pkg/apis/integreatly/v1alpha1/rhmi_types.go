@@ -56,6 +56,7 @@ var (
 	ProductCloudResources      ProductName = "cloud-resources"
 	ProductDataSync            ProductName = "datasync"
 	ProductMonitoringSpec      ProductName = "monitoring-spec"
+	ProductMarin3r             ProductName = "marin3r"
 
 	// Could not find a way to determine these versions dynamically, so they are hard-coded
 	// It is preferable to determine the version of a product dynamically (from a CR, or configmap, etc)
@@ -76,6 +77,7 @@ var (
 	VersionRHSSOUser           ProductVersion = "7.4"
 	VersionMonitoringSpec      ProductVersion = "1.0"
 	VersionSolutionExplorer    ProductVersion = "2.28.0"
+	VersionMarin3r             ProductVersion = "0.5.1-alpha1"
 
 	// Versioning for Fuse on OpenShift does not follow a similar pattern to other products.
 	// It is currently implicitly tied to version 7.6 of Fuse, hence the 7.6 value for VersionFuseOnOpenshift above
@@ -104,6 +106,7 @@ var (
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
 	OperatorVersionMonitoringSpec      OperatorVersion = "1.0"
+	OperatorVersionMarin3r             OperatorVersion = "0.5.1-alpha"
 
 	// Event reasons to be used when emitting events
 	EventProcessingError       string = "ProcessingError"
