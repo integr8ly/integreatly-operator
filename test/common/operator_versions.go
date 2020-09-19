@@ -43,10 +43,6 @@ var (
 			integreatlyv1alpha1.Product3Scale:    integreatlyv1alpha1.OperatorVersion3Scale,
 			integreatlyv1alpha1.ProductRHSSOUser: integreatlyv1alpha1.OperatorVersionRHSSOUser,
 		},
-
-		integreatlyv1alpha1.SolutionExplorerStage: {
-			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.OperatorVersionSolutionExplorer,
-		},
 	}
 )
 

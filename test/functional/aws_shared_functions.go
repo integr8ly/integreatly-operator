@@ -27,15 +27,24 @@ const (
 	awsCredsSecretName = "aws-creds"
 )
 
-func getExpectedPostgres(installationName string) []string {
-	// expected postgres resources provisioned per product
-	return []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
+func getExpectedPostgres(installType string, installationName string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		// expected postgres resources provisioned per product
+		return []string{
+			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+		}
+	} else {
+		// expected postgres resources provisioned per product
+		return []string{
+			fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
+		}
 	}
 }
 
@@ -96,7 +105,7 @@ func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integrea
 	var foundErrors []string
 	var foundResourceIDs []string
 
-	expectedPostgres := getExpectedPostgres(rhmi.Name)
+	expectedPostgres := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedPostgres {
 		// get rds cr
@@ -123,7 +132,7 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 	var foundErrors []string
 	var foundResourceIDs []string
 
-	expectedBlobStorage := getExpectedPostgres(rhmi.Name)
+	expectedBlobStorage := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedBlobStorage {
 		// get rds cr
