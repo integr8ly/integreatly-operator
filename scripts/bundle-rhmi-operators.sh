@@ -66,7 +66,7 @@ generate_bundles() {
 
     cd ./bundle/
 
-    opm alpha bundle build --directory ./manifests --tag $REG/$ORG/integreatly-bundle:${VERSION} \
+    opm alpha bundle build --directory ./2.8.0 --tag $REG/$ORG/integreatly-bundle:${VERSION} \
         --package integreatly --channels $CHANNEL --default $CHANNEL
 
     docker push $REG/$ORG/integreatly-bundle:$VERSION

@@ -20,7 +20,7 @@ import (
 
 const (
 	manifestEnvVarKey  = "MANIFEST_DIR"
-	defaultManifestDir = "manifests"
+	defaultManifestDir = "2.8.0"
 )
 
 // Generates ConfigMap equivalent from a manifest package
