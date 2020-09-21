@@ -9,10 +9,6 @@ import (
 	"sync"
 )
 
-var (
-	lockCatalogSourceClientInterfaceMockGetLatestCSV sync.RWMutex
-)
-
 // Ensure, that CatalogSourceClientInterfaceMock does implement CatalogSourceClientInterface.
 // If this is not the case, regenerate this file with moq.
 var _ CatalogSourceClientInterface = &CatalogSourceClientInterfaceMock{}
@@ -48,6 +44,7 @@ type CatalogSourceClientInterfaceMock struct {
 			ChannelName string
 		}
 	}
+	lockGetLatestCSV sync.RWMutex
 }
 
 // GetLatestCSV calls GetLatestCSVFunc.
@@ -64,9 +61,9 @@ func (mock *CatalogSourceClientInterfaceMock) GetLatestCSV(catalogSourceKey type
 		PackageName:      packageName,
 		ChannelName:      channelName,
 	}
-	lockCatalogSourceClientInterfaceMockGetLatestCSV.Lock()
+	mock.lockGetLatestCSV.Lock()
 	mock.calls.GetLatestCSV = append(mock.calls.GetLatestCSV, callInfo)
-	lockCatalogSourceClientInterfaceMockGetLatestCSV.Unlock()
+	mock.lockGetLatestCSV.Unlock()
 	return mock.GetLatestCSVFunc(catalogSourceKey, packageName, channelName)
 }
 
@@ -83,8 +80,8 @@ func (mock *CatalogSourceClientInterfaceMock) GetLatestCSVCalls() []struct {
 		PackageName      string
 		ChannelName      string
 	}
-	lockCatalogSourceClientInterfaceMockGetLatestCSV.RLock()
+	mock.lockGetLatestCSV.RLock()
 	calls = mock.calls.GetLatestCSV
-	lockCatalogSourceClientInterfaceMockGetLatestCSV.RUnlock()
+	mock.lockGetLatestCSV.RUnlock()
 	return calls
 }

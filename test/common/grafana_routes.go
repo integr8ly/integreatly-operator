@@ -167,10 +167,10 @@ func getGrafanaRoute(c client.Client) (string, error) {
 		routeGrafanaName      = "grafana-route"
 		routeGrafanaNamespace = "redhat-rhmi-middleware-monitoring-operator"
 	)
-	testCtx := context.TODO()
+	Context := context.TODO()
 	//get grafana openshift route
 	grafanaRoute := &v1.Route{}
-	if err := c.Get(testCtx, client.ObjectKey{Name: routeGrafanaName, Namespace: routeGrafanaNamespace}, grafanaRoute); err != nil {
+	if err := c.Get(Context, client.ObjectKey{Name: routeGrafanaName, Namespace: routeGrafanaNamespace}, grafanaRoute); err != nil {
 		return "", fmt.Errorf("failed to get grafana route: %w", err)
 	}
 	//evaluate the grafana route hostname
