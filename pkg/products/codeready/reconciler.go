@@ -264,13 +264,13 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient k8scl
 
 	cheCluster, err := r.createCheCluster(ctx, kcConfig, kcRealm, serverClient)
 
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	// che cluster hasn't reconciled yet
 	if cheCluster == nil {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
