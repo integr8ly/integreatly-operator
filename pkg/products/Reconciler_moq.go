@@ -11,12 +11,6 @@ import (
 	"sync"
 )
 
-var (
-	lockInterfaceMockGetPreflightObject sync.RWMutex
-	lockInterfaceMockReconcile          sync.RWMutex
-	lockInterfaceMockVerifyVersion      sync.RWMutex
-)
-
 // Ensure, that InterfaceMock does implement Interface.
 // If this is not the case, regenerate this file with moq.
 var _ Interface = &InterfaceMock{}
@@ -76,6 +70,9 @@ type InterfaceMock struct {
 			Installation *v1alpha1.RHMI
 		}
 	}
+	lockGetPreflightObject sync.RWMutex
+	lockReconcile          sync.RWMutex
+	lockVerifyVersion      sync.RWMutex
 }
 
 // GetPreflightObject calls GetPreflightObjectFunc.
@@ -88,9 +85,9 @@ func (mock *InterfaceMock) GetPreflightObject(ns string) runtime.Object {
 	}{
 		Ns: ns,
 	}
-	lockInterfaceMockGetPreflightObject.Lock()
+	mock.lockGetPreflightObject.Lock()
 	mock.calls.GetPreflightObject = append(mock.calls.GetPreflightObject, callInfo)
-	lockInterfaceMockGetPreflightObject.Unlock()
+	mock.lockGetPreflightObject.Unlock()
 	return mock.GetPreflightObjectFunc(ns)
 }
 
@@ -103,9 +100,9 @@ func (mock *InterfaceMock) GetPreflightObjectCalls() []struct {
 	var calls []struct {
 		Ns string
 	}
-	lockInterfaceMockGetPreflightObject.RLock()
+	mock.lockGetPreflightObject.RLock()
 	calls = mock.calls.GetPreflightObject
-	lockInterfaceMockGetPreflightObject.RUnlock()
+	mock.lockGetPreflightObject.RUnlock()
 	return calls
 }
 
@@ -125,9 +122,9 @@ func (mock *InterfaceMock) Reconcile(ctx context.Context, installation *v1alpha1
 		Product:      product,
 		ServerClient: serverClient,
 	}
-	lockInterfaceMockReconcile.Lock()
+	mock.lockReconcile.Lock()
 	mock.calls.Reconcile = append(mock.calls.Reconcile, callInfo)
-	lockInterfaceMockReconcile.Unlock()
+	mock.lockReconcile.Unlock()
 	return mock.ReconcileFunc(ctx, installation, product, serverClient)
 }
 
@@ -146,9 +143,9 @@ func (mock *InterfaceMock) ReconcileCalls() []struct {
 		Product      *v1alpha1.RHMIProductStatus
 		ServerClient client.Client
 	}
-	lockInterfaceMockReconcile.RLock()
+	mock.lockReconcile.RLock()
 	calls = mock.calls.Reconcile
-	lockInterfaceMockReconcile.RUnlock()
+	mock.lockReconcile.RUnlock()
 	return calls
 }
 
@@ -162,9 +159,9 @@ func (mock *InterfaceMock) VerifyVersion(installation *v1alpha1.RHMI) bool {
 	}{
 		Installation: installation,
 	}
-	lockInterfaceMockVerifyVersion.Lock()
+	mock.lockVerifyVersion.Lock()
 	mock.calls.VerifyVersion = append(mock.calls.VerifyVersion, callInfo)
-	lockInterfaceMockVerifyVersion.Unlock()
+	mock.lockVerifyVersion.Unlock()
 	return mock.VerifyVersionFunc(installation)
 }
 
@@ -177,8 +174,8 @@ func (mock *InterfaceMock) VerifyVersionCalls() []struct {
 	var calls []struct {
 		Installation *v1alpha1.RHMI
 	}
-	lockInterfaceMockVerifyVersion.RLock()
+	mock.lockVerifyVersion.RLock()
 	calls = mock.calls.VerifyVersion
-	lockInterfaceMockVerifyVersion.RUnlock()
+	mock.lockVerifyVersion.RUnlock()
 	return calls
 }

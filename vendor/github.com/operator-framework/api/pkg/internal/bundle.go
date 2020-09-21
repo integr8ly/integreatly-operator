@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/blang/semver"
-	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-registry/pkg/sqlite"
 	"github.com/pkg/errors"
@@ -55,18 +55,23 @@ func (l *manifestsLoad) AddPackageChannels(pkg registry.PackageManifest) error {
 	return nil
 }
 
-// AddBundlePackageChannels is a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) AddBundlePackageChannels(manifest registry.PackageManifest, bundle registry.Bundle) error {
+// AddBundleSemver is a no-op to implement the registry.Load interface.
+func (l *manifestsLoad) AddBundleSemver(pkg *registry.Package, bundle *registry.Bundle) error {
 	return nil
 }
 
-// RmPackageName is a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) RmPackageName(packageName string) error {
+// AddBundlePackageChannels is a no-op to implement the registry.Load interface.
+func (*manifestsLoad) AddBundlePackageChannels(registry.PackageManifest, *registry.Bundle) error {
+	return nil
+}
+
+// RmPemoveckageNas a no-op to implement the registry.Load interface.
+func (l *manifestsLoad) RemovePackage(packageName string) error {
 	return nil
 }
 
 // ClearNonDefaultBundles is a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) ClearNonDefaultBundles(packageName string) error {
+func (l *manifestsLoad) ClearNonHeadBundles() error {
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -10,7 +11,7 @@ import (
 	interfaces "github.com/operator-framework/api/pkg/validation/interfaces"
 
 	"github.com/blang/semver"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/pkg/registry"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -185,4 +186,16 @@ func validateInstallModes(csv *v1alpha1.ClusterServiceVersion) (errs []errors.Er
 		errs = append(errs, errors.ErrInvalidCSV("none of InstallModeTypes are supported", csv.GetName()))
 	}
 	return errs
+}
+
+func bundleCSVToCSV(bcsv *registry.ClusterServiceVersion) (*v1alpha1.ClusterServiceVersion, errors.Error) {
+	spec := v1alpha1.ClusterServiceVersionSpec{}
+	if err := json.Unmarshal(bcsv.Spec, &spec); err != nil {
+		return nil, errors.ErrInvalidParse(fmt.Sprintf("converting bundle CSV %q", bcsv.GetName()), err)
+	}
+	return &v1alpha1.ClusterServiceVersion{
+		TypeMeta:   bcsv.TypeMeta,
+		ObjectMeta: bcsv.ObjectMeta,
+		Spec:       spec,
+	}, errors.Error{}
 }
