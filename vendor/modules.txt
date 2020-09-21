@@ -251,13 +251,13 @@ github.com/go-openapi/analysis/internal
 github.com/go-openapi/errors
 # github.com/go-openapi/jsonpointer v0.19.3
 github.com/go-openapi/jsonpointer
-# github.com/go-openapi/jsonreference v0.19.4
+# github.com/go-openapi/jsonreference v0.19.3
 github.com/go-openapi/jsonreference
 # github.com/go-openapi/loads v0.19.5
 github.com/go-openapi/loads
 # github.com/go-openapi/runtime v0.19.15
 github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.19.9
+# github.com/go-openapi/spec v0.19.9 => github.com/go-openapi/spec v0.19.6
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.19.5
 github.com/go-openapi/strfmt
@@ -724,7 +724,7 @@ golang.org/x/sync/semaphore
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.3
+# golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
