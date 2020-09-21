@@ -7,7 +7,7 @@
 #  - aws-cli
 
 # AZ to disable
-AZ=eu-west-1c
+AZ=eu-west-1a
 
 # Checks the command line params true/nothing to disable and false to re-enable
 DISABLE=$1
@@ -51,7 +51,7 @@ then
   # create new disable ACL association
   ChangeAcl NetworkAclAssociationId.tmp NetworkAclId.tmp
 else
-    echo "Re-enable AvailabilityZone"
+  echo "Re-enable AvailabilityZone"
   for SUBNETID in $(aws ec2 describe-subnets | jq ".Subnets[] | select(.AvailabilityZone==\"$AZ\")" | jq -r '.SubnetId')
   do
     aws ec2 describe-network-acls | jq -r ".[] | .[].Associations[] | select(.SubnetId==\"$SUBNETID\")" | jq -r '.NetworkAclAssociationId' >> NetworkAclAssociationId-restore.tmp
