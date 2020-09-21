@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultBinarySourceImage = "quay.io/operator-framework/upstream-opm-builder"
+	defaultBinarySourceImage = "quay.io/operator-framework/upstream-registry-builder"
 	DefaultDbLocation        = "/database/index.db"
 	DbLocationLabel          = "operators.operatorframework.io.index.database.v1"
 )
@@ -24,7 +24,7 @@ type IndexDockerfileGenerator struct {
 }
 
 // NewDockerfileGenerator is a constructor that returns a DockerfileGenerator
-func NewDockerfileGenerator(logger *logrus.Entry) DockerfileGenerator {
+func NewDockerfileGenerator(containerTool string, logger *logrus.Entry) DockerfileGenerator {
 	return &IndexDockerfileGenerator{
 		Logger: logger,
 	}
@@ -32,7 +32,7 @@ func NewDockerfileGenerator(logger *logrus.Entry) DockerfileGenerator {
 
 // GenerateIndexDockerfile builds a string representation of a dockerfile to use when building
 // an operator-registry index image
-func (g *IndexDockerfileGenerator) GenerateIndexDockerfile(binarySourceImage, databasePath string) string {
+func (g *IndexDockerfileGenerator) GenerateIndexDockerfile(binarySourceImage, databaseFolder string) string {
 	var dockerfile string
 
 	if binarySourceImage == "" {
@@ -48,7 +48,7 @@ func (g *IndexDockerfileGenerator) GenerateIndexDockerfile(binarySourceImage, da
 	dockerfile += fmt.Sprintf("LABEL %s=%s\n", DbLocationLabel, DefaultDbLocation)
 
 	// Content
-	dockerfile += fmt.Sprintf("ADD %s %s\n", databasePath, DefaultDbLocation)
+	dockerfile += fmt.Sprintf("ADD %s /database\n", databaseFolder)
 	dockerfile += fmt.Sprintf("EXPOSE 50051\n")
 	dockerfile += fmt.Sprintf("ENTRYPOINT [\"/bin/opm\"]\n")
 	dockerfile += fmt.Sprintf("CMD [\"registry\", \"serve\", \"--database\", \"%s\"]\n", DefaultDbLocation)

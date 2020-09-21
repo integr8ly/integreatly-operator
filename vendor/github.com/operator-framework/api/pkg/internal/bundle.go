@@ -55,23 +55,18 @@ func (l *manifestsLoad) AddPackageChannels(pkg registry.PackageManifest) error {
 	return nil
 }
 
-// AddBundleSemver is a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) AddBundleSemver(pkg *registry.Package, bundle *registry.Bundle) error {
-	return nil
-}
-
 // AddBundlePackageChannels is a no-op to implement the registry.Load interface.
-func (*manifestsLoad) AddBundlePackageChannels(registry.PackageManifest, *registry.Bundle) error {
+func (l *manifestsLoad) AddBundlePackageChannels(manifest registry.PackageManifest, bundle registry.Bundle) error {
 	return nil
 }
 
-// RmPemoveckageNas a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) RemovePackage(packageName string) error {
+// RmPackageName is a no-op to implement the registry.Load interface.
+func (l *manifestsLoad) RmPackageName(packageName string) error {
 	return nil
 }
 
 // ClearNonDefaultBundles is a no-op to implement the registry.Load interface.
-func (l *manifestsLoad) ClearNonHeadBundles() error {
+func (l *manifestsLoad) ClearNonDefaultBundles(packageName string) error {
 	return nil
 }
 
