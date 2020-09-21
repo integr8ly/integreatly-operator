@@ -52,6 +52,7 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
+	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20191022152013-2823239d2298
 	github.com/operator-framework/api => github.com/operator-framework/api v0.1.1
 	github.com/operator-framework/operator-lifecycle-manager => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
@@ -61,7 +62,6 @@ replace (
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.5
 	k8s.io/apiserver => k8s.io/apiserver v0.17.4
-	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.6
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.17.4
 	k8s.io/client-go => k8s.io/client-go v0.17.4 // Required by prometheus-operator
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.17.4
