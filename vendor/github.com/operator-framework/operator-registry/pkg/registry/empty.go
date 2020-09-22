@@ -80,10 +80,6 @@ func (EmptyQuery) GetBundlePathsForPackage(ctx context.Context, pkgName string) 
 	return nil, errors.New("empty querier: cannot get images")
 }
 
-func (EmptyQuery) GetBundlesForPackage(ctx context.Context, pkgName string) (map[BundleKey]struct{}, error) {
-	return nil, errors.New("empty querier: cannot get bundles")
-}
-
 func (EmptyQuery) GetDefaultChannelForPackage(ctx context.Context, pkgName string) (string, error) {
 	return "", errors.New("empty querier: cannot get default channel")
 }
@@ -94,14 +90,6 @@ func (EmptyQuery) ListChannels(ctx context.Context, pkgName string) ([]string, e
 
 func (EmptyQuery) GetCurrentCSVNameForChannel(ctx context.Context, pkgName, channel string) (string, error) {
 	return "", errors.New("empty querier: cannot get csv name for package and channel")
-}
-
-func (EmptyQuery) ListBundles(ctx context.Context) ([]*api.Bundle, error) {
-	return nil, errors.New("empty querier: cannot list bundles")
-}
-
-func (EmptyQuery) GetDependenciesForBundle(ctx context.Context, name, version, path string) (dependencies []*api.Dependency, err error) {
-	return nil, errors.New("empty querier: cannot get dependencies for bundle")
 }
 
 var _ Query = &EmptyQuery{}

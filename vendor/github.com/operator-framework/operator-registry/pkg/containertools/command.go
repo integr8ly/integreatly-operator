@@ -8,6 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// Podman cli tool
+	Podman = "podman"
+	// Docker cli tool
+	Docker = "docker"
+)
+
 // CommandRunner defines methods to shell out to common container tools
 type CommandRunner interface {
 	GetToolName() string
@@ -21,22 +28,31 @@ type CommandRunner interface {
 // execute commands with that tooling.
 type ContainerCommandRunner struct {
 	logger        *logrus.Entry
-	containerTool ContainerTool
+	containerTool string
 }
 
 // NewCommandRunner takes the containerTool as an input string and returns a
 // CommandRunner to run commands with that cli tool
-func NewCommandRunner(containerTool ContainerTool, logger *logrus.Entry) CommandRunner {
+func NewCommandRunner(containerTool string, logger *logrus.Entry) CommandRunner {
 	r := ContainerCommandRunner{
 		logger: logger,
-		containerTool: containerTool,
 	}
+
+	switch containerTool {
+	case Podman:
+		r.containerTool = Podman
+	case Docker:
+		r.containerTool = Docker
+	default:
+		r.containerTool = Podman
+	}
+
 	return &r
 }
 
 // GetToolName returns the container tool this command runner is using
 func (r *ContainerCommandRunner) GetToolName() string {
-	return r.containerTool.String()
+	return r.containerTool
 }
 
 // Pull takes a container image path hosted on a container registry and runs the
@@ -44,9 +60,10 @@ func (r *ContainerCommandRunner) GetToolName() string {
 func (r *ContainerCommandRunner) Pull(image string) error {
 	args := []string{"pull", image}
 
-	command := exec.Command(r.containerTool.String(), args...)
+	command := exec.Command(r.containerTool, args...)
 
-	r.logger.Infof("running %s", command.String())
+	r.logger.Infof("running %s pull", r.containerTool)
+	r.logger.Debugf("%s", command.Args)
 
 	out, err := command.CombinedOutput()
 	if err != nil {
@@ -67,7 +84,7 @@ func (r *ContainerCommandRunner) Build(dockerfile, tag string) error {
 
 	args = append(args, ".")
 
-	command := exec.Command(r.containerTool.String(), args...)
+	command := exec.Command(r.containerTool, args...)
 
 	r.logger.Infof("running %s build", r.containerTool)
 	r.logger.Infof("%s", command.Args)
@@ -86,7 +103,7 @@ func (r *ContainerCommandRunner) Build(dockerfile, tag string) error {
 func (r *ContainerCommandRunner) Save(image, tarFile string) error {
 	args := []string{"save", image, "-o", tarFile}
 
-	command := exec.Command(r.containerTool.String(), args...)
+	command := exec.Command(r.containerTool, args...)
 
 	r.logger.Infof("running %s save", r.containerTool)
 	r.logger.Debugf("%s", command.Args)
@@ -105,7 +122,7 @@ func (r *ContainerCommandRunner) Save(image, tarFile string) error {
 func (r *ContainerCommandRunner) Inspect(image string) ([]byte, error) {
 	args := []string{"inspect", image}
 
-	command := exec.Command(r.containerTool.String(), args...)
+	command := exec.Command(r.containerTool, args...)
 
 	r.logger.Infof("running %s inspect", r.containerTool)
 	r.logger.Debugf("%s", command.Args)

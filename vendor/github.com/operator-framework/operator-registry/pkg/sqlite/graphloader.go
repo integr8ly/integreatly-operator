@@ -9,60 +9,55 @@ import (
 )
 
 type SQLGraphLoader struct {
-	Querier registry.Query
+	Querier     registry.Query
+	PackageName string
 }
 
-func NewSQLGraphLoader(dbFilename string) (*SQLGraphLoader, error) {
+func NewSQLGraphLoader(dbFilename, name string) (*SQLGraphLoader, error) {
 	querier, err := NewSQLLiteQuerier(dbFilename)
 	if err != nil {
 		return nil, err
 	}
 
 	return &SQLGraphLoader{
-		Querier: querier,
+		Querier:     querier,
+		PackageName: name,
 	}, nil
 }
 
-func NewSQLGraphLoaderFromDB(db *sql.DB) (*SQLGraphLoader, error) {
+func NewSQLGraphLoaderFromDB(db *sql.DB, name string) (*SQLGraphLoader, error) {
 	return &SQLGraphLoader{
-		Querier: NewSQLLiteQuerierFromDb(db),
+		Querier:     NewSQLLiteQuerierFromDb(db),
+		PackageName: name,
 	}, nil
 }
 
-func (g *SQLGraphLoader) Generate(packageName string) (*registry.Package, error) {
-	graph := &registry.Package{
-		Name:     packageName,
-		Channels: make(map[string]registry.Channel, 0),
-	}
-
+func (g *SQLGraphLoader) Generate() (*registry.Package, error) {
 	ctx := context.TODO()
-	defaultChannel, err := g.Querier.GetDefaultPackage(ctx, packageName)
+	defaultChannel, err := g.Querier.GetDefaultPackage(ctx, g.PackageName)
 	if err != nil {
-		return graph, registry.ErrPackageNotInDatabase
-	}
-	graph.DefaultChannel = defaultChannel
-
-	channelEntries, err := g.Querier.GetChannelEntriesFromPackage(ctx, packageName)
-	if err != nil {
-		return graph, err
+		return nil, err
 	}
 
-	existingBundles, err := g.Querier.GetBundlesForPackage(ctx, packageName)
+	channelEntries, err := g.Querier.GetChannelEntriesFromPackage(ctx, g.PackageName)
 	if err != nil {
-		return graph, err
+		return nil, err
 	}
 
-	channels, err := graphFromEntries(channelEntries, existingBundles)
+	channels, err := graphFromEntries(channelEntries)
 	if err != nil {
-		return graph, err
+		return nil, err
 	}
-	graph.Channels = channels
 
-	return graph, nil
+	return &registry.Package{
+		Name:           g.PackageName,
+		DefaultChannel: defaultChannel,
+		Channels:       channels,
+	}, nil
 }
 
 // graphFromEntries builds the graph from a set of channel entries
-func graphFromEntries(channelEntries []registry.ChannelEntryAnnotated, existingBundles map[registry.BundleKey]struct{}) (map[string]registry.Channel, error) {
+func graphFromEntries(channelEntries []registry.ChannelEntryAnnotated) (map[string]registry.Channel, error) {
 	channels := map[string]registry.Channel{}
 
 	type replaces map[registry.BundleKey]map[registry.BundleKey]struct{}
@@ -82,12 +77,6 @@ func graphFromEntries(channelEntries []registry.ChannelEntryAnnotated, existingB
 			Version:    entry.Version,
 			CsvName:    entry.BundleName,
 		}
-
-		// skip synthetic channelentries that aren't pointers to actual bundles
-		if _, ok := existingBundles[key]; !ok {
-			continue
-		}
-
 		channelGraph[entry.ChannelName][key] = map[registry.BundleKey]struct{}{}
 
 		// every bundle in a channel is a potential head of that channel
@@ -105,7 +94,7 @@ func graphFromEntries(channelEntries []registry.ChannelEntryAnnotated, existingB
 			CsvName:    entry.BundleName,
 		}
 		replacesKey := registry.BundleKey{
-			BundlePath: entry.ReplacesBundlePath,
+			BundlePath: entry.BundlePath,
 			Version:    entry.ReplacesVersion,
 			CsvName:    entry.Replaces,
 		}

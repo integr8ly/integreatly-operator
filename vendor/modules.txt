@@ -135,37 +135,21 @@ github.com/cespare/xxhash/v2
 # github.com/containerd/cgroups v0.0.0-20190919134610-bf292b21730f
 github.com/containerd/cgroups/stats/v1
 # github.com/containerd/containerd v1.3.2
-github.com/containerd/containerd/archive
 github.com/containerd/containerd/archive/compression
-github.com/containerd/containerd/containers
 github.com/containerd/containerd/content
 github.com/containerd/containerd/content/local
 github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/filters
-github.com/containerd/containerd/gc
-github.com/containerd/containerd/identifiers
 github.com/containerd/containerd/images
 github.com/containerd/containerd/labels
-github.com/containerd/containerd/leases
 github.com/containerd/containerd/log
-github.com/containerd/containerd/metadata
-github.com/containerd/containerd/metadata/boltutil
-github.com/containerd/containerd/mount
-github.com/containerd/containerd/namespaces
 github.com/containerd/containerd/platforms
 github.com/containerd/containerd/reference
 github.com/containerd/containerd/remotes
 github.com/containerd/containerd/remotes/docker
 github.com/containerd/containerd/remotes/docker/schema1
-github.com/containerd/containerd/snapshots
 github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
-# github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
-github.com/containerd/continuity/fs
-github.com/containerd/continuity/syscallx
-github.com/containerd/continuity/sysx
-# github.com/containerd/ttrpc v0.0.0-20190828154514-0e0f228740de
-github.com/containerd/ttrpc
 # github.com/coreos/prometheus-operator v0.40.0 => github.com/coreos/prometheus-operator v0.38.3
 github.com/coreos/prometheus-operator/pkg/apis/monitoring
 github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1
@@ -232,7 +216,7 @@ github.com/docker/docker-credential-helpers/credentials
 # github.com/docker/go-connections v0.4.0
 github.com/docker/go-connections/nat
 github.com/docker/go-connections/tlsconfig
-# github.com/docker/go-metrics v0.0.1
+# github.com/docker/go-metrics v0.0.0-20180209012529-399ea8c73916
 github.com/docker/go-metrics
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
@@ -267,13 +251,13 @@ github.com/go-openapi/analysis/internal
 github.com/go-openapi/errors
 # github.com/go-openapi/jsonpointer v0.19.3
 github.com/go-openapi/jsonpointer
-# github.com/go-openapi/jsonreference v0.19.4
+# github.com/go-openapi/jsonreference v0.19.3
 github.com/go-openapi/jsonreference
 # github.com/go-openapi/loads v0.19.5
 github.com/go-openapi/loads
 # github.com/go-openapi/runtime v0.19.15
 github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.19.9
+# github.com/go-openapi/spec v0.19.9 => github.com/go-openapi/spec v0.19.6
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.19.5
 github.com/go-openapi/strfmt
@@ -301,7 +285,6 @@ github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
-github.com/gogo/protobuf/types
 # github.com/golang-migrate/migrate/v4 v4.6.2
 github.com/golang-migrate/migrate/v4/source
 github.com/golang-migrate/migrate/v4/source/file
@@ -342,7 +325,7 @@ github.com/gophercloud/gophercloud/openstack/identity/v3/extensions/ec2tokens
 github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
 github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
-# github.com/gorilla/mux v1.7.4
+# github.com/gorilla/mux v1.7.3
 github.com/gorilla/mux
 # github.com/gosuri/uitable v0.0.4
 github.com/gosuri/uitable
@@ -463,12 +446,9 @@ github.com/modern-go/reflect2
 github.com/morikuni/aec
 # github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f
 github.com/mxk/go-flowrate/flowrate
-# github.com/onsi/gomega v1.9.0
-github.com/onsi/gomega/gstruct/errors
-github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6
+# github.com/opencontainers/image-spec v1.0.1
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc9
@@ -504,7 +484,7 @@ github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1/fake
 github.com/openshift/cloud-credential-operator/pkg/apis/cloudcredential/v1
 # github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
 github.com/openshift/cluster-samples-operator/pkg/apis/samples/v1
-# github.com/operator-framework/api v0.3.5
+# github.com/operator-framework/api v0.3.5 => github.com/operator-framework/api v0.1.1
 github.com/operator-framework/api/pkg/internal
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/manifests
@@ -514,7 +494,7 @@ github.com/operator-framework/api/pkg/validation
 github.com/operator-framework/api/pkg/validation/errors
 github.com/operator-framework/api/pkg/validation/interfaces
 github.com/operator-framework/api/pkg/validation/internal
-# github.com/operator-framework/operator-lifecycle-manager v3.11.0+incompatible => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191115003340-16619cd27fa5
+# github.com/operator-framework/operator-lifecycle-manager v3.11.0+incompatible => github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1
@@ -524,16 +504,12 @@ github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version
 github.com/operator-framework/operator-marketplace/pkg/apis/operators/shared
 github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1
 github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2
-# github.com/operator-framework/operator-registry v1.12.2
+# github.com/operator-framework/operator-registry v1.12.2 => github.com/operator-framework/operator-registry v1.6.2-0.20200330184612-11867930adb5
 github.com/operator-framework/operator-registry/pkg/api
 github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1
 github.com/operator-framework/operator-registry/pkg/client
 github.com/operator-framework/operator-registry/pkg/containertools
-github.com/operator-framework/operator-registry/pkg/image
-github.com/operator-framework/operator-registry/pkg/image/containerdregistry
-github.com/operator-framework/operator-registry/pkg/image/execregistry
 github.com/operator-framework/operator-registry/pkg/lib/bundle
-github.com/operator-framework/operator-registry/pkg/lib/validation
 github.com/operator-framework/operator-registry/pkg/registry
 github.com/operator-framework/operator-registry/pkg/sqlite
 github.com/operator-framework/operator-registry/pkg/sqlite/migrations
@@ -683,8 +659,6 @@ github.com/xeipuuv/gojsonpointer
 github.com/xeipuuv/gojsonreference
 # github.com/xeipuuv/gojsonschema v1.1.0
 github.com/xeipuuv/gojsonschema
-# go.etcd.io/bbolt v1.3.4
-go.etcd.io/bbolt
 # go.mongodb.org/mongo-driver v1.3.2
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
@@ -750,7 +724,7 @@ golang.org/x/sync/semaphore
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.3
+# golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
@@ -1178,6 +1152,9 @@ k8s.io/helm/pkg/version
 k8s.io/klog
 # k8s.io/klog/v2 v2.0.0
 k8s.io/klog/v2
+# k8s.io/kube-aggregator v0.17.3 => k8s.io/kube-aggregator v0.17.4
+k8s.io/kube-aggregator/pkg/apis/apiregistration
+k8s.io/kube-aggregator/pkg/apis/apiregistration/v1
 # k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
@@ -1190,7 +1167,7 @@ k8s.io/kube-openapi/pkg/util/sets
 # k8s.io/kube-state-metrics v1.7.2
 k8s.io/kube-state-metrics/pkg/metric
 k8s.io/kube-state-metrics/pkg/metrics_store
-# k8s.io/kubectl v0.18.0 => k8s.io/kubectl v0.17.4
+# k8s.io/kubectl v0.17.4 => k8s.io/kubectl v0.17.4
 k8s.io/kubectl/pkg/cmd/util
 k8s.io/kubectl/pkg/scheme
 k8s.io/kubectl/pkg/util
@@ -1248,7 +1225,7 @@ sigs.k8s.io/controller-runtime/pkg/webhook/admission
 sigs.k8s.io/controller-runtime/pkg/webhook/conversion
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/certwatcher
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
-# sigs.k8s.io/controller-tools v0.3.0
+# sigs.k8s.io/controller-tools v0.2.8
 sigs.k8s.io/controller-tools/pkg/crd
 sigs.k8s.io/controller-tools/pkg/crd/markers
 sigs.k8s.io/controller-tools/pkg/genall
