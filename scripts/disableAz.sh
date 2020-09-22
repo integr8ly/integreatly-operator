@@ -69,7 +69,7 @@ if $DISABLE; then
     echo "Removing existing NetworkAclId-restore.tmp file"
     rm NetworkAclId-restore.tmp
   fi
-  if [ -f "NetworkAclId.tmp"];  then
+  if [ -f "NetworkAclId.tmp" ];  then
     echo "Removing existing NetworkAclId.tmp file"
     rm NetworkAclId.tmp
   fi
