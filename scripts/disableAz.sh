@@ -93,7 +93,7 @@ else
   echo "Re-enable AvailabilityZone"
   for SUBNETID in $(aws ec2 describe-subnets --region ${AZ%?} | jq ".Subnets[] | select(.AvailabilityZone==\"$AZ\")" | jq -r '.SubnetId')
   do
-    aws ec2 describe-network-acls --region ${AZ:?} | jq -r ".[] | .[].Associations[] | select(.SubnetId==\"$SUBNETID\")" | jq -r '.NetworkAclAssociationId' >> NetworkAclAssociationId-restore.tmp
+    aws ec2 describe-network-acls --region ${AZ%?} | jq -r ".[] | .[].Associations[] | select(.SubnetId==\"$SUBNETID\")" | jq -r '.NetworkAclAssociationId' >> NetworkAclAssociationId-restore.tmp
   done
 
   # Restore the subnets to the original ACL's
