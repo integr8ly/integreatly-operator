@@ -183,7 +183,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	} else if len(installationList.Items) == 1 {
 		installation = &installationList.Items[0]
 	} else {
-		return fmt.Errorf("Too many rhmi resources found. Expecting 1, found %s rhmi resources in %s namespace", string(len(installationList.Items)), namespace)
+		return fmt.Errorf("too many rhmi resources found. Expecting 1, found %d rhmi resources in %s namespace", len(installationList.Items), namespace)
 	}
 
 	return nil

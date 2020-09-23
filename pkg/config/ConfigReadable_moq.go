@@ -9,16 +9,6 @@ import (
 	"sync"
 )
 
-var (
-	lockConfigReadableMockGetHost            sync.RWMutex
-	lockConfigReadableMockGetNamespace       sync.RWMutex
-	lockConfigReadableMockGetOperatorVersion sync.RWMutex
-	lockConfigReadableMockGetProductName     sync.RWMutex
-	lockConfigReadableMockGetProductVersion  sync.RWMutex
-	lockConfigReadableMockGetWatchableCRDs   sync.RWMutex
-	lockConfigReadableMockRead               sync.RWMutex
-)
-
 // Ensure, that ConfigReadableMock does implement ConfigReadable.
 // If this is not the case, regenerate this file with moq.
 var _ ConfigReadable = &ConfigReadableMock{}
@@ -102,6 +92,13 @@ type ConfigReadableMock struct {
 		Read []struct {
 		}
 	}
+	lockGetHost            sync.RWMutex
+	lockGetNamespace       sync.RWMutex
+	lockGetOperatorVersion sync.RWMutex
+	lockGetProductName     sync.RWMutex
+	lockGetProductVersion  sync.RWMutex
+	lockGetWatchableCRDs   sync.RWMutex
+	lockRead               sync.RWMutex
 }
 
 // GetHost calls GetHostFunc.
@@ -111,9 +108,9 @@ func (mock *ConfigReadableMock) GetHost() string {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetHost.Lock()
+	mock.lockGetHost.Lock()
 	mock.calls.GetHost = append(mock.calls.GetHost, callInfo)
-	lockConfigReadableMockGetHost.Unlock()
+	mock.lockGetHost.Unlock()
 	return mock.GetHostFunc()
 }
 
@@ -124,9 +121,9 @@ func (mock *ConfigReadableMock) GetHostCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetHost.RLock()
+	mock.lockGetHost.RLock()
 	calls = mock.calls.GetHost
-	lockConfigReadableMockGetHost.RUnlock()
+	mock.lockGetHost.RUnlock()
 	return calls
 }
 
@@ -137,9 +134,9 @@ func (mock *ConfigReadableMock) GetNamespace() string {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetNamespace.Lock()
+	mock.lockGetNamespace.Lock()
 	mock.calls.GetNamespace = append(mock.calls.GetNamespace, callInfo)
-	lockConfigReadableMockGetNamespace.Unlock()
+	mock.lockGetNamespace.Unlock()
 	return mock.GetNamespaceFunc()
 }
 
@@ -150,9 +147,9 @@ func (mock *ConfigReadableMock) GetNamespaceCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetNamespace.RLock()
+	mock.lockGetNamespace.RLock()
 	calls = mock.calls.GetNamespace
-	lockConfigReadableMockGetNamespace.RUnlock()
+	mock.lockGetNamespace.RUnlock()
 	return calls
 }
 
@@ -163,9 +160,9 @@ func (mock *ConfigReadableMock) GetOperatorVersion() v1alpha1.OperatorVersion {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetOperatorVersion.Lock()
+	mock.lockGetOperatorVersion.Lock()
 	mock.calls.GetOperatorVersion = append(mock.calls.GetOperatorVersion, callInfo)
-	lockConfigReadableMockGetOperatorVersion.Unlock()
+	mock.lockGetOperatorVersion.Unlock()
 	return mock.GetOperatorVersionFunc()
 }
 
@@ -176,9 +173,9 @@ func (mock *ConfigReadableMock) GetOperatorVersionCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetOperatorVersion.RLock()
+	mock.lockGetOperatorVersion.RLock()
 	calls = mock.calls.GetOperatorVersion
-	lockConfigReadableMockGetOperatorVersion.RUnlock()
+	mock.lockGetOperatorVersion.RUnlock()
 	return calls
 }
 
@@ -189,9 +186,9 @@ func (mock *ConfigReadableMock) GetProductName() v1alpha1.ProductName {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetProductName.Lock()
+	mock.lockGetProductName.Lock()
 	mock.calls.GetProductName = append(mock.calls.GetProductName, callInfo)
-	lockConfigReadableMockGetProductName.Unlock()
+	mock.lockGetProductName.Unlock()
 	return mock.GetProductNameFunc()
 }
 
@@ -202,9 +199,9 @@ func (mock *ConfigReadableMock) GetProductNameCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetProductName.RLock()
+	mock.lockGetProductName.RLock()
 	calls = mock.calls.GetProductName
-	lockConfigReadableMockGetProductName.RUnlock()
+	mock.lockGetProductName.RUnlock()
 	return calls
 }
 
@@ -215,9 +212,9 @@ func (mock *ConfigReadableMock) GetProductVersion() v1alpha1.ProductVersion {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetProductVersion.Lock()
+	mock.lockGetProductVersion.Lock()
 	mock.calls.GetProductVersion = append(mock.calls.GetProductVersion, callInfo)
-	lockConfigReadableMockGetProductVersion.Unlock()
+	mock.lockGetProductVersion.Unlock()
 	return mock.GetProductVersionFunc()
 }
 
@@ -228,9 +225,9 @@ func (mock *ConfigReadableMock) GetProductVersionCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetProductVersion.RLock()
+	mock.lockGetProductVersion.RLock()
 	calls = mock.calls.GetProductVersion
-	lockConfigReadableMockGetProductVersion.RUnlock()
+	mock.lockGetProductVersion.RUnlock()
 	return calls
 }
 
@@ -241,9 +238,9 @@ func (mock *ConfigReadableMock) GetWatchableCRDs() []runtime.Object {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockGetWatchableCRDs.Lock()
+	mock.lockGetWatchableCRDs.Lock()
 	mock.calls.GetWatchableCRDs = append(mock.calls.GetWatchableCRDs, callInfo)
-	lockConfigReadableMockGetWatchableCRDs.Unlock()
+	mock.lockGetWatchableCRDs.Unlock()
 	return mock.GetWatchableCRDsFunc()
 }
 
@@ -254,9 +251,9 @@ func (mock *ConfigReadableMock) GetWatchableCRDsCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockGetWatchableCRDs.RLock()
+	mock.lockGetWatchableCRDs.RLock()
 	calls = mock.calls.GetWatchableCRDs
-	lockConfigReadableMockGetWatchableCRDs.RUnlock()
+	mock.lockGetWatchableCRDs.RUnlock()
 	return calls
 }
 
@@ -267,9 +264,9 @@ func (mock *ConfigReadableMock) Read() ProductConfig {
 	}
 	callInfo := struct {
 	}{}
-	lockConfigReadableMockRead.Lock()
+	mock.lockRead.Lock()
 	mock.calls.Read = append(mock.calls.Read, callInfo)
-	lockConfigReadableMockRead.Unlock()
+	mock.lockRead.Unlock()
 	return mock.ReadFunc()
 }
 
@@ -280,8 +277,8 @@ func (mock *ConfigReadableMock) ReadCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockConfigReadableMockRead.RLock()
+	mock.lockRead.RLock()
 	calls = mock.calls.Read
-	lockConfigReadableMockRead.RUnlock()
+	mock.lockRead.RUnlock()
 	return calls
 }

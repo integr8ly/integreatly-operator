@@ -48,7 +48,7 @@ func TestIntegreatly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
-	ctx := framework.NewTestCtx(t)
+	ctx := framework.NewContext(t)
 	err = ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
@@ -117,7 +117,7 @@ func TestIntegreatly(t *testing.T) {
 	}
 }
 
-func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, product, deploymentName string) error {
+func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framework.Context, product, deploymentName string) error {
 	namespace := ""
 	if deploymentName != "enmasse-operator" {
 		namespace = common.NamespacePrefix + product + "-operator"
@@ -142,7 +142,7 @@ func waitForProductDeployment(t *testing.T, f *framework.Framework, ctx *framewo
 	return nil
 }
 
-func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework.Context) error {
 
 	installType, err := common.GetInstallType(f.KubeConfig)
 	if err != nil {
@@ -273,7 +273,7 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 	return nil
 }
 
-func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Context) error {
 	namespace, err := ctx.GetNamespace()
 	// Create SMTP Secret
 	installationPrefix, found := os.LookupEnv("INSTALLATION_PREFIX")

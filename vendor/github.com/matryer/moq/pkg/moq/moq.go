@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -18,11 +19,12 @@ import (
 
 // Mocker can generate mock structs.
 type Mocker struct {
-	srcPkg  *packages.Package
-	tmpl    *template.Template
-	pkgName string
-	pkgPath string
-	fmter   func(src []byte) ([]byte, error)
+	srcPkg   *packages.Package
+	tmpl     *template.Template
+	pkgName  string
+	pkgPath  string
+	fmter    func(src []byte) ([]byte, error)
+	stubImpl bool
 
 	imports map[string]bool
 }
@@ -33,6 +35,7 @@ type Config struct {
 	SrcDir    string
 	PkgName   string
 	Formatter string
+	StubImpl  bool
 }
 
 // New makes a new Mocker for the specified package directory.
@@ -58,17 +61,21 @@ func New(conf Config) (*Mocker, error) {
 	}
 
 	fmter := gofmt
-	if conf.Formatter == "goimports" {
+	switch conf.Formatter {
+	case "goimports":
 		fmter = goimports
+	case "noop":
+		fmter = noopFmt
 	}
 
 	return &Mocker{
-		tmpl:    tmpl,
-		srcPkg:  srcPkg,
-		pkgName: pkgName,
-		pkgPath: pkgPath,
-		fmter:   fmter,
-		imports: make(map[string]bool),
+		tmpl:     tmpl,
+		srcPkg:   srcPkg,
+		pkgName:  pkgName,
+		pkgPath:  pkgPath,
+		fmter:    fmter,
+		stubImpl: conf.StubImpl,
+		imports:  make(map[string]bool),
 	}, nil
 }
 
@@ -106,6 +113,7 @@ func (m *Mocker) Mock(w io.Writer, names ...string) error {
 	doc := doc{
 		PackageName: m.pkgName,
 		Imports:     moqImports,
+		StubImpl:    m.stubImpl,
 	}
 
 	mocksMethods := false
@@ -133,8 +141,7 @@ func (m *Mocker) Mock(w io.Writer, names ...string) error {
 				Name: meth.Name(),
 			}
 			obj.Methods = append(obj.Methods, method)
-			method.Params = m.extractArgs(sig, sig.Params(), "in%d")
-			method.Returns = m.extractArgs(sig, sig.Results(), "out%d")
+			method.Params, method.Returns = m.extractArgs(sig)
 		}
 		doc.Objects = append(doc.Objects, obj)
 	}
@@ -182,26 +189,30 @@ func (m *Mocker) packageQualifier(pkg *types.Package) string {
 	return pkg.Name()
 }
 
-func (m *Mocker) extractArgs(sig *types.Signature, list *types.Tuple, nameFormat string) []*param {
-	var params []*param
-	listLen := list.Len()
-	for ii := 0; ii < listLen; ii++ {
-		p := list.At(ii)
-		name := p.Name()
-		if name == "" {
-			name = fmt.Sprintf(nameFormat, ii+1)
-		}
-		typename := types.TypeString(p.Type(), m.packageQualifier)
+func (m *Mocker) extractArgs(sig *types.Signature) (params, results []*param) {
+	pp := sig.Params()
+	for i := 0; i < pp.Len(); i++ {
+		p := m.buildParam(pp.At(i), "in"+strconv.Itoa(i+1))
 		// check for final variadic argument
-		variadic := sig.Variadic() && ii == listLen-1 && typename[0:2] == "[]"
-		param := &param{
-			Name:     name,
-			Type:     typename,
-			Variadic: variadic,
-		}
-		params = append(params, param)
+		p.Variadic = sig.Variadic() && i == pp.Len()-1 && p.Type[0:2] == "[]"
+		params = append(params, p)
 	}
-	return params
+
+	rr := sig.Results()
+	for i := 0; i < rr.Len(); i++ {
+		results = append(results, m.buildParam(rr.At(i), "out"+strconv.Itoa(i+1)))
+	}
+
+	return
+}
+
+func (m *Mocker) buildParam(v *types.Var, fallbackName string) *param {
+	name := v.Name()
+	if name == "" || name == "_" {
+		name = fallbackName
+	}
+	typ := types.TypeString(v.Type(), m.packageQualifier)
+	return &param{Name: name, Type: typ}
 }
 
 func pkgInfoFromPath(srcDir string, mode packages.LoadMode) (*packages.Package, error) {
@@ -217,6 +228,12 @@ func pkgInfoFromPath(srcDir string, mode packages.LoadMode) (*packages.Package, 
 	}
 	if len(pkgs) > 1 {
 		return nil, errors.New("More than one package was found")
+	}
+	if errs := pkgs[0].Errors; len(errs) != 0 {
+		if len(errs) == 1 {
+			return nil, errs[0]
+		}
+		return nil, fmt.Errorf("%s (and %d more errors)", errs[0], len(errs)-1)
 	}
 	return pkgs[0], nil
 }
@@ -236,6 +253,7 @@ type doc struct {
 	SourcePackagePrefix string
 	Objects             []obj
 	Imports             []string
+	StubImpl            bool
 }
 
 type obj struct {
@@ -265,13 +283,21 @@ func (m *method) ArgCallList() string {
 	return strings.Join(params, ", ")
 }
 
-func (m *method) ReturnArglist() string {
+func (m *method) ReturnArgTypeList() string {
 	params := make([]string, len(m.Returns))
 	for i, p := range m.Returns {
 		params[i] = p.TypeString()
 	}
 	if len(m.Returns) > 1 {
 		return fmt.Sprintf("(%s)", strings.Join(params, ", "))
+	}
+	return strings.Join(params, ", ")
+}
+
+func (m *method) ReturnArgNameList() string {
+	params := make([]string, len(m.Returns))
+	for i, p := range m.Returns {
+		params[i] = p.Name
 	}
 	return strings.Join(params, ", ")
 }

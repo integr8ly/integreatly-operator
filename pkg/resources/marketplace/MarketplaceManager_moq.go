@@ -10,11 +10,6 @@ import (
 	"sync"
 )
 
-var (
-	lockMarketplaceInterfaceMockGetSubscriptionInstallPlans sync.RWMutex
-	lockMarketplaceInterfaceMockInstallOperator             sync.RWMutex
-)
-
 // Ensure, that MarketplaceInterfaceMock does implement MarketplaceInterface.
 // If this is not the case, regenerate this file with moq.
 var _ MarketplaceInterface = &MarketplaceInterfaceMock{}
@@ -73,6 +68,8 @@ type MarketplaceInterfaceMock struct {
 			CatalogSourceReconciler CatalogSourceReconciler
 		}
 	}
+	lockGetSubscriptionInstallPlans sync.RWMutex
+	lockInstallOperator             sync.RWMutex
 }
 
 // GetSubscriptionInstallPlans calls GetSubscriptionInstallPlansFunc.
@@ -91,9 +88,9 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlans(ctx context.Co
 		SubName:      subName,
 		Ns:           ns,
 	}
-	lockMarketplaceInterfaceMockGetSubscriptionInstallPlans.Lock()
+	mock.lockGetSubscriptionInstallPlans.Lock()
 	mock.calls.GetSubscriptionInstallPlans = append(mock.calls.GetSubscriptionInstallPlans, callInfo)
-	lockMarketplaceInterfaceMockGetSubscriptionInstallPlans.Unlock()
+	mock.lockGetSubscriptionInstallPlans.Unlock()
 	return mock.GetSubscriptionInstallPlansFunc(ctx, serverClient, subName, ns)
 }
 
@@ -112,9 +109,9 @@ func (mock *MarketplaceInterfaceMock) GetSubscriptionInstallPlansCalls() []struc
 		SubName      string
 		Ns           string
 	}
-	lockMarketplaceInterfaceMockGetSubscriptionInstallPlans.RLock()
+	mock.lockGetSubscriptionInstallPlans.RLock()
 	calls = mock.calls.GetSubscriptionInstallPlans
-	lockMarketplaceInterfaceMockGetSubscriptionInstallPlans.RUnlock()
+	mock.lockGetSubscriptionInstallPlans.RUnlock()
 	return calls
 }
 
@@ -138,9 +135,9 @@ func (mock *MarketplaceInterfaceMock) InstallOperator(ctx context.Context, serve
 		ApprovalStrategy:        approvalStrategy,
 		CatalogSourceReconciler: catalogSourceReconciler,
 	}
-	lockMarketplaceInterfaceMockInstallOperator.Lock()
+	mock.lockInstallOperator.Lock()
 	mock.calls.InstallOperator = append(mock.calls.InstallOperator, callInfo)
-	lockMarketplaceInterfaceMockInstallOperator.Unlock()
+	mock.lockInstallOperator.Unlock()
 	return mock.InstallOperatorFunc(ctx, serverClient, t, operatorGroupNamespaces, approvalStrategy, catalogSourceReconciler)
 }
 
@@ -163,8 +160,8 @@ func (mock *MarketplaceInterfaceMock) InstallOperatorCalls() []struct {
 		ApprovalStrategy        v1alpha1.Approval
 		CatalogSourceReconciler CatalogSourceReconciler
 	}
-	lockMarketplaceInterfaceMockInstallOperator.RLock()
+	mock.lockInstallOperator.RLock()
 	calls = mock.calls.InstallOperator
-	lockMarketplaceInterfaceMockInstallOperator.RUnlock()
+	mock.lockInstallOperator.RUnlock()
 	return calls
 }

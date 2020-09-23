@@ -8,7 +8,7 @@ metadata:
           "apiVersion": "apps.3scale.net/v1alpha1",
           "kind": "APIManager",
           "metadata": {
-            "name": "example-apimanager"
+            "name": "example-apimanagerStrategySpecRaw"
           },
           "spec": {
             "wildcardDomain": "example.com"

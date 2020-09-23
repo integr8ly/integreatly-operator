@@ -8,20 +8,6 @@ import (
 	"sync"
 )
 
-var (
-	lockThreeScaleInterfaceMockAddAuthenticationProvider       sync.RWMutex
-	lockThreeScaleInterfaceMockAddUser                         sync.RWMutex
-	lockThreeScaleInterfaceMockDeleteUser                      sync.RWMutex
-	lockThreeScaleInterfaceMockGetAuthenticationProviderByName sync.RWMutex
-	lockThreeScaleInterfaceMockGetAuthenticationProviders      sync.RWMutex
-	lockThreeScaleInterfaceMockGetUser                         sync.RWMutex
-	lockThreeScaleInterfaceMockGetUsers                        sync.RWMutex
-	lockThreeScaleInterfaceMockSetNamespace                    sync.RWMutex
-	lockThreeScaleInterfaceMockSetUserAsAdmin                  sync.RWMutex
-	lockThreeScaleInterfaceMockSetUserAsMember                 sync.RWMutex
-	lockThreeScaleInterfaceMockUpdateUser                      sync.RWMutex
-)
-
 // Ensure, that ThreeScaleInterfaceMock does implement ThreeScaleInterface.
 // If this is not the case, regenerate this file with moq.
 var _ ThreeScaleInterface = &ThreeScaleInterfaceMock{}
@@ -187,6 +173,17 @@ type ThreeScaleInterfaceMock struct {
 			AccessToken string
 		}
 	}
+	lockAddAuthenticationProvider       sync.RWMutex
+	lockAddUser                         sync.RWMutex
+	lockDeleteUser                      sync.RWMutex
+	lockGetAuthenticationProviderByName sync.RWMutex
+	lockGetAuthenticationProviders      sync.RWMutex
+	lockGetUser                         sync.RWMutex
+	lockGetUsers                        sync.RWMutex
+	lockSetNamespace                    sync.RWMutex
+	lockSetUserAsAdmin                  sync.RWMutex
+	lockSetUserAsMember                 sync.RWMutex
+	lockUpdateUser                      sync.RWMutex
 }
 
 // AddAuthenticationProvider calls AddAuthenticationProviderFunc.
@@ -201,9 +198,9 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProvider(data map[string]s
 		Data:        data,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockAddAuthenticationProvider.Lock()
+	mock.lockAddAuthenticationProvider.Lock()
 	mock.calls.AddAuthenticationProvider = append(mock.calls.AddAuthenticationProvider, callInfo)
-	lockThreeScaleInterfaceMockAddAuthenticationProvider.Unlock()
+	mock.lockAddAuthenticationProvider.Unlock()
 	return mock.AddAuthenticationProviderFunc(data, accessToken)
 }
 
@@ -218,9 +215,9 @@ func (mock *ThreeScaleInterfaceMock) AddAuthenticationProviderCalls() []struct {
 		Data        map[string]string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockAddAuthenticationProvider.RLock()
+	mock.lockAddAuthenticationProvider.RLock()
 	calls = mock.calls.AddAuthenticationProvider
-	lockThreeScaleInterfaceMockAddAuthenticationProvider.RUnlock()
+	mock.lockAddAuthenticationProvider.RUnlock()
 	return calls
 }
 
@@ -240,9 +237,9 @@ func (mock *ThreeScaleInterfaceMock) AddUser(username string, email string, pass
 		Password:    password,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockAddUser.Lock()
+	mock.lockAddUser.Lock()
 	mock.calls.AddUser = append(mock.calls.AddUser, callInfo)
-	lockThreeScaleInterfaceMockAddUser.Unlock()
+	mock.lockAddUser.Unlock()
 	return mock.AddUserFunc(username, email, password, accessToken)
 }
 
@@ -261,9 +258,9 @@ func (mock *ThreeScaleInterfaceMock) AddUserCalls() []struct {
 		Password    string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockAddUser.RLock()
+	mock.lockAddUser.RLock()
 	calls = mock.calls.AddUser
-	lockThreeScaleInterfaceMockAddUser.RUnlock()
+	mock.lockAddUser.RUnlock()
 	return calls
 }
 
@@ -279,9 +276,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteUser(userID int, accessToken string) 
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockDeleteUser.Lock()
+	mock.lockDeleteUser.Lock()
 	mock.calls.DeleteUser = append(mock.calls.DeleteUser, callInfo)
-	lockThreeScaleInterfaceMockDeleteUser.Unlock()
+	mock.lockDeleteUser.Unlock()
 	return mock.DeleteUserFunc(userID, accessToken)
 }
 
@@ -296,9 +293,9 @@ func (mock *ThreeScaleInterfaceMock) DeleteUserCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockDeleteUser.RLock()
+	mock.lockDeleteUser.RLock()
 	calls = mock.calls.DeleteUser
-	lockThreeScaleInterfaceMockDeleteUser.RUnlock()
+	mock.lockDeleteUser.RUnlock()
 	return calls
 }
 
@@ -314,9 +311,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByName(name string
 		Name:        name,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Lock()
+	mock.lockGetAuthenticationProviderByName.Lock()
 	mock.calls.GetAuthenticationProviderByName = append(mock.calls.GetAuthenticationProviderByName, callInfo)
-	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.Unlock()
+	mock.lockGetAuthenticationProviderByName.Unlock()
 	return mock.GetAuthenticationProviderByNameFunc(name, accessToken)
 }
 
@@ -331,9 +328,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviderByNameCalls() []st
 		Name        string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RLock()
+	mock.lockGetAuthenticationProviderByName.RLock()
 	calls = mock.calls.GetAuthenticationProviderByName
-	lockThreeScaleInterfaceMockGetAuthenticationProviderByName.RUnlock()
+	mock.lockGetAuthenticationProviderByName.RUnlock()
 	return calls
 }
 
@@ -347,9 +344,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProviders(accessToken stri
 	}{
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockGetAuthenticationProviders.Lock()
+	mock.lockGetAuthenticationProviders.Lock()
 	mock.calls.GetAuthenticationProviders = append(mock.calls.GetAuthenticationProviders, callInfo)
-	lockThreeScaleInterfaceMockGetAuthenticationProviders.Unlock()
+	mock.lockGetAuthenticationProviders.Unlock()
 	return mock.GetAuthenticationProvidersFunc(accessToken)
 }
 
@@ -362,9 +359,9 @@ func (mock *ThreeScaleInterfaceMock) GetAuthenticationProvidersCalls() []struct 
 	var calls []struct {
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockGetAuthenticationProviders.RLock()
+	mock.lockGetAuthenticationProviders.RLock()
 	calls = mock.calls.GetAuthenticationProviders
-	lockThreeScaleInterfaceMockGetAuthenticationProviders.RUnlock()
+	mock.lockGetAuthenticationProviders.RUnlock()
 	return calls
 }
 
@@ -380,9 +377,9 @@ func (mock *ThreeScaleInterfaceMock) GetUser(username string, accessToken string
 		Username:    username,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockGetUser.Lock()
+	mock.lockGetUser.Lock()
 	mock.calls.GetUser = append(mock.calls.GetUser, callInfo)
-	lockThreeScaleInterfaceMockGetUser.Unlock()
+	mock.lockGetUser.Unlock()
 	return mock.GetUserFunc(username, accessToken)
 }
 
@@ -397,9 +394,9 @@ func (mock *ThreeScaleInterfaceMock) GetUserCalls() []struct {
 		Username    string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockGetUser.RLock()
+	mock.lockGetUser.RLock()
 	calls = mock.calls.GetUser
-	lockThreeScaleInterfaceMockGetUser.RUnlock()
+	mock.lockGetUser.RUnlock()
 	return calls
 }
 
@@ -413,9 +410,9 @@ func (mock *ThreeScaleInterfaceMock) GetUsers(accessToken string) (*Users, error
 	}{
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockGetUsers.Lock()
+	mock.lockGetUsers.Lock()
 	mock.calls.GetUsers = append(mock.calls.GetUsers, callInfo)
-	lockThreeScaleInterfaceMockGetUsers.Unlock()
+	mock.lockGetUsers.Unlock()
 	return mock.GetUsersFunc(accessToken)
 }
 
@@ -428,9 +425,9 @@ func (mock *ThreeScaleInterfaceMock) GetUsersCalls() []struct {
 	var calls []struct {
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockGetUsers.RLock()
+	mock.lockGetUsers.RLock()
 	calls = mock.calls.GetUsers
-	lockThreeScaleInterfaceMockGetUsers.RUnlock()
+	mock.lockGetUsers.RUnlock()
 	return calls
 }
 
@@ -444,9 +441,9 @@ func (mock *ThreeScaleInterfaceMock) SetNamespace(ns string) {
 	}{
 		Ns: ns,
 	}
-	lockThreeScaleInterfaceMockSetNamespace.Lock()
+	mock.lockSetNamespace.Lock()
 	mock.calls.SetNamespace = append(mock.calls.SetNamespace, callInfo)
-	lockThreeScaleInterfaceMockSetNamespace.Unlock()
+	mock.lockSetNamespace.Unlock()
 	mock.SetNamespaceFunc(ns)
 }
 
@@ -459,9 +456,9 @@ func (mock *ThreeScaleInterfaceMock) SetNamespaceCalls() []struct {
 	var calls []struct {
 		Ns string
 	}
-	lockThreeScaleInterfaceMockSetNamespace.RLock()
+	mock.lockSetNamespace.RLock()
 	calls = mock.calls.SetNamespace
-	lockThreeScaleInterfaceMockSetNamespace.RUnlock()
+	mock.lockSetNamespace.RUnlock()
 	return calls
 }
 
@@ -477,9 +474,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdmin(userID int, accessToken stri
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockSetUserAsAdmin.Lock()
+	mock.lockSetUserAsAdmin.Lock()
 	mock.calls.SetUserAsAdmin = append(mock.calls.SetUserAsAdmin, callInfo)
-	lockThreeScaleInterfaceMockSetUserAsAdmin.Unlock()
+	mock.lockSetUserAsAdmin.Unlock()
 	return mock.SetUserAsAdminFunc(userID, accessToken)
 }
 
@@ -494,9 +491,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsAdminCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockSetUserAsAdmin.RLock()
+	mock.lockSetUserAsAdmin.RLock()
 	calls = mock.calls.SetUserAsAdmin
-	lockThreeScaleInterfaceMockSetUserAsAdmin.RUnlock()
+	mock.lockSetUserAsAdmin.RUnlock()
 	return calls
 }
 
@@ -512,9 +509,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMember(userID int, accessToken str
 		UserID:      userID,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockSetUserAsMember.Lock()
+	mock.lockSetUserAsMember.Lock()
 	mock.calls.SetUserAsMember = append(mock.calls.SetUserAsMember, callInfo)
-	lockThreeScaleInterfaceMockSetUserAsMember.Unlock()
+	mock.lockSetUserAsMember.Unlock()
 	return mock.SetUserAsMemberFunc(userID, accessToken)
 }
 
@@ -529,9 +526,9 @@ func (mock *ThreeScaleInterfaceMock) SetUserAsMemberCalls() []struct {
 		UserID      int
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockSetUserAsMember.RLock()
+	mock.lockSetUserAsMember.RLock()
 	calls = mock.calls.SetUserAsMember
-	lockThreeScaleInterfaceMockSetUserAsMember.RUnlock()
+	mock.lockSetUserAsMember.RUnlock()
 	return calls
 }
 
@@ -551,9 +548,9 @@ func (mock *ThreeScaleInterfaceMock) UpdateUser(userID int, username string, ema
 		Email:       email,
 		AccessToken: accessToken,
 	}
-	lockThreeScaleInterfaceMockUpdateUser.Lock()
+	mock.lockUpdateUser.Lock()
 	mock.calls.UpdateUser = append(mock.calls.UpdateUser, callInfo)
-	lockThreeScaleInterfaceMockUpdateUser.Unlock()
+	mock.lockUpdateUser.Unlock()
 	return mock.UpdateUserFunc(userID, username, email, accessToken)
 }
 
@@ -572,8 +569,8 @@ func (mock *ThreeScaleInterfaceMock) UpdateUserCalls() []struct {
 		Email       string
 		AccessToken string
 	}
-	lockThreeScaleInterfaceMockUpdateUser.RLock()
+	mock.lockUpdateUser.RLock()
 	calls = mock.calls.UpdateUser
-	lockThreeScaleInterfaceMockUpdateUser.RUnlock()
+	mock.lockUpdateUser.RUnlock()
 	return calls
 }
