@@ -105,7 +105,7 @@ setup/service_account:
 	@oc replace --force -f deploy/role.yaml
 	@-oc create -f deploy/service_account.yaml -n $(NAMESPACE)
 	@cat deploy/$(INSTALLATION_PREFIX)/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
