@@ -82,6 +82,27 @@ var rhmi2ExpectedDashboards = []dashboardsTestRule{
 	{
 		Title: "EnMasse Routers",
 	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / Backend",
+	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / Apicast Services",
+	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / Kubernetes / Compute Resources / Namespace (Pods)",
+	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / Kubernetes / Compute Resources / Pod",
+	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / System",
+	},
+	{
+		Title: "redhat-rhmi-3scale / 3scale / Zync",
+	},
+	{
+		Title: "redhat-rhmi-3scale/ 3scale / Apicast",
+	},
 }
 
 func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
