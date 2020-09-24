@@ -369,6 +369,8 @@ github.com/integr8ly/cloud-resource-operator/pkg/client
 github.com/integr8ly/cloud-resource-operator/pkg/providers
 github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
 github.com/integr8ly/cloud-resource-operator/pkg/resources
+# github.com/integr8ly/grafana-operator v2.0.0+incompatible
+github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/keycloak-client v0.1.2

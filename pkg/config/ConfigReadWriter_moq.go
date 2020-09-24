@@ -22,6 +22,7 @@ var (
 	lockConfigReadWriterMockReadDataSync                sync.RWMutex
 	lockConfigReadWriterMockReadFuse                    sync.RWMutex
 	lockConfigReadWriterMockReadFuseOnOpenshift         sync.RWMutex
+	lockConfigReadWriterMockReadGrafana                 sync.RWMutex
 	lockConfigReadWriterMockReadMonitoring              sync.RWMutex
 	lockConfigReadWriterMockReadMonitoringSpec          sync.RWMutex
 	lockConfigReadWriterMockReadProduct                 sync.RWMutex
@@ -82,6 +83,9 @@ var _ ConfigReadWriter = &ConfigReadWriterMock{}
 //             },
 //             ReadFuseOnOpenshiftFunc: func() (*FuseOnOpenshift, error) {
 // 	               panic("mock out the ReadFuseOnOpenshift method")
+//             },
+//             ReadGrafanaFunc: func() (*Grafana, error) {
+// 	               panic("mock out the ReadGrafana method")
 //             },
 //             ReadMonitoringFunc: func() (*Monitoring, error) {
 // 	               panic("mock out the ReadMonitoring method")
@@ -159,6 +163,9 @@ type ConfigReadWriterMock struct {
 	// ReadFuseOnOpenshiftFunc mocks the ReadFuseOnOpenshift method.
 	ReadFuseOnOpenshiftFunc func() (*FuseOnOpenshift, error)
 
+	// ReadGrafanaFunc mocks the ReadGrafana method.
+	ReadGrafanaFunc func() (*Grafana, error)
+
 	// ReadMonitoringFunc mocks the ReadMonitoring method.
 	ReadMonitoringFunc func() (*Monitoring, error)
 
@@ -229,6 +236,9 @@ type ConfigReadWriterMock struct {
 		}
 		// ReadFuseOnOpenshift holds details about calls to the ReadFuseOnOpenshift method.
 		ReadFuseOnOpenshift []struct {
+		}
+		// ReadGrafana holds details about calls to the ReadGrafana method.
+		ReadGrafana []struct {
 		}
 		// ReadMonitoring holds details about calls to the ReadMonitoring method.
 		ReadMonitoring []struct {
@@ -604,6 +614,32 @@ func (mock *ConfigReadWriterMock) ReadFuseOnOpenshiftCalls() []struct {
 	lockConfigReadWriterMockReadFuseOnOpenshift.RLock()
 	calls = mock.calls.ReadFuseOnOpenshift
 	lockConfigReadWriterMockReadFuseOnOpenshift.RUnlock()
+	return calls
+}
+
+// ReadGrafana calls ReadGrafanaFunc.
+func (mock *ConfigReadWriterMock) ReadGrafana() (*Grafana, error) {
+	if mock.ReadGrafanaFunc == nil {
+		panic("ConfigReadWriterMock.ReadGrafanaFunc: method is nil but ConfigReadWriter.ReadGrafana was just called")
+	}
+	callInfo := struct {
+	}{}
+	lockConfigReadWriterMockReadGrafana.Lock()
+	mock.calls.ReadGrafana = append(mock.calls.ReadGrafana, callInfo)
+	lockConfigReadWriterMockReadGrafana.Unlock()
+	return mock.ReadGrafanaFunc()
+}
+
+// ReadGrafanaCalls gets all the calls that were made to ReadGrafana.
+// Check the length with:
+//     len(mockedConfigReadWriter.ReadGrafanaCalls())
+func (mock *ConfigReadWriterMock) ReadGrafanaCalls() []struct {
+} {
+	var calls []struct {
+	}
+	lockConfigReadWriterMockReadGrafana.RLock()
+	calls = mock.calls.ReadGrafana
+	lockConfigReadWriterMockReadGrafana.RUnlock()
 	return calls
 }
 
