@@ -10,5 +10,6 @@ var (
 		{Description: "A25 - Verify standalone RHMI VPC exists and is configured properly", Test: TestStandaloneVPCExists},
 		{Description: "N06 - Verify Legacy cluster VPC is configured properly", Test: TestLegacyClusterVPC},
 		{Description: "F04 - Verify AWS s3 blob storage resources exist", Test: TestAWSs3BlobStorageResourcesExist},
+		{"F09 - Verify correct pod distribution on Multi-AZ cluster", TestMultiAZPodDistribution},
 	}
 )
