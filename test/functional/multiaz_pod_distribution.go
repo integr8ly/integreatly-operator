@@ -6,6 +6,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	v1 "k8s.io/api/core/v1"
 	"math"
+	"os"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"testing"
@@ -23,9 +24,11 @@ var (
 type podDistribution struct {
 	zones     map[string]int
 	podsTotal int
+	namespace string
 }
 
 func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
+	var testErrors []string
 	pods := &v1.PodList{}
 	nodes := &v1.NodeList{}
 
@@ -33,10 +36,24 @@ func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
 
 	availableZones = getAZ(nodes)
 
+	// If "NAMESPACES_TO_CHECK" env var contains a list of namespaces, use that instead of the predefined list
+	namespacesFromEnvVar := os.Getenv("NAMESPACES_TO_CHECK")
+	if namespacesFromEnvVar != "" {
+		namespacesToCheck = strings.Split(namespacesFromEnvVar, ",")
+	}
+
 	for _, ns := range namespacesToCheck {
 		distributionPerOwner := make(map[string]*podDistribution)
 		// Get a list of pods per namespace
-		ctx.Client.List(goctx.TODO(), pods, k8sclient.InNamespace(ns))
+		err := ctx.Client.List(goctx.TODO(), pods, k8sclient.InNamespace(ns))
+		if err != nil {
+			testErrors = append(testErrors, fmt.Sprintf("Can't list pods in the namespace %s, %v", ns, err))
+			continue
+		}
+		if len(pods.Items) == 0 {
+			testErrors = append(testErrors, fmt.Sprintf("A namespace '%s' doesn't contain any pods", ns))
+			continue
+		}
 		for _, pod := range pods.Items {
 			// Skip pods with status "Completed"
 			if pod.Status.Phase == "Succeeded" {
@@ -45,24 +62,29 @@ func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
 			// Get an owner of the pod (ReplicationController, StatefulSet, ...)
 			podOwnerName := pod.OwnerReferences[0].Name
 			// Get a pod's AZ it is currently running in
-			podsAz := getPodZone(pod, nodes)
-			// Save
+			podsAz := getPodZoneName(pod, nodes)
+			// Update the pod distribution for the pods' owner
 			if _, ok := distributionPerOwner[podOwnerName]; ok == false {
-				distributionPerOwner[podOwnerName] = &podDistribution{zones: map[string]int{podsAz: 1}, podsTotal: 1}
+				distributionPerOwner[podOwnerName] = &podDistribution{
+					zones:     map[string]int{podsAz: 1},
+					podsTotal: 1,
+					namespace: ns,
+				}
 			} else {
 				distributionPerOwner[podOwnerName].podsTotal++
 				distributionPerOwner[podOwnerName].zones[podsAz]++
 			}
 
 		}
-		testErrors := testCorrectPodDistribution(distributionPerOwner)
+		testErrors = testCorrectPodDistribution(distributionPerOwner)
+	}
 
-		if len(testErrors) != 0 {
-			t.Fatalf("Error when verifying the pod distribution: %s", testErrors)
-		}
+	if len(testErrors) != 0 {
+		t.Fatalf("\nError when verifying the pod distribution: \n%s", testErrors)
 	}
 }
 
+// Returns a map containing zone names that are currently available
 func getAZ(nodes *v1.NodeList) map[string]bool {
 	zones := make(map[string]bool)
 	for _, node := range nodes.Items {
@@ -77,6 +99,8 @@ func getAZ(nodes *v1.NodeList) map[string]bool {
 	return zones
 }
 
+// Returns true if the node is a "worker" (compute node)
+// and is marked as Ready
 func isNodeWorkerAndReady(node v1.Node) bool {
 	var isWorker bool
 
@@ -97,7 +121,8 @@ func isNodeWorkerAndReady(node v1.Node) bool {
 	return false
 }
 
-func getPodZone(pod v1.Pod, nodes *v1.NodeList) string {
+// Returns an AWS zone the pod is currently running in
+func getPodZoneName(pod v1.Pod, nodes *v1.NodeList) string {
 	for _, node := range nodes.Items {
 		if pod.Spec.NodeName == node.Name {
 			for labelName, labelValue := range node.Labels {
@@ -111,20 +136,29 @@ func getPodZone(pod v1.Pod, nodes *v1.NodeList) string {
 	return ""
 }
 
+// Test whether the pod distribution (per pod owner) is correct
+// and return a slice of errors (strings) if any was encountered
 func testCorrectPodDistribution(dist map[string]*podDistribution) []string {
 	var testErrors []string
 	for podOwner, pd := range dist {
 		minPodsPerZone, maxPodsPerZone := getAllowedNumberOfPodsPerZone(pd.podsTotal)
+		// fmt.Printf("Pods distribution in %s: %+v\n", podOwner, pd)
 		for _, n := range pd.zones {
 			if n == minPodsPerZone || n == maxPodsPerZone {
 				continue
 			}
-			testErrors = append(testErrors, fmt.Sprintf("Pods are not distributed correctly in %s.", podOwner))
+			testErrors = append(testErrors, fmt.Sprintf("Pod owner '%s' pods are not distributed correctly. %+v\n", podOwner, dist))
 		}
 	}
 	return testErrors
 }
 
+// Takes the total number of pods belonging to the pod owner
+// and calculates the minimal and maximal amount of pods that should be running
+// per zone to meet the criteria for uniform pod distribution across the zones
+// Examples:
+// - 5 pods, 3 zones => 5/3 => min 1, max 2 pods per zone
+// - 4 pods, 2 zones => 4/2 => min 2, max 2 pods per zone
 func getAllowedNumberOfPodsPerZone(podsTotal int) (min int, max int) {
 	if podsTotal%len(availableZones) == 0 {
 		min = podsTotal / len(availableZones)
