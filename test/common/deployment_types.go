@@ -258,7 +258,7 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 				continue
 			}
 
-			if deployment.Status.Replicas != product.ExpectedReplicas {
+			if deployment.Status.Replicas < product.ExpectedReplicas {
 				t.Errorf("Deployment %s in namespace %s doesn't match the number of expected replicas. Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -269,7 +269,7 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 			}
 
 			// Verify that the expected replicas are also available, means they are up and running and consumable by users
-			if deployment.Status.AvailableReplicas != product.ExpectedReplicas {
+			if deployment.Status.AvailableReplicas < product.ExpectedReplicas {
 				t.Errorf("Deployment %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -313,7 +313,7 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 				continue
 			}
 
-			if deploymentConfig.Status.Replicas != product.ExpectedReplicas {
+			if deploymentConfig.Status.Replicas < product.ExpectedReplicas {
 				t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected replicas. Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -323,7 +323,7 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 				continue
 			}
 
-			if deploymentConfig.Status.AvailableReplicas != product.ExpectedReplicas {
+			if deploymentConfig.Status.AvailableReplicas < product.ExpectedReplicas {
 				t.Errorf("DeploymentConfig %s in namespace %s doesn't match the number of expected available replicas. Available Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -354,7 +354,7 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 				continue
 			}
 
-			if statefulSet.Status.Replicas != product.ExpectedReplicas {
+			if statefulSet.Status.Replicas < product.ExpectedReplicas {
 				t.Errorf("StatefulSet %s in namespace %s doesn't match the number of expected replicas. Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
@@ -365,7 +365,7 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 			}
 
 			// Verify the number of ReadyReplicas because the SatefulSet doesn't have the concept of AvailableReplicas
-			if statefulSet.Status.ReadyReplicas != product.ExpectedReplicas {
+			if statefulSet.Status.ReadyReplicas < product.ExpectedReplicas {
 				t.Errorf("StatefulSet %s in namespace %s doesn't match the number of expected ready replicas. Ready Replicas: %v / Expected Replicas: %v",
 					product.Name,
 					namespace.Name,
