@@ -26,7 +26,7 @@ func TestIntegreatly(t *testing.T) {
 
 		installType, err := common.GetInstallType(config)
 		if err != nil {
-			t.Fatalf("failed to get install type, err: %s", installType)
+			t.Fatalf("failed to get install type, err: %s, %v", installType, err)
 		}
 
 		// get happy path test cases according to the install type

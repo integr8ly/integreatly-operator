@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	goctx "context"
 	"fmt"
 	"os"
 	"path"
@@ -22,7 +21,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -245,13 +243,12 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 
 func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, namespace string, retryInterval, timeout time.Duration, phase string) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		installation := &integreatlyv1alpha1.RHMI{}
-		err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: common.InstallationName, Namespace: namespace}, installation)
+		installation, err := common.GetRHMI(f.Client.Client, false)
+		if installation == nil {
+			t.Logf("Waiting for availability of rhmi installation in namespace: %s, phase: %s\n", namespace, phase)
+			return false, nil
+		}
 		if err != nil {
-			if apierrors.IsNotFound(err) {
-				t.Logf("Waiting for availability of %s installation in namespace: %s, phase: %s\n", common.InstallationName, namespace, phase)
-				return false, nil
-			}
 			return false, err
 		}
 
@@ -260,7 +257,7 @@ func waitForInstallationStageCompletion(t *testing.T, f *framework.Framework, na
 			return true, nil
 		}
 
-		t.Logf("Waiting for completion of %s\n", phase)
+		t.Logf("Waiting for completion of %s, current state:%s\n", phase, phaseStatus)
 		if installation.Status.LastError != "" {
 			t.Logf("Last Error: %s\n", installation.Status.LastError)
 		}

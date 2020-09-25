@@ -13,8 +13,13 @@ import (
 func AWSRDSResourcesExistTest(t *testing.T, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
 
+	rhmi, err := common.GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
 	// build an array of postgres resources to check and an array of test errors
-	rdsResourceIDs, testErrors := GetRDSResourceIDs(goContext, ctx.Client)
+	rdsResourceIDs, testErrors := GetRDSResourceIDs(goContext, ctx.Client, rhmi)
 
 	if len(testErrors) != 0 {
 		t.Fatalf("test cro postgres exists failed with the following errors : %s", testErrors)

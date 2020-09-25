@@ -9,7 +9,7 @@ import (
 )
 
 func GetRhmiCr(client k8sclient.Client, ctx context.Context, namespace string) (*integreatlyv1alpha1.RHMI, error) {
-	logrus.Infof("Looking for rhmi CR in %s namespace", namespace)
+	logrus.Infof("Looking for RHMI CR in %s namespace", namespace)
 
 	installationList := &integreatlyv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{
