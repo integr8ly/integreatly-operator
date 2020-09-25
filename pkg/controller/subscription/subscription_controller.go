@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"os"
 	"regexp"
 	"time"
@@ -60,7 +61,7 @@ func Add(mgr manager.Manager) error {
 }
 
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := global.NamespacePrefix + "operator"
 
 	restConfig := controllerruntime.GetConfigOrDie()
 	restConfig.Timeout = time.Second * 10

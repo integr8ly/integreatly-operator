@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -284,7 +285,7 @@ func TestShouldReconcileSubscription(t *testing.T) {
 	}{
 		{
 			Name:      "Non matching namespace",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
@@ -295,44 +296,44 @@ func TestShouldReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:      "Not in reconcile name list",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "another",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: false,
 		},
 		{
 			Name:      "\"integreatly\" subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "RHMI Addon subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "Managed API Addon subscription",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-managed-api-service",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 			},
 			ExpectedResult: true,

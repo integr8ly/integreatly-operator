@@ -46,6 +46,7 @@ var (
 					integreatlyv1alpha1.Product3Scale:    {Name: integreatlyv1alpha1.Product3Scale},
 					integreatlyv1alpha1.ProductRHSSOUser: {Name: integreatlyv1alpha1.ProductRHSSOUser},
 					//integreatlyv1alpha1.ProductMarin3r:   {Name: integreatlyv1alpha1.ProductMarin3r},
+					integreatlyv1alpha1.ProductGrafana: {Name: integreatlyv1alpha1.ProductGrafana},
 				},
 			},
 		},
@@ -57,6 +58,7 @@ var (
 					integreatlyv1alpha1.Product3Scale:    {Name: integreatlyv1alpha1.Product3Scale},
 					integreatlyv1alpha1.ProductRHSSOUser: {Name: integreatlyv1alpha1.ProductRHSSOUser},
 					//integreatlyv1alpha1.ProductMarin3r:   {Name: integreatlyv1alpha1.ProductMarin3r},
+					integreatlyv1alpha1.ProductGrafana: {Name: integreatlyv1alpha1.ProductGrafana},
 				},
 			},
 			{

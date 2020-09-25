@@ -22,27 +22,27 @@ const (
 
 // Specific to rmhi install type
 var rhmi2ExpectedServiceMonitors = []string{
-	"redhat-rhmi-amq-online-enmasse-address-space-controller",
-	"redhat-rhmi-amq-online-enmasse-admin",
-	"redhat-rhmi-amq-online-enmasse-broker",
-	"redhat-rhmi-amq-online-enmasse-console",
-	"redhat-rhmi-amq-online-enmasse-iot",
-	"redhat-rhmi-amq-online-enmasse-operator-metrics",
-	"redhat-rhmi-amq-online-enmasse-router",
-	"redhat-rhmi-fuse-syndesis-infra",
-	"redhat-rhmi-fuse-syndesis-integrations",
-	"redhat-rhmi-ups-operator-unifiedpush-operator-metrics",
-	"redhat-rhmi-ups-unifiedpush",
+	NamespacePrefix + "amq-online-enmasse-address-space-controller",
+	NamespacePrefix + "amq-online-enmasse-admin",
+	NamespacePrefix + "amq-online-enmasse-broker",
+	NamespacePrefix + "amq-online-enmasse-console",
+	NamespacePrefix + "amq-online-enmasse-iot",
+	NamespacePrefix + "amq-online-enmasse-operator-metrics",
+	NamespacePrefix + "amq-online-enmasse-router",
+	NamespacePrefix + "fuse-syndesis-infra",
+	NamespacePrefix + "fuse-syndesis-integrations",
+	NamespacePrefix + "ups-operator-unifiedpush-operator-metrics",
+	NamespacePrefix + "ups-unifiedpush",
 }
 
 // Common to all install types
 var commonExpectedServiceMonitors = []string{
-	"redhat-rhmi-cloud-resources-operator-cloud-resource-operator-metrics",
-	"redhat-rhmi-middleware-monitoring-operator-application-monitoring-operator-metrics",
-	"redhat-rhmi-middleware-monitoring-operator-grafana-servicemonitor",
-	"redhat-rhmi-middleware-monitoring-operator-prometheus-servicemonitor",
-	"redhat-rhmi-rhsso-keycloak-service-monitor",
-	"redhat-rhmi-user-sso-keycloak-service-monitor",
+	NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
+	NamespacePrefix + "middleware-monitoring-operator-application-monitoring-operator-metrics",
+	NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
+	NamespacePrefix + "middleware-monitoring-operator-prometheus-servicemonitor",
+	NamespacePrefix + "rhsso-keycloak-service-monitor",
+	NamespacePrefix + "user-sso-keycloak-service-monitor",
 }
 
 // TestServiceMonitorsCloneAndRolebindingsExist monitoring spec testcase

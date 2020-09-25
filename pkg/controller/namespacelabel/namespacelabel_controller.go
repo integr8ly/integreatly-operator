@@ -19,9 +19,11 @@ package namespacelabel
 import (
 	"context"
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,7 +77,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	operatorNs := "redhat-rhmi-operator"
+	operatorNs := global.NamespacePrefix + "operator"
 
 	return &ReconcileNamespaceLabel{
 		mgr:               mgr,

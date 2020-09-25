@@ -897,6 +897,8 @@ github.com/integr8ly/application-monitoring-operator v1.1.1 h1:qd/ctydmBZpaUhPqt
 github.com/integr8ly/application-monitoring-operator v1.1.1/go.mod h1:oG6qQ2kOQr2XOZZ2Clo0Bh7wgiHTg3ZwE3AF6If9pXU=
 github.com/integr8ly/cloud-resource-operator v0.16.1 h1:Z0VpuzIL5OJkl4oZH+waYKBq4rAe9KJJMmm/LDIe+SA=
 github.com/integr8ly/cloud-resource-operator v0.16.1/go.mod h1:msU3lhYqs7wdJ4h+V9avZDZtd/by1zjuZdCLWXQtijM=
+github.com/integr8ly/grafana-operator v2.0.0+incompatible h1:wSqKpcr5wE6pws35iJeOYGVBMJbSNEhcE6hlD0zF9NU=
+github.com/integr8ly/grafana-operator v2.0.0+incompatible/go.mod h1:uFZI5IG74KBTtqzdwAMvoFoAC3RlgF5VaJypcCzyVVs=
 github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4 h1://E7j42AwTNj3oPVr7/yS0Ztbm7iunOppSs9VJ3nGMc=
 github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4/go.mod h1:0WBJ5MjgAgIu9briw0EaDkpXsWIXMoRJKnE/J024+bM=
 github.com/integr8ly/grafana-operator/v3 v3.4.0 h1:h+qRqPWMTUl3s0Zgzm+LEEAYOLKQ4iibL8bhr7kWL6M=

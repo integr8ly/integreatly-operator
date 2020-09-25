@@ -23,6 +23,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/datasync"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
@@ -192,6 +193,8 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = datasync.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductMarin3r:
 		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductGrafana:
+		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

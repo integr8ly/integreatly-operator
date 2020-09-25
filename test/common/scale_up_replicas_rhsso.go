@@ -18,9 +18,9 @@ const (
 	scaleUpRhssoReplicas   int = 3
 	scaleDownRhssoReplicas int = 1
 	rhssoName                  = "rhsso"
-	rhssoNamespace             = "redhat-rhmi-rhsso"
+	rhssoNamespace             = NamespacePrefix + "rhsso"
 	userSSOName                = "rhssouser"
-	userSSONamespace           = "redhat-rhmi-user-sso"
+	userSSONamespace           = NamespacePrefix + "user-sso"
 	requestURLSSO              = "/apis/keycloak.org/v1alpha1"
 	kindSSO                    = "Keycloaks"
 )

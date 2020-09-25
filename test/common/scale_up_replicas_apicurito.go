@@ -19,7 +19,7 @@ const (
 	scaleUpApicuritoReplicas   = 3
 	scaleDownApicuritoReplicas = 1
 	apicuritoName              = "apicurito"
-	apicuritoNamespace         = "redhat-rhmi-apicurito"
+	apicuritoNamespace         = NamespacePrefix + "apicurito"
 	retryIntervalApicurito     = time.Second * 20
 	timeoutApicurito           = time.Minute * 7
 	requestURLApicturito       = "/apis/apicur.io/v1alpha1"
