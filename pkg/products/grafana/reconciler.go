@@ -16,6 +16,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +29,8 @@ import (
 const (
 	defaultInstallationNamespace = "customer-monitoring"
 	manifestPackage              = "integreatly-grafana"
+	defaultGrafanaName           = "grafana"
+	defaultRoutename             = defaultGrafanaName + "-route"
 )
 
 type Reconciler struct {
@@ -131,6 +134,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileHost(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile host", err)
+		return phase, err
+	}
+
+	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionGrafana) {
+		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionGrafana))
+		r.ConfigManager.WriteConfig(r.Config)
+	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
+
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
+	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, cr *grafanav1alpha1.Grafana) (integreatlyv1alpha1.StatusPhase, error) {
@@ -311,4 +331,21 @@ func generatePassword(n int) (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(b), err
+}
+
+func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	grafanaRoute := &routev1.Route{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetOperatorNamespace()}, grafanaRoute)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get route for Grafana: %w", err)
+	}
+
+	r.Config.SetHost("https://" + grafanaRoute.Spec.Host)
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Could not set Grafana route: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }

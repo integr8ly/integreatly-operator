@@ -250,7 +250,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	}
 
 	isInstallPlanDeleted := false
-	currentOperatorVersionName := fmt.Sprintf("%s.v%s", CSVNamePrefix, version.Version)
+	currentOperatorVersionName := fmt.Sprintf("%s.v%s", CSVNamePrefix, version.GetVersion())
 	if csvFromCatalogSource.Spec.Replaces != currentOperatorVersionName {
 
 		if csvFromCatalogSource.Spec.Replaces != latestRHMICSV.Spec.Replaces {
