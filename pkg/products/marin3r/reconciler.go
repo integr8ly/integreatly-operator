@@ -3,20 +3,32 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
+	"github.com/integr8ly/application-monitoring-operator/pkg/controller/applicationmonitoring"
+	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
 	defaultInstallationNamespace = "marin3r"
+	manifestPackage              = "integreatly-marin3r"
+
 )
 
 type Reconciler struct {
@@ -107,5 +119,72 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
+		return phase, err
+	}
+
+	logrus.Infof("about to start reconciling the discovery service")
+	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace, installation.Spec.NamespacePrefix)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoverService cr"), err)
+		return phase, err
+	}
+	logrus.Infof("after function is finished to reconciling the discovery service")
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error){
+	enabledNamespaces := []string{
+		namespacePrefix + "3scale",
+	}
+
+	discoveryService := &marin3r.DiscoveryService{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "instance",
+		},
+		Spec: marin3r.DiscoveryServiceSpec{
+			DiscoveryServiceNamespace: productNamespace,
+			EnabledNamespaces: enabledNamespaces,
+			Image: "quay.io/3scale/marin3r:v0.5.1",
+		},
+	}
+
+	err := client.Create(ctx, discoveryService)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.Marin3rSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		r.preUpgradeBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
+}
+
+func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+	//todo add backup for redis once it's added to the reconciler
+	return backup.NewNoopBackupExecutor()
 }

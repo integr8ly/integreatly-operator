@@ -4,7 +4,8 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 
-	marin3r "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	envoyconfigv1 "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	discoveryservicev1 "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -86,6 +87,7 @@ func init() {
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
 		consolev1.AddToScheme,
-		marin3r.SchemeBuilder.AddToScheme,
+		envoyconfigv1.SchemeBuilder.AddToScheme,
+		discoveryservicev1.SchemeBuilder.AddToScheme,
 	)
 }

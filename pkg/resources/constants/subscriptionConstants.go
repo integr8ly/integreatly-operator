@@ -14,4 +14,5 @@ const (
 	ThreeScaleSubscriptionName       = "rhmi-3scale"
 	UPSSubscriptionName              = "rhmi-unifiedpush"
 	GrafanaSubscriptionName          = "rhmi-grafana"
+	Marin3rSubscriptionName			 = "rhmi-marin3r"
 )
