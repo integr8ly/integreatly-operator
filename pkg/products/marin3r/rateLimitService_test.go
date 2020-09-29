@@ -26,7 +26,7 @@ func TestRateLimitService(t *testing.T) {
 		Assert     func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
 	}{
 		{
-			Name:       "Service deployed",
+			Name:       "Service deployed without metrics",
 			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis"),
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
@@ -39,87 +39,114 @@ func TestRateLimitService(t *testing.T) {
 					},
 				},
 			},
-			Assert: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
-				if reconcileError != nil {
-					return fmt.Errorf("unexpected error: %v", reconcileError)
-				}
-
-				if phase != integreatlyv1alpha1.PhaseCompleted {
-					return fmt.Errorf("unexpected phase. Expected PhaseCompleted, got %s", phase)
-				}
-
-				configMap := &corev1.ConfigMap{}
-				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
-					Name:      "ratelimit-config",
-					Namespace: "redhat-test-marin3r",
-				}, configMap); err != nil {
-					return fmt.Errorf("failed to obtain expected ConfigMap: %v", err)
-				}
-
-				deployment := &appsv1.Deployment{}
-				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
-					Name:      "ratelimit",
-					Namespace: "redhat-test-marin3r",
-				}, deployment); err != nil {
-					return fmt.Errorf("failed to obtain expected deployment: %v", err)
-				}
-
-				envs := deployment.Spec.Template.Spec.Containers[0].Env
-				url, err := func() (string, error) {
-					for _, env := range envs {
-						if env.Name == "REDIS_URL" {
-							return env.Value, nil
-						}
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseCompleted),
+				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
+					configMap := &corev1.ConfigMap{}
+					if err := client.Get(context.TODO(), k8sclient.ObjectKey{
+						Name:      "ratelimit-config",
+						Namespace: "redhat-test-marin3r",
+					}, configMap); err != nil {
+						return fmt.Errorf("failed to obtain expected ConfigMap: %v", err)
 					}
 
-					return "", errors.Errorf("REDIS_URL not found in environment variables")
-				}()
+					return nil
+				},
+				assertDeployment(assertEnvs(map[string]func(string) error{
+					"REDIS_URL": func(url string) error {
+						if url == "" {
+							return errors.Errorf("REDIS_URL not found in environment variables")
+						}
 
-				if err != nil {
-					return err
-				}
-				if url != "test-url" {
-					return fmt.Errorf("unexpected value for REDIS_URL: %s", url)
-				}
+						if url != "test-url" {
+							return fmt.Errorf("unexpected value for REDIS_URL: %s", url)
+						}
 
-				service := &corev1.Service{}
-				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
-					Name:      "ratelimit",
-					Namespace: "redhat-test-marin3r",
-				}, service); err != nil {
-					return fmt.Errorf("failed to obtain expected service: %v", err)
-				}
+						return nil
+					},
+					"USE_STATSD": func(s string) error {
+						if s != "false" {
+							return fmt.Errorf("unexpected value for USE_STATSD variable. Expected true, got %s", s)
+						}
 
-				return nil
+						return nil
+					},
+				})),
+				func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
+					service := &corev1.Service{}
+					if err := client.Get(context.TODO(), k8sclient.ObjectKey{
+						Name:      "ratelimit",
+						Namespace: "redhat-test-marin3r",
+					}, service); err != nil {
+						return fmt.Errorf("failed to obtain expected service: %v", err)
+					}
+
+					return nil
+				},
+			),
+		},
+
+		{
+			Name: "Service deployed with metrics",
+			InitObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "ratelimit-redis",
+						Namespace: "redhat-test-marin3r",
+					},
+					Data: map[string][]byte{
+						"URL": []byte("test-url"),
+					},
+				},
 			},
+			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis").WithStatsdConfig(StatsdConfig{
+				Host: "test-host",
+				Port: "9092",
+			}),
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseCompleted),
+				assertDeployment(assertEnvs(map[string]func(string) error{
+					"STATSD_PORT": func(s string) error {
+						if s != "9092" {
+							return fmt.Errorf("unexpected value for STATSD_PORT variable. Expected 9092, got %s", s)
+						}
+
+						return nil
+					},
+					"STATSD_HOST": func(s string) error {
+						if s != "test-host" {
+							return fmt.Errorf("unexpected value for STATSD_HOST variable. Expected test-host, got %s", s)
+						}
+
+						return nil
+					},
+					"USE_STATSD": func(s string) error {
+						if s != "true" {
+							return fmt.Errorf("unexpected value for USE_STATSD variable. Expected true, got %s", s)
+						}
+
+						return nil
+					},
+				})),
+			),
 		},
 
 		{
 			Name:       "Wait for redis",
 			InitObjs:   []runtime.Object{},
 			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis"),
-			Assert: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, reconcileError error) error {
-				if reconcileError != nil {
-					return fmt.Errorf("unexpected error: %v", reconcileError)
-				}
-
-				if phase != integreatlyv1alpha1.PhaseAwaitingComponents {
-					return fmt.Errorf("unexpected phase. Expected %s, got %s",
-						integreatlyv1alpha1.PhaseAwaitingComponents,
-						phase,
-					)
-				}
-
-				deployment := &appsv1.Deployment{}
-				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
-					Name:      "ratelimit",
-					Namespace: "redhat-test-marin3r",
-				}, deployment); !k8serrors.IsNotFound(err) {
-					return fmt.Errorf("expected deployment not found error, got: %v", err)
-				}
-
-				return nil
-			},
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseAwaitingComponents),
+				assertDeployment(func(_ *appsv1.Deployment, e error) error {
+					if !k8serrors.IsNotFound(e) {
+						return fmt.Errorf("expected deployment not found error, got: %v", e)
+					}
+					return nil
+				}),
+			),
 		},
 	}
 
@@ -141,4 +168,71 @@ func newScheme() *runtime.Scheme {
 	appsv1.AddToScheme(scheme)
 
 	return scheme
+}
+
+func assertPhase(expectedPhase integreatlyv1alpha1.StatusPhase) func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error {
+	return func(_ k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, _ error) error {
+		if phase != expectedPhase {
+			return fmt.Errorf("unexpected phase. Expected %s, got %s", expectedPhase, phase)
+		}
+
+		return nil
+	}
+}
+
+func assertNoError(_ k8sclient.Client, _ integreatlyv1alpha1.StatusPhase, err error) error {
+	if err != nil {
+		return fmt.Errorf("unexpected error: %v", err)
+	}
+
+	return nil
+}
+
+func allOf(assertions ...func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error) func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error {
+	return func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
+		for _, assertion := range assertions {
+			if assertionErr := assertion(client, phase, err); assertionErr != nil {
+				return assertionErr
+			}
+		}
+
+		return nil
+	}
+}
+
+func assertDeployment(assertion func(*appsv1.Deployment, error) error) func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error {
+	return func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
+		deployment := &appsv1.Deployment{}
+		clientErr := client.Get(context.TODO(), k8sclient.ObjectKey{
+			Name:      "ratelimit",
+			Namespace: "redhat-test-marin3r",
+		}, deployment)
+
+		return assertion(deployment, clientErr)
+	}
+}
+
+func assertEnvs(assertions map[string]func(string) error) func(*appsv1.Deployment, error) error {
+	return func(deployment *appsv1.Deployment, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to obtain deployment: %v", err)
+		}
+
+		for env, assertion := range assertions {
+			value := ""
+
+			for _, e := range deployment.Spec.Template.Spec.Containers[0].Env {
+				if e.Name == env {
+					value = e.Value
+					break
+				}
+			}
+
+			if err := assertion(value); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
 }
