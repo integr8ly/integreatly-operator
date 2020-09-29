@@ -147,7 +147,7 @@ func testCorrectPodDistribution(dist map[string]*podDistribution) []string {
 			if n == minPodsPerZone || n == maxPodsPerZone {
 				continue
 			}
-			testErrors = append(testErrors, fmt.Sprintf("Pod owner '%s' pods are not distributed correctly. %+v\n", podOwner, dist))
+			testErrors = append(testErrors, fmt.Sprintf("Pod owner '%s' pods are not distributed correctly. %+v\n", podOwner, pd))
 		}
 	}
 	return testErrors
