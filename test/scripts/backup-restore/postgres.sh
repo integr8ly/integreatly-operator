@@ -43,7 +43,7 @@ test_postgres_backup () {
 
   # Get a dump of the database before the deletion
   echo "Dumping current database..."
-  dump_databse dump_before.sql
+  dump_database dump_before.sql
   echo "Dumped original database to dump_before.sql"
 
   # Create the snapshot
@@ -168,7 +168,7 @@ EOF
 
   # Dump the database after the restoration
   echo "Dumping restored database..."
-  dump_database database_after.sql
+  dump_database dump_after.sql
   echo "Dumped restore database to dump_after.sql"
 
   echo "Calculating difference between databases..."
@@ -188,7 +188,7 @@ EOF
   echo "Test finished successfully."
 }
 
-dump_databse() {
+dump_database() {
   DUMP_FILE=$1
 
   echo "Creating throwaway Postgres container..."

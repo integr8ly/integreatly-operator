@@ -38,11 +38,22 @@ cat << EOF | oc create -f - -n redhat-rhmi-operator
 EOF
 ```
 
-- Run the following commands in throwaway Postgres pod and verify that data in 3Scale Postgres exists:
+- Once POD is created log in to it by executing the following command:
+
+```sh
+oc rsh $(oc get pods | grep throw-away | awk '{print $1}')
+```
+
+- Run the following command to log into Postgres 3Scale Postgres instance:
 
 ```
 # password and host retrieved from threescale-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
 psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
+```
+
+- Once logged in to 3Scale Postgres run the following commands to verify that the data is there:
+
+```sh
 $ select * from plans;
 $ select * from accounts;
 ```
@@ -54,6 +65,12 @@ oc delete -n redhat-rhmi-operator postgres/throw-away-postgres
 ```
 
 3. Navigate to https://3scale-admin.[Your_admin_domain].devshift.org/p/admin/onboarding/wizard/intro and follow the steps outlined in the wizard to create a 3Scale service. You can get your admin domain from `Routes` under `redhat-rhmi-3scale` namespace.
+
+4. Make sure that you have aws cli installed and configured correctly by running:
+
+```sh
+aws configure
+```
 
 ### Backup and restore
 
