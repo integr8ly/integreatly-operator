@@ -14,7 +14,6 @@ echo "| Pod name | Availability Zone |"
 echo "| -------- | ----------------- |"
 while IFS= read -r pod_name; do
 node=`oc get pods/$pod_name -n $NAMESPACE -o json | jq -r '.spec.nodeName'`
-machine_name=`oc get nodes $node -o json | jq -r '.metadata.annotations["machine.openshift.io/machine"] | match("openshift-machine-api\/(.+)") | .captures[0].string'`
-zone=`oc get machines $machine_name -n openshift-machine-api -o json | jq -r '.metadata.labels["machine.openshift.io/zone"]'`
+zone=`oc get nodes $node -o json | jq -r '.metadata.labels["topology.kubernetes.io/zone"]'`
 echo "| $pod_name | $zone |"
 done <<< "$pods"
