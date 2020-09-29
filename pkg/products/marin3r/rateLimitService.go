@@ -18,6 +18,12 @@ import (
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
+	StatsdConfig    *StatsdConfig
+}
+
+type StatsdConfig struct {
+	Host string
+	Port string
 }
 
 func NewRateLimitServiceReconciler(namespace, redisSecretName string) *RateLimitServiceReconciler {
@@ -62,6 +68,12 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	}
 
 	return r.reconcileService(ctx, client)
+}
+
+// WithStatsdConfig mutates r setting r.StatsdConfig to the value of config
+func (r *RateLimitServiceReconciler) WithStatsdConfig(config StatsdConfig) *RateLimitServiceReconciler {
+	r.StatsdConfig = &config
+	return r
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -141,6 +153,49 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}
+
+		useStatsd := "false"
+		if r.StatsdConfig != nil {
+			useStatsd = "true"
+		}
+
+		envs := []corev1.EnvVar{
+			{
+				Name:  "REDIS_SOCKET_TYPE",
+				Value: "tcp",
+			},
+			{
+				Name:  "REDIS_URL",
+				Value: string(redisSecret.Data["URL"]),
+			},
+			{
+				Name:  "USE_STATSD",
+				Value: useStatsd,
+			},
+			{
+				Name:  "RUNIME_ROOT",
+				Value: "/srv/runtime_data/current",
+			},
+			{
+				Name:  "RUNTIME_SUBDIRECTORY",
+				Value: "/",
+			},
+			{
+				Name:  "RUNTIME_IGNOREDOTFILES",
+				Value: "true",
+			},
+		}
+
+		if r.StatsdConfig != nil {
+			envs = append(envs, corev1.EnvVar{
+				Name:  "STATSD_PORT",
+				Value: r.StatsdConfig.Port,
+			}, corev1.EnvVar{
+				Name:  "STATSD_HOST",
+				Value: r.StatsdConfig.Host,
+			})
+		}
+
 		deployment.Spec.Template = corev1.PodTemplateSpec{
 			ObjectMeta: v1.ObjectMeta{
 				Labels: map[string]string{
@@ -173,32 +228,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 								ContainerPort: 6070,
 							},
 						},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "REDIS_SOCKET_TYPE",
-								Value: "tcp",
-							},
-							{
-								Name:  "REDIS_URL",
-								Value: string(redisSecret.Data["URL"]),
-							},
-							{
-								Name:  "USE_STATSD",
-								Value: "false",
-							},
-							{
-								Name:  "RUNIME_ROOT",
-								Value: "/srv/runtime_data/current",
-							},
-							{
-								Name:  "RUNTIME_SUBDIRECTORY",
-								Value: "/",
-							},
-							{
-								Name:  "RUNTIME_IGNOREDOTFILES",
-								Value: "true",
-							},
-						},
+						Env: envs,
 					},
 				},
 				Volumes: []corev1.Volume{
