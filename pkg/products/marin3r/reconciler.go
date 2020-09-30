@@ -11,11 +11,13 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -241,6 +243,10 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 		}
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
+	_, err = controllerutil.CreateOrUpdate(ctx, client, serverSecret, func() error{
+		owner.AddIntegreatlyOwnerAnnotations(serverSecret, r.installation)
+		return nil
+	})
 
 	// get the secret data from the server secret
 	crt, ok := serverSecret.Data[secretDataCertKey]
@@ -263,11 +269,13 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 		Data: secretData,
 		Type: "kubernetes.io/tls",
 	}
-
-	err = client.Create(ctx, caSecret)
+	_, err = controllerutil.CreateOrUpdate(ctx, client, caSecret, func() error{
+		owner.AddIntegreatlyOwnerAnnotations(caSecret, r.installation)
+		return nil
+	})
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			logrus.Infof("error creating %s secret", caSecret.Name)
+			logrus.Infof("error creating or updating %s secret", caSecret.Name)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
