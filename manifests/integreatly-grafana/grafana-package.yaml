@@ -1,0 +1,5 @@
+packageName: rhmi-grafana
+channels:
+- currentCSV: grafana-operator.v3.5.0
+  name: rhmi
+    
