@@ -67,7 +67,7 @@ setup/service_account:
 	@oc project $(NAMESPACE)
 	@oc replace --force -f deploy/role.yaml
 	@-oc create -f deploy/service_account.yaml -n $(NAMESPACE)
-	@cat deploy/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
+	@cat deploy/$(INSTALLATION_PREFIX)/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
 	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG
 
 .PHONY: setup/git/hooks
@@ -153,7 +153,7 @@ test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/
 
 .PHONY: test/e2e/local
 test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=90m" --debug --up-local
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --watch-namespace="$(NAMESPACE)" --operator-namespace="${NAMESPACE}" --go-test-flags "-timeout=90m" --debug --up-local
 
 
 .PHONY: test/functional
@@ -233,7 +233,7 @@ cluster/prepare/crd:
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/croaws
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
-	@oc create -f deploy/role_binding.yaml
+	@oc create -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
 
 .PHONY: cluster/prepare/olm/subscription
 cluster/prepare/olm/subscription:
@@ -282,7 +282,7 @@ cluster/cleanup:
 	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete -f deploy/role.yaml
-	@-oc delete -f deploy/role_binding.yaml
+	@-oc delete -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
 
 .PHONY: cluster/cleanup/serviceaccount
 cluster/cleanup/serviceaccount:

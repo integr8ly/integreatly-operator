@@ -3,6 +3,7 @@ package webapp
 import (
 	"context"
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -92,7 +93,7 @@ func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.R
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: global.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(notifier.ctx, k8sclient.ObjectKey{
@@ -125,7 +126,7 @@ func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: global.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(
