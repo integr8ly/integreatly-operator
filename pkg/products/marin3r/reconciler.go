@@ -142,6 +142,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileAlerts(ctx, client, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
 	// if the phase is not complete but there's no error, then return the phase
 	// this could happen when trying to reconcile the secrets as there is a request to get the service that would
 	// be created as a result of the previous reconcileDiscoverService
@@ -151,6 +157,40 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+
+	// TODO: Get the rateLimitUnit and rateLimitRequestsPerUnit from here
+	//apiVersion: v1
+	//kind: ConfigMap
+	//metadata:
+	//name: ratelimit-config
+	//namespace: marin3r
+	//labels:
+	//app: ratelimit
+	//	part-of: 3scale-saas
+	//data:
+	//	kuard.yaml: |
+	//	domain: kuard
+	//	descriptors:
+	//	- key: generic_key
+	//	value: slowpath
+	//	rate_limit:
+	//	unit: minute
+	//	requests_per_unit: 1
+
+	alertReconciler, err := r.newAlertsReconciler("second", 20000)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err := alertReconciler.ReconcileAlerts(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -243,7 +283,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 		}
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	_, err = controllerutil.CreateOrUpdate(ctx, client, serverSecret, func() error{
+	_, err = controllerutil.CreateOrUpdate(ctx, client, serverSecret, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(serverSecret, r.installation)
 		return nil
 	})
@@ -269,7 +309,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 		Data: secretData,
 		Type: "kubernetes.io/tls",
 	}
-	_, err = controllerutil.CreateOrUpdate(ctx, client, caSecret, func() error{
+	_, err = controllerutil.CreateOrUpdate(ctx, client, caSecret, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(caSecret, r.installation)
 		return nil
 	})

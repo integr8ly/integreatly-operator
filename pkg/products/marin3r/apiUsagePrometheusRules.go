@@ -68,7 +68,7 @@ func getLevel1ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint,
 	//(increase(total_hits[4h]) >= (requestsAllowedOverTimePeriod * .8)) && (increase(total_hits[4h]) <=  (requestsAllowedOverTimePeriod * .9))
 
 	return &monitoringv1.Rule{
-		Alert: "Level1ApiUsageThresholdExceeded",
+		Alert: "Level1ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
 			"message": fmt.Sprintf("3Scale API usage is between 80% and 90% of the allowable threshold, %s requests per %s, during the last 4 hours", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
@@ -83,7 +83,7 @@ func getLevel2ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint,
 	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint(level2ApiUsageCheckFrequencyMins) * 60
 
 	return &monitoringv1.Rule{
-		Alert: "Level2ApiUsageThresholdExceeded",
+		Alert: "Level2ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
 			"message": fmt.Sprintf("3Scale API usage is between 90% and 95% of the allowable threshold, %s requests per %s, during the last 2 hours", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
@@ -98,7 +98,7 @@ func getLevel3ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint,
 	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint(level3ApiUsageCheckFrequencyMins) * 60
 
 	return &monitoringv1.Rule{
-		Alert: "Level3ApiUsageThresholdExceeded",
+		Alert: "Level3ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
 			"message": fmt.Sprintf("3Scale API usage is above 95% of the allowable threshold, %s requests per %s, during the last 30 minutes", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
