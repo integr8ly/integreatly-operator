@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -11,16 +12,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -134,22 +131,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
 		return phase, err
 	}
-	logrus.Infof("after function is finished to reconciling the discovery service")
-
-	phase, err = r.reconcileSecrets(ctx, client, productNamespace)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile secrets"), err)
-		return phase, err
-	}
-
-	// if the phase is not complete but there's no error, then return the phase
-	// this could happen when trying to reconcile the secrets as there is a request to get the service that would
-	// be created as a result of the previous reconcileDiscoverService
-	// return to allow the service time to be created. on subsequent reconciles the reconculesecrets should reconcile as complete
-	// or failed if there's an error
-	if phase != integreatlyv1alpha1.PhaseCompleted {
-		return phase, nil
-	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -195,7 +176,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 	return r.Reconciler.ReconcileSubscription(
 		ctx,
 		target,
-		[]string{productNamespace},
+		[]string{},
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
@@ -208,77 +189,4 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	}
 	//todo add backup for redis once it's added to the reconciler
 	return backup.NewNoopBackupExecutor()
-}
-
-func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	service := &corev1.Service{}
-	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "marin3r-instance", Namespace: productNamespace}, service)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			logrus.Infof("didn't find the service in %s with name marin3r-instance", productNamespace)
-			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	// add annotations to the service to trigger creation of the secret
-	annotations := service.GetAnnotations()
-	if service.Annotations == nil {
-		annotations = map[string]string{}
-	}
-	annotations["service.beta.openshift.io/serving-cert-secret-name"] = serverSecretName
-	service.SetAnnotations(annotations)
-
-	err = client.Update(ctx, service)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	//service should be updated now with the annotations
-	//wait for secret to be created
-	serverSecret := &corev1.Secret{}
-	err = client.Get(ctx, types.NamespacedName{Name: serverSecretName, Namespace: productNamespace}, serverSecret)
-	if err != nil {
-		if k8serr.IsNotFound(err) {
-			return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-		}
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-	_, err = controllerutil.CreateOrUpdate(ctx, client, serverSecret, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(serverSecret, r.installation)
-		return nil
-	})
-
-	// get the secret data from the server secret
-	crt, ok := serverSecret.Data[secretDataCertKey]
-	if !ok {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Secret does not contain key %s", secretDataCertKey)
-	}
-	key, ok := serverSecret.Data[secretDataKeyKey]
-	if !ok {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Secret does not contain key %s", secretDataKeyKey)
-	}
-	secretData := map[string][]byte{}
-	// assign the same crt and key to the second secret required by marin3r instance
-	secretData[secretDataCertKey] = crt
-	secretData[secretDataKeyKey] = key
-	caSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      caSecretName,
-			Namespace: productNamespace,
-		},
-		Data: secretData,
-		Type: "kubernetes.io/tls",
-	}
-	_, err = controllerutil.CreateOrUpdate(ctx, client, caSecret, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(caSecret, r.installation)
-		return nil
-	})
-	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
-			logrus.Infof("error creating or updating %s secret", caSecret.Name)
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
 }

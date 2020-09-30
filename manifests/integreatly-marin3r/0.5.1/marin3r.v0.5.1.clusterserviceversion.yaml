@@ -4503,8 +4503,6 @@ spec:
   installModes:
     - supported: true
       type: AllNamespaces
-    - supported: true
-      type: OwnNamespace
   keywords:
     - envoy
     - discovery
