@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -17,6 +18,8 @@ import (
 
 const (
 	defaultInstallationNamespace = "marin3r"
+
+	externalRedisSecretName = "redis"
 )
 
 type Reconciler struct {
@@ -105,6 +108,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
+	}
+
+	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
+		ReconcileRateLimitService(ctx, client)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
+		return phase, err
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
