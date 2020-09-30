@@ -27,11 +27,14 @@ import (
 
 const (
 	defaultInstallationNamespace = "marin3r"
-	manifestPackage              = "integreatly-marin3r"
-	serverSecretName             = "marin3r-server-cert-instance"
-	caSecretName                 = "marin3r-ca-cert-instance"
-	secretDataCertKey            = "tls.crt"
-	secretDataKeyKey             = "tls.key"
+
+	manifestPackage   = "integreatly-marin3r"
+	serverSecretName  = "marin3r-server-cert-instance"
+	caSecretName      = "marin3r-ca-cert-instance"
+	secretDataCertKey = "tls.crt"
+	secretDataKeyKey  = "tls.key"
+
+	externalRedisSecretName = "redis"
 )
 
 type Reconciler struct {
@@ -142,6 +145,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
+		ReconcileRateLimitService(ctx, client)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
+		return phase, err
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
+	}
+
 	phase, err = r.reconcileAlerts(ctx, client, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
@@ -180,6 +193,13 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 	//	rate_limit:
 	//	unit: minute
 	//	requests_per_unit: 1
+
+	cm := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "ratelimit-config", Namespace: r.Config.GetNamespace()}, cm)
+	if err != nil {
+		logrus.Infof("didn't find ratelimit-config config map in %s", r.Config.GetNamespace())
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	alertReconciler, err := r.newAlertsReconciler("second", 20000)
 	if err != nil {
