@@ -2158,6 +2158,7 @@ k8s.io/cli-runtime v0.17.4/go.mod h1:IVW4zrKKx/8gBgNNkhiUIc7nZbVVNhc1+HcQh+PiNHc
 k8s.io/client-go v0.17.4 h1:VVdVbpTY70jiNHS1eiFkUt7ZIJX3txd29nDxxXH4en8=
 k8s.io/client-go v0.17.4/go.mod h1:ouF6o5pz3is8qU0/qYL2RnoxOPqgfuidYLowytyLJmc=
 k8s.io/cloud-provider v0.17.4/go.mod h1:XEjKDzfD+b9MTLXQFlDGkk6Ho8SGMpaU8Uugx/KNK9U=
+k8s.io/cluster-bootstrap v0.17.4 h1:K2BySILB1pA+9RPK3+Z7aj9p3PzLBZ1CdnHuuXp40qI=
 k8s.io/cluster-bootstrap v0.17.4/go.mod h1:DMePcUKMsBpBTaTvfIIKna3Q2fVbGutwh5cnMu3hMYU=
 k8s.io/code-generator v0.17.4 h1:C3uu/IvQclEIO4ouUOXuoKWfc4765mYe0uebStg9CaY=
 k8s.io/code-generator v0.17.4/go.mod h1:l8BLVwASXQZTo2xamW5mQNFCe1XPiAesVq7Y1t7PiQQ=
@@ -2201,6 +2202,7 @@ k8s.io/kube-state-metrics v1.7.2/go.mod h1:U2Y6DRi07sS85rmVPmBFlmv+2peBcL8IWGjM+
 k8s.io/kubectl v0.17.4 h1:Ts0CvqvIVceS4RTVXgWMH+YqtieLAzyS2T9eoz8uDQ0=
 k8s.io/kubectl v0.17.4/go.mod h1:im5QWmh6fvtmJkkNm4HToLe8z9aM3jihYK5X/wOybcY=
 k8s.io/kubelet v0.17.4/go.mod h1:LpY8egnY6pPFNyazV+nMncgsemaCEDwp6M7b5rv8TWU=
+k8s.io/kubernetes v1.17.4 h1:hnz5goC7sf4LyG9kjJv6eBBJ/8DeD6TL3UAdCoHpaJE=
 k8s.io/kubernetes v1.17.4/go.mod h1:T2iWC2zSz7Nq5mQvvFPQB8mc2sEBIAdjMJPxavtZkcg=
 k8s.io/legacy-cloud-providers v0.17.4/go.mod h1:FikRNoD64ECjkxO36gkDgJeiQWwyZTuBkhu+yxOc1Js=
 k8s.io/metrics v0.17.4/go.mod h1:6rylW2iD3M9VppnEAAtJASY1XS8Pt9tcYh+tHxBeV3I=
