@@ -29,6 +29,8 @@ const (
 	caSecretName                 = "marin3r-ca-cert-instance"
 	secretDataCertKey            = "tls.crt"
 	secretDataKeyKey             = "tls.key"
+
+	discoveryServiceName = "instance"
 )
 
 type Reconciler struct {
@@ -100,6 +102,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		if err := r.deleteDiscoveryService(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
+		}
+
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -142,7 +148,7 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 
 	discoveryService := &marin3r.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "instance",
+			Name: discoveryServiceName,
 		},
 		Spec: marin3r.DiscoveryServiceSpec{
 			DiscoveryServiceNamespace: productNamespace,
@@ -159,6 +165,21 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) deleteDiscoveryService(ctx context.Context, client k8sclient.Client) error {
+	discoveryService := &marin3r.DiscoveryService{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name: discoveryServiceName,
+	}, discoveryService); err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return client.Delete(ctx, discoveryService)
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
