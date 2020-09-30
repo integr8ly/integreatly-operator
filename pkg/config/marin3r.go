@@ -8,11 +8,11 @@ import (
 )
 
 type Marin3r struct {
-	config ProductConfig
+	Config ProductConfig
 }
 
 func NewMarin3r(config ProductConfig) *Marin3r {
-	return &Marin3r{config: config}
+	return &Marin3r{Config: config}
 }
 
 func (m *Marin3r) GetProductName() integreatlyv1alpha1.ProductName {
@@ -20,19 +20,19 @@ func (m *Marin3r) GetProductName() integreatlyv1alpha1.ProductName {
 }
 
 func (m *Marin3r) GetOperatorNamespace() string {
-	return m.config["OPERATOR_NAMESPACE"]
+	return m.Config["OPERATOR_NAMESPACE"]
 }
 
 func (m *Marin3r) SetOperatorNamespace(newNamespace string) {
-	m.config["OPERATOR_NAMESPACE"] = newNamespace
+	m.Config["OPERATOR_NAMESPACE"] = newNamespace
 }
 
 func (m *Marin3r) GetNamespace() string {
-	return m.config["NAMESPACE"]
+	return m.Config["NAMESPACE"]
 }
 
 func (m *Marin3r) Read() ProductConfig {
-	return m.config
+	return m.Config
 }
 
 func (m *Marin3r) GetProductVersion() integreatlyv1alpha1.ProductVersion {
@@ -44,7 +44,7 @@ func (m *Marin3r) GetOperatorVersion() integreatlyv1alpha1.OperatorVersion {
 }
 
 func (m *Marin3r) GetHost() string {
-	return m.config["HOST"]
+	return m.Config["HOST"]
 }
 
 func (m *Marin3r) GetWatchableCRDs() []runtime.Object {
@@ -59,5 +59,5 @@ func (m *Marin3r) GetWatchableCRDs() []runtime.Object {
 }
 
 func (m *Marin3r) SetNamespace(newNamespace string) {
-	m.config["NAMESPACE"] = newNamespace
+	m.Config["NAMESPACE"] = newNamespace
 }

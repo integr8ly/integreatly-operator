@@ -20,7 +20,7 @@ var (
 	level3ApiUsageCheckFrequencyMins     = 30
 )
 
-func (r *Reconciler) newAlertsReconciler(rateLimitUnit string, rateLimitRequestsPerUnit uint) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertsReconciler(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (resources.AlertReconciler, error) {
 
 	requestsAllowedPerSecond, err := getRateLimitInSeconds(rateLimitUnit, rateLimitRequestsPerUnit)
 	if err != nil {
@@ -46,12 +46,29 @@ func (r *Reconciler) newAlertsReconciler(rateLimitUnit string, rateLimitRequests
 		Logger:       r.logger,
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "3scale-api-usage-alerts",
+				AlertName: "3scale-api-usage-alert-level1",
 				Namespace: r.Config.GetNamespace(),
 				GroupName: "3scale-api-usage.rules",
+				Interval:  fmt.Sprintf("%dm", level1ApiUsageCheckFrequencyMins),
 				Rules: []monitoringv1.Rule{
 					*level1Rule,
+				},
+			},
+			{
+				AlertName: "3scale-api-usage-alert-level2",
+				Namespace: r.Config.GetNamespace(),
+				GroupName: "3scale-api-usage.rules",
+				Interval:  fmt.Sprintf("%dm", level2ApiUsageCheckFrequencyMins),
+				Rules: []monitoringv1.Rule{
 					*level2Rule,
+				},
+			},
+			{
+				AlertName: "3scale-api-usage-alert-level3",
+				Namespace: r.Config.GetNamespace(),
+				GroupName: "3scale-api-usage.rules",
+				Interval:  fmt.Sprintf("%dm", level3ApiUsageCheckFrequencyMins),
+				Rules: []monitoringv1.Rule{
 					*level3Rule,
 				},
 			},
@@ -59,56 +76,52 @@ func (r *Reconciler) newAlertsReconciler(rateLimitUnit string, rateLimitRequests
 	}, nil
 }
 
-func getLevel1ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint, requestsAllowedPerSecond uint) (*monitoringv1.Rule, error) {
+func getLevel1ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond uint32) (*monitoringv1.Rule, error) {
 
-	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint(level1ApiUsageCheckFrequencyMins) * 60
-
-	// How to get total requests in a time period
-	// https://stackoverflow.com/questions/47138461/get-total-requests-in-a-period-of-time
-	//(increase(total_hits[4h]) >= (requestsAllowedOverTimePeriod * .8)) && (increase(total_hits[4h]) <=  (requestsAllowedOverTimePeriod * .9))
+	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint32(level1ApiUsageCheckFrequencyMins) * 60
 
 	return &monitoringv1.Rule{
 		Alert: "Level1ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
-			"message": fmt.Sprintf("3Scale API usage is between 80% and 90% of the allowable threshold, %s requests per %s, during the last 4 hours", rateLimitRequestsPerUnit, rateLimitUnit),
+			"message": fmt.Sprintf("3Scale API usage is between 80%% and 90%% of the allowable threshold, %d requests per %s, during the last 4 hours", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
 		Expr: intstr.FromString(fmt.Sprintf("(increase(total_hits[%dm]) >= (%d / 100 * %d)) and (increase(total_hits[%dm]) <=  (%d / 100 * %d))",
 			level1ApiUsageCheckFrequencyMins, requestsAllowedOverTimePeriod, level1ApiUsageLowerThresholdPercent, level1ApiUsageCheckFrequencyMins, requestsAllowedOverTimePeriod, level1ApiUsageHigherThresholdPercent)),
-		Labels: map[string]string{"severity": "warning"},
+		Labels: map[string]string{"severity": "informational"},
 	}, nil
 }
 
-func getLevel2ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint, requestsAllowedPerSecond uint) (*monitoringv1.Rule, error) {
+func getLevel2ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond uint32) (*monitoringv1.Rule, error) {
 
-	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint(level2ApiUsageCheckFrequencyMins) * 60
+	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint32(level2ApiUsageCheckFrequencyMins) * 60
 
 	return &monitoringv1.Rule{
 		Alert: "Level2ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
-			"message": fmt.Sprintf("3Scale API usage is between 90% and 95% of the allowable threshold, %s requests per %s, during the last 2 hours", rateLimitRequestsPerUnit, rateLimitUnit),
+			"message": fmt.Sprintf("3Scale API usage is between 90%% and 95%% of the allowable threshold, %d requests per %s, during the last 2 hours", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
 		Expr: intstr.FromString(fmt.Sprintf("(increase(total_hits[%dm]) >= (%d / 100 * %d)) and (increase(total_hits[%dm]) <=  (%d / 100 * %d))",
 			level2ApiUsageCheckFrequencyMins, requestsAllowedOverTimePeriod, level2ApiUsageLowerThresholdPercent, level2ApiUsageCheckFrequencyMins, requestsAllowedOverTimePeriod, level2ApiUsageHigherThresholdPercent)),
-		Labels: map[string]string{"severity": "warning"},
+		Labels: map[string]string{"severity": "informational"},
 	}, nil
 }
 
-func getLevel3ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint, requestsAllowedPerSecond uint) (*monitoringv1.Rule, error) {
+func getLevel3ApiUsageAlert(rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond uint32) (*monitoringv1.Rule, error) {
 
-	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint(level3ApiUsageCheckFrequencyMins) * 60
+	requestsAllowedOverTimePeriod := requestsAllowedPerSecond * uint32(level3ApiUsageCheckFrequencyMins) * 60
 
 	return &monitoringv1.Rule{
 		Alert: "Level3ThreeScaleApiUsageThresholdExceeded",
 		Annotations: map[string]string{
-			"message": fmt.Sprintf("3Scale API usage is above 95% of the allowable threshold, %s requests per %s, during the last 30 minutes", rateLimitRequestsPerUnit, rateLimitUnit),
+			"message": fmt.Sprintf("3Scale API usage is above 95%% of the allowable threshold, %d requests per %s, during the last 30 minutes", rateLimitRequestsPerUnit, rateLimitUnit),
 		},
 		Expr: intstr.FromString(fmt.Sprintf("(increase(total_hits[%dm]) >= (%d / 100 * %d))",
 			level3ApiUsageCheckFrequencyMins, requestsAllowedOverTimePeriod, level3ApiUsageLowerThresholdPercent)),
-		Labels: map[string]string{"severity": "warning"},
+		Labels: map[string]string{"severity": "informational"},
 	}, nil
 }
 
-func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint) (uint, error) {
+func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (uint32, error) {
 	if rateLimitUnit == "seconds" {
 		return rateLimitRequestsPerUnit, nil
 	} else if rateLimitUnit == "minute" {

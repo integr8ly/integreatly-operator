@@ -31,6 +31,7 @@ type AlertConfiguration struct {
 	AlertName string
 	GroupName string
 	Namespace string
+	Interval  string
 	Rules     []monitoringv1.Rule
 }
 
@@ -77,8 +78,9 @@ func (r *AlertReconcilerImpl) reconcileRule(ctx context.Context, client k8sclien
 		rule.Spec = monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{
 				{
-					Name:  alert.GroupName,
-					Rules: alert.Rules,
+					Name:     alert.GroupName,
+					Rules:    alert.Rules,
+					Interval: alert.Interval,
 				},
 			},
 		}

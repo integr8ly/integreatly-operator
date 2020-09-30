@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
+	"github.com/ghodss/yaml"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -201,7 +202,10 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	alertReconciler, err := r.newAlertsReconciler("second", 20000)
+	cmYamlData := yamlRoot{}
+	yaml.Unmarshal([]byte(cm.Data["kuard.yaml"]), &cmYamlData)
+
+	alertReconciler, err := r.newAlertsReconciler(cmYamlData.Descriptors[0].RateLimit.Unit, cmYamlData.Descriptors[0].RateLimit.RequestsPerUnit)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
