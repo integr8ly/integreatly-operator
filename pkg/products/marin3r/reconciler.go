@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -24,13 +25,16 @@ import (
 
 const (
 	defaultInstallationNamespace = "marin3r"
-	manifestPackage              = "integreatly-marin3r"
-	serverSecretName             = "marin3r-server-cert-instance"
-	caSecretName                 = "marin3r-ca-cert-instance"
-	secretDataCertKey            = "tls.crt"
-	secretDataKeyKey             = "tls.key"
+
+	manifestPackage   = "integreatly-marin3r"
+	serverSecretName  = "marin3r-server-cert-instance"
+	caSecretName      = "marin3r-ca-cert-instance"
+	secretDataCertKey = "tls.crt"
+	secretDataKeyKey  = "tls.key"
 
 	discoveryServiceName = "instance"
+
+	externalRedisSecretName = "redis"
 )
 
 type Reconciler struct {
@@ -136,6 +140,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
 		return phase, err
+	}
+
+	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
+		ReconcileRateLimitService(ctx, client)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
+		return phase, err
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
