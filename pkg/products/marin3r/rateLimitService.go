@@ -26,10 +26,11 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(namespace, redisSecretName string, statsdConfig *StatsdConfig) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
+		StatsdConfig:    statsdConfig,
 	}
 }
 
@@ -68,12 +69,6 @@ func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Conte
 	}
 
 	return r.reconcileService(ctx, client)
-}
-
-// WithStatsdConfig mutates r setting r.StatsdConfig to the value of config
-func (r *RateLimitServiceReconciler) WithStatsdConfig(config StatsdConfig) *RateLimitServiceReconciler {
-	r.StatsdConfig = &config
-	return r
 }
 
 func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

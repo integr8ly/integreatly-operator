@@ -3,6 +3,11 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 
@@ -35,6 +40,9 @@ const (
 	discoveryServiceName = "instance"
 
 	externalRedisSecretName = "redis"
+
+	statsdHost = "prom-statsd-exporter"
+	statsdPort = "9125"
 )
 
 type Reconciler struct {
@@ -142,14 +150,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
-		ReconcileRateLimitService(ctx, client)
+	phase, err = r.reconcilePromStatsdExporter(ctx, client, productNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter cr"), err)
+		return phase, err
+	}
+	statsdConfig := &StatsdConfig{
+		Host: statsdHost,
+		Port: statsdPort,
+	}
+
+	phase, err = r.reconcilePromStatsdExporterService(ctx, client, productNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus StatsD exporter service"), err)
+		return phase, err
+	}
+
+	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName, statsdConfig).ReconcileRateLimitService(ctx, client)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
 	}
 	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
 		return phase, nil
+	}
+
+	phase, err = r.reconcileServiceMonitor(ctx, client, productNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus service monitor"), err)
+		return phase, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -197,6 +226,7 @@ func (r *Reconciler) deleteDiscoveryService(ctx context.Context, client k8sclien
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Infof("Start reconcileSubscription for marin3r")
 	target := marketplace.Target{
 		Pkg:       constants.Marin3rSubscriptionName,
 		Namespace: operatorNamespace,
@@ -224,4 +254,149 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	}
 	//todo add backup for redis once it's added to the reconciler
 	return backup.NewNoopBackupExecutor()
+}
+
+func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Infof("Start reconcilePromStatsdExporter for marin3r")
+
+	deployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "prom-statsd-exporter",
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, deployment, func() error {
+		if deployment.Labels == nil {
+			deployment.Labels = map[string]string{}
+		}
+		deployment.Labels["app"] = "prom-statsd-exporter"
+
+		var replicas int32 = 1
+		deployment.Spec.Replicas = &replicas
+		deployment.Spec.Selector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"app": "prom-statsd-exporter",
+			},
+		}
+		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
+			Type: appsv1.RecreateDeploymentStrategyType,
+		}
+		deployment.Spec.Template = corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					"app": "prom-statsd-exporter",
+				},
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:  "prom-statsd-exporter",
+						Image: "prom/statsd-exporter:v0.18.0",
+						Ports: []corev1.ContainerPort{
+							{
+								Name:          "prom-statsd",
+								ContainerPort: 9125,
+							},
+							{
+								Name:          "metrics",
+								ContainerPort: 9102,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Infof("Start reconcilePromStatsdExporterService for marin3r")
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "prom-statsd-exporter",
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, service, func() error {
+		if service.Labels == nil {
+			service.Labels = map[string]string{}
+		}
+
+		service.Labels["app"] = "prom-statsd-exporter"
+		service.Spec.Ports = []corev1.ServicePort{
+			{
+				Name:       "prom-statsd",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       9125,
+				TargetPort: intstr.FromInt(9125),
+			},
+			{
+				Name:       "metrics",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       9102,
+				TargetPort: intstr.FromInt(9102),
+			},
+		}
+		service.Spec.Selector = map[string]string{
+			"app": "prom-statsd-exporter",
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Infof("Start reconcileServiceMonitor for marin3r")
+
+	serviceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "prom-statsd-exporter",
+			Namespace: namespace,
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, client, serviceMonitor, func() error {
+		serviceMonitor.Labels = map[string]string{
+			"monitoring-key": "middleware",
+		}
+		serviceMonitor.Spec = prometheus.ServiceMonitorSpec{
+			Endpoints: []prometheus.Endpoint{
+				{
+					BearerTokenSecret: corev1.SecretKeySelector{
+						Key: "",
+					},
+					Port: "metrics",
+				},
+			},
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "prom-statsd-exporter ",
+				},
+			},
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
