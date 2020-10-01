@@ -3,14 +3,24 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+
+	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,17 +29,24 @@ import (
 const (
 	defaultInstallationNamespace = "marin3r"
 
-	externalRedisSecretName = "redis"
+	manifestPackage   = "integreatly-marin3r"
+	serverSecretName  = "marin3r-server-cert-instance"
+	caSecretName      = "marin3r-ca-cert-instance"
+	secretDataCertKey = "tls.crt"
+	secretDataKeyKey  = "tls.key"
+
+	discoveryServiceName = "instance"
 )
 
 type Reconciler struct {
 	*resources.Reconciler
-	ConfigManager config.ConfigReadWriter
-	Config        *config.Marin3r
-	installation  *integreatlyv1alpha1.RHMI
-	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
-	recorder      record.EventRecorder
+	ConfigManager   config.ConfigReadWriter
+	Config          *config.Marin3r
+	installation    *integreatlyv1alpha1.RHMI
+	mpm             marketplace.MarketplaceInterface
+	logger          *logrus.Entry
+	recorder        record.EventRecorder
+	redisSecretName string
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -91,6 +108,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		if err := r.deleteDiscoveryService(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
+		}
+
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -110,8 +131,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
-		ReconcileRateLimitService(ctx, client)
+	phase, err = r.reconcileSubscription(ctx, client, operatorNamespace, operatorNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileRedis(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err = NewRateLimitServiceReconciler(productNamespace, r.redisSecretName).ReconcileRateLimitService(ctx, client)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -120,5 +151,118 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, nil
 	}
 
+	logrus.Infof("about to start reconciling the discovery service")
+	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace, installation.Spec.NamespacePrefix)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
+		return phase, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Info("Creating backend redis instance")
+	ns := r.Config.GetNamespace()
+	redisName := fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name)
+	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, func(cr metav1.Object) error {
+		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile backend redis request: %w", err)
+	}
+
+	r.redisSecretName = rateLimitRedis.Spec.SecretRef.Name
+
+	phase, err := resources.ReconcileRedisAlerts(ctx, client, r.installation, rateLimitRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
+	}
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
+	}
+
+	// create Redis Cpu Usage High alert
+	err = resources.CreateRedisCpuUsageAlerts(ctx, client, r.installation, rateLimitRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rate limit redis prometheus Cpu usage high alerts for threescale: %s", err)
+	}
+	// wait for the redis cr to reconcile
+	if rateLimitRedis.Status.Phase != types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
+	enabledNamespaces := []string{
+		namespacePrefix + "3scale",
+	}
+
+	discoveryService := &marin3r.DiscoveryService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: discoveryServiceName,
+		},
+		Spec: marin3r.DiscoveryServiceSpec{
+			DiscoveryServiceNamespace: productNamespace,
+			EnabledNamespaces:         enabledNamespaces,
+			Image:                     "quay.io/3scale/marin3r:v0.5.1",
+		},
+	}
+
+	err := client.Create(ctx, discoveryService)
+	if err != nil {
+		if !k8serr.IsAlreadyExists(err) {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating resource: %w", err)
+		}
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) deleteDiscoveryService(ctx context.Context, client k8sclient.Client) error {
+	discoveryService := &marin3r.DiscoveryService{}
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name: discoveryServiceName,
+	}, discoveryService); err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	return client.Delete(ctx, discoveryService)
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.Marin3rSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{},
+		r.preUpgradeBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
+}
+
+func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
+	if r.installation.Spec.UseClusterStorage != "false" {
+		return backup.NewNoopBackupExecutor()
+	}
+	//todo add backup for redis once it's added to the reconciler
+	return backup.NewNoopBackupExecutor()
 }

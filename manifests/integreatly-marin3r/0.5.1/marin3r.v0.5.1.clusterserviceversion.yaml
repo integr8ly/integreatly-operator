@@ -119,7 +119,7 @@ metadata:
     description: Operator to deploy and manage an Envoy Discovery Service.
     repository: https://github.com/3scale/marin3r
     support: Red Hat, Inc.
-  name: marin3r.v0.5.1-alpha1
+  name: marin3r.v0.5.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}

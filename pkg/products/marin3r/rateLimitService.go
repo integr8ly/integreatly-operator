@@ -3,7 +3,6 @@ package marin3r
 import (
 	"context"
 	"fmt"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -57,6 +56,7 @@ type yamlRoot struct {
 // It reconciles a ConfigMap to configure the service, a Deployment to run it, and
 // exposes it as a Service
 func (r *RateLimitServiceReconciler) ReconcileRateLimitService(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
 	phase, err := r.reconcileConfigMap(ctx, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err

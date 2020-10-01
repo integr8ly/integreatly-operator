@@ -3,6 +3,7 @@ package constants
 const (
 	CodeReadyPostgresPrefix      = "codeready-postgres-"
 	ThreeScaleBackendRedisPrefix = "threescale-backend-redis-"
+	RateLimitRedisPrefix         = "ratelimit-service-redis-"
 	ThreeScaleSystemRedisPrefix  = "threescale-redis-"
 	ThreeScalePostgresPrefix     = "threescale-postgres-"
 	RHSSOPostgresPrefix          = "rhsso-postgres-"
