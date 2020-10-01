@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -198,7 +199,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly 7 pods.",
 						},
-						Expr:   intstr.FromString("(1 - absent(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='redhat-rhmi-middleware-monitoring-operator'}) != 7"),
+						Expr:   intstr.FromString("(1 - absent(kube_pod_status_ready{condition='true',namespace='" + global.NamespacePrefix + "middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='" + global.NamespacePrefix + "middleware-monitoring-operator'}) != 7"),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},

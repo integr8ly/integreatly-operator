@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"reflect"
 	"strings"
 	"testing"
@@ -28,7 +29,7 @@ func makeScheduleScenario(scenario *scheduleScenario) struct {
 	Validate func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig)
 } {
 	scenario.config.Name = "test-config"
-	scenario.config.Namespace = "redhat-rhmi-operator"
+	scenario.config.Namespace = global.NamespacePrefix + "operator"
 
 	return struct {
 		Name     string
@@ -60,7 +61,7 @@ func TestUpdateStatus(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
@@ -94,7 +95,7 @@ func TestUpdateStatus(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: global.NamespacePrefix + "operator",
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
@@ -246,7 +247,7 @@ func TestUpdateStatus(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(buildScheme(), scenario.Config)
 			err := UpdateStatus(context.TODO(), client, scenario.Config)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
+			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: global.NamespacePrefix + "operator"}, updatedConfig)
 			scenario.Validate(t, err, updatedConfig)
 		})
 	}

@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +25,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := global.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -72,7 +73,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := global.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -120,7 +121,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := global.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -176,7 +177,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := "redhat-rhmi-operator"
+	namespace := global.NamespacePrefix + "operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)

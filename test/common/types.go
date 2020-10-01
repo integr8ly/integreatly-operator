@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
 	"testing"
 
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	NamespacePrefix                   = "redhat-rhmi-"
+	NamespacePrefix                   = global.NamespacePrefix
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"

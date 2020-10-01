@@ -9,19 +9,19 @@ import (
 var (
 	namespaces = []Namespace{
 		{
-			Name: "redhat-rhmi-rhsso",
+			Name: NamespacePrefix + "rhsso",
 			PodDisruptionBudgetNames: []string{
 				"keycloak",
 			},
 		},
 		{
-			Name: "redhat-rhmi-user-sso",
+			Name: NamespacePrefix + "user-sso",
 			PodDisruptionBudgetNames: []string{
 				"keycloak",
 			},
 		},
 		// {
-		// 	Name: "redhat-rhmi-3scale",
+		// 	Name: NamespacePrefix + "3scale",
 		// 	PodDisruptionBudgetNames: []string{
 		// 		"apicast-production",
 		// 		"apicast-staging",

@@ -3,6 +3,7 @@ package resources
 import (
 	goctx "context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
 	"net/url"
 	"strings"
@@ -24,7 +25,10 @@ const (
 
 	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
 	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
-	PathFusePods        = "/api/kubernetes/api/v1/namespaces/redhat-rhmi-fuse/pods"
+)
+
+var (
+	PathFusePods = "/api/kubernetes/api/v1/namespaces/" + global.NamespacePrefix + "fuse/pods"
 )
 
 // User used to create url user query

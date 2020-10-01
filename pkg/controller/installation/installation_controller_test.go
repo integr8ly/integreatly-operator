@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,8 +31,8 @@ func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = global.NamespacePrefix + "operator"
 )
 
 // Test that the installation CR spec value for UseClusterStorage is true when the

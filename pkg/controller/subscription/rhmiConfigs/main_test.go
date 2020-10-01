@@ -3,6 +3,7 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 	"time"
 
@@ -17,8 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = global.NamespacePrefix + "operator"
 )
 
 func setupRecorder() record.EventRecorder {
@@ -37,7 +38,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -56,7 +57,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -77,7 +78,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -100,7 +101,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -121,7 +122,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -143,7 +144,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -163,7 +164,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -185,7 +186,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -205,7 +206,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -217,7 +218,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage:     integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseInProgress),
@@ -369,7 +370,7 @@ func TestApproveUpgrade(t *testing.T) {
 	rhmiMock := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: defaultNamespace,
 		},
 	}
 
@@ -402,7 +403,7 @@ func TestApproveUpgrade(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 			},
 			RHMI: rhmiMock,
@@ -426,7 +427,7 @@ func TestApproveUpgrade(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
@@ -462,7 +463,7 @@ func TestApproveUpgrade(t *testing.T) {
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
+			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: defaultNamespace}, updatedConfig)
 			scenario.Verify(retrievedInstallPlan, updatedConfig, rhmi, err)
 		})
 	}
