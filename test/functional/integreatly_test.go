@@ -39,6 +39,15 @@ func TestIntegreatly(t *testing.T) {
 		common.RunTestCases(FUNCTIONAL_TESTS, t, config)
 	})
 
+	t.Run("API Managed Multi-AZ Tests", func(t *testing.T) {
+		// Do not execute these tests unless MULTIAZ is set to true
+		if os.Getenv("MULTIAZ") != "true" {
+			t.Skip("Skipping Multi-AZ tests as MULTIAZ env var is not set to true")
+		}
+
+		common.RunTestCases(MULTIAZ_TESTS, t, config)
+	})
+
 	t.Run("Integreatly Destructive Tests", func(t *testing.T) {
 		// Do not execute these tests unless DESTRUCTIVE is set to true
 		if os.Getenv("DESTRUCTIVE") != "true" {

@@ -11,4 +11,7 @@ var (
 		{Description: "N06 - Verify Legacy cluster VPC is configured properly", Test: TestLegacyClusterVPC},
 		{Description: "F04 - Verify AWS s3 blob storage resources exist", Test: TestAWSs3BlobStorageResourcesExist},
 	}
+	MULTIAZ_TESTS = []common.TestCase{
+		{Description: "F09 - Verify correct pod distribution on Multi-AZ cluster", Test: TestMultiAZPodDistribution},
+	}
 )
