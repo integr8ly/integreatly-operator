@@ -263,6 +263,12 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	if r.installation.Spec.UseClusterStorage != "false" {
 		return backup.NewNoopBackupExecutor()
 	}
-	//todo add backup for redis once it's added to the reconciler
-	return backup.NewNoopBackupExecutor()
+
+	return backup.NewConcurrentBackupExecutor(
+		backup.NewAWSBackupExecutor(
+			r.installation.Namespace,
+			"ratelimit-service-redis-rhmi",
+			backup.RedisSnapshotType,
+		),
+	)
 }
