@@ -129,6 +129,17 @@ rules:
       - create
       - update
       - delete
+  - apiGroups:
+      - operator.marin3r.3scale.net
+    resources:
+      - discoveryservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -417,4 +428,16 @@ rules:
       - create
       - update
       - delete
+  - apiGroups:
+      - operator.marin3r.3scale.net
+    resources:
+      - discoveryservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+
   
