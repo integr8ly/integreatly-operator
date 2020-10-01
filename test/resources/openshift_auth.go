@@ -3,7 +3,7 @@ package resources
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/common"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	PathFusePods = "/api/kubernetes/api/v1/namespaces/" + common.NamespacePrefix + "fuse/pods"
+	PathFusePods = "/api/kubernetes/api/v1/namespaces/" + global.NamespacePrefix + "fuse/pods"
 )
 
 // User used to create url user query

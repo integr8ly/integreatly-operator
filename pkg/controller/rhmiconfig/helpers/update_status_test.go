@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"context"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"reflect"
 	"strings"
 	"testing"
