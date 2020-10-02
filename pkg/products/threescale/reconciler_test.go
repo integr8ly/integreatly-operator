@@ -7,6 +7,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
+	openshiftv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -66,6 +67,7 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = appsv1.AddToScheme(scheme)
 	err = monitoringv1.AddToScheme(scheme)
 	err = consolev1.AddToScheme(scheme)
+	err = openshiftv1.AddToScheme(scheme)
 	return scheme, err
 }
 
