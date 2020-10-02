@@ -713,15 +713,15 @@ spec:
   provider:
     name: Red Hat
   relatedImages:
-  - image: registry.stage.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:34aba37c2d3e071c15015c6135004de937efbe12863dd800b25db4f13e77d7c2
+  - image: registry.redhat.io/3scale-amp2/apicast-gateway-rhel8@sha256:34aba37c2d3e071c15015c6135004de937efbe12863dd800b25db4f13e77d7c2
     name: apicast-gateway-rhel8
-  - image: registry.stage.redhat.io/3scale-amp2/backend-rhel7@sha256:48b8b101be540bcd06c3d5672bcbc07da12333916ac2ed5a93ccc3c077da9195
+  - image: registry.redhat.io/3scale-amp2/backend-rhel7@sha256:48b8b101be540bcd06c3d5672bcbc07da12333916ac2ed5a93ccc3c077da9195
     name: backend-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/system-rhel7@sha256:75d50fa5006e10574670507beb290992da992ec3dbfb1a55013894432bf94150
+  - image: registry.redhat.io/3scale-amp2/system-rhel7@sha256:75d50fa5006e10574670507beb290992da992ec3dbfb1a55013894432bf94150
     name: system-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/zync-rhel7@sha256:04add0c1e4ceaa3628939ed1e72dcc70b90ae669c831f2e9782f895959b371ed
+  - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:04add0c1e4ceaa3628939ed1e72dcc70b90ae669c831f2e9782f895959b371ed
     name: zync-rhel7
-  - image: registry.stage.redhat.io/3scale-amp2/memcached-rhel7@sha256:33a333cd8ae8d1d39aa297ba61c5bdbb4f8f3ada63e84196e5d2187ec63480be
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:33a333cd8ae8d1d39aa297ba61c5bdbb4f8f3ada63e84196e5d2187ec63480be
     name: memcached-rhel7
   - image: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
     name: redis-32-rhel7
