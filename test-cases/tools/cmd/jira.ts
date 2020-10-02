@@ -92,6 +92,7 @@ interface Args {
     epic: string;
     previousEpic?: string;
     environment: string;
+    product: string;
     dryRun: boolean;
 }
 
@@ -115,6 +116,11 @@ const jira: CommandModule<{}, Args> = {
         environment: {
             demand: true,
             describe: "the environment name used to filter out the test cases",
+            type: "string",
+        },
+        product: {
+            demand: true,
+            describe: "the product name used to filter out the test cases",
             type: "string",
         },
         epic: {
@@ -164,8 +170,8 @@ const jira: CommandModule<{}, Args> = {
 
         const project = epic.fields.project.key;
 
-        let tests = loadTestCases();
-
+        let tests = loadTestCases(args.product);
+        console.log("fixversion", fixVersion);
         tests = releaseFilter(tests, args.environment, fixVersion.name);
 
         for (const test of tests) {

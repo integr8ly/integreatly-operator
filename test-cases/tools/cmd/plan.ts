@@ -36,6 +36,7 @@ function versionToString(version: Version): string {
 }
 
 interface ReleaseArgs {
+    product: string;
     target: string;
     dryRun: boolean;
 }
@@ -46,6 +47,11 @@ const release: CommandModule<{}, ReleaseArgs> = {
     describe:
         "automatically assign the target version to the test cases which latest version is older than 3 minor releases",
     builder: {
+        product: {
+            demand: true,
+            describe: "the product to set the version to",
+            type: "string",
+        },
         target: {
             demand: true,
             describe: "the version to check against and set to the test cases",
@@ -64,7 +70,7 @@ const release: CommandModule<{}, ReleaseArgs> = {
             process.exit(1);
         }
 
-        const tests = loadTestCases();
+        const tests = loadTestCases(args.product);
 
         for (const test of tests) {
             // skip all test cases that are automated, per-release, per-build or marked as manual-selection
@@ -118,6 +124,7 @@ const release: CommandModule<{}, ReleaseArgs> = {
 };
 
 interface ForArgs {
+    product: string;
     target: string;
     component: string;
     dryRun: boolean;
@@ -129,6 +136,11 @@ const forcmd: CommandModule<{}, ForArgs> = {
     describe:
         "automatically assign the target version to the test cases with the passed component",
     builder: {
+        product: {
+            demand: true,
+            describe: "all the test cases with this product will be updated",
+            type: "string",
+        },
         target: {
             demand: true,
             describe: "the version to set to the test cases",
@@ -144,7 +156,7 @@ const forcmd: CommandModule<{}, ForArgs> = {
         },
     },
     handler: (args) => {
-        const tests = loadTestCases();
+        const tests = loadTestCases(args.product);
 
         for (const test of tests) {
             // skip all test cases that are automated, per-release, per-build or marked as manual-selection

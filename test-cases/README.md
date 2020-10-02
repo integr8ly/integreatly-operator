@@ -78,7 +78,7 @@ If need to update multiple test cases by component read: [How to bulk update the
 To automatically add the target version to all test cases with a target version older than 3 releases, use the following command:
 
 ```
-./tools.sh plan release --target TARGET_VERSION
+./tools.sh plan release --product PRODUCT_NAME --target TARGET_VERSION
 ```
 
 > For example if we set the TARGET_VERSION to `2.8.0` than all test cases which latest target version for the same major release is equal or minor to `2.5.0` will receive the target `2.8.0` and therefore included in the `2.8.0` release
@@ -148,19 +148,19 @@ To crate the Jira tasks for the test cases you need first to create an Epic in J
 To see the list of test cases that will be created in the Epic you can use the `export` cmd:
 
 ```bash
-./tools.sh export csv --target VERSION --environment ENVIRONMENT | column -t -s,
+./tools.sh export csv --product PRODUCT_NAME --target VERSION --environment ENVIRONMENT | column -t -s,
 ```
 
 Use the `jira` cmd to create the Jira tasks for the test cases and add them to the Epic
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --environment ENVIRONMENT
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME --environment ENVIRONMENT
 ```
 
 If you need to link the new tasks to the task of a previous test round use the `previous-epic` option:
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
 ```
 
 > The `previous-epic` option will link each new task to the task in the previous epic with the same ID and it
@@ -187,25 +187,25 @@ It is also possible to set the Jira username and password in environment variabl
 Use the `export csv` cmd to list and export the test cases in csv:
 
 ```
-./tools.sh export csv
+./tools.sh export csv --product PRODUCT_NAME
 ```
 
 use the `--output` option to save it to file
 
 ```
-./tools.sh export csv --output /tmp/alltests.csv
+./tools.sh export csv --product PRODUCT_NAME --output /tmp/alltests.csv
 ```
 
 to export only specific test cases use the `--filter` option:
 
 ```
-./tools.sh export csv --filter components=product-3scale tags=^automated
+./tools.sh export csv --product PRODUCT_NAME --filter components=product-3scale tags=^automated
 ```
 
 to pretty print the csv output on the terminal:
 
 ```
-./tools.sh export csv | column -t -s, | less -S
+./tools.sh export csv --product PRODUCT_NAME | column -t -s, | less -S
 ```
 
 ## How to upload all test case to Polarion
@@ -213,7 +213,7 @@ to pretty print the csv output on the terminal:
 This command will automatically upload all test cases to Polarion:
 
 ```bash
-POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polarion testcase
+POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polarion testcase --product PRODUCT_NAME
 ```
 
 ## How to report the results of the manual tests to Polarion
@@ -223,7 +223,7 @@ POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polario
 This command will read all test results from Jira, and upload them to Polarion.
 
 ```bash
-JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390
+JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME
 ```
 
 ## Test Case Metadata
@@ -247,6 +247,7 @@ Tags are used to define specific characteristics of a test case.
 - `per-release` Indicates that this test case should be executed on each release but can be skip if passed in the previous build
 - `manual-selection` Indicates that this test case is excluded from the standard test recycle and therefore it will not be retested every tree releases
 - `destructive` Indicates that the test case may conflict with other tests and therefore can't be executed in parallel with other tests, all destructive tests must be executed sequentially
+- `rhmi`
 
 E.g.:
 
@@ -321,5 +322,5 @@ Or using the VS Code extension: https://marketplace.visualstudio.com/items?itemN
 Run the `./tools.sh export csv` script to export all test cases in a CSV table:
 
 ```
-./tools.sh export csv --output testcases.csv
+./tools.sh export csv --product PRODUCT_NAME --output testcases.csv
 ```

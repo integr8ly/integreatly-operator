@@ -8,6 +8,7 @@ import { logger } from "../lib/winston";
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
 
 interface TestCaseArgs {
+    product: string;
     polarionUsername: string;
     polarionPassword: string;
     dumpOnly: boolean;
@@ -17,6 +18,11 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
     command: "testcase",
     describe: "Upload all test cases to Polarion",
     builder: {
+        product: {
+            describe: "A product name (rhmi/rhoam)",
+            type: "string",
+            demand: true,
+        },
         polarionUsername: {
             describe: "Jira username or set POLARION_USERNAME",
             default: process.env.POLARION_USERNAME,
@@ -35,7 +41,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
         },
     },
     handler: async (args) => {
-        const tests = loadTestCases();
+        const tests = loadTestCases(args.product);
 
         // Polarion Test Case Importer: https://mojo.redhat.com/docs/DOC-1075945
         //

@@ -17,11 +17,9 @@ const REPO_URL =
 
 interface Metadata {
     automation: string[];
-    components: string[];
-    environments: string[];
     estimate: string;
+    products: Product[];
     tags: string[];
-    targets: string[];
 }
 
 interface Filter {
@@ -33,6 +31,7 @@ interface Filters {
     id?: Filter;
     category?: Filter;
     environments?: Filter;
+    products?: Filter;
     tags?: Filter;
     targets?: Filter;
     components?: Filter;
@@ -52,6 +51,13 @@ interface TestCase {
     file: string;
     url: string;
     matter: matter.GrayMatterFile<string>;
+}
+
+interface Product {
+    name: string;
+    targets: string[];
+    components: string[];
+    environments: string[];
 }
 
 function extractTitle(content: string): { title: string; content: string } {
@@ -111,13 +117,23 @@ function extractCategory(file: string): string {
     return path.basename(path.dirname(file));
 }
 
-function loadTestCases(testDirectory?: string): TestCase[] {
-    return walk(testDirectory || TEST_DIR, TEST_FILTER).map(loadTestCase);
+function loadTestCases(
+    productName?: string,
+    testDirectory?: string
+): TestCase[] {
+    return walk(testDirectory || TEST_DIR, TEST_FILTER)
+        .map((f) => loadTestCase(f, productName))
+        .filter((t) => t != null);
 }
 
-function loadTestCase(file: string): TestCase {
+function loadTestCase(file: string, productName: string): TestCase | null {
     const m = matter.read(file);
     const data = m.data as Metadata;
+
+    const product = data.products.find((p) => p.name === productName);
+    if (!product) {
+        return null;
+    }
 
     const te = extractTitle(m.content);
     let title = te.title;
@@ -132,15 +148,15 @@ function loadTestCase(file: string): TestCase {
     return {
         automation: data.automation || [],
         category,
-        components: data.components || [],
+        components: product.components || [],
         content,
-        environments: data.environments || [],
+        environments: product.environments || [],
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
         file,
         id,
         matter: m,
         tags: data.tags || [],
-        targets: data.targets || [],
+        targets: product.targets || [],
         title,
         url: `${REPO_URL}/${file}`,
     };

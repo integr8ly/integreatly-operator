@@ -26,6 +26,9 @@ type error = string | null;
 
 const AUTOMATION = /^[A-Z]+-[0-9]+$/;
 
+// Update the README.md too
+const PRODUCTS = ["rhmi", "rhoam"];
+
 const CATEGORIES = [
     "alerts",
     "authorization",
@@ -127,6 +130,14 @@ function lintComponents(): Linter {
         "components",
         includes(COMPONENTS),
         `valid components are: ${COMPONENTS}`
+    );
+}
+
+function lintProducts(): Linter {
+    return lintStringArrayField(
+        "products",
+        includes(PRODUCTS),
+        `valid products are: ${PRODUCTS}`
     );
 }
 
@@ -260,6 +271,7 @@ const linters: { [key: string]: Linter } = {
     "file-names": lintFileNames(),
     "mandatory-environment": lintMandatoryEnvironment(),
     occurrence: lintOccurrence(),
+    products: lintProducts(),
     sections: lintSections(),
     tags: lintTags(),
     targets: lintTargets(),
