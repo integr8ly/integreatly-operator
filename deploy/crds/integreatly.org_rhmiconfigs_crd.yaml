@@ -56,6 +56,8 @@ spec:
                     until it's approved
                   nullable: true
                   type: integer
+                schedule:
+                  type: boolean
                 waitForMaintenance:
                   description: If this value is true, upgrades will be approved in
                     the next maintenance window n days after the upgrade is made available.

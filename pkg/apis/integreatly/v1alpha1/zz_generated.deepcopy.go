@@ -365,6 +365,11 @@ func (in *Upgrade) DeepCopyInto(out *Upgrade) {
 		*out = new(int)
 		**out = **in
 	}
+	if in.Schedule != nil {
+		in, out := &in.Schedule, &out.Schedule
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
