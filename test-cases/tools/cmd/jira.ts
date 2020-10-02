@@ -171,7 +171,6 @@ const jira: CommandModule<{}, Args> = {
         const project = epic.fields.project.key;
 
         let tests = loadTestCases(args.product);
-        console.log("fixversion", fixVersion);
         tests = releaseFilter(tests, args.environment, fixVersion.name);
 
         for (const test of tests) {
