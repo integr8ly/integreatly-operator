@@ -17,6 +17,7 @@ const REPO_URL =
 
 interface Metadata {
     automation: string[];
+    components: string[];
     estimate: string;
     products: Product[];
     tags: string[];
@@ -56,7 +57,6 @@ interface TestCase {
 interface Product {
     name: string;
     targets: string[];
-    components: string[];
     environments: string[];
 }
 
@@ -148,7 +148,7 @@ function loadTestCase(file: string, productName: string): TestCase | null {
     return {
         automation: data.automation || [],
         category,
-        components: product.components || [],
+        components: data.components || [],
         content,
         environments: product.environments || [],
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
