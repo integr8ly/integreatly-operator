@@ -167,6 +167,11 @@ test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
 
+.PHONY: test/osde2e
+test/osde2e:
+	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
+	go clean -testcache && go test -v ./test/osde2e -timeout=80m
+
 .PHONY: test/products/local
 test/products/local:
 	# Running the products tests against an existing cluster inside a container. Make sure you have logged in to the cluster.
