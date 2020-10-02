@@ -31,6 +31,8 @@ const (
 	secretDataKeyKey             = "tls.key"
 
 	discoveryServiceName = "instance"
+
+	externalRedisSecretName = "redis"
 )
 
 type Reconciler struct {
@@ -136,6 +138,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
 		return phase, err
+	}
+
+	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
+		ReconcileRateLimitService(ctx, client)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rate limit service", err)
+		return phase, err
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
