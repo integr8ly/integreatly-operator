@@ -22,6 +22,7 @@ import (
 	usersv1 "github.com/openshift/api/user/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	"github.com/sirupsen/logrus"
+	k8sappsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -353,6 +354,21 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, serverClient k8s
 		r.PreUpgradeBackupsExecutor(resourceName),
 		serverClient,
 		catalogSourceReconciler,
+	)
+}
+
+func (r *Reconciler) ReconcileZoneTopologySpreadConstraints(ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon) (integreatlyv1alpha1.StatusPhase, error) {
+	keycloakStatefulSet := &k8sappsv1.StatefulSet{}
+	return resources.ReconcileZoneTopologySpreadConstraints(
+		ctx,
+		serverClient,
+		k8sclient.ObjectKey{
+			Name:      "keycloak",
+			Namespace: config.GetNamespace(),
+		},
+		resources.SelectFromStatefulSet,
+		"app",
+		keycloakStatefulSet,
 	)
 }
 

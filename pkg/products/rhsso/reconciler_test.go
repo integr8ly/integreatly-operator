@@ -17,6 +17,7 @@ import (
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	routev1 "github.com/openshift/api/route/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
@@ -105,6 +106,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = appsv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -523,6 +528,16 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		Type: corev1.SecretTypeOpaque,
 	}
 
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: defaultOperandNamespace,
+			Labels: map[string]string{
+				"app": "keycloak",
+			},
+		},
+	}
+
 	cases := []struct {
 		Name                  string
 		ExpectError           bool
@@ -541,7 +556,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed()),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, croPostgres, croPostgresSecret, getRHSSOCredentialSeed(), statefulSet),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
