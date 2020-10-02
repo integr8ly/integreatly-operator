@@ -156,7 +156,7 @@ function loadTestCase(file: string, productName?: string): TestCase | null {
     return {
         automation: data.automation || [],
         category,
-        components: product.components || [],
+        components: data.components || [],
         content,
         environments: product.environments || [],
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
