@@ -351,7 +351,7 @@ var postgresSec = &corev1.Secret{
 
 var redis = &crov1.Redis{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "threescale-redis-test-installation",
+		Name:      "threescale-redis-rhmi",
 		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.RedisStatus{
@@ -379,7 +379,7 @@ var redisSec = &corev1.Secret{
 
 var backendRedis = &crov1.Redis{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "threescale-backend-redis-test-installation",
+		Name:      "threescale-backend-redis-rhmi",
 		Namespace: "integreatly-operator-ns",
 	},
 	Status: crov1.RedisStatus{

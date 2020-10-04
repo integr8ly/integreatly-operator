@@ -90,7 +90,7 @@ type ThreeScaleTestScenario struct {
 func getTestInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
+			Name:      "rhmi",
 			Namespace: "test",
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
@@ -106,7 +106,7 @@ func getTestInstallation() *integreatlyv1alpha1.RHMI {
 func getTestBlobStorage() *crov1.BlobStorage {
 	return &crov1.BlobStorage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "threescale-blobstorage-test",
+			Name:      "threescale-blobstorage-rhmi",
 			Namespace: "test",
 		},
 		Status: crov1.BlobStorageStatus{
