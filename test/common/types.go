@@ -40,6 +40,9 @@ const (
 	UPSProductNamespace               = NamespacePrefix + "ups"
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
 	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
+	Marin3rOperatorNamespace          = NamespacePrefix + "marin3r-operator"
+	Marin3rProductNamespace           = NamespacePrefix + "marin3r"
+	CustomerGrafanaNamespace          = NamespacePrefix + "customer-monitoring-operator"
 	OpenShiftConsoleRoute             = "console"
 	OpenShiftConsoleNamespace         = "openshift-console"
 )

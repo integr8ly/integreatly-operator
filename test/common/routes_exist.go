@@ -143,6 +143,12 @@ var (
 			isTLS: true,
 		},
 	}
+	customerGrafanaRoutes = []ExpectedRoute{
+		{
+			Name:  "grafana-route",
+			isTLS: true,
+		},
+	}
 )
 
 var rhmi2ExpectedRoutes = map[string][]ExpectedRoute{
@@ -163,6 +169,7 @@ var managedApiExpectedRoutes = map[string][]ExpectedRoute{
 	"middleware-monitoring-operator": middlewareMonitoringRoutes,
 	"rhsso":                          rhssoRoutes,
 	"user-sso":                       userSsoRoutes,
+	"customer-monitoring-operator":   customerGrafanaRoutes,
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created

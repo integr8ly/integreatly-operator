@@ -41,6 +41,9 @@ var (
 		RHSSOOperatorNamespace,
 		ThreeScaleProductNamespace,
 		ThreeScaleOperatorNamespace,
+		Marin3rOperatorNamespace,
+		Marin3rProductNamespace,
+		CustomerGrafanaNamespace,
 	}
 )
 

@@ -35,6 +35,11 @@ var rhmi2ExpectedServiceMonitors = []string{
 	NamespacePrefix + "ups-unifiedpush",
 }
 
+// Specific to managed api install type
+var managedApiServiceMonitors = []string{
+	Marin3rProductNamespace + "-prom-statsd-exporter",
+}
+
 // Common to all install types
 var commonExpectedServiceMonitors = []string{
 	NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
@@ -165,7 +170,7 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 
 func getExpectedServiceMonitors(installType string) []string {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonExpectedServiceMonitors
+		return append(commonExpectedServiceMonitors, managedApiServiceMonitors...)
 	} else {
 		return append(commonExpectedServiceMonitors, rhmi2ExpectedServiceMonitors...)
 	}
