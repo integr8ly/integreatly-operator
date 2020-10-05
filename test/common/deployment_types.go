@@ -105,27 +105,27 @@ var (
 		},
 	}
 	marin3rOperatorDeployment = Namespace{
-		Name:                     Marin3rOperatorNamespace,
-		Products:                 []Product{
+		Name: Marin3rOperatorNamespace,
+		Products: []Product{
 			{
-				Name: "marin3r-operator",
+				Name:             "marin3r-operator",
 				ExpectedReplicas: 1,
 			},
 		},
 	}
 	marin3rDeployment = Namespace{
-		Name:                     Marin3rProductNamespace,
-		Products:                 []Product{
+		Name: Marin3rProductNamespace,
+		Products: []Product{
 			{
-				Name: "marin3r-instance",
+				Name:             "marin3r-instance",
 				ExpectedReplicas: 1,
 			},
 			{
-				Name: "prom-statsd-exporter",
+				Name:             "prom-statsd-exporter",
 				ExpectedReplicas: 1,
 			},
 			{
-				Name: "ratelimit",
+				Name:             "ratelimit",
 				ExpectedReplicas: 1,
 			},
 		},
