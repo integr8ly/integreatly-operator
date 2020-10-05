@@ -23,6 +23,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	consolev1 "github.com/openshift/api/console/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -144,6 +145,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	}
 	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
+		return nil, err
+	}
+	if err := consolev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, err
