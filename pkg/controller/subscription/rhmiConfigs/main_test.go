@@ -360,7 +360,7 @@ func TestApproveUpgrade(t *testing.T) {
 				{
 					Resource: olmv1alpha1.StepResource{
 						Kind:     "ClusterServiceVersion",
-						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.Version),
+						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.GetVersion()),
 					},
 				},
 			},

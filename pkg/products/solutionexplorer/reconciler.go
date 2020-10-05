@@ -369,7 +369,7 @@ func (r *Reconciler) ReconcileCustomResource(ctx context.Context, installation *
 			paramOpenShiftVersion:     "4",
 			paramClusterType:          "osd",
 			paramInstalledServices:    installedServices,
-			paramIntegreatlyVersion:   version.IntegreatlyVersion,
+			paramIntegreatlyVersion:   version.GetVersion(),
 			paramWalkthroughLocations: defaultWalkthroughsLoc,
 			paramRoutingSubdomain:     installation.Spec.RoutingSubdomain,
 			paramInstallationType:     installation.Spec.Type,

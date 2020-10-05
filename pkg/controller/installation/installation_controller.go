@@ -57,11 +57,9 @@ const (
 )
 
 var (
-	DefaultInstallationPrefix = global.NamespacePrefix
-)
-
-var (
-	allProductsReconciled = false
+	DefaultInstallationPrefix   = global.NamespacePrefix
+	allProductsReconciled       = false
+	productVersionMismatchFound bool
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -292,8 +290,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	// If no current or target version is set this is the first installation of rhmi.
 	if upgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
-		installation.Status.ToVersion = version.IntegreatlyVersion
-		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.IntegreatlyVersion)
+		installation.Status.ToVersion = version.GetVersion()
+		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.GetVersion())
 		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -350,6 +348,10 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 			installInProgress = true
 			break
 		}
+	}
+
+	if productVersionMismatchFound == false {
+		allProductsReconciled = true
 	}
 
 	logrus.Infof("installInProgress=%v", installInProgress)
@@ -558,7 +560,7 @@ func firstInstallFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 // In which case the toVersion field has not been set
 func upgradeFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	status := installation.Status
-	return status.Version != "" && status.ToVersion == "" && status.Version != version.IntegreatlyVersion
+	return status.Version != "" && status.ToVersion == "" && status.Version != version.GetVersion()
 }
 
 func upgradeInProgress(installation *integreatlyv1alpha1.RHMI) bool {
@@ -705,6 +707,8 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 
 func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
+	productVersionMismatchFound = false
+
 	var mErr error
 	productsAux := make(map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus)
 	installation.Status.Stage = stage.Name
@@ -714,7 +718,11 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}
-		allProductsReconciled = reconciler.VerifyVersion(installation)
+
+		if !reconciler.VerifyVersion(installation) {
+			productVersionMismatchFound = true
+		}
+
 		serverClient, err := k8sclient.New(r.restConfig, k8sclient.Options{})
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create server client: %w", err)
