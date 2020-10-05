@@ -59,8 +59,7 @@ func TestProductOperatorVersions(t *testing.T, ctx *TestingContext) {
 		for productName, operatorVersion := range operatorVersions[stage] {
 			clusterVersion := rhmi.Status.Stages[stage].Products[productName].OperatorVersion
 			if clusterVersion != operatorVersion {
-				t.Skipf("skipping due to known flaky behaviour https://issues.redhat.com/browse/INTLY-8390, Error with version of %s operator deployed on cluster. Expected %s. Got %s", productName, operatorVersion, clusterVersion)
-				// t.Errorf("Error with version of %s operator deployed on cluster. Expected %s. Got %s", productName, operatorVersion, clusterVersion)
+				t.Errorf("Error with version of %s operator deployed on cluster. Expected %s. Got %s", productName, operatorVersion, clusterVersion)
 			}
 		}
 
