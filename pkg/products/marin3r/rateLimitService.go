@@ -15,6 +15,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	//twenty million divided by hours per day and minutes per hour
+	//value == 13888.888888888....
+	//perMinuteRateTwentyMillion = 20000000 / 24 / 60
+)
+
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
@@ -85,8 +91,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		configYaml := yamlRoot{
-			Domain: "kuard",
+		stagingconfig := yamlRoot{
+			Domain: "apicast-staging",
 			Descriptors: []yamlDescriptor{
 				{
 					Key:   "generic_key",
@@ -98,7 +104,27 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 				},
 			},
 		}
-		configYamlMarshalled, err := yaml.Marshal(configYaml)
+
+		productionconfig := yamlRoot{
+			Domain: "apicast-production",
+			Descriptors: []yamlDescriptor{
+				{
+					Key:   "generic_key",
+					Value: "slowpath",
+					RateLimit: &yamlRateLimit{
+						Unit:            "minute",
+						RequestsPerUnit: 1,
+					},
+				},
+			},
+		}
+
+		stagingConfigYamlMarshalled, err := yaml.Marshal(stagingconfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshall rate limit config: %v", err)
+		}
+
+		productionConfigYamlMarshalled, err := yaml.Marshal(productionconfig)
 		if err != nil {
 			return fmt.Errorf("failed to marshall rate limit config: %v", err)
 		}
@@ -110,7 +136,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 			cm.Labels = map[string]string{}
 		}
 
-		cm.Data["kuard.yaml"] = string(configYamlMarshalled)
+		cm.Data["apicast-staging.yaml"] = string(stagingConfigYamlMarshalled)
+		cm.Data["apicast-production.yaml"] = string(productionConfigYamlMarshalled)
 		cm.Labels["app"] = "ratelimit"
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil

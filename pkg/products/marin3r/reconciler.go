@@ -40,14 +40,12 @@ const (
 	caSecretName                 = "marin3r-ca-cert-instance"
 	secretDataCertKey            = "tls.crt"
 	secretDataKeyKey             = "tls.key"
-
-	discoveryServiceName = "instance"
-
-	externalRedisSecretName = "redis"
-
 	statsdHost  = "prom-statsd-exporter"
 	statsdPort  = 9125
 	metricsPort = 9102
+	discoveryServiceName         = "instance"
+	externalRedisSecretName      = "redis"
+
 )
 
 type Reconciler struct {

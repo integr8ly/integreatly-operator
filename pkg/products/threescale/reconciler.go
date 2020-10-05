@@ -2,6 +2,7 @@ package threescale
 
 import (
 	"context"
+
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,11 +13,12 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
-	rbacv1 "k8s.io/api/rbac/v1"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
+	rbacv1 "k8s.io/api/rbac/v1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/sirupsen/logrus"
 
@@ -37,13 +39,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -307,6 +308,34 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		// Edit deployment configs of apicast production
+		apicasts := []string{"apicast-production", "apicast-staging"}
+		for _, apicast := range apicasts {
+			deploymentConfig, phase, err := r.getDeploymentConfig(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get deployment config for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			service, phase, err := r.getService(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get service for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			err = r.addEnvoyConfig(ctx, serverClient, deploymentConfig, apicast, service, productNamespace)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+			}
+		}
+
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -340,6 +369,68 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getDeploymentConfig(ctx context.Context, client k8sclient.Client, dcName string) (*appsv1.DeploymentConfig, integreatlyv1alpha1.StatusPhase, error) {
+	apiCastDeploymentConfig := &appsv1.DeploymentConfig{}
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, apiCastDeploymentConfig)
+
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
+	}
+	return apiCastDeploymentConfig, integreatlyv1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) getService(ctx context.Context, client k8sclient.Client, dcName string) (*corev1.Service, integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{}
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, service)
+
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
+	}
+	return service, integreatlyv1alpha1.PhaseInProgress, nil
+
+}
+
+func (r *Reconciler) addEnvoyConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, dcName string, service *corev1.Service, namespace string) error {
+
+	secretName := fmt.Sprintf("%s-certificate", dcName)
+	if service.Annotations == nil {
+		service.Annotations = map[string]string{}
+	}
+	// add annotation in order to trigger openshift to create a required tls secret
+	service.Annotations["service.beta.openshift.io/serving-cert-secret-name"] = secretName
+	// update the gateway port to point to 8443 so that the request is via the envoy sidecar container
+	ports := service.Spec.Ports
+	for i, port := range ports {
+		if port.Name == "gateway" {
+			service.Spec.Ports[i].Port = 8443
+			service.Spec.Ports[i].TargetPort = intstr.FromInt(8443)
+			break
+		}
+	}
+	if err := client.Update(ctx, service); err != nil {
+		return fmt.Errorf("failed to update service: %v", err)
+	}
+
+	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = dcName
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8443"
+
+	if err := client.Update(ctx, service); err != nil {
+		return fmt.Errorf("failed to update deployment config: %v", err)
+	}
+
+	return nil
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
