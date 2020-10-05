@@ -10,7 +10,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 
-	consolev1 "github.com/openshift/api/console/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
@@ -51,8 +50,6 @@ const (
 	SSOLabelKey   = "sso"
 	SSOLabelValue = "integreatly"
 	RHSSOProfile  = "RHSSO"
-
-	RHSSOIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2NkY2RjZDt9LmNscy00e2ZpbGw6I2ZmZjt9LmNscy01e2ZpbGw6I2VhZWFlYTt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9TU08gZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0yMy40OCw3MC41OHYzYTEuNDQsMS40NCwwLDAsMCwwLC4yOEw0Niw1MS40NWwtLjcxLTIuNjNaIi8+PHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODEuMjQsNDIuMDksNzYuNjUsMjQuOTVBMiwyLDAsMCwwLDc2LDI0bC0yLjIxLDIuMjFhMiwyLDAsMCwxLC42MiwxbDMuNzksMTQuMTNhMiwyLDAsMCwxLS41MywyTDY3LjM2LDUzLjU5YTIsMiwwLDAsMS0yLC41M0w1MS4yNyw1MC4zM2EyLDIsMCwwLDEtMS0uNjJsLTIuMjEsMi4yMWEyLDIsMCwwLDAsMSwuNjJsMTcuMTQsNC41OWEyLDIsMCwwLDAsMi0uNTNMODAuNzIsNDQuMDVBMiwyLDAsMCwwLDgxLjI0LDQyLjA5WiIvPjxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTQ1LjA5LDQxLjYybC0xLjcxLDEuNzFhMi4xMywyLjEzLDAsMCwwLDAsM2wuNzcuNzctMjAuMywyMC4zYTEuMjUsMS4yNSwwLDAsMC0uMzcuODh2Mi4yOUw0NS4yNCw0OC44Miw0Niw1MS40NSwyMy41MSw3My44OUExLjQ0LDEuNDQsMCwwLDAsMjQuOTIsNzVoMEw0OC4wOCw1MS45MWEyLjQsMi40LDAsMCwxLS40NS0uODJaIi8+PHBhdGggY2xhc3M9ImNscy00IiBkPSJNNzMsMjUuNzEsNTguODgsMjEuOTNhMiwyLDAsMCwwLTIsLjUzTDQ2LjU3LDMyLjhhMiwyLDAsMCwwLS41MywybDMuNzksMTQuMTNhMiwyLDAsMCwwLC40NS44Mkw2Ni41NywzMy40Myw2Mi4xNCwyOWExLjI1LDEuMjUsMCwwLDEsLjI4LTEuMTVsLS4wNiwwLC4xMS0uMTEsMCwuMDZhMS4yNSwxLjI1LDAsMCwxLDEuMTUtLjI4TDcwLDI5LjI5YTEuMjQsMS4yNCwwLDAsMSwuNDcuMjVsMy4zNy0zLjM3QTIsMiwwLDAsMCw3MywyNS43MVoiLz48cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik03OC4yMyw0MS4yOCw3NC40NSwyNy4xNWEyLDIsMCwwLDAtLjYyLTFsLTMuMzcsMy4zN2ExLjI1LDEuMjUsMCwwLDEsLjQyLjY0bDEuNzIsNi40MWExLjI1LDEuMjUsMCwwLDEtLjI4LDEuMTVsLjA2LDAtLjExLjExLDAtLjA2YTEuMjUsMS4yNSwwLDAsMS0xLjE1LjI4bC00LjU5LTQuNTlMNTAuMjksNDkuNzFhMiwyLDAsMCwwLDEsLjYyTDY1LjQsNTQuMTFhMiwyLDAsMCwwLDItLjUzTDc3LjcsNDMuMjRBMiwyLDAsMCwwLDc4LjIzLDQxLjI4WiIvPjxwYXRoIGNsYXNzPSJjbHMtNSIgZD0iTTc1LjIxLDIzLjUxLDU4LjA3LDE4LjkyYTIsMiwwLDAsMC0yLC41M0w0My41NiwzMkEyLDIsMCwwLDAsNDMsMzRsNC41OSwxNy4xNGEyLjQsMi40LDAsMCwwLC40NS44MkwyNC45NSw3NWg2LjY0YTEuMjUsMS4yNSwwLDAsMCwuODgtLjM3bDEuODMtMS44M2ExLjI1LDEuMjUsMCwwLDAsLjM3LS44OHYtMy42QS40Ny40NywwLDAsMSwzNC44LDY4bC42Mi0uNjJhLjQ3LjQ3LDAsMCwxLC4zMy0uMTRoMy4xNGExLjI1LDEuMjUsMCwwLDAsLjg4LS4zN2wuNTYtLjU2YTEuMjUsMS4yNSwwLDAsMCwuMzctLjg4VjYzLjE3YS40Ny40NywwLDAsMSwuMTQtLjMzbC43LS43YS40Ny40NywwLDAsMSwuMzMtLjE0aDQuNjdhMS4yNSwxLjI1LDAsMCwwLC44OC0uMzdMNTMsNTZsLjc3Ljc3YTIuMTMsMi4xMywwLDAsMCwzLDBsMS43MS0xLjcxLTkuNDctMi41NGEyLDIsMCwwLDEtMS0uNjJsMi4yMS0yLjIxYTIsMiwwLDAsMS0uNDUtLjgyTDQ2LDM0Ljc2YTIsMiwwLDAsMSwuNTMtMkw1Ni45MiwyMi40NmEyLDIsMCwwLDEsMi0uNTNMNzMsMjUuNzFhMiwyLDAsMCwxLC44Mi40NUw3NiwyNEEyLjQzLDIuNDMsMCwwLDAsNzUuMjEsMjMuNTFaIi8+PC9nPjwvc3ZnPg=="
 )
 
 type Reconciler struct {
@@ -113,10 +110,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 		err = resources.RemoveOauthClient(r.Oauthv1Client, r.GetOAuthClientName(r.Config))
 		if err != nil {
-			return integreatlyv1alpha1.PhaseFailed, err
-		}
-
-		if err := r.deleteConsoleLink(ctx, serverClient); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 
@@ -200,10 +193,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
-	}
-
-	if err := r.reconcileConsoleLink(ctx, serverClient); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	product.Host = r.Config.GetHost()
@@ -402,56 +391,6 @@ func (r *Reconciler) setupGithubIDP(ctx context.Context, kc *keycloak.Keycloak, 
 	}
 
 	installation.Status.GitHubOAuthEnabled = true
-
-	return nil
-}
-
-func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
-	// If the installation type isn't managed-api, ensure that the ConsoleLink
-	// doesn't exist
-	if r.Installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return r.deleteConsoleLink(ctx, serverClient)
-	}
-
-	cl := &consolev1.ConsoleLink{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "rhmi-rhsso-console-link",
-		},
-	}
-
-	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
-		cl.Spec = consolev1.ConsoleLinkSpec{
-			ApplicationMenu: &consolev1.ApplicationMenuSpec{
-				ImageURL: RHSSOIcon,
-				Section:  "OpenShift Managed Services",
-			},
-			Location: consolev1.ApplicationMenu,
-			Link: consolev1.Link{
-				Href: r.Config.GetHost(),
-				Text: "API Management SSO",
-			},
-		}
-
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("error reconciling console link: %v", err)
-	}
-
-	return nil
-}
-
-func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclient.Client) error {
-	cl := &consolev1.ConsoleLink{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "rhmi-rhsso-console-link",
-		},
-	}
-
-	err := serverClient.Delete(ctx, cl)
-	if err != nil && !k8serr.IsNotFound(err) {
-		return fmt.Errorf("error removing console link: %v", err)
-	}
 
 	return nil
 }
