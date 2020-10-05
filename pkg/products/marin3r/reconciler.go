@@ -298,7 +298,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 
 	return backup.NewAWSBackupExecutor(
 		r.installation.Namespace,
-		externalRedisSecretName,
+		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name),
 		backup.RedisSnapshotType,
 	)
 }
