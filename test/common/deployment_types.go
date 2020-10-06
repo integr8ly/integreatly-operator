@@ -227,9 +227,9 @@ func getClusterStorageDeployments(installationName string, installType string) [
 			Name: NamespacePrefix + "operator",
 			Products: []Product{
 				Product{Name: constants.CodeReadyPostgresPrefix + installationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + "rhmi", ExpectedReplicas: 1},
 				Product{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + "rhmi", ExpectedReplicas: 1},
 				Product{Name: constants.UPSPostgresPrefix + installationName, ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
@@ -241,11 +241,12 @@ func getClusterStorageDeployments(installationName string, installType string) [
 		{
 			Name: NamespacePrefix + "operator",
 			Products: []Product{
-				Product{Name: constants.ThreeScaleBackendRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleBackendRedisPrefix + "rhmi", ExpectedReplicas: 1},
 				Product{Name: constants.ThreeScalePostgresPrefix + installationName, ExpectedReplicas: 1},
-				Product{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.ThreeScaleSystemRedisPrefix + "rhmi", ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RateLimitRedisPrefix + installationName, ExpectedReplicas: 1},
 			},
 		},
 	}

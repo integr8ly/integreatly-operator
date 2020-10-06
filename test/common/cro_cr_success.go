@@ -41,10 +41,20 @@ func getPostgres(installType string, installationName string) []string {
 	}
 }
 
-func getRedisToCheck(installationName string) []string {
-	return []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
+func getRedisToCheck(installType string, installationName string) []string {
+	commonRedis := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, "rhmi"),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, "rhmi"),
+	}
+
+	managedApiRedis := []string{
+		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(commonRedis, managedApiRedis...)
+	} else {
+		return commonRedis
 	}
 }
 
@@ -102,7 +112,7 @@ func TestCRORedisSuccessfulState(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
-	redisToCheck := getRedisToCheck(rhmi.Name)
+	redisToCheck := getRedisToCheck(rhmi.Spec.Type, rhmi.Name)
 
 	for _, redisName := range redisToCheck {
 		redis := &crov1.Redis{}

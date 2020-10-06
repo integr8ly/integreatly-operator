@@ -48,11 +48,21 @@ func getExpectedPostgres(installType string, installationName string) []string {
 	}
 }
 
-func getExpectedRedis(installationName string) []string {
+func getExpectedRedis(installType string, installationName string) []string {
 	// expected redis resources provisioned per product
-	return []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
+	commonRedis := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, "rhmi"),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, "rhmi"),
+	}
+
+	managedApiRedis := []string{
+		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(commonRedis, managedApiRedis...)
+	} else {
+		return commonRedis
 	}
 }
 
@@ -73,7 +83,7 @@ func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *
 	var foundErrors []string
 	var foundResourceIDs []string
 
-	expectedRedis := getExpectedRedis(rhmi.Name)
+	expectedRedis := getExpectedRedis(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedRedis {
 		// get elasticache cr

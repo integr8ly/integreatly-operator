@@ -61,6 +61,8 @@ var (
 		"products": {
 			"rhssouser",
 			"3scale",
+			"marin3r",
+			"grafana",
 		},
 	}
 )
