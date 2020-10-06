@@ -188,7 +188,7 @@ EOF
   echo "Test finished successfully."
 }
 
-dump_databse() {
+dump_database() {
   DUMP_FILE=$1
 
   echo "Creating throwaway Postgres container..."
