@@ -43,7 +43,7 @@ test_postgres_backup () {
 
   # Get a dump of the database before the deletion
   echo "Dumping current database..."
-  dump_databse dump_before.sql
+  dump_database dump_before.sql
   echo "Dumped original database to dump_before.sql"
 
   # Create the snapshot
