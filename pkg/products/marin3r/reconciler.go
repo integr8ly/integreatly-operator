@@ -3,6 +3,11 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
+	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -140,6 +145,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileRedis(ctx, client)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
+	}
+
 	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
 		ReconcileRateLimitService(ctx, client)
 	if err != nil {
@@ -151,6 +164,68 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	logrus.Info("Creating backend redis instance in marine3r reconcile")
+
+	ns := r.installation.Namespace
+
+	redisName := fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name)
+	rateLimitRedis, err := croUtil.ReconcileRedis(ctx, client, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, redisName, ns, redisName, ns, func(cr metav1.Object) error {
+		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile backend redis request: %w", err)
+	}
+
+	// wait for the redis cr to reconcile
+	if rateLimitRedis.Status.Phase != types.PhaseComplete {
+		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
+	}
+
+	// get the secret created by the cloud resources operator
+	// containing system redis connection details
+	systemCredSec := &corev1.Secret{}
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: rateLimitRedis.Status.SecretRef.Name, Namespace: rateLimitRedis.Status.SecretRef.Namespace}, systemCredSec)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get system redis credential secret: %w", err)
+	}
+
+	// create system redis external connection secret needed for the 3scale apimanager
+	redisSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      externalRedisSecretName,
+			Namespace: r.Config.GetNamespace(),
+		},
+		Data: map[string][]byte{},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, client, redisSecret, func() error {
+		uri := systemCredSec.Data["uri"]
+		port := systemCredSec.Data["port"]
+
+		conn := fmt.Sprintf("%s:%s", uri, port)
+		redisSecret.Data["URL"] = []byte(conn)
+
+		return nil
+	})
+
+	phase, err := resources.ReconcileRedisAlerts(ctx, client, r.installation, rateLimitRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
+	}
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
+	}
+
+	// create Redis Cpu Usage High alert
+	err = resources.CreateRedisCpuUsageAlerts(ctx, client, r.installation, rateLimitRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rate limit redis prometheus Cpu usage high alerts for threescale: %s", err)
+	}
+
+	return phase, nil
 }
 
 func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
@@ -220,6 +295,10 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 	if r.installation.Spec.UseClusterStorage != "false" {
 		return backup.NewNoopBackupExecutor()
 	}
-	//todo add backup for redis once it's added to the reconciler
-	return backup.NewNoopBackupExecutor()
+
+	return backup.NewAWSBackupExecutor(
+		r.installation.Namespace,
+		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, r.installation.Name),
+		backup.RedisSnapshotType,
+	)
 }

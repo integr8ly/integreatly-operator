@@ -718,6 +718,15 @@ var rhmi2ExpectedAWSRules = []alertsTestRule{
 	},
 }
 
+var managedApiAwsExpectedRules = []alertsTestRule{
+	{
+		File: NamespacePrefix + "operator-resource-status-phase-failed-rule-ratelimit-service-redis-managed-api.yaml",
+		Rules: []string{
+			"Ratelimit-Service-Redis-Managed-ApiRedisResourceStatusPhaseFailed",
+		},
+	},
+}
+
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
@@ -847,7 +856,7 @@ func getExpectedAWSRules(installType string) []alertsTestRule {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return commonExpectedAWSRules
 	} else {
-		return append(commonExpectedAWSRules, rhmi2ExpectedAWSRules...)
+		return append(append(commonExpectedAWSRules, rhmi2ExpectedAWSRules...), managedApiAwsExpectedRules...)
 	}
 }
 
