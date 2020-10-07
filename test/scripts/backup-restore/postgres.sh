@@ -29,6 +29,7 @@ test_postgres_backup () {
   POSTGRES_CR_NAME=$1
   POSTGRES_SECRET=$2
   AWS_DB_ID=$3
+  AWS_REGION=$4
 
   # Get the database credentials
   DB_HOST=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.host}} | base64 -d`
@@ -65,7 +66,7 @@ EOF
   do
       PHASE=`oc get postgressnapshot/$POSTGRES_SNAPSHOT_NAME -n redhat-rhmi-operator -o template --template={{.status.phase}}`
       if [ "$PHASE" = 'complete' ]; then
-        echo "Snapshot creation completed."  
+        echo "Snapshot creation completed."
         break
       fi
 
@@ -75,30 +76,31 @@ EOF
 
   # Edit Postgres CR to prevent RDS recreation during restoration
   echo "Disabling automatic RDS recreation..."
-  oc patch postgres/$POSTGRES_CR_NAME -n redhat-rhmi-operator -p '{"spec":{"skipCreate":true}}' --type merge 
+  oc patch postgres/$POSTGRES_CR_NAME -n redhat-rhmi-operator -p '{"spec":{"skipCreate":true}}' --type merge
 
   # Get VPC security group IDs from existing RDS
-  VPC_SECURITY_GROUP_IDS=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID | jq '.DBInstances[0].VpcSecurityGroups[].VpcSecurityGroupId' -r | tr '\n' ' ' | sed -e 's/[[:space:]]$//')
+  VPC_SECURITY_GROUP_IDS=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq '.DBInstances[0].VpcSecurityGroups[].VpcSecurityGroupId' -r | tr '\n' ' ' | sed -e 's/[[:space:]]$//')
   echo "Obtained VPC Security Group IDs: $VPC_SECURITY_GROUP_IDS"
 
   # Get Subnet group name from existing RDS
-  DB_SUBNET_GROUP_NAME=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID | jq '.DBInstances[0].DBSubnetGroup.DBSubnetGroupName' -r)
+  DB_SUBNET_GROUP_NAME=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq '.DBInstances[0].DBSubnetGroup.DBSubnetGroupName' -r)
   echo "Obtained Subnet group name: $DB_SUBNET_GROUP_NAME"
 
   echo "Removing Postgres instance deletion protection..."
   aws rds modify-db-instance \
-      --db-instance-identifier $AWS_DB_ID --no-deletion-protection > /dev/null
+      --db-instance-identifier $AWS_DB_ID --no-deletion-protection --region $AWS_REGION > /dev/null
 
   echo "Deleting Postgres instance..."
   aws rds delete-db-instance \
       --db-instance-identifier $AWS_DB_ID \
       --skip-final-snapshot \
-      --no-delete-automated-backups > /dev/null
+      --no-delete-automated-backups \
+      --region $AWS_REGION > /dev/null
 
   while true
   do
     # Check if the database still exists. If it does not, break the loop
-    EXISTS=`aws rds describe-db-instances | jq ".DBInstances | any(.DBInstanceIdentifier == \"$AWS_DB_ID\")"`
+    EXISTS=`aws rds describe-db-instances --region $AWS_REGION | jq ".DBInstances | any(.DBInstanceIdentifier == \"$AWS_DB_ID\")"`
     if [ "$EXISTS" = 'false' ]; then
       echo "Database deleted"
       break
@@ -107,7 +109,7 @@ EOF
     # Attempt to get the database status. If it fails, check if the error is
     # not found. If it's not found it means the database was deleted, so break
     # the loop. Otherwise report the error
-    DATABASE=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID 2>&1`
+    DATABASE=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION 2>&1`
     if [ ! "$?" = 0 ]; then
       if echo $DATABASE | grep -q "DBInstanceNotFound"; then
         echo "Database deleted"
@@ -141,13 +143,14 @@ EOF
       --db-subnet-group-name $DB_SUBNET_GROUP_NAME \
       --vpc-security-group-ids $VPC_SECURITY_GROUP_IDS \
       --multi-az \
-      --deletion-protection > /dev/null
+      --deletion-protection \
+      --region $AWS_REGION > /dev/null
 
 
   # Wait for the database to be available
   while true
   do
-    STATUS=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID | jq -r '.DBInstances[0].DBInstanceStatus'`
+    STATUS=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq -r '.DBInstances[0].DBInstanceStatus'`
     if [ "$STATUS" = 'available' ]; then
       echo "Database restored."
       break
@@ -160,7 +163,8 @@ EOF
   # Restore default scaling options that couldn't be added as part of the restore
   echo "Restoring default scaling options..."
   aws rds modify-db-instance \
-      --db-instance-identifier $AWS_DB_ID --max-allocated-storage 100 > /dev/null
+      --db-instance-identifier $AWS_DB_ID --max-allocated-storage 100 \
+      --region $AWS_REGION > /dev/null
 
   # Revert PostGres CR Change
   echo "Re-enabling automating RDS recreation..."
