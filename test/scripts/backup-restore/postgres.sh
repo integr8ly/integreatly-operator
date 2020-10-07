@@ -34,7 +34,7 @@ test_postgres_backup () {
   # Get the database credentials
   DB_HOST=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.host}} | base64 -d`
   DB_PORT=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.port}} | base64 -d`
-  DATABASE=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.database}} | base64 -d`
+  DATABASE_NAME=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.database}} | base64 -d`
   DB_USER=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.username}} | base64 -d`
   DB_PASSWORD=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.password}} | base64 -d`
 
@@ -172,7 +172,7 @@ EOF
 
   # Dump the database after the restoration
   echo "Dumping restored database..."
-  dump_database database_after.sql
+  dump_database dump_after.sql
   echo "Dumped restore database to dump_after.sql"
 
   echo "Calculating difference between databases..."
@@ -225,7 +225,7 @@ EOF
   # Create the dump
   kubectl exec deploy/throw-away-postgres \
     -n redhat-rhmi-operator \
-    -- env PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER $DATABASE > $DUMP_FILE
+    -- env PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER $DATABASE_NAME > $DUMP_FILE
 
   # Delete the throwaway postgres
   oc delete postgres/throw-away-postgres -n redhat-rhmi-operator
