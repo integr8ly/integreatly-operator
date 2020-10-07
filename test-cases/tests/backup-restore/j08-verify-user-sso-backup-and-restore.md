@@ -39,12 +39,14 @@ cat << EOF | oc create -f - -n redhat-rhmi-operator
     type: workshop
 EOF
 ```
+
 ```
 # password and host retrieved from rhssouser-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
 psql --host=<db_host> --port=5432 --username=postgres --password --dbname=postgres
 select * from client;
 select * from realm;
 ```
+
 Once verified. Delete the throwaway Postgres
 
 ```sh
