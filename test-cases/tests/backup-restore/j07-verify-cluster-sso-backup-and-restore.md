@@ -20,7 +20,9 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ### Postgres
 
-1. Verify Clients and Realms exist in postgres.
+1. Login via `oc` as **kubeadmin**
+
+2. Verify Clients and Realms exist in postgres.
 
 Create a throwaway Postgres instance to access the RHSSO Postgres instance
 
@@ -53,12 +55,12 @@ Once verified. Delete the throwaway Postgres
 oc delete -n redhat-rhmi-operator postgres/throw-away-postgres
 ```
 
-2. Run the backup and restore script
+3. Run the backup and restore script
 
 ```sh
 cd test/scripts/backup-restore
 ./j07-verify-rhsso-backup-and-restore.sh | tee test-output.txt
 ```
 
-3. Wait for the script to finish without errors
-4. Verify in the `test-output.txt` log that the test finished successfully.
+4. Wait for the script to finish without errors
+5. Verify in the `test-output.txt` log that the test finished successfully.
