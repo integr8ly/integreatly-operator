@@ -2,11 +2,12 @@ package helpers
 
 import (
 	"context"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
@@ -70,6 +71,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						NotBeforeDays:      intPtr(8),
 						WaitForMaintenance: boolPtr(true),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -101,6 +103,9 @@ func TestUpdateStatus(t *testing.T) {
 					Maintenance: integreatlyv1alpha1.Maintenance{
 						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
 					},
+					Upgrade: integreatlyv1alpha1.Upgrade{
+						Schedule: boolPtr(true),
+					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
 					UpgradeAvailable: &integreatlyv1alpha1.UpgradeAvailable{
@@ -129,6 +134,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						NotBeforeDays:      intPtr(0),
 						WaitForMaintenance: boolPtr(false),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -152,6 +158,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						NotBeforeDays:      intPtr(0),
 						WaitForMaintenance: boolPtr(true),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -180,6 +187,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						WaitForMaintenance: boolPtr(true),
 						NotBeforeDays:      intPtr(3),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -206,6 +214,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						WaitForMaintenance: boolPtr(true),
 						NotBeforeDays:      intPtr(6),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
@@ -227,6 +236,7 @@ func TestUpdateStatus(t *testing.T) {
 					Upgrade: integreatlyv1alpha1.Upgrade{
 						NotBeforeDays:      intPtr(3),
 						WaitForMaintenance: boolPtr(false),
+						Schedule:           boolPtr(true),
 					},
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{

@@ -113,17 +113,14 @@ var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
 
 	{
 		NotBeforeDays: intPtr(-1),
+		Schedule:      boolPtr(true),
 	}: assertValidationError,
 
 	{
 		NotBeforeDays:      intPtr(7),
 		WaitForMaintenance: boolPtr(true),
+		Schedule:           boolPtr(true),
 	}: assertNoError,
-
-	{
-		NotBeforeDays:      intPtr(365),
-		WaitForMaintenance: boolPtr(true),
-	}: assertValidationError,
 }
 
 // TestRHMIConfigCRs tests that the RHMIConfig CR is created successfuly and

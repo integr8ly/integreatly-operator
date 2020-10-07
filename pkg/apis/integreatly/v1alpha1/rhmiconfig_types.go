@@ -41,7 +41,7 @@ const (
 	DefaultWaitForMaintenance = true
 
 	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
-	MaxUpgradeDays = 14
+	// MaxUpgradeDays = 14
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -105,6 +105,8 @@ type Upgrade struct {
 	// +optional
 	// +nullable
 	NotBeforeDays *int `json:"notBeforeDays,omitempty"`
+
+	Schedule *bool `json:"schedule,omitempty"`
 }
 
 type Maintenance struct {
@@ -166,9 +168,6 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 
 		if notBeforeDays < 0 {
 			return errors.New("Value of spec.Upgrade.NotBeforeDays must be greater or equal to zero")
-		}
-		if notBeforeDays > MaxUpgradeDays {
-			return fmt.Errorf("Value of spec.Upgrade.NotBeforeDays must be less than or equal to %d", MaxUpgradeDays)
 		}
 	}
 
@@ -252,6 +251,7 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 func (u *Upgrade) DefaultIfEmpty() {
 	u.NotBeforeDays = either(u.NotBeforeDays, DefaultNotBeforeDays).(*int)
 	u.WaitForMaintenance = either(u.WaitForMaintenance, DefaultWaitForMaintenance).(*bool)
+	u.Schedule = either(u.Schedule, false).(*bool)
 }
 
 func init() {
