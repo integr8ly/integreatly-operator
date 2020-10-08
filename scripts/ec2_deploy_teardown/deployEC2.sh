@@ -91,7 +91,7 @@ for (( i=0; i<5; i++ )) do
 done
 
 INSTANCE=`aws ec2 describe-instances --instance-ids $EC2 --region ${CLUSTER_REGION} --output json`
-echo INSTANCE
+echo ${INSTANCE}
 echo ""
 echo "If working locally, you will need to create the pipelineKey.pem and paste in the following contents before running the following commands."
 echo ""
