@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"github.com/integr8ly/integreatly-operator/version"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -58,7 +58,6 @@ const (
 
 var (
 	DefaultInstallationPrefix   = global.NamespacePrefix
-	allProductsReconciled       = false
 	productVersionMismatchFound bool
 )
 
@@ -290,8 +289,8 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 
 	// If no current or target version is set this is the first installation of rhmi.
 	if upgradeFirstReconcile(installation) || firstInstallFirstReconcile(installation) {
-		installation.Status.ToVersion = version.GetVersion()
-		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.GetVersion())
+		installation.Status.ToVersion = version.GetVersionByType(installation.Spec.Type)
+		logrus.Infof("Setting installation.Status.ToVersion on initial install %s", version.GetVersionByType(installation.Spec.Type))
 		if err := r.client.Status().Update(context.TODO(), installation); err != nil {
 			return reconcile.Result{}, err
 		}
@@ -350,40 +349,24 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	if productVersionMismatchFound == false {
-		allProductsReconciled = true
-	}
-
-	logrus.Infof("installInProgress=%v", installInProgress)
-	// UPDATE STATUS
-	// updates rhmi status metric according to the status of the products
-	if !installInProgress {
-		installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
-	}
-	metrics.SetRHMIStatus(installation)
-
-	// Check if the version needs to be updated
-	if (firstInstallInProgress(installation) || upgradeInProgress(installation)) && allProductsReconciled {
-		installation.Status.Version = installation.Status.ToVersion
+	// Entered on first reconcile where all stages reported complete after an upgrade / install
+	if installation.Status.ToVersion == version.GetVersionByType(installation.Spec.Type) && !installInProgress && !productVersionMismatchFound {
+		installation.Status.Version = version.GetVersionByType(installation.Spec.Type)
 		installation.Status.ToVersion = ""
 		metrics.SetRhmiVersions(string(installation.Status.Stage), installation.Status.Version, installation.Status.ToVersion, installation.CreationTimestamp.Unix())
+		logrus.Infof("installation completed successfully")
+	}
+
+	// Entered on every reconcile where all stages reported complete
+	if !installInProgress {
+		installation.Status.Stage = integreatlyv1alpha1.StageName("complete")
+		metrics.RHMIStatusAvailable.Set(1)
+		retryRequeue.RequeueAfter = 5 * time.Minute
 	}
 	metrics.SetRHMIStatus(installation)
 
 	err = r.updateStatusAndObject(originalInstallation, installation)
-	if err != nil {
-		return retryRequeue, err
-	}
-
-	// installation completed
-	if !installInProgress {
-		metrics.RHMIStatusAvailable.Set(1)
-		logrus.Infof("installation completed succesfully")
-		return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
-	}
-
-	//installation still in progress
-	return retryRequeue, nil
+	return retryRequeue, err
 }
 
 func (r *ReconcileInstallation) updateStatusAndObject(original, installation *integreatlyv1alpha1.RHMI) error {
@@ -547,10 +530,6 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 	return retryRequeue, err
 }
 
-func firstInstallInProgress(installation *integreatlyv1alpha1.RHMI) bool {
-	return installation.Status.Version == ""
-}
-
 func firstInstallFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	status := installation.Status
 	return status.Version == "" && status.ToVersion == ""
@@ -560,15 +539,7 @@ func firstInstallFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 // In which case the toVersion field has not been set
 func upgradeFirstReconcile(installation *integreatlyv1alpha1.RHMI) bool {
 	status := installation.Status
-	return status.Version != "" && status.ToVersion == "" && status.Version != version.GetVersion()
-}
-
-func upgradeInProgress(installation *integreatlyv1alpha1.RHMI) bool {
-	status := installation.Status
-	if status.ToVersion != "" {
-		return true
-	}
-	return false
+	return status.Version != "" && status.ToVersion == "" && status.Version != version.GetVersionByType(installation.Spec.Type)
 }
 
 func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha1.RHMI, installationType *Type, configManager *config.Manager) (reconcile.Result, error) {

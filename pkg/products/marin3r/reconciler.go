@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"strconv"
+
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
@@ -12,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
 
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -67,7 +68,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	return version.VerifyProductAndOperatorVersion(
 		installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductMarin3r],
 		string(integreatlyv1alpha1.VersionMarin3r),
-		"",
+		string(integreatlyv1alpha1.OperatorVersionMarin3r),
 	)
 }
 
@@ -194,6 +195,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile Prometheus service monitor"), err)
 		return phase, err
 	}
+
+	product.Host = r.Config.GetHost()
+	product.Version = r.Config.GetProductVersion()
+	product.OperatorVersion = r.Config.GetOperatorVersion()
+
+	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
+	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
