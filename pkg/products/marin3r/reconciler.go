@@ -36,12 +36,11 @@ import (
 const (
 	defaultInstallationNamespace = "marin3r"
 	manifestPackage              = "integreatly-marin3r"
-	statsdHost  = "prom-statsd-exporter"
-	statsdPort  = 9125
-	metricsPort = 9102
+	statsdHost                   = "prom-statsd-exporter"
+	statsdPort                   = 9125
+	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
-
 )
 
 type Reconciler struct {
