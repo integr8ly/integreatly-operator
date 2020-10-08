@@ -20,13 +20,39 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ### Postgres
 
-1. Verify Clients and Realms exist in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
+1. Login via `oc` as **kubeadmin**
+
+2. Verify Clients and Realms exist in postgres.
+
+Create a throwaway Postgres instance to access the User SSO Postgres instance
+
+```sh
+cat << EOF | oc create -f - -n redhat-rhmi-operator
+  apiVersion: integreatly.org/v1alpha1
+  kind: Postgres
+  metadata:
+    name: throw-away-postgres
+    labels:
+      productName: productName
+  spec:
+    secretRef:
+      name: throw-away-postgres-sec
+    tier: development
+    type: workshop
+EOF
+```
 
 ```
 # password and host retrieved from rhssouser-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
-psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
-$ select * from clients;
-$ select * from realms;
+psql --host=<db_host> --port=5432 --username=postgres --password --dbname=postgres
+select * from client;
+select * from realm;
+```
+
+Once verified. Delete the throwaway Postgres
+
+```sh
+oc delete -n redhat-rhmi-operator postgres/throw-away-postgres
 ```
 
 3. Run the backup and restore script
