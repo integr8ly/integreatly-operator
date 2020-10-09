@@ -11,7 +11,7 @@ tags:
 ## Description
 
 Measure the downtime of the RHOAM components during a AWS Availability Zone failure to ensure that pods redistribute and
-service remain available.
+services remain available.
 
 ## Prerequisites
 
