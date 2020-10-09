@@ -35,6 +35,7 @@ const CATEGORIES = [
     "high-availability",
     "installation",
     "monitoring",
+    "multiAZ",
     "performance",
     "products",
     "upgrade",
