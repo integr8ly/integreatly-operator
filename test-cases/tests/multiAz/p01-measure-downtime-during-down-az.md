@@ -6,7 +6,7 @@ tags:
   - manual-selection
 ---
 
-# P01 - Measure downtime during OpenShift upgrade
+# P01 - Measure downtime during down az
 
 ## Description
 
@@ -28,22 +28,22 @@ service remain available.
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
 
-2. Make sure **nobody is using the cluster** for performing the test cases, because the RHOAM components will have a 
+2. Make sure **nobody is using the cluster** for performing the test cases, because the RHOAM components will have a
    downtime during this test
 
 3. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repo and run the following command:
 
-    ```bash
-    git clone https://github.com/integr8ly/workload-web-app
-    cd workload-web-app
-    export GRAFANA_DASHBOARD=true
-    export RHOAM=true
-    make local/deploy
-    ```
+   ```bash
+   git clone https://github.com/integr8ly/workload-web-app
+   cd workload-web-app
+   export GRAFANA_DASHBOARD=true
+   export RHOAM=true
+   make local/deploy
+   ```
 
    See step 8 and 9, you might want to do these before killing the zone as well.
 
-4. In terminal window #2, run the following [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh) 
+4. In terminal window #2, run the following [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh)
    to fail an AZ
 
    ```bash
@@ -61,9 +61,10 @@ service remain available.
    ./scripts/disableAz.sh true eu-west-1a
    ```
 
-5. Wait around 30 minutes for all terminating pod to redeploy to their new AZ's. You can use the following 
-   [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) to check the pod 
+5. Wait around 30 minutes for all terminating pod to redeploy to their new AZ's. You can use the following
+   [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/podsAz.sh) to check the pod
    distribution.
+
    ```bash
    # e.g.
    ./scripts/podsAz.sh redhat-rhmi-rhsso
@@ -73,7 +74,7 @@ service remain available.
    | keycloak-0 | eu-west-1c |
    | keycloak-1 | eu-west-1b |
 
-   ``` 
+   ```
 
 6. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RMOAN components are accessible
 
@@ -91,21 +92,22 @@ service remain available.
 
 8. Open the RHOAM Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
 
-    ```bash
-    echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
-    ```
+   ```bash
+   echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+   ```
 
 9. Select the **Workload App** dashboard
 
 > Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
 
-10. re-enable the AZ by running the same [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh) 
+10. re-enable the AZ by running the same [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh)
     as before
+
     ```bash
     # e.g.
     ./scripts/disableAz.sh false eu-west-1a
     ```
 
-11. Consult the results with engineering (especially in case some components have a longer downtime than 30min 
+11. Consult the results with engineering (especially in case some components have a longer downtime than 30min
     or are not working properly)
