@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/ghodss/yaml"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
@@ -189,12 +190,43 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileAlerts(ctx, client, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+
+	cm := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(), k8sclient.ObjectKey{Name: "ratelimit-config", Namespace: r.Config.GetNamespace()}, cm)
+	if err != nil {
+		logrus.Infof("didn't find ratelimit-config config map in %s", r.Config.GetNamespace())
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	cmYamlData := yamlRoot{}
+	yaml.Unmarshal([]byte(cm.Data["kuard.yaml"]), &cmYamlData)
+
+	alertReconciler, err := r.newAlertsReconciler(cmYamlData.Descriptors[0].RateLimit.Unit, cmYamlData.Descriptors[0].RateLimit.RequestsPerUnit)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err := alertReconciler.ReconcileAlerts(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

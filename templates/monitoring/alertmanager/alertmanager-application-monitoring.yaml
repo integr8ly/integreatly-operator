@@ -17,6 +17,15 @@ route:
         alertname: DeadMansSwitch
       repeat_interval: 5m
       receiver: deadmansswitch
+    - match:
+        alertname: Level1ThreeScaleApiUsageThresholdExceeded
+      receiver: BUandCustomer
+    - match:
+        alertname: Level2ThreeScaleApiUsageThresholdExceeded
+      receiver: BUandCustomer
+    - match:
+        alertname: Level3ThreeScaleApiUsageThresholdExceeded
+      receiver: SRECustomerBU
 receivers:
   - name: default
     email_configs:
@@ -31,6 +40,14 @@ receivers:
   - name: deadmansswitch
     webhook_configs:
       - url: {{ index .Params "DeadMansSnitchURL" }}
+  - name: BUandCustomer
+    emailConfigs:
+      - send_resolved: True
+      to: {{ index .Params "SMTPToAddress" }}
+  - name: SRECustomerBU
+    emailConfigs:
+      - send_resolved: True
+    to: {{ index .Params "SMTPToAddress" }}
 inhibit_rules:
   - source_match:
       alertname: 'JobRunningTimeExceeded'
