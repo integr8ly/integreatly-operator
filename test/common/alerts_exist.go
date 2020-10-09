@@ -291,6 +291,14 @@ var managedApiSpecificRules = []alertsTestRule{
 // Common to all install types
 var commonExpectedRules = []alertsTestRule{
 	{
+		File: "redhat-rhmi-marin3r-3scale-api-usage-alerts.yaml",
+		Rules: []string{
+			"Level1ThreeScaleApiUsageThresholdExceeded",
+			"Level2ThreeScaleApiUsageThresholdExceeded",
+			"Level3ThreeScaleApiUsageThresholdExceeded",
+		},
+	},
+	{
 		File: NamespacePrefix + "middleware-monitoring-operator-backup-monitoring-alerts.yaml",
 		Rules: []string{
 			"JobRunningTimeExceeded",
