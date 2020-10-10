@@ -52,7 +52,7 @@ const (
 	manifestPackage              = "integreatly-monitoring"
 
 	// alert manager configuration
-	alertManagerRouteName            = "alertmanager-route"
+	alertManagerRouteName            = "alertmanager"
 	alertManagerConfigSecretName     = "alertmanager-application-monitoring"
 	alertManagerConfigSecretFileName = "alertmanager.yaml"
 	alertManagerConfigTemplatePath   = "alertmanager/alertmanager-application-monitoring.yaml"

@@ -66,7 +66,7 @@ oc delete redis --all -n redhat-rhmi-operator
 6. Go to alert manager
 
 ```bash
-open "https://$(oc get routes alertmanager-route -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
+open "https://$(oc get routes alertmanager -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
 > Verify that all Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed and Redis-RhmiRedisResourceDeletionStatusPhaseFailed alerts (8 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
