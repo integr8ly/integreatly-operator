@@ -85,20 +85,21 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, client, cm, func() error {
-		configYaml := yamlRoot{
-			Domain: "kuard",
+		stagingconfig := yamlRoot{
+			Domain: "apicast-ratelimit",
 			Descriptors: []yamlDescriptor{
 				{
 					Key:   "generic_key",
 					Value: "slowpath",
 					RateLimit: &yamlRateLimit{
 						Unit:            "minute",
-						RequestsPerUnit: 1,
+						RequestsPerUnit: 20,
 					},
 				},
 			},
 		}
-		configYamlMarshalled, err := yaml.Marshal(configYaml)
+
+		stagingConfigYamlMarshalled, err := yaml.Marshal(stagingconfig)
 		if err != nil {
 			return fmt.Errorf("failed to marshall rate limit config: %v", err)
 		}
@@ -110,7 +111,7 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 			cm.Labels = map[string]string{}
 		}
 
-		cm.Data["kuard.yaml"] = string(configYamlMarshalled)
+		cm.Data["apicast-ratelimiting.yaml"] = string(stagingConfigYamlMarshalled)
 		cm.Labels["app"] = "ratelimit"
 		cm.Labels["part-of"] = "3scale-saas"
 		return nil

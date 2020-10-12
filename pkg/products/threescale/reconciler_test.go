@@ -383,7 +383,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 
 	newTsUsers := &Users{
 		Users: []*User{
-			&User{
+			{
 				UserDetails: UserDetails{
 					Id:   1,
 					Role: memberRole,
@@ -391,7 +391,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 					Username: "User1",
 				},
 			},
-			&User{
+			{
 				UserDetails: UserDetails{
 					Id:   2,
 					Role: adminRole,
@@ -400,7 +400,7 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 					Username: "User2",
 				},
 			},
-			&User{
+			{
 				UserDetails{
 					Id:   3,
 					Role: adminRole,

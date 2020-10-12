@@ -1,26 +1,42 @@
 package threescale
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	marin3rv1alpha "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	v2route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	yaml "github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	ptypes "github.com/golang/protobuf/ptypes"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	consolev1 "github.com/openshift/api/console/v1"
-
 	oauthv1 "github.com/openshift/api/oauth/v1"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
-	rbacv1 "k8s.io/api/rbac/v1"
-
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
-
 	"github.com/sirupsen/logrus"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	rbacv1 "k8s.io/api/rbac/v1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -37,13 +53,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +67,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -60,18 +76,24 @@ const (
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
+	nsPrefix                     = global.NamespacePrefix
+	marinerNs                    = nsPrefix + "marin3r"
+
+	threeScaleNs = nsPrefix + "3scale"
 
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
 
-	numberOfReplicas int64 = 2
+	numberOfReplicas              int64 = 2
+	apicastStagingName                  = "apicast-staging"
+	apicastProductionName               = "apicast-production"
+	systemSeedSecretName                = "system-seed"
+	systemMasterApiCastSecretName       = "system-master-apicast"
 
-	systemSeedSecretName          = "system-seed"
-	systemMasterApiCastSecretName = "system-master-apicast"
-
-	registrySecretName = "threescale-registry-auth"
+	apicastRatelimiting = "apicast-ratelimit"
+	registrySecretName  = "threescale-registry-auth"
 
 	threeScaleIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+"
 )
@@ -307,6 +329,38 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+
+		apicasts := []string{apicastStagingName, apicastProductionName}
+		for _, apicast := range apicasts {
+			deploymentConfig, phase, err := r.getDeploymentConfig(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get deployment config for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			service, phase, err := r.getService(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get service for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			err = r.patchDeploymentConfig(ctx, serverClient, deploymentConfig, service)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+			}
+		}
+
+		err = r.createEnvoyRateLimitingConfig(ctx, serverClient)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
+		}
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -340,6 +394,367 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 		}
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getDeploymentConfig(ctx context.Context, client k8sclient.Client, dcName string) (*appsv1.DeploymentConfig, integreatlyv1alpha1.StatusPhase, error) {
+	apiCastDeploymentConfig := &appsv1.DeploymentConfig{}
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, apiCastDeploymentConfig)
+
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
+	}
+	return apiCastDeploymentConfig, integreatlyv1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) getService(ctx context.Context, client k8sclient.Client, dcName string) (*corev1.Service, integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{}
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, service)
+
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
+	}
+	return service, integreatlyv1alpha1.PhaseInProgress, nil
+
+}
+
+// Patching the deployment configuration of both apicasts, this is required in order to enable rate limiting on the deployment. "Enabled" means that the Discovery Service
+// will attach a sidecar container to the apicasts, annotations are set to label the apicasts so that appropriate envoy config(sidecar container used configuration) is
+// pulled and attached to sidecar containers.
+func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, service *corev1.Service) error {
+
+	ports := service.Spec.Ports
+	for i, port := range ports {
+		if port.Name == "gateway" {
+			service.Spec.Ports[i].Port = 8443
+			service.Spec.Ports[i].TargetPort = intstr.FromInt(8443)
+			break
+		}
+	}
+	if err := client.Update(ctx, service); err != nil {
+		return fmt.Errorf("failed to update service: %v", err)
+	}
+
+	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = apicastRatelimiting
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8443"
+
+	if err := client.Update(ctx, deploymentConfig); err != nil {
+		return fmt.Errorf("failed to update deployment config: %v", err)
+	}
+
+	return nil
+}
+
+// This function creates envoy configuration that is used by sidecar containers. It contains information about clusters, which is information about where and how to find rate limiting
+// pods, how to proxy the traffic and what traffic to listen for. Our data needs to be converted to JSON in order for the envoyapi omit empty to filter through fields that we are only interested in,
+// then we need to convert it to yaml and finally push.
+func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k8sclient.Client) error {
+
+	rateLimitService := &corev1.Service{}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: marinerNs,
+		Name:      "ratelimit",
+	}, rateLimitService)
+
+	if err != nil {
+		return fmt.Errorf("failed to rate limiting service: %v", err)
+	}
+
+	// Setting up cluster endpoints for rate limit and apicast
+	apicastEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
+		SocketAddress: &envoycore.SocketAddress{
+			Address:  "127.0.0.1",
+			Protocol: envoycore.SocketAddress_TCP,
+			PortSpecifier: &envoycore.SocketAddress_PortValue{
+				PortValue: uint32(8080),
+			},
+		},
+	}}
+
+	rateLimitEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
+		SocketAddress: &envoycore.SocketAddress{
+			Address:  rateLimitService.Spec.ClusterIP,
+			Protocol: envoycore.SocketAddress_TCP,
+			PortSpecifier: &envoycore.SocketAddress_PortValue{
+				PortValue: uint32(8081),
+			},
+		},
+	}}
+
+	cluster := envoyapi.Cluster{
+		Name:                 apicastRatelimiting,
+		ConnectTimeout:       ptypes.DurationProto(2 * time.Second),
+		ClusterDiscoveryType: &envoyapi.Cluster_Type{Type: envoyapi.Cluster_STRICT_DNS},
+		LbPolicy:             envoyapi.Cluster_ROUND_ROBIN,
+		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+			ClusterName: apicastRatelimiting,
+			Endpoints: []*envoy_api_v2_endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*envoy_api_v2_endpoint.LbEndpoint{
+					{
+						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
+							Endpoint: &envoy_api_v2_endpoint.Endpoint{
+								Address: apicastEndpoint,
+							}},
+					},
+				},
+			}},
+		},
+	}
+
+	rateLimitCluster := envoyapi.Cluster{
+		Name:                 "ratelimit",
+		ConnectTimeout:       ptypes.DurationProto(2 * time.Second),
+		ClusterDiscoveryType: &envoyapi.Cluster_Type{Type: envoyapi.Cluster_STRICT_DNS},
+		LbPolicy:             envoyapi.Cluster_ROUND_ROBIN,
+		Http2ProtocolOptions: &envoycore.Http2ProtocolOptions{},
+		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+			ClusterName: "ratelimit",
+			Endpoints: []*envoy_api_v2_endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*envoy_api_v2_endpoint.LbEndpoint{
+					{
+						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
+							Endpoint: &envoy_api_v2_endpoint.Endpoint{
+								Address: rateLimitEndpoint,
+							}},
+					},
+				},
+			}},
+		},
+	}
+
+	// Setting up listener
+	virtualHost := v2route.VirtualHost{
+		Name:    apicastRatelimiting,
+		Domains: []string{"*"},
+
+		Routes: []*v2route.Route{
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_Prefix{
+						Prefix: "/",
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: apicastRatelimiting,
+						},
+						RateLimits: []*route.RateLimit{{
+							Stage: &wrappers.UInt32Value{Value: 0},
+							Actions: []*route.RateLimit_Action{{
+								ActionSpecifier: &route.RateLimit_Action_GenericKey_{
+									GenericKey: &route.RateLimit_Action_GenericKey{
+										DescriptorValue: "slowpath",
+									},
+								},
+							}},
+						}},
+					},
+				},
+			},
+		},
+	}
+
+	// Setting GRPC
+	clusterName := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"cluster_name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: "ratelimit",
+				},
+			},
+		},
+	}
+
+	grpcService := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"timeout": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: "2s",
+				},
+			},
+			"envoy_grpc": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: clusterName,
+				},
+			},
+		},
+	}
+	grpcInnerService := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"grpc_service": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: grpcService,
+				},
+			},
+		},
+	}
+	httpFilterGrpc := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"domain": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: apicastRatelimiting,
+				},
+			},
+			"stage": {
+				Kind: &structpb.Value_NumberValue{
+					NumberValue: 0,
+				},
+			},
+			"rate_limit_service": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: grpcInnerService,
+				},
+			},
+		},
+	}
+
+	// Setting up connection manager
+	manager := &hcm.HttpConnectionManager{
+		CodecType:  hcm.HttpConnectionManager_AUTO,
+		StatPrefix: "ingress_http",
+		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
+			RouteConfig: &envoyapi.RouteConfiguration{
+				Name:         "local_route",
+				VirtualHosts: []*v2route.VirtualHost{&virtualHost},
+			},
+		},
+		HttpFilters: []*hcm.HttpFilter{
+			{
+				Name:       "envoy.rate_limit",
+				ConfigType: &hcm.HttpFilter_Config{Config: httpFilterGrpc},
+			},
+			{
+				Name: "envoy.router",
+			},
+		},
+	}
+
+	pbst, err := ptypes.MarshalAny(manager)
+	if err != nil {
+		return fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
+	}
+
+	listener := &envoyapi.Listener{
+		Name: "http",
+		Address: &envoycore.Address{
+			Address: &envoycore.Address_SocketAddress{
+				SocketAddress: &envoycore.SocketAddress{
+					Protocol: envoycore.SocketAddress_TCP,
+					Address:  "0.0.0.0",
+					PortSpecifier: &envoycore.SocketAddress_PortValue{
+						PortValue: uint32(8443),
+					},
+				},
+			},
+		},
+		FilterChains: []*listener.FilterChain{{
+			Filters: []*listener.Filter{{
+				Name:       "envoy.http_connection_manager",
+				ConfigType: &listener.Filter_TypedConfig{TypedConfig: pbst},
+			}},
+		}},
+	}
+
+	// Converting to Json and then to Yaml before creating the CR
+	rateLimitClusterJson, err := ResourcesToJSON(&rateLimitCluster)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy rate limiting cluster configuration to JSON %v", err)
+	}
+
+	yamlRateLimitCluster, err := yaml.JSONToYAML(rateLimitClusterJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy rate limiting cluster JSON configuration to YAML %v", err)
+	}
+
+	clusterJson, err := ResourcesToJSON(&cluster)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy cluster configuration to JSON %v", err)
+	}
+
+	yamlCluster, err := yaml.JSONToYAML(clusterJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy cluster JSON configuration to YAML %v", err)
+	}
+
+	listenerJson, err := ResourcesToJSON(listener)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy listener configuration to JSON %v", err)
+	}
+
+	yamlListener, err := yaml.JSONToYAML(listenerJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy listener JSON configuration to YAML %v", err)
+	}
+
+	envoyconfig := &marin3rv1alpha.EnvoyConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apicastRatelimiting,
+			Namespace: threeScaleNs,
+		},
+	}
+
+	controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, r.installation)
+		envoyconfig.Spec.NodeID = apicastRatelimiting
+		envoyconfig.Spec.Serialization = "yaml"
+		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha.EnvoyResources{
+			Clusters: []marin3rv1alpha.EnvoyResource{
+				{
+					Name:  apicastRatelimiting,
+					Value: string(yamlCluster),
+				},
+				{
+					Name:  "ratelimit",
+					Value: string(yamlRateLimitCluster),
+				},
+			},
+			Listeners: []marin3rv1alpha.EnvoyResource{
+				{
+					Name:  "http",
+					Value: string(yamlListener),
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to create envoy config CR %v", err)
+	}
+
+	return nil
+}
+
+func ResourcesToJSON(pb proto.Message) ([]byte, error) {
+	m := jsonpb.Marshaler{}
+
+	json := bytes.NewBuffer([]byte{})
+	err := m.Marshal(json, pb)
+	if err != nil {
+		return []byte{}, err
+	}
+	return json.Bytes(), nil
+}
+
+func resourceToYAML(o interface{}) ([]byte, error) {
+	jsonMarshalled, err := json.Marshal(o)
+	if err != nil {
+		return nil, err
+	}
+	yaml, err := k8syaml.JSONToYAML(jsonMarshalled)
+	if err != nil {
+		return nil, err
+	}
+	return yaml, nil
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {

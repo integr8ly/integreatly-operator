@@ -36,18 +36,11 @@ import (
 const (
 	defaultInstallationNamespace = "marin3r"
 	manifestPackage              = "integreatly-marin3r"
-	serverSecretName             = "marin3r-server-cert-instance"
-	caSecretName                 = "marin3r-ca-cert-instance"
-	secretDataCertKey            = "tls.crt"
-	secretDataKeyKey             = "tls.key"
-
-	discoveryServiceName = "instance"
-
-	externalRedisSecretName = "redis"
-
-	statsdHost  = "prom-statsd-exporter"
-	statsdPort  = 9125
-	metricsPort = 9102
+	statsdHost                   = "prom-statsd-exporter"
+	statsdPort                   = 9125
+	metricsPort                  = 9102
+	discoveryServiceName         = "instance"
+	externalRedisSecretName      = "redis"
 )
 
 type Reconciler struct {
@@ -202,7 +195,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -280,7 +272,7 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 		Spec: marin3r.DiscoveryServiceSpec{
 			DiscoveryServiceNamespace: productNamespace,
 			EnabledNamespaces:         enabledNamespaces,
-			Image:                     "quay.io/3scale/marin3r:v0.5.1",
+			Image:                     fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r),
 		},
 	}
 
