@@ -66,6 +66,4 @@ aws ec2 delete-security-group --group-id $SECGRP --region $CLUSTER_REGION
 echo "Deleting key-pair pipelineKey from aws"
 aws ec2 delete-key-pair --key-name pipelineKey --region $CLUSTER_REGION
 
-echo "Deleting private key 'pipelineKey.pem' from Jenkins"
-rm pipelineKey.pem
 
