@@ -51,8 +51,8 @@ func getExpectedPostgres(installType string, installationName string) []string {
 func getExpectedRedis(installType string, installationName string) []string {
 	// expected redis resources provisioned per product
 	commonRedis := []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, "rhmi"),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, "rhmi"),
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
 	}
 
 	managedApiRedis := []string{

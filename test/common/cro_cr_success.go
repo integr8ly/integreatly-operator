@@ -43,8 +43,8 @@ func getPostgres(installType string, installationName string) []string {
 
 func getRedisToCheck(installType string, installationName string) []string {
 	commonRedis := []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, "rhmi"),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, "rhmi"),
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
 	}
 
 	managedApiRedis := []string{
