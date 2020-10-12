@@ -9,6 +9,17 @@
 # - oc (logged in at the cmd line in order to get the bearer token)
 PRODUCT_NAME=$1
 
+# function to check if there are no alerts firing bar deadmansnitch and remove the temp files
+function CHECK_NO_ALERTS(){
+    if [[ $(wc -l  tmp-alert-firing-during-perf-testing-report.csv) = 1  && $(wc -l  tmp-alert-pending-during-perf-testing-report.csv) = 1 ]] ; then
+      echo Only alert firing is DeadMansSwitch
+      date
+    fi
+    rm tmp-alert-firing-during-perf-testing-report.csv
+    rm tmp-alert-pending-during-perf-testing-report.csv
+  done
+}
+
 # If no args are passed in then run for all products
 if (( $# == 0 )); then
   while :; do
@@ -58,13 +69,3 @@ else
   done
 fi
 
-# function to check if there are no alerts firing bar deadmansnitch and remove the temp files
-function CHECK_NO_ALERTS(){
-    if [[ $(wc -l  tmp-alert-firing-during-perf-testing-report.csv) = 1  && $(wc -l  tmp-alert-pending-during-perf-testing-report.csv) = 1 ]] ; then
-      echo Only alert firing is DeadMansSwitch
-      date
-    fi
-    rm tmp-alert-firing-during-perf-testing-report.csv
-    rm tmp-alert-pending-during-perf-testing-report.csv
-  done
-}
