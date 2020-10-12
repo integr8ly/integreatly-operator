@@ -208,7 +208,7 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
 
 .PHONY: cluster/prepare
-cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
+cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean
 
 .PHONY: cluster/prepare/bundle
 cluster/prepare/bundle: cluster/prepare/project cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean
@@ -241,7 +241,7 @@ cluster/prepare/crd:
 	- oc create -f deploy/crds/integreatly.org_rhmiconfigs_crd.yaml
 
 .PHONY: cluster/prepare/local
-cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/delorean cluster/prepare/croaws
+cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean cluster/prepare/croaws
 	@oc create -f deploy/service_account.yaml
 	@oc create -f deploy/role.yaml
 	@oc create -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
@@ -276,6 +276,10 @@ cluster/prepare/pagerduty:
 cluster/prepare/dms:
 	@-oc create secret generic $(INSTALLATION_PREFIX)-deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
+
+.PHONY: cluster/prepare/ratelimits
+cluster/prepare/ratelimits:
+	@-oc create -n $(NAMESPACE) -f deploy/sku-limits-configmap.yaml
 
 .PHONY: cluster/prepare/delorean
 cluster/prepare/delorean: cluster/prepare/delorean/pullsecret

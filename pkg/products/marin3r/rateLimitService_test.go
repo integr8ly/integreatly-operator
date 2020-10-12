@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -26,8 +27,11 @@ func TestRateLimitService(t *testing.T) {
 		Assert     func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
 	}{
 		{
-			Name:       "Service deployed without metrics",
-			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis"),
+			Name: "Service deployed without metrics",
+			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
+				Unit:            "minute",
+				RequestsPerUnit: 1,
+			}, "redhat-test-marin3r", "ratelimit-redis"),
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: v1.ObjectMeta{
@@ -100,10 +104,18 @@ func TestRateLimitService(t *testing.T) {
 					},
 				},
 			},
-			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis").WithStatsdConfig(StatsdConfig{
-				Host: "test-host",
-				Port: "9092",
-			}),
+			Reconciler: NewRateLimitServiceReconciler(
+				&marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 1,
+				},
+				"redhat-test-marin3r",
+				"ratelimit-redis",
+			).
+				WithStatsdConfig(StatsdConfig{
+					Host: "test-host",
+					Port: "9092",
+				}),
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseCompleted),
@@ -134,9 +146,12 @@ func TestRateLimitService(t *testing.T) {
 		},
 
 		{
-			Name:       "Wait for redis",
-			InitObjs:   []runtime.Object{},
-			Reconciler: NewRateLimitServiceReconciler("redhat-test-marin3r", "ratelimit-redis"),
+			Name:     "Wait for redis",
+			InitObjs: []runtime.Object{},
+			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
+				Unit:            "minute",
+				RequestsPerUnit: 1,
+			}, "redhat-test-marin3r", "ratelimit-redis"),
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseAwaitingComponents),

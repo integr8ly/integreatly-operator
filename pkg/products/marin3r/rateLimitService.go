@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +20,7 @@ type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
 	StatsdConfig    *StatsdConfig
+	RateLimitConfig *marin3rconfig.RateLimitConfig
 }
 
 type StatsdConfig struct {
@@ -26,8 +28,9 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
+		RateLimitConfig: config,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
 	}
@@ -92,8 +95,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 					Key:   "generic_key",
 					Value: "slowpath",
 					RateLimit: &yamlRateLimit{
-						Unit:            "minute",
-						RequestsPerUnit: 20,
+						Unit:            r.RateLimitConfig.Unit,
+						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
 					},
 				},
 			},
