@@ -40,7 +40,7 @@ aws ec2 authorize-security-group-ingress --group-id $SECGRP --protocol tcp --por
 sleep 5
 
 echo "Getting image"
-AMI=`aws ec2 describe-images --filters "Name=is-public,Values=true" "Name=description,Values=Provided by Red Hat*" "Name=name,Values=RHEL-8.2.0_HVM-*-x86_64*Hourly2-GP2" --region ${CLUSTER_REGION} --output text --query 'Images[0].ImageId'`
+AMI=`aws ec2 describe-images --filters "Name=is-public,Values=true" "Name=description,Values=Provided by Red Hat*" "Name=name,Values=${IMAGE}" --region ${CLUSTER_REGION} --output text --query 'Images[0].ImageId'`
 for (( i=0; i<5; i++ )) do
     if [[ $AMI =~ "ami-" ]]; then
       echo "AMI "${AMI}" is available"
