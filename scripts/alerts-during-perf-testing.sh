@@ -7,13 +7,16 @@
 # PREREQUISITES
 # - jq
 # - oc (logged in at the cmd line in order to get the bearer token)
+# VARIABLES
+TOKEN=$(oc whoami --show-token)
+MONITORING_ROUTE=$(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts
 
 # remove tmp files on ctrl-c
 trap "rm tmp-alert-firing-during-perf-testing-report.csv tmp-alert-pending-during-perf-testing-report.csv" EXIT
 
 # function to check if there are no alerts firing bar deadmansnitch
 function CHECK_NO_ALERTS(){
-    if [[ $(curl -s -H "Authorization: Bearer $(oc whoami --show-token)" $(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts | jq -r '.data.alerts[]| select(.state=="firing") | [.labels.alertname, .state, .activeAt ] | @csv' | wc -l) == 1 ]] ; then
+    if [[ $(curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE | jq -r '.data.alerts[]| select(.state=="firing") | [.labels.alertname, .state, .activeAt ] | @csv' | wc -l) == 1 ]] ; then
       echo Only alert firing is DeadMansSwitch
       date
     fi
@@ -23,12 +26,10 @@ function CHECK_NO_ALERTS(){
 if (( $# == 0 )); then
   while :; do
     # generate a report
-    curl -s -H "Authorization: Bearer $(oc whoami --show-token)" \
-    $(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts \
+    curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE \
     | jq -r '.data.alerts[]| select(.state=="pending") | [.labels.alertname, .state, .activeAt ] | @csv'>> tmp-alert-pending-during-perf-testing-report.csv
 
-    curl -s -H "Authorization: Bearer $(oc whoami --show-token)" \
-    $(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts \
+    curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE \
     | jq -r '.data.alerts[]| select(.state=="firing") | [.labels.alertname, .state, .activeAt ] | @csv'>> tmp-alert-firing-during-perf-testing-report.csv
 
     # sort command to remove duplicate alert
@@ -51,12 +52,10 @@ if [ -z "$PRODUCT_NAME" ]; then
 else
   echo "Check $1 product namespace and operator namespace for alerts"
   while :; do
-    curl -s -H "Authorization: Bearer $(oc whoami --show-token)" \
-    $(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts \
+    curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE \
     | jq -r '.data.alerts[]| select(.state=="pending" or .labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'" or .labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'-operator") | [.labels.alertname, .labels.namespace, .state, .activeAt ] | @csv'>> tmp-alert-pending-during-perf-testing-report.csv
 
-    curl -s -H "Authorization: Bearer $(oc whoami --show-token)" \
-    $(echo "https://$(oc get route prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')")/api/v1/alerts \
+    curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE \
     | jq -r '.data.alerts[]| select(.state=="firing" or .labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'" or .labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'-operator") | [.labels.alertname, .labels.namespace, .state, .activeAt ] | @csv'>> tmp-alert-firing-during-perf-testing-report.csv
 
     # sort command to remove duplicate alert
