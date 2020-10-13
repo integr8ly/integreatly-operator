@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -18,6 +20,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -280,6 +283,65 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 	}
 
 	logrus.Info("Grafana Status: ", status)
+
+	prometheusNamespace := fmt.Sprintf("%smiddleware-monitoring-operator", global.NamespacePrefix)
+
+	prometheusService := &corev1.Service{}
+
+	err = client.Get(ctx, k8sclient.ObjectKey{Name: "prometheus-service", Namespace: prometheusNamespace}, prometheusService)
+	if err != nil {
+		if !k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		return integreatlyv1alpha1.PhaseAwaitingComponents, fmt.Errorf("waiting for prometheus service for grafana datasource to become available, %w", err)
+	}
+
+	var upstreamPort int32
+	for _, port := range prometheusService.Spec.Ports {
+		if port.Name == "upstream" {
+			upstreamPort = port.Port
+		}
+	}
+	url := fmt.Sprintf("http://%s.%s.svc:%d", prometheusService.Name, prometheusService.Namespace, upstreamPort)
+
+	dataSourceCR := &grafanav1alpha1.GrafanaDataSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "customer-prometheus",
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	status, err = controllerutil.CreateOrUpdate(ctx, client, dataSourceCR, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(dataSourceCR, r.installation)
+
+		spec := grafanav1alpha1.GrafanaDataSourceSpec{
+			Datasources: []grafanav1alpha1.GrafanaDataSourceFields{
+				{
+					Name:      "Prometheus",
+					Access:    "proxy",
+					Editable:  true,
+					IsDefault: true,
+					JsonData: grafanav1alpha1.GrafanaDataSourceJsonData{
+						TimeInterval: "5s",
+					},
+					Type:    "prometheus",
+					Url:     url,
+					Version: 1,
+				},
+			},
+		}
+
+		dataSourceCR.Spec = spec
+		dataSourceCR.Spec.Name = "customer.yaml"
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	logrus.Info("grafana datasource status: ", status)
 
 	// if there are no errors, the phase is complete
 	return integreatlyv1alpha1.PhaseCompleted, nil
