@@ -126,6 +126,15 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 		return err
 	}
 
+	// Watch for changes to rate limit alerts config
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		&EnqueueIntegreatlyOwner{},
+	)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -2,9 +2,12 @@ package marin3r
 
 import (
 	"context"
+	"testing"
+
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	projectv1 "github.com/openshift/api/project/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"github.com/sirupsen/logrus"
@@ -14,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
 )
 
 func getRateLimitConfigMap() *corev1.ConfigMap {
@@ -50,6 +52,33 @@ func getBasicReconciler() *Reconciler {
 			Config: config.ProductConfig{
 				"NAMESPACE": defaultInstallationNamespace,
 			},
+		},
+		AlertsConfig: map[string]*marin3rconfig.AlertConfig{
+			"api-usage-alert-level1": {
+				RuleName: "Level1ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "80%",
+				MaxRate:  "90%",
+				Period:   "4h",
+			},
+			"api-usage-alert-level2": {
+				RuleName: "Level2ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "90%",
+				MaxRate:  "95%",
+				Period:   "2h",
+			},
+			"api-usage-alert-level3": {
+				RuleName: "Level3ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "95%",
+				MaxRate:  "100%",
+				Period:   "30m",
+			},
+		},
+		RateLimitConfig: &marin3rconfig.RateLimitConfig{
+			Unit:            "minute",
+			RequestsPerUnit: 1,
 		},
 	}
 }
