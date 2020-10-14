@@ -71,7 +71,6 @@ else
       curl -s -H "Authorization: Bearer $TOKEN" $MONITORING_ROUTE \
       | jq -r '.data.alerts[]| select((.state=="firing") and (.labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'" or .labels.namespace=="redhat-rhmi-'$PRODUCT_NAME'-operator" or .labels.productName=="'$PRODUCT_NAME'")) | [.labels.alertname, .labels.namespace, .state, .activeAt ] | @csv'>> tmp-alert-firing-during-perf-testing-report.csv
     fi
-    set -
     # sort command to remove duplicate alert
     sort -t, -k1 -u tmp-alert-pending-during-perf-testing-report.csv > ${PRODUCT_NAME}-alert-pending-during-perf-testing-report.csv
     sort -t, -k1 -u tmp-alert-firing-during-perf-testing-report.csv > ${PRODUCT_NAME}-alert-firing-during-perf-testing-report.csv
