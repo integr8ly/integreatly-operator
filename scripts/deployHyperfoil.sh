@@ -8,6 +8,3 @@ unzip hyperfoil-0.9.zip
 cd hyperfoil-0.9
 #logs of the hyperfoil controller will be stored in ~/hyperfoil-0.9/nohup.out
 nohup ./bin/controller.sh &
-
-
-
