@@ -240,6 +240,54 @@ var rhmi2ExpectedRules = []alertsTestRule{
 	},
 }
 
+// Managed-Api-Service rules
+var managedApiSpecificRules = []alertsTestRule{
+	{
+		File: NamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"Marin3rDiscoveryServiceEndpointDown",
+			"Marin3rPromstatsdExporterServiceEndpointDown",
+			"Marin3rRateLimitServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
+		Rules: []string{
+			"Marin3rOperatorPod",
+		},
+	},
+	{
+		File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
+		Rules: []string{
+			"Marin3rDiscoveryServicePod",
+			"Marin3rPromstatsdExporterPod",
+			"Marin3rRateLimitPod",
+			"Marin3rEnvoyApicastStagingContainerDown",
+			"Marin3rEnvoyApicastProductionContainerDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "customer-monitoring-operator-ksm-endpoint-alerts.yaml",
+		Rules: []string{
+			"GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
+			"GrafanaServiceEndpointDown",
+		},
+	},
+	{
+		File: NamespacePrefix + "customer-monitoring-operator-ksm-grafana-alerts.yaml",
+		Rules: []string{
+			"GrafanaOperatorPod",
+			"GrafanaServicePod",
+		},
+	},
+}
+
 // Common to all install types
 var commonExpectedRules = []alertsTestRule{
 	{
@@ -862,7 +910,7 @@ func getExpectedAWSRules(installType string) []alertsTestRule {
 
 func getExpectedRules(installType string) []alertsTestRule {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonExpectedRules
+		return append(commonExpectedRules, managedApiSpecificRules...)
 	} else {
 		return append(commonExpectedRules, rhmi2ExpectedRules...)
 	}
