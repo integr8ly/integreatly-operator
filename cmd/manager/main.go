@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"os"
 	"runtime"
 
@@ -85,7 +86,10 @@ func main() {
 	// be propagated through the whole operator, generating
 	// uniform and structured logs.
 	logf.SetLogger(zap.Logger())
-
+	if err := setLogLevel(); err != nil {
+		// print as assume loggers may not work
+		fmt.Printf("Failed to set log level %s ", err)
+	}
 	printVersion()
 
 	namespace, err := k8sutil.GetWatchNamespace()
@@ -157,6 +161,23 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
+}
+
+// setLogLevel will decide the log level based on the LOG_LEVEL env var valid values are (debug, info, warn and error)
+func setLogLevel() error {
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	if err := zap.FlagSet().Set("zap-level", logLevel); err != nil {
+		return fmt.Errorf("failed to set zap log level to %s %s", logLevel, err)
+	}
+	logrusLevel, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		return fmt.Errorf("failed to set logrus log level to %s %s", logLevel, err)
+	}
+	logrus.SetLevel(logrusLevel)
+	return nil
 }
 
 // addMetrics will create the Services and Service Monitors to allow the operator export the metrics by using
