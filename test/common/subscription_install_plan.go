@@ -65,6 +65,16 @@ var (
 			Namespace: SolutionExplorerOperatorNamespace,
 		},
 	}
+	managedApiSubscriptionsToCheck = []SubscriptionCheck{
+		{
+			Name:      constants.Marin3rSubscriptionName,
+			Namespace: Marin3rOperatorNamespace,
+		},
+		{
+			Name:      constants.GrafanaSubscriptionName,
+			Namespace: CustomerGrafanaNamespace,
+		},
+	}
 )
 
 func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
@@ -115,7 +125,7 @@ func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
 
 func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonSubscriptionsToCheck
+		return append(commonSubscriptionsToCheck, managedApiSubscriptionsToCheck...)
 	} else {
 		return append(commonSubscriptionsToCheck, rhmi2SubscriptionsToCheck...)
 	}

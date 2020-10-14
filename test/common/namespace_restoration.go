@@ -29,7 +29,7 @@ type StageDeletion struct {
 }
 
 var (
-	productStages = []StageDeletion{
+	commonStages = []StageDeletion{
 		{
 			productStageName: integreatlyv1alpha1.AuthenticationStage,
 			namespaces: []string{
@@ -54,11 +54,15 @@ var (
 			namespaces: []string{
 				MonitoringOperatorNamespace,
 				MonitoringFederateNamespace,
+				MonitoringSpecNamespace,
 			},
 			removeFinalizers: func(ctx *TestingContext) error {
 				return removeMonitoringFinalizers(ctx, MonitoringOperatorNamespace)
 			},
 		},
+	}
+
+	rhmiSpecificStages = []StageDeletion{
 		{
 			productStageName: integreatlyv1alpha1.ProductsStage,
 			namespaces: []string{
@@ -91,10 +95,34 @@ var (
 			},
 		},
 	}
+
+	managedApiStages = []StageDeletion{
+		{
+			productStageName: integreatlyv1alpha1.ProductsStage,
+			namespaces: []string{
+				CustomerGrafanaNamespace,
+				Marin3rOperatorNamespace,
+				Marin3rProductNamespace,
+				RHSSOUserProductOperatorNamespace,
+				RHSSOUserOperatorNamespace,
+				ThreeScaleProductNamespace,
+				ThreeScaleOperatorNamespace,
+			},
+			removeFinalizers: func(ctx *TestingContext) error {
+				return removeKeyCloakFinalizers(ctx, RHSSOUserProductOperatorNamespace)
+			},
+		},
+	}
 )
 
 func TestNamespaceRestoration(t *testing.T, ctx *TestingContext) {
-	for _, stage := range productStages {
+	rhmi, err := GetRHMI(ctx.Client, true)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, stage := range getStagesForInstallType(rhmi.Spec.Type) {
 
 		// Delete all the namespaces defined in product stage
 		for _, nameSpace := range stage.namespaces {
@@ -344,4 +372,12 @@ func removeApplicationMonitoringFinalizers(ctx *TestingContext, nameSpace string
 	})
 
 	return err
+}
+
+func getStagesForInstallType(installType string) []StageDeletion {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(commonStages, managedApiStages...)
+	} else {
+		return append(commonStages, rhmiSpecificStages...)
+	}
 }

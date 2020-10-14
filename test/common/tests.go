@@ -63,6 +63,7 @@ var (
 				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
+				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},

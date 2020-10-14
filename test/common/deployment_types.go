@@ -104,6 +104,32 @@ var (
 			Product{Name: "keycloak-operator", ExpectedReplicas: 1},
 		},
 	}
+	marin3rOperatorDeployment = Namespace{
+		Name: Marin3rOperatorNamespace,
+		Products: []Product{
+			{
+				Name:             "marin3r-operator",
+				ExpectedReplicas: 1,
+			},
+		},
+	}
+	marin3rDeployment = Namespace{
+		Name: Marin3rProductNamespace,
+		Products: []Product{
+			{
+				Name:             "marin3r-instance",
+				ExpectedReplicas: 1,
+			},
+			{
+				Name:             "prom-statsd-exporter",
+				ExpectedReplicas: 1,
+			},
+			{
+				Name:             "ratelimit",
+				ExpectedReplicas: 1,
+			},
+		},
+	}
 
 	// Applicable to install types used in 2.X
 	rhmi2Deployments = []Namespace{
@@ -123,6 +149,11 @@ var (
 		monitoringOperatorDeployment,
 		rhssoOperatorDeployment,
 		rhssoUserOperatorDeployment,
+	}
+
+	managedApiDeployments = []Namespace{
+		marin3rOperatorDeployment,
+		marin3rDeployment,
 	}
 
 	threeScaleDeploymentConfig = Namespace{
@@ -215,6 +246,7 @@ func getClusterStorageDeployments(installationName string, installType string) [
 				Product{Name: constants.ThreeScaleSystemRedisPrefix + installationName, ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOPostgresPrefix + installationName, ExpectedReplicas: 1},
 				Product{Name: constants.RHSSOUserProstgresPrefix + installationName, ExpectedReplicas: 1},
+				Product{Name: constants.RateLimitRedisPrefix + installationName, ExpectedReplicas: 1},
 			},
 		},
 	}
@@ -284,7 +316,7 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 
 func getDeployments(installType string) []Namespace {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return append(commonApiDeployments, []Namespace{rhmiOperatorDeploymentForManagedApi}...)
+		return append(append(commonApiDeployments, []Namespace{rhmiOperatorDeploymentForManagedApi}...), managedApiDeployments...)
 	} else {
 		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{rhmiOperatorDeploymentForRhmi2}...)
 	}

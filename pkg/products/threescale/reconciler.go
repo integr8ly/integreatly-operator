@@ -1118,7 +1118,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// setup backend redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating backend redis instance")
-	backendRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, "rhmi")
+	backendRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, r.installation.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
@@ -1130,7 +1130,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
 	logrus.Info("Creating system redis instance")
-	systemRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, "rhmi")
+	systemRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, r.installation.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
 		return nil
