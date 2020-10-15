@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -124,8 +123,6 @@ func isClusterStorage(ctx *TestingContext) (bool, error) {
 
 // returns rhmi
 func GetRHMI(client dynclient.Client, failNotExist bool) (*integreatlyv1alpha1.RHMI, error) {
-	logrus.Infof("Looking for Rhmi CR in %s namespace", RHMIOperatorNamespace)
-
 	installationList := &integreatlyv1alpha1.RHMIList{}
 	listOpts := []k8sclient.ListOption{
 		k8sclient.InNamespace(RHMIOperatorNamespace),
