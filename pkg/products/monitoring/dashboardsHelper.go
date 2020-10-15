@@ -29,8 +29,11 @@ func getSpecDetailsForDashboard(dashboard string) (string, string, error) {
 	case "cluster-resources":
 		return monitoring.MonitoringGrafanaDBClusterResourcesJSON, "cluster-resources-new.json", nil
 
-	case "critical-slo-alerts":
-		return monitoring.MonitoringGrafanaDBCriticalSLOAlertsJSON, "critical-slo-alerts.json", nil
+	case "critical-slo-rhmi-alerts":
+		return monitoring.MonitoringGrafanaDBCriticalSLORhmiAlertsJSON, "critical-slo-alerts.json", nil
+
+	case "critical-slo-managed-api-alerts":
+		return monitoring.MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON, "critical-slo-alerts.json", nil
 
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")

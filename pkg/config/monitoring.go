@@ -131,7 +131,8 @@ func (m *Monitoring) GetDashboards() []string {
 		"resources-by-namespace",
 		"resources-by-pod",
 		"cluster-resources",
-		"critical-slo-alerts",
+		"critical-slo-rhmi-alerts",
+		"critical-slo-managed-api-alerts",
 	}
 	return templateList
 }

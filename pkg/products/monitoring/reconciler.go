@@ -461,6 +461,15 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
 	for _, dashboard := range r.Config.GetDashboards() {
+
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && dashboard == "critical-slo-rhmi-alerts" {
+			continue
+		}
+
+		if r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) && dashboard == "critical-slo-managed-api-alerts" {
+			continue
+		}
+
 		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
