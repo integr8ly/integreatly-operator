@@ -34,10 +34,10 @@ const (
 )
 
 var (
-	keycloakClientName = fmt.Sprintf("%s-client", TestingIDPRealm)
-	keycloakClientNamespace = RHSSOProductNamespace
+	keycloakClientName           = fmt.Sprintf("%s-client", TestingIDPRealm)
+	keycloakClientNamespace      = RHSSOProductNamespace
 	clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
-	idpCAName = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+	idpCAName                    = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
 )
 
 type TestUser struct {
@@ -77,7 +77,7 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 	}
 
 	// Delete current client to ensure new created client secret is correct
-	if err := deleteKeycloakClient(ctx, client) ;err != nil {
+	if err := deleteKeycloakClient(ctx, client); err != nil {
 		return err
 	}
 
