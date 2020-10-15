@@ -2,6 +2,7 @@ package marin3r
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -177,12 +178,16 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				Value: useStatsd,
 			},
 			{
-				Name:  "RUNIME_ROOT",
-				Value: "/srv/runtime_data/current",
+				Name:  "RUNTIME_ROOT",
+				Value: "/srv/runtime_data",
 			},
 			{
 				Name:  "RUNTIME_SUBDIRECTORY",
-				Value: "/",
+				Value: "current",
+			},
+			{
+				Name:  "RUNTIME_WATCH_ROOT",
+				Value: "false",
 			},
 			{
 				Name:  "RUNTIME_IGNOREDOTFILES",
@@ -242,6 +247,12 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
 									Name: "ratelimit-config",
+								},
+								Items: []corev1.KeyToPath{
+									{
+										Key:  "apicast-ratelimiting.yaml",
+										Path: fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig)),
+									},
 								},
 							},
 						},
@@ -316,4 +327,11 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 	}, secret)
 
 	return secret, err
+}
+
+// uniqueKey generates a unique string for each possible rate limit configuration
+// combination
+func uniqueKey(r *marin3rconfig.RateLimitConfig) string {
+	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
+	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
