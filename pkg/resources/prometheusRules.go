@@ -50,7 +50,7 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 		if or, err := r.reconcileRule(ctx, client, monitoringConfig, alert); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		} else if or != controllerutil.OperationResultNone {
-			r.Logger.Infof("The opreation result for %s %s was %s",
+			r.Logger.Infof("The operation result for %s %s was %s",
 				r.ProductName,
 				alert.AlertName,
 				or,

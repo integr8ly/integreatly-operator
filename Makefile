@@ -270,7 +270,7 @@ cluster/prepare/olm: cluster/prepare cluster/prepare/olm/subscription cluster/ch
 
 .PHONY: cluster/prepare/smtp
 cluster/prepare/smtp:
-	@-oc create secret generic $(INSTALLATION_PREFIX)-smtp -n $(NAMESPACE) \
+	@-oc create secret generic $(NAMESPACE_PREFIX)smtp -n $(NAMESPACE) \
 		--from-literal=host=smtp.example.com \
 		--from-literal=username=dummy \
 		--from-literal=password=dummy \
@@ -279,12 +279,12 @@ cluster/prepare/smtp:
 
 .PHONY: cluster/prepare/pagerduty
 cluster/prepare/pagerduty:
-	@-oc create secret generic $(INSTALLATION_PREFIX)-pagerduty -n $(NAMESPACE) \
+	@-oc create secret generic $(NAMESPACE_PREFIX)pagerduty -n $(NAMESPACE) \
 		--from-literal=serviceKey=test
 
 .PHONY: cluster/prepare/dms
 cluster/prepare/dms:
-	@-oc create secret generic $(INSTALLATION_PREFIX)-deadmanssnitch -n $(NAMESPACE) \
+	@-oc create secret generic $(NAMESPACE_PREFIX)deadmanssnitch -n $(NAMESPACE) \
 		--from-literal=url=https://dms.example.com
 
 .PHONY: cluster/prepare/ratelimits
@@ -304,7 +304,7 @@ endif
 
 .PHONY: cluster/cleanup
 cluster/cleanup:
-	@-oc delete -f deploy/integreatly-rhmi-cr.yml --timeout=240s --wait
+	@-oc delete -f deploy/crds/examples/integreatly-rhmi-cr.yml --timeout=240s --wait
 	@-oc delete namespace $(NAMESPACE) --timeout=60s --wait
 	@-oc delete -f deploy/role.yaml
 	@-oc delete -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}

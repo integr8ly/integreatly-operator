@@ -4,9 +4,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: rhmi-operator
 subjects:
-- kind: ServiceAccount
-  name: rhmi-operator
-  namespace: redhat-rhmi-operator
+  - kind: ServiceAccount
+    name: rhmi-operator
+    namespace: redhat-rhmi-operator
 roleRef:
   kind: Role
   name: rhmi-operator
