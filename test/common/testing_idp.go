@@ -72,7 +72,7 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 	}
 
 	// create keycloak realm
-	if err := createKeycloakRealm(ctx, client); err != nil {
+	if err := createKeycloakRealm(ctx, client, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
 
@@ -82,7 +82,7 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 	}
 
 	// create keycloak client
-	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host); err != nil {
+	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
@@ -91,7 +91,7 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 	}
 
 	// create keycloak rhmi developer users
-	if err := createKeycloakUsers(ctx, client); err != nil {
+	if err := createKeycloakUsers(ctx, client, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
@@ -323,7 +323,7 @@ func createClientSecret(ctx context.Context, client dynclient.Client, clientSecr
 }
 
 // create rhmi developer keycloak users
-func createKeycloakUsers(ctx context.Context, client dynclient.Client) error {
+func createKeycloakUsers(ctx context.Context, client dynclient.Client, installationName string) error {
 	// populate users to be created
 	var testUsers []TestUser
 	postfix := 0
@@ -349,7 +349,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client) error {
 		postfix++
 	}
 
-	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers)
+	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers, installationName)
 	if err != nil {
 		return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
 	}
@@ -357,7 +357,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client) error {
 	return nil
 }
 
-func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser) error {
+func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser, installationName string) error {
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
 		keycloakUser := &v1alpha1.KeycloakUser{
@@ -368,6 +368,10 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 		}
 
 		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
+			keycloakUser.Annotations = map[string]string{
+				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-name":      installationName,
+			}
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -428,11 +432,15 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) e
 }
 
 // creates keycloak client
-func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string) error {
+func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName string) error {
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakClientName,
 			Namespace: keycloakClientNamespace,
+			Annotations: map[string]string{
+				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-name":      installationName,
+			},
 		},
 		Spec: v1alpha1.KeycloakClientSpec{
 			RealmSelector: &metav1.LabelSelector{
@@ -584,7 +592,7 @@ func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
 }
 
 // create keycloak realm
-func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
+func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName string) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestingIDPRealm,
@@ -610,6 +618,10 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakRealm, func() error {
+		keycloakRealm.Annotations = map[string]string{
+			"integreatly-namespace": RHMIOperatorNamespace,
+			"integreatly-name":      installationName,
+		}
 		keycloakRealm.Spec = keycloakRealmSpec
 		return nil
 	}); err != nil {
