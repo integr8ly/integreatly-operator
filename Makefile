@@ -13,13 +13,14 @@ OPERATOR_SDK_VERSION=0.15.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 
-INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
-MANAGED_API_OPERATOR_IMAGE ?= $(REG)/$(ORG)/managed-api-service:v$(MGDAPI_TAG)
 
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= "test-results"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
+
+RHMI_TAG ?= 2.7.0
+RHOAM_TAG ?= 0.1.0-rc2
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -47,29 +48,29 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
-export INSTALLATION_PREFIX ?= redhat-rhmi
+
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 export ALERTING_EMAIL_ADDRESS = noreply-test@rhmi-redhat.com
 
 ifeq ($(INSTALLATION_TYPE), managed)
-	RHMI_TAG ?= 2.7.0
 	PROJECT=integreatly-operator
-	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(RHMI_TAG)
 	TAG ?= RHMI_TAG
+	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
 	NAMESPACE_PREFIX ?= redhat-rhmi-
 	APPLICATION_REPO ?= integreatly
+	export INSTALLATION_PREFIX ?= redhat-rhmi
 	export OLM_TYPE ?= integreatly-operator
 endif
 
 ifeq ($(INSTALLATION_TYPE), managed-api)
-	RHOAM_TAG ?= 0.1.0
 	PROJECT=managed-api-service
-	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(RHOAM_TAG)
 	TAG ?= RHOAM_TAG
+	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
 	NAMESPACE_PREFIX ?= redhat-rhoam-
 	APPLICATION_REPO ?= managed-api-service
+	export INSTALLATION_PREFIX ?= redhat-rhoam
 	export OLM_TYPE ?= managed-api-service
 endif
 
@@ -175,11 +176,16 @@ test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
+.PHONY: test/e2e/rhoam/prow
+test/e2e/rhoam/prow: export component := integreatly-operator
+test/e2e/rhoam/prow: export MANAGED_API_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
+test/e2e/rhoam/prow: export INSTALLATION_TYPE := "managed-api"
+test/e2e/rhoam/prow:
+	echo $(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
+
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
 test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
-	 export SURF_DEBUG_HEADERS=1
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
@@ -356,11 +362,19 @@ deploy/integreatly-rhmi-cr.yml:
 .PHONY: prepare-patch-release
 prepare-patch-release:
 	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
-	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v "${HOME}/.delorean.yaml:/.delorean.yaml" quay.io/integreatly/delorean-cli:master delorean release openshift-ci-release --config /.delorean.yaml --olmType $(olmType) --version $(TAG)
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v "${HOME}/.delorean.yaml:/.delorean.yaml" quay.io/integreatly/delorean-cli:master delorean release openshift-ci-release --config /.delorean.yaml --olmType $(OLMTYPE) --version $(TAG)
 
 .PHONY: release/prepare
 release/prepare:
 	@./scripts/prepare-release.sh
+
+.PHONY: push/csv
+push/csv:
+	operator-courier verify deploy/olm-catalog/$(PROJECT)
+	-operator-courier push deploy/olm-catalog/$(PROJECT)/ $(REPO) $(APPLICATION_REPO) $(TAG) "$(AUTH_TOKEN)"
+
+.PHONY: gen/push/csv
+gen/push/csv: release/prepare push/csv
 
 # Generate namespace names to be used in docs
 .PHONY: gen/namespaces
