@@ -7,6 +7,7 @@ PROJECT=integreatly-operator
 REG=quay.io
 SHELL=/bin/bash
 TAG ?= 2.7.0
+MGDAPI_TAG ?= 0.1.0-rc2
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -15,6 +16,7 @@ OPERATOR_SDK_VERSION=0.17.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
+MANAGED_API_OPERATOR_IMAGE ?= $(REG)/$(ORG)/managed-api-service:v$(MGDAPI_TAG)
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= "test-results"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
@@ -146,15 +148,23 @@ test/unit:
 	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
-test/e2e/prow: export SURF_DEBUG_HEADERS=1
 test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
+.PHONY: test/e2e/rhoam/prow
+test/e2e/rhoam/prow: export component := integreatly-operator
+test/e2e/rhoam/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
+test/e2e/rhoam/prow: test/e2e/rhoam
+
+.PHONY: test/e2e/rhoam
+test/e2e/rhoam: export INSTALLATION_TYPE := "managed-api"
+test/e2e/rhoam:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
+
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
 test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	 export SURF_DEBUG_HEADERS=1
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
