@@ -656,7 +656,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	// only set the to address to a real value for managed deployments
 	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddress
+	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
 	if smtpToAddressCRDVal != "" {
 		smtpToAddress = smtpToAddressCRDVal
 	}

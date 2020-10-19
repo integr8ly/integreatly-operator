@@ -67,7 +67,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 
 func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
 	installation := basicInstallation()
-	installation.Spec.AlertingEmailAddress = mockAlertingEmailAddress
+	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
 	return installation
 }
 

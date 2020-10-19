@@ -112,11 +112,15 @@ func TestCreateInstallationCR_alertingEmailAddressIsPresent(t *testing.T) {
 	ctx := context.TODO()
 
 	email := "noreply-test@rhmi-redhat.com"
+	buEmail := "noreply-test@rhmi-redhat.com"
+
 	os.Setenv("ALERTING_EMAIL_ADDRESS", email)
+	os.Setenv("BU_ALERTING_EMAIL_ADDRESS", buEmail)
 	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
 
 	// Defer unsetting the environment variables regardless of test results
 	defer os.Unsetenv("ALERTING_EMAIL_ADDRESS")
+	defer os.Unsetenv("BU_ALERTING_EMAIL_ADDRESS")
 	defer os.Unsetenv("WATCH_NAMESPACE")
 
 	// Function to test
@@ -131,11 +135,19 @@ func TestCreateInstallationCR_alertingEmailAddressIsPresent(t *testing.T) {
 		t.Fatalf("Error getting installation CR: %v", err)
 	}
 
-	if installation.Spec.AlertingEmailAddress != email {
+	if installation.Spec.AlertingEmailAddresses.CSSRE != email {
 		t.Fatalf(
-			"Expected email address value of Installation.Spec.AlertingEmailAddress to be %s, instead got %s",
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.CSSRE to be %s, instead got %s",
 			email,
-			installation.Spec.AlertingEmailAddress,
+			installation.Spec.AlertingEmailAddresses.CSSRE,
+		)
+	}
+
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit != buEmail {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.BusinessUnit to be %s, instead got %s",
+			buEmail,
+			installation.Spec.AlertingEmailAddresses.BusinessUnit,
 		)
 	}
 }
@@ -161,10 +173,17 @@ func TestCreateInstallationCR_alertingEmailAddressIsNotPresent(t *testing.T) {
 		t.Fatalf("Error getting installation CR: %v", err)
 	}
 
-	if installation.Spec.AlertingEmailAddress != "" {
+	if installation.Spec.AlertingEmailAddresses.CSSRE != "" {
 		t.Fatalf(
-			"Expected email address value of Installation.Spec.AlertingEmailAddress to be empty, instead got %s",
-			installation.Spec.AlertingEmailAddress,
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.CSSRE to be empty, instead got %s",
+			installation.Spec.AlertingEmailAddresses.CSSRE,
+		)
+	}
+
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit != "" {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.BusinessUnit to be empty, instead got %s",
+			installation.Spec.AlertingEmailAddresses.BusinessUnit,
 		)
 	}
 }

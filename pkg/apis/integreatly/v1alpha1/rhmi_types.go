@@ -127,14 +127,14 @@ type RHMISpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type                 string         `json:"type"`
-	RoutingSubdomain     string         `json:"routingSubdomain,omitempty"`
-	MasterURL            string         `json:"masterURL,omitempty"`
-	NamespacePrefix      string         `json:"namespacePrefix"`
-	SelfSignedCerts      bool           `json:"selfSignedCerts,omitempty"`
-	PullSecret           PullSecretSpec `json:"pullSecret,omitempty"`
-	UseClusterStorage    string         `json:"useClusterStorage,omitempty"`
-	AlertingEmailAddress string         `json:"alertingEmailAddress,omitempty"`
+	Type                   string                 `json:"type"`
+	RoutingSubdomain       string                 `json:"routingSubdomain,omitempty"`
+	MasterURL              string                 `json:"masterURL,omitempty"`
+	NamespacePrefix        string                 `json:"namespacePrefix"`
+	SelfSignedCerts        bool                   `json:"selfSignedCerts,omitempty"`
+	PullSecret             PullSecretSpec         `json:"pullSecret,omitempty"`
+	UseClusterStorage      string                 `json:"useClusterStorage,omitempty"`
+	AlertingEmailAddresses AlertingEmailAddresses `json:"alertingEmailAddresses,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product
@@ -173,6 +173,11 @@ type RHMISpec struct {
 type PullSecretSpec struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+}
+
+type AlertingEmailAddresses struct {
+	BusinessUnit string `json:"businessUnit"`
+	CSSRE        string `json:"cssre"`
 }
 
 // RHMIStatus defines the observed state of Installation

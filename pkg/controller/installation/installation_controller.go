@@ -53,6 +53,7 @@ const (
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
+	buAlertingEmailAddressEnvName    = "BU_ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"
 )
 
@@ -151,7 +152,9 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	if len(installationList.Items) == 0 {
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
-		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
+		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
+		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
+
 		installType, _ := os.LookupEnv(installTypeEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
@@ -166,14 +169,17 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
-				Type:                        installType,
-				NamespacePrefix:             DefaultInstallationPrefix,
-				SelfSignedCerts:             false,
-				SMTPSecret:                  DefaultInstallationPrefix + "smtp",
-				DeadMansSnitchSecret:        DefaultInstallationPrefix + "deadmanssnitch",
-				PagerDutySecret:             DefaultInstallationPrefix + "pagerduty",
-				UseClusterStorage:           useClusterStorage,
-				AlertingEmailAddress:        alertingEmailAddress,
+				Type:                 installType,
+				NamespacePrefix:      DefaultInstallationPrefix,
+				SelfSignedCerts:      false,
+				SMTPSecret:           DefaultInstallationPrefix + "smtp",
+				DeadMansSnitchSecret: DefaultInstallationPrefix + "deadmanssnitch",
+				PagerDutySecret:      DefaultInstallationPrefix + "pagerduty",
+				UseClusterStorage:    useClusterStorage,
+				AlertingEmailAddresses: integreatlyv1alpha1.AlertingEmailAddresses{
+					BusinessUnit: buAlertingEmailAddress,
+					CSSRE:        cssreAlertingEmailAddress,
+				},
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
 			},
 		}
@@ -242,13 +248,23 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
-	alertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
-	if installation.Spec.AlertingEmailAddress == "" && alertingEmailAddress != "" {
-		logrus.Infof("Adding alerting email address to RHMI CR")
-		installation.Spec.AlertingEmailAddress = alertingEmailAddress
+	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddresses.CSSRE == "" && cssreAlertingEmailAddress != "" {
+		logrus.Infof("Adding CS-SRE alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddresses.CSSRE = cssreAlertingEmailAddress
 		err = r.client.Update(context.TODO(), installation)
 		if err != nil {
-			logrus.Errorf("Error while copying alerting email address to RHMI CR: %v", err)
+			logrus.Errorf("Error while copying alerting email addresses to RHMI CR: %v", err)
+		}
+	}
+
+	buAlertingEmailAddress := os.Getenv(buAlertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit == "" && buAlertingEmailAddress != "" {
+		logrus.Infof("Adding BU alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddresses.BusinessUnit = buAlertingEmailAddress
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			logrus.Errorf("Error while copying alerting email addresses to RHMI CR: %v", err)
 		}
 	}
 
