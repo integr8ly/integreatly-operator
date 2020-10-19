@@ -18,6 +18,7 @@ import (
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -45,12 +46,13 @@ const (
 
 type Reconciler struct {
 	*resources.Reconciler
-	ConfigManager config.ConfigReadWriter
-	Config        *config.Marin3r
-	installation  *integreatlyv1alpha1.RHMI
-	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
-	recorder      record.EventRecorder
+	ConfigManager   config.ConfigReadWriter
+	Config          *config.Marin3r
+	RateLimitConfig *marin3rconfig.RateLimitConfig
+	installation    *integreatlyv1alpha1.RHMI
+	mpm             marketplace.MarketplaceInterface
+	logger          *logrus.Entry
+	recorder        record.EventRecorder
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -123,6 +125,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	rateLimitConfig, err := marin3rconfig.GetRateLimitConfig(ctx, client, r.installation.Namespace)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit config", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.RateLimitConfig = rateLimitConfig
+
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
@@ -172,7 +181,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = NewRateLimitServiceReconciler(productNamespace, externalRedisSecretName).
+	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, productNamespace, externalRedisSecretName).
 		WithStatsdConfig(statsdConfig).
 		ReconcileRateLimitService(ctx, client)
 	if err != nil {

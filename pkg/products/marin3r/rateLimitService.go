@@ -2,9 +2,11 @@ package marin3r
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +21,7 @@ type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
 	StatsdConfig    *StatsdConfig
+	RateLimitConfig *marin3rconfig.RateLimitConfig
 }
 
 type StatsdConfig struct {
@@ -26,8 +29,9 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
+		RateLimitConfig: config,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
 	}
@@ -92,8 +96,8 @@ func (r *RateLimitServiceReconciler) reconcileConfigMap(ctx context.Context, cli
 					Key:   "generic_key",
 					Value: "slowpath",
 					RateLimit: &yamlRateLimit{
-						Unit:            "minute",
-						RequestsPerUnit: 20,
+						Unit:            r.RateLimitConfig.Unit,
+						RequestsPerUnit: r.RateLimitConfig.RequestsPerUnit,
 					},
 				},
 			},
@@ -174,12 +178,16 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				Value: useStatsd,
 			},
 			{
-				Name:  "RUNIME_ROOT",
-				Value: "/srv/runtime_data/current",
+				Name:  "RUNTIME_ROOT",
+				Value: "/srv/runtime_data",
 			},
 			{
 				Name:  "RUNTIME_SUBDIRECTORY",
-				Value: "/",
+				Value: "current",
+			},
+			{
+				Name:  "RUNTIME_WATCH_ROOT",
+				Value: "false",
 			},
 			{
 				Name:  "RUNTIME_IGNOREDOTFILES",
@@ -239,6 +247,12 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
 									Name: "ratelimit-config",
+								},
+								Items: []corev1.KeyToPath{
+									{
+										Key:  "apicast-ratelimiting.yaml",
+										Path: fmt.Sprintf("apicast-ratelimiting-%s.yaml", uniqueKey(r.RateLimitConfig)),
+									},
 								},
 							},
 						},
@@ -313,4 +327,11 @@ func (r *RateLimitServiceReconciler) getRedisSecret(ctx context.Context, client 
 	}, secret)
 
 	return secret, err
+}
+
+// uniqueKey generates a unique string for each possible rate limit configuration
+// combination
+func uniqueKey(r *marin3rconfig.RateLimitConfig) string {
+	str := fmt.Sprintf("%s/%d", r.Unit, r.RequestsPerUnit)
+	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }

@@ -329,6 +329,28 @@ func IntegreatlyCluster(t *testing.T, f *framework.Framework, ctx *framework.Con
 		return fmt.Errorf("create dead mans snitch secret : %w", err)
 	}
 
+	// create rate limits config map
+	rlConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sku-limits-managed-api-service",
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			"rate_limit": `
+			{
+				"RHOAM SERVICE SKU": {
+					"unit": "minute",
+					"requests_per_unit": 13860
+				}
+			}
+			`,
+		},
+	}
+	err = f.Client.Create(context.TODO(), rlConfigMap, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("create rate limits config map: %w", err)
+	}
+
 	// wait for integreatly-operator to be ready
 	err = e2eutil.WaitForOperatorDeployment(t, f.KubeClient, namespace, "rhmi-operator", 1, retryInterval, timeout)
 	if err != nil {

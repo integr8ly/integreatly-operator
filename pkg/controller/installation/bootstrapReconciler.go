@@ -2,6 +2,7 @@ package installation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -29,6 +30,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -92,6 +95,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check cloud resources config settings", err)
 		return phase, err
 	}
+
+	phase, err = r.checkRateLimitsConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check rate limits config settings", err)
+		return phase, err
+	}
+
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	metrics.SetRHMIInfo(installation)
@@ -129,6 +139,44 @@ func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkRateLimitsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	rlConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      marin3rconfig.RateLimitConfigMapName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rlConfig, func() error {
+		if rlConfig.Data == nil {
+			rlConfig.Data = map[string]string{}
+		}
+
+		if _, ok := rlConfig.Data["rate_limit"]; ok {
+			return nil
+		}
+
+		defaultConfig := map[string]*marin3rconfig.RateLimitConfig{
+			marin3rconfig.ManagedApiServiceSKU: {
+				Unit:            marin3rconfig.DefaultRateLimitUnit,
+				RequestsPerUnit: uint32(marin3rconfig.DefaultRateLimitRequests),
+			},
+		}
+
+		defaultConfigJSON, err := json.Marshal(defaultConfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshal default config: %w", err)
+		}
+
+		rlConfig.Data["rate_limit"] = string(defaultConfigJSON)
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
