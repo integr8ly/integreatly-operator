@@ -89,3 +89,9 @@ func SelectFromDeploymentConfig(obj v1.Object) *corev1.PodTemplateSpec {
 	dc := obj.(*openshiftappsv1.DeploymentConfig)
 	return dc.Spec.Template
 }
+
+// SelectFromDeployment returns obj.Spec.Template
+func SelectFromDeployment(obj v1.Object) *corev1.PodTemplateSpec {
+	d := obj.(*appsv1.Deployment)
+	return &d.Spec.Template
+}
