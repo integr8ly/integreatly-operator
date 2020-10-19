@@ -17,6 +17,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+var (
+	replicas int32 = 3
+)
+
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
@@ -149,6 +153,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			deployment.Labels = map[string]string{}
 		}
 
+		deployment.Spec.Replicas = &replicas
 		deployment.Labels["app"] = "ratelimit"
 		deployment.Spec.Selector = &v1.LabelSelector{
 			MatchLabels: map[string]string{
