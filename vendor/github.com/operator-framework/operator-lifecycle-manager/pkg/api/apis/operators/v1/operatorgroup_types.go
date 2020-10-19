@@ -26,6 +26,7 @@ type OperatorGroupSpec struct {
 	// TargetNamespaces is an explicit set of namespaces to target.
 	// If it is set, Selector is ignored.
 	// +optional
+	// +listType=set
 	TargetNamespaces []string `json:"targetNamespaces,omitempty"`
 
 	// ServiceAccountName is the admin specified service account which will be
@@ -40,13 +41,14 @@ type OperatorGroupSpec struct {
 // OperatorGroupStatus is the status for an OperatorGroupResource.
 type OperatorGroupStatus struct {
 	// Namespaces is the set of target namespaces for the OperatorGroup.
+	// +listType=set
 	Namespaces []string `json:"namespaces,omitempty"`
 
 	// ServiceAccountRef references the service account object specified.
 	ServiceAccountRef *corev1.ObjectReference `json:"serviceAccountRef,omitempty"`
 
 	// LastUpdated is a timestamp of the last time the OperatorGroup's status was Updated.
-	LastUpdated metav1.Time `json:"lastUpdated"`
+	LastUpdated *metav1.Time `json:"lastUpdated"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -58,6 +60,7 @@ type OperatorGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// +optional
 	Spec   OperatorGroupSpec   `json:"spec"`
 	Status OperatorGroupStatus `json:"status,omitempty"`
 }
@@ -68,13 +71,15 @@ type OperatorGroup struct {
 type OperatorGroupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-
+	// +listType=set
 	Items []OperatorGroup `json:"items"`
 }
 
 func (o *OperatorGroup) BuildTargetNamespaces() string {
-	sort.Strings(o.Status.Namespaces)
-	return strings.Join(o.Status.Namespaces, ",")
+	ns := make([]string, len(o.Status.Namespaces))
+	copy(ns, o.Status.Namespaces)
+	sort.Strings(ns)
+	return strings.Join(ns, ",")
 }
 
 // IsServiceAccountSpecified returns true if the spec has a service account name specified.
