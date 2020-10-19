@@ -450,6 +450,9 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 			//Verify that grafana dashboards are created
 			for _, dashboard := range reconciler.Config.GetDashboards() {
+				if dashboard == "critical-slo-managed-api-alerts" {
+					continue
+				}
 				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
 				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashboard, Namespace: defaultInstallationNamespace}, grafanaDB)
 				if err != nil {
