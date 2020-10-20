@@ -1,9 +1,18 @@
 ---
-environments:
-  - osd-post-upgrade
 estimate: 15m
-targets:
-  - 2.6.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+      - osd-post-upgrade
+    targets:
+      - 0.1.0
+      - 0.2.0
 ---
 
 # C14 - Verify 3scale UIBBT alerts

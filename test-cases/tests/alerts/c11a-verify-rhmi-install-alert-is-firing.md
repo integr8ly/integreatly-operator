@@ -1,11 +1,13 @@
 ---
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.5.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.5.0
 ---
 
-# C11 - Verify RHMI install alert is firing
+# C11a - Verify RHMI install alert is firing
 
 ## Description
 

@@ -1,30 +1,25 @@
 ---
 automation:
   - INTLY-7416
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
-  - rhpds
+products:
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
 estimate: 15m
 tags:
   - per-release
 ---
 
-# B01 - Verify that the users can login in all products
+# B01b - Verify that the users can login in all products
 
 ## Description
 
 Products:
 
 - OpenShift Console
-- Fuse (redhat-rhmi-fuse)
 - 3Scale (redhat-rhmi-3scale), route name: zync-3scale-provider, URL starting with "https://3scale-admin"
-- AMQ Online (redhat-rhmi-amq-online), route name: console
-- Codeready workspaces (redhat-rhmi-codeready), route name: codeready
 - User SSO (redhat-rhmi-user-sso), route name: keycloak-edge
-- UPS (redhat-rhmi-ups)
-- Solution explorer (redhat-rhmi-solution-explorer)
-- Apicurito (redhat-rhmi-apicurito), route name: apicurito
 
 ## Steps
 

@@ -1,12 +1,14 @@
 ---
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
 estimate: 15m
-targets:
-  - 2.6.0
 ---
 
-# M05 - Verify secrets
+# M05a - Verify secrets
 
 More info:
 

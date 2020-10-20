@@ -1,16 +1,18 @@
 ---
-environments:
-  - external
+products:
+  - name: rhoam
+    environments:
+      - external
 estimate: 30m
 tags:
   - manual-selection
 ---
 
-# N05 - Verify upgrade not approved when another upgrade in progress
+# N05b - Verify upgrade not approved when another upgrade in progress
 
 ## Description
 
-**Note:** This test can be executed only when installing RHMI using olm, just ignore it when testing RHMI on OSD
+**Note:** This test can be executed only when installing RHOAM using olm, just ignore it when testing RHOAM on OSD
 
 ## Prerequisites
 
@@ -20,11 +22,11 @@ tags:
 oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
 ```
 
-2. RHMI Installation
+2. RHOAM Installation
 
 ## Steps
 
-1. Trigger an upgrade of RHMI
+1. Trigger an upgrade of RHOAM
 2. Verify that the installPlan gets approved
-3. Trigger another upgrade of RHMI
+3. Trigger another upgrade of RHOAM
 4. Verify that the installPlan does not get approved until `status.stage` is `complete` and the `toVersion` field is empty.

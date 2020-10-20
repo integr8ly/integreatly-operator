@@ -1,11 +1,15 @@
 ---
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.5.0
+products:
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 ---
 
-# C13 - Verify RHMI reconciliation alerts are firing
+# C13b - Verify RHOAM reconciliation alerts are firing
 
 ## Description
 

@@ -1,13 +1,17 @@
 ---
-environments:
-  - osd-post-upgrade
-  - osd-private-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+      - osd-private-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 2h
 tags:
   - per-build
 ---
 
-# N02 - Upgrade RHMI
+# N02a - Upgrade RHMI
 
 ## Description
 

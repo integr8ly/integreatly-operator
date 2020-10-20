@@ -78,7 +78,7 @@ function extractTitle(content: string): { title: string; content: string } {
 
 function extractId(title: string): { id: string; title: string } {
     // A01 - Title
-    const match = /^(?<id>[A-Z][0-9]{2})\s-\s(?<title>.*)$/.exec(title);
+    const match = /^(?<id>[A-Z][0-9]{2}[a-z]?)\s-\s(?<title>.*)$/.exec(title);
     if (match) {
         return {
             id: match.groups.id,
@@ -130,7 +130,8 @@ function loadTestCase(file: string, productName: string): TestCase | null {
     const m = matter.read(file);
     const data = m.data as Metadata;
 
-    const product = data.products.find((p) => p.name === productName);
+    const product =
+        data.products && data.products.find((p) => p.name === productName);
     if (!product) {
         return null;
     }

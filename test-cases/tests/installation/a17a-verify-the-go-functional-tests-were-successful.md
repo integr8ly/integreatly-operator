@@ -1,15 +1,17 @@
 ---
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
-  - rhpds
-  - osd-private-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+      - rhpds
+      - osd-private-post-upgrade
 estimate: 15m
 tags:
   - per-build
 ---
 
-# A17 - Verify the Go functional tests were successful
+# A17a - Verify the Go functional tests were successful
 
 Acceptance Criteria:
 

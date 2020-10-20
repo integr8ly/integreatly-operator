@@ -9,7 +9,7 @@ https://github.com/integr8ly/integreatly-operator/blob/master/test/functional/aw
 
 ## Description
 
-This test case should verify that RHMI AWS resources are still configured properly after upgrade from 2.4.0
+This test case should verify that RHMI/RHOAM AWS resources are still configured properly after upgrade from 2.4.0
 More info: <https://issues.redhat.com/browse/INTLY-8098>
 
 ## Prerequisites

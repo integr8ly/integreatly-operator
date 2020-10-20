@@ -1,12 +1,14 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
 estimate: 30m
 tags:
   - per-build
 ---
 
-# H21 - Verify all products using the workload-web-app
+# H21a - Verify all products using the workload-web-app
 
 ## Description
 

@@ -1,11 +1,13 @@
 ---
 components:
   - product-fuse
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.8.0
 estimate: 45m
-targets:
-  - 2.8.0
 ---
 
 # G04 - Verify API management walkthrough

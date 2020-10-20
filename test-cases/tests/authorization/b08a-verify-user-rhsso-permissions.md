@@ -3,14 +3,16 @@ automation:
   - INTLY-6408
 components:
   - product-sso
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
 estimate: 15m
-targets:
-  - 2.6.0
 ---
 
-# B08 - Verify User RHSSO Permissions
+# B08a - Verify User RHSSO Permissions
 
 ## Steps
 

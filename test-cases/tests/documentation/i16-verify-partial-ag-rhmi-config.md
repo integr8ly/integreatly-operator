@@ -1,10 +1,12 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.7.0
 tags:
   - manual-selection
-targets:
-  - 2.7.0
 ---
 
 # I16 - Verify partial ag rhmi config

@@ -2,11 +2,13 @@
 components:
   - product-fuse
   - product-amq
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.6.0
 estimate: 30m
-targets:
-  - 2.6.0
 ---
 
 # G01 - Verify AMQ Online walkthrough

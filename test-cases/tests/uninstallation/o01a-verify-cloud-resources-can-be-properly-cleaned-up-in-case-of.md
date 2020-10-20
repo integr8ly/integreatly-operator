@@ -1,14 +1,16 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.8.0
 estimate: 30m
 tags:
   - destructive
-targets:
-  - 2.8.0
 ---
 
-# O01 - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
+# O01a - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster (ideally a cluster that is about to be deleted)
 

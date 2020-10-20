@@ -1,14 +1,17 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 30m
 tags:
   - destructive
-targets:
-  - 2.8.0
 ---
 
-# O02 - Verify if CRO operator removes remaining snapshots for RDS, Elasticache and S3 after the deletion of RHMI operator has finished
+# O02b - Verify if CRO operator removes remaining snapshots for RDS, Elasticache and S3 after the deletion of RHMI operator has finished
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster (ideally a cluster that is about to be deleted)
 
@@ -32,10 +35,10 @@ By following this test case should be able to verify:
 oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
 ```
 
-2. Trigger RHMI uninstallation
+2. Trigger RHOAM uninstallation
 
 ```bash
-oc delete rhmi rhmi -n redhat-rhmi-operator
+oc delete rhmi rhmi -n redhat-managed-api-operator
 ```
 
 3. Verify the `cloud-resources-aws-strategies` configmap in the rhmi operator has got the fields:
@@ -45,13 +48,13 @@ oc delete rhmi rhmi -n redhat-rhmi-operator
    - `redis.production.deleteStrategy.FinalSnapshotIdentifier` set to empty.
 
 ```bash
-oc describe configmap cloud-resources-aws-strategies -n redhat-rhmi-operator
+oc describe configmap cloud-resources-aws-strategies -n redhat-managed-api-operator
 ```
 
 4. Ensure that there are no manual or automatic RDS snapshots associated to the install remaining in the AWS account.
 
 ```bash
-for id in $(oc get postgres -n redhat-rhmi-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get postgres -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
 do
   if [[ -n $(aws rds describe-db-snapshots --db-instance-identifier=$id | jq -r '.DBSnapshots[]') ]]
   then
@@ -66,7 +69,7 @@ done
 5. Ensure that there are no manual or automatic Elasticache snapshots associated to the install remaining in the AWS account.
 
 ```bash
-for id in $(oc get redis -n redhat-rhmi-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get redis -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
 do
   if [[ -n $(aws elasticache describe-snapshots --cache-cluster-id=$id-001 | jq -r '.Snapshots[]') ]]
   then
@@ -83,7 +86,7 @@ done
 ```bash
 aws_s3_buckets=$(aws s3 ls)
 
-for id in $(oc get blobstorages -n redhat-rhmi-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get blobstorages -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
   do echo $aws_s3_buckets | grep $b || echo bucket $id not found ;
 done
 ```

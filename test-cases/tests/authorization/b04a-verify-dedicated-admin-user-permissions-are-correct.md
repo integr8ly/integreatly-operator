@@ -1,15 +1,21 @@
 ---
 automation:
   - INTLY-7748
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
 estimate: 1h
 tags:
   - per-release
 ---
 
-# B04 - Verify Dedicated Admin User Permissions are Correct
+# B04a - Verify Dedicated Admin User Permissions are Correct
 
 **Automated Test**: [user_dedicated_admin_permissions.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/user_dedicated_admin_permissions.go)
 

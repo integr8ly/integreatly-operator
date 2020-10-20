@@ -1,13 +1,22 @@
 ---
 components:
   - product-sso
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 1h
 tags:
   - destructive
-targets:
-  - 2.8.0
 ---
 
 # J08 - Verify User SSO Backup and Restore

@@ -3,11 +3,13 @@ automation:
   - INTLY-6652
 components:
   - product-codeready
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.4.0
-  - 2.8.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.4.0
+      - 2.8.0
 ---
 
 # B05 - Verify Codeready CRUDL Permissions

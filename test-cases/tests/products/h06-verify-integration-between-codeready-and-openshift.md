@@ -3,11 +3,13 @@ automation:
   - INTLY-7434
 components:
   - product-codeready
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 30m
-targets:
-  - 2.8.0
 ---
 
 # H06 - Verify integration between CodeReady and OpenShift

@@ -1,13 +1,15 @@
 ---
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.3.0
+      - 2.7.0
 estimate: 15m
-targets:
-  - 2.3.0
-  - 2.7.0
 ---
 
-# M02 - Verify RHMI version metric is exposed
+# M02a - Verify RHMI version metric is exposed
 
 ## Steps
 

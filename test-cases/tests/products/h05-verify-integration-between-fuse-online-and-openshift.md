@@ -3,11 +3,13 @@ automation:
   - INTLY-7433
 components:
   - product-fuse
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 30m
-targets:
-  - 2.8.0
 ---
 
 # H05 - Verify integration between Fuse Online and OpenShift

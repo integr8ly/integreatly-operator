@@ -1,16 +1,20 @@
 ---
-environments:
-  - external
+products:
+  - name: rhoam
+    environments:
+      - external
+    targets:
+      - 0.0.2
 estimate: 2h
 tags:
   - manual-selection
 ---
 
-# N01 - Mesure downtime during OpenShift upgrade
+# N01b - Measure downtime during OpenShift upgrade
 
 ## Description
 
-Mesure the downtime of the RHMI components during the OpenShift upgrade (not to be confused with the RHMI upgrade) to ensure OpenShift can be safely upgraded.
+Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to be confused with the RHOAM upgrade) to ensure OpenShift can be safely upgraded.
 
 ## Prerequisites
 
@@ -27,14 +31,14 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
    oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
    ```
 
-2. Make sure **nobody is using the cluster** for performing the test cases, because the RHMI components will have a downtime during the upgrade
+2. Make sure **nobody is using the cluster** for performing the test cases, because the RHOAM components will have a downtime during the upgrade
 
 3. Clone the [workload-web-app](https://github.com/integr8ly/workload-web-app) repo and run the following command:
 
    ```
    git clone https://github.com/integr8ly/workload-web-app
    cd workload-web-app
-   export GRAFANA_DASHBOARD=true
+   export GRAFANA_DASHBOARD=true RHOAM=true
    make local/deploy
    ```
 
@@ -66,7 +70,7 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
    >
    > Once it's finished, it should print out "Upgrade completed!" (it could take ~1 hour)
 
-7. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHMI components are accessible
+7. Go to the OpenShift console, go through all the `redhat-managed-api-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
@@ -80,19 +84,19 @@ Mesure the downtime of the RHMI components during the OpenShift upgrade (not to 
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-9. Open the RHMI Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+9. Open the RHOAM Grafana Console in the `redhat-managed-api-middleware-monitoring-operator` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-managed-api-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 10. Select the **Workload App** dashboard
 
-> Verify that **AMQ**, **3scale** and **SSO** are working by checking the **Status** graph.
+> Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 > Take the screenshot of the dashboard and attach it to this ticket
 >
-> Note: when testing the RHMI upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues (also make sure that the screenshot of the dashboard post-upgrade is attached to this Jira)
+> Note: when testing the RHOAM upgrade the dashboard must be verified also after the upgrade and any downtime during the upgrade should be reported as issues (also make sure that the screenshot of the dashboard post-upgrade is attached to this Jira)
 >
-> Note: it's normal that graph will show a short downtime at the start for 3scale and/or AMQ because the workload-web-app is usually deployed before the 3scale API and/or the AMQ queue is ready
+> Note: it's normal that graph will show a short downtime at the start for 3scale because the workload-web-app is usually deployed before the 3scale API is ready
 
 11. Consult the results with engineering (especially in case some components have a long downtime or are not working properly)
