@@ -61,6 +61,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 			SMTPSecret:           mockSMTPSecretName,
 			PagerDutySecret:      mockPagerdutySecretName,
 			DeadMansSnitchSecret: mockDMSSecretName,
+			Type:                 string(integreatlyv1alpha1.InstallationTypeManaged),
 		},
 	}
 }
@@ -449,10 +450,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 
 			//Verify that grafana dashboards are created
-			for _, dashboard := range reconciler.Config.GetDashboards() {
-				if dashboard == "critical-slo-managed-api-alerts" {
-					continue
-				}
+			for _, dashboard := range reconciler.Config.GetDashboards(integreatlyv1alpha1.InstallationType(installation.Spec.Type)) {
 				grafanaDB := &grafanav1alpha1.GrafanaDashboard{}
 				err = tc.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: dashboard, Namespace: defaultInstallationNamespace}, grafanaDB)
 				if err != nil {
