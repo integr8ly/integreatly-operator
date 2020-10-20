@@ -9,12 +9,14 @@ import (
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	marin3rv1alpha "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -42,6 +44,12 @@ const (
 	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
+)
+
+var (
+	enabledNamespaces = []string{
+		global.NamespacePrefix + "3scale",
+	}
 )
 
 type Reconciler struct {
@@ -104,6 +112,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		if err := r.deleteEnabledNamespacesFinalizers(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete enabled namespaces finalizers: %v", err)
+		}
+
+		if err := r.deleteDiscoveryService(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
+		}
+
 		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -112,10 +128,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
-		}
-
-		if err := r.deleteDiscoveryService(ctx, client); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
@@ -151,7 +163,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	logrus.Infof("about to start reconciling the discovery service")
-	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace, installation.Spec.NamespacePrefix)
+	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
 		return phase, err
@@ -269,10 +281,7 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 	return phase, nil
 }
 
-func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
-	enabledNamespaces := []string{
-		namespacePrefix + "3scale",
-	}
+func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	discoveryService := &marin3r.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -308,6 +317,23 @@ func (r *Reconciler) deleteDiscoveryService(ctx context.Context, client k8sclien
 	}
 
 	return client.Delete(ctx, discoveryService)
+}
+
+func (r *Reconciler) deleteEnabledNamespacesFinalizers(ctx context.Context, client k8sclient.Client) error {
+
+	for _, namespace := range enabledNamespaces {
+		envoyConfigs := &marin3rv1alpha.EnvoyConfigList{}
+		if err := client.List(ctx, envoyConfigs, k8sclient.InNamespace(namespace)); err != nil {
+			return err
+		}
+		for _, envoyConfig := range envoyConfigs.Items {
+			if err := client.Delete(ctx, &envoyConfig); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
