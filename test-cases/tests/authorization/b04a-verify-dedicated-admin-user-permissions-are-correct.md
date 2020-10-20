@@ -6,6 +6,13 @@ products:
     environments:
       - osd-post-upgrade
       - osd-fresh-install
+<<<<<<< HEAD:test-cases/tests/authorization/b04a-verify-dedicated-admin-user-permissions-are-correct.md
+=======
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+>>>>>>> update existing test cases, extract test case id:test-cases/tests/authorization/b04a-verify-dedicated-admin-user-permissions-are-correct.md
 estimate: 1h
 tags:
   - per-release

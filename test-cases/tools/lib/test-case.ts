@@ -79,7 +79,11 @@ function extractTitle(content: string): { title: string; content: string } {
 }
 
 function extractId(title: string): { id: string; title: string } {
+<<<<<<< HEAD
     // A01a - Title
+=======
+    // A01 - Title
+>>>>>>> update existing test cases, extract test case id
     const match = /^(?<id>[A-Z][0-9]{2}[a-z]?)\s-\s(?<title>.*)$/.exec(title);
     if (match) {
         return {
@@ -133,6 +137,7 @@ function loadTestCase(file: string, productName?: string): TestCase | null {
     const m = matter.read(file);
     const data = m.data as Metadata;
 
+<<<<<<< HEAD
     if (productName) {
         product =
             data.products && data.products.find((p) => p.name === productName);
@@ -141,6 +146,12 @@ function loadTestCase(file: string, productName?: string): TestCase | null {
         }
     } else {
         product = {};
+=======
+    const product =
+        data.products && data.products.find((p) => p.name === productName);
+    if (!product) {
+        return null;
+>>>>>>> update existing test cases, extract test case id
     }
 
     const te = extractTitle(m.content);
