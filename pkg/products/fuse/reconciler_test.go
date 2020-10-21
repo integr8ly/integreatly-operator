@@ -604,7 +604,7 @@ func getFuseCr(phase syndesisv1beta1.SyndesisPhase) *syndesisv1beta1.Syndesis {
 				Server: syndesisv1beta1.ServerConfiguration{
 					Features: syndesisv1beta1.ServerFeatures{
 						IntegrationLimit:       intLimit,
-						ManagementUrlFor3scale: "https://3scale-admin.dummmy",
+						ManagementURLFor3scale: "https://3scale-admin.dummmy",
 					},
 				},
 			},
