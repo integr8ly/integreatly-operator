@@ -160,7 +160,7 @@ test/e2e/rhoam/prow: test/e2e/rhoam
 .PHONY: test/e2e/rhoam
 test/e2e/rhoam: export INSTALLATION_TYPE := "managed-api"
 test/e2e/rhoam:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
