@@ -4,11 +4,6 @@ products:
     environments:
       - osd-post-upgrade
       - osd-private-post-upgrade
-<<<<<<< HEAD:test-cases/tests/upgrade/n02a-upgrade-rhmi.md
-=======
-    targets:
-      - 2.8.0
->>>>>>> update existing test cases, extract test case id:test-cases/tests/upgrade/n02a-upgrade-rhmi.md
 estimate: 2h
 tags:
   - per-build

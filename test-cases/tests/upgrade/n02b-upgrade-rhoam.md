@@ -4,11 +4,6 @@ products:
     environments:
       - osd-post-upgrade
       - osd-private-post-upgrade
-<<<<<<< HEAD
-=======
-    targets:
-      - 0.0.3
->>>>>>> update existing test cases, extract test case id
 estimate: 2h
 tags:
   - per-build

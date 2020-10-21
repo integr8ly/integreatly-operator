@@ -2,13 +2,6 @@
 automation:
   - INTLY-7748
 products:
-<<<<<<< HEAD
-=======
-  - name: rhmi
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
->>>>>>> update existing test cases, extract test case id
   - name: rhoam
     environments:
       - osd-post-upgrade
