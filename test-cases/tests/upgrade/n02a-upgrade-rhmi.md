@@ -4,8 +4,6 @@ products:
     environments:
       - osd-post-upgrade
       - osd-private-post-upgrade
-    targets:
-      - 2.8.0
 estimate: 2h
 tags:
   - per-build

@@ -2,10 +2,6 @@
 automation:
   - INTLY-7748
 products:
-  - name: rhmi
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
   - name: rhoam
     environments:
       - osd-post-upgrade
