@@ -110,3 +110,13 @@ type PersistentVolumeClaim struct {
 	Namespace                  string
 	PersistentVolumeClaimNames []string
 }
+
+type StatefulSets struct {
+	Namespace string
+	Name      string
+}
+
+type DeploymentConfigs struct {
+	Namespace string
+	Name      string
+}
