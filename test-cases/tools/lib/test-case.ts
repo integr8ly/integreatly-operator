@@ -79,7 +79,7 @@ function extractTitle(content: string): { title: string; content: string } {
 }
 
 function extractId(title: string): { id: string; title: string } {
-    // A01 - Title
+    // A01a - Title
     const match = /^(?<id>[A-Z][0-9]{2}[a-z]?)\s-\s(?<title>.*)$/.exec(title);
     if (match) {
         return {
@@ -172,8 +172,17 @@ function loadTestCase(file: string, productName?: string): TestCase | null {
     };
 }
 
-function updateTargets(test: TestCase, targets: string[]): void {
-    test.matter.data.targets = targets;
+function updateTargets(
+    test: TestCase,
+    productName: string,
+    targets: string[]
+): void {
+    for (const i in test.matter.data.products) {
+        if (test.matter.data.products[i].name === productName) {
+            test.matter.data.products[i].targets = targets;
+            break;
+        }
+    }
     const out = test.matter.stringify("");
     fs.writeFileSync(test.file, out);
 }

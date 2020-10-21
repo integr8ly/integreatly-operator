@@ -116,7 +116,7 @@ const release: CommandModule<{}, ReleaseArgs> = {
                     `add target ${v} to ${test.id} - ${test.title} | ${test.file}`
                 );
                 if (!args.dryRun) {
-                    updateTargets(test, targets);
+                    updateTargets(test, args.product, targets);
                 }
             }
         }
@@ -180,7 +180,7 @@ const forcmd: CommandModule<{}, ForArgs> = {
                     `add target ${args.target} to ${test.id} - ${test.title} | ${test.file}`
                 );
                 if (!args.dryRun) {
-                    updateTargets(test, targets);
+                    updateTargets(test, args.product, targets);
                 }
             }
         }
