@@ -99,7 +99,7 @@ function lintDuplicateIDs(): Linter {
     const parsed: { [id: string]: TestCase } = {};
 
     return (test: TestCase): error => {
-        if (test.id in parsed) {
+        if (test.id in parsed && parsed[test.id].title !== test.title) {
             return `the id: ${test.id} is duplicated in '${
                 parsed[test.id].file
             }' and in '${test.file}'`;
@@ -134,8 +134,8 @@ function lintComponents(): Linter {
 }
 
 function lintProducts(): Linter {
-    return lintStringArrayField(
-        "products",
+    return lintStringField(
+        "productName",
         includes(PRODUCTS),
         `valid products are: ${PRODUCTS}`
     );
@@ -290,10 +290,16 @@ const lint: CommandModule<{}, {}> = {
             logger.info(`linting: ${l}`);
 
             for (const test of tests) {
-                const err = linters[l](test);
-                if (err !== null) {
-                    logger.error(`${l}: ${test.file}: ${err}`);
-                    dirty = true;
+                for (const product of test.products) {
+                    test.environments = product.environments || [];
+                    test.targets = product.targets || [];
+                    test.productName = product.name || "";
+
+                    const err = linters[l](test);
+                    if (err !== null) {
+                        logger.error(`${l}: ${test.file}: ${err}`);
+                        dirty = true;
+                    }
                 }
             }
         }
@@ -307,4 +313,4 @@ const lint: CommandModule<{}, {}> = {
     },
 };
 
-export { lint };
+export { lint, PRODUCTS };

@@ -45,6 +45,8 @@ interface TestCase {
     content: string;
     environments: string[];
     estimate: number;
+    products: Product[];
+    productName: string;
     tags: string[];
     targets: string[];
     components: string[];
@@ -126,14 +128,19 @@ function loadTestCases(
         .filter((t) => t != null);
 }
 
-function loadTestCase(file: string, productName: string): TestCase | null {
+function loadTestCase(file: string, productName?: string): TestCase | null {
+    let product;
     const m = matter.read(file);
     const data = m.data as Metadata;
 
-    const product =
-        data.products && data.products.find((p) => p.name === productName);
-    if (!product) {
-        return null;
+    if (productName) {
+        product =
+            data.products && data.products.find((p) => p.name === productName);
+        if (!product) {
+            return null;
+        }
+    } else {
+        product = {};
     }
 
     const te = extractTitle(m.content);
@@ -156,6 +163,8 @@ function loadTestCase(file: string, productName: string): TestCase | null {
         file,
         id,
         matter: m,
+        products: data.products || [],
+        productName: product.name || "",
         tags: data.tags || [],
         targets: product.targets || [],
         title,
