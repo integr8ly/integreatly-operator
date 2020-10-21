@@ -8,6 +8,7 @@ tags:
   - destructive
 targets:
   - 2.6.0
+  - 2.7.1
 ---
 
 # K03 - Run performance test against RHSSO

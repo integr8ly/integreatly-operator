@@ -8,6 +8,7 @@ environments:
 estimate: 15m
 targets:
   - 2.6.0
+  - 2.7.1
 ---
 
 # B08 - Verify User RHSSO Permissions

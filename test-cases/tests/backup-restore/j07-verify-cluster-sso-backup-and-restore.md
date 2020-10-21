@@ -8,6 +8,7 @@ tags:
   - destructive
 targets:
   - 2.6.0
+  - 2.7.1
 ---
 
 # J07 - Verify Cluster SSO Backup and Restore
