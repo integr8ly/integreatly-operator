@@ -12,6 +12,26 @@ type Monitoring struct {
 	Config ProductConfig
 }
 
+var rhmiTemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-rhmi-alerts",
+}
+
+var managedAPITemplateList = []string{
+	"endpointsdetailed",
+	"endpointsreport",
+	"endpointssummary",
+	"resources-by-namespace",
+	"resources-by-pod",
+	"cluster-resources",
+	"critical-slo-managed-api-alerts",
+}
+
 func NewMonitoring(config ProductConfig) *Monitoring {
 	return &Monitoring{Config: config}
 }
@@ -123,17 +143,15 @@ func (m *Monitoring) GetPrometheusStorageRequest() string {
 	return "50Gi"
 }
 
-func (m *Monitoring) GetDashboards() []string {
-	templateList := []string{
-		"endpointsdetailed",
-		"endpointsreport",
-		"endpointssummary",
-		"resources-by-namespace",
-		"resources-by-pod",
-		"cluster-resources",
-		"critical-slo-alerts",
+func (m *Monitoring) GetDashboards(installType integreatlyv1alpha1.InstallationType) []string {
+	switch installType {
+	case integreatlyv1alpha1.InstallationTypeManaged, integreatlyv1alpha1.InstallationTypeSelfManaged, integreatlyv1alpha1.InstallationTypeWorkshop:
+		return rhmiTemplateList
+	case integreatlyv1alpha1.InstallationTypeManagedApi:
+		return managedAPITemplateList
+	default:
+		return rhmiTemplateList
 	}
-	return templateList
 }
 
 func (m *Monitoring) GetJobTemplates() []string {

@@ -1,7 +1,7 @@
 include ./make/*.mk
 
 ORG ?= integreatly
-NAMESPACE_PREFIX=redhat-rhmi-
+NAMESPACE_PREFIX ?= redhat-rhmi-
 NAMESPACE=$(NAMESPACE_PREFIX)operator
 PROJECT=integreatly-operator
 REG=quay.io

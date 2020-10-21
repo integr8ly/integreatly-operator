@@ -460,7 +460,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 
 func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	for _, dashboard := range r.Config.GetDashboards() {
+	for _, dashboard := range r.Config.GetDashboards(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
