@@ -4,7 +4,7 @@ targets:
 estimate: 15m
 products:
   - name: rhoam
-    environments:ugh
+    environments:
       - osd-fresh-install
     targets:
       - 0.2.0
