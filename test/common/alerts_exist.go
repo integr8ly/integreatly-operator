@@ -480,63 +480,6 @@ var commonExpectedRules = []alertsTestRule{
 			"SendgridSmtpSecretExists",
 		},
 	},
-	{
-		File: "redhat-rhmi-3scale-zync-que.yaml",
-		Rules: []string{
-			"ThreescaleZyncQueJobDown",
-			"ThreescaleZyncQueScheduledJobCountHigh",
-			"ThreescaleZyncQueFailedJobCountHigh",
-			"ThreescaleZyncQueReadyJobCountHigh",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-zync.yaml",
-		Rules: []string{
-			"ThreescaleZyncJobDown",
-			"ThreescaleZync5XXRequestsHigh",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-apicast.yaml",
-		Rules: []string{
-			"ThreescaleApicastJobDown",
-			"ThreescaleApicastRequestTime",
-			"ThreescaleApicastHttp4xxErrorRate",
-			"ThreescaleApicastLatencyHigh",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-threescale-kube-state-metrics.yaml",
-		Rules: []string{
-			"ThreescalePodCrashLooping",
-			"ThreescalePodNotReady",
-			"ThreescaleReplicationControllerReplicasMismatch",
-			"ThreescaleContainerWaiting",
-			"ThreescaleContainerCPUHigh",
-			"ThreescaleContainerMemoryHigh",
-			"ThreescaleContainerCPUThrottlingHigh",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-system-sidekiq.yaml",
-		Rules: []string{
-			"SystemSidekiqZyncRuntime",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-backend-listener.yaml",
-		Rules: []string{
-			"ThreescaleBackendListener5XXRequestsHigh",
-			"ThreescaleBackendListenerJobDown",
-		},
-	},
-	{
-		File: "redhat-rhmi-3scale-backend-worker.yaml",
-		Rules: []string{
-			"ThreescaleBackendWorkerJobsCountRunningHigh",
-			"ThreescaleBackendWorkerJobDown",
-		},
-	},
 }
 
 // common aws rules applicable to all install types
