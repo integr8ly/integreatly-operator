@@ -10,7 +10,7 @@ tags:
   - per-release
 ---
 
-# A27 - Verify Rate limit service pods are running
+# A29 - Verify Rate limit service pods are running
 
 ## Prerequisites
 
