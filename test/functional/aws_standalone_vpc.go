@@ -172,6 +172,13 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 		t.Fatal("could not get cluster id", err)
 	}
 
+	clusterNodes := &v1.NodeList{}
+	err = testingCtx.Client.List(ctx, clusterNodes)
+	if err != nil {
+		t.Errorf("Error when getting the list of OpenShift cluster nodes: %s", err)
+	}
+	availableZones := GetClustersAvailableZones(clusterNodes)
+
 	// verify vpc
 	vpc, err := verifyVpc(ec2Sess, clusterTag, expectedCidr)
 	testErrors.vpcError = err.(*networkConfigTestError).vpcError
@@ -219,7 +226,7 @@ func TestStandaloneVPCExists(t *testing.T, testingCtx *common.TestingContext) {
 	testErrors.standaloneRouteTableError = err.(*networkConfigTestError).standaloneRouteTableError
 
 	// verify cluster route table
-	err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn)
+	err = verifyClusterRouteTables(ec2Sess, clusterTag, expectedCidr, conn, availableZones)
 	testErrors.clusterRouteTablesError = err.(*networkConfigTestError).clusterRouteTablesError
 
 	// update the _network create strategy in the aws strategy map and ensure
@@ -521,7 +528,7 @@ func verifyStandaloneRouteTable(session *ec2.EC2, clusterTag string, conn *ec2.V
 }
 
 // verify that the cluster route tables contain a route to the peering connection and the standalone vpc
-func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peeringConn *ec2.VpcPeeringConnection) error {
+func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peeringConn *ec2.VpcPeeringConnection, availableZones map[string]bool) error {
 	newErr := &networkConfigTestError{
 		clusterRouteTablesError: []error{},
 	}
@@ -541,9 +548,10 @@ func verifyClusterRouteTables(session *ec2.EC2, clusterTag, vpcCidr string, peer
 		return newErr
 	}
 
-	// expect 2 route tables (main and non-main)
+	// 1 private route per AZ + 1 public route
+	expectedRouteTableCount := len(availableZones) + 1
 	routeTables := describeRouteTables.RouteTables
-	if len(routeTables) != 2 {
+	if len(routeTables) != expectedRouteTableCount {
 		errMsg := fmt.Errorf("unexpected number of route tables: %d", len(routeTables))
 		newErr.clusterRouteTablesError = append(newErr.clusterRouteTablesError, errMsg)
 		return newErr

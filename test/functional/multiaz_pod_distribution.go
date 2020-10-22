@@ -3,13 +3,14 @@ package functional
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/common"
-	v1 "k8s.io/api/core/v1"
 	"math"
 	"os"
-	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/test/common"
+	v1 "k8s.io/api/core/v1"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -34,7 +35,7 @@ func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
 
 	ctx.Client.List(goctx.TODO(), nodes)
 
-	availableZones = getAZ(nodes)
+	availableZones = GetClustersAvailableZones(nodes)
 
 	// If "NAMESPACES_TO_CHECK" env var contains a list of namespaces, use that instead of the predefined list
 	namespacesFromEnvVar := os.Getenv("NAMESPACES_TO_CHECK")
@@ -82,21 +83,6 @@ func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
 	if len(testErrors) != 0 {
 		t.Fatalf("\nError when verifying the pod distribution: \n%s", testErrors)
 	}
-}
-
-// Returns a map containing zone names that are currently available
-func getAZ(nodes *v1.NodeList) map[string]bool {
-	zones := make(map[string]bool)
-	for _, node := range nodes.Items {
-		if isNodeWorkerAndReady(node) {
-			for labelName, labelValue := range node.Labels {
-				if labelName == "topology.kubernetes.io/zone" {
-					zones[labelValue] = true
-				}
-			}
-		}
-	}
-	return zones
 }
 
 // Returns true if the node is a "worker" (compute node)
