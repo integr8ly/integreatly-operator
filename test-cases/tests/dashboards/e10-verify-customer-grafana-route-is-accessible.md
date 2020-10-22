@@ -3,12 +3,13 @@ products:
   - name: rhoam
     environments:
       - osd-fresh-install
-estimate: 15m
 tags:
-  - per-release
+  - automated
 ---
 
-# E09 - Verify Grafana rate-limiting dashboard
+# E10 - Verify Customer Grafana Route is accessible
+
+**Automated Test**: [grafana_routes.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/grafana_routes.go)
 
 ## Prerequisites
 
@@ -23,6 +24,6 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 
 ## Steps
 
-1. Go to redhat-managed-api-customer-monitoring-operator namespace
+1. Go to redhat-rhmi-customer-monitoring-operator namespace
 2. Go to Routes -> grafana-route and login as customer-admin user using testing-idp
-3. Verify the rate-limiting dashboard is present (TODO: more detailed step)
+   > Verify that you can successfully log in to the Grafana
