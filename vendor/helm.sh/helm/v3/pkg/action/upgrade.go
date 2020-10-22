@@ -29,6 +29,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/kube"
+	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 )
@@ -41,9 +42,11 @@ type Upgrade struct {
 
 	ChartPathOptions
 
-	Install      bool
-	Devel        bool
-	Namespace    string
+	Install   bool
+	Devel     bool
+	Namespace string
+	// SkipCRDs skip installing CRDs when install flag is enabled during upgrade
+	SkipCRDs     bool
 	Timeout      time.Duration
 	Wait         bool
 	DisableHooks bool
@@ -58,6 +61,8 @@ type Upgrade struct {
 	Atomic        bool
 	CleanupOnFail bool
 	SubNotes      bool
+	Description   string
+	PostRenderer  postrender.PostRenderer
 }
 
 // NewUpgrade creates a new Upgrade object with the given configuration.
@@ -160,7 +165,7 @@ func (u *Upgrade) prepareUpgrade(name string, chart *chart.Chart, vals map[strin
 		return nil, nil, err
 	}
 
-	hooks, manifestDoc, notesTxt, err := u.cfg.renderResources(chart, valuesToRender, "", u.SubNotes)
+	hooks, manifestDoc, notesTxt, err := u.cfg.renderResources(chart, valuesToRender, "", "", u.SubNotes, false, false, u.PostRenderer)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -218,7 +223,11 @@ func (u *Upgrade) performUpgrade(originalRelease, upgradedRelease *release.Relea
 
 	if u.DryRun {
 		u.cfg.Log("dry run for %s", upgradedRelease.Name)
-		upgradedRelease.Info.Description = "Dry run complete"
+		if len(u.Description) > 0 {
+			upgradedRelease.Info.Description = u.Description
+		} else {
+			upgradedRelease.Info.Description = "Dry run complete"
+		}
 		return upgradedRelease, nil
 	}
 
@@ -270,7 +279,11 @@ func (u *Upgrade) performUpgrade(originalRelease, upgradedRelease *release.Relea
 	u.cfg.recordRelease(originalRelease)
 
 	upgradedRelease.Info.Status = release.StatusDeployed
-	upgradedRelease.Info.Description = "Upgrade complete"
+	if len(u.Description) > 0 {
+		upgradedRelease.Info.Description = u.Description
+	} else {
+		upgradedRelease.Info.Description = "Upgrade complete"
+	}
 
 	return upgradedRelease, nil
 }
@@ -282,7 +295,7 @@ func (u *Upgrade) failRelease(rel *release.Release, created kube.ResourceList, e
 	rel.Info.Status = release.StatusFailed
 	rel.Info.Description = msg
 	u.cfg.recordRelease(rel)
-	if u.CleanupOnFail {
+	if u.CleanupOnFail && len(created) > 0 {
 		u.cfg.Log("Cleanup on fail set, cleaning up %d resources", len(created))
 		_, errs := u.cfg.KubeClient.Delete(created)
 		if errs != nil {

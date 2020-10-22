@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"gomodules.xyz/jsonpatch/v3"
 	"helm.sh/helm/v3/pkg/action"
 	cpb "helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/kube"
@@ -35,7 +36,6 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest"
 
-	"github.com/mattbaird/jsonpatch"
 	"github.com/operator-framework/operator-sdk/pkg/helm/internal/types"
 )
 
@@ -46,10 +46,10 @@ type Manager interface {
 	IsInstalled() bool
 	IsUpdateRequired() bool
 	Sync(context.Context) error
-	InstallRelease(context.Context) (*rpb.Release, error)
-	UpdateRelease(context.Context) (*rpb.Release, *rpb.Release, error)
+	InstallRelease(context.Context, ...InstallOption) (*rpb.Release, error)
+	UpdateRelease(context.Context, ...UpdateOption) (*rpb.Release, *rpb.Release, error)
 	ReconcileRelease(context.Context) (*rpb.Release, error)
-	UninstallRelease(context.Context) (*rpb.Release, error)
+	UninstallRelease(context.Context, ...UninstallOption) (*rpb.Release, error)
 }
 
 type manager struct {
@@ -68,6 +68,10 @@ type manager struct {
 	deployedRelease  *rpb.Release
 	chart            *cpb.Chart
 }
+
+type InstallOption func(*action.Install) error
+type UpdateOption func(*action.Upgrade) error
+type UninstallOption func(*action.Uninstall) error
 
 // ReleaseName returns the name of the release.
 func (m manager) ReleaseName() string {
@@ -141,7 +145,8 @@ func (m manager) getDeployedRelease() (*rpb.Release, error) {
 	return deployedRelease, nil
 }
 
-func (m manager) getCandidateRelease(namespace, name string, chart *cpb.Chart, values map[string]interface{}) (*rpb.Release, error) {
+func (m manager) getCandidateRelease(namespace, name string, chart *cpb.Chart,
+	values map[string]interface{}) (*rpb.Release, error) {
 	upgrade := action.NewUpgrade(m.actionConfig)
 	upgrade.Namespace = namespace
 	upgrade.DryRun = true
@@ -149,10 +154,15 @@ func (m manager) getCandidateRelease(namespace, name string, chart *cpb.Chart, v
 }
 
 // InstallRelease performs a Helm release install.
-func (m manager) InstallRelease(ctx context.Context) (*rpb.Release, error) {
+func (m manager) InstallRelease(ctx context.Context, opts ...InstallOption) (*rpb.Release, error) {
 	install := action.NewInstall(m.actionConfig)
 	install.ReleaseName = m.releaseName
 	install.Namespace = m.namespace
+	for _, o := range opts {
+		if err := o(install); err != nil {
+			return nil, fmt.Errorf("failed to apply install option: %w", err)
+		}
+	}
 
 	installedRelease, err := install.Run(m.chart, m.values)
 	if err != nil {
@@ -178,10 +188,22 @@ func (m manager) InstallRelease(ctx context.Context) (*rpb.Release, error) {
 	return installedRelease, nil
 }
 
+func ForceUpdate(force bool) UpdateOption {
+	return func(u *action.Upgrade) error {
+		u.Force = force
+		return nil
+	}
+}
+
 // UpdateRelease performs a Helm release update.
-func (m manager) UpdateRelease(ctx context.Context) (*rpb.Release, *rpb.Release, error) {
+func (m manager) UpdateRelease(ctx context.Context, opts ...UpdateOption) (*rpb.Release, *rpb.Release, error) {
 	upgrade := action.NewUpgrade(m.actionConfig)
 	upgrade.Namespace = m.namespace
+	for _, o := range opts {
+		if err := o(upgrade); err != nil {
+			return nil, nil, fmt.Errorf("failed to apply upgrade option: %w", err)
+		}
+	}
 
 	updatedRelease, err := upgrade.Run(m.releaseName, m.chart, m.values)
 	if err != nil {
@@ -229,8 +251,9 @@ func reconcileRelease(ctx context.Context, kubeClient kube.Interface, expectedMa
 
 		existing, err := helper.Get(expected.Namespace, expected.Name, false)
 		if apierrors.IsNotFound(err) {
-			if _, err := helper.Create(expected.Namespace, true, expected.Object, &metav1.CreateOptions{}); err != nil {
-				return fmt.Errorf("create error: %w", err)
+			if _, err := helper.Create(expected.Namespace, true, expected.Object,
+				&metav1.CreateOptions{}); err != nil {
+				return fmt.Errorf("create error: %s", err)
 			}
 			return nil
 		} else if err != nil {
@@ -273,9 +296,10 @@ func generatePatch(existing, expected runtime.Object) ([]byte, error) {
 	// fields added by Kubernetes or by the user after the existing release
 	// resource has been applied. The goal for this patch is to make sure that
 	// the fields managed by the Helm chart are applied.
+	// All "add" operations without a value (null) can be ignored
 	patchOps := make([]jsonpatch.JsonPatchOperation, 0)
 	for _, op := range ops {
-		if op.Operation != "remove" {
+		if op.Operation != "remove" && !(op.Operation == "add" && op.Value == nil) {
 			patchOps = append(patchOps, op)
 		}
 	}
@@ -291,7 +315,7 @@ func generatePatch(existing, expected runtime.Object) ([]byte, error) {
 }
 
 // UninstallRelease performs a Helm release uninstall.
-func (m manager) UninstallRelease(ctx context.Context) (*rpb.Release, error) {
+func (m manager) UninstallRelease(ctx context.Context, opts ...UninstallOption) (*rpb.Release, error) {
 	// Get history of this release
 	h, err := m.storageBackend.History(m.releaseName)
 	if err != nil {
@@ -305,6 +329,11 @@ func (m manager) UninstallRelease(ctx context.Context) (*rpb.Release, error) {
 	}
 
 	uninstall := action.NewUninstall(m.actionConfig)
+	for _, o := range opts {
+		if err := o(uninstall); err != nil {
+			return nil, fmt.Errorf("failed to apply uninstall option: %w", err)
+		}
+	}
 	uninstallResponse, err := uninstall.Run(m.releaseName)
 	return uninstallResponse.Release, err
 }

@@ -207,28 +207,6 @@ func TestReconciler_reconcilePullSecret(t *testing.T) {
 		Validate     func(c k8sclient.Client) error
 	}{
 		{
-			Name:   "test default pull secret details are used if not provided",
-			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret),
-			Installation: &integreatlyv1alpha1.RHMI{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "testinstall",
-					Namespace: "testinstall",
-				},
-			},
-			Config: basicConfigMock(),
-			Validate: func(c k8sclient.Client) error {
-				s := &corev1.Secret{}
-				err := c.Get(context.TODO(), k8sclient.ObjectKey{Name: integreatlyv1alpha1.DefaultOriginPullSecretName, Namespace: integreatlyv1alpha1.DefaultOriginPullSecretNamespace}, s)
-				if err != nil {
-					return err
-				}
-				if bytes.Compare(s.Data["test"], customPullSecret.Data["test"]) != 0 {
-					return fmt.Errorf("expected data %v, but got %v", customPullSecret.Data["test"], s.Data["test"])
-				}
-				return nil
-			},
-		},
-		{
 			Name:   "test pull secret is reconciled successfully",
 			Client: fakeclient.NewFakeClientWithScheme(scheme, defPullSecret, customPullSecret),
 			Installation: &integreatlyv1alpha1.RHMI{
