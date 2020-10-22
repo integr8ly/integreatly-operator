@@ -8,7 +8,7 @@ products:
       - 0.2.0
 ---
 
-# a27 - Verify pod priority class is created
+# A27 - Verify pod priority class is created
 
 ## Description
 

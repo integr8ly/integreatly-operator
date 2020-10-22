@@ -8,7 +8,7 @@ products:
       - 0.2.0
 ---
 
-# a28 - Verify pod priority class name is set on products
+# A28 - Verify pod priority class name is set on products
 
 ## Description
 
