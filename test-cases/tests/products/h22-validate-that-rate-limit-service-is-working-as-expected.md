@@ -20,7 +20,7 @@ This test case should prove that the rate limiting Redis counter correctly incre
 
 1. Open Openshift Console in your browser
 2. Copy `oc login` command and login to your cluster in the terminal
-3. Go to `Networking` > `Routes` under 3Scale namespace
+3. Go to `Networking` > `Routes` under `redhat-rhmi-3scale` namespace
 4. Click on the `zync` route that starts with `https://3scale-admin...`
 5. Go to `Secrets` > `system-seed` under 3Scale namespace and copy the admin password
 6. Go back to 3Scale login page and login
