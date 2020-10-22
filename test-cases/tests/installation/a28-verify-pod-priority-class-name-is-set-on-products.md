@@ -1,27 +1,14 @@
 ---
-<<<<<<< HEAD
 estimate: 15m
 products:
   - name: rhoam
     environments:
-=======
-targets:
-  - 0.2.0
-estimate: 15m
-products:
-  - name: rhoam
-    environments:ugh
->>>>>>> Add test cases for MGDAPI-231 and MGDAPI-234
       - osd-fresh-install
     targets:
       - 0.2.0
 ---
 
-<<<<<<< HEAD
 # A28 - Verify pod priority class name is set on products
-=======
-# a28 - Verify pod priority class name is set on products
->>>>>>> Add test cases for MGDAPI-231 and MGDAPI-234
 
 ## Description
 
