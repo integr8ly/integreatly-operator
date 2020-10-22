@@ -1,6 +1,6 @@
 import { Argv, CommandModule } from "yargs";
 import { assertEpic, Jira } from "../lib/jira";
-import { uploadToPolarion } from "../lib/polarion";
+import { uploadToPolarion, extractPolarionTestId } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
 import { loadTestRuns } from "../lib/test-run";
 import { logger } from "../lib/winston";
@@ -47,7 +47,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
         //
         // prepare the testcases xml document
         const testcases = tests.map((t) => ({
-            $: { id: t.id },
+            $: { id: extractPolarionTestId(t.id) },
             title: `${t.id} - ${t.category} - ${t.title}`,
             description: t.file.link,
             "custom-fields": [
@@ -165,7 +165,10 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                     $: { name: r.title },
                     properties: {
                         property: {
-                            $: { name: "polarion-testcase-id", value: r.id },
+                            $: {
+                                name: "polarion-testcase-id",
+                                value: extractPolarionTestId(r.id),
+                            },
                         },
                     },
                 };
