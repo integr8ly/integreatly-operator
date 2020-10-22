@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -274,4 +275,19 @@ func putStrategyForResource(configMap *v1.ConfigMap, stratMap *strategyMap, reso
 	}
 	configMap.Data[resourceType] = string(updatedRawStrategyMapping)
 	return nil
+}
+
+// GetClustersAvailableZones returns a map containing zone names that are currently available
+func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
+	zones := make(map[string]bool)
+	for _, node := range nodes.Items {
+		if isNodeWorkerAndReady(node) {
+			for labelName, labelValue := range node.Labels {
+				if labelName == "topology.kubernetes.io/zone" {
+					zones[labelValue] = true
+				}
+			}
+		}
+	}
+	return zones
 }
