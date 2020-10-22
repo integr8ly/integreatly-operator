@@ -41,7 +41,7 @@ func (r *Reconciler) newAlertsReconciler() (resources.AlertReconciler, error) {
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit, requestsAllowedPerSecond uint32, alertsConfig map[string]*marin3rconfig.AlertConfig) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
@@ -49,7 +49,7 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 		if err != nil {
 			return nil, err
 		}
-		requestsAllowedOverTimePeriod := requestsAllowedPerSecond * usageFrequencyMins * 60
+		requestsAllowedOverTimePeriod := requestsAllowedPerSecond * float64(usageFrequencyMins*60)
 
 		minRateValue, maxRateValue, err := parsePercenteageRange(
 			alertConfig.MinRate,
@@ -59,10 +59,21 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 			return nil, err
 		}
 
+		lowerExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, ">=", requestsAllowedOverTimePeriod, &minRateValue)
+		upperExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, "<=", requestsAllowedOverTimePeriod, maxRateValue)
+
+		// Get the complete expression by ANDing the lower and the upper if the
+		// upper limit is set, if not, assign the lower one
+		expr := *lowerExpr
+		upperMessage := "*"
+		if upperExpr != nil {
+			expr = fmt.Sprintf("%s and %s", expr, *upperExpr)
+			upperMessage = *alertConfig.MaxRate
+		}
+
 		alert := resources.AlertConfiguration{
 			AlertName: alertName,
 			GroupName: "api-usage.rules",
-			Interval:  alertConfig.Period,
 			Namespace: namespace,
 			Rules: []monitoringv1.Rule{
 				{
@@ -70,12 +81,10 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 					Annotations: map[string]string{
 						"message": fmt.Sprintf(
 							"3Scale API usage is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
-							alertConfig.MinRate, alertConfig.MaxRate, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
+							alertConfig.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
 						),
 					},
-					Expr: intstr.FromString(fmt.Sprintf("(increase(%s[%s]) >= (%d / 100 * %d)) and (increase(%s[%s]) <=  (%d / 100 * %d))",
-						totalRequestsMetric, alertConfig.Period, requestsAllowedOverTimePeriod, minRateValue, totalRequestsMetric, alertConfig.Period, requestsAllowedOverTimePeriod, maxRateValue,
-					)),
+					Expr:   intstr.FromString(expr),
 					Labels: map[string]string{"severity": alertConfig.Level},
 				},
 			},
@@ -87,15 +96,28 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 	return result, nil
 }
 
-func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (uint32, error) {
-	if rateLimitUnit == "seconds" {
-		return rateLimitRequestsPerUnit, nil
+func increaseExpr(totalRequestsMetric, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
+	if percenteageLimit == nil {
+		return nil
+	}
+
+	result := fmt.Sprintf(
+		"(increase(%s[%s]) %s (%f / 100 * %d))",
+		totalRequestsMetric, period, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
+	)
+
+	return &result
+}
+
+func getRateLimitInSeconds(rateLimitUnit string, rateLimitRequestsPerUnit uint32) (float64, error) {
+	if rateLimitUnit == "second" {
+		return float64(rateLimitRequestsPerUnit), nil
 	} else if rateLimitUnit == "minute" {
-		return rateLimitRequestsPerUnit * 60, nil
+		return float64(rateLimitRequestsPerUnit) / 60, nil
 	} else if rateLimitUnit == "hour" {
-		return rateLimitRequestsPerUnit * 60 * 60, nil
+		return float64(rateLimitRequestsPerUnit) / (60 * 60), nil
 	} else if rateLimitUnit == "day" {
-		return rateLimitRequestsPerUnit * 60 * 60 * 24, nil
+		return float64(rateLimitRequestsPerUnit) / (60 * 60 * 24), nil
 	} else {
 		logrus.Errorf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit)
 		return 0, errors.New(fmt.Sprintf("Unexpected Rate Limit Unit %v, while creating 3scale api usage alerts", rateLimitUnit))
@@ -138,42 +160,46 @@ func intervalToMinutes(interval string) (uint32, error) {
 
 // parsePercenteage parses and validates a percenteage string by extracting
 // the numeric value and validating that it's in a correct value for a percenteage
-func parsePercenteage(percenteage string) (int, error) {
+func parsePercenteage(percenteage *string) (*int, error) {
+	if percenteage == nil {
+		return nil, nil
+	}
+
 	var re = regexp.MustCompile(`(?m)([0-9]+)%$`)
-	matches := re.FindAllStringSubmatch(percenteage, -1)
+	matches := re.FindAllStringSubmatch(*percenteage, -1)
 
 	if len(matches) == 0 || len(matches[0]) != 2 {
-		return 0, fmt.Errorf("invalid value for percenteage %s", percenteage)
+		return nil, fmt.Errorf("invalid value for percenteage %s", *percenteage)
 	}
 
 	result, err := strconv.Atoi(matches[0][1])
 	if err != nil {
-		return 0, nil
+		return nil, nil
 	}
 
 	if result < 0 || result > 100 {
-		return 0, fmt.Errorf("%d is an invalid percenteage", result)
+		return nil, fmt.Errorf("%d is an invalid percenteage", result)
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // parsePercenteageRange parses both min and max as percenteages, and validates
 // that min is less than or equal to max
-func parsePercenteageRange(min, max string) (int, int, error) {
-	minValue, err := parsePercenteage(min)
+func parsePercenteageRange(min string, max *string) (int, *int, error) {
+	minValue, err := parsePercenteage(&min)
 	if err != nil {
-		return 0, 0, err
+		return 0, nil, err
 	}
 
 	maxValue, err := parsePercenteage(max)
 	if err != nil {
-		return 0, 0, err
+		return 0, nil, err
 	}
 
-	if minValue > maxValue {
-		return 0, 0, fmt.Errorf("min value %d must be less than or equal to max value %d", minValue, maxValue)
+	if maxValue != nil && *minValue > *maxValue {
+		return 0, nil, fmt.Errorf("min value %d must be less than or equal to max value %d", minValue, maxValue)
 	}
 
-	return minValue, maxValue, nil
+	return *minValue, maxValue, nil
 }

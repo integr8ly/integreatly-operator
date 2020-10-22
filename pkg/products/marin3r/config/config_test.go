@@ -117,10 +117,12 @@ func TestGetAlertConfig(t *testing.T) {
 					return fmt.Errorf("expected key alert-1 not found in resulting config")
 				}
 
+				maxRate := "90%"
+
 				expectedConfig := &AlertConfig{
 					RuleName: "Rule1",
 					Level:    "warning",
-					MaxRate:  "90%",
+					MaxRate:  &maxRate,
 					MinRate:  "80%",
 					Period:   "2h",
 				}

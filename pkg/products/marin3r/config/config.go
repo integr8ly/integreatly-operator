@@ -24,11 +24,11 @@ type RateLimitConfig struct {
 }
 
 type AlertConfig struct {
-	RuleName string `json:"ruleName"`
-	Level    string `json:"level"`
-	MinRate  string `json:"minRate"`
-	MaxRate  string `json:"maxRate"`
-	Period   string `json:"period"`
+	RuleName string  `json:"ruleName"`
+	Level    string  `json:"level"`
+	MinRate  string  `json:"minRate"`
+	MaxRate  *string `json:"maxRate,omitempty"`
+	Period   string  `json:"period"`
 }
 
 // GetRateLimitConfig retrieves the configuration for the rate limit service,

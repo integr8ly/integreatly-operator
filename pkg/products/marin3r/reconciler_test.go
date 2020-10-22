@@ -58,21 +58,20 @@ func getBasicReconciler() *Reconciler {
 				RuleName: "Level1ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "80%",
-				MaxRate:  "90%",
+				MaxRate:  strPtr("90%"),
 				Period:   "4h",
 			},
 			"api-usage-alert-level2": {
 				RuleName: "Level2ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "90%",
-				MaxRate:  "95%",
+				MaxRate:  strPtr("95%"),
 				Period:   "2h",
 			},
 			"api-usage-alert-level3": {
 				RuleName: "Level3ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "95%",
-				MaxRate:  "100%",
 				Period:   "30m",
 			},
 		},
@@ -166,4 +165,8 @@ func TestAlertCreation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(str string) *string {
+	return &str
 }

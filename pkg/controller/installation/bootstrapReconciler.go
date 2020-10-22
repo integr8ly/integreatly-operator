@@ -207,26 +207,29 @@ func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClien
 			return nil
 		}
 
+		maxRate1 := "90%"
+		maxRate2 := "95%"
+
 		defaultConfig := map[string]*marin3rconfig.AlertConfig{
 			"api-usage-alert-level1": {
 				RuleName: "Level1ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "80%",
-				MaxRate:  "90%",
+				MaxRate:  &maxRate1,
 				Period:   "4h",
 			},
 			"api-usage-alert-level2": {
 				RuleName: "Level2ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "90%",
-				MaxRate:  "95%",
+				MaxRate:  &maxRate2,
 				Period:   "2h",
 			},
 			"api-usage-alert-level3": {
 				RuleName: "Level3ThreeScaleApiUsageThresholdExceeded",
 				Level:    "warning",
 				MinRate:  "95%",
-				MaxRate:  "100%",
+				MaxRate:  nil,
 				Period:   "30m",
 			},
 		}
