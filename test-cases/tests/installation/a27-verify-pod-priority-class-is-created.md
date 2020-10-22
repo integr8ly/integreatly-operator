@@ -1,6 +1,4 @@
 ---
-targets:
-  - 0.2.0
 estimate: 15m
 products:
   - name: rhoam
