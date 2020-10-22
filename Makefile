@@ -1,13 +1,10 @@
 include ./make/*.mk
 
 ORG ?= integreatly
-NAMESPACE_PREFIX ?= redhat-rhmi-
-NAMESPACE=$(NAMESPACE_PREFIX)operator
-PROJECT=integreatly-operator
+
 REG=quay.io
 SHELL=/bin/bash
-TAG ?= 2.7.0
-MGDAPI_TAG ?= 0.1.0-rc2
+
 PKG=github.com/integr8ly/integreatly-operator
 TEST_DIRS?=$(shell sh -c "find $(TOP_SRC_DIRS) -name \\*_test.go -exec dirname {} \\; | sort | uniq")
 TEST_POD_NAME=integreatly-operator-test
@@ -15,12 +12,16 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.17.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-INTEGREATLY_OPERATOR_IMAGE ?= $(REG)/$(ORG)/$(PROJECT):v$(TAG)
-MANAGED_API_OPERATOR_IMAGE ?= $(REG)/$(ORG)/managed-api-service:v$(MGDAPI_TAG)
+
+
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= "test-results"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
+
+# These tags are modified by the prepare-release script.
+RHMI_TAG ?= 2.7.0
+RHOAM_TAG ?= 0.1.0
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -46,19 +47,45 @@ else
 endif
 
 export SELF_SIGNED_CERTS   ?= true
+# Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
-export INSTALLATION_PREFIX ?= redhat-rhmi
+
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
 export ALERTING_EMAIL_ADDRESS = noreply-test@rhmi-redhat.com
+
+ifeq ($(INSTALLATION_TYPE), managed)
+	PROJECT=integreatly-operator
+	TAG ?= RHMI_TAG
+	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	NAMESPACE_PREFIX ?= redhat-rhmi-
+	APPLICATION_REPO ?= integreatly
+	export INSTALLATION_PREFIX ?= redhat-rhmi
+	export OLM_TYPE ?= integreatly-operator
+endif
+
+ifeq ($(INSTALLATION_TYPE), managed-api)
+	PROJECT=managed-api-service
+	TAG ?= RHOAM_TAG
+	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
+	NAMESPACE_PREFIX ?= redhat-rhoam-
+	APPLICATION_REPO ?= managed-api-service
+	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
+	export INSTALLATION_PREFIX ?= redhat-managed-api
+	export OLM_TYPE ?= managed-api-service
+endif
+
+NAMESPACE=$(NAMESPACE_PREFIX)operator
 
 define wait_command
 	@echo Waiting for $(2) for $(3)...
 	@time timeout --foreground $(3) bash -c "until $(1); do echo $(2) not ready yet, trying again in $(4)s...; sleep $(4); done"
 	@echo $(2) ready!
 endef
+
+
 
 .PHONY: setup/moq
 setup/moq:
@@ -130,18 +157,22 @@ code/fix:
 
 .PHONY: image/build
 image/build: code/compile
-	@$(OPERATOR_SDK) build $(INTEGREATLY_OPERATOR_IMAGE)
+	echo "build image $(OPERATOR_IMAGE)"
+	@$(OPERATOR_SDK) build $(OPERATOR_IMAGE)
 
 .PHONY: image/push
 image/push:
-	docker push $(INTEGREATLY_OPERATOR_IMAGE)
+	echo "push image $(OPERATOR_IMAGE)"
+	docker push $(OPERATOR_IMAGE)
 
 .PHONY: image/build/push
 image/build/push: image/build image/push
 
+#TODO operator-sdk 0.17.1 does not have the `--enable-test` flag
 .PHONY: image/build/test
 image/build/test:
-	$(OPERATOR_SDK) build --enable-tests $(INTEGREATLY_OPERATOR_IMAGE)
+	echo "build test image for $(OPERATOR_IMAGE)"
+	$(OPERATOR_SDK) build --enable-tests $(OPERATOR_IMAGE)
 
 .PHONY: test/unit
 test/unit:
@@ -149,23 +180,20 @@ test/unit:
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export component := integreatly-operator
-test/e2e/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
+test/e2e/prow: export OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
 test/e2e/rhoam/prow: export component := integreatly-operator
-test/e2e/rhoam/prow: export INTEGREATLY_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
-test/e2e/rhoam/prow: test/e2e/rhoam
-
-.PHONY: test/e2e/rhoam
-test/e2e/rhoam: export INSTALLATION_TYPE := "managed-api"
-test/e2e/rhoam:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+test/e2e/rhoam/prow: export MANAGED_API_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
+test/e2e/rhoam/prow: export INSTALLATION_TYPE := "managed-api"
+test/e2e/rhoam/prow:
+	echo $(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
 test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
-	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(INTEGREATLY_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
 test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
@@ -215,7 +243,9 @@ cluster/deploy/integreatly-rhmi-cr.yml: deploy/integreatly-rhmi-cr.yml
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.monitoring.phase}' | grep -q completed, monitoring phase, 10m, 30)
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.authentication.phase}' | grep -q completed, authentication phase, 10m, 30)
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.products.phase}' | grep -q completed, products phase, 30m, 30)
+ifeq ($(INSTALLATION_TYPE), managed)
 	$(call wait_command, oc get RHMI $(INSTALLATION_NAME) -n $(NAMESPACE) --output=json -o jsonpath='{.status.stages.solution-explorer.phase}' | grep -q completed, solution-explorer phase, 10m, 30)
+endif
 
 .PHONY: cluster/prepare
 cluster/prepare: cluster/prepare/project cluster/prepare/osrc cluster/prepare/configmaps cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean
@@ -348,7 +378,7 @@ deploy/integreatly-rhmi-cr.yml:
 .PHONY: prepare-patch-release
 prepare-patch-release:
 	$(CONTAINER_ENGINE) pull quay.io/integreatly/delorean-cli:master
-	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v "${HOME}/.delorean.yaml:/.delorean.yaml" quay.io/integreatly/delorean-cli:master delorean release openshift-ci-release --config /.delorean.yaml --version $(TAG)
+	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v "${HOME}/.delorean.yaml:/.delorean.yaml" quay.io/integreatly/delorean-cli:master delorean release openshift-ci-release --config /.delorean.yaml --olmType $(OLMTYPE) --version $(TAG)
 
 .PHONY: release/prepare
 release/prepare:
@@ -356,8 +386,8 @@ release/prepare:
 
 .PHONY: push/csv
 push/csv:
-	operator-courier verify deploy/olm-catalog/integreatly-operator
-	-operator-courier push deploy/olm-catalog/integreatly-operator/ $(REPO) integreatly $(TAG) "$(AUTH_TOKEN)"
+	operator-courier verify deploy/olm-catalog/$(PROJECT)
+	-operator-courier push deploy/olm-catalog/$(PROJECT)/ $(REPO) $(APPLICATION_REPO) $(TAG) "$(AUTH_TOKEN)"
 
 .PHONY: gen/push/csv
 gen/push/csv: release/prepare push/csv
