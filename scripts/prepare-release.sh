@@ -30,14 +30,14 @@ create_new_csv() {
 
   if [[ -z "$PREVIOUS_VERSION" ]]
     then
-      operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds --make-manifests=false
+      operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds
     else
-      operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds --from-version "$PREVIOUS_VERSION" --make-manifests=false
+      operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds --from-version "$PREVIOUS_VERSION"
   fi
 }
 
 update_csv() {
-  operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds --make-manifests=false
+  operator-sdk generate csv --csv-version "$VERSION" --default-channel --operator-name "$OLM_TYPE" --csv-channel=rhmi --update-crds
 
 }
 
