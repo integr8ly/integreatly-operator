@@ -84,7 +84,57 @@ var rhmi2ExpectedDashboards = []dashboardsTestRule{
 	},
 }
 
-func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
+var customerRHOAMDashboards = []dashboardsTestRule{
+	{
+		Title: "3Scale API Rate Limiting",
+	},
+}
+
+func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
+	pods := &corev1.PodList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(CustomerGrafanaNamespace),
+		k8sclient.MatchingLabels{"app": "grafana"},
+	}
+
+	// get console master url
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	err = ctx.Client.List(goctx.TODO(), pods, opts...)
+	if err != nil {
+		t.Fatal("failed to list pods", err)
+	}
+
+	if len(pods.Items) != 1 {
+		t.Fatal("grafana pod not found")
+	}
+
+	output, err := execToPod("curl localhost:3000/api/search",
+		pods.Items[0].ObjectMeta.Name,
+		CustomerGrafanaNamespace,
+		"grafana", ctx)
+	if err != nil {
+		t.Fatal("failed to exec to pod:", err)
+	}
+
+	var grafanaApiCallOutput []dashboardsTestRule
+	err = json.Unmarshal([]byte(output), &grafanaApiCallOutput)
+	if err != nil {
+		t.Logf("failed to unmarshall json: %s", err)
+	}
+
+	if len(grafanaApiCallOutput) == 0 {
+		t.Fatal("no grafana dashboards were found : %w", grafanaApiCallOutput)
+	}
+
+	expectedDashboards := getExpectedCustomerDashboard(rhmi.Spec.Type)
+	verifyExpectedDashboards(t, expectedDashboards, grafanaApiCallOutput)
+}
+
+func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
 		k8sclient.InNamespace(MonitoringOperatorNamespace),
@@ -124,8 +174,12 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatal("no grafana dashboards were found : %w", grafanaApiCallOutput)
 	}
 
-	expectedDashboards := getExpectedDashboard(rhmi.Spec.Type)
+	expectedDashboards := getExpectedMiddlewareDashboard(rhmi.Spec.Type)
+	verifyExpectedDashboards(t, expectedDashboards, grafanaApiCallOutput)
 
+}
+
+func verifyExpectedDashboards(t *testing.T, expectedDashboards []dashboardsTestRule, grafanaApiCallOutput []dashboardsTestRule) {
 	var expectedDashboardTitles []string
 	for _, dashboard := range expectedDashboards {
 		expectedDashboardTitles = append(expectedDashboardTitles, dashboard.Title)
@@ -151,7 +205,14 @@ func TestIntegreatlyDashboardsExist(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getExpectedDashboard(installType string) []dashboardsTestRule {
+func getExpectedCustomerDashboard(installType string) []dashboardsTestRule {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return customerRHOAMDashboards
+	}
+	return nil
+}
+
+func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return commonExpectedDashboards
 	} else {

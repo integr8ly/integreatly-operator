@@ -23,13 +23,25 @@ const (
 	grafanaCredsPassword = "Password1"
 )
 
-func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
-
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
+func TestCustomerGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
+	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, CustomerGrafanaNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
 
+	testRoute(t, ctx, grafanaRootHostname)
+}
+
+func TestGrafanaExternalRouteAccessible(t *testing.T, ctx *TestingContext) {
+	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, MonitoringOperatorNamespace)
+	if err != nil {
+		t.Fatal("failed to get grafana route", err)
+	}
+
+	testRoute(t, ctx, grafanaRootHostname)
+}
+
+func testRoute(t *testing.T, ctx *TestingContext, grafanaRootHostname string) {
 	// create new http client
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
@@ -57,13 +69,12 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	const (
 		serviceAccountName = "test"
 		bindingName        = "test"
-		grafanaNamespace   = NamespacePrefix + "middleware-monitoring-operator"
 	)
 
 	//create service account - its token will be used to call grafana api
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: grafanaNamespace,
+			Namespace: MonitoringOperatorNamespace,
 			Name:      serviceAccountName,
 		},
 	}
@@ -81,7 +92,7 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 				Kind:       "ServiceAccount",
 				APIVersion: "rbac.authorization.k8s.io/v1",
 				Name:       serviceAccountName,
-				Namespace:  grafanaNamespace,
+				Namespace:  MonitoringOperatorNamespace,
 			},
 		},
 		RoleRef: corev1.ObjectReference{
@@ -96,13 +107,13 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	}
 	defer ctx.Client.Delete(goctx.TODO(), binding)
 
-	grafanaRootHostname, err := getGrafanaRoute(ctx.Client)
+	grafanaRootHostname, err := getGrafanaRoute(ctx.Client, MonitoringOperatorNamespace)
 	if err != nil {
 		t.Fatal("failed to get grafana route", err)
 	}
 
 	token := ""
-	secrets, err := ctx.KubeClient.CoreV1().Secrets(grafanaNamespace).List(metav1.ListOptions{})
+	secrets, err := ctx.KubeClient.CoreV1().Secrets(MonitoringOperatorNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		t.Fatal("failed to get secrets", err)
 	}
@@ -111,10 +122,10 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      secretsItem.Name,
-					Namespace: grafanaNamespace,
+					Namespace: MonitoringOperatorNamespace,
 				},
 			}
-			err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretsItem.Name, Namespace: grafanaNamespace}, secret)
+			err = ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: secretsItem.Name, Namespace: MonitoringOperatorNamespace}, secret)
 			if err != nil {
 				t.Fatal("failed to get secret", err)
 			}
@@ -162,15 +173,14 @@ func TestGrafanaExternalRouteDashboardExist(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getGrafanaRoute(c client.Client) (string, error) {
+func getGrafanaRoute(c client.Client, namespace string) (string, error) {
 	const (
-		routeGrafanaName      = "grafana-route"
-		routeGrafanaNamespace = NamespacePrefix + "middleware-monitoring-operator"
+		routeGrafanaName = "grafana-route"
 	)
 	Context := context.TODO()
 	//get grafana openshift route
 	grafanaRoute := &v1.Route{}
-	if err := c.Get(Context, client.ObjectKey{Name: routeGrafanaName, Namespace: routeGrafanaNamespace}, grafanaRoute); err != nil {
+	if err := c.Get(Context, client.ObjectKey{Name: routeGrafanaName, Namespace: namespace}, grafanaRoute); err != nil {
 		return "", fmt.Errorf("failed to get grafana route: %w", err)
 	}
 	//evaluate the grafana route hostname
