@@ -11,18 +11,6 @@ import (
 	"sync"
 )
 
-var (
-	lockSigsClientInterfaceMockCreate        sync.RWMutex
-	lockSigsClientInterfaceMockDelete        sync.RWMutex
-	lockSigsClientInterfaceMockDeleteAllOf   sync.RWMutex
-	lockSigsClientInterfaceMockGet           sync.RWMutex
-	lockSigsClientInterfaceMockGetSigsClient sync.RWMutex
-	lockSigsClientInterfaceMockList          sync.RWMutex
-	lockSigsClientInterfaceMockPatch         sync.RWMutex
-	lockSigsClientInterfaceMockStatus        sync.RWMutex
-	lockSigsClientInterfaceMockUpdate        sync.RWMutex
-)
-
 // Ensure, that SigsClientInterfaceMock does implement SigsClientInterface.
 // If this is not the case, regenerate this file with moq.
 var _ SigsClientInterface = &SigsClientInterfaceMock{}
@@ -168,6 +156,15 @@ type SigsClientInterfaceMock struct {
 			Opts []client.UpdateOption
 		}
 	}
+	lockCreate        sync.RWMutex
+	lockDelete        sync.RWMutex
+	lockDeleteAllOf   sync.RWMutex
+	lockGet           sync.RWMutex
+	lockGetSigsClient sync.RWMutex
+	lockList          sync.RWMutex
+	lockPatch         sync.RWMutex
+	lockStatus        sync.RWMutex
+	lockUpdate        sync.RWMutex
 }
 
 // Create calls CreateFunc.
@@ -184,9 +181,9 @@ func (mock *SigsClientInterfaceMock) Create(ctx context.Context, obj runtime.Obj
 		Obj:  obj,
 		Opts: opts,
 	}
-	lockSigsClientInterfaceMockCreate.Lock()
+	mock.lockCreate.Lock()
 	mock.calls.Create = append(mock.calls.Create, callInfo)
-	lockSigsClientInterfaceMockCreate.Unlock()
+	mock.lockCreate.Unlock()
 	return mock.CreateFunc(ctx, obj, opts...)
 }
 
@@ -203,9 +200,9 @@ func (mock *SigsClientInterfaceMock) CreateCalls() []struct {
 		Obj  runtime.Object
 		Opts []client.CreateOption
 	}
-	lockSigsClientInterfaceMockCreate.RLock()
+	mock.lockCreate.RLock()
 	calls = mock.calls.Create
-	lockSigsClientInterfaceMockCreate.RUnlock()
+	mock.lockCreate.RUnlock()
 	return calls
 }
 
@@ -223,9 +220,9 @@ func (mock *SigsClientInterfaceMock) Delete(ctx context.Context, obj runtime.Obj
 		Obj:  obj,
 		Opts: opts,
 	}
-	lockSigsClientInterfaceMockDelete.Lock()
+	mock.lockDelete.Lock()
 	mock.calls.Delete = append(mock.calls.Delete, callInfo)
-	lockSigsClientInterfaceMockDelete.Unlock()
+	mock.lockDelete.Unlock()
 	return mock.DeleteFunc(ctx, obj, opts...)
 }
 
@@ -242,9 +239,9 @@ func (mock *SigsClientInterfaceMock) DeleteCalls() []struct {
 		Obj  runtime.Object
 		Opts []client.DeleteOption
 	}
-	lockSigsClientInterfaceMockDelete.RLock()
+	mock.lockDelete.RLock()
 	calls = mock.calls.Delete
-	lockSigsClientInterfaceMockDelete.RUnlock()
+	mock.lockDelete.RUnlock()
 	return calls
 }
 
@@ -262,9 +259,9 @@ func (mock *SigsClientInterfaceMock) DeleteAllOf(ctx context.Context, obj runtim
 		Obj:  obj,
 		Opts: opts,
 	}
-	lockSigsClientInterfaceMockDeleteAllOf.Lock()
+	mock.lockDeleteAllOf.Lock()
 	mock.calls.DeleteAllOf = append(mock.calls.DeleteAllOf, callInfo)
-	lockSigsClientInterfaceMockDeleteAllOf.Unlock()
+	mock.lockDeleteAllOf.Unlock()
 	return mock.DeleteAllOfFunc(ctx, obj, opts...)
 }
 
@@ -281,9 +278,9 @@ func (mock *SigsClientInterfaceMock) DeleteAllOfCalls() []struct {
 		Obj  runtime.Object
 		Opts []client.DeleteAllOfOption
 	}
-	lockSigsClientInterfaceMockDeleteAllOf.RLock()
+	mock.lockDeleteAllOf.RLock()
 	calls = mock.calls.DeleteAllOf
-	lockSigsClientInterfaceMockDeleteAllOf.RUnlock()
+	mock.lockDeleteAllOf.RUnlock()
 	return calls
 }
 
@@ -301,9 +298,9 @@ func (mock *SigsClientInterfaceMock) Get(ctx context.Context, key types.Namespac
 		Key: key,
 		Obj: obj,
 	}
-	lockSigsClientInterfaceMockGet.Lock()
+	mock.lockGet.Lock()
 	mock.calls.Get = append(mock.calls.Get, callInfo)
-	lockSigsClientInterfaceMockGet.Unlock()
+	mock.lockGet.Unlock()
 	return mock.GetFunc(ctx, key, obj)
 }
 
@@ -320,9 +317,9 @@ func (mock *SigsClientInterfaceMock) GetCalls() []struct {
 		Key types.NamespacedName
 		Obj runtime.Object
 	}
-	lockSigsClientInterfaceMockGet.RLock()
+	mock.lockGet.RLock()
 	calls = mock.calls.Get
-	lockSigsClientInterfaceMockGet.RUnlock()
+	mock.lockGet.RUnlock()
 	return calls
 }
 
@@ -333,9 +330,9 @@ func (mock *SigsClientInterfaceMock) GetSigsClient() client.Client {
 	}
 	callInfo := struct {
 	}{}
-	lockSigsClientInterfaceMockGetSigsClient.Lock()
+	mock.lockGetSigsClient.Lock()
 	mock.calls.GetSigsClient = append(mock.calls.GetSigsClient, callInfo)
-	lockSigsClientInterfaceMockGetSigsClient.Unlock()
+	mock.lockGetSigsClient.Unlock()
 	return mock.GetSigsClientFunc()
 }
 
@@ -346,9 +343,9 @@ func (mock *SigsClientInterfaceMock) GetSigsClientCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockSigsClientInterfaceMockGetSigsClient.RLock()
+	mock.lockGetSigsClient.RLock()
 	calls = mock.calls.GetSigsClient
-	lockSigsClientInterfaceMockGetSigsClient.RUnlock()
+	mock.lockGetSigsClient.RUnlock()
 	return calls
 }
 
@@ -366,9 +363,9 @@ func (mock *SigsClientInterfaceMock) List(ctx context.Context, list runtime.Obje
 		List: list,
 		Opts: opts,
 	}
-	lockSigsClientInterfaceMockList.Lock()
+	mock.lockList.Lock()
 	mock.calls.List = append(mock.calls.List, callInfo)
-	lockSigsClientInterfaceMockList.Unlock()
+	mock.lockList.Unlock()
 	return mock.ListFunc(ctx, list, opts...)
 }
 
@@ -385,9 +382,9 @@ func (mock *SigsClientInterfaceMock) ListCalls() []struct {
 		List runtime.Object
 		Opts []client.ListOption
 	}
-	lockSigsClientInterfaceMockList.RLock()
+	mock.lockList.RLock()
 	calls = mock.calls.List
-	lockSigsClientInterfaceMockList.RUnlock()
+	mock.lockList.RUnlock()
 	return calls
 }
 
@@ -407,9 +404,9 @@ func (mock *SigsClientInterfaceMock) Patch(ctx context.Context, obj runtime.Obje
 		Patch: patch,
 		Opts:  opts,
 	}
-	lockSigsClientInterfaceMockPatch.Lock()
+	mock.lockPatch.Lock()
 	mock.calls.Patch = append(mock.calls.Patch, callInfo)
-	lockSigsClientInterfaceMockPatch.Unlock()
+	mock.lockPatch.Unlock()
 	return mock.PatchFunc(ctx, obj, patch, opts...)
 }
 
@@ -428,9 +425,9 @@ func (mock *SigsClientInterfaceMock) PatchCalls() []struct {
 		Patch client.Patch
 		Opts  []client.PatchOption
 	}
-	lockSigsClientInterfaceMockPatch.RLock()
+	mock.lockPatch.RLock()
 	calls = mock.calls.Patch
-	lockSigsClientInterfaceMockPatch.RUnlock()
+	mock.lockPatch.RUnlock()
 	return calls
 }
 
@@ -441,9 +438,9 @@ func (mock *SigsClientInterfaceMock) Status() client.StatusWriter {
 	}
 	callInfo := struct {
 	}{}
-	lockSigsClientInterfaceMockStatus.Lock()
+	mock.lockStatus.Lock()
 	mock.calls.Status = append(mock.calls.Status, callInfo)
-	lockSigsClientInterfaceMockStatus.Unlock()
+	mock.lockStatus.Unlock()
 	return mock.StatusFunc()
 }
 
@@ -454,9 +451,9 @@ func (mock *SigsClientInterfaceMock) StatusCalls() []struct {
 } {
 	var calls []struct {
 	}
-	lockSigsClientInterfaceMockStatus.RLock()
+	mock.lockStatus.RLock()
 	calls = mock.calls.Status
-	lockSigsClientInterfaceMockStatus.RUnlock()
+	mock.lockStatus.RUnlock()
 	return calls
 }
 
@@ -474,9 +471,9 @@ func (mock *SigsClientInterfaceMock) Update(ctx context.Context, obj runtime.Obj
 		Obj:  obj,
 		Opts: opts,
 	}
-	lockSigsClientInterfaceMockUpdate.Lock()
+	mock.lockUpdate.Lock()
 	mock.calls.Update = append(mock.calls.Update, callInfo)
-	lockSigsClientInterfaceMockUpdate.Unlock()
+	mock.lockUpdate.Unlock()
 	return mock.UpdateFunc(ctx, obj, opts...)
 }
 
@@ -493,8 +490,8 @@ func (mock *SigsClientInterfaceMock) UpdateCalls() []struct {
 		Obj  runtime.Object
 		Opts []client.UpdateOption
 	}
-	lockSigsClientInterfaceMockUpdate.RLock()
+	mock.lockUpdate.RLock()
 	calls = mock.calls.Update
-	lockSigsClientInterfaceMockUpdate.RUnlock()
+	mock.lockUpdate.RUnlock()
 	return calls
 }
