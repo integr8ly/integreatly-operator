@@ -31,7 +31,7 @@ type MaintenanceBackup struct {
 
 // this state check covers test case - A22
 // verify that the RHMIConfig validation webhook for Maintenance and Backup values work as expected
-var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error){
+var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error) error{
 	// we expect no error as blank strings will be set to default vals
 	{
 		Backup: v1alpha1.Backup{
@@ -108,7 +108,7 @@ var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error)
 	}: assertValidationError,
 }
 
-var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
+var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error) error{
 	{}: assertNoError,
 
 	{
@@ -155,17 +155,38 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	// Test each possible state for the Upgrade section
 	for state, assertion := range upgradeSectionStates {
 		t.Logf("Testing the RHMIConfig state: %s", logUpgrade(state))
-		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
-			cr.Spec.Upgrade = state
+		err := wait.Poll(1*time.Second, 30*time.Second, func() (done bool, err error) {
+			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
+				cr.Spec.Upgrade = state
+			})
+			if newErr != nil {
+				return false, newErr
+			}
+			return true, nil
+
 		})
+		if err != nil {
+			t.Errorf("Timed out when trying to test states for the Upgrade section: %s", err)
+		}
+
 	}
 
 	// test for possible state changes for the Backup and Maintenance section
 	for state, assertion := range maintenanceBackupStates {
-		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
-			cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
-			cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
+
+		err := wait.Poll(1*time.Second, 30*time.Second, func() (done bool, err error) {
+			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
+				cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
+				cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
+			})
+			if newErr != nil {
+				return false, newErr
+			}
+			return true, nil
 		})
+		if err != nil {
+			t.Errorf("Timed out when trying to test states for the maintenance and backup sections: %s", err)
+		}
 	}
 }
 
@@ -196,7 +217,7 @@ func deleteRHMIConfigCR(t *testing.T, client dynclient.Client, cr *v1alpha1.RHMI
 	}
 }
 
-func verifyRHMIConfigValidation(client dynclient.Client, validateError func(error), mutateRHMIConfig func(*v1alpha1.RHMIConfig)) error {
+func verifyRHMIConfigValidation(client dynclient.Client, validateError func(error) error, mutateRHMIConfig func(*v1alpha1.RHMIConfig)) error {
 	rhmiConfig := &v1alpha1.RHMIConfig{}
 
 	if err := client.Get(
@@ -209,9 +230,8 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 
 	// Perform the update and validate the error object
 	mutateRHMIConfig(rhmiConfig)
-	validateError(client.Update(goctx.TODO(), rhmiConfig))
+	return validateError(client.Update(goctx.TODO(), rhmiConfig))
 
-	return nil
 }
 
 // verifyRHMIConfigMutatingWebhook tests the mutating webhook by logging in as
@@ -303,24 +323,29 @@ func waitForValidatingWebhook(client dynclient.Client) error {
 	})
 }
 
-func assertNoError(t *testing.T) func(error) {
-	return func(err error) {
+func assertNoError(t *testing.T) func(error) error {
+	return func(err error) error {
 		if err != nil {
-			t.Errorf("Expected error to be nil. Got %v", err)
+			t.Logf("Expected error to be nil. Got %v", err)
+			return err
 		}
+		return nil
 	}
 }
 
-func assertValidationError(t *testing.T) func(error) {
-	return func(err error) {
+func assertValidationError(t *testing.T) func(error) error {
+	return func(err error) error {
 		switch e := err.(type) {
 		case errors.APIStatus:
 			if e.Status().Code != 403 {
-				t.Errorf("Expected error to be \"Forbidden\", but got: %s", e.Status().Reason)
+				t.Logf("Expected error to be \"Forbidden\", but got: %s", e.Status().Reason)
+				return err
 			}
 		default:
-			t.Errorf("Expected error type to be APIStatus type. Got %v", e)
+			t.Logf("Expected error type to be APIStatus type. Got %v", e)
+			return err
 		}
+		return nil
 	}
 }
 
