@@ -9,6 +9,7 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -18,14 +19,13 @@ var (
 	totalRequestsMetric = "ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits"
 )
 
-func (r *Reconciler) newAlertsReconciler() (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertsReconciler(grafanaConsoleURL string) (resources.AlertReconciler, error) {
 
 	requestsAllowedPerSecond, err := getRateLimitInSeconds(r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit)
 	if err != nil {
 		return nil, err
 	}
-
-	alerts, err := mapAlertsConfiguration(r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig)
+	alerts, err := mapAlertsConfiguration(r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaConsoleURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -41,7 +41,7 @@ func (r *Reconciler) newAlertsReconciler() (resources.AlertReconciler, error) {
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaConsoleURL string) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
@@ -83,6 +83,7 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 							"3Scale API usage is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
 							alertConfig.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
 						),
+						"grafanaConsole": string(grafanaConsoleURL),
 					},
 					Expr:   intstr.FromString(expr),
 					Labels: map[string]string{"severity": alertConfig.Level},
