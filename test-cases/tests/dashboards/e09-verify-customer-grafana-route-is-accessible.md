@@ -7,7 +7,7 @@ tags:
   - automated
 ---
 
-# E10 - Verify Customer Grafana Route is accessible
+# E09 - Verify Customer Grafana Route is accessible
 
 **Automated Test**: [grafana_routes.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/grafana_routes.go)
 
