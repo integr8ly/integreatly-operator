@@ -25,6 +25,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -103,6 +104,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcilePriorityClass(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile priority class", err)
+		return phase, err
+	}
+
 	phase, err = r.checkRateLimitAlertsConfig(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
@@ -116,6 +123,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	logrus.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		priorityClass := &schedulingv1.PriorityClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: r.installation.Spec.PriorityClassName,
+			},
+		}
+		if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, priorityClass, func() error {
+
+			priorityClass.Value = 1000000000
+			priorityClass.GlobalDefault = false
+			priorityClass.Description = "Priority Class for managed-api"
+
+			return nil
+		}); err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

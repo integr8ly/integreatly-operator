@@ -200,6 +200,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.ReconcilePodPriority(ctx, serverClient, r.Config.RHSSOCommon, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.Recorder, installation, phase, "Failed to reconsile RHSSO pod priority", err)
+		return phase, err
+	}
+
 	phase, err = r.HandleProgressPhase(ctx, serverClient, keycloakName, masterRealmName, r.Config, r.Config.RHSSOCommon, string(integreatlyv1alpha1.VersionRHSSOUser), string(integreatlyv1alpha1.OperatorVersionRHSSOUser))
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)

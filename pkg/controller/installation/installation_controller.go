@@ -56,6 +56,8 @@ const (
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
 	buAlertingEmailAddressEnvName    = "BU_ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"
+	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
+	managedServicePriorityClassName  = "managed-service-priority"
 )
 
 var (
@@ -173,11 +175,16 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
 
 		installType, _ := os.LookupEnv(installTypeEnvName)
+		priorityClassName, _ := os.LookupEnv(priorityClassNameEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
 			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
+		}
+
+		if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) && priorityClassName == "" {
+			priorityClassName = managedServicePriorityClassName
 		}
 
 		installation = &integreatlyv1alpha1.RHMI{
@@ -198,6 +205,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 					CSSRE:        cssreAlertingEmailAddress,
 				},
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
+				PriorityClassName:           priorityClassName,
 			},
 		}
 

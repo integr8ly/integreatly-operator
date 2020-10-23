@@ -485,3 +485,21 @@ func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, installation 
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
+func (r *Reconciler) ReconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+
+	if r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		keycloakStatefulSet := &k8sappsv1.StatefulSet{}
+		return resources.ReconcilePodPriority(
+			ctx,
+			serverClient,
+			k8sclient.ObjectKey{
+				Name:      "keycloak",
+				Namespace: config.GetNamespace(),
+			},
+			resources.SelectFromStatefulSet,
+			keycloakStatefulSet,
+		)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
