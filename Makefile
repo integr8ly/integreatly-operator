@@ -21,7 +21,7 @@ CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.7.0
-RHOAM_TAG ?= 0.2.0
+RHOAM_TAG ?= 0.1.0
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -70,7 +70,7 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	PROJECT=managed-api-service
 	TAG ?= RHOAM_TAG
 	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
-	NAMESPACE_PREFIX ?= redhat-rhoam-
+	NAMESPACE_PREFIX ?= redhat-rhmi-
 	APPLICATION_REPO ?= managed-api-service
 	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
 	export INSTALLATION_PREFIX ?= redhat-managed-api
