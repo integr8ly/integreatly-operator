@@ -54,7 +54,9 @@ export INSTALLATION_NAME   ?= rhmi
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret
-export ALERTING_EMAIL_ADDRESS = noreply-test@rhmi-redhat.com
+export ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
+export BU_ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
+
 
 ifeq ($(INSTALLATION_TYPE), managed)
 	PROJECT=integreatly-operator

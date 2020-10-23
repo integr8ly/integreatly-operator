@@ -31,8 +31,16 @@ spec:
         spec:
           description: RHMISpec defines the desired state of Installation
           properties:
-            alertingEmailAddress:
-              type: string
+            alertingEmailAddresses:
+              properties:
+                businessUnit:
+                  type: string
+                cssre:
+                  type: string
+              required:
+              - businessUnit
+              - cssre
+              type: object
             deadMansSnitchSecret:
               description: "DeadMansSnitchSecret is the name of a secret in the installation
                 namespace containing connection details for Dead Mans Snitch. The

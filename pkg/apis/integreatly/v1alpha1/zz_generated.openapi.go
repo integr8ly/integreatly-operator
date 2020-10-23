@@ -128,10 +128,9 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
-					"alertingEmailAddress": {
+					"alertingEmailAddresses": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertingEmailAddresses"),
 						},
 					},
 					"operatorsInProductNamespace": {
@@ -167,7 +166,7 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertingEmailAddresses", "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
 	}
 }
 
