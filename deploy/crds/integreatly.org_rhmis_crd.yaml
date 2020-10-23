@@ -31,6 +31,8 @@ spec:
         spec:
           description: RHMISpec defines the desired state of Installation
           properties:
+            alertingEmailAddress:
+              type: string
             alertingEmailAddresses:
               properties:
                 businessUnit:
@@ -61,6 +63,8 @@ spec:
               description: "PagerDutySecret is the name of a secret in the installation
                 namespace containing PagerDuty account details. The secret must contain
                 the following fields: \n serviceKey"
+              type: string
+            priorityClassName:
               type: string
             pullSecret:
               properties:

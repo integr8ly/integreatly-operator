@@ -271,6 +271,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcilePodPriority(ctx, serverClient, installation)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
 	logrus.Infof("%s is successfully deployed", r.Config.GetProductName())
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
@@ -390,6 +397,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+
+		ns := global.NamespacePrefix + defaultInstallationNamespace
+		for _, name := range threeScaleDeploymentConfigs {
+			deploymentConfig := &appsv1.DeploymentConfig{}
+			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseInProgress, err
+			}
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

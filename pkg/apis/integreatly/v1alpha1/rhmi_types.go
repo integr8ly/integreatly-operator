@@ -134,6 +134,8 @@ type RHMISpec struct {
 	SelfSignedCerts        bool                   `json:"selfSignedCerts,omitempty"`
 	PullSecret             PullSecretSpec         `json:"pullSecret,omitempty"`
 	UseClusterStorage      string                 `json:"useClusterStorage,omitempty"`
+	AlertingEmailAddress   string                 `json:"alertingEmailAddress,omitempty"`
+	PriorityClassName      string                 `json:"priorityClassName,omitempty"`
 	AlertingEmailAddresses AlertingEmailAddresses `json:"alertingEmailAddresses,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if

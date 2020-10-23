@@ -50,6 +50,7 @@ rules:
     resources:
       - deployments/finalizers
       - replicasets
+      - statefulsets
     verbs:
       - update
       - get
@@ -186,6 +187,7 @@ rules:
       - apps
     resources:
       - deployments
+      - statefulsets
     verbs:
       - list
       - get
@@ -440,4 +442,10 @@ rules:
       - update
       - delete
 
+  - apiGroups:
+      - scheduling.k8s.io
+    resources:
+      - "*"
+    verbs:
+      - "*"
   
