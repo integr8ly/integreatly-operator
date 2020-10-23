@@ -73,7 +73,7 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	NAMESPACE_PREFIX ?= redhat-rhoam-
 	APPLICATION_REPO ?= managed-api-service
 	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
-	export INSTALLATION_PREFIX ?= redhat-managed-api
+	export INSTALLATION_PREFIX ?= redhat-rhoam
 	export OLM_TYPE ?= managed-api-service
 endif
 
