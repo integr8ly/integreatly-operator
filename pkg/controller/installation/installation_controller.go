@@ -10,6 +10,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/version"
 
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"k8s.io/apimachinery/pkg/labels"
@@ -125,6 +126,22 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 	if err != nil {
 		return err
 	}
+
+	// Watch for changes to rate limit alerts config
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		&EnqueueIntegreatlyOwner{},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Watch the SKU rate limits config map
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		enqueueAllInstallations,
+		newObjectPredicate(isName(marin3rconfig.RateLimitConfigMapName)),
+	)
 
 	return nil
 }

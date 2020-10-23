@@ -49,6 +49,7 @@ type Reconciler struct {
 	ConfigManager   config.ConfigReadWriter
 	Config          *config.Marin3r
 	RateLimitConfig *marin3rconfig.RateLimitConfig
+	AlertsConfig    map[string]*marin3rconfig.AlertConfig
 	installation    *integreatlyv1alpha1.RHMI
 	mpm             marketplace.MarketplaceInterface
 	logger          *logrus.Entry
@@ -132,6 +133,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	r.RateLimitConfig = rateLimitConfig
 
+	alertsConfig, err := marin3rconfig.GetAlertConfig(ctx, client, r.installation.Namespace)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit alerts config", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	r.AlertsConfig = alertsConfig
+
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
@@ -204,12 +212,33 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	// Reconcile API usage alerts
+	phase, err = r.reconcileAlerts(ctx, client, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	alertReconciler, err := r.newAlertsReconciler()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err := alertReconciler.ReconcileAlerts(ctx, client)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
+		return phase, err
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
