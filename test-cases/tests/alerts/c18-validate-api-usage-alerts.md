@@ -86,13 +86,13 @@ and insert the following data:
         "level": "warning",
         "minRate": "90%",
         "maxRate": "95%",
-        "period": "2h"
+        "period": "1m"
       },
       "api-usage-alert-level3": {
         "ruleName": "Level3ThreeScaleApiUsageThresholdExceeded",
         "level": "warning",
         "minRate": "95%",
-        "period": "30m"
+        "period": "1m"
       }
 }
 ```
@@ -107,10 +107,17 @@ and insert the following data:
 11. Run the following script to verify that rate limit (20 requests/minute) works correctly:
 
 ```
-for i in {1..21}; do <replace-with-example-curl-for-testing>; done
+# Select which number of requests to perform based on the level to trigger
+# To trigger level 1 alert
+num_req=17
+# To trigger level 2 alert
+num_req=18
+# To trigger level 3 alert
+num_req=21
+for (( c = 1; c<=$num_req; c++ )); do <replace-with-example-curl-for-testing>; done
 ```
 
-> Only the last request should fail (TODO: any specific status code?)
+> Only the last request for level 3 should fail with a `428 Too Many Requests` status code
 
 12. TODO: should we update the configmap now to increase the rate limit for test the rate-limit alerts?
 13. Run the following command and log in to Prometheus service (as a kubeadmin)
@@ -123,4 +130,4 @@ open "https://$(oc get routes prometheus-route -n redhat-rhmi-middleware-monitor
 15. Click on the alert name -> click on the expression (link) -> Graph
 16. Run the `curl` command against the APIcast endpoint so you reach between 80%-90% rate limit (i.e. amount of curl requests = rate-limit-value \* 0.85)
 17. Verify that the alert graph is showing some data
-18. Repeat the same process for `Level2ThreeScaleApiUsageThresholdExceeded` and `Level3ThreeScaleApiUsageThresholdExceeded` alerts based on their min and max rates and verify that the alerts are firing as expected
+18. Repeat the same process for `Level2ThreeScaleApiUsageThresholdExceeded` and `Level3ThreeScaleApiUsageThresholdExceeded` alerts based on their min and max rates and verify that the alerts are firing as expected. Make sure to wait at least a minute before running each set of `curl` commands
