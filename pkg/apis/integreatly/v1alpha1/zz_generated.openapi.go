@@ -134,6 +134,17 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"priorityClassName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"alertingEmailAddresses": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertingEmailAddresses"),
+						},
+					},
 					"operatorsInProductNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OperatorsInProductNamespace is a flag that decides if the product operators should be installed in the product namespace (when set to true) or in standalone namespace (when set to false, default). Standalone namespace will be used only for those operators that support it.",
@@ -167,7 +178,7 @@ func schema_pkg_apis_integreatly_v1alpha1_RHMISpec(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
+			"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.AlertingEmailAddresses", "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1.PullSecretSpec"},
 	}
 }
 
