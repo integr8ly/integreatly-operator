@@ -120,12 +120,16 @@ function extractCategory(file: string): string {
 }
 
 function loadTestCases(
-    productName?: string,
+    productName: string,
     testDirectory?: string
 ): TestCase[] {
     return walk(testDirectory || TEST_DIR, TEST_FILTER)
         .map((f) => loadTestCase(f, productName))
         .filter((t) => t != null);
+}
+
+function loadAllTestCases(): TestCase[] {
+    return walk(TEST_DIR, TEST_FILTER).map((f) => loadTestCase(f));
 }
 
 function loadTestCase(file: string, productName?: string): TestCase | null {
@@ -319,6 +323,7 @@ function manualSelectionOnly(test: TestCase): boolean {
 
 export {
     loadTestCases,
+    loadAllTestCases,
     TestCase,
     filterTests,
     desiredFileName,

@@ -13,7 +13,7 @@ import {
     isAutomated,
     isPerBuild,
     isPerRelease,
-    loadTestCases,
+    loadAllTestCases,
     manualSelectionOnly,
     TestCase,
 } from "../lib/test-case";
@@ -283,7 +283,7 @@ const lint: CommandModule<{}, {}> = {
     describe: "verify all test cases",
     builder: {},
     handler: () => {
-        const tests = loadTestCases();
+        const tests = loadAllTestCases();
 
         let dirty = false;
         for (const l of Object.keys(linters)) {
