@@ -40,10 +40,11 @@ import (
 )
 
 const (
-	mockSMTPSecretName       = "test-smtp"
-	mockPagerdutySecretName  = "test-pd"
-	mockDMSSecretName        = "test-dms"
-	mockAlertingEmailAddress = "noreply-test@rhmi-redhat.com"
+	mockSMTPSecretName         = "test-smtp"
+	mockPagerdutySecretName    = "test-pd"
+	mockDMSSecretName          = "test-dms"
+	mockAlertingEmailAddress   = "noreply-test@rhmi-redhat.com"
+	mockBUAlertingEmailAddress = "noreply-bu-test@rhmi-redhat.com"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -69,6 +70,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
 	installation := basicInstallation()
 	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
+	installation.Spec.AlertingEmailAddresses.BusinessUnit = mockBUAlertingEmailAddress
 	return installation
 }
 
@@ -683,7 +685,8 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		"SMTPPassword":        string(smtpSecret.Data["password"]),
 		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-		"SMTPToAddress":       fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPToSREAddress":    fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPToBUAddress":     fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
 	})
 
 	testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -834,7 +837,8 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					"SMTPPassword":        string(smtpSecret.Data["password"]),
 					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
 					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-					"SMTPToAddress":       mockAlertingEmailAddress,
+					"SMTPToSREAddress":    mockAlertingEmailAddress,
+					"SMTPToBUAddress":     mockBUAlertingEmailAddress,
 				})
 
 				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
