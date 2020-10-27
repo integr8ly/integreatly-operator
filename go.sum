@@ -869,8 +869,8 @@ github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaR
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/karrick/godirwalk v1.10.12/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/keycloak/keycloak-operator v0.0.0-20200129141231-e99da8a15034/go.mod h1:WoLwcfx2IhJSJjmcO8wXgFWwinHpD976L9WqkKwAmWg=
-github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0 h1:RsqRi+j2AH0ongx1GrhkmBUkg9sb3UArInthHdHNSuE=
-github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0/go.mod h1:sk5KHHIkEAAajA5XSBK5VP3/NBBdWH0GSQrrcu9or/Q=
+github.com/keycloak/keycloak-operator v0.0.0-20201021091505-b576fa07b78a h1:tkYLhfq7jQ/LC7wM5/FgV3oWBVtTL4xeiE1Tgzm+Rd0=
+github.com/keycloak/keycloak-operator v0.0.0-20201021091505-b576fa07b78a/go.mod h1:VHLhx3tMiYS+PaUz3rSZo4HM1absmaI10J8h1K9c970=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/gotool v0.0.0-20161130080628-0de1eaf82fa3/go.mod h1:jxZFDH7ILpTPQTk+E2s+z4CUas9lVNjIuKR4c5/zKgM=
