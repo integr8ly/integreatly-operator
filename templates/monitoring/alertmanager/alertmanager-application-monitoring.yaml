@@ -41,11 +41,11 @@ receivers:
     webhook_configs:
       - url: {{ index .Params "DeadMansSnitchURL" }}
   - name: BUandCustomer
-    emailConfigs:
+    email_configs:
       - send_resolved: True
         to: {{ index .Params "SMTPToAddress" }}
   - name: SRECustomerBU
-    emailConfigs:
+    email_configs:
       - send_resolved: True
         to: {{ index .Params "SMTPToAddress" }}
 inhibit_rules:
