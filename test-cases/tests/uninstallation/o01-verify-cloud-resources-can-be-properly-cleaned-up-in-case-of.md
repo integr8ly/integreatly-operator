@@ -40,13 +40,13 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 oc get prometheusrule -n redhat-rhmi-operator | grep -cE "resource-deletion((.*codeready|.*fuse|.*rhsso|.*rhssouser|.*threescale|.*ups)-postgres|(.*threescale|.*threescale-backend)-redis)"
 ```
 
-> You should get "8" in the output
+> You should get "5" in the output
 
 3. Patch the `cloud-resources-aws-strategies` config map with a dummy value in `region` field for `postgres` and `redis` instances
 
 ```bash
-postgres=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhmi-operator -o jsonpath='{.data.postgres}' | jq -c '.production.region = "blabla123"' | jq -R)
-redis=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhmi-operator -o jsonpath='{.data.redis}' | jq -c '.production.region = "blabla123"' | jq -R)
+postgres=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhmi-operator -o jsonpath='{.data.postgres}' | jq -c '.production.region = "blabla123"' | jq -R . )
+redis=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhmi-operator -o jsonpath='{.data.redis}' | jq -c '.production.region = "blabla123"' | jq -R . )
 oc patch configmap cloud-resources-aws-strategies -n redhat-rhmi-operator --type=merge --patch="{\"data\": { \"postgres\": $postgres }}" --dry-run=false
 oc patch configmap cloud-resources-aws-strategies -n redhat-rhmi-operator --type=merge --patch="{\"data\": { \"redis\": $redis }}" --dry-run=false
 ```
@@ -54,7 +54,7 @@ oc patch configmap cloud-resources-aws-strategies -n redhat-rhmi-operator --type
 4. Trigger RHMI uninstallation
 
 ```bash
-oc delete rhmi rhmi -n redhat-rhmi-operator
+oc delete rhmi managed-api -n redhat-rhmi-operator
 ```
 
 5. Trigger Redis CR deletion (Note: this step won't be necessary after https://issues.redhat.com/browse/INTLY-9101 is resolved)
@@ -69,6 +69,6 @@ oc delete redis --all -n redhat-rhmi-operator
 open "https://$(oc get routes alertmanager-route -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
-> Verify that all Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed and Redis-RhmiRedisResourceDeletionStatusPhaseFailed alerts (8 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
+> Verify that all Postgres-Managed-ApiPostgresResourceDeletionStatusPhaseFailed and Redis-Managed-ApiRedisResourceDeletionStatusPhaseFailed alerts (5 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
 
 7. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)
