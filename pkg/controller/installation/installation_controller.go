@@ -57,7 +57,7 @@ const (
 	buAlertingEmailAddressEnvName    = "BU_ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"
 	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
-	managedServicePriorityClassName  = "managed-service-priority"
+	managedServicePriorityClassName  = "rhoam-pod-priority"
 )
 
 var (
