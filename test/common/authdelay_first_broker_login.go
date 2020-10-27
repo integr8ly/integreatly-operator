@@ -37,15 +37,15 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
-	testUser, err := getRandomKeycloakUser(ctx)
-
-	if err != nil {
-		t.Fatalf("error getting test user: %v", err)
-	}
-
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	testUser, err := getRandomKeycloakUser(ctx, rhmi.Name)
+
+	if err != nil {
+		t.Fatalf("error getting test user: %v", err)
 	}
 
 	tsHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
@@ -66,7 +66,7 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getRandomKeycloakUser(ctx *TestingContext) (*TestUser, error) {
+func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestUser, error) {
 	// create random keycloak user
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -78,7 +78,7 @@ func getRandomKeycloakUser(ctx *TestingContext) (*TestUser, error) {
 			UserName:  fmt.Sprintf("%s-%d", TestAuthThreeScaleUsername, userNamePostfix),
 		},
 	}
-	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers)
+	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installationName)
 	if err != nil {
 		return nil, fmt.Errorf("error creating test user: %v", err)
 	}

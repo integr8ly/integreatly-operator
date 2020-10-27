@@ -93,6 +93,10 @@ if [[ ${CLUSTER_ID} ]]; then
     echo "To delete IDP execute: ocm delete \"/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers/$IDP_ID\""
   else
 
+    # Delete any keycloak client of the same name to allow regenerating correct client secret for keycloak client
+    oc delete keycloakclient "$REALM-client" -n "$INSTALLATION_PREFIX-rhsso" --ignore-not-found=true
+
+    # apply KeycloakRealm and KeycloakClient from a template
     oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -
 
     sed "s|REALM|$REALM|g; s|KEYCLOAK_URL|$KEYCLOAK_URL|g; s|CLIENT_SECRET|$CLIENT_SECRET|g" "${BASH_SOURCE%/*}/ocm-idp-template.json" | ocm post "/api/clusters_mgmt/v1/clusters/$CLUSTER_ID/identity_providers"
@@ -115,6 +119,9 @@ else
     # create dedicated-admins group if it doesn't exist
     echo '{"kind": "Group", "apiVersion": "user.openshift.io/v1", "metadata": { "name": "dedicated-admins" }, "users": null }' | oc create -f -
   fi
+
+  # Delete any keycloak client of the same name to allow regenerating correct client secret for keycloak client
+  oc delete keycloakclient "$REALM-client" -n "$INSTALLATION_PREFIX-rhsso" --ignore-not-found=true
 
   # apply KeycloakRealm and KeycloakClient from a template
   oc process -p OAUTH_URL="$OAUTH_URL" -p NAMESPACE="$INSTALLATION_PREFIX-rhsso" -p REALM="$REALM" -p REALM_DISPLAY_NAME="$REALM_DISPLAY_NAME" -p CLIENT_SECRET="$CLIENT_SECRET" -f "${BASH_SOURCE%/*}/testing-idp-template.yml" | oc apply -f -

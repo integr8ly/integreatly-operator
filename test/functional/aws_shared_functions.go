@@ -66,11 +66,21 @@ func getExpectedRedis(installType string, installationName string) []string {
 	}
 }
 
-func getExpectedBlobStorage(installationName string) []string {
-	// expected blob storage
-	return []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
+func getExpectedBlobStorage(installType string, installationName string) []string {
+	// common blob storage
+	commonBlobStorage := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	// rhmi blob storage
+	rhmiBlobStorage := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return commonBlobStorage
+	} else {
+		return append(commonBlobStorage, rhmiBlobStorage...)
 	}
 }
 
@@ -142,7 +152,7 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 	var foundErrors []string
 	var foundResourceIDs []string
 
-	expectedBlobStorage := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
+	expectedBlobStorage := getExpectedBlobStorage(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedBlobStorage {
 		// get rds cr

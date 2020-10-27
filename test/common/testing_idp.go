@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"testing"
 	"time"
@@ -30,6 +31,13 @@ const (
 	defaultSecret                  = "rhmiForeva"
 	DefaultTestUserName            = "test-user"
 	DefaultPassword                = "Password1"
+)
+
+var (
+	keycloakClientName           = fmt.Sprintf("%s-client", TestingIDPRealm)
+	keycloakClientNamespace      = RHSSOProductNamespace
+	clusterOauthClientSecretName = fmt.Sprintf("idp-%s", TestingIDPRealm)
+	idpCAName                    = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
 )
 
 type TestUser struct {
@@ -64,18 +72,26 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 	}
 
 	// create keycloak realm
-	if err := createKeycloakRealm(ctx, client); err != nil {
+	if err := createKeycloakRealm(ctx, client, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak realm: %w", err)
 	}
+
+	// Delete current client to ensure new created client secret is correct
+	if err := deleteKeycloakClient(ctx, client); err != nil {
+		return err
+	}
+
 	// create keycloak client
-	keycloakClientName := fmt.Sprintf("%s-client", TestingIDPRealm)
-	keycloakClientNamespace := fmt.Sprintf("%srhsso", NamespacePrefix)
-	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, keycloakClientName, keycloakClientNamespace); err != nil {
+	if err := createKeycloakClient(ctx, client, oauthRoute.Spec.Host, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak client: %w", err)
 	}
 
+	if err := ensureKeycloakClientIsReady(ctx, client); err != nil {
+		return fmt.Errorf("error occurred while waiting on keycloak client: %w", err)
+	}
+
 	// create keycloak rhmi developer users
-	if err := createKeycloakUsers(ctx, client, keycloakClientName, keycloakClientNamespace); err != nil {
+	if err := createKeycloakUsers(ctx, client, rhmiCR.Name); err != nil {
 		return fmt.Errorf("error occurred while setting up keycloak users: %w", err)
 	}
 
@@ -189,7 +205,7 @@ func setupIDPConfig(ctx context.Context, client dynclient.Client) error {
 
 	idpConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("idp-ca-%s", TestingIDPRealm),
+			Name:      idpCAName,
 			Namespace: "openshift-config",
 		},
 	}
@@ -210,7 +226,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	// setup identity provider ca name
 	identityProviderCA := ""
 	if hasSelfSignedCerts {
-		identityProviderCA = fmt.Sprintf("idp-ca-%s", TestingIDPRealm)
+		identityProviderCA = idpCAName
 	}
 
 	clusterOauth := &configv1.OAuth{}
@@ -219,17 +235,21 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 	}
 
 	keycloakRoute := &v1.Route{}
-	if err := client.Get(ctx, types.NamespacedName{Name: "keycloak-edge", Namespace: fmt.Sprintf("%srhsso", NamespacePrefix)}, keycloakRoute); err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: "keycloak-edge", Namespace: RHSSOProductNamespace}, keycloakRoute); err != nil {
 		return fmt.Errorf("error occurred while getting Keycloak Edge Route: %w ", err)
 	}
 	identityProviderIssuer := fmt.Sprintf("https://%s/auth/realms/%s", keycloakRoute.Spec.Host, TestingIDPRealm)
 
 	// check if identity providers is nil or contains testing IDP
 	identityProviders := clusterOauth.Spec.IdentityProviders
+	idpAlreadySetUpByScript := false
+	idpIndex := 0
 	if identityProviders != nil {
-		for _, providers := range identityProviders {
+		for index, providers := range identityProviders {
 			if providers.Name == TestingIDPRealm {
-				return nil
+				idpAlreadySetUpByScript = true
+				idpIndex = index
+				break
 			}
 		}
 	}
@@ -243,7 +263,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 			OpenID: &configv1.OpenIDIdentityProvider{
 				ClientID: "openshift",
 				ClientSecret: configv1.SecretNameReference{
-					Name: fmt.Sprintf("idp-%s", TestingIDPRealm),
+					Name: clusterOauthClientSecretName,
 				},
 				CA: configv1.ConfigMapNameReference{
 					Name: identityProviderCA,
@@ -268,7 +288,12 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 		if clusterOauth.Spec.IdentityProviders == nil {
 			clusterOauth.Spec.IdentityProviders = []configv1.IdentityProvider{}
 		}
-		clusterOauth.Spec.IdentityProviders = append(clusterOauth.Spec.IdentityProviders, *testingIdentityProvider)
+		// If idp is already set up - ensure using the correct client secret generated from test
+		if idpAlreadySetUpByScript {
+			clusterOauth.Spec.IdentityProviders[idpIndex].OpenID.ClientSecret.Name = clusterOauthClientSecretName
+		} else {
+			clusterOauth.Spec.IdentityProviders = append(clusterOauth.Spec.IdentityProviders, *testingIdentityProvider)
+		}
 		return nil
 	}); err != nil {
 		return fmt.Errorf("error occurred while creating or updating openshift cluster oauth: %w", err)
@@ -280,7 +305,7 @@ func addIDPToOauth(ctx context.Context, client dynclient.Client, hasSelfSignedCe
 func createClientSecret(ctx context.Context, client dynclient.Client, clientSecret []byte) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("idp-%s", TestingIDPRealm),
+			Name:      clusterOauthClientSecretName,
 			Namespace: "openshift-config",
 		},
 	}
@@ -298,11 +323,7 @@ func createClientSecret(ctx context.Context, client dynclient.Client, clientSecr
 }
 
 // create rhmi developer keycloak users
-func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakClientName, keycloakClientNamespace string) error {
-	if err := ensureKeycloakClientIsReady(ctx, client, keycloakClientName, keycloakClientNamespace); err != nil {
-		return fmt.Errorf("error occurred while waiting on keycloak client: %w", err)
-	}
-
+func createKeycloakUsers(ctx context.Context, client dynclient.Client, installationName string) error {
 	// populate users to be created
 	var testUsers []TestUser
 	postfix := 0
@@ -328,7 +349,7 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 		postfix++
 	}
 
-	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers)
+	err := createOrUpdateKeycloakUserCR(ctx, client, testUsers, installationName)
 	if err != nil {
 		return fmt.Errorf("error occurred while creating or updating keycloak user: %w", err)
 	}
@@ -336,17 +357,21 @@ func createKeycloakUsers(ctx context.Context, client dynclient.Client, keycloakC
 	return nil
 }
 
-func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser) error {
+func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, testUsers []TestUser, installationName string) error {
 	// create rhmi developer users from test users
 	for _, user := range testUsers {
 		keycloakUser := &v1alpha1.KeycloakUser{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-%s", TestingIDPRealm, user.UserName),
-				Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
+				Namespace: RHSSOProductNamespace,
 			},
 		}
 
 		_, err := controllerutil.CreateOrUpdate(ctx, client, keycloakUser, func() error {
+			keycloakUser.Annotations = map[string]string{
+				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-name":      installationName,
+			}
 			keycloakUser.Spec = v1alpha1.KeycloakUserSpec{
 				RealmSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
@@ -388,12 +413,12 @@ func createOrUpdateKeycloakUserCR(ctx context.Context, client dynclient.Client, 
 }
 
 // polls the keycloak client until it is ready
-func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client, keycloakClientName, keycloakClientNamespace string) error {
+func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client) error {
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
 		keycloakClient := &v1alpha1.KeycloakClient{}
 
 		if err := client.Get(ctx, types.NamespacedName{Name: keycloakClientName, Namespace: keycloakClientNamespace}, keycloakClient); err != nil {
-			return true, fmt.Errorf("error occurred while getting keycloak client")
+			return false, fmt.Errorf("error occurred while getting keycloak client")
 		}
 		if keycloakClient.Status.Ready {
 			return true, nil
@@ -407,147 +432,171 @@ func ensureKeycloakClientIsReady(ctx context.Context, client dynclient.Client, k
 }
 
 // creates keycloak client
-func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL, clientName, clientNamespace string) error {
+func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL string, installationName string) error {
 	keycloakClient := &v1alpha1.KeycloakClient{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clientName,
-			Namespace: clientNamespace,
+			Name:      keycloakClientName,
+			Namespace: keycloakClientNamespace,
+			Annotations: map[string]string{
+				"integreatly-namespace": RHMIOperatorNamespace,
+				"integreatly-name":      installationName,
+			},
+		},
+		Spec: v1alpha1.KeycloakClientSpec{
+			RealmSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"sso": TestingIDPRealm,
+				},
+			},
+			Client: &v1alpha1.KeycloakAPIClient{
+				ID:                      "openshift",
+				ClientID:                "openshift",
+				Enabled:                 true,
+				ClientAuthenticatorType: "client-secret",
+				Secret:                  defaultSecret,
+				RootURL:                 fmt.Sprintf("https://%s", oauthURL),
+				RedirectUris: []string{
+					fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, TestingIDPRealm),
+				},
+				WebOrigins: []string{
+					fmt.Sprintf("https://%s", oauthURL),
+					fmt.Sprintf("https://%s/*", oauthURL),
+				},
+				StandardFlowEnabled:       true,
+				DirectAccessGrantsEnabled: true,
+				FullScopeAllowed:          true,
+				ProtocolMappers: []v1alpha1.KeycloakProtocolMapper{
+					{
+						Config: map[string]string{
+							"access.token.claim":   "true",
+							"claim.name":           "given_name",
+							"id.token.claim":       "true",
+							"jsonType.label":       "String",
+							"user.attribute":       "firstName",
+							"userinfo.token.claim": "true",
+						},
+						ConsentRequired: true,
+						ConsentText:     "${givenName}",
+						Name:            "given name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+					},
+					{
+						Config: map[string]string{
+							"access.token.claim":   "true",
+							"id.token.claim":       "true",
+							"userinfo.token.claim": "true",
+						},
+						ConsentRequired: true,
+						ConsentText:     "${fullName}",
+						Name:            "full name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-full-name-mapper",
+					},
+					{
+						Config: map[string]string{
+							"access.token.claim":   "true",
+							"claim.name":           "family_name",
+							"id.token.claim":       "true",
+							"jsonType.label":       "String",
+							"user.attribute":       "lastName",
+							"userinfo.token.claim": "true",
+						},
+						ConsentRequired: true,
+						ConsentText:     "${familyName}",
+						Name:            "family name",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+					},
+					{
+						Config: map[string]string{
+							"attribute.name":       "Role",
+							"attribute.nameformat": "Basic",
+							"single":               "false",
+						},
+						ConsentText:    "${familyName}",
+						Name:           "role list",
+						Protocol:       "saml",
+						ProtocolMapper: "saml-role-list-mapper",
+					},
+					{
+						Config: map[string]string{
+							"access.token.claim":   "true",
+							"claim.name":           "email",
+							"id.token.claim":       "true",
+							"jsonType.label":       "String",
+							"user.attribute":       "email",
+							"userinfo.token.claim": "true",
+						},
+						ConsentRequired: true,
+						ConsentText:     "${email}",
+						Name:            "email",
+						Protocol:        "openid-connect",
+						ProtocolMapper:  "oidc-usermodel-property-mapper",
+					},
+					{
+						Config: map[string]string{
+							"access.token.claim":   "true",
+							"claim.name":           "preferred_username",
+							"id.token.claim":       "true",
+							"jsonType.label":       "String",
+							"user.attribute":       "username",
+							"userinfo.token.claim": "true",
+						},
+						ConsentText:    "n.a.",
+						Name:           "username",
+						Protocol:       "openid-connect",
+						ProtocolMapper: "oidc-usermodel-property-mapper",
+					},
+				},
+				Access: map[string]bool{
+					"configure": true,
+					"manage":    true,
+					"view":      true,
+				},
+			},
 		},
 	}
 
-	keycloakSpec := v1alpha1.KeycloakClientSpec{
-		RealmSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				"sso": TestingIDPRealm,
-			},
-		},
-		Client: &v1alpha1.KeycloakAPIClient{
-			ID:                      "openshift",
-			ClientID:                "openshift",
-			Enabled:                 true,
-			ClientAuthenticatorType: "client-secret",
-			Secret:                  defaultSecret,
-			RootURL:                 fmt.Sprintf("https://%s", oauthURL),
-			RedirectUris: []string{
-				fmt.Sprintf("https://%s/oauth2callback/%s", oauthURL, TestingIDPRealm),
-			},
-			WebOrigins: []string{
-				fmt.Sprintf("https://%s", oauthURL),
-				fmt.Sprintf("https://%s/*", oauthURL),
-			},
-			StandardFlowEnabled:       true,
-			DirectAccessGrantsEnabled: true,
-			FullScopeAllowed:          true,
-			ProtocolMappers: []v1alpha1.KeycloakProtocolMapper{
-				{
-					Config: map[string]string{
-						"access.token.claim":   "true",
-						"claim.name":           "given_name",
-						"id.token.claim":       "true",
-						"jsonType.label":       "String",
-						"user.attribute":       "firstName",
-						"userinfo.token.claim": "true",
-					},
-					ConsentRequired: true,
-					ConsentText:     "${givenName}",
-					Name:            "given name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-				},
-				{
-					Config: map[string]string{
-						"access.token.claim":   "true",
-						"id.token.claim":       "true",
-						"userinfo.token.claim": "true",
-					},
-					ConsentRequired: true,
-					ConsentText:     "${fullName}",
-					Name:            "full name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-full-name-mapper",
-				},
-				{
-					Config: map[string]string{
-						"access.token.claim":   "true",
-						"claim.name":           "family_name",
-						"id.token.claim":       "true",
-						"jsonType.label":       "String",
-						"user.attribute":       "lastName",
-						"userinfo.token.claim": "true",
-					},
-					ConsentRequired: true,
-					ConsentText:     "${familyName}",
-					Name:            "family name",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-				},
-				{
-					Config: map[string]string{
-						"attribute.name":       "Role",
-						"attribute.nameformat": "Basic",
-						"single":               "false",
-					},
-					ConsentText:    "${familyName}",
-					Name:           "role list",
-					Protocol:       "saml",
-					ProtocolMapper: "saml-role-list-mapper",
-				},
-				{
-					Config: map[string]string{
-						"access.token.claim":   "true",
-						"claim.name":           "email",
-						"id.token.claim":       "true",
-						"jsonType.label":       "String",
-						"user.attribute":       "email",
-						"userinfo.token.claim": "true",
-					},
-					ConsentRequired: true,
-					ConsentText:     "${email}",
-					Name:            "email",
-					Protocol:        "openid-connect",
-					ProtocolMapper:  "oidc-usermodel-property-mapper",
-				},
-				{
-					Config: map[string]string{
-						"access.token.claim":   "true",
-						"claim.name":           "preferred_username",
-						"id.token.claim":       "true",
-						"jsonType.label":       "String",
-						"user.attribute":       "username",
-						"userinfo.token.claim": "true",
-					},
-					ConsentText:    "n.a.",
-					Name:           "username",
-					Protocol:       "openid-connect",
-					ProtocolMapper: "oidc-usermodel-property-mapper",
-				},
-			},
-			Access: map[string]bool{
-				"configure": true,
-				"manage":    true,
-				"view":      true,
-			},
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakClient, func() error {
-		if keycloakClient.Spec.Client != nil && keycloakClient.Spec.Client.Secret != "" {
-			keycloakSpec.Client.Secret = keycloakClient.Spec.Client.Secret
-		}
-		keycloakClient.Spec = keycloakSpec
-		return nil
-	}); err != nil {
-		return fmt.Errorf("error occurred while creating or updating keycloak client: %w", err)
+	if err := client.Create(ctx, keycloakClient); err != nil {
+		return fmt.Errorf("error occurred while creating keycloak client: %w", err)
 	}
 	return nil
 }
 
+func deleteKeycloakClient(ctx context.Context, client dynclient.Client) error {
+	err := wait.PollImmediate(time.Second*2, time.Minute*2, func() (done bool, err error) {
+		if err := client.Delete(ctx, &v1alpha1.KeycloakClient{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      keycloakClientName,
+				Namespace: keycloakClientNamespace,
+			},
+		}); err != nil {
+			if !k8errors.IsNotFound(err) {
+				return false, nil
+			}
+
+			if k8errors.IsNotFound(err) {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete testing idp keycloak client: %s", err)
+	}
+
+	return nil
+}
+
 // create keycloak realm
-func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
+func createKeycloakRealm(ctx context.Context, client dynclient.Client, installationName string) error {
 	keycloakRealm := &v1alpha1.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      TestingIDPRealm,
-			Namespace: fmt.Sprintf("%srhsso", NamespacePrefix),
+			Namespace: RHSSOProductNamespace,
 			Labels: map[string]string{
 				"sso": TestingIDPRealm,
 			},
@@ -569,6 +618,10 @@ func createKeycloakRealm(ctx context.Context, client dynclient.Client) error {
 	}
 
 	if _, err := controllerutil.CreateOrUpdate(ctx, client, keycloakRealm, func() error {
+		keycloakRealm.Annotations = map[string]string{
+			"integreatly-namespace": RHMIOperatorNamespace,
+			"integreatly-name":      installationName,
+		}
 		keycloakRealm.Spec = keycloakRealmSpec
 		return nil
 	}); err != nil {

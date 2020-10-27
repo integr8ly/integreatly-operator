@@ -5,17 +5,24 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
 )
 
 const (
-	expectedBucketEncryption     = "AES256"
-	resourceNameTag              = "integreatly.org/resource-name"
-	backupBucketResourceName     = "backups-blobstorage-rhmi"
-	threeScaleBucketResourceName = "threescale-blobstorage-rhmi"
+	expectedBucketEncryption = "AES256"
+	resourceNameTag          = "integreatly.org/resource-name"
 )
+
+func getExpectedBackupBucketResourceName(installationName string) string {
+	return fmt.Sprintf("backups-blobstorage-%s", installationName)
+}
+
+func getExpectedThreeScaleBucketResourceName(installationName string) string {
+	return fmt.Sprintf("threescale-blobstorage-%s", installationName)
+}
 
 func TestAWSs3BlobStorageResourcesExist(t *testing.T, ctx *common.TestingContext) {
 	goContext := goctx.TODO()
@@ -31,8 +38,13 @@ func TestAWSs3BlobStorageResourcesExist(t *testing.T, ctx *common.TestingContext
 		t.Fatalf("test cro blob storage exists failed with the following errors : %s", testErrors)
 	}
 
-	if len(s3ResourceIDs) != 2 {
-		t.Fatalf("There should be exactly 2 blob resources: actual: %d", len(s3ResourceIDs))
+	// Expect 2 blobstorage for RHMI
+	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && len(s3ResourceIDs) != 2 {
+		t.Fatalf("There should be exactly 2 blob resources for %s install type: actual: %d", rhmi.Spec.Type, len(s3ResourceIDs))
+	}
+
+	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && len(s3ResourceIDs) != 1 {
+		t.Fatalf("There should be exactly 1 blob resources for %s install type: actual: %d", rhmi.Spec.Type, len(s3ResourceIDs))
 	}
 
 	sess, err := CreateAWSSession(goContext, ctx.Client)
@@ -57,14 +69,20 @@ func TestAWSs3BlobStorageResourcesExist(t *testing.T, ctx *common.TestingContext
 			testErrors = append(testErrors, err.Error())
 		}
 
-		err = verifyResourceNames(s3api, resourceIdentifier, backupsFound, threeScaleFound)
+		err = verifyResourceNames(s3api, resourceIdentifier, backupsFound, threeScaleFound, rhmi.Name)
 		if err != nil {
 			testErrors = append(testErrors, err.Error())
 		}
 	}
 
-	if *backupsFound == false || *threeScaleFound == false {
-		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets"))
+	// Expect both backup and three scale bucket for managed install
+	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) && (*backupsFound == false || *threeScaleFound == false) {
+		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets for managed install"))
+	}
+
+	// Expect just three scale bucket for managed api install
+	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) && *threeScaleFound == false {
+		testErrors = append(testErrors, fmt.Sprintf("Failed to find appropriate resource names for buckets for managed api install"))
 	}
 
 	if len(testErrors) != 0 {
@@ -108,7 +126,7 @@ func verifyPublicAccessBlock(s3api *s3.S3, identifier string) error {
 	}
 }
 
-func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, threeScaleFound *bool) error {
+func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, threeScaleFound *bool, installationName string) error {
 
 	tags, err := s3api.GetBucketTagging(&s3.GetBucketTaggingInput{Bucket: aws.String(identifier)})
 	if err != nil {
@@ -120,11 +138,11 @@ func verifyResourceNames(s3api *s3.S3, identifier string, backupsFound *bool, th
 	for i := range tags.TagSet {
 		tag := tags.TagSet[i]
 		if *tag.Key == resourceNameTag {
-			if *tag.Value == backupBucketResourceName {
+			if *tag.Value == getExpectedBackupBucketResourceName(installationName) {
 				*backupsFound = true
 				return nil
 			}
-			if *tag.Value == threeScaleBucketResourceName {
+			if *tag.Value == getExpectedThreeScaleBucketResourceName(installationName) {
 				*threeScaleFound = true
 				return nil
 			}
