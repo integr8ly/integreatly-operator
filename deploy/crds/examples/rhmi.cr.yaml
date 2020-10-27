@@ -10,3 +10,4 @@ spec:
   smtpSecret: redhat-rhmi-smtp
   deadMansSnitchSecret: redhat-rhmi-deadmanssnitch
   pagerDutySecret: redhat-rhmi-pagerduty
+  priorityClassName: rhoam-pod-priority
