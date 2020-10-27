@@ -42,6 +42,8 @@ spec:
             pagerDutySecret:
               description: "PagerDutySecret is the name of a secret in the installation namespace containing PagerDuty account details. The secret must contain the following fields: \n serviceKey"
               type: string
+            priorityClassName:
+              type: string
             pullSecret:
               properties:
                 name:
