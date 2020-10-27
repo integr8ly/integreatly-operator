@@ -62,6 +62,26 @@ set_version() {
   fi
 }
 
+set_installation_type() {
+  if [[ -z "$PREVIOUS_VERSION" ]]
+    then
+      echo "No previous version please set correct values in the Makefile and version/version.go files"
+    else
+      case $OLM_TYPE in
+        "integreatly-operator")
+          echo "using default INSTALLATION_TYPE found in deploy/operator.yaml"
+          ;;
+        "managed-api-service")
+          yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].env.'(name==INSTALLATION_TYPE)'.value managed-api
+          ;;
+        *)
+          echo "No INSTALLATION_TYPE found for install type : $(OLM_TYPE)"
+          echo "using default INSTALLATION_TYPE found in deploy/operator.yaml"
+          ;;
+      esac
+  fi
+}
+
 set_images() {
   : "${IMAGE_TAG:=v${SEMVER}}"
   "${SED_INLINE[@]}" "s/image:.*/image: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
@@ -102,7 +122,7 @@ if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
 else
   update_csv
 fi
-
+set_installation_type
 set_images
 
 if [[ ! -z "$NON_SERVICE_AFFECTING" ]]; then
