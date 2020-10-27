@@ -21,6 +21,8 @@ import (
 
 const (
 	RHMIConfigCRName = "rhmi-config"
+	pollInterval     = 1 * time.Second
+	pollTimeout      = 30 * time.Second
 )
 
 // we reuse this struct in tests A21 and A22
@@ -150,12 +152,24 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	verifyCr(t, ctx)
 
 	// Verify the Mutating webhook
-	verifyRHMIConfigMutatingWebhook(ctx, t)
+	// Use polling to avoid unnecessary test failure due to an error
+	// when trying to update modified object
+	// More info in https://github.com/integr8ly/integreatly-operator/pull/1279
+	err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
+		newErr := verifyRHMIConfigMutatingWebhook(ctx, t)
+		if newErr != nil {
+			return false, newErr
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Errorf("Timed out when trying to verify RHMI Config Mutating Webhook: %s", err)
+	}
 
 	// Test each possible state for the Upgrade section
 	for state, assertion := range upgradeSectionStates {
 		t.Logf("Testing the RHMIConfig state: %s", logUpgrade(state))
-		err := wait.Poll(1*time.Second, 30*time.Second, func() (done bool, err error) {
+		err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
 			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
 				cr.Spec.Upgrade = state
 			})
@@ -174,7 +188,7 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	// test for possible state changes for the Backup and Maintenance section
 	for state, assertion := range maintenanceBackupStates {
 
-		err := wait.Poll(1*time.Second, 30*time.Second, func() (done bool, err error) {
+		err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
 			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
 				cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
 				cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
@@ -237,13 +251,13 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 // verifyRHMIConfigMutatingWebhook tests the mutating webhook by logging in as
 // a customer admin in the testing IDP and performing an update to the RHMIConfig
 // instance, and checking that the webhooks adds the correct annotations
-func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
+func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) error {
 	currentUser := &userv1.User{}
 	if err := ctx.Client.Get(goctx.TODO(), dynclient.ObjectKey{
 		Name: "~",
 	}, currentUser); err != nil {
-		t.Errorf("Error getting the current user: %v", err)
-		return
+		t.Logf("Error getting the current user: %v", err)
+		return err
 	}
 
 	// Get the current RHMIConfig instance
@@ -253,8 +267,8 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
-		t.Errorf("Error getting RHMIConfig instance: %v", err)
-		return
+		t.Logf("Error getting RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Update a value in the instance
@@ -262,8 +276,8 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 
 	// Update the RHMIConfig instance as the customer-admin user
 	if err := ctx.Client.Update(goctx.TODO(), rhmiConfig); err != nil {
-		t.Errorf("Error updating RHMIConfig instance: %v", err)
-		return
+		t.Logf("Error updating RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Get the updated RHMIConfig instance
@@ -272,8 +286,8 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
-		t.Errorf("Error getting RHMIConfig instance: %v", err)
-		return
+		t.Logf("Error getting RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Verify the username is set in the annotations
@@ -291,6 +305,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 	} else {
 		t.Error("Expected mutating webhook to add lastEditTimestamp annotation to RHMIConfig")
 	}
+	return nil
 }
 
 // we require this template across different tests for RHMI config
