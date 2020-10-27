@@ -18,9 +18,9 @@ tags:
 oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:6443
 ```
 
-2. RHOAM is installed using the [Jenkins pipeline](https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/ManagedAPI/job/managed-api-install-master/build?delay=0sec) with following parameters:
+2. RHMI is installed using the [Jenkins pipeline](https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/ManagedAPI/job/managed-api-install-master/build?delay=0sec) with following parameters:
 
-- integreatlyOperatorBranchName: (Go to integreatly-operator github repo and select latest RHOAM release branch)
+- integreatlyOperatorBranchName: (Go to integreatly-operator github repo and select latest RHMI release branch)
 - ocmClusterLifespan: 36
 - openshiftVersion: (search for the version in the test plan document)
 - useByoc: false
@@ -35,13 +35,13 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 1. Validate that rate-limiting alerts ConfigMap has been created
 
 ```sh
-oc get cm rate-limit-alerts -n redhat-managed-api-operator
+oc get cm rate-limit-alerts -n redhat-rhmi-operator
 ```
 
 2. Verify that level1, level2 and level3 rate-limiting alerts are present
 
 ```sh
-oc get prometheusrules -n redhat-managed-api-marin3r
+oc get prometheusrules -n redhat-rhmi-marin3r
 ```
 
 3. Modify the `sku-limits-managed-api-service` configmap to set the rate limit to 20 requests per minute.
@@ -57,7 +57,7 @@ And insert the following data:
 data:
   rate_limit: |-
     {
-      "RHOAM SERVICE SKU": {
+      "RHMI SERVICE SKU": {
         "unit": "minute",
         "requests_per_unit": 100
       }
@@ -74,26 +74,26 @@ and insert the following data:
 
 ```json
 {
-      "api-usage-alert-level1": {
-        "ruleName": "Level1ThreeScaleApiUsageThresholdExceeded",
-        "level": "warning",
-        "minRate": "80%",
-        "maxRate": "90%",
-        "period": "1m"
-      },
-      "api-usage-alert-level2": {
-        "ruleName": "Level2ThreeScaleApiUsageThresholdExceeded",
-        "level": "warning",
-        "minRate": "90%",
-        "maxRate": "95%",
-        "period": "1m"
-      },
-      "api-usage-alert-level3": {
-        "ruleName": "Level3ThreeScaleApiUsageThresholdExceeded",
-        "level": "warning",
-        "minRate": "95%",
-        "period": "1m"
-      }
+  "api-usage-alert-level1": {
+    "ruleName": "Level1ThreeScaleApiUsageThresholdExceeded",
+    "level": "warning",
+    "minRate": "80%",
+    "maxRate": "90%",
+    "period": "1m"
+  },
+  "api-usage-alert-level2": {
+    "ruleName": "Level2ThreeScaleApiUsageThresholdExceeded",
+    "level": "warning",
+    "minRate": "90%",
+    "maxRate": "95%",
+    "period": "1m"
+  },
+  "api-usage-alert-level3": {
+    "ruleName": "Level3ThreeScaleApiUsageThresholdExceeded",
+    "level": "warning",
+    "minRate": "95%",
+    "period": "1m"
+  }
 }
 ```
 
@@ -107,10 +107,17 @@ and insert the following data:
 11. Prepare the following script for each level to verify that the rate limit (100 requests/minute) works correctly:
 
     ```sh
-    for i in {1..<numRequests>}; do
-      curl -i <replace-with-example-curl-for-testing> &
-      sleep <interval>
+    export numRequests=<REPLACE_ME> interval=<REPLACE_ME>
+    apicast_url="<REPLACE_ME>"
+    rm /tmp/curl_output
+    for i in {1..$numRequests}
+    do
+      curl -s -o /dev/null -w "%{http_code}" $apicast_url | xargs >> /tmp/curl_output &
+      sleep $interval
     done
+    sleep 5
+    echo "Number of successful requests:" $(grep -c 200 /tmp/curl_output)
+    echo "Number of rejected requests:" $(grep -c 429 /tmp/curl_output)
     ```
 
     Replace `numRequests` and `interval` for the values from the following table:
@@ -120,22 +127,21 @@ and insert the following data:
     > is in the range for the alert
     >
     > _Example_: To trigger level 1 we use a rate of 85 (between 80% and 90% of the limit),
-    >  so we perform 170 requests every 0.71s. That is:
+    > so we perform 170 requests every 0.71s. That is:
     >
-    > * `numRequests = expected rate x minutes to keep the alert firing` 
-    > * `interval = 60 / expected rate`
+    > - `numRequests = expected rate x minutes to keep the alert firing`
+    > - `interval = 60 / expected rate`
 
-    | Alert to fire | `numRequests` | `interval` |
-    | ------------- | ------------- | ---------- |
-    | Level1ThreeScaleApiUsageThresholdExceeded | 170 | 0.71 |
-    | Level2ThreeScaleApiUsageThresholdExceeded | 186 | 0.645 |
-    | Level3ThreeScaleApiUsageThresholdExceeded | 240 | 0.5 |
+    | Alert to fire                             | `numRequests` | `interval` |
+    | ----------------------------------------- | ------------- | ---------- |
+    | Level1ThreeScaleApiUsageThresholdExceeded | 170           | 0.71       |
+    | Level2ThreeScaleApiUsageThresholdExceeded | 186           | 0.645      |
+    | Level3ThreeScaleApiUsageThresholdExceeded | 240           | 0.5        |
 
-    > Only the last requests for level 3 should fail with a `428 Too Many Requests` status code
+    > Only the requests for level 3 should be eventually failing with a `429 Too Many Requests` status code
     > due to the rate limit being exceeded
-    
 
-13. Run the following command and log in to Prometheus service (as a kubeadmin)
+13) Run the following command and log in to Prometheus service (as a kubeadmin)
 
 ```sh
 open "https://$(oc get routes prometheus-route -n redhat-rhmi-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
@@ -146,8 +152,10 @@ open "https://$(oc get routes prometheus-route -n redhat-rhmi-middleware-monitor
 16. Run the corresponding script to trigger the alert
 17. Verify that after a minute the alert graph is showing some data
     > In order to verify the current rate, run the following query in the Graph tab
+    >
     > ```
     > increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))
     > ```
+    >
     > The alert should fire when the value is in the expected range
 18. Repeat the same process for the remaining alerts and verify that they are firing as expected. Make sure to wait at least a minute before running each script.
