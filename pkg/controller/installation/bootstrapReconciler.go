@@ -18,12 +18,14 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -102,6 +104,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcilePriorityClass(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile priority class", err)
+		return phase, err
+	}
+
+	phase, err = r.checkRateLimitAlertsConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
+		return phase, err
+	}
+
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	metrics.SetRHMIInfo(installation)
@@ -109,6 +123,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	logrus.Info("Bootstrap stage reconciled successfully")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		priorityClass := &schedulingv1.PriorityClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: r.installation.Spec.PriorityClassName,
+			},
+		}
+		if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, priorityClass, func() error {
+
+			priorityClass.Value = 1000000000
+			priorityClass.GlobalDefault = false
+			priorityClass.Description = "Priority Class for managed-api"
+
+			return nil
+		}); err != nil {
+			return integreatlyv1alpha1.PhaseInProgress, err
+		}
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -172,6 +208,68 @@ func (r *Reconciler) checkRateLimitsConfig(ctx context.Context, serverClient k8s
 		}
 
 		rlConfig.Data["rate_limit"] = string(defaultConfigJSON)
+
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	alertsConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      marin3rconfig.AlertConfigMapName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, alertsConfig, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(alertsConfig, r.installation)
+
+		if alertsConfig.Data == nil {
+			alertsConfig.Data = map[string]string{}
+		}
+
+		if _, ok := alertsConfig.Data["alerts"]; ok {
+			return nil
+		}
+
+		maxRate1 := "90%"
+		maxRate2 := "95%"
+
+		defaultConfig := map[string]*marin3rconfig.AlertConfig{
+			"api-usage-alert-level1": {
+				RuleName: "Level1ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "80%",
+				MaxRate:  &maxRate1,
+				Period:   "4h",
+			},
+			"api-usage-alert-level2": {
+				RuleName: "Level2ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "90%",
+				MaxRate:  &maxRate2,
+				Period:   "2h",
+			},
+			"api-usage-alert-level3": {
+				RuleName: "Level3ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "95%",
+				MaxRate:  nil,
+				Period:   "30m",
+			},
+		}
+
+		defaultConfigJSON, err := json.MarshalIndent(defaultConfig, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		alertsConfig.Data["alerts"] = string(defaultConfigJSON)
+
 		return nil
 	}); err != nil {
 		return integreatlyv1alpha1.PhaseInProgress, err

@@ -227,6 +227,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	/*phase, err = r.reconcilePodPriority(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+	*/
+
 	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
 	logrus.Infof("Phase %s reconcileAlertManagerConfigSecret", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -326,6 +334,39 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+/*
+func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	alertmanagerStatefulSet := &k8sappsv1.StatefulSet{}
+	_, err :=  resources.ReconcilePodPriority(
+		ctx,
+		serverClient,
+		k8sclient.ObjectKey{
+			Name:      "alertmanager-application-monitoring",
+			Namespace: r.Config.GetNamespace(),
+		},
+		resources.SelectFromStatefulSet,
+		alertmanagerStatefulSet,
+	)
+
+	prometheusStatefulSet := &k8sappsv1.StatefulSet{}
+	_, err =  resources.ReconcilePodPriority(
+		ctx,
+		serverClient,
+		k8sclient.ObjectKey{
+			Name:      "alertmanager-application-monitoring",
+			Namespace: r.Config.GetNamespace(),
+		},
+		resources.SelectFromStatefulSet,
+		prometheusStatefulSet,
+	)
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+*/
 // Creates a service monitor that federates metrics about alerts to the cluster
 // monitoring stack
 func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -656,7 +697,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 
 	// only set the to address to a real value for managed deployments
 	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddress
+	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
 	if smtpToAddressCRDVal != "" {
 		smtpToAddress = smtpToAddressCRDVal
 	}

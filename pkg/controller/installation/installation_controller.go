@@ -10,6 +10,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/version"
 
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"k8s.io/apimachinery/pkg/labels"
@@ -53,7 +54,10 @@ const (
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
+	buAlertingEmailAddressEnvName    = "BU_ALERTING_EMAIL_ADDRESS"
 	installTypeEnvName               = "INSTALLATION_TYPE"
+	priorityClassNameEnvName         = "PRIORITY_CLASS_NAME"
+	managedServicePriorityClassName  = "rhoam-pod-priority"
 )
 
 var (
@@ -126,6 +130,22 @@ func add(mgr manager.Manager, r ReconcileInstallation) error {
 		return err
 	}
 
+	// Watch for changes to rate limit alerts config
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		&EnqueueIntegreatlyOwner{},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Watch the SKU rate limits config map
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		enqueueAllInstallations,
+		newObjectPredicate(isName(marin3rconfig.RateLimitConfigMapName)),
+	)
+
 	return nil
 }
 
@@ -151,13 +171,20 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	if len(installationList.Items) == 0 {
 
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
-		alertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
+		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
+		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
+
 		installType, _ := os.LookupEnv(installTypeEnvName)
+		priorityClassName, _ := os.LookupEnv(priorityClassNameEnvName)
 
 		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
 			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
+		}
+
+		if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) && priorityClassName == "" {
+			priorityClassName = managedServicePriorityClassName
 		}
 
 		installation = &integreatlyv1alpha1.RHMI{
@@ -166,15 +193,19 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				Namespace: namespace,
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
-				Type:                        installType,
-				NamespacePrefix:             DefaultInstallationPrefix,
-				SelfSignedCerts:             false,
-				SMTPSecret:                  DefaultInstallationPrefix + "smtp",
-				DeadMansSnitchSecret:        DefaultInstallationPrefix + "deadmanssnitch",
-				PagerDutySecret:             DefaultInstallationPrefix + "pagerduty",
-				UseClusterStorage:           useClusterStorage,
-				AlertingEmailAddress:        alertingEmailAddress,
+				Type:                 installType,
+				NamespacePrefix:      DefaultInstallationPrefix,
+				SelfSignedCerts:      false,
+				SMTPSecret:           DefaultInstallationPrefix + "smtp",
+				DeadMansSnitchSecret: DefaultInstallationPrefix + "deadmanssnitch",
+				PagerDutySecret:      DefaultInstallationPrefix + "pagerduty",
+				UseClusterStorage:    useClusterStorage,
+				AlertingEmailAddresses: integreatlyv1alpha1.AlertingEmailAddresses{
+					BusinessUnit: buAlertingEmailAddress,
+					CSSRE:        cssreAlertingEmailAddress,
+				},
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
+				PriorityClassName:           priorityClassName,
 			},
 		}
 
@@ -242,13 +273,23 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		installationCfgMap = installation.Spec.NamespacePrefix + DefaultInstallationConfigMapName
 	}
 
-	alertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
-	if installation.Spec.AlertingEmailAddress == "" && alertingEmailAddress != "" {
-		logrus.Infof("Adding alerting email address to RHMI CR")
-		installation.Spec.AlertingEmailAddress = alertingEmailAddress
+	cssreAlertingEmailAddress := os.Getenv(alertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddresses.CSSRE == "" && cssreAlertingEmailAddress != "" {
+		logrus.Infof("Adding CS-SRE alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddresses.CSSRE = cssreAlertingEmailAddress
 		err = r.client.Update(context.TODO(), installation)
 		if err != nil {
-			logrus.Errorf("Error while copying alerting email address to RHMI CR: %v", err)
+			logrus.Errorf("Error while copying alerting email addresses to RHMI CR: %v", err)
+		}
+	}
+
+	buAlertingEmailAddress := os.Getenv(buAlertingEmailAddressEnvName)
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit == "" && buAlertingEmailAddress != "" {
+		logrus.Infof("Adding BU alerting email address to RHMI CR")
+		installation.Spec.AlertingEmailAddresses.BusinessUnit = buAlertingEmailAddress
+		err = r.client.Update(context.TODO(), installation)
+		if err != nil {
+			logrus.Errorf("Error while copying alerting email addresses to RHMI CR: %v", err)
 		}
 	}
 

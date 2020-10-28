@@ -1963,8 +1963,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 				}
 			},
 			"title": "$product",
@@ -2027,8 +2027,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2115,8 +2115,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2185,8 +2185,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 				}
 			},
 			"seriesOverrides": [],
@@ -2298,8 +2298,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -4184,8 +4184,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-						"value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+						"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+						"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
 					},
 					{
 						"selected": false,
@@ -4208,7 +4208,7 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 						"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
 					}
 				],
-				"query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `amq-online|AMQ, ` + global.NamespacePrefix + `fuse|Fuse, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-rhsso|Keycloak, ` + global.NamespacePrefix + `codeready-workspaces|CodeReady, ` + global.NamespacePrefix + `solution-explorer|Solution, ` + global.NamespacePrefix + `apicurito|Apicurito, ` + global.NamespacePrefix + `ups|UnifiedPush",
+				"query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `amq-online|AMQ, ` + global.NamespacePrefix + `fuse|Fuse, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-sso|Keycloak, ` + global.NamespacePrefix + `codeready-workspaces|CodeReady, ` + global.NamespacePrefix + `solution-explorer|Solution, ` + global.NamespacePrefix + `apicurito|Apicurito, ` + global.NamespacePrefix + `ups|UnifiedPush",
 				"skipUrlSync": false,
 				"type": "custom"
 			}
@@ -5528,8 +5528,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
         }
       },
       "title": "$product",
@@ -5595,8 +5595,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -5690,8 +5690,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -5764,8 +5764,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
         }
       },
       "seriesOverrides": [],
@@ -5883,8 +5883,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -6174,11 +6174,11 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `user-rhsso|Keycloak",
-            "value": "` + global.NamespacePrefix + `user-rhsso|Keycloak"
+            "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
+            "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
           }
         ],
-        "query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-rhsso|Keycloak",
+        "query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-sso|Keycloak",
         "skipUrlSync": false,
         "type": "custom"
       }

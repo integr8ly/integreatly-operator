@@ -6,6 +6,7 @@ router-ca.tmp
 TMP_SA_KUBECONFIG
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
+tmp/_output/bin/managed-api-service
 cmd/manager/debug
 build/_output
 build/_test

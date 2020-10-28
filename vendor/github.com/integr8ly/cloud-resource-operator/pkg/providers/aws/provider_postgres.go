@@ -50,7 +50,7 @@ const (
 	defaultAwsBackupRetentionPeriod      = 31
 	defaultAwsDBInstanceClass            = "db.t2.small"
 	defaultAwsEngine                     = "postgres"
-	defaultAwsEngineVersion              = "10.6"
+	defaultAwsEngineVersion              = "10.13"
 	defaultAwsPubliclyAccessible         = false
 	defaultAwsSkipFinalSnapshot          = false
 	defaultAWSCopyTagsToSnapshot         = true
@@ -62,7 +62,7 @@ const (
 )
 
 var (
-	defaultSupportedEngineVersions = []string{"10.6", "9.6", "9.5"}
+	defaultSupportedEngineVersions = []string{"10.13", "10.6", "9.6", "9.5"}
 )
 
 var _ providers.PostgresProvider = (*PostgresProvider)(nil)
@@ -515,6 +515,10 @@ func buildRDSUpdateStrategy(rdsConfig *rds.CreateDBInstanceInput, foundConfig *r
 		mi.MultiAZ = rdsConfig.MultiAZ
 		updateFound = true
 	}
+	if rdsConfig.AutoMinorVersionUpgrade != nil && *rdsConfig.AutoMinorVersionUpgrade != *foundConfig.AutoMinorVersionUpgrade {
+		mi.AutoMinorVersionUpgrade = rdsConfig.AutoMinorVersionUpgrade
+		updateFound = true
+	}
 	if rdsConfig.PreferredBackupWindow != nil && *rdsConfig.PreferredBackupWindow != *foundConfig.PreferredBackupWindow {
 		mi.PreferredBackupWindow = rdsConfig.PreferredBackupWindow
 		updateFound = true
@@ -581,6 +585,9 @@ func (p *PostgresProvider) buildRDSCreateStrategy(ctx context.Context, pg *v1alp
 	}
 	if rdsCreateConfig.Port == nil {
 		rdsCreateConfig.Port = aws.Int64(defaultAwsPostgresPort)
+	}
+	if rdsCreateConfig.AutoMinorVersionUpgrade == nil {
+		rdsCreateConfig.AutoMinorVersionUpgrade = aws.Bool(false)
 	}
 	if rdsCreateConfig.DBName == nil {
 		rdsCreateConfig.DBName = aws.String(defaultAwsPostgresDatabase)
@@ -863,11 +870,19 @@ func (p *PostgresProvider) setPostgresServiceMaintenanceMetric(ctx context.Conte
 
 		for _, pma := range su.PendingMaintenanceActionDetails {
 
-			metricLabels["AutoAppliedAfterDate"] = strconv.FormatInt((*pma.AutoAppliedAfterDate).Unix(), 10)
-			metricLabels["CurrentApplyDate"] = strconv.FormatInt((*pma.CurrentApplyDate).Unix(), 10)
-			metricLabels["Description"] = *pma.Description
+			metricEpochTimestamp := time.Now().Unix()
 
-			metricEpochTimestamp := (*pma.AutoAppliedAfterDate).Unix()
+			if pma.AutoAppliedAfterDate != nil && !pma.AutoAppliedAfterDate.IsZero() {
+				metricLabels["AutoAppliedAfterDate"] = strconv.FormatInt((*pma.AutoAppliedAfterDate).Unix(), 10)
+				metricEpochTimestamp = (*pma.AutoAppliedAfterDate).Unix()
+			}
+
+			if pma.CurrentApplyDate != nil && !pma.CurrentApplyDate.IsZero() {
+				metricLabels["CurrentApplyDate"] = strconv.FormatInt((*pma.CurrentApplyDate).Unix(), 10)
+				metricEpochTimestamp = (*pma.CurrentApplyDate).Unix()
+			}
+
+			metricLabels["Description"] = *pma.Description
 
 			resources.SetMetric(resources.DefaultPostgresMaintenanceMetricName, metricLabels, float64(metricEpochTimestamp))
 		}

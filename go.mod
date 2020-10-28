@@ -14,22 +14,26 @@ require (
 	github.com/aws/aws-sdk-go v1.34.5
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/coreos/prometheus-operator v0.40.0
+	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/eclipse/che-operator v0.0.0-20191122191946-81d08d3f0fde
 	github.com/envoyproxy/go-control-plane v0.9.5
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/spec v0.19.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-querystring v1.0.0
+	github.com/gregjones/httpcache v0.0.0-20190203031600-7a902570cb17 // indirect
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/integr8ly/application-monitoring-operator v1.1.1
-	github.com/integr8ly/cloud-resource-operator v0.16.1
+	github.com/integr8ly/cloud-resource-operator v0.16.2
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.4.0
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
 	github.com/matryer/moq v0.1.3
+	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -44,6 +48,7 @@ require (
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200921104849-b99c54c8a481
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	google.golang.org/protobuf v1.23.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6

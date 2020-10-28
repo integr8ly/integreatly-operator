@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -66,11 +67,21 @@ func getExpectedRedis(installType string, installationName string) []string {
 	}
 }
 
-func getExpectedBlobStorage(installationName string) []string {
-	// expected blob storage
-	return []string{
-		fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installationName),
+func getExpectedBlobStorage(installType string, installationName string) []string {
+	// common blob storage
+	commonBlobStorage := []string{
 		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	// rhmi blob storage
+	rhmiBlobStorage := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return commonBlobStorage
+	} else {
+		return append(commonBlobStorage, rhmiBlobStorage...)
 	}
 }
 
@@ -142,7 +153,7 @@ func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi
 	var foundErrors []string
 	var foundResourceIDs []string
 
-	expectedBlobStorage := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
+	expectedBlobStorage := getExpectedBlobStorage(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedBlobStorage {
 		// get rds cr
@@ -274,4 +285,19 @@ func putStrategyForResource(configMap *v1.ConfigMap, stratMap *strategyMap, reso
 	}
 	configMap.Data[resourceType] = string(updatedRawStrategyMapping)
 	return nil
+}
+
+// GetClustersAvailableZones returns a map containing zone names that are currently available
+func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
+	zones := make(map[string]bool)
+	for _, node := range nodes.Items {
+		if isNodeWorkerAndReady(node) {
+			for labelName, labelValue := range node.Labels {
+				if labelName == "topology.kubernetes.io/zone" {
+					zones[labelValue] = true
+				}
+			}
+		}
+	}
+	return zones
 }

@@ -71,7 +71,7 @@ var (
 	VersionMonitoring          ProductVersion = "1.2.1"
 	Version3Scale              ProductVersion = "2.9"
 	VersionUps                 ProductVersion = "2.3.2"
-	VersionCloudResources      ProductVersion = "0.22.0"
+	VersionCloudResources      ProductVersion = "0.22.2"
 	VersionFuseOnline          ProductVersion = "7.6"
 	VersionDataSync            ProductVersion = "0.9.4"
 	VersionRHSSO               ProductVersion = "7.4"
@@ -103,7 +103,7 @@ var (
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.6.0"
 	OperatorVersionFuse                OperatorVersion = "1.6.0"
-	OperatorVersionCloudResources      OperatorVersion = "0.22.0"
+	OperatorVersionCloudResources      OperatorVersion = "0.22.2"
 	OperatorVersionUPS                 OperatorVersion = "0.5.0"
 	OperatorVersionApicurioRegistry    OperatorVersion = "0.0.3"
 	OperatorVersionApicurito           OperatorVersion = "1.6.0"
@@ -127,14 +127,16 @@ type RHMISpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	Type                 string         `json:"type"`
-	RoutingSubdomain     string         `json:"routingSubdomain,omitempty"`
-	MasterURL            string         `json:"masterURL,omitempty"`
-	NamespacePrefix      string         `json:"namespacePrefix"`
-	SelfSignedCerts      bool           `json:"selfSignedCerts,omitempty"`
-	PullSecret           PullSecretSpec `json:"pullSecret,omitempty"`
-	UseClusterStorage    string         `json:"useClusterStorage,omitempty"`
-	AlertingEmailAddress string         `json:"alertingEmailAddress,omitempty"`
+	Type                   string                 `json:"type"`
+	RoutingSubdomain       string                 `json:"routingSubdomain,omitempty"`
+	MasterURL              string                 `json:"masterURL,omitempty"`
+	NamespacePrefix        string                 `json:"namespacePrefix"`
+	SelfSignedCerts        bool                   `json:"selfSignedCerts,omitempty"`
+	PullSecret             PullSecretSpec         `json:"pullSecret,omitempty"`
+	UseClusterStorage      string                 `json:"useClusterStorage,omitempty"`
+	AlertingEmailAddress   string                 `json:"alertingEmailAddress,omitempty"`
+	PriorityClassName      string                 `json:"priorityClassName,omitempty"`
+	AlertingEmailAddresses AlertingEmailAddresses `json:"alertingEmailAddresses,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product
@@ -173,6 +175,11 @@ type RHMISpec struct {
 type PullSecretSpec struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+}
+
+type AlertingEmailAddresses struct {
+	BusinessUnit string `json:"businessUnit"`
+	CSSRE        string `json:"cssre"`
 }
 
 // RHMIStatus defines the observed state of Installation

@@ -428,6 +428,246 @@ var operatorNS = &corev1.Namespace{
 	},
 }
 
+var apicastProduction = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "apicast-production",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "apicast-production",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var apicastStaging = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "apicast-staging",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "apicast-staging",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var backendCron = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "backend-cron",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "backend-cron",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var backendListener = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "backend-listener",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "backend-listener",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var backendWorker = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "backend-worker",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "backend-worker",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var systemAppDep = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "system-app",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "system-app",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var systemMemcache = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "system-memcache",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "system-memcache",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var systemSidekiqDep = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "system-sidekiq",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "system-sidekiq",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var systemSphinx = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "system-sphinx",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "system-sphinx",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var zync = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "zync",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "zync",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var zyncDatabase = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "zync-database",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "zync-database",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
+var zyncQue = &appsv1.DeploymentConfig{
+	TypeMeta: metav1.TypeMeta{},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      "zync-que",
+		Namespace: nsPrefix + defaultInstallationNamespace,
+		Labels: map[string]string{
+			"app": "zync-que",
+		},
+	},
+	Spec: appsv1.DeploymentConfigSpec{
+		Template: &corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec: corev1.PodSpec{
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
+			},
+		},
+	},
+	Status: appsv1.DeploymentConfigStatus{},
+}
+
 func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallationNamepsace string) []runtime.Object {
 	configManagerConfigMap.Namespace = integreatlyOperatorNamespace
 	s3BucketSecret.Namespace = integreatlyOperatorNamespace
@@ -469,5 +709,17 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 		rhssoTest1,
 		ns,
 		operatorNS,
+		apicastProduction,
+		apicastStaging,
+		backendCron,
+		backendListener,
+		backendWorker,
+		systemAppDep,
+		systemMemcache,
+		systemSidekiqDep,
+		systemSphinx,
+		zync,
+		zyncDatabase,
+		zyncQue,
 	}
 }

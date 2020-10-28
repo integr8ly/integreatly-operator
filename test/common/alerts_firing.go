@@ -32,6 +32,13 @@ type alertsFiringError struct {
 }
 
 var (
+	// Applicable to RHOAM
+	rhoamExpectedPodNamespaces = []string{
+		Marin3rOperatorNamespace,
+		Marin3rProductNamespace,
+		CustomerGrafanaNamespace,
+	}
+
 	// Applicable to all install types
 	commonPodNamespaces = []string{
 		RHMIOperatorNamespace,
@@ -186,7 +193,7 @@ func podLogs(t *testing.T, ctx *TestingContext) {
 
 func getPodNamespaces(installType string) []string {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonPodNamespaces
+		return append(commonPodNamespaces, rhoamExpectedPodNamespaces...)
 	} else {
 		return append(commonPodNamespaces, rhmi2PodNamespaces...)
 	}

@@ -6,8 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/sirupsen/logrus"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/pflag"
 
@@ -235,11 +238,20 @@ func serveCRMetrics(cfg *rest.Config, operatorNs string) error {
 	// The function below returns a list of filtered operator/CR specific GVKs. For more control, override the GVK list below
 	// with your own custom logic. Note that if you are adding third party API schemas, probably you will need to
 	// customize this implementation to avoid permissions issues.
-	filteredGVK, err := k8sutil.GetGVKsFromAddToScheme(apis.AddToScheme)
+
+	allGVK, err := k8sutil.GetGVKsFromAddToScheme(apis.AddToScheme)
 	if err != nil {
 		return err
 	}
 
+	// FIXME: Work around https://github.com/operator-framework/operator-sdk/issues/1858
+	var ownGVKs []schema.GroupVersionKind
+	for _, gvk := range allGVK {
+		if !isKubeMetaKind(gvk.Group) {
+			continue
+		}
+		ownGVKs = append(ownGVKs, gvk)
+	}
 	// The metrics will be generated from the namespaces which are returned here.
 	// NOTE that passing nil or an empty list of namespaces in GenerateAndServeCRMetrics will result in an error.
 	ns, err := kubemetrics.GetNamespacesForMetrics(operatorNs)
@@ -248,7 +260,7 @@ func serveCRMetrics(cfg *rest.Config, operatorNs string) error {
 	}
 
 	// Generate and serve custom resource specific metrics.
-	err = kubemetrics.GenerateAndServeCRMetrics(cfg, ns, filteredGVK, metricsHost, operatorMetricsPort)
+	err = kubemetrics.GenerateAndServeCRMetrics(cfg, ns, ownGVKs, metricsHost, operatorMetricsPort)
 	if err != nil {
 		return err
 	}
@@ -292,4 +304,25 @@ func setupWebhooks(mgr manager.Manager) error {
 	}
 
 	return nil
+}
+
+func isKubeMetaKind(kind string) bool {
+	if strings.HasSuffix(kind, "List") ||
+		kind == "PatchOptions" ||
+		kind == "GetOptions" ||
+		kind == "DeleteOptions" ||
+		kind == "ExportOptions" ||
+		kind == "APIVersions" ||
+		kind == "APIGroupList" ||
+		kind == "APIResourceList" ||
+		kind == "UpdateOptions" ||
+		kind == "CreateOptions" ||
+		kind == "Status" ||
+		kind == "WatchEvent" ||
+		kind == "ListOptions" ||
+		kind == "APIGroup" {
+		return true
+	}
+
+	return false
 }
