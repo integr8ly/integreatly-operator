@@ -499,6 +499,7 @@ func (r *Reconciler) ReconcilePodPriority(ctx context.Context, serverClient k8sc
 			},
 			resources.SelectFromStatefulSet,
 			keycloakStatefulSet,
+			r.Installation.Spec.PriorityClassName,
 		)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
