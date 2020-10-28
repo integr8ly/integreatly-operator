@@ -2,8 +2,9 @@ package common
 
 import (
 	goctx "context"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -126,7 +127,7 @@ var (
 			},
 			{
 				Name:             "ratelimit",
-				ExpectedReplicas: 1,
+				ExpectedReplicas: 3,
 			},
 		},
 	}

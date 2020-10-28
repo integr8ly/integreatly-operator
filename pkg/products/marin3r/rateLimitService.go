@@ -7,6 +7,7 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"gopkg.in/yaml.v2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,6 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+var (
+	replicas int32 = 3
 )
 
 type RateLimitServiceReconciler struct {
@@ -158,6 +163,10 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 		deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		}
+		// Default to 3 replicas, but allow this field to be tweaked
+		if deployment.Spec.Replicas == nil {
+			deployment.Spec.Replicas = &replicas
+		}
 
 		useStatsd := "false"
 		if r.StatsdConfig != nil {
@@ -259,6 +268,14 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 					},
 				},
 			},
+		}
+
+		if err := resources.SetZoneTopologySpreadConstraints(
+			resources.SelectFromDeployment,
+			"app",
+			deployment,
+		); err != nil {
+			return fmt.Errorf("failed to set zone topology spread constraints: %w", err)
 		}
 
 		return nil
