@@ -406,7 +406,7 @@ func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sc
 		ns := global.NamespacePrefix + defaultInstallationNamespace
 		for _, name := range threeScaleDeploymentConfigs {
 			deploymentConfig := &appsv1.DeploymentConfig{}
-			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig)
+			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}

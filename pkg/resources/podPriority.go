@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func ReconcilePodPriority(ctx context.Context, client client.Client, objKey client.ObjectKey, templateSelector PodTemplateSelector, obj runtime.Object) (integreatlyv1alpha1.StatusPhase, error) {
+func ReconcilePodPriority(ctx context.Context, client client.Client, objKey client.ObjectKey, templateSelector PodTemplateSelector, obj runtime.Object, priorityClassName string) (integreatlyv1alpha1.StatusPhase, error) {
 	err := client.Get(ctx, objKey, obj)
 	if err != nil {
 		if k8serr.IsNotFound(err) {
@@ -20,25 +20,25 @@ func ReconcilePodPriority(ctx context.Context, client client.Client, objKey clie
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	if err := UpdatePodPriority(ctx, client, templateSelector, obj); err != nil {
+	if err := UpdatePodPriority(ctx, client, templateSelector, obj, priorityClassName); err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func UpdatePodPriority(ctx context.Context, client client.Client, templateSelector PodTemplateSelector, obj runtime.Object) error {
-	if err := SetPodPriority(templateSelector, obj.(v1.Object)); err != nil {
+func UpdatePodPriority(ctx context.Context, client client.Client, templateSelector PodTemplateSelector, obj runtime.Object, priorityClassName string) error {
+	if err := SetPodPriority(templateSelector, obj.(v1.Object), priorityClassName); err != nil {
 		return err
 	}
 
 	return client.Update(ctx, obj)
 }
 
-func SetPodPriority(templateSelector PodTemplateSelector, obj v1.Object) error {
+func SetPodPriority(templateSelector PodTemplateSelector, obj v1.Object, priorityClassName string) error {
 	podTemplate := templateSelector(obj)
 
-	podTemplate.Spec.PriorityClassName = "managed-service-priority"
+	podTemplate.Spec.PriorityClassName = priorityClassName
 
 	return nil
 }
