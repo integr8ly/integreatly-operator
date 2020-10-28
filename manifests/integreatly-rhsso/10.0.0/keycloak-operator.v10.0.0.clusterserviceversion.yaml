@@ -182,8 +182,6 @@ spec:
                   - command:
                       - keycloak-operator
                     env:
-                      - name: RELATED_IMAGE_RHSSO_OPENJDK
-                        value: registry.redhat.io/rh-sso-7/sso74-openshift-rhel8:7.4-3
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
