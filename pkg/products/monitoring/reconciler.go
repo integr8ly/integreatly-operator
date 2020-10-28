@@ -696,10 +696,16 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 	}
 
 	// only set the to address to a real value for managed deployments
-	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
-	if smtpToAddressCRDVal != "" {
-		smtpToAddress = smtpToAddressCRDVal
+	smtpToSREAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToSREAddressCRVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
+	if smtpToSREAddressCRVal != "" {
+		smtpToSREAddress = smtpToSREAddressCRVal
+	}
+
+	smtpToBUAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToBUAddressCRVal := r.installation.Spec.AlertingEmailAddresses.BusinessUnit
+	if smtpToBUAddressCRVal != "" {
+		smtpToBUAddress = smtpToBUAddressCRVal
 	}
 
 	// parse the config template into a secret object
@@ -709,7 +715,8 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
 		"SMTPUsername":        string(smtpSecret.Data["username"]),
 		"SMTPPassword":        string(smtpSecret.Data["password"]),
-		"SMTPToAddress":       smtpToAddress,
+		"SMTPToSREAddress":    smtpToSREAddress,
+		"SMTPToBUAddress":     smtpToBUAddress,
 		"PagerDutyServiceKey": pagerDutySecret,
 		"DeadMansSnitchURL":   dmsSecret,
 	})
