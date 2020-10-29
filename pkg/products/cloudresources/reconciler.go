@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
@@ -132,6 +134,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	if err := r.reconcileCIDRValue(ctx, client); err != nil {
+		phase := integreatlyv1alpha1.PhaseFailed
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile CIDR value", err)
+		return phase, err
+	}
+
 	// In this case due to cloudresources reconciler is always installed in the
 	// same namespace as the operatorNamespace we pass operatorNamespace as the
 	// productNamepace too
@@ -151,7 +159,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
 	}
-
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -339,4 +346,59 @@ func overrideStrategyConfig(resourceType string, tier string, croStrategyConfig 
 	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
 
 	return nil
+}
+
+// reconcileCIDRValue sets the CIDR value in the ConfigMap from the addon
+// parameter. If the value has already been set, or if the secret is not found,
+// it does nothing
+func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Client) error {
+	cidrValue, ok, err := addon.GetStringParameter(ctx, client, r.installation.Namespace, "cidr-range")
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return nil
+	}
+
+	cfgMap := &corev1.ConfigMap{}
+
+	if err := client.Get(ctx, k8sclient.ObjectKey{
+		Name:      "cloud-resources-aws-strategies",
+		Namespace: r.installation.Namespace,
+	}, cfgMap); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	var network struct {
+		Production struct {
+			CreateStrategy struct {
+				CidrBlock string `json:"CidrBlock"`
+			} `json:"createStrategy"`
+		} `json:"production"`
+	}
+
+	data, ok := cfgMap.Data["_network"]
+	if ok {
+		if err := json.Unmarshal([]byte(data), &network); err != nil {
+			return err
+		}
+
+		if network.Production.CreateStrategy.CidrBlock != "" {
+			return nil
+		}
+	}
+
+	network.Production.CreateStrategy.CidrBlock = cidrValue
+	networkJSON, err := json.Marshal(network)
+	if err != nil {
+		return err
+	}
+
+	cfgMap.Data["_network"] = string(networkJSON)
+
+	return client.Patch(ctx, cfgMap, k8sclient.Merge)
 }
