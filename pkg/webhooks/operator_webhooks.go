@@ -3,6 +3,7 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"os"
 	"time"
 
@@ -140,7 +141,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 	caConfigMap := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      webhookConfig.CAConfigMap,
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 			Annotations: map[string]string{
 				caConfigMapAnnotation: "true",
 			},
@@ -181,7 +182,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 	// Get the service. If it's not found, create it
 	service := &corev1.Service{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{
-		Namespace: "redhat-rhmi-operator",
+		Namespace: global.NamespacePrefix + "operator",
 		Name:      operatorPodServiceName,
 	}, service); err != nil {
 		if !errors.IsNotFound(err) {
@@ -205,7 +206,7 @@ func createService(ctx context.Context, client k8sclient.Client, owner ownerutil
 	service := &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      operatorPodServiceName,
-			Namespace: "redhat-rhmi-operator",
+			Namespace: global.NamespacePrefix + "operator",
 		},
 	}
 	_, err := controllerutil.CreateOrUpdate(ctx, client, service, func() error {
@@ -240,7 +241,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, c
 	// Wait for the secret to te created
 	secret := &corev1.Secret{}
 	err := wait.PollImmediate(time.Second*1, time.Second*30, func() (bool, error) {
-		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: "redhat-rhmi-operator", Name: "rhmi-webhook-cert"}, secret)
+		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: global.NamespacePrefix + "operator", Name: "rhmi-webhook-cert"}, secret)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -268,7 +269,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.
 	err := wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
 		caConfigMap := &corev1.ConfigMap{}
 		if err := client.Get(ctx,
-			k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: "redhat-rhmi-operator"},
+			k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: global.NamespacePrefix + "operator"},
 			caConfigMap,
 		); err != nil {
 			if errors.IsNotFound(err) {

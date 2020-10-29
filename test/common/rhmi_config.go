@@ -1,28 +1,28 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	goctx "context"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-	routev1 "github.com/openshift/api/route/v1"
+	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
-
-	goctx "context"
 )
 
 const (
 	RHMIConfigCRName = "rhmi-config"
+	pollInterval     = 1 * time.Second
+	pollTimeout      = 30 * time.Second
 )
 
 // we reuse this struct in tests A21 and A22
@@ -33,7 +33,7 @@ type MaintenanceBackup struct {
 
 // this state check covers test case - A22
 // verify that the RHMIConfig validation webhook for Maintenance and Backup values work as expected
-var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error){
+var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error) error{
 	// we expect no error as blank strings will be set to default vals
 	{
 		Backup: v1alpha1.Backup{
@@ -110,22 +110,19 @@ var maintenanceBackupStates = map[MaintenanceBackup]func(*testing.T) func(error)
 	}: assertValidationError,
 }
 
-var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error){
+var upgradeSectionStates = map[v1alpha1.Upgrade]func(*testing.T) func(error) error{
 	{}: assertNoError,
 
 	{
 		NotBeforeDays: intPtr(-1),
+		Schedule:      boolPtr(true),
 	}: assertValidationError,
 
 	{
 		NotBeforeDays:      intPtr(7),
 		WaitForMaintenance: boolPtr(true),
+		Schedule:           boolPtr(true),
 	}: assertNoError,
-
-	{
-		NotBeforeDays:      intPtr(365),
-		WaitForMaintenance: boolPtr(true),
-	}: assertValidationError,
 }
 
 // TestRHMIConfigCRs tests that the RHMIConfig CR is created successfuly and
@@ -155,22 +152,55 @@ func TestRHMIConfigCRs(t *testing.T, ctx *TestingContext) {
 	verifyCr(t, ctx)
 
 	// Verify the Mutating webhook
-	verifyRHMIConfigMutatingWebhook(ctx, t)
+	// Use polling to avoid unnecessary test failure due to an error
+	// when trying to update modified object
+	// More info in https://github.com/integr8ly/integreatly-operator/pull/1279
+	err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
+		newErr := verifyRHMIConfigMutatingWebhook(ctx, t)
+		if newErr != nil {
+			return false, newErr
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Errorf("Timed out when trying to verify RHMI Config Mutating Webhook: %s", err)
+	}
 
 	// Test each possible state for the Upgrade section
 	for state, assertion := range upgradeSectionStates {
 		t.Logf("Testing the RHMIConfig state: %s", logUpgrade(state))
-		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
-			cr.Spec.Upgrade = state
+		err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
+			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
+				cr.Spec.Upgrade = state
+			})
+			if newErr != nil {
+				return false, newErr
+			}
+			return true, nil
+
 		})
+		if err != nil {
+			t.Errorf("Timed out when trying to test states for the Upgrade section: %s", err)
+		}
+
 	}
 
 	// test for possible state changes for the Backup and Maintenance section
 	for state, assertion := range maintenanceBackupStates {
-		verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
-			cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
-			cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
+
+		err := wait.Poll(pollInterval, pollTimeout, func() (done bool, err error) {
+			newErr := verifyRHMIConfigValidation(ctx.Client, assertion(t), func(cr *v1alpha1.RHMIConfig) {
+				cr.Spec.Maintenance.ApplyFrom = state.Maintenance.ApplyFrom
+				cr.Spec.Backup.ApplyOn = state.Backup.ApplyOn
+			})
+			if newErr != nil {
+				return false, newErr
+			}
+			return true, nil
 		})
+		if err != nil {
+			t.Errorf("Timed out when trying to test states for the maintenance and backup sections: %s", err)
+		}
 	}
 }
 
@@ -201,7 +231,7 @@ func deleteRHMIConfigCR(t *testing.T, client dynclient.Client, cr *v1alpha1.RHMI
 	}
 }
 
-func verifyRHMIConfigValidation(client dynclient.Client, validateError func(error), mutateRHMIConfig func(*v1alpha1.RHMIConfig)) error {
+func verifyRHMIConfigValidation(client dynclient.Client, validateError func(error) error, mutateRHMIConfig func(*v1alpha1.RHMIConfig)) error {
 	rhmiConfig := &v1alpha1.RHMIConfig{}
 
 	if err := client.Get(
@@ -214,45 +244,21 @@ func verifyRHMIConfigValidation(client dynclient.Client, validateError func(erro
 
 	// Perform the update and validate the error object
 	mutateRHMIConfig(rhmiConfig)
-	validateError(client.Update(goctx.TODO(), rhmiConfig))
+	return validateError(client.Update(goctx.TODO(), rhmiConfig))
 
-	return nil
 }
 
 // verifyRHMIConfigMutatingWebhook tests the mutating webhook by logging in as
 // a customer admin in the testing IDP and performing an update to the RHMIConfig
 // instance, and checking that the webhooks adds the correct annotations
-func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
-	// Create the testing IdP
-	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		t.Errorf("Error when creating testing IdP: %v", err)
-		return
+func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) error {
+	currentUser := &userv1.User{}
+	if err := ctx.Client.Get(goctx.TODO(), dynclient.ObjectKey{
+		Name: "~",
+	}, currentUser); err != nil {
+		t.Logf("Error getting the current user: %v", err)
+		return err
 	}
-
-	rhmi, err := getRHMI(ctx.Client)
-	if err != nil {
-		t.Errorf("Error getting RHMI CR: %v", err)
-		return
-	}
-
-	masterURL := rhmi.Spec.MasterURL
-
-	oauthRoute := &routev1.Route{}
-	if err := ctx.Client.Get(goctx.TODO(), types.NamespacedName{
-		Name:      resources.OpenshiftOAuthRouteName,
-		Namespace: resources.OpenshiftAuthenticationNamespace,
-	}, oauthRoute); err != nil {
-		t.Errorf("Error getting Openshift OAuth Route: %v", err)
-		return
-	}
-
-	// Get customer admin tokens
-	if err := resources.DoAuthOpenshiftUser(fmt.Sprintf("%s/auth/login", masterURL), "customer-admin-1", DefaultPassword, ctx.HttpClient, TestingIDPRealm, t); err != nil {
-		t.Errorf("error occured trying to get token : %v", err)
-		return
-	}
-	t.Log("Retrieved customer admin tokens")
-	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
 	// Get the current RHMIConfig instance
 	rhmiConfig := &v1alpha1.RHMIConfig{}
@@ -261,33 +267,17 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
-		t.Errorf("Error getting RHMIConfig instance: %v", err)
-		return
+		t.Logf("Error getting RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Update a value in the instance
-	// The `TypeMeta` field has to be set explicitely in order to send the
-	// marshalled RHMIConfig directly to the API
-	rhmiConfig.TypeMeta = v1.TypeMeta{
-		APIVersion: "integreatly.org/v1alpha1",
-		Kind:       "RHMIConfig",
-	}
 	*rhmiConfig.Spec.Upgrade.WaitForMaintenance = false
-	rhmiConfigChange, err := json.Marshal(rhmiConfig)
-	if err != nil {
-		t.Errorf("Error marshalling rhmiConfig: %v", err)
-		return
-	}
-
-	path := fmt.Sprintf("/apis/integreatly.org/v1alpha1/namespaces/%s/rhmiconfigs/%s",
-		RHMIOperatorNamespace,
-		RHMIConfigCRName,
-	)
 
 	// Update the RHMIConfig instance as the customer-admin user
-	if _, err := openshiftClient.DoOpenshiftPutRequest(path, rhmiConfigChange); err != nil {
-		t.Errorf("Error updating RHMIConfig instance: %v", err)
-		return
+	if err := ctx.Client.Update(goctx.TODO(), rhmiConfig); err != nil {
+		t.Logf("Error updating RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Get the updated RHMIConfig instance
@@ -296,13 +286,14 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 		types.NamespacedName{Name: RHMIConfigCRName, Namespace: RHMIOperatorNamespace},
 		rhmiConfig,
 	); err != nil {
-		t.Errorf("Error getting RHMIConfig instance: %v", err)
-		return
+		t.Logf("Error getting RHMIConfig instance: %v", err)
+		return err
 	}
 
 	// Verify the username is set in the annotations
-	if rhmiConfig.Annotations["lastEditUsername"] != "customer-admin-1" {
-		t.Errorf("Expected mutating webhook to add lastEditUsername annotation to RHMIConfig. Got %s instead",
+	if rhmiConfig.Annotations["lastEditUsername"] != currentUser.Name {
+		t.Errorf("Expected mutating webhook to add \"%s\" lastEditUsername annotation to RHMIConfig. Got %s instead",
+			currentUser.Name,
 			rhmiConfig.Annotations["lastEditUsername"])
 	}
 
@@ -314,6 +305,7 @@ func verifyRHMIConfigMutatingWebhook(ctx *TestingContext, t *testing.T) {
 	} else {
 		t.Error("Expected mutating webhook to add lastEditTimestamp annotation to RHMIConfig")
 	}
+	return nil
 }
 
 // we require this template across different tests for RHMI config
@@ -346,24 +338,29 @@ func waitForValidatingWebhook(client dynclient.Client) error {
 	})
 }
 
-func assertNoError(t *testing.T) func(error) {
-	return func(err error) {
+func assertNoError(t *testing.T) func(error) error {
+	return func(err error) error {
 		if err != nil {
-			t.Errorf("Expected error to be nil. Got %v", err)
+			t.Logf("Expected error to be nil. Got %v", err)
+			return err
 		}
+		return nil
 	}
 }
 
-func assertValidationError(t *testing.T) func(error) {
-	return func(err error) {
+func assertValidationError(t *testing.T) func(error) error {
+	return func(err error) error {
 		switch e := err.(type) {
 		case errors.APIStatus:
 			if e.Status().Code != 403 {
-				t.Errorf("Expected error to be \"Forbidden\", but got: %s", e.Status().Reason)
+				t.Logf("Expected error to be \"Forbidden\", but got: %s", e.Status().Reason)
+				return err
 			}
 		default:
-			t.Errorf("Expected error type to be APIStatus type. Got %v", e)
+			t.Logf("Expected error type to be APIStatus type. Got %v", e)
+			return err
 		}
+		return nil
 	}
 }
 

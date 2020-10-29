@@ -1,13 +1,12 @@
 ---
 estimate: 30m
 tags:
-  - happy-path
   - automated
 ---
 
 # C03 - Verify that alerting mechanism works
 
-<https://github.com/integr8ly/integreatly-operator/blob/master/test/common/alerts_mechanism.go>
+https://github.com/integr8ly/integreatly-operator/blob/master/test/common/alerts_mechanism.go
 
 ## Prerequisites
 

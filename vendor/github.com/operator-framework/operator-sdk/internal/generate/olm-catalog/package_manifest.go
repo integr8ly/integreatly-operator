@@ -26,6 +26,7 @@ import (
 	"github.com/operator-framework/api/pkg/validation"
 	"github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/operator-framework/operator-sdk/internal/generate/gen"
+	"github.com/operator-framework/operator-sdk/internal/scaffold"
 	"github.com/operator-framework/operator-sdk/internal/util/fileutil"
 
 	"github.com/ghodss/yaml"
@@ -33,9 +34,7 @@ import (
 )
 
 const (
-	PackageManifestFileExt = ".package.yaml"
-
-	ManifestsDirKey = "manifests"
+	packageManifestFileExt = ".package.yaml"
 )
 
 type pkgGenerator struct {
@@ -60,21 +59,33 @@ func NewPackageManifest(cfg gen.Config, csvVersion, channel string, isDefault bo
 		channelIsDefault: isDefault,
 		fileName:         getPkgFileName(cfg.OperatorName),
 	}
-	if g.Inputs == nil {
-		g.Inputs = map[string]string{}
-	}
-	if manifests, ok := g.Inputs[ManifestsDirKey]; !ok || manifests == "" {
-		g.Inputs[ManifestsDirKey] = filepath.Join(OLMCatalogDir, g.OperatorName)
-	}
+
+	// Pkg manifest generator has no defined inputs
+	g.Inputs = map[string]string{}
+
+	// The olm-catalog directory location depends on where the output directory is set.
 	if g.OutputDir == "" {
-		g.OutputDir = filepath.Join(OLMCatalogDir, g.OperatorName)
+		g.OutputDir = scaffold.DeployDir
 	}
+
 	return g
+}
+
+func isFileExist(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		// TODO: return and handle this error
+		log.Fatalf("Failed to stat %s: %v", path, err)
+	}
+	return true
 }
 
 // getPkgFileName will return the name of the PackageManifestFile
 func getPkgFileName(operatorName string) string {
-	return strings.ToLower(operatorName) + PackageManifestFileExt
+	return strings.ToLower(operatorName) + packageManifestFileExt
 }
 
 func (g pkgGenerator) Generate() error {
@@ -85,11 +96,13 @@ func (g pkgGenerator) Generate() error {
 	if len(fileMap) == 0 {
 		return errors.New("error generating package manifest: no generated file found")
 	}
-	if err = os.MkdirAll(g.OutputDir, fileutil.DefaultDirFileMode); err != nil {
-		return fmt.Errorf("error mkdir %s: %v", g.OutputDir, err)
+	pkgManifestOutputDir := filepath.Join(g.OutputDir, OLMCatalogChildDir, g.OperatorName)
+	if err = os.MkdirAll(pkgManifestOutputDir, fileutil.DefaultDirFileMode); err != nil {
+		return fmt.Errorf("error mkdir %s: %v", pkgManifestOutputDir, err)
 	}
 	for fileName, b := range fileMap {
-		path := filepath.Join(g.OutputDir, fileName)
+		path := filepath.Join(pkgManifestOutputDir, fileName)
+		log.Debugf("Package manifest generator writing %s", path)
 		if err = ioutil.WriteFile(path, b, fileutil.DefaultFileMode); err != nil {
 			return err
 		}
@@ -109,8 +122,7 @@ func (g pkgGenerator) generate() (map[string][]byte, error) {
 	sortChannelsByName(&pkg)
 
 	if err := validatePackageManifest(&pkg); err != nil {
-		log.Error(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	b, err := yaml.Marshal(pkg)
@@ -124,12 +136,13 @@ func (g pkgGenerator) generate() (map[string][]byte, error) {
 	return fileMap, nil
 }
 
-// buildPackageManifest will create a registry.PackageManifest from scratch, or modify
+// buildPackageManifest will create a registry.PackageManifest from scratch, or reads
 // an existing one if found at the expected path.
 func (g pkgGenerator) buildPackageManifest() (registry.PackageManifest, error) {
+	pkgManifestOutputDir := filepath.Join(g.OutputDir, OLMCatalogChildDir, g.OperatorName)
+	path := filepath.Join(pkgManifestOutputDir, g.fileName)
 	pkg := registry.PackageManifest{}
-	path := filepath.Join(g.Inputs[ManifestsDirKey], g.fileName)
-	if _, err := os.Stat(path); err == nil {
+	if isFileExist(path) {
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
 			return pkg, fmt.Errorf("failed to read package manifest %s: %v", path, err)
@@ -137,10 +150,8 @@ func (g pkgGenerator) buildPackageManifest() (registry.PackageManifest, error) {
 		if err = yaml.Unmarshal(b, &pkg); err != nil {
 			return pkg, fmt.Errorf("failed to unmarshal package manifest %s: %v", path, err)
 		}
-	} else if os.IsNotExist(err) {
-		pkg = newPackageManifest(g.OperatorName, g.channel, g.csvVersion)
 	} else {
-		return pkg, fmt.Errorf("error reading package manifest %s: %v", path, err)
+		pkg = newPackageManifest(g.OperatorName, g.channel, g.csvVersion)
 	}
 	return pkg, nil
 }
@@ -175,7 +186,7 @@ func validatePackageManifest(pkg *registry.PackageManifest) error {
 	return nil
 }
 
-// newPackageManifest will return the registry.PackageManifest populated
+// newPackageManifest will return the registry.PackageManifest populated.
 func newPackageManifest(operatorName, channelName, version string) registry.PackageManifest {
 	// Take the current CSV version to be the "alpha" channel, as an operator
 	// should only be designated anything more stable than "alpha" by a human.

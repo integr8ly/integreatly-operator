@@ -4,6 +4,8 @@ import (
 	upsv1alpha1 "github.com/aerogear/unifiedpush-operator/pkg/apis/push/v1alpha1"
 	monitoring "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 
+	envoyconfigv1 "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	discoveryservicev1 "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
@@ -14,6 +16,7 @@ import (
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 
+	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
 	apicurito "github.com/apicurio/apicurio-operators/apicurito/pkg/apis/apicur/v1alpha1"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
@@ -68,6 +71,7 @@ func init() {
 		solutionExplorerv1alpha1.SchemeBuilder.AddToScheme,
 		grafanav1alpha1.SchemeBuilder.AddToScheme,
 		crov1.SchemeBuilder.AddToScheme,
+		apicurioregistry.SchemeBuilder.AddToScheme,
 		apicurito.SchemeBuilder.AddToScheme,
 		routev1.AddToScheme,
 		monitoring.SchemeBuilder.AddToScheme,
@@ -83,5 +87,7 @@ func init() {
 		prometheusmonitoringv1.SchemeBuilder.AddToScheme,
 		projectv1.AddToScheme,
 		consolev1.AddToScheme,
+		envoyconfigv1.SchemeBuilder.AddToScheme,
+		discoveryservicev1.SchemeBuilder.AddToScheme,
 	)
 }

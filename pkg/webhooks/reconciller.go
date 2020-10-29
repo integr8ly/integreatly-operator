@@ -3,6 +3,7 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	"k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,7 +79,7 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 				ClientConfig: v1beta1.WebhookClientConfig{
 					CABundle: caBundle,
 					Service: &v1beta1.ServiceReference{
-						Namespace: "redhat-rhmi-operator",
+						Namespace: global.NamespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,
@@ -129,7 +130,7 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, cl
 				ClientConfig: v1beta1.WebhookClientConfig{
 					CABundle: caBundle,
 					Service: &v1beta1.ServiceReference{
-						Namespace: "redhat-rhmi-operator",
+						Namespace: global.NamespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,

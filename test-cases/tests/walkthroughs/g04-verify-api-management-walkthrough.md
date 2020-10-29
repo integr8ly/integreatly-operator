@@ -1,7 +1,11 @@
 ---
+components:
+  - product-fuse
+environments:
+  - osd-fresh-install
 estimate: 45m
-require:
-  - G03
+targets:
+  - 2.8.0
 ---
 
 # G04 - Verify API management walkthrough
@@ -25,9 +29,5 @@ Important Note:
 
 ## Steps
 
-1. Follow all steps in the solution-pattern.
-   1. The Red Hat 3scale API Management Platform Dashboard shows the Audience and APIs panels.
-   2. The i-greeting-integration-test-user\*\* API is visible and active in the PRODUCTS tab.
-   3. The staging environment information URL in INTEGRATION/CONFIGURATION/ENVIRONMENST matches the pattern https://wt4-test-user10-3scale.apps.namespace.s1.devshift.org
-   4. user_key=testkey? is shown INTEGRATION/CONFIGURATION/'STAGING ENVIRONMENT'/'Example curl for testing'
-   5. The message 'Hello from, OpenShift appears in your Slack channel on completion of the walkthrough.
+1. Login to the Solution Explorer as `test-user-XX` and confirm that `All services` tab is selected by default.
+2. Make sure that you can complete all of the walkthrough steps and that they are accurate, without any spelling mistakes and up to date

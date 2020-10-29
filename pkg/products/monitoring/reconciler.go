@@ -45,11 +45,11 @@ const (
 	defaultInstallationNamespace = "middleware-monitoring"
 	defaultMonitoringName        = "middleware-monitoring"
 	packageName                  = "monitoring"
-	openshiftMonitoringNamespace = "openshift-monitoring"
+	OpenshiftMonitoringNamespace = "openshift-monitoring"
 	grafanaDataSourceSecretName  = "grafana-datasources"
 	grafanaDataSourceSecretKey   = "prometheus.yaml"
 	defaultBlackboxModule        = "http_2xx"
-	manifestPackagae             = "integreatly-monitoring"
+	manifestPackage              = "integreatly-monitoring"
 
 	// alert manager configuration
 	alertManagerRouteName            = "alertmanager-route"
@@ -126,11 +126,11 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		logrus.Infof("Phase: Monitoring ReconcileFinalizer")
-
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
+		_, err := resources.GetNS(ctx, operatorNamespace, serverClient)
 		if k8serr.IsNotFound(err) {
 			//namespace is gone, return complete
 			return integreatlyv1alpha1.PhaseCompleted, nil
@@ -152,7 +152,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			for _, bbt := range blackboxtargets.Items {
 				logrus.Infof("Phase: Monitoring ReconcileFinalizer try delete blackboxtarget %s", bbt.Name)
 				b := &monitoring.BlackboxTarget{}
-				err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: r.Config.GetOperatorNamespace()}, b)
+				err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: bbt.Name, Namespace: operatorNamespace}, b)
 				if k8serr.IsNotFound(err) {
 					continue
 				}
@@ -169,7 +169,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 
 		m := &monitoring.ApplicationMonitoring{}
-		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: r.Config.GetOperatorNamespace()}, m)
+		err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultMonitoringName, Namespace: operatorNamespace}, m)
 		if err != nil && !k8serr.IsNotFound(err) {
 			logrus.Infof("Phase: Monitoring ReconcileFinalizer error fetch ApplicationMonitoring CR")
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get %s application monitoring custom resource: %w", defaultMonitoringName, err)
@@ -190,7 +190,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -203,20 +203,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, r.Config.GetOperatorNamespace(), serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", r.Config.GetOperatorNamespace()), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.MonitoringSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackagae}, []string{r.Config.GetOperatorNamespace()}, backup.NewNoopBackupExecutor(), serverClient)
+	// In this case due to monitoring reconciler is always installed in the
+	// same namespace as the operatorNamespace we pass operatorNamespace as the
+	// productNamepace too
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, operatorNamespace, operatorNamespace)
 	logrus.Infof("Phase: %s ReconcileSubscription", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.MonitoringSubscriptionName), err)
@@ -229,6 +226,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
 	}
+
+	/*phase, err = r.reconcilePodPriority(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+	*/
 
 	phase, err = r.reconcileAlertManagerConfigSecret(ctx, serverClient)
 	logrus.Infof("Phase %s reconcileAlertManagerConfigSecret", phase)
@@ -274,32 +279,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileBackupMonitoringAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcilePrometheusRule", phase)
-
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile backup monitroing alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileKubeStateMetricsAlerts", phase)
-
+	// creates an alert to check for the presents of sendgrid smtp secret
+	phase, err = resources.CreateSmtpSecretExists(ctx, serverClient, installation)
+	logrus.Infof("Phase: %s CreateSmtpSecretExistsRule", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMetricsAlerts", err)
-		return phase, err
-	}
-	phase, err = r.reconcileKubeStateMetricsMonitoringAlerts(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileKubeStateMonitoringMetricsAlerts", phase)
-
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile reconcileKubeStateMonitoringMetricsAlerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile SendgridSmtpSecretExists alert", err)
 		return phase, err
 	}
 
@@ -343,6 +334,39 @@ func (r *Reconciler) createFederationNamespace(ctx context.Context, serverClient
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+/*
+func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	alertmanagerStatefulSet := &k8sappsv1.StatefulSet{}
+	_, err :=  resources.ReconcilePodPriority(
+		ctx,
+		serverClient,
+		k8sclient.ObjectKey{
+			Name:      "alertmanager-application-monitoring",
+			Namespace: r.Config.GetNamespace(),
+		},
+		resources.SelectFromStatefulSet,
+		alertmanagerStatefulSet,
+	)
+
+	prometheusStatefulSet := &k8sappsv1.StatefulSet{}
+	_, err =  resources.ReconcilePodPriority(
+		ctx,
+		serverClient,
+		k8sclient.ObjectKey{
+			Name:      "alertmanager-application-monitoring",
+			Namespace: r.Config.GetNamespace(),
+		},
+		resources.SelectFromStatefulSet,
+		prometheusStatefulSet,
+	)
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+*/
 // Creates a service monitor that federates metrics about alerts to the cluster
 // monitoring stack
 func (r *Reconciler) reconcileFederation(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -477,7 +501,7 @@ func (r *Reconciler) reconcileScrapeConfigs(ctx context.Context, serverClient k8
 
 func (r *Reconciler) reconcileDashboards(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 
-	for _, dashboard := range r.Config.GetDashboards() {
+	for _, dashboard := range r.Config.GetDashboards(integreatlyv1alpha1.InstallationType(r.installation.Spec.Type)) {
 		err := r.reconcileGrafanaDashboards(ctx, serverClient, dashboard)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update grafana dashboard %s: %w", dashboard, err)
@@ -592,7 +616,7 @@ func (r *Reconciler) readFederatedPrometheusCredentials(ctx context.Context, ser
 	secret := &corev1.Secret{}
 
 	selector := k8sclient.ObjectKey{
-		Namespace: openshiftMonitoringNamespace,
+		Namespace: OpenshiftMonitoringNamespace,
 		Name:      grafanaDataSourceSecretName,
 	}
 
@@ -632,7 +656,7 @@ func (r *Reconciler) populateParams(ctx context.Context, serverClient k8sclient.
 
 	r.extraParams["threescale_namespace"] = threeScaleConfig.GetNamespace()
 	r.extraParams["namespace-prefix"] = r.installation.Spec.NamespacePrefix
-	r.extraParams["openshift_monitoring_namespace"] = openshiftMonitoringNamespace
+	r.extraParams["openshift_monitoring_namespace"] = OpenshiftMonitoringNamespace
 	r.extraParams["openshift_monitoring_prometheus_username"] = datasources.DataSources[0].BasicAuthUser
 	r.extraParams["openshift_monitoring_prometheus_password"] = datasources.DataSources[0].BasicAuthPassword
 
@@ -659,29 +683,29 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
 	}
 
-	// handle pagerduty credentials
-	pagerdutySecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret, Namespace: rhmiOperatorNs}, pagerdutySecret); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
-	}
-	if len(pagerdutySecret.Data["serviceKey"]) == 0 {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("serviceKey is undefined in pager duty secret")
+	//Get pagerduty credentials
+	pagerDutySecret, err := r.getPagerDutySecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	// handle dead mans snitch credentials
-	dmsSecret := &corev1.Secret{}
-	if err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret, Namespace: rhmiOperatorNs}, dmsSecret); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
-	}
-	if len(dmsSecret.Data["url"]) == 0 {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("url is undefined in dead mans switch secret")
+	//Get dms credentials
+	dmsSecret, err := r.getDMSSecret(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	// only set the to address to a real value for managed deployments
-	smtpToAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
-	smtpToAddressCRDVal := r.installation.Spec.AlertingEmailAddress
-	if smtpToAddressCRDVal != "" {
-		smtpToAddress = smtpToAddressCRDVal
+	smtpToSREAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToSREAddressCRVal := r.installation.Spec.AlertingEmailAddresses.CSSRE
+	if smtpToSREAddressCRVal != "" {
+		smtpToSREAddress = smtpToSREAddressCRVal
+	}
+
+	smtpToBUAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToBUAddressCRVal := r.installation.Spec.AlertingEmailAddresses.BusinessUnit
+	if smtpToBUAddressCRVal != "" {
+		smtpToBUAddress = smtpToBUAddressCRVal
 	}
 
 	// parse the config template into a secret object
@@ -691,9 +715,10 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
 		"SMTPUsername":        string(smtpSecret.Data["username"]),
 		"SMTPPassword":        string(smtpSecret.Data["password"]),
-		"SMTPToAddress":       smtpToAddress,
-		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
-		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
+		"SMTPToSREAddress":    smtpToSREAddress,
+		"SMTPToBUAddress":     smtpToBUAddress,
+		"PagerDutyServiceKey": pagerDutySecret,
+		"DeadMansSnitchURL":   dmsSecret,
 	})
 	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
@@ -769,4 +794,75 @@ func CreateBlackboxTarget(ctx context.Context, name string, target monitoring.Bl
 	}
 
 	return nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.MonitoringSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		backup.NewNoopBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
+
+}
+
+func (r *Reconciler) getPagerDutySecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
+
+	var secret string
+
+	pagerdutySecret := &corev1.Secret{}
+	err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.PagerDutySecret,
+		Namespace: r.installation.Namespace}, pagerdutySecret)
+
+	if err != nil {
+		return "", fmt.Errorf("could not obtain pagerduty credentials secret: %w", err)
+	}
+
+	if len(pagerdutySecret.Data["PAGERDUTY_KEY"]) != 0 {
+		secret = string(pagerdutySecret.Data["PAGERDUTY_KEY"])
+	} else if len(pagerdutySecret.Data["serviceKey"]) != 0 {
+		secret = string(pagerdutySecret.Data["serviceKey"])
+	}
+
+	if secret == "" {
+		return "", fmt.Errorf("secret key is undefined in pager duty secret")
+	}
+
+	return secret, nil
+}
+
+func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
+
+	var secret string
+
+	dmsSecret := &corev1.Secret{}
+	err := serverClient.Get(ctx, types.NamespacedName{Name: r.installation.Spec.DeadMansSnitchSecret,
+		Namespace: r.installation.Namespace}, dmsSecret)
+
+	if err != nil {
+		return "", fmt.Errorf("could not obtain dead mans snitch credentials secret: %w", err)
+	}
+
+	if len(dmsSecret.Data["SNITCH_URL"]) != 0 {
+		secret = string(dmsSecret.Data["SNITCH_URL"])
+	} else if len(dmsSecret.Data["url"]) != 0 {
+		secret = string(dmsSecret.Data["url"])
+	} else {
+		return "", fmt.Errorf("url is undefined in dead mans snitch secret")
+	}
+
+	return secret, nil
 }

@@ -11,11 +11,6 @@ const (
 	KeycloakProbesName                   = ApplicationName + "-probes"
 	PostgresqlDeploymentComponent        = "database"
 	PostgresqlServiceName                = ApplicationName + "-postgresql"
-	PostgresqlImage                      = "postgres:11.5"
-	KeycloakImage                        = "quay.io/keycloak/keycloak:9.0.2"
-	KeycloakInitContainerImage           = "quay.io/keycloak/keycloak-init-container:master"
-	RHSSOImage                           = "registry.access.redhat.com/redhat-sso-7/sso73-openshift:1.0-31"
-	BackupImage                          = "quay.io/integreatly/backup-container:1.0.10"
 	KeycloakDiscoveryServiceName         = ApplicationName + "-discovery"
 	KeycloakDeploymentName               = ApplicationName
 	KeycloakDeploymentComponent          = "keycloak"
@@ -31,7 +26,7 @@ const (
 	// Required by the Integreately Backup Image
 	DatabaseSecretDatabaseProperty = "POSTGRES_DATABASE" // nolint
 	// Required by the Integreately Backup Image
-	DatabaseSecretSuperuserProperty       = "POSTGRES_SUPERUSER"        // nolint
+	DatabaseSecretVersionProperty         = "POSTGRES_VERSION"          // nolint
 	DatabaseSecretExternalAddressProperty = "POSTGRES_EXTERNAL_ADDRESS" // nolint
 	DatabaseSecretExternalPortProperty    = "POSTGRES_EXTERNAL_PORT"    // nolint
 	KeycloakServicePort                   = 8443
@@ -42,6 +37,7 @@ const (
 	LivenessProbeProperty                 = "liveness_probe.sh"
 	ReadinessProbeProperty                = "readiness_probe.sh"
 	RouteLoadBalancingStrategy            = "source"
+	IngressDefaultHost                    = "keycloak.local"
 	PostgresqlBackupServiceAccountName    = "keycloak-operator"
 	KeycloakExtensionEnvVar               = "KEYCLOAK_EXTENSIONS"
 	KeycloakExtensionPath                 = "/opt/jboss/keycloak/providers"

@@ -26,7 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -39,7 +41,7 @@ const (
 	DefaultWaitForMaintenance = true
 
 	// Maximum allowed number of days to schedule an upgrade via `NotBeforeDays`
-	MaxUpgradeDays = 14
+	// MaxUpgradeDays = 14
 )
 
 // RHMIConfigSpec defines the desired state of RHMIConfig
@@ -59,9 +61,9 @@ type RHMIConfigStatus struct {
 	//			duration: "6hrs"
 	//		upgrade:
 	//			window: "3 Jan 1980 - 17 Jan 1980"
-	Maintenance   RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
-	Upgrade       RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
-	TargetVersion string                      `json:"targetVersion,omitempty"`
+	Maintenance      RHMIConfigStatusMaintenance `json:"maintenance,omitempty"`
+	Upgrade          RHMIConfigStatusUpgrade     `json:"upgrade,omitempty"`
+	UpgradeAvailable *UpgradeAvailable           `json:"upgradeAvailable,omitempty"`
 }
 
 type RHMIConfigStatusMaintenance struct {
@@ -103,6 +105,8 @@ type Upgrade struct {
 	// +optional
 	// +nullable
 	NotBeforeDays *int `json:"notBeforeDays,omitempty"`
+
+	Schedule *bool `json:"schedule,omitempty"`
 }
 
 type Maintenance struct {
@@ -115,6 +119,15 @@ type Backup struct {
 	// apply-on: string, day time.
 	// Format: "DDD hh:mm" > "wed 20:00". UTC time
 	ApplyOn string `json:"applyOn,omitempty"`
+}
+
+type UpgradeAvailable struct {
+	// Time of new update becoming available
+	// Format: "DDD hh:mm" > "sun 23:00". UTC time
+	AvailableAt v1.Time `json:"availableAt,omitempty" protobuf:"bytes,8,opt,name=availableAt"`
+
+	// target-version: string, version of incoming RHMI Operator
+	TargetVersion string `json:"targetVersion,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -156,9 +169,6 @@ func (c *RHMIConfig) ValidateUpdate(old runtime.Object) error {
 		if notBeforeDays < 0 {
 			return errors.New("Value of spec.Upgrade.NotBeforeDays must be greater or equal to zero")
 		}
-		if notBeforeDays > MaxUpgradeDays {
-			return fmt.Errorf("Value of spec.Upgrade.NotBeforeDays must be less than or equal to %d", MaxUpgradeDays)
-		}
 	}
 
 	return nil
@@ -192,7 +202,7 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 		rhmiConfig.Annotations = map[string]string{}
 	}
 
-	if request.UserInfo.Username != "system:serviceaccount:redhat-rhmi-operator:rhmi-operator" {
+	if request.UserInfo.Username != "system:serviceaccount:"+global.NamespacePrefix+"operator:rhmi-operator" {
 		rhmiConfig.Annotations["lastEditUsername"] = request.UserInfo.Username
 		rhmiConfig.Annotations["lastEditTimestamp"] = time.Now().UTC().Format(DateFormat)
 	}
@@ -241,6 +251,7 @@ func (h *rhmiConfigMutatingHandler) Handle(ctx context.Context, request admissio
 func (u *Upgrade) DefaultIfEmpty() {
 	u.NotBeforeDays = either(u.NotBeforeDays, DefaultNotBeforeDays).(*int)
 	u.WaitForMaintenance = either(u.WaitForMaintenance, DefaultWaitForMaintenance).(*bool)
+	u.Schedule = either(u.Schedule, false).(*bool)
 }
 
 func init() {

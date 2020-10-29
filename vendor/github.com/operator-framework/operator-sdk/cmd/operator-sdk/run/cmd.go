@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	olmcatalog "github.com/operator-framework/operator-sdk/internal/generate/olm-catalog"
 	olmoperator "github.com/operator-framework/operator-sdk/internal/olm/operator"
-	olmcatalog "github.com/operator-framework/operator-sdk/internal/scaffold/olm-catalog"
 	k8sinternal "github.com/operator-framework/operator-sdk/internal/util/k8sutil"
 	"github.com/operator-framework/operator-sdk/internal/util/projutil"
 	aoflags "github.com/operator-framework/operator-sdk/pkg/ansible/flags"
@@ -33,7 +33,9 @@ import (
 type runCmd struct {
 	// Common options.
 	kubeconfig string
-	namespace  string
+	//TODO: remove namespace flag before 1.0.0
+	//namespace is deprecated
+	namespace string
 
 	// Run type.
 	olm, local bool
@@ -56,6 +58,14 @@ func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run an Operator in a variety of environments",
+		Long: `This command will run or deploy your Operator in two different modes: locally
+and using OLM. These modes are controlled by setting --local and --olm run mode
+flags. Each run mode has a separate set of flags that configure 'run' for that
+mode. Run 'operator-sdk run --help' for more information on these flags.
+
+Read more about the --olm run mode and configuration options here:
+https://github.com/operator-framework/operator-sdk/blob/master/doc/user/olm-catalog/olm-cli.md
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := c.checkRunType(); err != nil {
 				return err
@@ -65,7 +75,15 @@ func NewCmd() *cobra.Command {
 			switch {
 			case c.olm:
 				c.olmArgs.KubeconfigPath = c.kubeconfig
-				c.olmArgs.OperatorNamespace = c.namespace
+				// operator-namespace flag is not set
+				// use default namespace from kubeconfig to deploy operator resources
+				if !cmd.Flags().Changed("operator-namespace") {
+					_, defaultNamespace, err := k8sinternal.GetKubeconfigAndNamespace(c.kubeconfig)
+					if err != nil {
+						return fmt.Errorf("error getting kubeconfig and default namespace: %v", err)
+					}
+					c.olmArgs.OperatorNamespace = defaultNamespace
+				}
 				if c.olmArgs.ManifestsDir == "" {
 					operatorName := filepath.Base(projutil.MustGetwd())
 					c.olmArgs.ManifestsDir = filepath.Join(olmcatalog.OLMCatalogDir, operatorName)
@@ -74,16 +92,25 @@ func NewCmd() *cobra.Command {
 					log.Fatalf("Failed to run operator using OLM: %v", err)
 				}
 			case c.local:
+				//TODO: remove namespace flag before 1.0.0
+				// set --watch-namespace flag if the --namespace flag is set
+				// (only if --watch-namespace flag is not set)
+				if cmd.Flags().Changed("namespace") {
+					log.Info("--namespace is deprecated; use --watch-namespace instead.")
+					if !cmd.Flags().Changed("watch-namespace") {
+						err := cmd.Flags().Set("watch-namespace", c.namespace)
+						return err
+					}
+				}
 				// Get default namespace to watch if unset.
-				if !cmd.Flags().Changed("namespace") {
+				if !cmd.Flags().Changed("watch-namespace") {
 					_, defaultNamespace, err := k8sinternal.GetKubeconfigAndNamespace(c.kubeconfig)
 					if err != nil {
 						return fmt.Errorf("error getting kubeconfig and default namespace: %v", err)
 					}
-					c.namespace = defaultNamespace
+					c.localArgs.watchNamespace = defaultNamespace
 				}
 				c.localArgs.kubeconfig = c.kubeconfig
-				c.localArgs.namespace = c.namespace
 				if err := c.localArgs.run(); err != nil {
 					log.Fatalf("Failed to run operator locally: %v", err)
 				}
@@ -98,9 +125,11 @@ func NewCmd() *cobra.Command {
 	cmd.Flags().StringVar(&c.kubeconfig, "kubeconfig", "",
 		"The file path to kubernetes configuration file. Defaults to location "+
 			"specified by $KUBECONFIG, or to default file rules if not set")
+	// Deprecated: namespace exists for historical compatibility. Use watch-namespace instead.
+	//TODO: remove namespace flag before 1.0.0
 	cmd.Flags().StringVar(&c.namespace, "namespace", "",
-		"The namespace where the operator watches for changes.")
-
+		"(Deprecated: use --watch-namespace instead.)"+
+			"The namespace where the operator watches for changes.")
 	// 'run --olm' and related flags.
 	cmd.Flags().BoolVar(&c.olm, "olm", false,
 		"The operator to be run will be managed by OLM in a cluster. "+

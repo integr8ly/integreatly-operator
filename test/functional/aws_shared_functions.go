@@ -2,8 +2,12 @@ package functional
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,42 +17,84 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	awsCredsNamespace  = "redhat-rhmi-operator"
-	awsCredsSecretName = "cloud-resources-aws-credentials"
+	awsCredsNamespace  = "kube-system"
+	awsCredsSecretName = "aws-creds"
 )
 
-var (
-	// expected postgres resources provisioned per product
-	expectedPostgres = []string{
-		fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.FusePostgresPrefix, common.InstallationName),
+func getExpectedPostgres(installType string, installationName string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		// expected postgres resources provisioned per product
+		return []string{
+			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+		}
+	} else {
+		// expected postgres resources provisioned per product
+		return []string{
+			fmt.Sprintf("%s%s", constants.CodeReadyPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.RHSSOUserProstgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.UPSPostgresPrefix, installationName),
+			fmt.Sprintf("%s%s", constants.FusePostgresPrefix, installationName),
+		}
 	}
+}
 
+func getExpectedRedis(installType string, installationName string) []string {
 	// expected redis resources provisioned per product
-	expectedRedis = []string{
-		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, common.InstallationName),
-		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, common.InstallationName),
+	commonRedis := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, installationName),
+		fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, installationName),
 	}
-)
+
+	managedApiRedis := []string{
+		fmt.Sprintf("%s%s", constants.RateLimitRedisPrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(commonRedis, managedApiRedis...)
+	} else {
+		return commonRedis
+	}
+}
+
+func getExpectedBlobStorage(installType string, installationName string) []string {
+	// common blob storage
+	commonBlobStorage := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	// rhmi blob storage
+	rhmiBlobStorage := []string{
+		fmt.Sprintf("%s%s", constants.ThreeScaleBlobStoragePrefix, installationName),
+	}
+
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return commonBlobStorage
+	} else {
+		return append(commonBlobStorage, rhmiBlobStorage...)
+	}
+}
 
 /*
 	Each resource provisioned contains an annotation with the resource ID
 	This function iterates over a list of expected resource CR's
 	Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
-func GetElasticacheResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+func GetElasticacheResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string
+
+	expectedRedis := getExpectedRedis(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedRedis {
 		// get elasticache cr
@@ -76,9 +122,11 @@ func GetElasticacheResourceIDs(ctx context.Context, client client.Client) ([]str
 	This function iterates over a list of expected resource CR's
 	Returns a list of resource ID's, these ID's can be used when testing AWS resources
 */
-func GetRDSResourceIDs(ctx context.Context, client client.Client) ([]string, []string) {
+func GetRDSResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
 	var foundErrors []string
 	var foundResourceIDs []string
+
+	expectedPostgres := getExpectedPostgres(rhmi.Spec.Type, rhmi.Name)
 
 	for _, r := range expectedPostgres {
 		// get rds cr
@@ -98,6 +146,34 @@ func GetRDSResourceIDs(ctx context.Context, client client.Client) ([]string, []s
 		// populate the array
 		foundResourceIDs = append(foundResourceIDs, resourceID)
 	}
+	return foundResourceIDs, foundErrors
+}
+
+func GetS3BlobStorageResourceIDs(ctx context.Context, client client.Client, rhmi *integreatlyv1alpha1.RHMI) ([]string, []string) {
+	var foundErrors []string
+	var foundResourceIDs []string
+
+	expectedBlobStorage := getExpectedBlobStorage(rhmi.Spec.Type, rhmi.Name)
+
+	for _, r := range expectedBlobStorage {
+		// get rds cr
+		blobStorage := &crov1.BlobStorage{}
+		if err := client.Get(ctx, types.NamespacedName{Namespace: common.RHMIOperatorNamespace, Name: r}, blobStorage); err != nil {
+			foundErrors = append(foundErrors, fmt.Sprintf("\nfailed to find %s blobStorage cr : %v", r, err))
+		}
+		// ensure phase is completed
+		if blobStorage.Status.Phase != croTypes.PhaseComplete {
+			foundErrors = append(foundErrors, fmt.Sprintf("\nfound %s blobStorage not ready with phase: %s, message: %s", r, blobStorage.Status.Phase, blobStorage.Status.Message))
+		}
+		// return resource id
+		resourceID, err := getCROAnnotation(blobStorage)
+		if err != nil {
+			foundErrors = append(foundErrors, fmt.Sprintf("\n%s blobStorage cr does not contain a resource id annotation: %v", r, err))
+		}
+		// populate the array
+		foundResourceIDs = append(foundResourceIDs, resourceID)
+	}
+
 	return foundResourceIDs, foundErrors
 }
 
@@ -156,6 +232,7 @@ func getAWSCredentials(ctx context.Context, client client.Client) (string, strin
 	}
 	awsAccessKeyID := string(secret.Data["aws_access_key_id"])
 	awsSecretAccessKey := string(secret.Data["aws_secret_access_key"])
+
 	if awsAccessKeyID == "" && awsSecretAccessKey == "" {
 		return "", "", errors.New("aws credentials secret can't be empty")
 	}
@@ -175,4 +252,52 @@ func getCROAnnotation(instance metav1.Object) (string, error) {
 		}
 	}
 	return "", errors.New(fmt.Sprintf("no resource identifier found for resource %s", instance.GetName()))
+}
+
+func getStrategyForResource(configMap *v1.ConfigMap, resourceType, tier string) (*strategyMap, error) {
+	rawStrategyMapping := configMap.Data[resourceType]
+	if rawStrategyMapping == "" {
+		return nil, fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
+	}
+	var strategyMapping map[string]*strategyMap
+	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	if strategyMapping[tier] == nil {
+		return nil, fmt.Errorf("no strategy found for deployment type: %s and deployment tier: %s", resourceType, tier)
+	}
+	return strategyMapping[tier], nil
+}
+
+func putStrategyForResource(configMap *v1.ConfigMap, stratMap *strategyMap, resourceType, tier string) error {
+	rawStrategyMapping := configMap.Data[resourceType]
+	if rawStrategyMapping == "" {
+		return fmt.Errorf("aws strategy for resource type: %s is not defined", resourceType)
+	}
+	var strategyMapping map[string]*strategyMap
+	if err := json.Unmarshal([]byte(rawStrategyMapping), &strategyMapping); err != nil {
+		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	strategyMapping[tier] = stratMap
+	updatedRawStrategyMapping, err := json.Marshal(strategyMapping)
+	if err != nil {
+		return fmt.Errorf("failed to marshal strategy mapping for resource type %s: %v", resourceType, err)
+	}
+	configMap.Data[resourceType] = string(updatedRawStrategyMapping)
+	return nil
+}
+
+// GetClustersAvailableZones returns a map containing zone names that are currently available
+func GetClustersAvailableZones(nodes *v1.NodeList) map[string]bool {
+	zones := make(map[string]bool)
+	for _, node := range nodes.Items {
+		if isNodeWorkerAndReady(node) {
+			for labelName, labelValue := range node.Labels {
+				if labelName == "topology.kubernetes.io/zone" {
+					zones[labelValue] = true
+				}
+			}
+		}
+	}
+	return zones
 }

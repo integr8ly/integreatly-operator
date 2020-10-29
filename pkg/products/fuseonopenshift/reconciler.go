@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -29,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -97,20 +97,20 @@ var (
 
 type Reconciler struct {
 	*resources.Reconciler
-	coreClient    kubernetes.Interface
 	Config        *config.FuseOnOpenshift
 	ConfigManager config.ConfigReadWriter
-	httpClient    http.Client
+	httpClient    *http.Client
 	logger        *logrus.Entry
 	recorder      record.EventRecorder
 	installation  *integreatlyv1alpha1.RHMI
+	baseURL       string
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, httpClient *http.Client, baseURL string) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
@@ -125,8 +125,15 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
-	var httpClient http.Client
+	httpClient.Timeout = time.Second * 20
+	httpClient.Transport = &http.Transport{DisableKeepAlives: true, IdleConnTimeout: time.Second * 20}
 
+	url := ""
+	if baseURL == "" {
+		url = TemplatesBaseURL
+	} else {
+		url = baseURL
+	}
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
@@ -135,6 +142,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 		installation:  installation,
+		baseURL:       url,
 	}, nil
 }
 
@@ -206,7 +214,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 
 		for _, fn := range fileNames {
 
-			fileURL := TemplatesBaseURL + fn
+			fileURL := r.baseURL + fn
 
 			content, err := r.getFileContentFromURL(fileURL)
 			if err != nil {
@@ -254,7 +262,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8s
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to unmarshal contents of %s: %w", imageStreamFileName, err)
 	}
 
-	// The content of the imagestream file is a an object of kind List
+	// The content of the imagestream file is an object of kind List
 	// Create the imagestreams seperately
 	isList := r.getResourcesFromList(fileContent)
 	imageStreams := make(map[string]runtime.Object)
@@ -391,6 +399,7 @@ func (r *Reconciler) createResourceIfNotExist(ctx context.Context, serverClient 
 
 func (r *Reconciler) getFileContentFromURL(url string) (io.ReadCloser, error) {
 	resp, err := r.httpClient.Get(url)
+
 	if err != nil {
 		return nil, err
 	}

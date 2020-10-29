@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	"time"
+
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -24,7 +26,7 @@ var (
 
 // Add creates a new User Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, products []string) error {
+func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
@@ -62,6 +64,7 @@ func (r *ReconcileUser) Reconcile(request reconcile.Request) (reconcile.Result, 
 
 	// new client to avoid caching issues
 	restConfig := controllerruntime.GetConfigOrDie()
+	restConfig.Timeout = time.Second * 10
 	c, _ := k8sclient.New(restConfig, k8sclient.Options{})
 	ctx := context.TODO()
 

@@ -16,8 +16,8 @@ var (
 			Name: "integreatly_version_info",
 			Help: "Integreatly operator information",
 			ConstLabels: prometheus.Labels{
-				"operator_version": version.Version,
-				"version":          version.IntegreatlyVersion,
+				"operator_version": version.GetVersion(),
+				"version":          version.GetVersion(),
 			},
 		},
 	)

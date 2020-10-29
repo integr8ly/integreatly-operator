@@ -1,33 +1,30 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- mikenairn
+- laurafitzgerald
 - maleck13
-- philbrookes
-- davidffrench
 - matskiv
-- david-martin
-- aidenkeating
-- wei-lee
+- philbrookes
+- pmccarthy
 
 reviewers:
-- mikenairn
-- maleck13
-- philbrookes
 - aidenkeating
-- dimitraz
-- matskiv
-- JameelB
-- trepel
 - austincunningham
-- pmccarthy
+- briangallagher
 - damienomurchu
+- davidffrench
+- david-martin
+- dimitraz
+- grdryn
+- JameelB
 - jjaferson
 - kevfan
-- david-martin
-- davidffrench
+- laurafitzgerald
+- maleck13
+- matskiv
+- mikenairn
 - pawelpaszki
-- grdryn
-- briangallagher
-- darahayes
+- philbrookes
+- pmccarthy
+- trepel
 - wei-lee

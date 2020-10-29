@@ -4,24 +4,27 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/integr8ly/integreatly-operator/pkg/products/marin3r"
+	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoringspec"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
-
-	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
 	"net/http"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqstreams"
+	"github.com/integr8ly/integreatly-operator/pkg/products/apicurioregistry"
+	"github.com/integr8ly/integreatly-operator/pkg/products/apicurito"
 	"github.com/integr8ly/integreatly-operator/pkg/products/cloudresources"
 	"github.com/integr8ly/integreatly-operator/pkg/products/codeready"
 	"github.com/integr8ly/integreatly-operator/pkg/products/datasync"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuse"
 	"github.com/integr8ly/integreatly-operator/pkg/products/fuseonopenshift"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
+	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssouser"
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
@@ -93,7 +96,15 @@ type Interface interface {
 
 func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
-	oauthResolver := resources.NewOauthResolver(http.DefaultClient)
+	oauthHttpClient := &http.Client{
+		Timeout: time.Second * 10,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			IdleConnTimeout:   time.Second * 10,
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+		},
+	}
+	oauthResolver := resources.NewOauthResolver(oauthHttpClient)
 	oauthResolver.Host = rc.Host
 	recorder := mgr.GetEventRecorderFor(string(product))
 
@@ -102,6 +113,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -111,6 +123,7 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		}
 	case integreatlyv1alpha1.ProductRHSSOUser:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -123,11 +136,12 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 	case integreatlyv1alpha1.ProductFuse:
 		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "")
 	case integreatlyv1alpha1.ProductAMQOnline:
 		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
@@ -139,22 +153,29 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductApicurioRegistry:
+		reconciler, err = apicurioregistry.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductApicurito:
 		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
+		client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
 
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
+		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
 
 		httpc := &http.Client{
+			Timeout: time.Second * 10,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
+				DisableKeepAlives: true,
+				IdleConnTimeout:   time.Second * 10,
+				TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
 			},
 		}
 
@@ -170,6 +191,10 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder)
 	case integreatlyv1alpha1.ProductDataSync:
 		reconciler, err = datasync.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductMarin3r:
+		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder)
+	case integreatlyv1alpha1.ProductGrafana:
+		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

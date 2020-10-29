@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"testing"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
 	threescalev1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
@@ -20,7 +21,6 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -110,7 +110,7 @@ func TestReconciler_config(t *testing.T) {
 			ExpectError:    true,
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return errors.New("dummy")
 				},
 			},
@@ -283,6 +283,28 @@ func TestReconciler_handleProgress(t *testing.T) {
 		})
 	}
 
+	mixedReadinessPods := []runtime.Object{}
+	for i := 0; i < 8; i++ {
+		readyCondition := corev1.ConditionFalse
+		if (i % 2) == 0 {
+			readyCondition = corev1.ConditionTrue
+		}
+		mixedReadinessPods = append(mixedReadinessPods, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%d", constants.AMQStreamsSubscriptionName, i),
+				Namespace: defaultInstallationNamespace,
+			},
+			Status: corev1.PodStatus{
+				Conditions: []corev1.PodCondition{
+					corev1.PodCondition{
+						Type:   corev1.ContainersReady,
+						Status: readyCondition,
+					},
+				},
+			},
+		})
+	}
+
 	cases := []struct {
 		Name           string
 		ExpectError    bool
@@ -320,6 +342,14 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:           "test unready pods returns phase in progress",
 			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, unreadyPods...),
+			FakeConfig:     basicConfigMock(),
+			Installation:   &integreatlyv1alpha1.RHMI{},
+			Recorder:       setupRecorder(),
+		},
+		{
+			Name:           "test mixed readiness pods returns phase in progress",
+			ExpectedStatus: integreatlyv1alpha1.PhaseInProgress,
+			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, mixedReadinessPods...),
 			FakeConfig:     basicConfigMock(),
 			Installation:   &integreatlyv1alpha1.RHMI{},
 			Recorder:       setupRecorder(),
@@ -404,7 +434,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Phase: corev1.NamespaceActive,
 		},
 	}
-	objs = append(objs, ns, operatorNS, installation)
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "rhmi-cluster-kafka-bootstrap",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+	objs = append(objs, ns, operatorNS, installation, service)
 
 	for i := 0; i < 8; i++ {
 		objs = append(objs, &corev1.Pod{
@@ -441,7 +477,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			FakeClient:     moqclient.NewSigsClientMoqWithScheme(scheme, objs...),
 			FakeConfig:     basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 					return nil
 				},
 				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {

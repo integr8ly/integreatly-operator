@@ -1,12 +1,13 @@
 package common
 
 import (
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 )
 
 var (
-	productVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
+	rhmi2ProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
 		integreatlyv1alpha1.AuthenticationStage: {
 			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
 		},
@@ -29,15 +30,33 @@ var (
 			integreatlyv1alpha1.ProductSolutionExplorer: integreatlyv1alpha1.VersionSolutionExplorer,
 		},
 	}
+
+	managedApiProductVersions = map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion{
+		integreatlyv1alpha1.AuthenticationStage: {
+			integreatlyv1alpha1.ProductRHSSO: integreatlyv1alpha1.VersionRHSSO,
+		},
+		integreatlyv1alpha1.MonitoringStage: {
+			integreatlyv1alpha1.ProductMonitoring: integreatlyv1alpha1.VersionMonitoring,
+		},
+		integreatlyv1alpha1.CloudResourcesStage: {
+			integreatlyv1alpha1.ProductCloudResources: integreatlyv1alpha1.VersionCloudResources,
+		},
+		integreatlyv1alpha1.ProductsStage: {
+			integreatlyv1alpha1.Product3Scale:    integreatlyv1alpha1.Version3Scale,
+			integreatlyv1alpha1.ProductRHSSOUser: integreatlyv1alpha1.VersionRHSSOUser,
+		},
+	}
 )
 
 func TestProductVersions(t *testing.T, ctx *TestingContext) {
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 
 	if err != nil {
 		t.Fatalf("failed to get the RHMI: %s", err)
 	}
+
+	productVersions := getProductVersions(rhmi.Spec.Type)
 
 	for stage := range productVersions {
 		for productName, productVersion := range productVersions[stage] {
@@ -48,5 +67,13 @@ func TestProductVersions(t *testing.T, ctx *TestingContext) {
 			}
 		}
 
+	}
+}
+
+func getProductVersions(installType string) map[integreatlyv1alpha1.StageName]map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.ProductVersion {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return managedApiProductVersions
+	} else {
+		return rhmi2ProductVersions
 	}
 }

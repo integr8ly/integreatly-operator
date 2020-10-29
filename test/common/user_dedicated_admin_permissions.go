@@ -3,17 +3,18 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"io/ioutil"
+	"reflect"
+	"strings"
+	"testing"
+
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
 	enmassev1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta1"
 	enmassev1beta2 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/v1beta2"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"io/ioutil"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -21,9 +22,21 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var productNamespaces = []string{
+// Common to all install types including managed api
+var commonNamespaces = []string{
 	"3scale",
 	"3scale-operator",
+	"middleware-monitoring",
+	"middleware-monitoring-operator",
+	"operator",
+	"rhsso",
+	"rhsso-operator",
+	"user-sso",
+	"user-sso-operator",
+}
+
+// Applicable to install types used in 2.X
+var rhmi2NamespacesPermissions = []string{
 	"amq-online",
 	"amq-online-operator",
 	"apicurito",
@@ -33,17 +46,10 @@ var productNamespaces = []string{
 	"codeready-workspaces-operator",
 	"fuse",
 	"fuse-operator",
-	"middleware-monitoring",
-	"middleware-monitoring-operator",
-	"operator",
-	"rhsso",
-	"rhsso-operator",
 	"solution-explorer",
 	"solution-explorer-operator",
 	"ups",
 	"ups-operator",
-	"user-sso",
-	"user-sso-operator",
 }
 
 type ExpectedPermissions struct {
@@ -63,7 +69,7 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get console master url
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -94,35 +100,38 @@ func TestDedicatedAdminUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// Verify Dedicated admins permissions around secrets
-	verifyDedicatedAdminSecretPermissions(t, openshiftClient)
+	verifyDedicatedAdminSecretPermissions(t, openshiftClient, rhmi.Spec.Type)
 
 	// Verify Dedicated admin permissions around RHMI Config
 	verifyDedicatedAdminRHMIConfigPermissions(t, openshiftClient)
 
 	verifyDedicatedAdmin3ScaleRoutePermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around StandardInfraConfig
-	verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
+	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 
-	// Verify dedicated admin permissions around BrokeredInfraConfig
-	verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around StandardInfraConfig
+		verifyDedicatedAdminStandardInfraConfigPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AddressSpacePlan
-	verifyDedicatedAdminAddressSpacePlanPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around BrokeredInfraConfig
+		verifyDedicatedAdminBrokeredInfraConfigPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AddressPlan
-	verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around AddressSpacePlan
+		verifyDedicatedAdminAddressSpacePlanPermissions(t, openshiftClient)
 
-	// Verify dedicated admin permissions around AuthenticationService
-	verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+		// Verify dedicated admin permissions around AddressPlan
+		verifyDedicatedAdminAddressPlanPermissions(t, openshiftClient)
 
-	// Verify dedicated admin Role / Role binding for AMQ Online resources
-	verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
+		// Verify dedicated admin permissions around AuthenticationService
+		verifyDedicatedAdminAuthenticationServicePermissions(t, openshiftClient)
+
+		// Verify dedicated admin Role / Role binding for AMQ Online resources
+		verifyDedicatedAdminAMQOnlineRolePermissions(t, ctx)
+	}
 }
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
 func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
-	ns := "redhat-rhmi-3scale"
+	ns := NamespacePrefix + "3scale"
 	route := "backend"
 
 	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
@@ -130,6 +139,7 @@ func verifyDedicatedAdmin3ScaleRoutePermissions(t *testing.T, client *resources.
 	if err != nil {
 		t.Errorf("Failed to get route : %s", err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.Errorf("Unable to get 3scale route as dedicated admin : %v", resp)
 	}
@@ -167,8 +177,10 @@ func verifyDedicatedAdminProjectPermissions(projects []projectv1.Project) bool {
 	return hasKubePrefix && hasRedhatPrefix && hasOpenshiftPrefix
 }
 
-func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
+func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient, installType string) {
 	t.Log("Verifying Dedicated admin permissions for Secrets Resource")
+
+	productNamespaces := getProductNamespaces(installType)
 
 	// build array of rhmi namespaces
 	var rhmiNamespaces []string
@@ -200,16 +212,24 @@ func verifyDedicatedAdminSecretPermissions(t *testing.T, openshiftClient *resour
 	}
 }
 
+func getProductNamespaces(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return commonNamespaces
+	} else {
+		return append(commonNamespaces, rhmi2NamespacesPermissions...)
+	}
+}
+
 // Verify Dedicated admin permissions for RHMIConfig Resource - CRUDL
 func verifyDedicatedAdminRHMIConfigPermissions(t *testing.T, openshiftClient *resources.OpenshiftClient) {
 	t.Log("Verifying Dedicated admin permissions for RHMIConfig Resource")
 
 	expectedPermission := ExpectedPermissions{
 		ExpectedCreateStatusCode: 403,
-		ExpectedReadStatusCode:   200,
-		ExpectedUpdateStatusCode: 200,
+		ExpectedReadStatusCode:   403,
+		ExpectedUpdateStatusCode: 403,
 		ExpectedDeleteStatusCode: 403,
-		ExpectedListStatusCode:   200,
+		ExpectedListStatusCode:   403,
 		ListPath:                 fmt.Sprintf(resources.PathListRHMIConfig, RHMIOperatorNamespace),
 		GetPath:                  fmt.Sprintf(resources.PathGetRHMIConfig, RHMIOperatorNamespace, "rhmi-config"),
 		ObjectToCreate: &integreatlyv1alpha1.RHMIConfig{

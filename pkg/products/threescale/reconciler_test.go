@@ -7,6 +7,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 
+	openshiftv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -34,6 +35,7 @@ import (
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
 	marketplacev2 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v2"
 
+	consolev1 "github.com/openshift/api/console/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,6 +66,8 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	err = projectv1.AddToScheme(scheme)
 	err = appsv1.AddToScheme(scheme)
 	err = monitoringv1.AddToScheme(scheme)
+	err = consolev1.AddToScheme(scheme)
+	err = openshiftv1.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -88,7 +92,7 @@ type ThreeScaleTestScenario struct {
 func getTestInstallation() *integreatlyv1alpha1.RHMI {
 	return &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
+			Name:      "rhmi",
 			Namespace: "test",
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
@@ -104,7 +108,7 @@ func getTestInstallation() *integreatlyv1alpha1.RHMI {
 func getTestBlobStorage() *crov1.BlobStorage {
 	return &crov1.BlobStorage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "threescale-blobstorage-test",
+			Name:      "threescale-blobstorage-rhmi",
 			Namespace: "test",
 		},
 		Status: crov1.BlobStorageStatus{
@@ -381,30 +385,30 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 
 	newTsUsers := &Users{
 		Users: []*User{
-			&User{
+			{
 				UserDetails: UserDetails{
 					Id:   1,
 					Role: memberRole,
 					// User is in OS admin group. Should be promoted
-					Username: "user1",
+					Username: "User1",
 				},
 			},
-			&User{
+			{
 				UserDetails: UserDetails{
 					Id:   2,
 					Role: adminRole,
 					// User is in OS admin group and admin in 3scale. Should
 					// be ignored
-					Username: "user2",
+					Username: "User2",
 				},
 			},
-			&User{
+			{
 				UserDetails{
 					Id:   3,
 					Role: adminRole,
 					// User is not in OS admin group but is already admin.
 					// Should NOT be demoted
-					Username: "user3",
+					Username: "User3",
 				},
 			},
 		},

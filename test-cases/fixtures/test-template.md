@@ -1,14 +1,20 @@
 ---
-# see the Tags section in the README for the list of tags that we use
-tags:
-  - tag1
-  - tag2
-
-require:
-  - ID1
-  - ID2
-
+# See the metatadata section in the README.md for details on the
+# allowed fields and values
+automation:
+  - INTLY-0000
+components:
+  - product-3scale
+  - product-amq
+environments:
+  - osd-fresh-install
+  - rhpds
 estimate: 1h
+targets:
+  - 0.0.0
+tags:
+  - automated
+  - destructive
 ---
 
 # [ID] - [Title]
@@ -26,7 +32,15 @@ estimate: 1h
 [List here the the steps that the tester need to perform, the expected result of the step is quoted after the step]
 
 1. [Step 1]
+
    > [Expected result]
+
 2. [Step 2 without expected result]
+
 3. [Step 3]
+
+   ```bash
+   some help cmd
+   ```
+
    > [Expected result]

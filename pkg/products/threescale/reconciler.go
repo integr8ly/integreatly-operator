@@ -1,21 +1,43 @@
 package threescale
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
-	rbacv1 "k8s.io/api/rbac/v1"
+	marin3rv1alpha "github.com/3scale/marin3r/pkg/apis/marin3r/v1alpha1"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	v2route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	yaml "github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	ptypes "github.com/golang/protobuf/ptypes"
+	wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	consolev1 "github.com/openshift/api/console/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-	"github.com/integr8ly/integreatly-operator/version"
-
-	"github.com/sirupsen/logrus"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/integr8ly/integreatly-operator/version"
+	"github.com/sirupsen/logrus"
+	rbacv1 "k8s.io/api/rbac/v1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -32,14 +54,12 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
+	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	appsv1 "github.com/openshift/api/apps/v1"
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	usersv1 "github.com/openshift/api/user/v1"
 	appsv1Client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
-
-	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +68,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -56,18 +77,43 @@ const (
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
+	nsPrefix                     = global.NamespacePrefix
+	marinerNs                    = nsPrefix + "marin3r"
+
+	threeScaleNs = nsPrefix + "3scale"
 
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
 	externalBackendRedisSecretName = "backend-redis"
 	externalPostgresSecretName     = "system-database"
 
-	numberOfReplicas int64 = 2
+	numberOfReplicas              int64 = 2
+	apicastStagingName                  = "apicast-staging"
+	apicastProductionName               = "apicast-production"
+	systemSeedSecretName                = "system-seed"
+	systemMasterApiCastSecretName       = "system-master-apicast"
 
-	systemSeedSecretName          = "system-seed"
-	systemMasterApiCastSecretName = "system-master-apicast"
+	apicastRatelimiting = "apicast-ratelimit"
+	registrySecretName  = "threescale-registry-auth"
 
-	registrySecretName = "threescale-registry-auth"
+	threeScaleIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2ZmZjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9BUEkgZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik01MC4yNSwzMC44M2EyLjY5LDIuNjksMCwxLDAtMi42OC0yLjY5QTIuNjUsMi42NSwwLDAsMCw1MC4yNSwzMC44M1pNNDMuMzYsMzkuNGEzLjM1LDMuMzUsMCwwLDAsMy4zMiwzLjM0LDMuMzQsMy4zNCwwLDAsMCwwLTYuNjdBMy4zNSwzLjM1LDAsMCwwLDQzLjM2LDM5LjRabTMuOTIsOS44OUEyLjY4LDIuNjgsMCwxLDAsNDQuNiw1MiwyLjcsMi43LDAsMCwwLDQ3LjI4LDQ5LjI5Wk0zMi42MywyOS42NWEzLjI2LDMuMjYsMCwxLDAtMy4yNC0zLjI2QTMuMjYsMy4yNiwwLDAsMCwzMi42MywyOS42NVpNNDAuNTMsMzRhMi43NywyLjc3LDAsMCwwLDAtNS41MywyLjc5LDIuNzksMCwwLDAtMi43NiwyLjc3QTIuODUsMi44NSwwLDAsMCw0MC41MywzNFptMS43Ni05LjMxYTQuNCw0LjQsMCwxLDAtNC4zOC00LjRBNC4zNyw0LjM3LDAsMCwwLDQyLjI5LDI0LjcxWk0zMi43OCw0OWE3LDcsMCwxLDAtNy03QTcsNywwLDAsMCwzMi43OCw0OVptMzIuMTMtNy43YTQuMjMsNC4yMywwLDAsMCw0LjMsNC4zMSw0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFabTYuOSwxMC4wNmEzLjA4LDMuMDgsMCwxLDAsMy4wOC0zLjA5QTMuMDksMy4wOSwwLDAsMCw3MS44MSw1MS4zOFpNNzMuOSwzNC43N2E0LjMxLDQuMzEsMCwxLDAtNC4zLTQuMzFBNC4yOCw0LjI4LDAsMCwwLDczLjksMzQuNzdaTTUyLjE2LDQ1LjA2YTMuNjUsMy42NSwwLDEsMCwzLjY1LTMuNjZBMy42NCwzLjY0LDAsMCwwLDUyLjE2LDQ1LjA2Wk01NSwyMmEzLjE3LDMuMTcsMCwwLDAsMy4xNi0zLjE3QTMuMjMsMy4yMywwLDAsMCw1NSwxNS42MywzLjE3LDMuMTcsMCwwLDAsNTUsMjJabS0uNDcsMTAuMDlBNS4zNyw1LjM3LDAsMCwwLDYwLDM3LjU0YTUuNDgsNS40OCwwLDEsMC01LjQ1LTUuNDhaTTY2LjI1LDI1LjVhMi42OSwyLjY5LDAsMSwwLTIuNjgtMi42OUEyLjY1LDIuNjUsMCwwLDAsNjYuMjUsMjUuNVpNNDUuNyw2My4xYTMuNDIsMy40MiwwLDEsMC0zLjQxLTMuNDJBMy40MywzLjQzLDAsMCwwLDQ1LjcsNjMuMVptMTQsMTEuMTlhNC40LDQuNCwwLDEsMCw0LjM4LDQuNEE0LjM3LDQuMzcsMCwwLDAsNTkuNzMsNzQuMjlaTTYyLjMsNTAuNTFhOS4yLDkuMiwwLDEsMCw5LjE2LDkuMkE5LjIyLDkuMjIsMCwwLDAsNjIuMyw1MC41MVpNNTAuMSw2Ni43N2EyLjY5LDIuNjksMCwxLDAsMi42OCwyLjY5QTIuNywyLjcsMCwwLDAsNTAuMSw2Ni43N1pNODEuMjUsNDEuMTJhMi43LDIuNywwLDAsMC0yLjY4LDIuNjksMi42NSwyLjY1LDAsMCwwLDIuNjgsMi42OSwyLjY5LDIuNjksMCwwLDAsMC01LjM3Wk00NC40OSw3Ni40N2EzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0LDMuNzcsMy43NywwLDEsMCwzLjczLTMuNzRaTTc5LjA2LDU2LjcyYTQsNCwwLDEsMCw0LDRBNCw0LDAsMCwwLDc5LjA2LDU2LjcyWm0tNiwxMS43OEEzLjA5LDMuMDksMCwwLDAsNzAsNzEuNmEzLDMsMCwwLDAsMy4wOCwzLjA5LDMuMDksMy4wOSwwLDAsMCwwLTYuMTlaTTI4LjMsNjhhNC4xNiw0LjE2LDAsMCwwLTQuMTQsNC4xNUE0LjIxLDQuMjEsMCwwLDAsMjguMyw3Ni4zYTQuMTUsNC4xNSwwLDAsMCwwLTguM1ptLTguMjItOWEzLDMsMCwxLDAsMywzQTMuMDUsMy4wNSwwLDAsMCwyMC4wOCw1OVptMS44NC05Ljc0YTMsMywwLDEsMCwzLDNBMy4wNSwzLjA1LDAsMCwwLDIxLjkxLDQ5LjIyWk0yMi4zNyw0MmEzLjI0LDMuMjQsMCwxLDAtMy4yNCwzLjI2QTMuMjYsMy4yNiwwLDAsMCwyMi4zNyw0MlpNNDMuMTEsNzAuMmEzLjgsMy44LDAsMCwwLTMuODEtMy43NCwzLjczLDMuNzMsMCwwLDAtMy43MywzLjc0QTMuOCwzLjgsMCwwLDAsMzkuMyw3NCwzLjg3LDMuODcsMCwwLDAsNDMuMTEsNzAuMlpNMzcuNTYsNTguNDNhNC42OCw0LjY4LDAsMCwwLTQuNjItNC42NCw0LjYzLDQuNjMsMCwwLDAtNC42Miw0LjY0LDQuNTgsNC41OCwwLDAsMCw0LjYyLDQuNjRBNC42Myw0LjYzLDAsMCwwLDM3LjU2LDU4LjQzWk0yMy4xMSwzMy44MmEyLjUyLDIuNTIsMCwxLDAtMi41MS0yLjUyQTIuNTMsMi41MywwLDAsMCwyMy4xMSwzMy44MloiLz48L2c+PC9zdmc+"
+)
+
+var (
+	threeScaleDeploymentConfigs = []string{
+		"apicast-production",
+		"apicast-staging",
+		"backend-cron",
+		"backend-listener",
+		"backend-worker",
+		"system-app",
+		"system-memcache",
+		"system-sidekiq",
+		"system-sphinx",
+		"zync",
+		"zync-database",
+		"zync-que",
+	}
 )
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -139,13 +185,21 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	logrus.Infof("Reconciling %s", r.Config.GetProductName())
 
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
+
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -154,6 +208,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
+
+		phase, err = r.deleteConsoleLink(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
 		return integreatlyv1alpha1.PhaseCompleted, nil
 	})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -161,38 +221,31 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
 	}
 
 	phase, err = r.restoreSystemSecrets(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", r.Config.GetNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s ns", r.Config.GetNamespace()), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), r.Config.GetNamespace(), registrySecretName, serverClient)
+	err = resources.CopyPullSecretToNameSpace(ctx, installation.GetPullSecretSpec(), productNamespace, registrySecretName, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile pull secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	preUpgradeBackups := r.preUpgradeBackupExecutor()
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.ThreeScaleSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{r.Config.GetNamespace()}, preUpgradeBackups, serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.ThreeScaleSubscriptionName), err)
 		return phase, err
@@ -219,6 +272,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	phase, err = r.reconcileComponents(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilePodPriority(ctx, serverClient, installation)
+	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
@@ -287,20 +347,53 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsEndpointAvailableAlerts(ctx, serverClient)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile endpoint available alerts", err)
+	alertsReconciler := r.newAlertReconciler()
+	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, serverClient)
+	phase, err = r.reconcileConsoleLink(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
 		return phase, err
 	}
-	phase, err = r.reconcileKubeStateMetrics3scaleAlerts(ctx, serverClient)
+
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+
+		apicasts := []string{apicastStagingName, apicastProductionName}
+		for _, apicast := range apicasts {
+			deploymentConfig, phase, err := r.getDeploymentConfig(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get deployment config for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			service, phase, err := r.getService(context.TODO(), serverClient, apicast)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get service for %s: %w", apicast, err)
+			}
+			if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+				return phase, nil
+			}
+
+			err = r.patchDeploymentConfig(ctx, serverClient, deploymentConfig, service)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+			}
+		}
+
+		err = r.createEnvoyRateLimitingConfig(ctx, serverClient)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
+		}
+	}
+
+	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile 3scale alerts", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
 		return phase, err
 	}
 
@@ -310,6 +403,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+
+		ns := global.NamespacePrefix + defaultInstallationNamespace
+		for _, name := range threeScaleDeploymentConfigs {
+			deploymentConfig := &appsv1.DeploymentConfig{}
+			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
+			if err != nil {
+				return integreatlyv1alpha1.PhaseInProgress, err
+			}
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -339,29 +448,365 @@ func (r *Reconciler) backupSystemSecrets(ctx context.Context, serverClient k8scl
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-// CreateResource Creates a generic kubernetes resource from a template
-func (r *Reconciler) createResource(ctx context.Context, resourceName string, serverClient k8sclient.Client) (runtime.Object, error) {
-	if r.extraParams == nil {
-		r.extraParams = map[string]string{}
-	}
-	r.extraParams["MonitoringKey"] = r.Config.GetLabelSelector()
-	r.extraParams["Namespace"] = r.Config.GetNamespace()
+func (r *Reconciler) getDeploymentConfig(ctx context.Context, client k8sclient.Client, dcName string) (*appsv1.DeploymentConfig, integreatlyv1alpha1.StatusPhase, error) {
+	apiCastDeploymentConfig := &appsv1.DeploymentConfig{}
 
-	templateHelper := monitoring.NewTemplateHelper(r.extraParams)
-	resource, err := templateHelper.CreateResource(resourceName)
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, apiCastDeploymentConfig)
 
 	if err != nil {
-		return nil, fmt.Errorf("createResource failed: %w", err)
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
 	}
+	return apiCastDeploymentConfig, integreatlyv1alpha1.PhaseInProgress, nil
+}
 
-	err = serverClient.Create(ctx, resource)
+func (r *Reconciler) getService(ctx context.Context, client k8sclient.Client, dcName string) (*corev1.Service, integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{}
+
+	err := client.Get(ctx, k8sTypes.NamespacedName{Name: dcName, Namespace: r.Config.GetNamespace()}, service)
+
 	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("error creating resource: %w", err)
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the deployment config %v", err)
+	}
+	return service, integreatlyv1alpha1.PhaseInProgress, nil
+
+}
+
+// Patching the deployment configuration of both apicasts, this is required in order to enable rate limiting on the deployment. "Enabled" means that the Discovery Service
+// will attach a sidecar container to the apicasts, annotations are set to label the apicasts so that appropriate envoy config(sidecar container used configuration) is
+// pulled and attached to sidecar containers.
+func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, service *corev1.Service) error {
+
+	ports := service.Spec.Ports
+	for i, port := range ports {
+		if port.Name == "gateway" {
+			service.Spec.Ports[i].Port = 8443
+			service.Spec.Ports[i].TargetPort = intstr.FromInt(8443)
+			break
 		}
 	}
+	if err := client.Update(ctx, service); err != nil {
+		return fmt.Errorf("failed to update service: %v", err)
+	}
 
-	return resource, nil
+	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = apicastRatelimiting
+	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8443"
+
+	if err := client.Update(ctx, deploymentConfig); err != nil {
+		return fmt.Errorf("failed to update deployment config: %v", err)
+	}
+
+	return nil
+}
+
+// This function creates envoy configuration that is used by sidecar containers. It contains information about clusters, which is information about where and how to find rate limiting
+// pods, how to proxy the traffic and what traffic to listen for. Our data needs to be converted to JSON in order for the envoyapi omit empty to filter through fields that we are only interested in,
+// then we need to convert it to yaml and finally push.
+func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k8sclient.Client) error {
+
+	rateLimitService := &corev1.Service{}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: marinerNs,
+		Name:      "ratelimit",
+	}, rateLimitService)
+
+	if err != nil {
+		return fmt.Errorf("failed to rate limiting service: %v", err)
+	}
+
+	// Setting up cluster endpoints for rate limit and apicast
+	apicastEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
+		SocketAddress: &envoycore.SocketAddress{
+			Address:  "127.0.0.1",
+			Protocol: envoycore.SocketAddress_TCP,
+			PortSpecifier: &envoycore.SocketAddress_PortValue{
+				PortValue: uint32(8080),
+			},
+		},
+	}}
+
+	rateLimitEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
+		SocketAddress: &envoycore.SocketAddress{
+			Address:  rateLimitService.Spec.ClusterIP,
+			Protocol: envoycore.SocketAddress_TCP,
+			PortSpecifier: &envoycore.SocketAddress_PortValue{
+				PortValue: uint32(8081),
+			},
+		},
+	}}
+
+	cluster := envoyapi.Cluster{
+		Name:                 apicastRatelimiting,
+		ConnectTimeout:       ptypes.DurationProto(2 * time.Second),
+		ClusterDiscoveryType: &envoyapi.Cluster_Type{Type: envoyapi.Cluster_STRICT_DNS},
+		LbPolicy:             envoyapi.Cluster_ROUND_ROBIN,
+		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+			ClusterName: apicastRatelimiting,
+			Endpoints: []*envoy_api_v2_endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*envoy_api_v2_endpoint.LbEndpoint{
+					{
+						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
+							Endpoint: &envoy_api_v2_endpoint.Endpoint{
+								Address: apicastEndpoint,
+							}},
+					},
+				},
+			}},
+		},
+	}
+
+	rateLimitCluster := envoyapi.Cluster{
+		Name:                 "ratelimit",
+		ConnectTimeout:       ptypes.DurationProto(2 * time.Second),
+		ClusterDiscoveryType: &envoyapi.Cluster_Type{Type: envoyapi.Cluster_STRICT_DNS},
+		LbPolicy:             envoyapi.Cluster_ROUND_ROBIN,
+		Http2ProtocolOptions: &envoycore.Http2ProtocolOptions{},
+		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+			ClusterName: "ratelimit",
+			Endpoints: []*envoy_api_v2_endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*envoy_api_v2_endpoint.LbEndpoint{
+					{
+						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
+							Endpoint: &envoy_api_v2_endpoint.Endpoint{
+								Address: rateLimitEndpoint,
+							}},
+					},
+				},
+			}},
+		},
+	}
+
+	// Setting up listener
+	virtualHost := v2route.VirtualHost{
+		Name:    apicastRatelimiting,
+		Domains: []string{"*"},
+
+		Routes: []*v2route.Route{
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_Prefix{
+						Prefix: "/",
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: apicastRatelimiting,
+						},
+						RateLimits: []*route.RateLimit{{
+							Stage: &wrappers.UInt32Value{Value: 0},
+							Actions: []*route.RateLimit_Action{{
+								ActionSpecifier: &route.RateLimit_Action_GenericKey_{
+									GenericKey: &route.RateLimit_Action_GenericKey{
+										DescriptorValue: "slowpath",
+									},
+								},
+							}},
+						}},
+					},
+				},
+			},
+		},
+	}
+
+	// Setting GRPC
+	clusterName := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"cluster_name": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: "ratelimit",
+				},
+			},
+		},
+	}
+
+	grpcService := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"timeout": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: "2s",
+				},
+			},
+			"envoy_grpc": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: clusterName,
+				},
+			},
+		},
+	}
+	grpcInnerService := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"grpc_service": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: grpcService,
+				},
+			},
+		},
+	}
+	httpFilterGrpc := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"domain": {
+				Kind: &structpb.Value_StringValue{
+					StringValue: apicastRatelimiting,
+				},
+			},
+			"stage": {
+				Kind: &structpb.Value_NumberValue{
+					NumberValue: 0,
+				},
+			},
+			"rate_limit_service": {
+				Kind: &structpb.Value_StructValue{
+					StructValue: grpcInnerService,
+				},
+			},
+		},
+	}
+
+	// Setting up connection manager
+	manager := &hcm.HttpConnectionManager{
+		CodecType:  hcm.HttpConnectionManager_AUTO,
+		StatPrefix: "ingress_http",
+		RouteSpecifier: &hcm.HttpConnectionManager_RouteConfig{
+			RouteConfig: &envoyapi.RouteConfiguration{
+				Name:         "local_route",
+				VirtualHosts: []*v2route.VirtualHost{&virtualHost},
+			},
+		},
+		HttpFilters: []*hcm.HttpFilter{
+			{
+				Name:       "envoy.rate_limit",
+				ConfigType: &hcm.HttpFilter_Config{Config: httpFilterGrpc},
+			},
+			{
+				Name: "envoy.router",
+			},
+		},
+	}
+
+	pbst, err := ptypes.MarshalAny(manager)
+	if err != nil {
+		return fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
+	}
+
+	listener := &envoyapi.Listener{
+		Name: "http",
+		Address: &envoycore.Address{
+			Address: &envoycore.Address_SocketAddress{
+				SocketAddress: &envoycore.SocketAddress{
+					Protocol: envoycore.SocketAddress_TCP,
+					Address:  "0.0.0.0",
+					PortSpecifier: &envoycore.SocketAddress_PortValue{
+						PortValue: uint32(8443),
+					},
+				},
+			},
+		},
+		FilterChains: []*listener.FilterChain{{
+			Filters: []*listener.Filter{{
+				Name:       "envoy.http_connection_manager",
+				ConfigType: &listener.Filter_TypedConfig{TypedConfig: pbst},
+			}},
+		}},
+	}
+
+	// Converting to Json and then to Yaml before creating the CR
+	rateLimitClusterJson, err := ResourcesToJSON(&rateLimitCluster)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy rate limiting cluster configuration to JSON %v", err)
+	}
+
+	yamlRateLimitCluster, err := yaml.JSONToYAML(rateLimitClusterJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy rate limiting cluster JSON configuration to YAML %v", err)
+	}
+
+	clusterJson, err := ResourcesToJSON(&cluster)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy cluster configuration to JSON %v", err)
+	}
+
+	yamlCluster, err := yaml.JSONToYAML(clusterJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy cluster JSON configuration to YAML %v", err)
+	}
+
+	listenerJson, err := ResourcesToJSON(listener)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy listener configuration to JSON %v", err)
+	}
+
+	yamlListener, err := yaml.JSONToYAML(listenerJson)
+	if err != nil {
+		return fmt.Errorf("Failed to convert envoy listener JSON configuration to YAML %v", err)
+	}
+
+	envoyconfig := &marin3rv1alpha.EnvoyConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      apicastRatelimiting,
+			Namespace: threeScaleNs,
+		},
+	}
+
+	controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, r.installation)
+		envoyconfig.Spec.NodeID = apicastRatelimiting
+		envoyconfig.Spec.Serialization = "yaml"
+		envoyconfig.Spec.EnvoyResources = &marin3rv1alpha.EnvoyResources{
+			Clusters: []marin3rv1alpha.EnvoyResource{
+				{
+					Name:  apicastRatelimiting,
+					Value: string(yamlCluster),
+				},
+				{
+					Name:  "ratelimit",
+					Value: string(yamlRateLimitCluster),
+				},
+			},
+			Listeners: []marin3rv1alpha.EnvoyResource{
+				{
+					Name:  "http",
+					Value: string(yamlListener),
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to create envoy config CR %v", err)
+	}
+
+	return nil
+}
+
+func ResourcesToJSON(pb proto.Message) ([]byte, error) {
+	m := jsonpb.Marshaler{}
+
+	json := bytes.NewBuffer([]byte{})
+	err := m.Marshal(json, pb)
+	if err != nil {
+		return []byte{}, err
+	}
+	return json.Bytes(), nil
+}
+
+func resourceToYAML(o interface{}) ([]byte, error) {
+	jsonMarshalled, err := json.Marshal(o)
+	if err != nil {
+		return nil, err
+	}
+	yaml, err := k8syaml.JSONToYAML(jsonMarshalled)
+	if err != nil {
+		return nil, err
+	}
+	return yaml, nil
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
@@ -460,6 +905,7 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
 	fss, err := r.getBlobStorageFileStorageSpec(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -475,6 +921,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		Spec: threescalev1.APIManagerSpec{
 			HighAvailability:    &threescalev1.HighAvailabilitySpec{},
 			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{},
+			Monitoring:          &threescalev1.MonitoringSpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
@@ -511,6 +958,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
 		apim.Spec.System.FileStorageSpec = fss
 		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
+		apim.Spec.Monitoring = &threescalev1.MonitoringSpec{Enabled: false}
 
 		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
 			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas
@@ -562,13 +1010,80 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			if err != nil {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
-			return integreatlyv1alpha1.PhaseCompleted, nil
 		} else if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		// Its not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
+		exist, err := r.routesExist(ctx, serverClient)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+		if exist {
+			return integreatlyv1alpha1.PhaseCompleted, nil
+		} else {
+			// If the system-provider route does not exist at this point (i.e. when Deployments are ready)
+			// we can force a resync of routes. see below for more details on why this is required:
+			// https://access.redhat.com/documentation/en-us/red_hat_3scale_api_management/2.7/html/operating_3scale/backup-restore#creating_equivalent_zync_routes
+			// This scenario will manifest during a backup and restore and also if the product ns was accidentially deleted.
+			return r.resyncRoutes(ctx, serverClient)
 		}
 	}
 
 	return integreatlyv1alpha1.PhaseInProgress, nil
+}
+
+func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Client) (bool, error) {
+	expectedRoutes := 6
+	opts := k8sclient.ListOptions{
+		Namespace: r.Config.GetNamespace(),
+	}
+
+	routes := routev1.RouteList{}
+	err := serverClient.List(ctx, &routes, &opts)
+	if err != nil {
+		return false, err
+	}
+
+	if len(routes.Items) >= expectedRoutes {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	ns := r.Config.GetNamespace()
+	podname := ""
+
+	pods := &corev1.PodList{}
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+		k8sclient.MatchingLabels(map[string]string{"deploymentConfig": "system-sidekiq"}),
+	}
+	err := client.List(ctx, pods, listOpts...)
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == "Running" {
+			podname = pod.ObjectMeta.Name
+			break
+		}
+	}
+
+	if podname == "" {
+		logrus.Info("Waiting on system-sidekiq pod to start, 3Scale install in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	stdout, stderr, err := resources.ExecuteRemoteCommand(ns, podname, "bundle exec rake zync:resync:domains")
+	if err != nil {
+		logrus.Errorf("Failed to resync 3Scale routes %v", err)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else if stderr != "" {
+		logrus.Errorf("Error attempting to resync 3Scale routes %s", stderr)
+		return integreatlyv1alpha1.PhaseFailed, nil
+	} else {
+		logrus.Infof("Resync 3Scale routes result: %s", stdout)
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
 }
 
 func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
@@ -690,30 +1205,22 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	// redis cr returning a failed state
-	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, backendRedis)
+	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
+	}
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
 
+	// create Redis Cpu Usage High alert
+	err = resources.CreateRedisCpuUsageAlerts(ctx, serverClient, r.installation, backendRedis)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus Cpu usage high alerts for threescale: %s", err)
+	}
 	// wait for the backend redis cr to reconcile
 	if backendRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// create prometheus pending rule
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, backendRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create redis pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	if _, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus alert for threescale: %w", err)
-	}
-	// create backend connectivity alert
-	if _, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, backendRedis); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// get the secret created by the cloud resources operator
@@ -743,32 +1250,16 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
-	// create prometheus failure rule
-	_, err = resources.CreateRedisResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, systemRedis)
+	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, systemRedis)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
-
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
+	}
 	// wait for the system redis cr to reconcile
 	if systemRedis.Status.Phase != types.PhaseComplete {
 		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// create prometheus pending rule
-	_, err = resources.CreateRedisResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreateRedisAvailabilityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus alert for threescale: %w", err)
-	}
-	// create system redis connectivity alert
-	_, err = resources.CreateRedisConnectivityAlert(ctx, serverClient, r.installation, systemRedis)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create system redis prometheus connectivity alert for threescale: %s", err)
 	}
 
 	// get the secret created by the cloud resources operator
@@ -799,32 +1290,14 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalRedisSecretName, err)
 	}
 
-	// cr returning a failed state
-	_, err = resources.CreatePostgresResourceStatusPhaseFailedAlert(ctx, serverClient, r.installation, postgres)
+	// reconcile postgres alerts
+	phase, err = resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
+	productName := postgres.Labels["productName"]
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres failure alert: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
 	}
-
-	// wait for the postgres cr to reconcile
-	if postgres.Status.Phase != types.PhaseComplete {
-		return integreatlyv1alpha1.PhaseAwaitingComponents, nil
-	}
-
-	// create prometheus pending rule
-	_, err = resources.CreatePostgresResourceStatusPhasePendingAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres pending alert: %w", err)
-	}
-
-	// create the prometheus availability rule
-	_, err = resources.CreatePostgresAvailabilityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus alert for threescale: %w", err)
-	}
-	// create postgres connectivity alert
-	_, err = resources.CreatePostgresConnectivityAlert(ctx, serverClient, r.installation, postgres)
-	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create postgres prometheus connectivity alert for threescale: %s", err)
+	if phase != integreatlyv1alpha1.PhaseCompleted {
+		return phase, nil
 	}
 
 	// get the secret containing redis credentials
@@ -952,7 +1425,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	added, deleted := r.getUserDiff(kcu, tsUsers.Users)
 	for _, kcUser := range added {
-		res, err := r.tsClient.AddUser(kcUser.UserName, kcUser.Email, "", *accessToken)
+		res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
@@ -1268,7 +1741,7 @@ func (r *Reconciler) getUserDiff(kcUsers []keycloak.KeycloakAPIUser, tsUsers []*
 
 func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 	for _, kcu := range kcUsers {
-		if kcu.UserName == tsUser.UserDetails.Username {
+		if strings.EqualFold(kcu.UserName, tsUser.UserDetails.Username) {
 			return true
 		}
 	}
@@ -1278,7 +1751,7 @@ func kcContainsTs(kcUsers []keycloak.KeycloakAPIUser, tsUser *User) bool {
 
 func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 	for _, tsu := range tsusers {
-		if tsu.UserDetails.Username == kcUser.UserName {
+		if strings.EqualFold(tsu.UserDetails.Username, kcUser.UserName) {
 			return true
 		}
 	}
@@ -1288,7 +1761,7 @@ func tsContainsKc(tsusers []*User, kcUser keycloak.KeycloakAPIUser) bool {
 
 func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	for _, userName := range adminGroup.Users {
-		if tsUser.UserDetails.Username == userName {
+		if strings.EqualFold(tsUser.UserDetails.Username, userName) {
 			return true
 		}
 	}
@@ -1481,5 +1954,84 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed reconciling service admin role binding %v: %w", editRoutesRoleBinding, err)
 	}
 
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.ThreeScaleSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		r.preUpgradeBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
+}
+
+func (r *Reconciler) reconcileConsoleLink(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cl := &consolev1.ConsoleLink{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "rhmi-3scale-console-link",
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cl, func() error {
+		cl.Spec = consolev1.ConsoleLinkSpec{
+			ApplicationMenu: &consolev1.ApplicationMenuSpec{
+				ImageURL: threeScaleIcon,
+				Section:  "OpenShift Managed Services",
+			},
+			Link: consolev1.Link{
+				Href: fmt.Sprintf("%v/auth/rhsso/bounce", r.Config.GetHost()),
+				Text: "API Management",
+			},
+			Location: consolev1.ApplicationMenu,
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating or updating 3Scale console link, %s", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cl := &consolev1.ConsoleLink{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "rhmi-3scale-console-link",
+		},
+	}
+
+	err := serverClient.Delete(ctx, cl)
+	if err != nil && !k8serr.IsNotFound(err) {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error removing 3Scale console link, %s", err)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	ns := global.NamespacePrefix + defaultInstallationNamespace
+
+	for _, name := range threeScaleDeploymentConfigs {
+		deploymentConfig := &appsv1.DeploymentConfig{}
+
+		phase, err := resources.ReconcileZoneTopologySpreadConstraints(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, "app", deploymentConfig)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

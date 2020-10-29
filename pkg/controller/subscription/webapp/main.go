@@ -3,11 +3,13 @@ package webapp
 import (
 	"context"
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,14 +93,14 @@ func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.R
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: global.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(notifier.ctx, k8sclient.ObjectKey{
 		Name:      webapp.Name,
 		Namespace: webapp.Namespace,
 	}, webapp); err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		}
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -124,7 +126,7 @@ func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: "redhat-rhmi-solution-explorer",
+			Namespace: global.NamespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(
@@ -132,7 +134,7 @@ func (notifier *UpgradeNotifierImpl) ClearNotification() error {
 		k8sclient.ObjectKey{Name: webapp.Name, Namespace: webapp.Namespace},
 		webapp,
 	); err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			return nil
 		}
 		return err

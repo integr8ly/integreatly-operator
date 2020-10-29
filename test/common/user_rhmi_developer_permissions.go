@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	expectedRhmiDeveloperProjectCount = 1
+	expectedRhmiDeveloperProjectCount       = 1
+	expectedManagedApiDeveloperProjectCount = 0
 )
 
 // struct used to create query string for fuse logs endpoint
@@ -33,7 +34,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	}
 
 	// get console master url
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -54,35 +55,45 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 	t.Log("retrieved rhmi developer user tokens")
 	openshiftClient := resources.NewOpenshiftClient(ctx.HttpClient, masterURL)
 
-	// test rhmi developer projects are as expected
-	t.Log("testing rhmi developer projects")
 	fuseNamespace := fmt.Sprintf("%sfuse", NamespacePrefix)
-	if err := testRHMIDeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
-		t.Fatalf("test failed - %v", err)
+	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		// test rhmi developer projects are as expected
+		t.Log("testing rhmi 2 developer projects")
+		if err := testRHMI2DeveloperProjects(masterURL, fuseNamespace, openshiftClient); err != nil {
+			t.Fatalf("test failed - %v", err)
+		}
+	} else {
+		// test managed api developer projects are as expected
+		t.Log("testing managed api developer projects")
+		if err := testManagedApiDeveloperProjects(masterURL, openshiftClient); err != nil {
+			t.Fatalf("test failed - %v", err)
+		}
 	}
 
-	// get fuse pods for rhmi developer
-	podlist, err := openshiftClient.ListPods(fuseNamespace)
-	if err != nil {
-		t.Fatalf("error occured while getting pods : %v", err)
-	}
+	if rhmi.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		// get fuse pods for rhmi developer
+		podlist, err := openshiftClient.ListPods(fuseNamespace)
+		if err != nil {
+			t.Fatalf("error occured while getting pods : %v", err)
+		}
 
-	// log through rhmi developer fuse podlist
-	for _, p := range podlist.Items {
-		if p.Status.Phase == "Running" {
-			logOpt := LogOptions{p.Spec.Containers[0].Name, "false", "10"}
-			lv, err := query.Values(logOpt)
-			if err != nil {
-				t.Fatal(err)
-			}
-			// verify an rhmi developer can access the pods logs
-			podPath := fmt.Sprintf(resources.OpenshiftPathListPods, p.Namespace)
-			resp, err := openshiftClient.GetRequest(fmt.Sprintf("%s/%s/log?%s", podPath, p.Name, lv.Encode()))
-			if err != nil {
-				t.Fatalf("error occurred making oc get request: %v", err)
-			}
-			if resp.StatusCode != 200 {
-				t.Fatalf("test-failed - status code %d RHMI developer unable to access fuse logs in pod %s : %v", resp.StatusCode, p.Name, err)
+		// log through rhmi developer fuse podlist
+		for _, p := range podlist.Items {
+			if p.Status.Phase == "Running" {
+				logOpt := LogOptions{p.Spec.Containers[0].Name, "false", "10"}
+				lv, err := query.Values(logOpt)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// verify an rhmi developer can access the pods logs
+				podPath := fmt.Sprintf(resources.OpenshiftPathListPods, p.Namespace)
+				resp, err := openshiftClient.GetRequest(fmt.Sprintf("%s/%s/log?%s", podPath, p.Name, lv.Encode()))
+				if err != nil {
+					t.Fatalf("error occurred making oc get request: %v", err)
+				}
+				if resp.StatusCode != 200 {
+					t.Fatalf("test-failed - status code %d RHMI developer unable to access fuse logs in pod %s : %v", resp.StatusCode, p.Name, err)
+				}
 			}
 		}
 	}
@@ -95,7 +106,7 @@ func TestRHMIDeveloperUserPermissions(t *testing.T, ctx *TestingContext) {
 
 // Verify that a dedicated admin can edit routes in the 3scale namespace
 func verifyRHMIDeveloper3ScaleRoutePermissions(t *testing.T, client *resources.OpenshiftClient) {
-	ns := "redhat-rhmi-3scale"
+	ns := NamespacePrefix + "3scale"
 	route := "backend"
 
 	path := fmt.Sprintf(resources.PathGetRoute, ns, route)
@@ -108,7 +119,7 @@ func verifyRHMIDeveloper3ScaleRoutePermissions(t *testing.T, client *resources.O
 	}
 }
 
-func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
+func testRHMI2DeveloperProjects(masterURL, fuseNamespace string, openshiftClient *resources.OpenshiftClient) error {
 	var rhmiDevfoundProjects *projectv1.ProjectList
 	// five minute time out needed to ensure users have been reconciled by RHMI operator
 	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
@@ -136,6 +147,34 @@ func testRHMIDeveloperProjects(masterURL, fuseNamespace string, openshiftClient 
 	foundNamespace := rhmiDevfoundProjects.Items[0].Name
 	if foundNamespace != fuseNamespace {
 		return fmt.Errorf("found rhmi developer project: %s expected rhmi developer project : %s", foundNamespace, fuseNamespace)
+	}
+
+	return nil
+}
+
+func testManagedApiDeveloperProjects(masterURL string, openshiftClient *resources.OpenshiftClient) error {
+	var rhmiDevfoundProjects *projectv1.ProjectList
+	// five minute time out needed to ensure users have been reconciled by RHMI operator
+	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+		rhmiDevfoundProjects, err = openshiftClient.ListProjects()
+		if err != nil {
+			return false, fmt.Errorf("error occured while getting user projects : %w", err)
+		}
+
+		// check if projects are as expected for rhmi developer
+		if len(rhmiDevfoundProjects.Items) != expectedManagedApiDeveloperProjectCount {
+			return false, nil
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		if rhmiDevfoundProjects != nil {
+			return fmt.Errorf("unexpected developer project count : %d expected project count : %d , error occurred - %w", len(rhmiDevfoundProjects.Items), expectedManagedApiDeveloperProjectCount, err)
+		} else {
+			return fmt.Errorf("unexpected error occurred when retrieving projects list - %w", err)
+		}
+
 	}
 
 	return nil

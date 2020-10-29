@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
 	"testing"
@@ -31,27 +32,37 @@ type alertsFiringError struct {
 }
 
 var (
-	podNamespaces = []string{
+	// Applicable to RHOAM
+	rhoamExpectedPodNamespaces = []string{
+		Marin3rOperatorNamespace,
+		Marin3rProductNamespace,
+		CustomerGrafanaNamespace,
+	}
 
+	// Applicable to all install types
+	commonPodNamespaces = []string{
 		RHMIOperatorNamespace,
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
-		AMQOnlineOperatorNamespace,
-		ApicuritoProductNamespace,
-		ApicuritoOperatorNamespace,
 		CloudResourceOperatorNamespace,
-		CodeReadyProductNamespace,
-		CodeReadyOperatorNamespace,
-		FuseProductNamespace,
-		FuseOperatorNamespace,
 		RHSSOUserProductOperatorNamespace,
 		RHSSOUserOperatorNamespace,
 		RHSSOProductNamespace,
 		RHSSOOperatorNamespace,
-		SolutionExplorerProductNamespace,
-		SolutionExplorerOperatorNamespace,
 		ThreeScaleProductNamespace,
 		ThreeScaleOperatorNamespace,
+	}
+	// Applicable to rhmi 2 install types only
+	rhmi2PodNamespaces = []string{
+		AMQOnlineOperatorNamespace,
+		ApicuritoProductNamespace,
+		ApicuritoOperatorNamespace,
+		CodeReadyProductNamespace,
+		CodeReadyOperatorNamespace,
+		FuseProductNamespace,
+		FuseOperatorNamespace,
+		SolutionExplorerProductNamespace,
+		SolutionExplorerOperatorNamespace,
 		UPSProductNamespace,
 		UPSOperatorNamespace,
 	}
@@ -162,6 +173,12 @@ func getFiringAlerts(t *testing.T, ctx *TestingContext) error {
 func podLogs(t *testing.T, ctx *TestingContext) {
 	pods := &corev1.PodList{}
 
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get the RHMI: %s", err)
+	}
+	podNamespaces := getPodNamespaces(rhmi.Spec.Type)
+
 	for _, namespaces := range podNamespaces {
 		err := ctx.Client.List(goctx.TODO(), pods, &k8sclient.ListOptions{Namespace: namespaces})
 		if err != nil {
@@ -171,6 +188,14 @@ func podLogs(t *testing.T, ctx *TestingContext) {
 		for _, pod := range pods.Items {
 			t.Logf("\tPod name: %s, Status: %s", pod.Name, pod.Status.Phase)
 		}
+	}
+}
+
+func getPodNamespaces(installType string) []string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(commonPodNamespaces, rhoamExpectedPodNamespaces...)
+	} else {
+		return append(commonPodNamespaces, rhmi2PodNamespaces...)
 	}
 }
 

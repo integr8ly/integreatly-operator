@@ -2,9 +2,11 @@ package common
 
 import (
 	"encoding/json"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
 	"testing"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/kubernetes"
@@ -13,12 +15,13 @@ import (
 )
 
 const (
-	InstallationName                  = "rhmi"
-	NamespacePrefix                   = "redhat-rhmi-"
+	NamespacePrefix                   = global.NamespacePrefix
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
 	AMQOnlineOperatorNamespace        = NamespacePrefix + "amq-online"
+	ApicurioRegistryProductNamespace  = NamespacePrefix + "apicurio-registry"
+	ApicurioRegistryOperatorNamespace = ApicurioRegistryProductNamespace + "-operator"
 	ApicuritoProductNamespace         = NamespacePrefix + "apicurito"
 	ApicuritoOperatorNamespace        = ApicuritoProductNamespace + "-operator"
 	CloudResourceOperatorNamespace    = NamespacePrefix + "cloud-resources-operator"
@@ -37,6 +40,11 @@ const (
 	UPSProductNamespace               = NamespacePrefix + "ups"
 	UPSOperatorNamespace              = UPSProductNamespace + "-operator"
 	MonitoringSpecNamespace           = NamespacePrefix + "monitoring"
+	Marin3rOperatorNamespace          = NamespacePrefix + "marin3r-operator"
+	Marin3rProductNamespace           = NamespacePrefix + "marin3r"
+	CustomerGrafanaNamespace          = NamespacePrefix + "customer-monitoring-operator"
+	OpenShiftConsoleRoute             = "console"
+	OpenShiftConsoleNamespace         = "openshift-console"
 )
 
 type TestingContext struct {
@@ -51,6 +59,11 @@ type TestingContext struct {
 type TestCase struct {
 	Description string
 	Test        func(t *testing.T, ctx *TestingContext)
+}
+
+type TestSuite struct {
+	TestCases   []TestCase
+	InstallType []integreatlyv1alpha1.InstallationType
 }
 
 type prometheusAPIResponse struct {
@@ -96,4 +109,14 @@ type SubscriptionCheck struct {
 type PersistentVolumeClaim struct {
 	Namespace                  string
 	PersistentVolumeClaimNames []string
+}
+
+type StatefulSets struct {
+	Namespace string
+	Name      string
+}
+
+type DeploymentConfigs struct {
+	Namespace string
+	Name      string
 }

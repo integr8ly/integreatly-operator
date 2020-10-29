@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/rhmiconfig/helpers"
 	k8sErr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +47,7 @@ var log = logf.Log.WithName("controller_rhmiconfig")
 
 // Add creates a new RHMIConfig Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, _ []string) error {
+func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
@@ -111,6 +112,25 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	//	Checks if there is an upgrade available, if there is upgrade available upgrades the status of RHMIConfig
+	if rhmiConfig.Status.UpgradeAvailable != nil {
+		err = helpers.UpdateStatus(context.TODO(), r.client, rhmiConfig)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		err = r.client.Update(context.TODO(), rhmiConfig)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		rhmiConfig.Status.Upgrade = integreatlyv1alpha1.RHMIConfigStatusUpgrade{}
+		err = r.client.Status().Update(context.TODO(), rhmiConfig)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	retryRequeue := reconcile.Result{

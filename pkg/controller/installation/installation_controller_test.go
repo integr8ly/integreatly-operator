@@ -8,8 +8,10 @@ import (
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,8 +31,8 @@ func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
 }
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = global.NamespacePrefix + "operator"
 )
 
 // Test that the installation CR spec value for UseClusterStorage is true when the
@@ -110,11 +112,15 @@ func TestCreateInstallationCR_alertingEmailAddressIsPresent(t *testing.T) {
 	ctx := context.TODO()
 
 	email := "noreply-test@rhmi-redhat.com"
+	buEmail := "noreply-test@rhmi-redhat.com"
+
 	os.Setenv("ALERTING_EMAIL_ADDRESS", email)
+	os.Setenv("BU_ALERTING_EMAIL_ADDRESS", buEmail)
 	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
 
 	// Defer unsetting the environment variables regardless of test results
 	defer os.Unsetenv("ALERTING_EMAIL_ADDRESS")
+	defer os.Unsetenv("BU_ALERTING_EMAIL_ADDRESS")
 	defer os.Unsetenv("WATCH_NAMESPACE")
 
 	// Function to test
@@ -129,11 +135,19 @@ func TestCreateInstallationCR_alertingEmailAddressIsPresent(t *testing.T) {
 		t.Fatalf("Error getting installation CR: %v", err)
 	}
 
-	if installation.Spec.AlertingEmailAddress != email {
+	if installation.Spec.AlertingEmailAddresses.CSSRE != email {
 		t.Fatalf(
-			"Expected email address value of Installation.Spec.AlertingEmailAddress to be %s, instead got %s",
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.CSSRE to be %s, instead got %s",
 			email,
-			installation.Spec.AlertingEmailAddress,
+			installation.Spec.AlertingEmailAddresses.CSSRE,
+		)
+	}
+
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit != buEmail {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.BusinessUnit to be %s, instead got %s",
+			buEmail,
+			installation.Spec.AlertingEmailAddresses.BusinessUnit,
 		)
 	}
 }
@@ -159,10 +173,83 @@ func TestCreateInstallationCR_alertingEmailAddressIsNotPresent(t *testing.T) {
 		t.Fatalf("Error getting installation CR: %v", err)
 	}
 
-	if installation.Spec.AlertingEmailAddress != "" {
+	if installation.Spec.AlertingEmailAddresses.CSSRE != "" {
 		t.Fatalf(
-			"Expected email address value of Installation.Spec.AlertingEmailAddress to be empty, instead got %s",
-			installation.Spec.AlertingEmailAddress,
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.CSSRE to be empty, instead got %s",
+			installation.Spec.AlertingEmailAddresses.CSSRE,
+		)
+	}
+
+	if installation.Spec.AlertingEmailAddresses.BusinessUnit != "" {
+		t.Fatalf(
+			"Expected email address value of Installation.Spec.AlertingEmailAddresses.BusinessUnit to be empty, instead got %s",
+			installation.Spec.AlertingEmailAddresses.BusinessUnit,
+		)
+	}
+}
+
+func TestCreateInstallationCR_installationTypeInEnvVar(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	installationType := "test"
+	os.Setenv("INSTALLATION_TYPE", installationType)
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("INSTALLATION_TYPE")
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.Type != installationType {
+		t.Fatalf(
+			"Expected installationType value of Installation.Spec.Type to be %s, instead got %s",
+			installationType,
+			installation.Spec.Type,
+		)
+	}
+}
+
+func TestCreateInstallationCR_installationTypeDefault(t *testing.T) {
+
+	mockClient := fake.NewFakeClientWithScheme(buildScheme())
+	ctx := context.TODO()
+
+	installationType := "managed"
+	os.Setenv("WATCH_NAMESPACE", defaultNamespace)
+
+	// Defer unsetting the environment variables regardless of test results
+	defer os.Unsetenv("WATCH_NAMESPACE")
+
+	// Function to test
+	err := createInstallationCR(ctx, mockClient)
+
+	if err != nil {
+		t.Fatalf("Error creating installation CR: %v", err)
+	}
+
+	installation, err := getInstallationCR(ctx, mockClient)
+	if err != nil {
+		t.Fatalf("Error getting installation CR: %v", err)
+	}
+
+	if installation.Spec.Type != installationType {
+		t.Fatalf(
+			"Expected installationType value of Installation.Spec.Type to be %s, instead got %s",
+			installationType,
+			installation.Spec.Type,
 		)
 	}
 }

@@ -11,12 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	brow "github.com/headzoo/surf/browser"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -25,6 +27,8 @@ import (
 
 const (
 	TestAuthThreeScaleUsername = "testauth-threescale"
+	threeScaleDashboardURI     = "p/admin/dashboard"
+	threeScaleOnboardingURI    = "p/admin/onboarding/wizard/intro"
 )
 
 func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
@@ -33,15 +37,15 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
-	testUser, err := getRandomKeycloakUser(ctx)
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	testUser, err := getRandomKeycloakUser(ctx, rhmi.Name)
 
 	if err != nil {
 		t.Fatalf("error getting test user: %v", err)
-	}
-
-	rhmi, err := getRHMI(ctx.Client)
-	if err != nil {
-		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
 	tsHost := rhmi.Status.Stages[v1alpha1.ProductsStage].Products[v1alpha1.Product3Scale].Host
@@ -57,13 +61,16 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 
 	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, ctx.HttpClient)
 	if err != nil {
-		t.Fatalf("error logging in to three scale: %v", err)
+		dumpAuthResources(ctx.Client, t)
+		t.Fatalf("[%s] error logging in to three scale: %v", getTimeStampPrefix(), err)
 	}
 }
 
-func getRandomKeycloakUser(ctx *TestingContext) (*TestUser, error) {
+func getRandomKeycloakUser(ctx *TestingContext, installationName string) (*TestUser, error) {
 	// create random keycloak user
-	userNamePostfix := rand.Intn(100000)
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	userNamePostfix := r1.Intn(100000)
 	testUsers := []TestUser{
 		{
 			FirstName: TestAuthThreeScaleUsername,
@@ -71,7 +78,7 @@ func getRandomKeycloakUser(ctx *TestingContext) (*TestUser, error) {
 			UserName:  fmt.Sprintf("%s-%d", TestAuthThreeScaleUsername, userNamePostfix),
 		},
 	}
-	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers)
+	err := createOrUpdateKeycloakUserCR(goctx.TODO(), ctx.Client, testUsers, installationName)
 	if err != nil {
 		return nil, fmt.Errorf("error creating test user: %v", err)
 	}
@@ -115,9 +122,7 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 
 	// const variable to validate authentication
 	const (
-		threeScaleDashboardURI  = "p/admin/dashboard"
-		threeScaleOnboardingURI = "p/admin/onboarding/wizard/intro"
-		provisioningAccountTxt  = "Your account is being provisioned"
+		provisioningAccountTxt = "Your account is being provisioned"
 	)
 
 	parsedURL, err := url.Parse(tsHost)
@@ -128,19 +133,39 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 	if parsedURL.Scheme == "" {
 		tsHost = fmt.Sprintf("https://%s", tsHost)
 	}
+
 	tsLoginURL := fmt.Sprintf("%v/p/login", tsHost)
+	tsDashboardURL := fmt.Sprintf("%v/%s", tsHost, threeScaleDashboardURI)
 
 	t.Logf("Attempting to open threescale login page with url: %s", tsLoginURL)
 
 	browser := surf.NewBrowser()
 	browser.SetCookieJar(client.Jar)
 	browser.SetTransport(client.Transport)
+	browser.SetAttribute(brow.FollowRedirects, true)
 
 	// open threescale login page
 	err = browser.Open(tsLoginURL)
 	if err != nil {
 		return fmt.Errorf("failed to open browser url: %w", err)
 	}
+
+	// check if logged in already
+	if browser.StatusCode() == 302 {
+
+		t.Logf("status code %d before redirect to landing page", browser.StatusCode())
+
+		// opens landing page
+		browser.Open(tsDashboardURL)
+
+		if isUserAuthenticated(browser.Url().RequestURI()) {
+			return nil
+		}
+	}
+
+	t.Logf("status code %d before redirect to landing page", browser.StatusCode())
+
+	t.Logf("url %s body %s", browser.Url(), browser.Body())
 
 	// click on authenticate throught rhsso
 	err = browser.Click("a.authorizeLink")
@@ -156,6 +181,7 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 
 	// waits until the account is provisioned and user is authenticated in three scale
 	err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
+		t.Logf("browser URL first %s%s", browser.Url(), browser.Url().RequestURI())
 
 		browser.Find(fmt.Sprintf("h1:contains('%s')", provisioningAccountTxt)).Each(func(index int, s *goquery.Selection) {
 
@@ -177,20 +203,36 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 			})
 		})
 
-		t.Logf("browser URL %s", browser.Url().RequestURI())
-		t.Logf("does browser URL contains %s or %s %t", threeScaleDashboardURI, threeScaleOnboardingURI,
-			strings.Contains(browser.Url().RequestURI(), threeScaleDashboardURI) ||
-				strings.Contains(browser.Url().RequestURI(), threeScaleOnboardingURI))
+		// checks if an error happened in the login
+		if browser.StatusCode() == 502 {
+			browser.Open(tsDashboardURL)
 
-		if strings.Contains(browser.Url().RequestURI(), threeScaleDashboardURI) ||
-			strings.Contains(browser.Url().RequestURI(), threeScaleOnboardingURI) {
-			return true, nil
+			// if redirected to the login page try again
+			if browser.Url().String() == tsLoginURL {
+				t.Logf("browser url redirected to %s", browser.Url().String())
+
+				// click on authenticate throught rhsso
+				err = browser.Click("a.authorizeLink")
+				if err != nil {
+					return false, fmt.Errorf("failed to click authenticate throught rhsso: %w", err)
+				}
+			}
 		}
-		return false, nil
+
+		t.Logf("browser URL %s%s", browser.Url(), browser.Url().RequestURI())
+		t.Logf("status code %d", browser.StatusCode())
+
+		return isUserAuthenticated(browser.Url().RequestURI()), nil
 	})
+
 	if err != nil {
 		return fmt.Errorf("Account was not provisioned: %w", err)
 	}
 
 	return nil
+}
+
+func isUserAuthenticated(tsURL string) bool {
+	return strings.Contains(tsURL, threeScaleDashboardURI) ||
+		strings.Contains(tsURL, threeScaleOnboardingURI)
 }

@@ -1,11 +1,13 @@
 ---
-targets:
-  - 2.4.0
+tags:
+  - automated
 ---
 
 # M04 - Verify rhmi_status metric
 
 More info: <https://issues.redhat.com/browse/INTLY-8120>
+
+**Automated Test**: [rhmicr_metrics.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/rhmicr_metrics.go)
 
 ## Steps
 

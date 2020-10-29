@@ -1,7 +1,6 @@
 ---
 estimate: 15m
 tags:
-  - happy-path
   - automated
 ---
 

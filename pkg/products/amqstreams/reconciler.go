@@ -29,10 +29,13 @@ import (
 )
 
 var (
-	defaultInstallationNamespace         = "amq-streams"
-	clusterName                          = "rhmi-cluster"
+	defaultInstallationNamespace = "amq-streams"
+	// ClusterName is the Kafka cluster name
+	ClusterName                          = "rhmi-cluster"
 	manifestPackage                      = "integreatly-amq-streams"
-	replicas                             = 3
+	kafkaReplicas                        = 3
+	zookeeperReplicas                    = 3
+	entityOperatorReplicas               = 1
 	offsetsTopicReplicationFactor        = "3"
 	transactionStateLogReplicationFactor = "3"
 )
@@ -91,12 +94,14 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 // Reconcile reads that state of the cluster for amq streams and makes changes based on the state read
 // and what is required
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	operatorNamespace := r.Config.GetOperatorNamespace()
+	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetOperatorNamespace())
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -107,9 +112,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, r.Config.GetOperatorNamespace(), installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", r.Config.GetOperatorNamespace()), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
@@ -120,13 +125,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, serverClient)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Namespace: r.Config.GetOperatorNamespace(), Channel: marketplace.IntegreatlyChannel, Pkg: constants.AMQStreamsSubscriptionName, ManifestPackage: manifestPackage}, []string{ns}, backup.NewNoopBackupExecutor(), serverClient)
+	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.AMQStreamsSubscriptionName), err)
 		return phase, err
@@ -144,6 +143,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.setHostInConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to share host", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -158,7 +163,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 
 	kafka := &kafkav1alpha1.Kafka{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
+			Name:      ClusterName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
@@ -168,12 +173,12 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.APIVersion = fmt.Sprintf("%s/%s", kafkav1alpha1.SchemeGroupVersion.Group, kafkav1alpha1.SchemeGroupVersion.Version)
 		kafka.Kind = kafkav1alpha1.KafkaKind
 
-		kafka.Name = clusterName
+		kafka.Name = ClusterName
 		kafka.Namespace = r.Config.GetNamespace()
 
 		kafka.Spec.Kafka.Version = "2.1.1"
-		if kafka.Spec.Kafka.Replicas < replicas {
-			kafka.Spec.Kafka.Replicas = replicas
+		if kafka.Spec.Kafka.Replicas < kafkaReplicas {
+			kafka.Spec.Kafka.Replicas = kafkaReplicas
 		}
 		kafka.Spec.Kafka.Listeners = map[string]kafkav1alpha1.KafkaListener{
 			"plain": {},
@@ -187,8 +192,8 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 		kafka.Spec.Kafka.Storage.Size = "10Gi"
 		kafka.Spec.Kafka.Storage.DeleteClaim = false
 
-		if kafka.Spec.Zookeeper.Replicas < replicas {
-			kafka.Spec.Zookeeper.Replicas = replicas
+		if kafka.Spec.Zookeeper.Replicas < zookeeperReplicas {
+			kafka.Spec.Zookeeper.Replicas = zookeeperReplicas
 		}
 		kafka.Spec.Zookeeper.Storage.Type = "persistent-claim"
 		kafka.Spec.Zookeeper.Storage.Size = "10Gi"
@@ -221,24 +226,69 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to check amq streams installation: %w", err)
 	}
 
-	//expecting 8 pods in total
-	if len(pods.Items) < 8 {
+	minExpectedPods := kafkaReplicas + zookeeperReplicas + entityOperatorReplicas
+	if len(pods.Items) < minExpectedPods {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	//and they should all be ready
-checkPodStatus:
-	for _, pod := range pods.Items {
-		for _, cnd := range pod.Status.Conditions {
-			if cnd.Type == corev1.ContainersReady {
-				if cnd.Status != corev1.ConditionStatus("True") {
-					return integreatlyv1alpha1.PhaseInProgress, nil
-				}
-				break checkPodStatus
-			}
-		}
+	if !r.allPodsReady(pods) {
+		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	r.logger.Infof("all pods ready, returning complete")
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) allPodsReady(pods *corev1.PodList) bool {
+	for _, pod := range pods.Items {
+		for _, cnd := range pod.Status.Conditions {
+			if cnd.Type == corev1.ContainersReady {
+				if cnd.Status != corev1.ConditionStatus("True") {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// setHostInConfig sets the Kafka Bootstrap service address into the config object
+func (r *Reconciler) setHostInConfig(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{}
+
+	err := client.Get(ctx, k8sclient.ObjectKey{Name: "rhmi-cluster-kafka-bootstrap", Namespace: r.Config.GetNamespace()}, service)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to read amq streams bootstrap server service: %w", err)
+	}
+
+	r.Config.SetHost(fmt.Sprintf("%s.%s.svc:9092", service.GetName(), service.GetNamespace()))
+	err = r.ConfigManager.WriteConfig(r.Config)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not persist config: %w", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.AMQStreamsSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{productNamespace},
+		backup.NewNoopBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
 }

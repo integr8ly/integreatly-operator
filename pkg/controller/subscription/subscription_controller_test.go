@@ -3,17 +3,17 @@ package subscription
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/webapp"
 
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
-	integr8lyversion "github.com/integr8ly/integreatly-operator/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,8 +29,11 @@ const (
 
 func getBuildScheme() (*runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	err := v1alpha1.SchemeBuilder.AddToScheme(scheme)
+	err := integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return scheme, err
+	}
+	err = v1alpha1.SchemeBuilder.AddToScheme(scheme)
 	return scheme, err
 }
 
@@ -118,7 +121,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription: %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalManual {
 					t.Fatalf("expected Manual but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -147,7 +153,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: "other-ns"}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: "other-ns"}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription : %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -176,7 +185,10 @@ func TestSubscriptionReconciler(t *testing.T) {
 					t.Fatalf("unexpected error: %s", err.Error())
 				}
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: "other-package", Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: "other-package", Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting subscription: %s", err.Error())
+				}
 				if sub.Spec.InstallPlanApproval != v1alpha1.ApprovalAutomatic {
 					t.Fatalf("expected Automatic but got %s", sub.Spec.InstallPlanApproval)
 				}
@@ -230,53 +242,15 @@ func TestSubscriptionReconciler(t *testing.T) {
 				}
 
 				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				err = c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
+				if err != nil {
+					t.Fatalf("unexpected error getting sublscription: %s", err.Error())
+				}
 				if sub.Status.InstalledCSV != sub.Status.CurrentCSV {
 					t.Fatalf("expected installedCSV %s to be the same as currentCSV  %s", sub.Status.InstalledCSV, sub.Status.CurrentCSV)
 				}
 			},
 			catalogsourceClient: getCatalogSourceClient(""),
-		},
-		{
-			Name: "subscription controller change targetversion in rhmi configCR",
-			Request: reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: operatorNamespace,
-					Name:      IntegreatlyPackage,
-				},
-			},
-			APISubscription: &v1alpha1.Subscription{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: operatorNamespace,
-					Name:      IntegreatlyPackage,
-				},
-				Spec: &olmv1alpha1.SubscriptionSpec{
-					InstallPlanApproval: olmv1alpha1.ApprovalManual,
-				},
-				Status: v1alpha1.SubscriptionStatus{
-					InstallPlanRef: &v1.ObjectReference{
-						Name:      installPlan.Name,
-						Namespace: installPlan.Namespace,
-					},
-					InstalledCSV: "123",
-					CurrentCSV:   "124",
-				},
-			},
-			Verify: func(c k8sclient.Client, res reconcile.Result, err error, t *testing.T) {
-				if err != nil {
-					t.Fatalf("unexpected error: %s", err.Error())
-				}
-
-				sub := &v1alpha1.Subscription{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: IntegreatlyPackage, Namespace: operatorNamespace}, sub)
-
-				rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
-				c.Get(context.TODO(), k8sclient.ObjectKey{Name: "rhmi-config", Namespace: operatorNamespace}, rhmiConfig)
-				if rhmiConfig.Status.TargetVersion != sub.Status.CurrentCSV {
-					t.Fatalf("expected TargetVersion to be %s got %s", sub.Status.CurrentCSV, rhmiConfig.Status.TargetVersion)
-				}
-			},
-			catalogsourceClient: getCatalogSourceClient(fmt.Sprintf("%s.v%s", CSVNamePrefix, integr8lyversion.Version)),
 		},
 	}
 
@@ -294,9 +268,89 @@ func TestSubscriptionReconciler(t *testing.T) {
 				catalogSourceClient: scenario.catalogsourceClient,
 				operatorNamespace:   operatorNamespace,
 				webbappNotifier:     &webapp.NoOp{},
+				csvLocator:          &csvlocator.EmbeddedCSVLocator{},
 			}
 			res, err := reconciler.Reconcile(scenario.Request)
 			scenario.Verify(client, res, err, t)
+		})
+	}
+}
+
+func TestShouldReconcileSubscription(t *testing.T) {
+	scenarios := []struct {
+		Name           string
+		Namespace      string
+		Request        reconcile.Request
+		ExpectedResult bool
+	}{
+		{
+			Name:      "Non matching namespace",
+			Namespace: global.NamespacePrefix + "operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "integreatly",
+					Namespace: "another",
+				},
+			},
+			ExpectedResult: false,
+		},
+		{
+			Name:      "Not in reconcile name list",
+			Namespace: global.NamespacePrefix + "operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "another",
+					Namespace: global.NamespacePrefix + "operator",
+				},
+			},
+			ExpectedResult: false,
+		},
+		{
+			Name:      "\"integreatly\" subscription",
+			Namespace: global.NamespacePrefix + "operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "integreatly",
+					Namespace: global.NamespacePrefix + "operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+		{
+			Name:      "RHMI Addon subscription",
+			Namespace: global.NamespacePrefix + "operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "addon-rhmi",
+					Namespace: global.NamespacePrefix + "operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+		{
+			Name:      "Managed API Addon subscription",
+			Namespace: global.NamespacePrefix + "operator",
+			Request: reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "addon-managed-api-service",
+					Namespace: global.NamespacePrefix + "operator",
+				},
+			},
+			ExpectedResult: true,
+		},
+	}
+
+	for _, scenario := range scenarios {
+		t.Run(scenario.Name, func(t *testing.T) {
+			reconciler := &ReconcileSubscription{
+				operatorNamespace: scenario.Namespace,
+			}
+
+			result := reconciler.shouldReconcileSubscription(scenario.Request)
+
+			if result != scenario.ExpectedResult {
+				t.Errorf("Unexpected result. Expected %v, got %v", scenario.ExpectedResult, result)
+			}
 		})
 	}
 }

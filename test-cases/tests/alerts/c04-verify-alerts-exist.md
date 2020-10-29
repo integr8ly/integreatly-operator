@@ -1,4 +1,5 @@
 ---
+estimate: 15m
 tags:
   - automated
 ---

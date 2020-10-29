@@ -2,6 +2,7 @@ package installation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -17,18 +18,22 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 )
 
 func NewBootstrapReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
@@ -92,6 +97,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		events.HandleError(r.recorder, installation, phase, "Failed to check cloud resources config settings", err)
 		return phase, err
 	}
+
+	phase, err = r.checkRateLimitsConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check rate limits config settings", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcilePriorityClass(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile priority class", err)
+		return phase, err
+	}
+
+	phase, err = r.checkRateLimitAlertsConfig(ctx, serverClient)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
+		return phase, err
+	}
+
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)
 
 	metrics.SetRHMIInfo(installation)
@@ -101,28 +125,156 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
-		cloudConfig := &corev1.ConfigMap{
+func (r *Reconciler) reconcilePriorityClass(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		priorityClass := &schedulingv1.PriorityClass{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:       DefaultCloudResourceConfigName,
-				Namespace:  r.installation.Namespace,
-				Finalizers: []string{deletionFinalizer},
+				Name: r.installation.Spec.PriorityClassName,
 			},
 		}
+		if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, priorityClass, func() error {
 
-		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
-			cloudConfig.Data = map[string]string{
-				"managed":  `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
-				"workshop": `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`,
-			}
+			priorityClass.Value = 1000000000
+			priorityClass.GlobalDefault = false
+			priorityClass.Description = "Priority Class for managed-api"
+
 			return nil
-		})
-
-		if err != nil {
+		}); err != nil {
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
+}
+
+func (r *Reconciler) checkCloudResourcesConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	cloudConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       DefaultCloudResourceConfigName,
+			Namespace:  r.installation.Namespace,
+			Finalizers: []string{deletionFinalizer},
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, cloudConfig, func() error {
+		if cloudConfig.Data == nil {
+			cloudConfig.Data = map[string]string{}
+		}
+		if strings.ToLower(r.installation.Spec.UseClusterStorage) == "true" {
+			cloudConfig.Data["managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["self-managed"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["managed-api"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+		} else {
+			cloudConfig.Data["managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			cloudConfig.Data["workshop"] = `{"blobstorage":"openshift", "smtpcredentials":"openshift", "redis":"openshift", "postgres":"openshift"}`
+			cloudConfig.Data["self-managed"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+			cloudConfig.Data["managed-api"] = `{"blobstorage":"aws", "smtpcredentials":"aws", "redis":"aws", "postgres":"aws"}`
+		}
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkRateLimitsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	rlConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      marin3rconfig.RateLimitConfigMapName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, rlConfig, func() error {
+		if rlConfig.Data == nil {
+			rlConfig.Data = map[string]string{}
+		}
+
+		if _, ok := rlConfig.Data["rate_limit"]; ok {
+			return nil
+		}
+
+		defaultConfig := map[string]*marin3rconfig.RateLimitConfig{
+			marin3rconfig.ManagedApiServiceSKU: {
+				Unit:            marin3rconfig.DefaultRateLimitUnit,
+				RequestsPerUnit: uint32(marin3rconfig.DefaultRateLimitRequests),
+			},
+		}
+
+		defaultConfigJSON, err := json.Marshal(defaultConfig)
+		if err != nil {
+			return fmt.Errorf("failed to marshal default config: %w", err)
+		}
+
+		rlConfig.Data["rate_limit"] = string(defaultConfigJSON)
+
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	alertsConfig := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      marin3rconfig.AlertConfigMapName,
+			Namespace: r.installation.Namespace,
+		},
+	}
+
+	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, alertsConfig, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(alertsConfig, r.installation)
+
+		if alertsConfig.Data == nil {
+			alertsConfig.Data = map[string]string{}
+		}
+
+		if _, ok := alertsConfig.Data["alerts"]; ok {
+			return nil
+		}
+
+		maxRate1 := "90%"
+		maxRate2 := "95%"
+
+		defaultConfig := map[string]*marin3rconfig.AlertConfig{
+			"api-usage-alert-level1": {
+				RuleName: "Level1ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "80%",
+				MaxRate:  &maxRate1,
+				Period:   "4h",
+			},
+			"api-usage-alert-level2": {
+				RuleName: "Level2ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "90%",
+				MaxRate:  &maxRate2,
+				Period:   "2h",
+			},
+			"api-usage-alert-level3": {
+				RuleName: "Level3ThreeScaleApiUsageThresholdExceeded",
+				Level:    "warning",
+				MinRate:  "95%",
+				MaxRate:  nil,
+				Period:   "30m",
+			},
+		}
+
+		defaultConfigJSON, err := json.MarshalIndent(defaultConfig, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		alertsConfig.Data["alerts"] = string(defaultConfigJSON)
+
+		return nil
+	}); err != nil {
+		return integreatlyv1alpha1.PhaseInProgress, err
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -308,31 +460,6 @@ func (r *Reconciler) reconcilerGithubOauthSecret(ctx context.Context, serverClie
 }
 
 func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	configRole := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhmiconfig-dedicated-admins-role",
-			Namespace: r.ConfigManager.GetOperatorNamespace(),
-		},
-	}
-
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRole, func() error {
-		configRole.Rules = []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"integreatly.org"},
-				Resources: []string{"rhmiconfigs"},
-				Verbs:     []string{"update", "get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{"integreatly.org"},
-				Resources: []string{"rhmis"},
-				Verbs:     []string{"watch", "get", "list"},
-			},
-		}
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role: %w", err)
-	}
-
 	configRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmiconfig-dedicated-admins-role-binding",
@@ -340,22 +467,24 @@ func (r *Reconciler) reconcileRHMIConfigPermissions(ctx context.Context, serverC
 		},
 	}
 
-	if _, err := controllerutil.CreateOrUpdate(ctx, serverClient, configRoleBinding, func() error {
-		configRoleBinding.RoleRef = rbacv1.RoleRef{
-			Name: configRole.GetName(),
-			Kind: "Role",
+	// Get the dedicated admins role binding. If it's not found, return
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{
+		Name:      "rhmiconfig-dedicated-admins-role-binding",
+		Namespace: r.ConfigManager.GetOperatorNamespace(),
+	}, configRoleBinding); err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		configRoleBinding.Subjects = []rbacv1.Subject{
-			{
-				Name: "dedicated-admins",
-				Kind: "Group",
-			},
-		}
-		return nil
-	}); err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating RHMI Config dedicated admin role binding: %w", err)
+
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	logrus.Info("Created RHMI config dedicated admin Role and Role Binding successfully reconciled")
+
+	logrus.Info("Found and deleted rhmiconfig-dedicated-admins-role-binding")
+
+	// Delete the role binding
+	if err := serverClient.Delete(ctx, configRoleBinding); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

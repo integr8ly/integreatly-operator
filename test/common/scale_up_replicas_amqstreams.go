@@ -19,7 +19,7 @@ const (
 	scaleUpAmqstreamsReplicas   = 1
 	scaleDownAmqstreamsReplicas = 1
 	amqstreamsName              = "rhmi-cluster"
-	amqstreamsNamespace         = "redhat-rhmi-amq-streams"
+	amqstreamsNamespace         = NamespacePrefix + "amq-streams"
 	retryIntervalAmqstreams     = time.Second * 20
 	timeoutAmqstreams           = time.Minute * 7
 )

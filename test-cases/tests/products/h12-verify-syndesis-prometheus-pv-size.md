@@ -1,6 +1,9 @@
 ---
+environments:
+  - osd-post-upgrade
 targets:
   - 2.3.0
+  - 2.8.0
 ---
 
 # H12 - Verify Syndesis Prometheus PV size

@@ -14,5 +14,9 @@ manifest/check/registries:
 	@! grep "quay.io/integreatly/delorean" -r manifests/ --include=*clusterserviceversion.{yml,yaml}
 	@! grep "registry-proxy.engineering.redhat.com" -r manifests/ --include=*clusterserviceversion.{yml,yaml}
 
+.PHONY: manifest/check/graph
+manifest/check/graph:
+	delorean ews check-olm-graph -d ./manifests
+
 .PHONY: manifest/check
-manifest/check: manifest/check/image_mirror_mapping manifest/check/registries
+manifest/check: manifest/check/image_mirror_mapping manifest/check/registries manifest/check/graph

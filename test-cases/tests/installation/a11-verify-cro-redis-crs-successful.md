@@ -1,6 +1,5 @@
 ---
 tags:
-  - happy-path
   - automated
 ---
 

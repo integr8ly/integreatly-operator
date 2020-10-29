@@ -1,10 +1,16 @@
 ---
+environments:
+  - osd-fresh-install
 estimate: 15m
-tags:
+targets:
+  - 2.3.0
+  - 2.6.0
 ---
 
 # G07 - Verify changes for customising solution explorer user roles
 
-Acceptance criteria:
+## Steps
 
-The masthead should have a user drop down menu in the right side. When accessed there should be user information determining if the user is a developer or admin user.
+1. Login to the Solution Explorer as a developer and in a different browser/ incognito window as an admin user
+2. Select the drop down menu in the right side of the masthead
+   > The drop down should show the user information determining if the user is a developer or an admin user.

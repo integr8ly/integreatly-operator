@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"testing"
 
 	goctx "context"
@@ -10,8 +11,8 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var expectedRoutes = map[string][]ExpectedRoute{
-	"3scale": []ExpectedRoute{
+var (
+	threeScaleRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "backend",
 			isTLS: true,
@@ -46,9 +47,9 @@ var expectedRoutes = map[string][]ExpectedRoute{
 			isTLS:           true,
 			ServiceName:     "system-provider",
 		},
-	},
+	}
 
-	"amq-online": []ExpectedRoute{
+	amqOnlineRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "console",
 			isTLS: true,
@@ -57,9 +58,9 @@ var expectedRoutes = map[string][]ExpectedRoute{
 			Name:  "standard-authservice",
 			isTLS: true,
 		},
-	},
+	}
 
-	"codeready-workspaces": []ExpectedRoute{
+	codeReadyRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "codeready",
 			isTLS: true,
@@ -72,16 +73,16 @@ var expectedRoutes = map[string][]ExpectedRoute{
 			Name:  "plugin-registry",
 			isTLS: true,
 		},
-	},
+	}
 
-	"fuse": []ExpectedRoute{
+	fuseRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "syndesis",
 			isTLS: true,
 		},
-	},
+	}
 
-	"middleware-monitoring-operator": []ExpectedRoute{
+	middlewareMonitoringRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "alertmanager-route",
 			isTLS: true,
@@ -94,45 +95,45 @@ var expectedRoutes = map[string][]ExpectedRoute{
 			Name:  "prometheus-route",
 			isTLS: true,
 		},
-	},
+	}
 
-	"rhsso": []ExpectedRoute{
+	rhssoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
-			isTLS: false,
+			isTLS: true,
 		},
 		ExpectedRoute{
 			Name:  "keycloak-edge",
 			isTLS: true,
 		},
-	},
+	}
 
-	"solution-explorer": []ExpectedRoute{
+	solutionExplorerRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "solution-explorer",
 			isTLS: true,
 		},
-	},
+	}
 
-	"ups": []ExpectedRoute{
+	upsRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "ups-unifiedpush-proxy",
 			isTLS: true,
 		},
-	},
+	}
 
-	"user-sso": []ExpectedRoute{
+	userSsoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "keycloak",
-			isTLS: false,
+			isTLS: true,
 		},
 		ExpectedRoute{
 			Name:  "keycloak-edge",
 			isTLS: true,
 		},
-	},
+	}
 
-	"apicurito": []ExpectedRoute{
+	apicuritoRoutes = []ExpectedRoute{
 		ExpectedRoute{
 			Name:  "apicurito",
 			isTLS: true,
@@ -141,11 +142,47 @@ var expectedRoutes = map[string][]ExpectedRoute{
 			Name:  "fuse-apicurito-generator",
 			isTLS: true,
 		},
-	},
+	}
+	customerGrafanaRoutes = []ExpectedRoute{
+		{
+			Name:  "grafana-route",
+			isTLS: true,
+		},
+	}
+)
+
+var rhmi2ExpectedRoutes = map[string][]ExpectedRoute{
+	"3scale":                         threeScaleRoutes,
+	"amq-online":                     amqOnlineRoutes,
+	"codeready-workspaces":           codeReadyRoutes,
+	"fuse":                           fuseRoutes,
+	"middleware-monitoring-operator": middlewareMonitoringRoutes,
+	"rhsso":                          rhssoRoutes,
+	"solution-explorer":              solutionExplorerRoutes,
+	"ups":                            upsRoutes,
+	"user-sso":                       userSsoRoutes,
+	"apicurito":                      apicuritoRoutes,
+}
+
+var managedApiExpectedRoutes = map[string][]ExpectedRoute{
+	"3scale":                         threeScaleRoutes,
+	"middleware-monitoring-operator": middlewareMonitoringRoutes,
+	"rhsso":                          rhssoRoutes,
+	"user-sso":                       userSsoRoutes,
+	"customer-monitoring-operator":   customerGrafanaRoutes,
 }
 
 // TestIntegreatlyRoutesExist tests that the routes for all the products are created
 func TestIntegreatlyRoutesExist(t *testing.T, ctx *TestingContext) {
+
+	rhmi, err := GetRHMI(ctx.Client, true)
+
+	if err != nil {
+		t.Fatalf("failed to get the RHMI: %s", err)
+	}
+
+	expectedRoutes := getExpectedRoutes(rhmi.Spec.Type)
+
 	for product, routes := range expectedRoutes {
 		for _, expectedRoute := range routes {
 			foundRoute, err := getRoute(t, ctx, product, expectedRoute)
@@ -162,6 +199,14 @@ func TestIntegreatlyRoutesExist(t *testing.T, ctx *TestingContext) {
 					expectedRoute.Name, product, expectedRoute.isTLS, foundTLS)
 			}
 		}
+	}
+}
+
+func getExpectedRoutes(installType string) map[string][]ExpectedRoute {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return managedApiExpectedRoutes
+	} else {
+		return rhmi2ExpectedRoutes
 	}
 }
 

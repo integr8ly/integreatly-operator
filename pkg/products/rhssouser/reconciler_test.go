@@ -9,7 +9,6 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
-	"github.com/sirupsen/logrus"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
@@ -24,6 +23,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	consolev1 "github.com/openshift/api/console/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -34,8 +34,8 @@ import (
 
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	marketplacev1 "github.com/operator-framework/operator-marketplace/pkg/apis/operators/v1"
+	appsv1 "k8s.io/api/apps/v1"
 
 	crov1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	croTypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
@@ -83,7 +83,7 @@ func getRHSSOCredentialSeed() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      adminCredentialSecretName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 		Data: map[string][]byte{},
 		Type: corev1.SecretTypeOpaque,
@@ -113,6 +113,10 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	err = corev1.SchemeBuilder.AddToScheme(scheme)
+	if err != nil {
+		return nil, err
+	}
+	err = appsv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +150,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 	}
 	err = monitoringv1.SchemeBuilder.AddToScheme(scheme)
 	if err != nil {
+		return nil, err
+	}
+	if err := consolev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return scheme, err
@@ -240,7 +247,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 	}
 
@@ -389,164 +396,6 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 	}
 }
 
-func TestReconciler_handleProgress(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	kc := &keycloak.Keycloak{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keycloakName,
-			Namespace: defaultRhssoNamespace,
-		},
-	}
-
-	kcr := getKcr(keycloak.KeycloakRealmStatus{
-		Phase: keycloak.PhaseReconciling,
-	})
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-secret",
-			Namespace: defaultRhssoNamespace,
-		},
-	}
-
-	githubOauthSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "github-oauth-secret",
-			Namespace: defaultOperatorNamespace,
-		},
-	}
-
-	oauthClientSecrets := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "oauth-client-secrets",
-			Namespace: defaultOperatorNamespace,
-		},
-		Data: map[string][]byte{
-			"rhssouser": bytes.NewBufferString("test").Bytes(),
-		},
-	}
-
-	cases := []struct {
-		Name                  string
-		ExpectError           bool
-		ExpectedStatus        integreatlyv1alpha1.StatusPhase
-		ExpectedError         string
-		FakeConfig            *config.ConfigReadWriterMock
-		FakeClient            k8sclient.Client
-		FakeOauthClient       oauthClient.OauthV1Interface
-		FakeMPM               *marketplace.MarketplaceInterfaceMock
-		Installation          *integreatlyv1alpha1.RHMI
-		Recorder              record.EventRecorder
-		ApiUrl                string
-		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
-	}{
-		{
-			Name:                  "test ready kcr returns phase complete",
-			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &integreatlyv1alpha1.RHMI{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-		},
-		{
-			Name:                  "test unready kcr cr returns phase in progress",
-			ExpectedStatus:        integreatlyv1alpha1.PhaseInProgress,
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &integreatlyv1alpha1.RHMI{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-		},
-		{
-			Name:                  "test missing kc cr returns phase failed",
-			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
-			ExpectError:           true,
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kcr, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &integreatlyv1alpha1.RHMI{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-		},
-		{
-			Name:                  "test missing kcr cr returns phase failed",
-			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
-			ExpectError:           true,
-			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig:            basicConfigMock(),
-			Installation:          &integreatlyv1alpha1.RHMI{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-		},
-		{
-			Name:            "test failed config write",
-			ExpectedStatus:  integreatlyv1alpha1.PhaseFailed,
-			ExpectError:     true,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
-			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
-			FakeConfig: &config.ConfigReadWriterMock{
-				ReadRHSSOUserFunc: func() (*config.RHSSOUser, error) {
-					return config.NewRHSSOUser(config.ProductConfig{
-						"NAMESPACE": "user-sso",
-						"REALM":     "openshift",
-						"URL":       "rhsso.openshift-cluster.com",
-					}), nil
-				},
-				WriteConfigFunc: func(config config.ConfigReadable) error {
-					return errors.New("error writing config")
-				},
-			},
-			Installation:          &integreatlyv1alpha1.RHMI{},
-			Recorder:              setupRecorder(),
-			ApiUrl:                "https://serverurl",
-			KeycloakClientFactory: getMoqKeycloakClientFactory(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			testReconciler, err := NewReconciler(
-				tc.FakeConfig,
-				tc.Installation,
-				tc.FakeOauthClient,
-				tc.FakeMPM,
-				tc.Recorder,
-				tc.ApiUrl,
-				tc.KeycloakClientFactory,
-			)
-			if err != nil && err.Error() != tc.ExpectedError {
-				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
-			}
-
-			status, err := testReconciler.handleProgressPhase(context.TODO(), tc.FakeClient)
-
-			if err != nil && !tc.ExpectError {
-				t.Fatalf("expected error but got one: %v", err)
-			}
-
-			if err == nil && tc.ExpectError {
-				t.Fatal("expected error but got none")
-			}
-
-			if status != tc.ExpectedStatus {
-				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
-			}
-		})
-	}
-}
-
 func TestReconciler_fullReconcile(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
@@ -556,7 +405,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	installation := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       "installation",
-			Namespace:  defaultRhssoNamespace,
+			Namespace:  defaultNamespace,
 			Finalizers: []string{"finalizer.user-sso.integreatly.org"},
 			UID:        types.UID("xyz"),
 		},
@@ -581,7 +430,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultRhssoNamespace,
+			Name: defaultNamespace,
 			Labels: map[string]string{
 				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
@@ -593,7 +442,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	operatorNS := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultRhssoNamespace + "-operator",
+			Name: defaultNamespace + "-operator",
 			Labels: map[string]string{
 				resources.OwnerLabelKey: string(installation.GetUID()),
 			},
@@ -606,14 +455,14 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	kc := &keycloak.Keycloak{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keycloakName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 	}
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 	}
 
@@ -654,13 +503,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	croPostgres := &crov1.Postgres{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("rhssouser-postgres-%s", installation.Name),
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 		Status: crov1.PostgresStatus{
 			Phase: croTypes.PhaseComplete,
 			SecretRef: &croTypes.SecretRef{
 				Name:      "test",
-				Namespace: defaultRhssoNamespace,
+				Namespace: defaultNamespace,
 			},
 		},
 	}
@@ -669,10 +518,20 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	croPostgresSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 		Data: map[string][]byte{},
 		Type: corev1.SecretTypeOpaque,
+	}
+
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				"app": "keycloak",
+			},
+		},
 	}
 
 	cases := []struct {
@@ -693,11 +552,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		{
 			Name:            "test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
-			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed()),
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:      basicConfigMock(),
 			FakeMPM: &marketplace.MarketplaceInterfaceMock{
-				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, owner ownerutil.Owner, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval) error {
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
 
 					return nil
 				},
@@ -762,318 +621,11 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}
 }
 
-func TestReconciler_reconcileCloudResources(t *testing.T) {
-	scheme, err := getBuildScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	installation := &integreatlyv1alpha1.RHMI{
-		ObjectMeta: controllerruntime.ObjectMeta{
-			Name:      "test",
-			Namespace: defaultRhssoNamespace,
-		},
-	}
-
-	//completed postgres that points at the secret croPostgresSecret
-	croPostgres := &crov1.Postgres{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("rhssouser-postgres-%s", installation.Name),
-			Namespace: defaultRhssoNamespace,
-		},
-		Status: crov1.PostgresStatus{
-			Phase: croTypes.PhaseComplete,
-			SecretRef: &croTypes.SecretRef{
-				Name:      "test",
-				Namespace: defaultRhssoNamespace,
-			},
-		},
-	}
-
-	//secret created by the cloud resource operator postgres reconciler
-	croPostgresSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test",
-			Namespace: defaultRhssoNamespace,
-		},
-		Data: map[string][]byte{},
-		Type: corev1.SecretTypeOpaque,
-	}
-
-	tests := []struct {
-		name         string
-		installation *integreatlyv1alpha1.RHMI
-		fakeClient   func() k8sclient.Client
-		want         integreatlyv1alpha1.StatusPhase
-		wantErr      bool
-	}{
-		{
-			name:         "error creating postgres cr causes state failed",
-			installation: &integreatlyv1alpha1.RHMI{},
-			fakeClient: func() k8sclient.Client {
-				mockClient := moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-				mockClient.GetFunc = func(ctx context.Context, key types.NamespacedName, obj runtime.Object) error {
-					return errors.New("test error")
-				}
-				return mockClient
-			},
-			wantErr: true,
-			want:    integreatlyv1alpha1.PhaseFailed,
-		},
-		{
-			name:         "nil secret causes state awaiting",
-			installation: installation,
-			fakeClient: func() k8sclient.Client {
-				pendingCroPostgres := croPostgres.DeepCopy()
-				pendingCroPostgres.Status.Phase = croTypes.PhaseInProgress
-				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgresSecret, pendingCroPostgres)
-			},
-			want: integreatlyv1alpha1.PhaseAwaitingCloudResources,
-		},
-		{
-			name:         "defined secret causes state completed",
-			installation: installation,
-			fakeClient: func() k8sclient.Client {
-				return moqclient.NewSigsClientMoqWithScheme(scheme, croPostgres, croPostgresSecret)
-			},
-			want: integreatlyv1alpha1.PhaseCompleted,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := &Reconciler{
-				logger: logrus.NewEntry(logrus.StandardLogger()),
-				Config: &config.RHSSOUser{
-					Config: map[string]string{
-						"NAMESPACE": defaultRhssoNamespace,
-					},
-				},
-			}
-			got, err := r.reconcileCloudResources(context.TODO(), tt.installation, tt.fakeClient())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("reconcileCloudResources() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("reconcileCloudResources() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestReconciler_reconcileFirstLoginAuthFlow(t *testing.T) {
-	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
-
-	r := &Reconciler{
-		logger: logrus.NewEntry(logrus.StandardLogger()),
-		Config: &config.RHSSOUser{
-			Config: map[string]string{
-				"NAMESPACE": defaultRhssoNamespace,
-			},
-		},
-		keycloakClientFactory: keycloakClientFactory,
-	}
-
-	kc := &keycloak.Keycloak{}
-	statusPhase, err := r.reconcileFirstLoginAuthFlow(kc)
-
-	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
-		t.Errorf("Expected phase to be completed, got %s", statusPhase)
-	}
-	if err != nil {
-		t.Errorf("Unexpected error occurred: %s", err)
-	}
-
-	executions := mockContext.AuthenticationFlowsExecutions[firstBrokerLoginFlowAlias]
-
-	// Iterate through the executions for the first broker login flow and, for
-	// the "review profile config" execution, assert that it's disabled after
-	// the reconciliation finished
-	for _, execution := range executions {
-		if execution.Alias != reviewProfileExecutionAlias {
-			continue
-		}
-
-		if execution.Requirement != "DISABLED" {
-			t.Errorf("Expected execution %s to be DISABLED, got %s", execution.Alias, execution.Requirement)
-		}
-	}
-}
-
-func TestReconciler_reconcileDevelopersGroup(t *testing.T) {
-	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
-
-	r := &Reconciler{
-		logger: logrus.NewEntry(logrus.StandardLogger()),
-		Config: &config.RHSSOUser{
-			Config: map[string]string{
-				"NAMESPACE": defaultRhssoNamespace,
-			},
-		},
-		ConfigManager:         basicConfigMock(),
-		keycloakClientFactory: keycloakClientFactory,
-	}
-
-	kc := &keycloak.Keycloak{}
-	statusPhase, err := r.reconcileDevelopersGroup(kc)
-
-	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
-		t.Errorf("Expected phase to be completed, got %s", statusPhase)
-	}
-	if err != nil {
-		t.Errorf("Unexpected error occurred: %s", err)
-	}
-
-	// Assert that the group `rhmi-developers` was created
-	foundGroup := false
-	var groupID string
-	for _, group := range mockContext.Groups {
-		if group.Name == developersGroupName {
-			foundGroup = true
-			groupID = group.ID
-			break
-		}
-	}
-
-	if !foundGroup {
-		t.Errorf("Group %s not found in mock Keycloak interface", developersGroupName)
-	}
-
-	// Assert that the group `rhmi-developers` is among the default groups
-	foundDefaultGroup := false
-	for _, group := range mockContext.DefaultGroups {
-		if group.Name == developersGroupName {
-			foundDefaultGroup = true
-			break
-		}
-	}
-
-	if !foundDefaultGroup {
-		t.Errorf("Group %s not found among default groups in mock Keycloak interface", developersGroupName)
-	}
-
-	// Assert that the `view-realm` role is mapped to the group
-	groupRoles, ok := mockContext.ClientRoles[groupID]
-	foundRole := false
-	if !ok {
-		t.Errorf("Group %s not found in client role mappings", developersGroupName)
-	}
-
-	for _, role := range groupRoles {
-		if role.Name == viewRealmRoleName {
-			foundRole = true
-			break
-		}
-	}
-
-	if !foundRole {
-		t.Errorf("Role %s not found in client role mappings for group %s", viewRealmRoleName, developersGroupName)
-	}
-
-	// Assert that the `create-realm` role is mapped to the group
-	clientRoles, ok := mockContext.RealmRoles[groupID]
-	foundRole = false
-	if !ok {
-		t.Errorf("Group %s not found in realm role mappings", developersGroupName)
-	}
-
-	for _, role := range clientRoles {
-		if role.Name == createRealmRoleName {
-			foundRole = true
-			break
-		}
-	}
-
-	if !foundRole {
-		t.Errorf("Role %s not found in realm role mappings for group %s", createRealmRoleName, developersGroupName)
-	}
-}
-
-func TestReconciler_reconcileDedicatedAdminsGroup(t *testing.T) {
-	keycloakClientFactory, mockContext := createKeycloakClientFactoryMock()
-
-	r := &Reconciler{
-		logger: logrus.NewEntry(logrus.StandardLogger()),
-		Config: &config.RHSSOUser{
-			Config: map[string]string{
-				"NAMESPACE": defaultRhssoNamespace,
-			},
-		},
-		keycloakClientFactory: keycloakClientFactory,
-	}
-
-	kc := &keycloak.Keycloak{}
-	statusPhase, err := r.reconcileDedicatedAdminsGroup(kc)
-
-	if statusPhase != integreatlyv1alpha1.PhaseCompleted {
-		t.Errorf("Expected phase to be completed, got %s", statusPhase)
-	}
-	if err != nil {
-		t.Errorf("Unexpected error occurred: %s", err)
-	}
-
-	foundDedicatedAdminsGroupID := ""
-	foundRealmManagersGroupID := ""
-	for _, group := range mockContext.Groups {
-		if group.Name != dedicatedAdminsGroupName {
-			continue
-		}
-
-		foundDedicatedAdminsGroupID = group.ID
-		for _, childGroup := range group.SubGroups {
-			if childGroup.Name == realmManagersGroupName {
-				foundRealmManagersGroupID = childGroup.ID
-			}
-		}
-	}
-
-	if foundDedicatedAdminsGroupID == "" {
-		t.Fatal("dedicated-admins group not found")
-	}
-
-	if foundRealmManagersGroupID == "" {
-		t.Fatal("realm-managers group not found")
-	}
-
-	hasManageUsersRole := false
-	hasViewRealmRole := false
-	for _, clientRole := range mockContext.ClientRoles[foundDedicatedAdminsGroupID] {
-		if clientRole.Name == manageUsersRoleName {
-			hasManageUsersRole = true
-		}
-		if clientRole.Name == viewRealmRoleName {
-			hasViewRealmRole = true
-		}
-	}
-
-	if !hasManageUsersRole {
-		t.Fatal("manage-users role not found for dedicated-admins group")
-	}
-	if !hasViewRealmRole {
-		t.Fatal("view-realm role not found for dedicated-admins group")
-	}
-
-	for _, expectedRole := range realmManagersClientRoles {
-		hasRole := false
-
-		for _, mappedRole := range mockContext.ClientRoles[foundRealmManagersGroupID] {
-			if mappedRole.Name == expectedRole {
-				hasRole = true
-				break
-			}
-		}
-
-		if !hasRole {
-			t.Errorf("Expected client role %s mapped to realm-managers group not found", expectedRole)
-		}
-	}
-}
-
 func getKcr(status keycloak.KeycloakRealmStatus) *keycloak.KeycloakRealm {
 	return &keycloak.KeycloakRealm{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      masterRealmName,
-			Namespace: defaultRhssoNamespace,
+			Namespace: defaultNamespace,
 		},
 		Spec: keycloak.KeycloakRealmSpec{
 			Realm: &keycloak.KeycloakAPIRealm{
@@ -1143,16 +695,6 @@ type mockClientContext struct {
 	ClientRoles                   map[string][]*keycloak.KeycloakUserRole
 	RealmRoles                    map[string][]*keycloak.KeycloakUserRole
 	AuthenticationFlowsExecutions map[string][]*keycloak.AuthenticationExecutionInfo
-}
-
-func createKeycloakClientFactoryMock() (keycloakCommon.KeycloakClientFactory, *mockClientContext) {
-	keycloakInterfaceMock, ctx := createKeycloakInterfaceMock()
-
-	return &keycloakCommon.KeycloakClientFactoryMock{
-		AuthenticatedClientFunc: func(_ keycloak.Keycloak) (keycloakCommon.KeycloakInterface, error) {
-			return keycloakInterfaceMock, nil
-		},
-	}, ctx
 }
 
 // Create a mock of the `KeycloakClientFactory` that creates a `KeycloakInterface` mock that

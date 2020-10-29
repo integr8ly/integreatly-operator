@@ -3,8 +3,10 @@ scripts/htpasswd
 htpasswd
 .DS_Store
 router-ca.tmp
+TMP_SA_KUBECONFIG
 # Temporary Build Files
 tmp/_output/bin/integreatly-operator
+tmp/_output/bin/managed-api-service
 cmd/manager/debug
 build/_output
 build/_test
@@ -109,3 +111,6 @@ deploy/crds/admin.enmasse.io_standardinfraconfigs_crd.yaml
 deploy/crds/admin.enmasse.io_authenticationservices_crd.yaml
 deploy/crds/applicationmonitoring.integreatly.org_blackboxtargets_crd.yaml
 deploy/crds/applicationmonitoring.integreatly.org_applicationmonitorings_crd.yaml
+
+# persisted oc resources on some test failures
+test/*.json

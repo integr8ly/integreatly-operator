@@ -1,13 +1,19 @@
 package version
 
 import (
+	"os"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	installTypeEnvName = "INSTALLATION_TYPE"
+)
+
 var (
-	Version            = "2.4.0"
-	IntegreatlyVersion = "2.4.0"
+	version           = "2.7.0"
+	managedAPIVersion = "0.3.0"
 )
 
 func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStatus, expectedProductVersion string, expectedOpVersion string) bool {
@@ -23,4 +29,18 @@ func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStat
 		return false
 	}
 	return true
+}
+
+func GetVersion() string {
+	installTypeEnv, _ := os.LookupEnv(installTypeEnvName)
+
+	return GetVersionByType(installTypeEnv)
+}
+
+func GetVersionByType(installType string) string {
+	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return managedAPIVersion
+	} else {
+		return version
+	}
 }

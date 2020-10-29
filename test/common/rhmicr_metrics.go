@@ -14,7 +14,7 @@ import (
 
 func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 
-	rhmi, err := getRHMI(ctx.Client)
+	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 		"rhmi-operator",
 		ctx)
 	if err != nil {
-		t.Fatalf("failed to exec to prometheus pod: %w", err)
+		t.Fatalf("failed to exec to prometheus pod: %v", err)
 	}
 
 	// check if rhmi_status is present
@@ -89,7 +89,7 @@ func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
 		return nil, fmt.Errorf("error listing rhmi-operator pod: %v", err)
 	}
 
-	if len(rhmiOperatorPod.Items) < 0 {
+	if len(rhmiOperatorPod.Items) == 0 {
 		return nil, fmt.Errorf("rhmi-operator pod doesn't exist: %v", err)
 	}
 

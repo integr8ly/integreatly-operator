@@ -2,27 +2,36 @@ package cloudresources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/aws/aws-sdk-go/service/elasticache"
+	"github.com/aws/aws-sdk-go/service/rds"
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	crov1alpha1Types "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	"github.com/integr8ly/cloud-resource-operator/pkg/providers/aws"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
@@ -36,6 +45,7 @@ const (
 type Reconciler struct {
 	Config        *config.CloudResources
 	ConfigManager config.ConfigReadWriter
+	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
 	logger        *logrus.Entry
 	*resources.Reconciler
@@ -62,6 +72,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
+		installation:  installation,
 		mpm:           mpm,
 		logger:        logger,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -83,20 +94,27 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	ns := r.Config.GetOperatorNamespace()
+	operatorNamespace := r.Config.GetOperatorNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
 		// Check if namespace is still present before trying to delete it resources
-		_, err := resources.GetNS(ctx, ns, client)
+		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
+
+			// overrides cro default deletion strategy to delete resources snapshots
+			phase, err := r.createDeletionStrategy(ctx, installation, client)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+
 			// ensure resources are cleaned up before deleting the namespace
-			phase, err := r.cleanupResources(ctx, installation, client)
+			phase, err = r.cleanupResources(ctx, installation, client)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
 
 			// remove the namespace
-			phase, err = resources.RemoveNamespace(ctx, installation, client, ns)
+			phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -108,19 +126,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
+		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	namespace, err := resources.GetNS(ctx, ns, client)
-	if err != nil {
-		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, fmt.Sprintf("Failed to retrieve %s namespace", ns), err)
-		return integreatlyv1alpha1.PhaseFailed, err
-	}
-
-	phase, err = r.ReconcileSubscription(ctx, namespace, marketplace.Target{Pkg: constants.CloudResourceSubscriptionName, Channel: marketplace.IntegreatlyChannel, Namespace: r.Config.GetOperatorNamespace(), ManifestPackage: manifestPackage}, []string{installation.Namespace}, backup.NewNoopBackupExecutor(), client)
+	// In this case due to cloudresources reconciler is always installed in the
+	// same namespace as the operatorNamespace we pass operatorNamespace as the
+	// productNamepace too
+	phase, err = r.reconcileSubscription(ctx, client, installation, operatorNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.CloudResourceSubscriptionName), err)
 		return phase, err
@@ -131,7 +146,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileKubeStateMetricsOperatorEndpointAvailableAlerts(ctx, client)
+	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, client)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile operator endpoint available alerts", err)
 		return phase, err
@@ -148,6 +163,48 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.CloudResourcesStage, r.Config.GetProductName())
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) createDeletionStrategy(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	if strings.ToLower(installation.Spec.UseClusterStorage) == "false" {
+		croStrategyConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "cloud-resources-aws-strategies",
+				Namespace: installation.Namespace,
+			},
+		}
+		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, croStrategyConfig, func() error {
+			forceBucketDeletion := true
+			skipFinalSnapshot := true
+			finalSnapshotIdentifier := ""
+			tier := "production"
+			resources := map[string]interface{}{
+				"blobstorage": aws.S3DeleteStrat{
+					ForceBucketDeletion: &forceBucketDeletion,
+				},
+				"postgres": rds.DeleteDBClusterInput{
+					SkipFinalSnapshot: &skipFinalSnapshot,
+				},
+				"redis": elasticache.DeleteCacheClusterInput{
+					FinalSnapshotIdentifier: &finalSnapshotIdentifier,
+				},
+			}
+			for resource, deleteStrategy := range resources {
+				err := overrideStrategyConfig(resource, tier, croStrategyConfig, deleteStrategy)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -168,10 +225,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
-	if len(postgresInstances.Items) > 0 {
-		r.logger.Info("deletion of postgres instances in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
-	}
 
 	// ensure redis instances are cleaned up
 	redisInstances := &crov1alpha1.RedisList{}
@@ -186,10 +239,6 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 		if err := client.Delete(ctx, &redisInst); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
-	}
-	if len(redisInstances.Items) > 0 {
-		r.logger.Info("deletion of redis instances in progress")
-		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	// ensure blob storage instances are cleaned up
@@ -206,6 +255,17 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 	}
+
+	if len(postgresInstances.Items) > 0 {
+		r.logger.Info("deletion of postgres instances in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
+	if len(redisInstances.Items) > 0 {
+		r.logger.Info("deletion of redis instances in progress")
+		return integreatlyv1alpha1.PhaseInProgress, nil
+	}
+
 	if len(blobStorages.Items) > 0 {
 		r.logger.Info("deletion of blob storage instances in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
@@ -216,6 +276,10 @@ func (r *Reconciler) cleanupResources(ctx context.Context, installation *integre
 }
 
 func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	if r.installation.Spec.Type != string(integreatlyv1alpha1.InstallationTypeManaged) {
+		return integreatlyv1alpha1.PhaseCompleted, nil
+	}
+
 	blobStorageName := fmt.Sprintf("%s%s", constants.BackupsBlobStoragePrefix, installation.Name)
 	blobStorage, err := croUtil.ReconcileBlobStorage(ctx, client, defaultInstallationNamespace, installation.Spec.Type, croUtil.TierProduction, blobStorageName, installation.Namespace, r.ConfigManager.GetBackupsSecretName(), installation.Namespace, func(cr metav1.Object) error {
 		return nil
@@ -230,4 +294,49 @@ func (r *Reconciler) reconcileBackupsStorage(ctx context.Context, installation *
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productNamespace string, operatorNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	target := marketplace.Target{
+		Pkg:       constants.CloudResourceSubscriptionName,
+		Namespace: operatorNamespace,
+		Channel:   marketplace.IntegreatlyChannel,
+	}
+	catalogSourceReconciler := marketplace.NewConfigMapCatalogSourceReconciler(
+		manifestPackage,
+		serverClient,
+		operatorNamespace,
+		marketplace.CatalogSourceName,
+	)
+	return r.Reconciler.ReconcileSubscription(
+		ctx,
+		target,
+		[]string{inst.Namespace}, // TODO why is this this value and not productNamespace?
+		backup.NewNoopBackupExecutor(),
+		serverClient,
+		catalogSourceReconciler,
+	)
+}
+
+func overrideStrategyConfig(resourceType string, tier string, croStrategyConfig *corev1.ConfigMap, deleteStrategy interface{}) error {
+	resource := croStrategyConfig.Data[resourceType]
+	strategyConfig := map[string]*aws.StrategyConfig{}
+	if err := json.Unmarshal([]byte(resource), &strategyConfig); err != nil {
+		return fmt.Errorf("failed to unmarshal strategy mapping for resource type %s %w", resourceType, err)
+	}
+
+	deleteStrategyJSON, err := json.Marshal(deleteStrategy)
+	if err != nil {
+		return err
+	}
+
+	strategyConfig[tier].DeleteStrategy = json.RawMessage(deleteStrategyJSON)
+
+	strategyConfigJSON, err := json.Marshal(strategyConfig)
+	if err != nil {
+		return err
+	}
+	croStrategyConfig.Data[resourceType] = string(strategyConfigJSON)
+
+	return nil
 }

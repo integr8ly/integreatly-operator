@@ -3,14 +3,12 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"strings"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/version"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/version"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -20,259 +18,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-const (
-	defaultNamespace = "redhat-rhmi-operator"
+var (
+	defaultNamespace = global.NamespacePrefix + "operator"
 )
 
 func setupRecorder() record.EventRecorder {
 	return record.NewFakeRecorder(50)
-}
-
-func buildScheme() *runtime.Scheme {
-	scheme := runtime.NewScheme()
-
-	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
-
-	return scheme
-}
-
-func nowOffset(hours int) time.Time {
-	now := now()
-	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
-}
-
-func now() time.Time {
-	return time.Now().UTC()
-}
-
-type scheduleScenario struct {
-	name             string
-	config           *integreatlyv1alpha1.RHMIConfig
-	expectedSchedule *integreatlyv1alpha1.UpgradeSchedule
-}
-
-func makeScheduleScenario(scenario *scheduleScenario) struct {
-	Name          string
-	Config        *integreatlyv1alpha1.RHMIConfig
-	InstallPlan   *olmv1alpha1.InstallPlan
-	TargetVersion string
-	Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
-} {
-	scenario.config.Name = "test-config"
-	scenario.config.Namespace = "redhat-rhmi-operator"
-
-	return struct {
-		Name          string
-		Config        *integreatlyv1alpha1.RHMIConfig
-		InstallPlan   *olmv1alpha1.InstallPlan
-		TargetVersion string
-		Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
-	}{
-		Name:   scenario.name,
-		Config: scenario.config,
-		InstallPlan: &olmv1alpha1.InstallPlan{
-			ObjectMeta: metav1.ObjectMeta{
-				CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
-			},
-		},
-		TargetVersion: "integreatly-operator-v2.3.0",
-		Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
-			if err != nil {
-				t.Errorf("Unexpected error occurred: %v", err)
-			}
-			if !reflect.DeepEqual(config.Status.Upgrade.Scheduled, scenario.expectedSchedule) {
-				t.Errorf("Upgrade schedule different than expected")
-			}
-		},
-	}
-}
-
-func TestUpdateStatus(t *testing.T) {
-	targetVersion := "integreatly-operator-v2.3.0"
-
-	scenarios := []struct {
-		Name          string
-		Config        *integreatlyv1alpha1.RHMIConfig
-		InstallPlan   *olmv1alpha1.InstallPlan
-		TargetVersion string
-		Validate      func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig, *olmv1alpha1.InstallPlan)
-	}{
-		{
-			Name: "status updated when pending installplan exists",
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
-					},
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      intPtr(8),
-						WaitForMaintenance: boolPtr(true),
-					},
-				},
-			},
-			InstallPlan: &olmv1alpha1.InstallPlan{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
-				},
-			},
-			TargetVersion: targetVersion,
-			Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
-				if err != nil {
-					t.Error("Expected no error, but got: " + err.Error())
-				}
-				expectedMaintenanceFrom := nowOffset(-1).Format("2-1-2006 15:04")
-				if config.Status.Maintenance.ApplyFrom != expectedMaintenanceFrom {
-					t.Errorf("expected maintenance from '%s', but got '%s'", expectedMaintenanceFrom, config.Status.Maintenance.ApplyFrom)
-				}
-				if config.Status.Maintenance.Duration != "6hrs" {
-					t.Errorf("expected maintenance duration '6hrs' but got '%s'", config.Status.Maintenance.Duration)
-				}
-			},
-		}, {
-			Name: "status unchanged with no pending installplan",
-			Config: &integreatlyv1alpha1.RHMIConfig{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
-				},
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(nowOffset(-1).Format("Mon 15:04")),
-					},
-				},
-				Status: integreatlyv1alpha1.RHMIConfigStatus{
-					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
-						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{},
-					},
-				},
-			},
-			InstallPlan: &olmv1alpha1.InstallPlan{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: nowOffset(-2)},
-				},
-				Spec: olmv1alpha1.InstallPlanSpec{
-					Approved: true,
-				},
-			},
-			TargetVersion: targetVersion,
-			Validate: func(t *testing.T, err error, config *integreatlyv1alpha1.RHMIConfig, plan *olmv1alpha1.InstallPlan) {
-				if err != nil {
-					t.Error("Expected no error, but got: " + err.Error())
-				}
-
-				expectedMaintenanceFrom := nowOffset(-1).Format("2-1-2006 15:04")
-				if config.Status.Maintenance.ApplyFrom != expectedMaintenanceFrom {
-					t.Errorf("expected maintenance from '%s', but got '%s'", expectedMaintenanceFrom, config.Status.Maintenance.ApplyFrom)
-				}
-				if config.Status.Maintenance.Duration != "6hrs" {
-					t.Errorf("expected maintenance duration '6hrs' but got '%s'", config.Status.Maintenance.Duration)
-				}
-			},
-		},
-		makeScheduleScenario(&scheduleScenario{
-			name: "do not wait for maintenance 0 days",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      intPtr(0),
-						WaitForMaintenance: boolPtr(false),
-					},
-				},
-			},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: nowOffset(-2).Format(integreatlyv1alpha1.DateFormat),
-			},
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "wait for maintenance 0 days",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: "Sun 00:00",
-					},
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      intPtr(0),
-						WaitForMaintenance: boolPtr(true),
-					},
-				},
-			},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: time.
-					Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
-					AddDate(0, 0, 7-int(now().Weekday())).
-					Format(integreatlyv1alpha1.DateFormat),
-			},
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "wait for maintenance, notBefore: 3 days before next window",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
-							Add(6 * 24 * time.Hour).
-							Format("Mon 15:04")),
-					},
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: boolPtr(true),
-						NotBeforeDays:      intPtr(3),
-					},
-				},
-			},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(6 * 24 * time.Hour).
-					Format(integreatlyv1alpha1.DateFormat),
-			},
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "wait for maintenance, notBefore: 3 days after next window",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Maintenance: integreatlyv1alpha1.Maintenance{
-						ApplyFrom: strings.ToLower(time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).
-							Add(3 * 24 * time.Hour).
-							Format("Mon 15:04")),
-					},
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						WaitForMaintenance: boolPtr(true),
-						NotBeforeDays:      intPtr(6),
-					},
-				},
-			},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: time.Date(now().Year(), now().Month(), now().Day(), 0, 0, 0, 0, time.UTC).Add(10 * 24 * time.Hour).
-					Format(integreatlyv1alpha1.DateFormat),
-			},
-		}),
-		makeScheduleScenario(&scheduleScenario{
-			name: "do not wait for maintenance, notBefore > 0",
-			config: &integreatlyv1alpha1.RHMIConfig{
-				Spec: integreatlyv1alpha1.RHMIConfigSpec{
-					Upgrade: integreatlyv1alpha1.Upgrade{
-						NotBeforeDays:      intPtr(3),
-						WaitForMaintenance: boolPtr(false),
-					},
-				},
-			},
-			expectedSchedule: &integreatlyv1alpha1.UpgradeSchedule{
-				For: nowOffset(-2).Add(3 * 24 * time.Hour).Format(integreatlyv1alpha1.DateFormat),
-			},
-		}),
-	}
-
-	for _, scenario := range scenarios {
-		t.Run(scenario.Name, func(t *testing.T) {
-			client := fake.NewFakeClientWithScheme(buildScheme(), scenario.Config)
-			err := UpdateStatus(context.TODO(), client, scenario.Config, scenario.InstallPlan, scenario.TargetVersion)
-			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
-			scenario.Validate(t, err, updatedConfig, scenario.InstallPlan)
-		})
-	}
 }
 
 func TestCanUpgradeNow(t *testing.T) {
@@ -287,7 +38,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -306,7 +57,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -327,7 +78,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -350,7 +101,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -371,7 +122,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -393,7 +144,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -413,7 +164,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -435,7 +186,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage: integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseCompleted),
@@ -455,7 +206,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Upgrade: integreatlyv1alpha1.Upgrade{
@@ -467,7 +218,7 @@ func TestCanUpgradeNow(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIStatus{
 					Stage:     integreatlyv1alpha1.StageName(integreatlyv1alpha1.PhaseInProgress),
@@ -609,7 +360,7 @@ func TestApproveUpgrade(t *testing.T) {
 				{
 					Resource: olmv1alpha1.StepResource{
 						Kind:     "ClusterServiceVersion",
-						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.Version),
+						Manifest: fmt.Sprintf("{\"kind\":\"ClusterServiceVersion\",    \"spec\": {      \"version\": \"%s\"}}", version.GetVersion()),
 					},
 				},
 			},
@@ -619,7 +370,7 @@ func TestApproveUpgrade(t *testing.T) {
 	rhmiMock := &integreatlyv1alpha1.RHMI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "rhmi",
-			Namespace: "redhat-rhmi-operator",
+			Namespace: defaultNamespace,
 		},
 	}
 
@@ -652,7 +403,7 @@ func TestApproveUpgrade(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 			},
 			RHMI: rhmiMock,
@@ -676,7 +427,7 @@ func TestApproveUpgrade(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: "redhat-rhmi-operator",
+					Namespace: defaultNamespace,
 				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
@@ -700,9 +451,6 @@ func TestApproveUpgrade(t *testing.T) {
 				if config.Status.Upgrade.Scheduled != nil {
 					t.Fatalf("Expected scheduled field to be empty")
 				}
-				if rhmi.Status.ToVersion != version.Version {
-					t.Fatalf("Expected ToVersion to be version.version")
-				}
 			},
 		},
 	}
@@ -715,47 +463,28 @@ func TestApproveUpgrade(t *testing.T) {
 			rhmi := &integreatlyv1alpha1.RHMI{}
 			err = scenario.FakeClient.Get(scenario.Context, k8sclient.ObjectKey{Name: scenario.RHMI.Name, Namespace: scenario.RHMI.Namespace}, rhmi)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "redhat-rhmi-operator"}, updatedConfig)
+			scenario.FakeClient.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: defaultNamespace}, updatedConfig)
 			scenario.Verify(retrievedInstallPlan, updatedConfig, rhmi, err)
 		})
 	}
 }
 
-func TestGetWeeklyWindow(t *testing.T) {
-	// Monday
-	from := time.Date(2020, time.June, 1, 0, 0, 0, 0, time.UTC)
+func buildScheme() *runtime.Scheme {
+	scheme := runtime.NewScheme()
 
-	// Test same day
-	r, _, err := getWeeklyWindow(from, "Mon 00:00", time.Hour)
-	if err != nil {
-		t.Errorf("Error calculating weekly window for same day: %v", err)
-	} else if r.Day() != from.Day() || r.Month() != from.Month() || r.Year() != from.Year() {
-		t.Errorf("Expected result to be same day, got %s", r.Format(integreatlyv1alpha1.DateFormat))
-	}
+	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
 
-	// Test next day
-	r, _, err = getWeeklyWindow(from, "Tue 00:00", time.Hour)
-	if err != nil {
-		t.Errorf("Error calculating weekly window for same day: %v", err)
-	} else if r.Day() != from.Day()+1 || r.Month() != from.Month() || r.Year() != from.Year() {
-		t.Errorf("Expected result to be next day, got %s", r.Format(integreatlyv1alpha1.DateFormat))
-	}
+	return scheme
+}
 
-	// Test day before
-	r, _, err = getWeeklyWindow(from, "SuN 00:00", time.Hour)
-	if err != nil {
-		t.Errorf("Error calculating weekly window for same day: %v", err)
-	} else if r.Day() != from.Day()+6 || r.Month() != from.Month() || r.Year() != from.Year() {
-		t.Errorf("Expected result to be next Sunday, got %s", r.Format(integreatlyv1alpha1.DateFormat))
-	}
+func nowOffset(hours int) time.Time {
+	now := now()
+	return time.Date(now.Year(), now.Month(), now.Day(), now.Hour()+hours, now.Minute(), now.Second(), 0, time.UTC)
+}
 
-	// Test 3 days after
-	r, _, err = getWeeklyWindow(from, "Thu 02:00", time.Hour)
-	if err != nil {
-		t.Errorf("Error calculating weekly window for same day: %v", err)
-	} else if r.Day() != from.Day()+3 || r.Month() != from.Month() || r.Year() != from.Year() {
-		t.Errorf("Expected result to be Thursday, got %s", r.Format(integreatlyv1alpha1.DateFormat))
-	}
+func now() time.Time {
+	return time.Now().UTC()
 }
 
 func intPtr(value int) *int {

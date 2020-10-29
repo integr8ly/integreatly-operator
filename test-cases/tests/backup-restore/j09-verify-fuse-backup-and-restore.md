@@ -1,14 +1,24 @@
 ---
+components:
+  - product-fuse
+environments:
+  - osd-post-upgrade
 estimate: 1h
-require:
-  - J03
+tags:
+  - destructive
+targets:
+  - 2.8.0
 ---
 
 # J09 - Verify Fuse Backup and Restore
 
+## Description
+
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster.
 
-## Postgres
+## Steps
+
+### Postgres
 
 1. Create connection in Fuse to Postgres DB, use sampleDB as example
 2. Create basic integreation to new connection

@@ -50,6 +50,7 @@ rules:
     resources:
       - deployments/finalizers
       - replicasets
+      - statefulsets
     verbs:
       - update
       - get
@@ -78,6 +79,7 @@ rules:
       - create
       - update
       - delete
+      - watch
   # Adding a role and rolebinding to allow GitHub Secret management by dedicated-admins
   - apiGroups:
       - rbac.authorization.k8s.io
@@ -116,6 +118,29 @@ rules:
       - list
       - watch
   # END Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
+
+  - apiGroups:
+      - marin3r.3scale.net
+    resources:
+      - envoyconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - operator.marin3r.3scale.net
+    resources:
+      - discoveryservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -162,6 +187,7 @@ rules:
       - apps
     resources:
       - deployments
+      - statefulsets
     verbs:
       - list
       - get
@@ -213,7 +239,7 @@ rules:
     resources:
       - secrets
     resourceNames:
-      - samples-registry-credentials
+      - pull-secret
     verbs:
       - get
 
@@ -383,3 +409,43 @@ rules:
       - update
       - delete
   # END Permission to manage ValidatingWebhookConfiguration CRs pointing to the webhook server
+
+  # Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+  - verbs:
+      - get
+    apiGroups:
+      - ''
+    resources:
+      - configmaps
+  # END Permission to get the ConfigMap that embeds the CSV for an InstallPlan
+
+  - apiGroups:
+      - marin3r.3scale.net
+    resources:
+      - envoyconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - operator.marin3r.3scale.net
+    resources:
+      - discoveryservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+
+  - apiGroups:
+      - scheduling.k8s.io
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  

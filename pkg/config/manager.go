@@ -45,6 +45,7 @@ type ConfigReadWriter interface {
 	ReadRHSSOUser() (*RHSSOUser, error)
 	ReadCodeReady() (*CodeReady, error)
 	ReadThreeScale() (*ThreeScale, error)
+	ReadMarin3r() (*Marin3r, error)
 	ReadFuse() (*Fuse, error)
 	ReadFuseOnOpenshift() (*FuseOnOpenshift, error)
 	ReadAMQOnline() (*AMQOnline, error)
@@ -53,10 +54,12 @@ type ConfigReadWriter interface {
 	ReadMonitoring() (*Monitoring, error)
 	ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigReadable, error)
 	ReadUps() (*Ups, error)
+	ReadApicurioRegistry() (*ApicurioRegistry, error)
 	ReadApicurito() (*Apicurito, error)
 	ReadCloudResources() (*CloudResources, error)
 	ReadDataSync() (*DataSync, error)
 	ReadMonitoringSpec() (*MonitoringSpec, error)
+	ReadGrafana() (*Grafana, error)
 }
 
 //go:generate moq -out ConfigReadable_moq.go . ConfigReadable
@@ -115,6 +118,8 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadSolutionExplorer()
 	case integreatlyv1alpha1.ProductUps:
 		return m.ReadUps()
+	case integreatlyv1alpha1.ProductApicurioRegistry:
+		return m.ReadApicurioRegistry()
 	case integreatlyv1alpha1.ProductApicurito:
 		return m.ReadApicurito()
 	case integreatlyv1alpha1.ProductCloudResources:
@@ -125,6 +130,10 @@ func (m *Manager) ReadProduct(product integreatlyv1alpha1.ProductName) (ConfigRe
 		return m.ReadDataSync()
 	case integreatlyv1alpha1.ProductMonitoringSpec:
 		return m.ReadMonitoringSpec()
+	case integreatlyv1alpha1.ProductMarin3r:
+		return m.ReadMarin3r()
+	case integreatlyv1alpha1.ProductGrafana:
+		return m.ReadGrafana()
 	}
 
 	return nil, fmt.Errorf("no config found for product %v", product)
@@ -234,6 +243,14 @@ func (m *Manager) ReadMonitoringSpec() (*MonitoringSpec, error) {
 	return NewMonitoringSpec(config), nil
 }
 
+func (m *Manager) ReadApicurioRegistry() (*ApicurioRegistry, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurioRegistry)
+	if err != nil {
+		return nil, err
+	}
+	return NewApicurioRegistry(config), nil
+}
+
 func (m *Manager) ReadApicurito() (*Apicurito, error) {
 	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductApicurito)
 	if err != nil {
@@ -241,6 +258,15 @@ func (m *Manager) ReadApicurito() (*Apicurito, error) {
 	}
 
 	return NewApicurito(config), nil
+}
+
+func (m *Manager) ReadGrafana() (*Grafana, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductGrafana)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewGrafana(config), nil
 }
 
 func (m *Manager) ReadUps() (*Ups, error) {
@@ -266,6 +292,14 @@ func (m *Manager) ReadDataSync() (*DataSync, error) {
 		return nil, err
 	}
 	return NewDataSync(config), nil
+}
+
+func (m *Manager) ReadMarin3r() (*Marin3r, error) {
+	config, err := m.readConfigForProduct(integreatlyv1alpha1.ProductMarin3r)
+	if err != nil {
+		return nil, err
+	}
+	return NewMarin3r(config), nil
 }
 
 func (m *Manager) WriteConfig(config ConfigReadable) error {

@@ -1,5 +1,13 @@
 ---
-tags: [] # Add tags here. See the tags section in the README for the list of tags that we use
+automation:
+  - INTLY-6652
+components:
+  - product-codeready
+environments:
+  - osd-post-upgrade
+targets:
+  - 2.4.0
+  - 2.8.0
 ---
 
 # B05 - Verify Codeready CRUDL Permissions
