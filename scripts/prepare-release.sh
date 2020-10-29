@@ -82,6 +82,24 @@ set_installation_type() {
   fi
 }
 
+set_descriptions() {
+  case $OLM_TYPE in
+   "integreatly-operator")
+      echo "using default descriptions"
+      ;;
+    "managed-api-service")
+      echo "Updating descriptions"
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.description 'RHOAM is the Schema for the RHOAM API'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.spec.description 'RHOAMSpec defines the desired state of Installation'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.status.description 'RHOAMStatus defines the observed state of Installation'
+
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[1].description 'RHOAM is the Schema for the RHOAM API'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[1].displayName 'RHOAM installation'
+
+
+      ;;
+  esac
+}
 set_images() {
   : "${IMAGE_TAG:=v${SEMVER}}"
   "${SED_INLINE[@]}" "s/image:.*/image: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
@@ -123,6 +141,7 @@ else
   update_csv
 fi
 set_installation_type
+set_descriptions
 set_images
 
 if [[ ! -z "$NON_SERVICE_AFFECTING" ]]; then
