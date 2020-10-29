@@ -1,5 +1,5 @@
 package product
 
 var (
-	ThreescaleRelease = "2.8"
+	ThreescaleRelease = "2.9"
 )
