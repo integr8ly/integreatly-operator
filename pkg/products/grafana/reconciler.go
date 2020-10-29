@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
@@ -416,4 +417,22 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.C
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
+
+	grafanaConsoleURL := installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductGrafana].Host
+	if grafanaConsoleURL != "" {
+		return grafanaConsoleURL, nil
+	}
+
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
+	grafanaRoute := &routev1.Route{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: ns}, grafanaRoute)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get route for Grafana: %w", err)
+	}
+
+	return "https://" + grafanaRoute.Spec.Host, nil
 }
