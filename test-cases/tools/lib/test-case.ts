@@ -8,7 +8,7 @@ import {
     PER_BUILD_TAG,
     PER_RELEASE_TAG,
 } from "./constants";
-import { walk } from "./utils";
+import { flat, walk } from "./utils";
 
 const TEST_DIR = "./tests";
 const TEST_FILTER = /^.*\.md$/;
@@ -38,22 +38,25 @@ interface Filters {
     components?: Filter;
 }
 
-interface TestCase {
+interface RoughTestCase {
     id: string;
     category: string;
     title: string;
     content: string;
-    environments: string[];
     estimate: number;
     products: Product[];
-    productName: string;
     tags: string[];
-    targets: string[];
     components: string[];
     automation: string[];
     file: string;
     url: string;
     matter: matter.GrayMatterFile<string>;
+}
+
+interface TestCase extends RoughTestCase {
+    productName: string;
+    environments: string[];
+    targets: string[];
 }
 
 interface Product {
@@ -123,29 +126,36 @@ function loadTestCases(
     productName: string,
     testDirectory?: string
 ): TestCase[] {
-    return walk(testDirectory || TEST_DIR, TEST_FILTER)
-        .map((f) => loadTestCase(f, productName))
-        .filter((t) => t != null);
+    return flat(loadRoughTestCases(testDirectory).map(refineTestCase)).filter(
+        (t) => t.productName === productName
+    );
 }
 
-function loadAllTestCases(): TestCase[] {
-    return walk(TEST_DIR, TEST_FILTER).map((f) => loadTestCase(f));
+/**
+ * If the test case defines multiple product then return a test case for each product
+ */
+function refineTestCase(test: RoughTestCase): TestCase[] {
+    const result: TestCase[] = [];
+    for (const product of test.products) {
+        result.push({
+            productName: product.name || "",
+            environments: product.environments || [],
+            targets: product.targets || [],
+            ...test,
+        });
+    }
+    return result;
 }
 
-function loadTestCase(file: string, productName?: string): TestCase | null {
-    let product;
+function loadRoughTestCases(testDirectory?: string): RoughTestCase[] {
+    return walk(testDirectory || TEST_DIR, TEST_FILTER).map((f) =>
+        loadRoughTestCase(f)
+    );
+}
+
+function loadRoughTestCase(file: string): RoughTestCase {
     const m = matter.read(file);
     const data = m.data as Metadata;
-
-    if (productName) {
-        product =
-            data.products && data.products.find((p) => p.name === productName);
-        if (!product) {
-            return null;
-        }
-    } else {
-        product = {};
-    }
 
     const te = extractTitle(m.content);
     let title = te.title;
@@ -162,15 +172,12 @@ function loadTestCase(file: string, productName?: string): TestCase | null {
         category,
         components: data.components || [],
         content,
-        environments: product.environments || [],
         estimate: data.estimate ? convertEstimation(data.estimate) : null,
         file,
         id,
         matter: m,
         products: data.products || [],
-        productName: product.name || "",
         tags: data.tags || [],
-        targets: product.targets || [],
         title,
         url: `${REPO_URL}/${file}`,
     };
@@ -289,7 +296,7 @@ function releaseFilter(
     });
 }
 
-function desiredFileName(test: TestCase): string {
+function desiredFileName(test: RoughTestCase): string {
     let name = `${test.id} - ${test.title}`;
 
     name = name.toLowerCase();
@@ -301,7 +308,7 @@ function desiredFileName(test: TestCase): string {
     return `${name}.md`;
 }
 
-function isAutomated(test: TestCase): boolean {
+function isAutomated(test: RoughTestCase): boolean {
     return test.tags.includes(AUTOMATED_TAG);
 }
 
@@ -323,7 +330,9 @@ function manualSelectionOnly(test: TestCase): boolean {
 
 export {
     loadTestCases,
-    loadAllTestCases,
+    loadRoughTestCases,
+    refineTestCase,
+    RoughTestCase,
     TestCase,
     filterTests,
     desiredFileName,
