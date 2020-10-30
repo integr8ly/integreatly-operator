@@ -43,7 +43,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
         const testcases = tests.map((t) => ({
             $: { id: t.id },
             title: `${t.id} - ${t.category} - ${t.title}`,
-            description: t.file.link,
+            description: t.url,
             "custom-fields": [
                 {
                     "custom-field": [
