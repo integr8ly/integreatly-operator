@@ -92,18 +92,57 @@ set_descriptions() {
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.description 'RHOAM is the Schema for the RHOAM API'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.spec.description 'RHOAMSpec defines the desired state of Installation'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmis_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.status.description 'RHOAMStatus defines the observed state of Installation'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.description 'RHOAMConfig is the Schema for the rhoamconfigs API'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.spec.description 'RHOAMConfigSpec defines the desired state of RHOAMConfig'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.status.description 'RHOAMConfigStatus defines the observed state of RHOAMConfig'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/integreatly.org_rhmiconfigs_crd.yaml" --tag '!!str' spec.validation.openAPIV3Schema.properties.status.properties.upgradeAvailable.properties.targetVersion.description 'target-version: string, version of incoming RHOAM Operator'
 
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[1].description 'RHOAM is the Schema for the RHOAM API'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[1].displayName 'RHOAM installation'
 
-
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[0].description 'RHOAMConfig is the Schema for the rhoamconfigs API'
       ;;
   esac
 }
+
+set_clusterPermissions() {
+  case $OLM_TYPE in
+   "integreatly-operator")
+      echo "using default permissions"
+      ;;
+    "managed-api-service")
+      echo "Updating permissions"
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.clusterPermissions[0].rules[14].resourceNames[0] 'rhoam-developers'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.clusterPermissions[0].rules[19].resourceNames[0] 'rhoam-registry-cs'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.clusterPermissions[0].serviceAccountName 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].name 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.selector.matchLabels.name 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.metadata.labels.name 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].command[0] 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2].value 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].name 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.serviceAccountName 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.permissions[0].serviceAccountName 'rhoam-operator'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.maintainers[0].email 'rhoam-support@redhat.com'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.maintainers[0].name 'rhoam'
+      ;;
+  esac
+}
+
 set_images() {
+  case $OLM_TYPE in
+   "integreatly-operator")
   : "${IMAGE_TAG:=v${SEMVER}}"
   "${SED_INLINE[@]}" "s/image:.*/image: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
   "${SED_INLINE[@]}" "s/containerImage:.*/containerImage: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
+  ;;
+  "managed-api-service")
+   : "${IMAGE_TAG:=rhoam-v${SEMVER}}"
+  "${SED_INLINE[@]}" "s/image:.*/image: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
+  "${SED_INLINE[@]}" "s/containerImage:.*/containerImage: quay\.io\/$ORG\/$OLM_TYPE:$IMAGE_TAG/g" "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml"
+
+  ;;
+  esac
 }
 
 set_csv_not_service_affecting() {
@@ -130,7 +169,7 @@ VERSION=$(echo "$SEMVER" | awk -F - '{print $1}')
 if [[ $(uname) = Darwin ]]; then
   SED_INLINE=(sed -i '')
 else
-  SED_INLINE=(sed -i)  
+  SED_INLINE=(sed -i)
 fi
 
 # We have a new version so generate the csv
@@ -142,6 +181,7 @@ else
 fi
 set_installation_type
 set_descriptions
+set_clusterPermissions
 set_images
 
 if [[ ! -z "$NON_SERVICE_AFFECTING" ]]; then
