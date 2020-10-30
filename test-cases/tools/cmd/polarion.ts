@@ -3,7 +3,6 @@ import { assertEpic, Jira } from "../lib/jira";
 import { uploadToPolarion } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
 import { loadTestRuns } from "../lib/test-run";
-import { logger } from "../lib/winston";
 
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
 
@@ -143,7 +142,7 @@ const testRun: CommandModule<{}, TestRunArgs> = {
         template: {
             describe: "the Polarion template id for the test run",
             type: "string",
-            demand: true
+            demand: true,
         },
         "dump-only": {
             default: false,
@@ -206,8 +205,8 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                         {
                             $: {
                                 name: "polarion-testrun-template-id",
-                                value: args.template
-                            }
+                                value: args.template,
+                            },
                         },
                         {
                             $: {
