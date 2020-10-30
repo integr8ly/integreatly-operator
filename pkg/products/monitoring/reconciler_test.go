@@ -40,11 +40,12 @@ import (
 )
 
 const (
-	mockSMTPSecretName         = "test-smtp"
-	mockPagerdutySecretName    = "test-pd"
-	mockDMSSecretName          = "test-dms"
-	mockAlertingEmailAddress   = "noreply-test@rhmi-redhat.com"
-	mockBUAlertingEmailAddress = "noreply-bu-test@rhmi-redhat.com"
+	mockSMTPSecretName               = "test-smtp"
+	mockPagerdutySecretName          = "test-pd"
+	mockDMSSecretName                = "test-dms"
+	mockCustomerAlertingEmailAddress = "noreply-customer-test@rhmi-redhat.com"
+	mockAlertingEmailAddress         = "noreply-test@rhmi-redhat.com"
+	mockBUAlertingEmailAddress       = "noreply-bu-test@rhmi-redhat.com"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -69,6 +70,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 
 func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
 	installation := basicInstallation()
+	installation.Spec.AlertingEmailAddress = mockCustomerAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.BusinessUnit = mockBUAlertingEmailAddress
 	return installation
@@ -678,15 +680,16 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	}
 
 	templateUtil := NewTemplateHelper(map[string]string{
-		"SMTPHost":            string(smtpSecret.Data["host"]),
-		"SMTPPort":            string(smtpSecret.Data["port"]),
-		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
-		"SMTPUsername":        string(smtpSecret.Data["username"]),
-		"SMTPPassword":        string(smtpSecret.Data["password"]),
-		"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
-		"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-		"SMTPToSREAddress":    fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
-		"SMTPToBUAddress":     fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPHost":              string(smtpSecret.Data["host"]),
+		"SMTPPort":              string(smtpSecret.Data["port"]),
+		"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+		"SMTPUsername":          string(smtpSecret.Data["username"]),
+		"SMTPPassword":          string(smtpSecret.Data["password"]),
+		"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
+		"DeadMansSnitchURL":     string(dmsSecret.Data["url"]),
+		"SMTPToCustomerAddress": fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPToSREAddress":      fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPToBUAddress":       fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
 	})
 
 	testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -830,15 +833,16 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 					return err
 				}
 				templateUtil := NewTemplateHelper(map[string]string{
-					"SMTPHost":            string(smtpSecret.Data["host"]),
-					"SMTPPort":            string(smtpSecret.Data["port"]),
-					"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
-					"SMTPUsername":        string(smtpSecret.Data["username"]),
-					"SMTPPassword":        string(smtpSecret.Data["password"]),
-					"PagerDutyServiceKey": string(pagerdutySecret.Data["serviceKey"]),
-					"DeadMansSnitchURL":   string(dmsSecret.Data["url"]),
-					"SMTPToSREAddress":    mockAlertingEmailAddress,
-					"SMTPToBUAddress":     mockBUAlertingEmailAddress,
+					"SMTPHost":              string(smtpSecret.Data["host"]),
+					"SMTPPort":              string(smtpSecret.Data["port"]),
+					"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+					"SMTPUsername":          string(smtpSecret.Data["username"]),
+					"SMTPPassword":          string(smtpSecret.Data["password"]),
+					"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
+					"DeadMansSnitchURL":     string(dmsSecret.Data["url"]),
+					"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
+					"SMTPToSREAddress":      mockAlertingEmailAddress,
+					"SMTPToBUAddress":       mockBUAlertingEmailAddress,
 				})
 
 				testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)

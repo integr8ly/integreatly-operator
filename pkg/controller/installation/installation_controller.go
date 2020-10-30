@@ -10,6 +10,7 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/version"
 
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -187,6 +188,17 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			priorityClassName = managedServicePriorityClassName
 		}
 
+		customerAlertingEmailAddress, _, err := addon.GetStringParameterByInstallType(
+			ctx,
+			serverClient,
+			integreatlyv1alpha1.InstallationType(installType),
+			namespace,
+			"notification-email",
+		)
+		if err != nil {
+			return fmt.Errorf("failed while retrieving addon parameter: %w", err)
+		}
+
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      getCrName(installType),
@@ -200,6 +212,7 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				DeadMansSnitchSecret: DefaultInstallationPrefix + "deadmanssnitch",
 				PagerDutySecret:      DefaultInstallationPrefix + "pagerduty",
 				UseClusterStorage:    useClusterStorage,
+				AlertingEmailAddress: customerAlertingEmailAddress,
 				AlertingEmailAddresses: integreatlyv1alpha1.AlertingEmailAddresses{
 					BusinessUnit: buAlertingEmailAddress,
 					CSSRE:        cssreAlertingEmailAddress,

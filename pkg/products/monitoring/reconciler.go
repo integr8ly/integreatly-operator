@@ -708,17 +708,24 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		smtpToBUAddress = smtpToBUAddressCRVal
 	}
 
+	smtpToCustomerAddress := fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host)
+	smtpToCustomerAddressCRVal := r.installation.Spec.AlertingEmailAddress
+	if smtpToCustomerAddressCRVal != "" {
+		smtpToCustomerAddress = prepareEmailAddresses(smtpToCustomerAddressCRVal)
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
-		"SMTPHost":            string(smtpSecret.Data["host"]),
-		"SMTPPort":            string(smtpSecret.Data["port"]),
-		"AlertManagerRoute":   alertmanagerRoute.Spec.Host,
-		"SMTPUsername":        string(smtpSecret.Data["username"]),
-		"SMTPPassword":        string(smtpSecret.Data["password"]),
-		"SMTPToSREAddress":    smtpToSREAddress,
-		"SMTPToBUAddress":     smtpToBUAddress,
-		"PagerDutyServiceKey": pagerDutySecret,
-		"DeadMansSnitchURL":   dmsSecret,
+		"SMTPHost":              string(smtpSecret.Data["host"]),
+		"SMTPPort":              string(smtpSecret.Data["port"]),
+		"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+		"SMTPUsername":          string(smtpSecret.Data["username"]),
+		"SMTPPassword":          string(smtpSecret.Data["password"]),
+		"SMTPToCustomerAddress": smtpToCustomerAddress,
+		"SMTPToSREAddress":      smtpToSREAddress,
+		"SMTPToBUAddress":       smtpToBUAddress,
+		"PagerDutyServiceKey":   pagerDutySecret,
+		"DeadMansSnitchURL":     dmsSecret,
 	})
 	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
@@ -865,4 +872,13 @@ func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Cl
 	}
 
 	return secret, nil
+}
+
+// prepareEmailAddresses converts a space separated string into a comma separated
+// string. Example:
+//
+// "foo@example.org bar@example.org" -> "foo@example.org, bar@example.org"
+func prepareEmailAddresses(list string) string {
+	addresses := strings.Split(strings.TrimSpace(list), " ")
+	return strings.Join(addresses, ", ")
 }

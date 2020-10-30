@@ -12,14 +12,27 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetParameter retrieves the value for an addon parameter
+// GetParameter retrieves the value for an addon parameter by finding the RHMI
+// CR and selecting the addon name for its installation type.
 func GetParameter(ctx context.Context, client k8sclient.Client, namespace, parameter string) ([]byte, bool, error) {
 	rhmi, err := resources.GetRhmiCr(client, ctx, namespace)
 	if err != nil {
 		return nil, false, err
 	}
 
-	addonName := GetName(integreatlyv1alpha1.InstallationType(rhmi.Spec.Type))
+	return GetParameterByInstallType(
+		ctx,
+		client,
+		integreatlyv1alpha1.InstallationType(rhmi.Spec.Type),
+		namespace,
+		parameter,
+	)
+}
+
+// GetParameterByInstallType retrieves the value for an addon parameter by
+// selecting the addon name for installationType
+func GetParameterByInstallType(ctx context.Context, client k8sclient.Client, installationType integreatlyv1alpha1.InstallationType, namespace, parameter string) ([]byte, bool, error) {
+	addonName := GetName(installationType)
 	secretName := fmt.Sprintf("addon-%s-parameters", addonName)
 
 	secret := &corev1.Secret{}
@@ -36,6 +49,17 @@ func GetParameter(ctx context.Context, client k8sclient.Client, namespace, param
 
 	value, ok := secret.Data[parameter]
 	return value, ok, nil
+}
+
+// GetStringParameterByInstallType retrieves the string value for an addon
+// parameter given the installation type
+func GetStringParameterByInstallType(ctx context.Context, client k8sclient.Client, installationType integreatlyv1alpha1.InstallationType, namespace, parameter string) (string, bool, error) {
+	value, ok, err := GetParameterByInstallType(ctx, client, installationType, namespace, parameter)
+	if err != nil || !ok {
+		return "", ok, err
+	}
+
+	return string(value), ok, nil
 }
 
 // GetStringParameter retrieves the string value for an addon parameter
