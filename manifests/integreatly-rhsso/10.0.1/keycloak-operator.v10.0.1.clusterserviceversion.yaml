@@ -5,7 +5,7 @@ metadata:
     capabilities: Deep Insights
     categories: Security
     certified: "False"
-    containerImage: "quay.io/keycloak/keycloak-operator:10.0.0"
+    containerImage: "quay.io/keycloak/keycloak-operator:10.0.1"
     createdAt: 2020-05-25 00:00:00
     description: "An Operator for installing and managing Keycloak"
     repository: "https://github.com/keycloak/keycloak-operator"
@@ -113,10 +113,10 @@ metadata:
           }
         }
       ]
-  name: keycloak-operator.v10.0.0
+  name: keycloak-operator.v10.0.1
   namespace: placeholder
 spec:
-  replaces: keycloak-operator.v9.0.3
+  replaces: keycloak-operator.v10.0.0
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -182,6 +182,8 @@ spec:
                   - command:
                       - keycloak-operator
                     env:
+                      - name: RELATED_IMAGE_RHSSO_OPENJDK
+                        value: registry.redhat.io/rh-sso-7/sso74-openshift-rhel8:7.4-3
                       - name: WATCH_NAMESPACE
                         valueFrom:
                           fieldRef:
@@ -192,7 +194,7 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: keycloak-operator
-                    image: quay.io/keycloak/keycloak-operator:10.0.0
+                    image: quay.io/keycloak/keycloak-operator:10.0.1
                     imagePullPolicy: Always
                     name: keycloak-operator
                     resources: {}
@@ -342,7 +344,7 @@ spec:
     - Access
   links:
     - name: Documentation
-      url: https://github.com/keycloak/keycloak-operator/tree/10.0.0/docs
+      url: https://github.com/keycloak/keycloak-operator/tree/10.0.1/docs
     - name: Keycloak
       url: https://www.keycloak.org/
     - name: Keycloak Discourse
@@ -353,4 +355,4 @@ spec:
   maturity: alpha
   provider:
     name: Red Hat
-  version: 10.0.0
+  version: 10.0.1
