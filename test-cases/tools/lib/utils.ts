@@ -26,4 +26,12 @@ function walk(dir: string, filter: RegExp): string[] {
     return results;
 }
 
-export { isEmpty, walk };
+function flat<T>(array: T[][]): T[] {
+    let result = [];
+    array.forEach((item) => {
+        result = result.concat(item);
+    });
+    return result;
+}
+
+export { isEmpty, walk, flat };

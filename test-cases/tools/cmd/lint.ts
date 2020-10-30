@@ -13,14 +13,16 @@ import {
     isAutomated,
     isPerBuild,
     isPerRelease,
-    loadAllTestCases,
+    loadRoughTestCases,
     manualSelectionOnly,
+    refineTestCase,
+    RoughTestCase,
     TestCase,
 } from "../lib/test-case";
 import { isEmpty } from "../lib/utils";
 import { logger } from "../lib/winston";
 
-type Linter = (test: TestCase) => error;
+type Linter<T> = (test: T) => error;
 
 type error = string | null;
 
@@ -82,8 +84,8 @@ const TAGS = [
 // Update the test-template.md to
 const SECTIONS = [STEPS_SECTION, "Description", "Prerequisites"];
 
-function lintFileNames(): Linter {
-    return (test: TestCase): error => {
+function lintFileNames(): Linter<RoughTestCase> {
+    return (test: RoughTestCase): error => {
         const desired = desiredFileName(test);
 
         const { base: current } = path.parse(test.file);
@@ -95,11 +97,11 @@ function lintFileNames(): Linter {
     };
 }
 
-function lintDuplicateIDs(): Linter {
-    const parsed: { [id: string]: TestCase } = {};
+function lintDuplicateIDs(): Linter<RoughTestCase> {
+    const parsed: { [id: string]: RoughTestCase } = {};
 
-    return (test: TestCase): error => {
-        if (test.id in parsed && parsed[test.id].title !== test.title) {
+    return (test: RoughTestCase): error => {
+        if (test.id in parsed) {
             return `the id: ${test.id} is duplicated in '${
                 parsed[test.id].file
             }' and in '${test.file}'`;
@@ -109,7 +111,7 @@ function lintDuplicateIDs(): Linter {
     };
 }
 
-function lintCategories(): Linter {
+function lintCategories(): Linter<RoughTestCase> {
     return lintStringField(
         "category",
         includes(CATEGORIES),
@@ -117,7 +119,7 @@ function lintCategories(): Linter {
     );
 }
 
-function lintAutomationJiras(): Linter {
+function lintAutomationJiras(): Linter<RoughTestCase> {
     return lintStringArrayField(
         "automation",
         regex(AUTOMATION),
@@ -125,7 +127,7 @@ function lintAutomationJiras(): Linter {
     );
 }
 
-function lintComponents(): Linter {
+function lintComponents(): Linter<RoughTestCase> {
     return lintStringArrayField(
         "components",
         includes(COMPONENTS),
@@ -133,7 +135,7 @@ function lintComponents(): Linter {
     );
 }
 
-function lintProducts(): Linter {
+function lintProducts(): Linter<TestCase> {
     return lintStringField(
         "productName",
         includes(PRODUCTS),
@@ -141,7 +143,7 @@ function lintProducts(): Linter {
     );
 }
 
-function lintEnvironments(): Linter {
+function lintEnvironments(): Linter<TestCase> {
     return lintStringArrayField(
         "environments",
         includes(ENVIRONMENTS),
@@ -149,7 +151,7 @@ function lintEnvironments(): Linter {
     );
 }
 
-function lintTargets(): Linter {
+function lintTargets(): Linter<TestCase> {
     return lintStringArrayField(
         "targets",
         regex(TARGETS),
@@ -157,7 +159,7 @@ function lintTargets(): Linter {
     );
 }
 
-function lintTags(): Linter {
+function lintTags(): Linter<RoughTestCase> {
     return lintStringArrayField(
         "tags",
         includes(TAGS),
@@ -165,12 +167,12 @@ function lintTags(): Linter {
     );
 }
 
-function lintStringField(
+function lintStringField<T>(
     field: string,
     l: (f: string) => boolean,
     tip: string
-): Linter {
-    return (test: TestCase): error => {
+): Linter<T> {
+    return (test: T): error => {
         if (l(test[field])) {
             return `invalid ${field}: ${test[field]}, ${tip}`;
         }
@@ -178,12 +180,12 @@ function lintStringField(
     };
 }
 
-function lintStringArrayField(
+function lintStringArrayField<T>(
     field: string,
     l: (f: string) => boolean,
     tip: string
-): Linter {
-    return (test: TestCase): error => {
+): Linter<T> {
+    return (test: T): error => {
         for (const e of test[field]) {
             if (l(e)) {
                 return `invalid ${field}: ${e}, ${tip}`;
@@ -201,7 +203,7 @@ function regex(reg: RegExp): (f: string) => boolean {
     return (f) => !reg.test(f);
 }
 
-function lintMandatoryEnvironment(): Linter {
+function lintMandatoryEnvironment(): Linter<TestCase> {
     return (test: TestCase): error => {
         if (!isAutomated(test) && isEmpty(test.environments)) {
             return `at least one environment must be set for each not automated test cases`;
@@ -210,7 +212,7 @@ function lintMandatoryEnvironment(): Linter {
     };
 }
 
-function lintOccurrence(): Linter {
+function lintOccurrence(): Linter<TestCase> {
     return (test: TestCase): error => {
         if (isAutomated(test) || manualSelectionOnly(test)) {
             return null;
@@ -236,8 +238,8 @@ function lintOccurrence(): Linter {
     };
 }
 
-function lintSections(): Linter {
-    return (test: TestCase): error => {
+function lintSections(): Linter<RoughTestCase> {
+    return (test: RoughTestCase): error => {
         const sections = [];
 
         const lines = test.content.split("\n");
@@ -262,18 +264,21 @@ function lintSections(): Linter {
     };
 }
 
-const linters: { [key: string]: Linter } = {
+const roughLinters: { [key: string]: Linter<RoughTestCase> } = {
     "automation-jiras": lintAutomationJiras(),
     categories: lintCategories(),
     components: lintComponents(),
     "duplicate-ids": lintDuplicateIDs(),
-    environments: lintEnvironments(),
     "file-names": lintFileNames(),
+    sections: lintSections(),
+    tags: lintTags(),
+};
+
+const linters: { [key: string]: Linter<TestCase> } = {
+    environments: lintEnvironments(),
     "mandatory-environment": lintMandatoryEnvironment(),
     occurrence: lintOccurrence(),
     products: lintProducts(),
-    sections: lintSections(),
-    tags: lintTags(),
     targets: lintTargets(),
 };
 
@@ -283,21 +288,29 @@ const lint: CommandModule<{}, {}> = {
     describe: "verify all test cases",
     builder: {},
     handler: () => {
-        const tests = loadAllTestCases();
+        const roughs = loadRoughTestCases();
 
         let dirty = false;
+        for (const l of Object.keys(roughLinters)) {
+            logger.info(`linting: ${l}`);
+            for (const rough of roughs) {
+                const err = roughLinters[l](rough);
+                if (err !== null) {
+                    logger.error(`${l}: ${rough.file}: ${err}`);
+                    dirty = true;
+                }
+            }
+        }
+
         for (const l of Object.keys(linters)) {
             logger.info(`linting: ${l}`);
-
-            for (const test of tests) {
-                for (const product of test.products) {
-                    test.environments = product.environments || [];
-                    test.targets = product.targets || [];
-                    test.productName = product.name || "";
-
+            for (const rough of roughs) {
+                for (const test of refineTestCase(rough)) {
                     const err = linters[l](test);
                     if (err !== null) {
-                        logger.error(`${l}: ${test.file}: ${err}`);
+                        logger.error(
+                            `${l}: ${test.file}: ${test.productName}: ${err}`
+                        );
                         dirty = true;
                     }
                 }
