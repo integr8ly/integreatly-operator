@@ -14,7 +14,7 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
-      description: RHMI is the Schema for the RHMI API
+      description: RHOAM is the Schema for the RHOAM API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -29,7 +29,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: RHMISpec defines the desired state of Installation
+          description: RHOAMSpec defines the desired state of Installation
           properties:
             alertingEmailAddress:
               type: string
@@ -98,7 +98,7 @@ spec:
           - type
           type: object
         status:
-          description: RHMIStatus defines the observed state of Installation
+          description: RHOAMStatus defines the observed state of Installation
           properties:
             gitHubOAuthEnabled:
               type: boolean
