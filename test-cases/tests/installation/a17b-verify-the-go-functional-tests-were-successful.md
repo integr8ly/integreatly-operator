@@ -1,15 +1,16 @@
 ---
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
-  - rhpds
-  - osd-private-post-upgrade
+products:
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+      - osd-private-post-upgrade
 estimate: 15m
 tags:
   - per-build
 ---
 
-# A17 - Verify the Go functional tests were successful
+# A17B - Verify the Go functional tests were successful
 
 Acceptance Criteria:
 
@@ -19,7 +20,7 @@ Acceptance Criteria:
 
 1. Select the Jenkins job used for installation of the QE release testing cluster from
 
-https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/Integreatly/job/rhmi-install-addon-flow
+https://master-jenkins-csb-intly.cloud.paas.psi.redhat.com/job/ManagedAPI/job/managed-api-install-addon-flow
 
 2. Check the functional tests were run as part of the pipeline.
 3. Check if there were any failed or skipped tests (flaky ones).

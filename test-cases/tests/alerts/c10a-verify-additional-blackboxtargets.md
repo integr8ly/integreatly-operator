@@ -1,12 +1,14 @@
 ---
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.3.0
-  - 2.7.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.3.0
+      - 2.7.0
 ---
 
-# C10 - Verify additional BlackboxTargets
+# C10A - Verify additional BlackboxTargets
 
 ## Description
 

@@ -1,12 +1,16 @@
 ---
-environments:
-  - external
+products:
+  - name: rhmi
+    environments:
+      - external
+    targets:
+      - 2.8.0
 estimate: 2h
 tags:
   - manual-selection
 ---
 
-# N01 - Mesure downtime during OpenShift upgrade
+# N01A - Measure downtime during OpenShift upgrade
 
 ## Description
 

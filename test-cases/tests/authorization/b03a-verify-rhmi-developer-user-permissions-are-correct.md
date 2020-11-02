@@ -1,15 +1,17 @@
 ---
 automation:
   - INTLY-7748
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
 estimate: 15m
 tags:
   - per-release
 ---
 
-# B03 - Verify RHMI Developer User Permissions are Correct
+# B03A - Verify RHMI Developer User Permissions are Correct
 
 **Automated Test**: [user_rhmi_developer_permissions.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/user_rhmi_developer_permissions.go)
 

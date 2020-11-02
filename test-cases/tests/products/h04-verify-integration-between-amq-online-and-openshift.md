@@ -3,11 +3,13 @@ automation:
   - INTLY-7432
 components:
   - product-amq
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 30m
-targets:
-  - 2.8.0
 ---
 
 # H04 - Verify integration between AMQ Online and OpenShift

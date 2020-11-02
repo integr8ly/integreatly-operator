@@ -1,11 +1,13 @@
 ---
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.5.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.5.0
 ---
 
-# C13 - Verify RHMI reconciliation alerts are firing
+# C13A - Verify RHMI reconciliation alerts are firing
 
 ## Description
 

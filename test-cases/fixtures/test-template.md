@@ -6,12 +6,19 @@ automation:
 components:
   - product-3scale
   - product-amq
-environments:
-  - osd-fresh-install
-  - rhpds
 estimate: 1h
-targets:
-  - 0.0.0
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+      - rhpds
+    targets:
+      - 0.0.0
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+    targets:
+      - 0.0.0
 tags:
   - automated
   - destructive

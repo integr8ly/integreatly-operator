@@ -3,7 +3,7 @@
 - Test cases are located in the directory `tests/` and are organized in subdirectories by categories.
 - Each markdown file `*.md` inside the `tests/` represents one test case.
 - Each test case must start with the ID and a title immediately after the metadata `# ID - This is a title`.
-- The ID must be unique across all test cases and have the same format `[CATEGORY-LETTER][TWO-DIGIT-NUMBER]`.
+- The ID must be unique across all test cases and have the same format `[CATEGORY-LETTER][TWO-DIGIT-NUMBER]`. The only exception to this format is when a single test case can be performed on more than one product (e.g. RHOAM and RHMI), but some test case steps differ (e.g. test case mentions components that are not common for both products). In that case, it is ideal to split the test case in 2 files (each file for a single product) and add the suffix `A` or `B` to the test ID in those files: `[CATEGORY-LETTER][TWO-DIGIT-NUMBER][A-or-B]`
 - The file name of each test case must match the title of the test case without special characters or spaces. Use `./tools.sh rename` to fix all file names.
 - The `./tools.sh` script requires Nodejs >= 10.
 - Try to write test cases using the standard syntax described in the [test-template.md](./fixtures/test-template.md).
@@ -78,7 +78,7 @@ If need to update multiple test cases by component read: [How to bulk update the
 To automatically add the target version to all test cases with a target version older than 3 releases, use the following command:
 
 ```
-./tools.sh plan release --target TARGET_VERSION
+./tools.sh plan release --product PRODUCT_NAME --target TARGET_VERSION
 ```
 
 > For example if we set the TARGET_VERSION to `2.8.0` than all test cases which latest target version for the same major release is equal or minor to `2.5.0` will receive the target `2.8.0` and therefore included in the `2.8.0` release
@@ -86,7 +86,7 @@ To automatically add the target version to all test cases with a target version 
 To automatically add the target version to all test cases with a specific component:
 
 ```
-./tools.sh plan for --target TARGET_VERSION --component COMPONENT
+./tools.sh plan for --product PRODUCT_NAME --target TARGET_VERSION --component COMPONENT
 ```
 
 ## How to estimate a test case
@@ -148,19 +148,19 @@ To crate the Jira tasks for the test cases you need first to create an Epic in J
 To see the list of test cases that will be created in the Epic you can use the `export` cmd:
 
 ```bash
-./tools.sh export csv --target VERSION --environment ENVIRONMENT | column -t -s,
+./tools.sh export csv --product PRODUCT_NAME --target VERSION --environment ENVIRONMENT | column -t -s,
 ```
 
 Use the `jira` cmd to create the Jira tasks for the test cases and add them to the Epic
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --environment ENVIRONMENT
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME --environment ENVIRONMENT
 ```
 
 If you need to link the new tasks to the task of a previous test round use the `previous-epic` option:
 
 ```bash
-JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00
+JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPICKEY-01 --previous-epic EPICKEY-00 --product PRODUCT_NAME
 ```
 
 > The `previous-epic` option will link each new task to the task in the previous epic with the same ID and it
@@ -179,7 +179,7 @@ JIRA_USERNAME=yourusername JIRA_PASSWORD=yourpassword ./tools.sh jira --epic EPI
 It is also possible to set the Jira username and password in environment variables:
 
 ```
- ./tools.sh jira --epic EPICKEY-00
+ ./tools.sh jira --epic EPICKEY-00 --product PRODUCT_NAME
 ```
 
 ## List and export the test cases
@@ -187,25 +187,25 @@ It is also possible to set the Jira username and password in environment variabl
 Use the `export csv` cmd to list and export the test cases in csv:
 
 ```
-./tools.sh export csv
+./tools.sh export csv --product PRODUCT_NAME
 ```
 
 use the `--output` option to save it to file
 
 ```
-./tools.sh export csv --output /tmp/alltests.csv
+./tools.sh export csv --product PRODUCT_NAME --output /tmp/alltests.csv
 ```
 
 to export only specific test cases use the `--filter` option:
 
 ```
-./tools.sh export csv --filter components=product-3scale tags=^automated
+./tools.sh export csv --product PRODUCT_NAME --filter components=product-3scale tags=^automated
 ```
 
 to pretty print the csv output on the terminal:
 
 ```
-./tools.sh export csv | column -t -s, | less -S
+./tools.sh export csv --product PRODUCT_NAME | column -t -s, | less -S
 ```
 
 ## How to upload all test case to Polarion
@@ -213,7 +213,7 @@ to pretty print the csv output on the terminal:
 This command will automatically upload all test cases to Polarion:
 
 ```bash
-POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polarion testcase
+POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polarion testcase --product PRODUCT_NAME
 ```
 
 ## How to report the results of the manual tests to Polarion
@@ -223,20 +223,48 @@ POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polario
 This command will read all test results from Jira, and upload them to Polarion.
 
 ```bash
-JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390
+JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME
 ```
 
 ## Test Case Metadata
 
-## Environments
+### Products
 
-The environment field specify against wich environment/setup the test need to be executed.
+This field specifies the list of products the test case can be executed against.
+Each product must contain the fields `name` and `environments`. It can also contain a field `targets`. See below for more details about these fields.
+
+#### Product names:
+
+- `rhmi` - Red Hat Managed Integration
+- `rhoam` - Red Hat OpenShift API Management
+
+### Environments
+
+The environment field specify against which environment/setup the test need to be executed.
 
 - `osd-post-upgrade` This is the environment where most of the tests will be executed and also the **default** choice for most of the tests. It consist in a BYOC OSD on AWS cluster installed with the previous version using addon-flow and upgraded to the version to test.
 - `osd-fresh-install` This environment should be used for tests that are for sure not affected from the upgrade. It consist in a BYOC OSD on AWS cluster installed with the version to test using the addon-flow.
 - `osd-private-post-upgrade` This is a special environment and should be used only for tests that are specifically targeting it, the only difference with the pervious environments, is that this environment resides behind a VPN
 - `rhpds` This is the RHMI demo environment and should be used only for tests that are specifically targeting it.
 - `external` This is a special tag that is used to identify tests that needs a special environment or a stand-alone one, the test in this case would have to specify how to setup the cluster.
+
+### Targets
+
+Targets version defines against which release the test case is going to be executed next time. This is useful to include or exclude the test cases form a specific release.
+
+All test cases need to define at least a `targets` version or set the `per-release`, `per-build` or `manual-selection` tag.
+
+In this example the test case `Z00` would be included in the `2.7.0` and `2.9.0` releases but excluded from any other release:
+
+```
+---
+targets:
+  - 2.7.0
+  - 2.9.0
+---
+
+# Z00 - Verify
+```
 
 ### Tags
 
@@ -273,24 +301,6 @@ The component field is used to decide which tests should be added in the next re
 - `product-data-sync` Data Sync minor or major product upgrades
 - `monitoring` Monitoring stack changes or upgrade
 
-### Targets
-
-Targets version defines against which release the test case is going to be executed next time. This is useful to include or exclude the test cases form a specific release.
-
-All test cases need to define at least a `targets` version or set the `per-release`, `per-build` or `manual-selection` tag.
-
-In this example the test case `Z00` would be included in the `2.7.0` and `2.9.0` releases but excluded from any other release:
-
-```
----
-targets:
-  - 2.7.0
-  - 2.9.0
----
-
-# Z00 - Verify
-```
-
 ### Automation Jiras
 
 As new manual test cases are being added, there should also be corresponding automation tasks for them in JIRA. Each manual test case for which automation task exist should have `automation` in its metadata pointing to the automation jira, e.g.:
@@ -321,5 +331,5 @@ Or using the VS Code extension: https://marketplace.visualstudio.com/items?itemN
 Run the `./tools.sh export csv` script to export all test cases in a CSV table:
 
 ```
-./tools.sh export csv --output testcases.csv
+./tools.sh export csv --product PRODUCT_NAME --output testcases.csv
 ```

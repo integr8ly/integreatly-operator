@@ -1,6 +1,12 @@
 ---
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
 estimate: 30m
 tags:
   - per-release

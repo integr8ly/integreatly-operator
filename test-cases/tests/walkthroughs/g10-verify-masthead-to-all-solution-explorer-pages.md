@@ -1,10 +1,12 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.3.0
+      - 2.6.0
 estimate: 15m
-targets:
-  - 2.3.0
-  - 2.6.0
 ---
 
 # G10 - Verify masthead to all solution explorer pages

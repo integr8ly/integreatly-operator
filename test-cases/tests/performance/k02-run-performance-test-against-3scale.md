@@ -1,13 +1,22 @@
 ---
 components:
   - product-3scale
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.7.0
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+      - osd-post-upgrade
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 2h
 tags:
   - destructive
-targets:
-  - 2.7.0
 ---
 
 # K02 - Run performance test against 3Scale

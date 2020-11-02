@@ -1,13 +1,15 @@
 ---
 components:
   - product-codeready
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 1h
 tags:
   - destructive
-targets:
-  - 2.8.0
 ---
 
 # J06 - Verify CodeReady Backup and Restore

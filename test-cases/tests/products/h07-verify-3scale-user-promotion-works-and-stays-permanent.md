@@ -1,10 +1,4 @@
 ---
-components:
-  - product-3scale
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.8.0
 tags:
   - automated
 ---

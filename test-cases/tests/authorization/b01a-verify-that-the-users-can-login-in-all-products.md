@@ -1,16 +1,18 @@
 ---
 automation:
   - INTLY-7416
-environments:
-  - osd-post-upgrade
-  - osd-fresh-install
-  - rhpds
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+      - rhpds
 estimate: 15m
 tags:
   - per-release
 ---
 
-# B01 - Verify that the users can login in all products
+# B01A - Verify that the users can login in all products
 
 ## Description
 

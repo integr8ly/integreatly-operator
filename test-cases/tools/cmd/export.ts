@@ -10,6 +10,7 @@ import {
 interface CSVArgs {
     output?: string;
     environment?: string;
+    product?: string;
     target?: string;
     filter?: string[];
 }
@@ -34,6 +35,12 @@ const csv: CommandModule<{}, CSVArgs> = {
                 "the environment name used from the release filter, if not set the release filter will not be used",
             type: "string",
         },
+        product: {
+            demand: true,
+            describe:
+                "the product name used from the release filter, if not set the release filter will not be used",
+            type: "string",
+        },
         target: {
             describe:
                 "the target version used from the release filter, if not set the release filter will not be used",
@@ -54,7 +61,7 @@ const csv: CommandModule<{}, CSVArgs> = {
             );
         }
 
-        let tests = loadTestCases();
+        let tests = loadTestCases(args.product);
 
         if (args.target || args.environment) {
             tests = releaseFilter(tests, args.environment, args.target);

@@ -2,10 +2,12 @@
 components:
   - product-3scale
   - product-fuse
-environments:
-  - rhpds
-targets:
-  - 2.7.0
+products:
+  - name: rhmi
+    environments:
+      - rhpds
+    targets:
+      - 2.7.0
 ---
 
 # B07 - Verify Fuse Service Discovery Works in 3Scale (Workshop Only)

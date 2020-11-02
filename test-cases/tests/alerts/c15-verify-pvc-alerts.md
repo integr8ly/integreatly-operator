@@ -1,9 +1,11 @@
 ---
-environments:
-  - osd-post-upgrade
 estimate: 30m
-targets:
-  - 2.6.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
 ---
 
 # C15 - Verify PVC alerts

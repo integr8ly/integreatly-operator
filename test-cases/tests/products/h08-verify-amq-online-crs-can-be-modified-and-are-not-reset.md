@@ -3,11 +3,13 @@ automation:
   - INTLY-6123
 components:
   - product-amq
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.8.0
 estimate: 1h
-targets:
-  - 2.8.0
 ---
 
 # H08 - Verify AMQ Online CRs can be modified and are not reset

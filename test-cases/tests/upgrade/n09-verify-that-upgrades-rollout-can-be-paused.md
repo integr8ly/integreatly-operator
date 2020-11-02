@@ -1,6 +1,8 @@
 ---
-environments:
-  - external
+products:
+  - name: rhmi
+    environments:
+      - external
 tags:
   - manual-selection
 targets:

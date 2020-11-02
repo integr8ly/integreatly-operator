@@ -3,14 +3,18 @@ automation:
   - INTLY-6408
 components:
   - product-sso
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 15m
-targets:
-  - 2.6.0
 ---
 
-# B08 - Verify User RHSSO Permissions
+# B08B - Verify User RHSSO Permissions
 
 ## Steps
 
@@ -18,7 +22,7 @@ The following steps should be tested for both rhmi developer and dedicated admin
 
 ### Manage Realms in User RHSSO
 
-1. Log into the User Red Hat Single Sign-On via the Solution Explorer
+1. Log into the User Red Hat Single Sign-On (Application Launcher -> Api Management SSO)
 2. Hover over the Realm dropdown and Click **Add Realm**
 3. Enter the following details in the realm creation form:
    - Name: Enter any name
