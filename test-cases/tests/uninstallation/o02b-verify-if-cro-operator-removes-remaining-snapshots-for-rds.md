@@ -11,7 +11,7 @@ tags:
   - destructive
 ---
 
-# O02b - Verify if CRO operator removes remaining snapshots for RDS, Elasticache and S3 after the deletion of RHMI operator has finished
+# O02B - Verify if CRO operator removes remaining snapshots for RDS, Elasticache and S3 after the deletion of RHMI operator has finished
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster (ideally a cluster that is about to be deleted)
 

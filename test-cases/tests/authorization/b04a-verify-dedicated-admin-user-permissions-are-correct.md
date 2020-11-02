@@ -11,7 +11,7 @@ tags:
   - per-release
 ---
 
-# B04a - Verify Dedicated Admin User Permissions are Correct
+# B04A - Verify Dedicated Admin User Permissions are Correct
 
 **Automated Test**: [user_dedicated_admin_permissions.go](https://github.com/integr8ly/integreatly-operator/blob/master/test/common/user_dedicated_admin_permissions.go)
 

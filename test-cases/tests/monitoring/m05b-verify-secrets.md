@@ -10,7 +10,7 @@ products:
 estimate: 15m
 ---
 
-# M05b - Verify secrets
+# M05B - Verify secrets
 
 More info:
 

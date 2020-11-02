@@ -10,7 +10,7 @@ tags:
   - manual-selection
 ---
 
-# N01a - Measure downtime during OpenShift upgrade
+# N01A - Measure downtime during OpenShift upgrade
 
 ## Description
 

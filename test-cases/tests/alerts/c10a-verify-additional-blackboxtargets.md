@@ -8,7 +8,7 @@ products:
       - 2.7.0
 ---
 
-# C10a - Verify additional BlackboxTargets
+# C10A - Verify additional BlackboxTargets
 
 ## Description
 

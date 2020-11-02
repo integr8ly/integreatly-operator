@@ -10,7 +10,7 @@ tags:
   - destructive
 ---
 
-# O01a - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
+# O01A - Verify cloud resources can be properly cleaned up in case of failing RHMI uninstallation
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster (ideally a cluster that is about to be deleted)
 

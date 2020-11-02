@@ -7,7 +7,7 @@ products:
       - 2.5.0
 ---
 
-# C13a - Verify RHMI reconciliation alerts are firing
+# C13A - Verify RHMI reconciliation alerts are firing
 
 ## Description
 

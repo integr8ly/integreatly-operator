@@ -9,7 +9,7 @@ products:
       - 0.2.0
 ---
 
-# C11b - Verify RHOAM install alert is firing
+# C11B - Verify RHOAM install alert is firing
 
 ## Description
 

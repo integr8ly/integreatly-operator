@@ -7,7 +7,7 @@ products:
       - 2.5.0
 ---
 
-# C11a - Verify RHMI install alert is firing
+# C11A - Verify RHMI install alert is firing
 
 ## Description
 

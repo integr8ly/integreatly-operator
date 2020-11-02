@@ -11,7 +11,7 @@ tags:
   - per-release
 ---
 
-# B01b - Verify that the users can login in all products
+# B01B - Verify that the users can login in all products
 
 ## Description
 

@@ -9,7 +9,7 @@ tags:
   - per-build
 ---
 
-# N02a - Upgrade RHMI
+# N02A - Upgrade RHMI
 
 ## Description
 

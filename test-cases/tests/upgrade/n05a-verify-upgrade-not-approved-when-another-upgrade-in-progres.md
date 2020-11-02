@@ -8,7 +8,7 @@ tags:
   - manual-selection
 ---
 
-# N05a - Verify upgrade not approved when another upgrade in progress
+# N05A - Verify upgrade not approved when another upgrade in progress
 
 ## Description
 

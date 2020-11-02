@@ -11,7 +11,7 @@ tags:
   - destructive
 ---
 
-# C17b - Verify RHOAM Upgrade alerts are present
+# C17B - Verify RHOAM Upgrade alerts are present
 
 ## Description
 

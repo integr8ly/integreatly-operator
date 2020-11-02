@@ -9,7 +9,7 @@ products:
       - 0.2.0
 ---
 
-# C10b - Verify additional BlackboxTargets
+# C10B - Verify additional BlackboxTargets
 
 ## Description
 

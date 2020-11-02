@@ -247,7 +247,6 @@ Tags are used to define specific characteristics of a test case.
 - `per-release` Indicates that this test case should be executed on each release but can be skip if passed in the previous build
 - `manual-selection` Indicates that this test case is excluded from the standard test recycle and therefore it will not be retested every tree releases
 - `destructive` Indicates that the test case may conflict with other tests and therefore can't be executed in parallel with other tests, all destructive tests must be executed sequentially
-- `rhmi`
 
 E.g.:
 

@@ -9,7 +9,7 @@ products:
 estimate: 15m
 ---
 
-# M02a - Verify RHMI version metric is exposed
+# M02A - Verify RHMI version metric is exposed
 
 ## Steps
 

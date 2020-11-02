@@ -10,7 +10,7 @@ tags:
   - per-build
 ---
 
-# A17b - Verify the Go functional tests were successful
+# A17B - Verify the Go functional tests were successful
 
 Acceptance Criteria:
 

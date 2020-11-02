@@ -14,7 +14,7 @@ products:
 estimate: 15m
 ---
 
-# B08b - Verify User RHSSO Permissions
+# B08B - Verify User RHSSO Permissions
 
 ## Steps
 

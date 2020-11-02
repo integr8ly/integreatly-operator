@@ -9,7 +9,7 @@ products:
       - 0.2.0
 ---
 
-# C13b - Verify RHOAM reconciliation alerts are firing
+# C13B - Verify RHOAM reconciliation alerts are firing
 
 ## Description
 

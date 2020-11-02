@@ -11,7 +11,7 @@ tags:
   - destructive
 ---
 
-# O01b - Verify cloud resources can be properly cleaned up in case of failing RHOAM uninstallation
+# O01B - Verify cloud resources can be properly cleaned up in case of failing RHOAM uninstallation
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster (ideally a cluster that is about to be deleted)
 

@@ -11,7 +11,7 @@ tags:
   - per-build
 ---
 
-# A17a - Verify the Go functional tests were successful
+# A17A - Verify the Go functional tests were successful
 
 Acceptance Criteria:
 

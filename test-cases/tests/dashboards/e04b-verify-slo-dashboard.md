@@ -16,7 +16,7 @@ tags:
   - destructive
 ---
 
-# E04b - Verify SLO dashboard
+# E04B - Verify SLO dashboard
 
 Note: this test should only be performed at a time it will not affect other ongoing testing, or on a separate cluster. Also due to known issues with the 3scale pods for these products will need to be brought back up manually.
 

@@ -10,7 +10,7 @@ products:
 estimate: 15m
 ---
 
-# M02b - Verify RHOAM version metric is exposed
+# M02B - Verify RHOAM version metric is exposed
 
 ## Steps
 

@@ -83,7 +83,7 @@ function extractTitle(content: string): { title: string; content: string } {
 
 function extractId(title: string): { id: string; title: string } {
     // A01a - Title
-    const match = /^(?<id>[A-Z][0-9]{2}[a-z]?)\s-\s(?<title>.*)$/.exec(title);
+    const match = /^(?<id>[A-Z][0-9]{2}[AB]?)\s-\s(?<title>.*)$/.exec(title);
     if (match) {
         return {
             id: match.groups.id,
