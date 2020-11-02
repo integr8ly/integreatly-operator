@@ -3,9 +3,10 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"strings"
 	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 )
@@ -290,19 +291,19 @@ var managedApiSpecificRules = []alertsTestRule{
 	{
 		File: NamespacePrefix + "marin3r-api-usage-alert-level1.yaml",
 		Rules: []string{
-			"Level1ThreeScaleApiUsageThresholdExceeded",
+			"RHOAMApiUsageLevel1ThresholdExceeded",
 		},
 	},
 	{
 		File: NamespacePrefix + "marin3r-api-usage-alert-level2.yaml",
 		Rules: []string{
-			"Level2ThreeScaleApiUsageThresholdExceeded",
+			"RHOAMApiUsageLevel2ThresholdExceeded",
 		},
 	},
 	{
 		File: NamespacePrefix + "marin3r-api-usage-alert-level3.yaml",
 		Rules: []string{
-			"Level3ThreeScaleApiUsageThresholdExceeded",
+			"RHOAMApiUsageLevel3ThresholdExceeded",
 		},
 	},
 }

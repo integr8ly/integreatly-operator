@@ -75,21 +75,21 @@ and insert the following data:
 ```json
 {
   "api-usage-alert-level1": {
-    "ruleName": "Level1ThreeScaleApiUsageThresholdExceeded",
+    "ruleName": "RHOAMApiUsageLevel1ThresholdExceeded",
     "level": "warning",
     "minRate": "80%",
     "maxRate": "90%",
     "period": "1m"
   },
   "api-usage-alert-level2": {
-    "ruleName": "Level2ThreeScaleApiUsageThresholdExceeded",
+    "ruleName": "RHOAMApiUsageLevel2ThresholdExceeded",
     "level": "warning",
     "minRate": "90%",
     "maxRate": "95%",
     "period": "1m"
   },
   "api-usage-alert-level3": {
-    "ruleName": "Level3ThreeScaleApiUsageThresholdExceeded",
+    "ruleName": "RHOAMApiUsageLevel3ThresholdExceeded",
     "level": "warning",
     "minRate": "95%",
     "period": "1m"
@@ -134,9 +134,9 @@ and insert the following data:
 
     | Alert to fire                             | `numRequests` | `interval` |
     | ----------------------------------------- | ------------- | ---------- |
-    | Level1ThreeScaleApiUsageThresholdExceeded | 170           | 0.71       |
-    | Level2ThreeScaleApiUsageThresholdExceeded | 186           | 0.645      |
-    | Level3ThreeScaleApiUsageThresholdExceeded | 240           | 0.5        |
+    | RHOAMApiUsageLevel1ThresholdExceeded | 170           | 0.71       |
+    | RHOAMApiUsageLevel2ThresholdExceeded | 186           | 0.645      |
+    | RHOAMApiUsageLevel3ThresholdExceeded | 240           | 0.5        |
 
     > Only the requests for level 3 should be eventually failing with a `429 Too Many Requests` status code
     > due to the rate limit being exceeded
