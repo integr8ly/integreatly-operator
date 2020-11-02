@@ -68,6 +68,18 @@ var (
 			"stage",
 		},
 	)
+
+	RHOAMVersion = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rhoam_version",
+			Help: "RHOAM versions",
+		},
+		[]string{
+			"stage",
+			"version",
+			"to_version",
+		},
+	)
 )
 
 // SetRHMIInfo exposes rhmi info metrics with labels from the installation CR
@@ -95,4 +107,7 @@ func SetRHMIStatus(installation *integreatlyv1alpha1.RHMI) {
 func SetRhmiVersions(stage string, version string, toVersion string, firstInstallTimestamp int64) {
 	RHMIVersion.Reset()
 	RHMIVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
+
+	RHOAMVersion.Reset()
+	RHOAMVersion.WithLabelValues(stage, version, toVersion).Set(float64(firstInstallTimestamp))
 }
