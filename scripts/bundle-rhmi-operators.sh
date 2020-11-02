@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 
-LATEST_VERSION=$(grep integreatly-operator deploy/olm-catalog/integreatly-operator/integreatly-operator.package.yaml | awk -F v '{print $2}')
+if [[ -z "$OLM_TYPE" ]]; then
+  OLM_TYPE="integreatly-operator"
+fi
+
+case $OLM_TYPE in
+  "integreatly-operator")
+    LATEST_VERSION=$(grep $OLM_TYPE deploy/olm-catalog/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $2}')
+    PACKAGE="integreatly"
+    ;;
+  "managed-api-service")
+    LATEST_VERSION=$(grep $OLM_TYPE deploy/olm-catalog/$OLM_TYPE/$OLM_TYPE.package.yaml | awk -F v '{print $3}')
+    PACKAGE="managed-api-service"
+    ;;
+  *)
+    echo "Invalid OLM_TYPE set"
+    echo "Use \"integreatly-operator\" or \"managed-api-service\""
+    exit 1
+    ;;
+esac
+
 CHANNEL="${CHANNEL:-alpha}"
 ORG="${ORG:-integreatly}"
 REG="${REG:-quay.io}"
@@ -9,6 +28,7 @@ UPGRADE_RHMI="${UPGRADE:-false}"
 VERSIONS="${BUNDLE_VERSIONS:-$LATEST_VERSION}"
 ROOT=$(pwd)
 INDEX_IMAGE=""
+
 
 start() {
   # TODO: validate input
@@ -24,7 +44,7 @@ start() {
 create_work_area() {
   printf "Creating Work Area \n"
 
-  cd ./deploy/olm-catalog/integreatly-operator/
+  cd ./deploy/olm-catalog/$OLM_TYPE/
   mkdir temp && cd temp
 }
 
@@ -50,7 +70,7 @@ check_upgrade_install() {
   OLDEST_VERSION=${VERSIONS##*,}
 
   printf "Removing replaces field from CSV \n"
-  file='./'${OLDEST_VERSION}'/integreatly-operator.v'${OLDEST_VERSION}'.clusterserviceversion.yaml'
+  file='./'${OLDEST_VERSION}'/'${OLM_TYPE}'.v'${OLDEST_VERSION}'.clusterserviceversion.yaml'
   sed '/replaces/d' $file > newfile ; mv newfile $file
 }
 
@@ -66,11 +86,11 @@ generate_bundles() {
 
     cd ./bundle/
 
-    opm alpha bundle build --directory ./manifests --tag $REG/$ORG/integreatly-bundle:${VERSION} \
+    opm alpha bundle build --directory ./manifests --tag $REG/$ORG/${PACKAGE}-bundle:${VERSION} \
         --package integreatly --channels $CHANNEL --default $CHANNEL
 
-    docker push $REG/$ORG/integreatly-bundle:$VERSION
-    operator-sdk bundle validate $REG/$ORG/integreatly-bundle:$VERSION
+    docker push $REG/$ORG/${PACKAGE}-bundle:$VERSION
+    operator-sdk bundle validate $REG/$ORG/${PACKAGE}-bundle:$VERSION
 
     cd ../../
   done
@@ -81,7 +101,7 @@ generate_index() {
   bundles=""
   for VERSION in $(echo $VERSIONS | sed "s/,/ /g")
   do
-      bundles=$bundles"$REG/$ORG/integreatly-bundle:$VERSION,"
+      bundles=$bundles"$REG/$ORG/${PACKAGE}-bundle:$VERSION,"
   done
   # remove last comma
   bundles=${bundles%?}
@@ -90,9 +110,9 @@ generate_index() {
   opm index add \
       --bundles $bundles \
       --build-tool ${BUILD_TOOL} \
-      --tag $REG/$ORG/integreatly-index:$NEWEST_VERSION
+      --tag $REG/$ORG/${PACKAGE}-index:$NEWEST_VERSION
 
-  INDEX_IMAGE=$REG/$ORG/integreatly-index:$NEWEST_VERSION
+  INDEX_IMAGE=$REG/$ORG/${PACKAGE}-index:$NEWEST_VERSION
 
   printf 'Pushing index image:'$INDEX_IMAGE'\n'
 
@@ -108,7 +128,7 @@ create_catalog_source() {
 
 clean_up() {
   printf 'Cleaning up work area \n'
-  rm -rf $ROOT/deploy/olm-catalog/integreatly-operator/temp
+  rm -rf $ROOT/deploy/olm-catalog/$OLM_TYPE/temp
 }
 
 start
