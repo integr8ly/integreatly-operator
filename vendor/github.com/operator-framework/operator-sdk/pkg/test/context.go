@@ -15,7 +15,6 @@
 package test
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -25,91 +24,56 @@ import (
 	"k8s.io/client-go/restmapper"
 )
 
-type Context struct {
+type TestCtx struct { //nolint:golint
+	// todo(camilamacedo86): The no lint here is for type name will be used as test.TestCtx by other packages, and that stutters; consider calling this Ctx (golint)
+	// However, was decided to not move forward with it now in order to not introduce breakchanges with the task to add the linter. We should to do it after.
 	id         string
 	cleanupFns []cleanupFn
-	// the  namespace is deprecated
-	// todo: remove before 1.0.0
-	// use operatorNamespace or watchNamespace  instead
-	namespace         string
-	operatorNamespace string
-	watchNamespace    string
-	t                 *testing.T
+	namespace  string
+	t          *testing.T
 
-	namespacedManPath  string
-	client             *frameworkClient
-	kubeclient         kubernetes.Interface
-	restMapper         *restmapper.DeferredDiscoveryRESTMapper
-	skipCleanupOnError bool
+	namespacedManPath string
+	client            *frameworkClient
+	kubeclient        kubernetes.Interface
+	restMapper        *restmapper.DeferredDiscoveryRESTMapper
 }
 
-// todo(camilamacedo86): Remove the following line just added for we are able to deprecated TestCtx
-// need to be done before: 1.0.0
-
-// Deprecated: TestCtx exists for historical compatibility. Use Context instead.
-type TestCtx = Context //nolint:golint
-
 type CleanupOptions struct {
-	TestContext   *Context
+	TestContext   *TestCtx
 	Timeout       time.Duration
 	RetryInterval time.Duration
 }
 
 type cleanupFn func() error
 
-func (f *Framework) newContext(t *testing.T) *Context {
-
-	// Context is used among others for namespace names where '/' is forbidden and must be 63 characters or less
+func (f *Framework) newTestCtx(t *testing.T) *TestCtx {
+	// TestCtx is used among others for namespace names where '/' is forbidden and must be 63 characters or less
 	id := "osdk-e2e-" + uuid.New()
 
-	var operatorNamespace string
-	_, ok := os.LookupEnv(TestOperatorNamespaceEnv)
-	if ok {
-		operatorNamespace = f.OperatorNamespace
+	var namespace string
+	if f.singleNamespaceMode {
+		namespace = f.Namespace
 	}
-
-	watchNamespace := operatorNamespace
-	ns, ok := os.LookupEnv(TestWatchNamespaceEnv)
-	if ok {
-		watchNamespace = ns
-	}
-
-	return &Context{
-		id:                 id,
-		t:                  t,
-		namespace:          operatorNamespace,
-		operatorNamespace:  operatorNamespace,
-		watchNamespace:     watchNamespace,
-		namespacedManPath:  *f.NamespacedManPath,
-		client:             f.Client,
-		kubeclient:         f.KubeClient,
-		restMapper:         f.restMapper,
-		skipCleanupOnError: f.skipCleanupOnError,
+	return &TestCtx{
+		id:                id,
+		t:                 t,
+		namespace:         namespace,
+		namespacedManPath: *f.NamespacedManPath,
+		client:            f.Client,
+		kubeclient:        f.KubeClient,
+		restMapper:        f.restMapper,
 	}
 }
 
-// Deprecated: NewTestCtx exists for historical compatibility. Use NewContext instead.
 func NewTestCtx(t *testing.T) *TestCtx {
-	return Global.newContext(t)
+	return Global.newTestCtx(t)
 }
 
-func NewContext(t *testing.T) *Context {
-	return Global.newContext(t)
-}
-
-func (ctx *Context) GetID() string {
+func (ctx *TestCtx) GetID() string {
 	return ctx.id
 }
 
-func (ctx *Context) Cleanup() {
-	if ctx.t != nil {
-		// The cleanup function will be skipped
-		if ctx.t.Failed() && ctx.skipCleanupOnError {
-			// Also, could we log the error here?
-			log.Info("Skipping cleanup function since --skip-cleanup-error is true")
-			return
-		}
-	}
+func (ctx *TestCtx) Cleanup() {
 	failed := false
 	for i := len(ctx.cleanupFns) - 1; i >= 0; i-- {
 		err := ctx.cleanupFns[i]()
@@ -127,6 +91,6 @@ func (ctx *Context) Cleanup() {
 	}
 }
 
-func (ctx *Context) AddCleanupFn(fn cleanupFn) {
+func (ctx *TestCtx) AddCleanupFn(fn cleanupFn) {
 	ctx.cleanupFns = append(ctx.cleanupFns, fn)
 }

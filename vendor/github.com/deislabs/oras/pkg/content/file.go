@@ -28,9 +28,6 @@ type FileStore struct {
 	DisableOverwrite          bool
 	AllowPathTraversalOnWrite bool
 
-	// Reproducible enables stripping times from added files
-	Reproducible bool
-
 	root       string
 	descriptor *sync.Map // map[digest.Digest]ocispec.Descriptor
 	pathMap    *sync.Map
@@ -112,7 +109,7 @@ func (s *FileStore) descFromDir(name, mediaType, root string) (ocispec.Descripto
 	zw := gzip.NewWriter(io.MultiWriter(file, digester.Hash()))
 	defer zw.Close()
 	tarDigester := digest.Canonical.Digester()
-	if err := tarDirectory(root, name, io.MultiWriter(zw, tarDigester.Hash()), s.Reproducible); err != nil {
+	if err := tarDirectory(root, name, io.MultiWriter(zw, tarDigester.Hash())); err != nil {
 		return ocispec.Descriptor{}, err
 	}
 

@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"go/types"
 
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextlegacy "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	crdmarkers "sigs.k8s.io/controller-tools/pkg/crd/markers"
@@ -40,18 +39,7 @@ type Generator struct {
 	// Single "trivial-version" CRDs are compatible with older (pre 1.13)
 	// Kubernetes API servers.  The storage version's schema will be used as
 	// the CRD's schema.
-	//
-	// Only works with the v1beta1 CRD version.
 	TrivialVersions bool `marker:",optional"`
-
-	// PreserveUnknownFields indicates whether or not we should turn off pruning.
-	//
-	// Left unspecified, it'll default to true when only a v1beta1 CRD is
-	// generated (to preserve compatibility with older versions of this tool),
-	// or false otherwise.
-	//
-	// It's required to be false for v1 CRDs.
-	PreserveUnknownFields *bool `marker:",optional"`
 
 	// MaxDescLen specifies the maximum description length for fields in CRD's OpenAPI schema.
 	//
@@ -59,16 +47,6 @@ type Generator struct {
 	// n indicates limit the description to at most n characters and truncate the description to
 	// closest sentence boundary if it exceeds n characters.
 	MaxDescLen *int `marker:",optional"`
-
-	// CRDVersions specifies the target API versions of the CRD type itself to
-	// generate.  Defaults to v1beta1.
-	//
-	// The first version listed will be assumed to be the "default" version and
-	// will not get a version suffix in the output filename.
-	//
-	// You'll need to use "v1" to get support for features like defaulting,
-	// along with an API server that supports it (Kubernetes 1.16+).
-	CRDVersions []string `marker:"crdVersions,optional"`
 }
 
 func (Generator) RegisterMarkers(into *markers.Registry) error {
@@ -98,58 +76,16 @@ func (g Generator) Generate(ctx *genall.GenerationContext) error {
 		return nil
 	}
 
-	crdVersions := g.CRDVersions
-
-	if len(crdVersions) == 0 {
-		crdVersions = []string{"v1beta1"}
-	}
-
-	for groupKind := range kubeKinds {
+	for _, groupKind := range kubeKinds {
 		parser.NeedCRDFor(groupKind, g.MaxDescLen)
-		crdRaw := parser.CustomResourceDefinitions[groupKind]
-		addAttribution(&crdRaw)
-
-		versionedCRDs := make([]interface{}, len(crdVersions))
-		for i, ver := range crdVersions {
-			conv, err := AsVersion(crdRaw, schema.GroupVersion{Group: apiext.SchemeGroupVersion.Group, Version: ver})
-			if err != nil {
-				return err
-			}
-			versionedCRDs[i] = conv
-		}
-
+		crd := parser.CustomResourceDefinitions[groupKind]
 		if g.TrivialVersions {
-			for i, crd := range versionedCRDs {
-				if crdVersions[i] == "v1beta1" {
-					toTrivialVersions(crd.(*apiextlegacy.CustomResourceDefinition))
-				}
-			}
+			toTrivialVersions(&crd)
 		}
-
-		// *If* we're only generating v1beta1 CRDs, default to `preserveUnknownFields: (unset)`
-		// for compatibility purposes.  In any other case, default to false, since that's
-		// the sensible default and is required for v1.
-		v1beta1Only := len(crdVersions) == 1 && crdVersions[0] == "v1beta1"
-		switch {
-		case (g.PreserveUnknownFields == nil || *g.PreserveUnknownFields) && v1beta1Only:
-			crd := versionedCRDs[0].(*apiextlegacy.CustomResourceDefinition)
-			crd.Spec.PreserveUnknownFields = nil
-		case g.PreserveUnknownFields == nil, g.PreserveUnknownFields != nil && !*g.PreserveUnknownFields:
-			// it'll be false here (coming from v1) -- leave it as such
-		default:
-			return fmt.Errorf("you may only set PreserveUnknownFields to true with v1beta1 CRDs")
-		}
-
-		for i, crd := range versionedCRDs {
-			var fileName string
-			if i == 0 {
-				fileName = fmt.Sprintf("%s_%s.yaml", crdRaw.Spec.Group, crdRaw.Spec.Names.Plural)
-			} else {
-				fileName = fmt.Sprintf("%s_%s.%s.yaml", crdRaw.Spec.Group, crdRaw.Spec.Names.Plural, crdVersions[i])
-			}
-			if err := ctx.WriteYAML(fileName, crd); err != nil {
-				return err
-			}
+		addAttribution(&crd)
+		fileName := fmt.Sprintf("%s_%s.yaml", crd.Spec.Group, crd.Spec.Names.Plural)
+		if err := ctx.WriteYAML(fileName, crd); err != nil {
+			return err
 		}
 	}
 
@@ -159,10 +95,10 @@ func (g Generator) Generate(ctx *genall.GenerationContext) error {
 // toTrivialVersions strips out all schemata except for the storage schema,
 // and moves that up into the root object.  This makes the CRD compatible
 // with pre 1.13 clusters.
-func toTrivialVersions(crd *apiextlegacy.CustomResourceDefinition) {
-	var canonicalSchema *apiextlegacy.CustomResourceValidation
-	var canonicalSubresources *apiextlegacy.CustomResourceSubresources
-	var canonicalColumns []apiextlegacy.CustomResourceColumnDefinition
+func toTrivialVersions(crd *apiext.CustomResourceDefinition) {
+	var canonicalSchema *apiext.CustomResourceValidation
+	var canonicalSubresources *apiext.CustomResourceSubresources
+	var canonicalColumns []apiext.CustomResourceColumnDefinition
 	for i, ver := range crd.Spec.Versions {
 		if ver.Storage == true {
 			canonicalSchema = ver.Schema
@@ -206,9 +142,9 @@ func FindMetav1(roots []*loader.Package) *loader.Package {
 // FindKubeKinds locates all types that contain TypeMeta and ObjectMeta
 // (and thus may be a Kubernetes object), and returns the corresponding
 // group-kinds.
-func FindKubeKinds(parser *Parser, metav1Pkg *loader.Package) map[schema.GroupKind]struct{} {
+func FindKubeKinds(parser *Parser, metav1Pkg *loader.Package) []schema.GroupKind {
 	// TODO(directxman12): technically, we should be finding metav1 per-package
-	kubeKinds := map[schema.GroupKind]struct{}{}
+	var kubeKinds []schema.GroupKind
 	for typeIdent, info := range parser.Types {
 		hasObjectMeta := false
 		hasTypeMeta := false
@@ -257,7 +193,7 @@ func FindKubeKinds(parser *Parser, metav1Pkg *loader.Package) map[schema.GroupKi
 			Group: parser.GroupVersions[pkg].Group,
 			Kind:  typeIdent.Name,
 		}
-		kubeKinds[groupKind] = struct{}{}
+		kubeKinds = append(kubeKinds, groupKind)
 	}
 
 	return kubeKinds

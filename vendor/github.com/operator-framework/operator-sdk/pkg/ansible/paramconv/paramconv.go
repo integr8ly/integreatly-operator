@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	numberSequence    = regexp.MustCompile(`([a-zA-Z])(\d+)([a-zA-Z](\d+))`)
+	numberSequence    = regexp.MustCompile(`([a-zA-Z])(\d+)([a-zA-Z]?)`)
 	numberReplacement = []byte(`$1 $2 $3`)
 	wordMapping       = map[string]string{
 		"http": "HTTP",

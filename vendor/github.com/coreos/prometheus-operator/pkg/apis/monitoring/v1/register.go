@@ -57,8 +57,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&AlertmanagerList{},
 		&PrometheusRule{},
 		&PrometheusRuleList{},
-		&ThanosRuler{},
-		&ThanosRulerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -21,8 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/operator-framework/operator-sdk/internal/olm"
-
 	"github.com/spf13/pflag"
 )
 
@@ -36,10 +34,10 @@ const (
 // OLMCmd configures deployment and teardown of an operator via an OLM
 // installation existing on a cluster.
 type OLMCmd struct { // nolint:golint
-	// ManifestsDir is a directory containing 1..N bundle directories and either
-	// a package manifest or metadata/annotations.yaml. OperatorVersion can be
-	// set to the version of the desired operator bundle and Run()/Cleanup() will
-	// deploy that operator version.
+	// ManifestsDir is a directory containing a package manifest and N bundles
+	// of the operator's CSV and CRD's. OperatorVersion can be set to the
+	// version of the desired operator version's subdir and Run()/Cleanup() will
+	// deploy the operator version in that subdir.
 	ManifestsDir string
 	// OperatorVersion is the version of the operator to deploy. It must be
 	// a semantic version, ex. 0.0.1.
@@ -75,8 +73,6 @@ type OLMCmd struct { // nolint:golint
 	// OperatorNamespace must already exist in the cluster or be defined in
 	// a manifest passed to IncludePaths.
 	OperatorNamespace string
-	// OLMNamespace is the namespace in which OLM is installed.
-	OLMNamespace string
 	// Timeout dictates how long to wait for a REST call to complete. A call
 	// exceeding Timeout will generate an error.
 	Timeout time.Duration
@@ -86,17 +82,12 @@ type OLMCmd struct { // nolint:golint
 	once sync.Once
 }
 
-var installModeFormat = "InstallModeType[=ns1,ns2[, ...]]"
+var installModeFormat = "InstallModeType=[ns1,ns2[, ...]]"
 
 func (c *OLMCmd) AddToFlagSet(fs *pflag.FlagSet) {
 	prefix := "[olm only] "
-	fs.StringVar(&c.OLMNamespace, "olm-namespace", olm.DefaultOLMNamespace,
-		prefix+"The namespace where OLM is installed")
-	fs.StringVar(&c.OperatorNamespace, "operator-namespace", "",
-		prefix+"The namespace where operator resources are created. It must already exist "+
-			"in the cluster or be defined in a manifest passed to --include")
 	fs.StringVar(&c.ManifestsDir, "manifests", "",
-		prefix+"Directory containing operator bundle directories and metadata")
+		prefix+"Directory containing package manifest and operator bundles.")
 	fs.StringVar(&c.OperatorVersion, "operator-version", "",
 		prefix+"Version of operator to deploy")
 	fs.StringVar(&c.InstallMode, "install-mode", "",
@@ -154,8 +145,6 @@ func (c *OLMCmd) Cleanup() (err error) {
 	if err != nil {
 		return fmt.Errorf("error initializing operator manager: %w", err)
 	}
-	// Cleanups should clean up all resources, which includes the registry.
-	m.forceRegistry = true
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 	return m.cleanup(ctx)

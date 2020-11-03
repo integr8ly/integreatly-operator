@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -75,7 +74,7 @@ type ApicurioRegistrySpecConfigurationStreams struct {
 
 // +k8s:openapi-gen=true
 type ApicurioRegistrySpecConfigurationStreamsSecurity struct {
-	Tls   ApicurioRegistrySpecConfigurationStreamsSecurityTls   `json:"tls,omitempty"`
+	Tls ApicurioRegistrySpecConfigurationStreamsSecurityTls `json:"tls,omitempty"`
 	Scram ApicurioRegistrySpecConfigurationStreamsSecurityScram `json:"scram,omitempty"`
 }
 
@@ -88,9 +87,9 @@ type ApicurioRegistrySpecConfigurationStreamsSecurityTls struct {
 // +k8s:openapi-gen=true
 type ApicurioRegistrySpecConfigurationStreamsSecurityScram struct {
 	TruststoreSecretName string `json:"truststoreSecretName,omitempty"`
-	User                 string `json:"user,omitempty"`
+	User   string `json:"user,omitempty"`
 	PasswordSecretName   string `json:"passwordSecretName,omitempty"`
-	Mechanism            string `json:"mechanism,omitempty"`
+	Mechanism   string `json:"mechanism,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -105,10 +104,8 @@ type ApicurioRegistrySpecConfigurationUI struct {
 
 // +k8s:openapi-gen=true
 type ApicurioRegistrySpecDeployment struct {
-	Replicas    int32               `json:"replicas,omitempty"`
-	Host        string              `json:"host,omitempty"`
-	Affinity    *corev1.Affinity    `json:"affinity,omitempty"`
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	Replicas int32  `json:"replicas,omitempty"`
+	Host     string `json:"host,omitempty"`
 	//Route     string                                  `json:"route,omitempty"`
 	//Resources ApicurioRegistrySpecDeploymentResources `json:"resources,omitempty"`
 }

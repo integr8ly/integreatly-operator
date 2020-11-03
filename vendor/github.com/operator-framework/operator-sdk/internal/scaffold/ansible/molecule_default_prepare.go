@@ -1,4 +1,4 @@
-// Copyright 2020 The Operator-SDK Authors
+// Copyright 2018 The Operator-SDK Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 const MoleculeDefaultPrepareFile = "prepare.yml"
 
 type MoleculeDefaultPrepare struct {
-	StaticInput
+	input.Input
 }
 
 // GetInput - gets the input
@@ -32,6 +32,7 @@ func (m *MoleculeDefaultPrepare) GetInput() (input.Input, error) {
 		m.Path = filepath.Join(MoleculeDefaultDir, MoleculeDefaultPrepareFile)
 	}
 	m.TemplateBody = moleculeDefaultPrepareAnsibleTmpl
+	m.Delims = AnsibleDelims
 
 	return m.Input, nil
 }
@@ -40,18 +41,26 @@ const moleculeDefaultPrepareAnsibleTmpl = `---
 - name: Prepare
   hosts: k8s
   gather_facts: no
+  vars:
+    kubeconfig: "{{ lookup('env', 'KUBECONFIG') }}"
   tasks:
+    - name: delete the kubeconfig if present
+      file:
+        path: '{{ kubeconfig }}'
+        state: absent
+      delegate_to: localhost
+
     - name: Fetch the kubeconfig
       fetch:
-        dest: '{{ kubeconfig_file }}'
+        dest: '{{ kubeconfig }}'
         flat: yes
         src: /root/.kube/config
 
     - name: Change the kubeconfig port to the proper value
       replace:
-        regexp: '8443'
+        regexp: '8443' 
         replace: "{{ lookup('env', 'KIND_PORT') }}"
-        path: '{{ kubeconfig_file }}'
+        path: '{{ kubeconfig }}'
       delegate_to: localhost
 
     - name: Wait for the Kubernetes API to become available (this could take a minute)

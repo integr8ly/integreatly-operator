@@ -22,13 +22,11 @@ import (
 	"github.com/operator-framework/operator-sdk/internal/util/projutil"
 
 	"github.com/google/shlex"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var kbFlags string
 
-//nolint:lll
 func NewCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kubebuilder [init/create cmds]",
@@ -69,8 +67,5 @@ func runKubebuilder(cmd *cobra.Command, args []string) error {
 	args = append(args, splitArgs...)
 
 	kbCmd := exec.Command("kubebuilder", args...)
-	if err := projutil.ExecCmd(kbCmd); err != nil {
-		log.Fatal(err)
-	}
-	return nil
+	return projutil.ExecCmd(kbCmd)
 }

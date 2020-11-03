@@ -38,8 +38,7 @@ func (r *RolesMetaMain) GetInput() (input.Input, error) {
 	return r.Input, nil
 }
 
-const rolesMetaMainAnsibleTmpl = `---
-galaxy_info:
+const rolesMetaMainAnsibleTmpl = `galaxy_info:
   author: your name
   description: your description
   company: your company (optional)
@@ -100,6 +99,4 @@ dependencies: []
   # List your role dependencies here, one per line. Be sure to remove the '[]' above,
   # if you add dependencies to this list.
 collections:
-- operator_sdk.util
-- community.kubernetes
-`
+- operator_sdk.util`

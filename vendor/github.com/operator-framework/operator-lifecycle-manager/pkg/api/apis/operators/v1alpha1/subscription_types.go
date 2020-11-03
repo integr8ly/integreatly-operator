@@ -76,7 +76,7 @@ type SubscriptionConfig struct {
 	// +patchStrategy=merge
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty" patchMergeKey:"name" patchStrategy:"merge"`
-
+	
 	// List of Volumes to set in the podSpec.
 	// +optional
 	Volumes []corev1.Volume `json:"volumes,omitempty"`
@@ -186,10 +186,6 @@ type SubscriptionStatus struct {
 	// +optional
 	Reason ConditionReason `json:"reason,omitempty"`
 
-	// InstallPlanGeneration is the current generation of the installplan
-	// +optional
-	InstallPlanGeneration int `json:"installPlanGeneration,omitempty"`
-
 	// InstallPlanRef is a reference to the latest InstallPlan that contains the Subscription's current CSV.
 	// +optional
 	InstallPlanRef *corev1.ObjectReference `json:"installPlanRef,omitempty"`
@@ -286,8 +282,7 @@ type Subscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec *SubscriptionSpec `json:"spec"`
-	// +optional
+	Spec   *SubscriptionSpec  `json:"spec"`
 	Status SubscriptionStatus `json:"status"`
 }
 

@@ -9,9 +9,8 @@ import (
 // +k8s:openapi-gen=true
 // OperatorVersion is a wrapper around semver.Version which supports correct
 // marshaling to YAML and JSON.
-// +kubebuilder:validation:Type=string
 type OperatorVersion struct {
-	semver.Version `json:"-"`
+	semver.Version
 }
 
 // DeepCopyInto creates a deep-copy of the Version value.

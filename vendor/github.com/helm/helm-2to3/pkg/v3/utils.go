@@ -41,13 +41,3 @@ func DataDir() string {
 	defaultDir := helmpath.DataPath()
 	return defaultDir
 }
-
-// CacheDir returns the v3 data directory
-func CacheDir() string {
-	if homeDir, exists := os.LookupEnv("HELM_V3_CACHE"); exists {
-		return homeDir
-	}
-
-	defaultDir := helmpath.CachePath()
-	return defaultDir
-}

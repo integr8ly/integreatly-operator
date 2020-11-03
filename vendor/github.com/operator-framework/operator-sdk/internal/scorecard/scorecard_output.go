@@ -19,19 +19,23 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	scapi "github.com/operator-framework/operator-sdk/pkg/apis/scorecard"
+	scapiv1alpha1 "github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha1"
 	scapiv1alpha2 "github.com/operator-framework/operator-sdk/pkg/apis/scorecard/v1alpha2"
 )
 
-func (cfg Config) printPluginOutputs(pluginOutputs []scapiv1alpha2.ScorecardOutput) error {
+func (cfg Config) printPluginOutputs(pluginOutputs []scapiv1alpha1.ScorecardOutput) error {
 
-	var scorecardOutput scapiv1alpha2.ScorecardOutput
+	var list scapi.ScorecardFormatter
 	var err error
-	scorecardOutput, err = cfg.combinePluginOutput(pluginOutputs)
+	list, err = cfg.combinePluginOutput(pluginOutputs)
 	if err != nil {
 		return err
 	}
 
+	list = scapi.ConvertScorecardOutputV1ToV2(list.(scapiv1alpha1.ScorecardOutput))
 	if cfg.List {
+		scorecardOutput := list.(scapiv1alpha2.ScorecardOutput)
 		for i := 0; i < len(scorecardOutput.Results); i++ {
 			scorecardOutput.Results[i].State = scapiv1alpha2.NotRunState
 		}
@@ -39,13 +43,13 @@ func (cfg Config) printPluginOutputs(pluginOutputs []scapiv1alpha2.ScorecardOutp
 
 	switch format := cfg.OutputFormat; format {
 	case TextOutputFormat:
-		output, err := scorecardOutput.MarshalText()
+		output, err := list.MarshalText()
 		if err != nil {
 			return err
 		}
 		fmt.Printf("%s\n", output)
 	case JSONOutputFormat:
-		bytes, err := json.MarshalIndent(scorecardOutput, "", "  ")
+		bytes, err := json.MarshalIndent(list, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -55,12 +59,13 @@ func (cfg Config) printPluginOutputs(pluginOutputs []scapiv1alpha2.ScorecardOutp
 	return nil
 }
 
-func (cfg Config) combinePluginOutput(pluginOutputs []scapiv1alpha2.
-	ScorecardOutput) (scapiv1alpha2.ScorecardOutput, error) {
-	output := scapiv1alpha2.ScorecardOutput{}
-	output.Results = make([]scapiv1alpha2.ScorecardTestResult, 0)
+func (cfg Config) combinePluginOutput(pluginOutputs []scapiv1alpha1.ScorecardOutput) (scapiv1alpha1.ScorecardOutput, error) {
+	output := scapiv1alpha1.ScorecardOutput{}
+	output.Results = make([]scapiv1alpha1.ScorecardSuiteResult, 0)
 	for _, v := range pluginOutputs {
-		output.Results = append(output.Results, v.Results...)
+		for _, r := range v.Results {
+			output.Results = append(output.Results, r)
+		}
 	}
 
 	if cfg.OutputFormat == JSONOutputFormat {

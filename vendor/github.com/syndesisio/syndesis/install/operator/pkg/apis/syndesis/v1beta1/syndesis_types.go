@@ -17,7 +17,6 @@
 package v1beta1
 
 import (
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,12 +44,6 @@ type SyndesisSpec struct {
 
 	// Something
 	ForceMigration bool `json:"forceMigration"`
-
-	// Configuration of Affinity and Toleration for infrastructure component pods
-	InfraScheduling SchedulingSpec `json:"infraScheduling,omitempty"`
-
-	// Configuration of Affinity and Toleration for integrations pods
-	IntegrationScheduling SchedulingSpec `json:"integrationScheduling,omitempty"`
 
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -110,13 +103,6 @@ type OauthConfiguration struct {
 
 	// The user needs to have permissions to at least get a list of pods in the given project in order to be granted access to the Syndesis installation
 	SarNamespace string `json:"sarNamespace,omitempty"`
-
-	// Using an external auth provider, specify the name of the secret
-	// that stores the credentials, ie. provider type, client id, cookie & client secrets
-	CredentialsSecret string `json:"credentialsSecret,omitempty"`
-
-	// The name of the secret used to store the TLS certificate for secure HTTPS communication
-	CryptoCommsSecret string `json:"cryptoCommsSecret,omitempty"`
 }
 
 type DatabaseConfiguration struct {
@@ -137,7 +123,8 @@ type DatabaseConfiguration struct {
 }
 
 type PrometheusConfiguration struct {
-	Resources ResourcesWithPersistentVolume `json:"resources,omitempty"`
+	Rules     string              `json:"rules,omitempty"`
+	Resources ResourcesWithVolume `json:"resources,omitempty"`
 }
 
 type GrafanaConfiguration struct {
@@ -150,7 +137,7 @@ type ServerConfiguration struct {
 }
 
 type MetaConfiguration struct {
-	Resources ResourcesWithPersistentVolume `json:"resources,omitempty"`
+	Resources ResourcesWithVolume `json:"resources,omitempty"`
 }
 
 type UpgradeConfiguration struct {
@@ -190,25 +177,11 @@ type ServerFeatures struct {
 	// Whether we deploy integrations
 	DeployIntegrations bool `json:"deployIntegrations,omitempty"`
 
-	// Maven settings
-	Maven MavenConfiguration `json:"maven"`
+	// Set repositories for maven
+	MavenRepositories map[string]string `json:"mavenRepositories,omitempty"`
 
 	// 3scale management URL
-	ManagementURLFor3scale string `json:"managementUrlFor3scale,omitempty"`
-}
-
-type MavenConfiguration struct {
-	// Should we append new repositories
-	Append bool `json:"append"`
-	// additional maven options to be used in integration builds
-	AdditionalArguments string `json:"additionalArguments,omitempty"`
-	// Set repositories for maven
-	Repositories map[string]string `json:"repositories,omitempty"`
-}
-
-type SchedulingSpec struct {
-	Affinity    *v1.Affinity    `json:"affinity,omitempty"`
-	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+	ManagementUrlFor3scale string `json:"managementUrlFor3scale,omitempty"`
 }
 
 type AddonsSpec struct {
@@ -216,8 +189,9 @@ type AddonsSpec struct {
 	Ops       AddonSpec              `json:"ops,omitempty"`
 	Todo      AddonSpec              `json:"todo,omitempty"`
 	Knative   AddonSpec              `json:"knative,omitempty"`
+	DV        DvConfiguration        `json:"dv,omitempty"`
 	CamelK    AddonSpec              `json:"camelk,omitempty"`
-	PublicAPI PublicAPIConfiguration `json:"publicApi,omitempty"`
+	PublicApi PublicApiConfiguration `json:"publicApi,omitempty"`
 }
 
 type JaegerConfiguration struct {
@@ -227,8 +201,8 @@ type JaegerConfiguration struct {
 	ImageAllInOne string `json:"imageAllInOne,omitempty"`
 	ImageOperator string `json:"imageOperator,omitempty"`
 	OperatorOnly  bool   `json:"operatorOnly,omitempty"`
-	QueryURI      string `json:"queryUri,omitempty"`
-	CollectorURI  string `json:"collectorUri,omitempty"`
+	QueryUri      string `json:"queryUri,omitempty"`
+	CollectorUri  string `json:"collectorUri,omitempty"`
 	SamplerType   string `json:"samplerType,omitempty"`
 	SamplerParam  string `json:"samplerParam,omitempty"`
 }
@@ -237,7 +211,12 @@ type AddonSpec struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
-type PublicAPIConfiguration struct {
+type DvConfiguration struct {
+	Enabled   bool      `json:"enabled,omitempty"`
+	Resources Resources `json:"resources,omitempty"`
+}
+
+type PublicApiConfiguration struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// Set RouteHostname to the hostname of the exposed syndesis Public API.
 	RouteHostname string `json:"routeHostname,omitempty"`

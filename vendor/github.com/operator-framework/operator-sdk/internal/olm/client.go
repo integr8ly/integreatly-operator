@@ -39,10 +39,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const (
-	olmOperatorName     = "olm-operator"
-	catalogOperatorName = "catalog-operator"
-	packageServerName   = "packageserver"
+var (
+	olmOperatorKey     = types.NamespacedName{Namespace: olmresourceclient.OLMNamespace, Name: "olm-operator"}
+	catalogOperatorKey = types.NamespacedName{Namespace: olmresourceclient.OLMNamespace, Name: "catalog-operator"}
+	packageServerKey   = types.NamespacedName{Namespace: olmresourceclient.OLMNamespace, Name: "packageserver"}
 )
 
 type Client struct {
@@ -64,8 +64,7 @@ func ClientForConfig(cfg *rest.Config) (*Client, error) {
 	return c, nil
 }
 
-func (c Client) InstallVersion(ctx context.Context, namespace, version string) (*olmresourceclient.Status, error) {
-
+func (c Client) InstallVersion(ctx context.Context, version string) (*olmresourceclient.Status, error) {
 	resources, err := c.getResources(ctx, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resources: %v", err)
@@ -75,8 +74,7 @@ func (c Client) InstallVersion(ctx context.Context, namespace, version string) (
 	status := c.GetObjectsStatus(ctx, objs...)
 	installed, err := status.HasInstalledResources()
 	if installed {
-		return nil, errors.New(
-			"detected existing OLM resources: OLM must be completely uninstalled before installation")
+		return nil, errors.New("detected existing OLM resources: OLM must be completely uninstalled before installation")
 	} else if err != nil {
 		return nil, errors.New("detected errored OLM resources, see resource statuses for more details")
 	}
@@ -87,13 +85,11 @@ func (c Client) InstallVersion(ctx context.Context, namespace, version string) (
 	}
 
 	log.Print("Waiting for deployment/olm-operator rollout to complete")
-	olmOperatorKey := types.NamespacedName{Namespace: namespace, Name: olmOperatorName}
 	if err := c.DoRolloutWait(ctx, olmOperatorKey); err != nil {
 		return nil, fmt.Errorf("deployment/%s failed to rollout: %v", olmOperatorKey.Name, err)
 	}
 
 	log.Print("Waiting for deployment/catalog-operator rollout to complete")
-	catalogOperatorKey := types.NamespacedName{Namespace: namespace, Name: catalogOperatorName}
 	if err := c.DoRolloutWait(ctx, catalogOperatorKey); err != nil {
 		return nil, fmt.Errorf("deployment/%s failed to rollout: %v", catalogOperatorKey.Name, err)
 	}
@@ -115,12 +111,10 @@ func (c Client) InstallVersion(ctx context.Context, namespace, version string) (
 		}
 		log.Printf("Waiting for clusterserviceversion/%s to reach 'Succeeded' phase", csvKey.Name)
 		if err := c.DoCSVWait(ctx, csvKey); err != nil {
-			return nil, fmt.Errorf("clusterserviceversion/%s failed to reach 'Succeeded' phase",
-				csvKey.Name)
+			return nil, fmt.Errorf("clusterserviceversion/%s failed to reach 'Succeeded' phase: %v", csvKey.Name, err)
 		}
 	}
 
-	packageServerKey := types.NamespacedName{Namespace: namespace, Name: packageServerName}
 	log.Printf("Waiting for deployment/%s rollout to complete", packageServerKey.Name)
 	if err := c.DoRolloutWait(ctx, packageServerKey); err != nil {
 		return nil, fmt.Errorf("deployment/%s failed to rollout: %v", packageServerKey.Name, err)
@@ -130,7 +124,7 @@ func (c Client) InstallVersion(ctx context.Context, namespace, version string) (
 	return &status, nil
 }
 
-func (c Client) UninstallVersion(ctx context.Context, namespace, version string) error {
+func (c Client) UninstallVersion(ctx context.Context, version string) error {
 	resources, err := c.getResources(ctx, version)
 	if err != nil {
 		return fmt.Errorf("failed to get resources: %v", err)
@@ -150,7 +144,7 @@ func (c Client) UninstallVersion(ctx context.Context, namespace, version string)
 	return nil
 }
 
-func (c Client) GetStatus(ctx context.Context, namespace, version string) (*olmresourceclient.Status, error) {
+func (c Client) GetStatus(ctx context.Context, version string) (*olmresourceclient.Status, error) {
 	resources, err := c.getResources(ctx, version)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get resources: %v", err)
@@ -261,8 +255,7 @@ func decodeResources(rds ...io.Reader) (objs []unstructured.Unstructured, err er
 	return objs, nil
 }
 
-func filterResources(resources []unstructured.Unstructured, filter func(unstructured.
-	Unstructured) bool) (filtered []unstructured.Unstructured) {
+func filterResources(resources []unstructured.Unstructured, filter func(unstructured.Unstructured) bool) (filtered []unstructured.Unstructured) {
 	for _, r := range resources {
 		if filter(r) {
 			filtered = append(filtered, r)

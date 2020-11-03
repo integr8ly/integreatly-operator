@@ -21,7 +21,7 @@ import (
 
 	"encoding/json"
 
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 
 	"sigs.k8s.io/controller-tools/pkg/markers"
 )
@@ -58,8 +58,6 @@ var ValidationMarkers = mustMakeAllWithPrefix("kubebuilder:validation", markers.
 	Enum(nil),
 	Format(""),
 	Type(""),
-	XPreserveUnknownFields{},
-	XEmbeddedResource{},
 )
 
 // FieldOnlyMarkers list field-specific validation markers (i.e. those markers that don't make
@@ -77,11 +75,6 @@ var FieldOnlyMarkers = []*definitionWithHelp{
 
 	must(markers.MakeAnyTypeDefinition("kubebuilder:default", markers.DescribesField, Default{})).
 		WithHelp(Default{}.Help()),
-
-	must(markers.MakeDefinition("kubebuilder:pruning:PreserveUnknownFields", markers.DescribesField, XPreserveUnknownFields{})).
-		WithHelp(XPreserveUnknownFields{}.Help()),
-	must(markers.MakeDefinition("kubebuilder:validation:EmbeddedResource", markers.DescribesField, XEmbeddedResource{})).
-		WithHelp(XEmbeddedResource{}.Help()),
 }
 
 func init() {
@@ -182,27 +175,7 @@ type Default struct {
 	Value interface{}
 }
 
-// +controllertools:marker:generateHelp:category="CRD processing"
-// PreserveUnknownFields stops the apiserver from pruning fields which are not specified.
-//
-// By default the apiserver drops unknown fields from the request payload
-// during the decoding step. This marker stops the API server from doing so.
-// It affects fields recursively, but switches back to normal pruning behaviour
-// if nested  properties or additionalProperties are specified in the schema.
-// This can either be true or undefined. False
-// is forbidden.
-type XPreserveUnknownFields struct{}
-
-// +controllertools:marker:generateHelp:category="CRD validation"
-// EmbeddedResource marks a fields as an embedded resource with apiVersion, kind and metadata fields.
-//
-// An embedded resource is a value that has apiVersion, kind and metadata fields.
-// They are validated implicitly according to the semantics of the currently
-// running apiserver. It is not necessary to add any additional schema for these
-// field, yet it is possible. This can be combined with PreserveUnknownFields.
-type XEmbeddedResource struct{}
-
-func (m Maximum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Maximum) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "integer" {
 		return fmt.Errorf("must apply maximum to an integer")
 	}
@@ -210,7 +183,7 @@ func (m Maximum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.Maximum = &val
 	return nil
 }
-func (m Minimum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Minimum) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "integer" {
 		return fmt.Errorf("must apply minimum to an integer")
 	}
@@ -218,21 +191,21 @@ func (m Minimum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.Minimum = &val
 	return nil
 }
-func (m ExclusiveMaximum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m ExclusiveMaximum) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "integer" {
 		return fmt.Errorf("must apply exclusivemaximum to an integer")
 	}
 	schema.ExclusiveMaximum = bool(m)
 	return nil
 }
-func (m ExclusiveMinimum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m ExclusiveMinimum) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "integer" {
 		return fmt.Errorf("must apply exclusiveminimum to an integer")
 	}
 	schema.ExclusiveMinimum = bool(m)
 	return nil
 }
-func (m MultipleOf) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m MultipleOf) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "integer" {
 		return fmt.Errorf("must apply multipleof to an integer")
 	}
@@ -241,7 +214,7 @@ func (m MultipleOf) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	return nil
 }
 
-func (m MaxLength) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m MaxLength) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "string" {
 		return fmt.Errorf("must apply maxlength to a string")
 	}
@@ -249,7 +222,7 @@ func (m MaxLength) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.MaxLength = &val
 	return nil
 }
-func (m MinLength) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m MinLength) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "string" {
 		return fmt.Errorf("must apply minlength to a string")
 	}
@@ -257,7 +230,7 @@ func (m MinLength) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.MinLength = &val
 	return nil
 }
-func (m Pattern) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Pattern) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "string" {
 		return fmt.Errorf("must apply pattern to a string")
 	}
@@ -265,7 +238,7 @@ func (m Pattern) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	return nil
 }
 
-func (m MaxItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m MaxItems) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "array" {
 		return fmt.Errorf("must apply maxitem to an array")
 	}
@@ -273,7 +246,7 @@ func (m MaxItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.MaxItems = &val
 	return nil
 }
-func (m MinItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m MinItems) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "array" {
 		return fmt.Errorf("must apply minitems to an array")
 	}
@@ -281,7 +254,7 @@ func (m MinItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	schema.MinItems = &val
 	return nil
 }
-func (m UniqueItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m UniqueItems) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	if schema.Type != "array" {
 		return fmt.Errorf("must apply uniqueitems to an array")
 	}
@@ -289,10 +262,10 @@ func (m UniqueItems) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 	return nil
 }
 
-func (m Enum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Enum) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	// TODO(directxman12): this is a bit hacky -- we should
 	// probably support AnyType better + using the schema structure
-	vals := make([]apiext.JSON, len(m))
+	vals := make([]v1beta1.JSON, len(m))
 	for i, val := range m {
 		// TODO(directxman12): check actual type with schema type?
 		// if we're expecting a string, marshal the string properly...
@@ -301,12 +274,12 @@ func (m Enum) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 		if err != nil {
 			return err
 		}
-		vals[i] = apiext.JSON{Raw: valMarshalled}
+		vals[i] = v1beta1.JSON{Raw: valMarshalled}
 	}
 	schema.Enum = vals
 	return nil
 }
-func (m Format) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Format) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	schema.Format = string(m)
 	return nil
 }
@@ -316,35 +289,24 @@ func (m Format) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
 // TODO(directxman12): find a less hacky way to do this
 // (we could preserve ordering of markers, but that feels bad in its own right).
 
-func (m Type) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Type) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	schema.Type = string(m)
 	return nil
 }
 
 func (m Type) ApplyFirst() {}
 
-func (m Nullable) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Nullable) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	schema.Nullable = true
 	return nil
 }
 
 // Defaults are only valid CRDs created with the v1 API
-func (m Default) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
+func (m Default) ApplyToSchema(schema *v1beta1.JSONSchemaProps) error {
 	marshalledDefault, err := json.Marshal(m.Value)
 	if err != nil {
 		return err
 	}
-	schema.Default = &apiext.JSON{Raw: marshalledDefault}
-	return nil
-}
-
-func (m XPreserveUnknownFields) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
-	defTrue := true
-	schema.XPreserveUnknownFields = &defTrue
-	return nil
-}
-
-func (m XEmbeddedResource) ApplyToSchema(schema *apiext.JSONSchemaProps) error {
-	schema.XEmbeddedResource = true
+	schema.Default = &v1beta1.JSON{Raw: marshalledDefault}
 	return nil
 }
