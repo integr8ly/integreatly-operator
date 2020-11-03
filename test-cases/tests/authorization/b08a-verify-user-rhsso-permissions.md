@@ -10,6 +10,9 @@ products:
     targets:
       - 2.6.0
 estimate: 15m
+targets:
+  - 2.6.0
+  - 2.7.1
 ---
 
 # B08A - Verify User RHSSO Permissions
