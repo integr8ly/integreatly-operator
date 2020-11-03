@@ -49,11 +49,13 @@ IDLE_QUERIES=(\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-marin3r', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-user-sso', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-rhsso', pod!='', container=''}) [15m:10s])/1024/1024"\
+  "avg_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-middleware-monitoring-operator', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(sum(container_memory_working_set_bytes{namespace=~'redhat-rhmi-.*', pod!='', container=''}) [15m:10s])/1024/1024"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-3scale'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-marin3r'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-user-sso'} [15m])"\
   "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-rhsso'} [15m])"\
+  "avg_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-middleware-monitoring-operator'} [15m])"\
   "sum(avg_over_time(namespace:container_cpu_usage:sum{namespace=~'redhat-rhmi-.*'} [15m]))"\
 )
 
@@ -63,11 +65,13 @@ LOAD_QUERIES=(\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-marin3r',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-user-sso',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-rhsso',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
+  "max_over_time(sum(container_memory_working_set_bytes{namespace='redhat-rhmi-middleware-monitoring-operator',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(sum(container_memory_working_set_bytes{namespace=~'redhat-rhmi-.*',container='', pod!=''}) [${testDuration}s:10s])/1024/1024"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-3scale'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-marin3r'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-user-sso'} [${testDuration}s])"\
   "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-rhsso'} [${testDuration}s])"\
+  "max_over_time(namespace:container_cpu_usage:sum{namespace='redhat-rhmi-middleware-monitoring-operator'} [${testDuration}s])"\
   "sum(max_over_time(namespace:container_cpu_usage:sum{namespace=~'redhat-rhmi-.*'} [${testDuration}s]))"\
 )
 
