@@ -55,12 +55,9 @@ For example:
 `,
 		RunE: buildFunc,
 	}
-	buildCmd.Flags().StringVar(&imageBuildArgs, "image-build-args", "",
-		"Extra image build arguments as one string such as \"--build-arg https_proxy=$https_proxy\"")
-	buildCmd.Flags().StringVar(&imageBuilder, "image-builder", "docker",
-		"Tool to build OCI images. One of: [docker, podman, buildah]")
-	buildCmd.Flags().StringVar(&goBuildArgs, "go-build-args", "",
-		"Extra Go build arguments as one string such as \"-ldflags -X=main.xyz=abc\"")
+	buildCmd.Flags().StringVar(&imageBuildArgs, "image-build-args", "", "Extra image build arguments as one string such as \"--build-arg https_proxy=$https_proxy\"")
+	buildCmd.Flags().StringVar(&imageBuilder, "image-builder", "docker", "Tool to build OCI images. One of: [docker, podman, buildah]")
+	buildCmd.Flags().StringVar(&goBuildArgs, "go-build-args", "", "Extra Go build arguments as one string such as \"-ldflags -X=main.xyz=abc\"")
 	return buildCmd
 }
 
@@ -123,7 +120,7 @@ func buildFunc(cmd *cobra.Command, args []string) error {
 			Env:         goBuildEnv,
 		}
 		if err := projutil.GoBuild(opts); err != nil {
-			log.Fatalf("Failed to build operator binary: %v", err)
+			return fmt.Errorf("failed to build operator binary: %v", err)
 		}
 	}
 
@@ -133,11 +130,11 @@ func buildFunc(cmd *cobra.Command, args []string) error {
 
 	buildCmd, err := createBuildCommand(imageBuilder, ".", "build/Dockerfile", image, imageBuildArgs)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	if err := projutil.ExecCmd(buildCmd); err != nil {
-		log.Fatalf("Failed to output build image %s: %v", image, err)
+		return fmt.Errorf("failed to output build image %s: %v", image, err)
 	}
 
 	log.Info("Operator build complete.")

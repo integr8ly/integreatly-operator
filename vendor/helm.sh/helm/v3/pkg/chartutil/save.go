@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
@@ -50,12 +49,11 @@ func SaveDir(c *chart.Chart, dest string) error {
 	}
 
 	// Save values.yaml
-	for _, f := range c.Raw {
-		if f.Name == ValuesfileName {
-			vf := filepath.Join(outdir, ValuesfileName)
-			if err := writeFile(vf, f.Data); err != nil {
-				return err
-			}
+	if c.Values != nil {
+		vf := filepath.Join(outdir, ValuesfileName)
+		b, _ := yaml.Marshal(c.Values)
+		if err := writeFile(vf, b); err != nil {
+			return err
 		}
 	}
 
@@ -143,17 +141,8 @@ func Save(c *chart.Chart, outDir string) (string, error) {
 func writeTarContents(out *tar.Writer, c *chart.Chart, prefix string) error {
 	base := filepath.Join(prefix, c.Name())
 
-	// Pull out the dependencies of a v1 Chart, since there's no way
-	// to tell the serializer to skip a field for just this use case
-	savedDependencies := c.Metadata.Dependencies
-	if c.Metadata.APIVersion == chart.APIVersionV1 {
-		c.Metadata.Dependencies = nil
-	}
 	// Save Chart.yaml
 	cdata, err := yaml.Marshal(c.Metadata)
-	if c.Metadata.APIVersion == chart.APIVersionV1 {
-		c.Metadata.Dependencies = savedDependencies
-	}
 	if err != nil {
 		return err
 	}
@@ -161,27 +150,13 @@ func writeTarContents(out *tar.Writer, c *chart.Chart, prefix string) error {
 		return err
 	}
 
-	// Save Chart.lock
-	// TODO: remove the APIVersion check when APIVersionV1 is not used anymore
-	if c.Metadata.APIVersion == chart.APIVersionV2 {
-		if c.Lock != nil {
-			ldata, err := yaml.Marshal(c.Lock)
-			if err != nil {
-				return err
-			}
-			if err := writeToTar(out, filepath.Join(base, "Chart.lock"), ldata); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Save values.yaml
-	for _, f := range c.Raw {
-		if f.Name == ValuesfileName {
-			if err := writeToTar(out, filepath.Join(base, ValuesfileName), f.Data); err != nil {
-				return err
-			}
-		}
+	ydata, err := yaml.Marshal(c.Values)
+	if err != nil {
+		return err
+	}
+	if err := writeToTar(out, filepath.Join(base, ValuesfileName), ydata); err != nil {
+		return err
 	}
 
 	// Save values.schema.json if it exists
@@ -223,10 +198,9 @@ func writeTarContents(out *tar.Writer, c *chart.Chart, prefix string) error {
 func writeToTar(out *tar.Writer, name string, body []byte) error {
 	// TODO: Do we need to create dummy parent directory names if none exist?
 	h := &tar.Header{
-		Name:    filepath.ToSlash(name),
-		Mode:    0644,
-		Size:    int64(len(body)),
-		ModTime: time.Now(),
+		Name: name,
+		Mode: 0644,
+		Size: int64(len(body)),
 	}
 	if err := out.WriteHeader(h); err != nil {
 		return err

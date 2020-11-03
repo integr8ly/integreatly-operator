@@ -13,14 +13,10 @@ import (
 	"github.com/matryer/moq/pkg/moq"
 )
 
-// version is the command version, injected at build time.
-var version string
-
 type userFlags struct {
 	outFile   string
 	pkgName   string
 	formatter string
-	stubImpl  bool
 	args      []string
 }
 
@@ -28,9 +24,7 @@ func main() {
 	var flags userFlags
 	flag.StringVar(&flags.outFile, "out", "", "output file (default stdout)")
 	flag.StringVar(&flags.pkgName, "pkg", "", "package name (default will infer)")
-	flag.StringVar(&flags.formatter, "fmt", "", "go pretty-printer: gofmt, goimports or noop (default gofmt)")
-	flag.BoolVar(&flags.stubImpl, "stub", false,
-		"return zero values when no mock implementation is provided, do not panic")
+	flag.StringVar(&flags.formatter, "fmt", "", "go pretty-printer: gofmt (default) or goimports")
 
 	flag.Usage = func() {
 		fmt.Println(`moq [flags] source-dir interface [interface2 [interface3 [...]]]`)
@@ -65,7 +59,6 @@ func run(flags userFlags) error {
 		SrcDir:    srcDir,
 		PkgName:   flags.pkgName,
 		Formatter: flags.formatter,
-		StubImpl:  flags.stubImpl,
 	})
 	if err != nil {
 		return err

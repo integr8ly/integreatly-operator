@@ -183,10 +183,6 @@ type SubscriptionStatus struct {
 	// +optional
 	Reason ConditionReason
 
-	// InstallPlanGeneration is the current generation of the installplan
-	// +optional
-	InstallPlanGeneration int `json:"installPlanGeneration,omitempty"`
-
 	// InstallPlanRef is a reference to the latest InstallPlan that contains the Subscription's current CSV.
 	// +optional
 	InstallPlanRef *corev1.ObjectReference

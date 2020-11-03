@@ -34,17 +34,12 @@ const (
 	GoModEnv   = "GO111MODULE"
 	SrcDir     = "src"
 
-	fsep             = string(filepath.Separator)
-	mainFile         = "main.go"
-	managerMainFile  = "cmd" + fsep + "manager" + fsep + mainFile
-	buildDockerfile  = "build" + fsep + "Dockerfile"
-	rolesDir         = "roles"
-	requirementsFile = "requirements.yml"
-	moleculeDir      = "molecule"
-	helmChartsDir    = "helm-charts"
-	goModFile        = "go.mod"
-
-	noticeColor = "\033[1;36m%s\033[0m"
+	fsep            = string(filepath.Separator)
+	mainFile        = "cmd" + fsep + "manager" + fsep + "main.go"
+	buildDockerfile = "build" + fsep + "Dockerfile"
+	rolesDir        = "roles"
+	helmChartsDir   = "helm-charts"
+	goModFile       = "go.mod"
 )
 
 // OperatorType - the type of operator
@@ -82,15 +77,12 @@ func MustInProjectRoot() {
 
 // CheckProjectRoot checks if the current dir is the project root, and returns
 // an error if not.
-// TODO(hasbro17): Change this to check for go.mod
-// "build/Dockerfile" may not be present in all projects
 func CheckProjectRoot() error {
 	// If the current directory has a "build/Dockerfile", then it is safe to say
 	// we are at the project root.
 	if _, err := os.Stat(buildDockerfile); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("must run command in project root dir: project structure requires %s",
-				buildDockerfile)
+			return fmt.Errorf("must run command in project root dir: project structure requires %s", buildDockerfile)
 		}
 		return fmt.Errorf("error while checking if current directory is the project root: %v", err)
 	}
@@ -101,8 +93,7 @@ func CheckGoProjectCmd(cmd *cobra.Command) error {
 	if IsOperatorGo() {
 		return nil
 	}
-	return fmt.Errorf("'%s' can only be run for Go operators; %s or %s do not exist",
-		cmd.CommandPath(), managerMainFile, mainFile)
+	return fmt.Errorf("'%s' can only be run for Go operators; %s does not exist", cmd.CommandPath(), mainFile)
 }
 
 func MustGetwd() string {
@@ -121,19 +112,9 @@ func getHomeDir() (string, error) {
 	return homedir.Expand(hd)
 }
 
-// TODO(hasbro17): If this function is called in the subdir of
-// a module project it will fail to parse go.mod and return
-// the correct import path.
-// This needs to be fixed to return the pkg import path for any subdir
-// in order for `generate csv` to correctly form pkg imports
-// for API pkg paths that are not relative to the root dir.
-// This might not be fixable since there is no good way to
-// get the project root from inside the subdir of a module project.
-//
 // GetGoPkg returns the current directory's import path by parsing it from
 // wd if this project's repository path is rooted under $GOPATH/src, or
 // from go.mod the project uses Go modules to manage dependencies.
-// If the project has a go.mod then wd must be the project root.
 //
 // Example: "github.com/example-inc/app-operator"
 func GetGoPkg() string {
@@ -169,8 +150,7 @@ func GetGoPkg() string {
 		goPath = MustSetWdGopath(goPath)
 	}
 	if !strings.HasPrefix(MustGetwd(), goPath) {
-		log.Fatal("Could not determine project repository path: $GOPATH not set, wd in default $HOME/go/src," +
-			" or wd does not contain a go.mod")
+		log.Fatal("Could not determine project repository path: $GOPATH not set, wd in default $HOME/go/src, or wd does not contain a go.mod")
 	}
 	return parseGoPkg(goPath)
 }
@@ -199,31 +179,18 @@ func GetOperatorType() OperatorType {
 }
 
 func IsOperatorGo() bool {
-	_, err := os.Stat(managerMainFile)
-	if err == nil || os.IsExist(err) {
-		return true
-	}
-	// Aware of an alternative location for main.go.
-	_, err = os.Stat(mainFile)
-	return err == nil || os.IsExist(err)
+	_, err := os.Stat(mainFile)
+	return err == nil
 }
 
 func IsOperatorAnsible() bool {
 	stat, err := os.Stat(rolesDir)
-	if (err == nil && stat.IsDir()) || os.IsExist(err) {
-		return true
-	}
-	stat, err = os.Stat(moleculeDir)
-	if (err == nil && stat.IsDir()) || os.IsExist(err) {
-		return true
-	}
-	_, err = os.Stat(requirementsFile)
-	return err == nil || os.IsExist(err)
+	return err == nil && stat.IsDir()
 }
 
 func IsOperatorHelm() bool {
 	stat, err := os.Stat(helmChartsDir)
-	return (err == nil && stat.IsDir()) || os.IsExist(err)
+	return err == nil && stat.IsDir()
 }
 
 // MustGetGopath gets GOPATH and ensures it is set and non-empty. If GOPATH
@@ -284,8 +251,7 @@ func CheckRepo(repo string) error {
 		return err
 	}
 	if !inGopathSrc && repo == "" {
-		return fmt.Errorf(`flag --repo must be set if the working directory is not in $GOPATH/src.
-		See "operator-sdk new -h"`)
+		return fmt.Errorf(`flag --repo must be set if the working directory is not in $GOPATH/src. See "operator-sdk new -h"`)
 	}
 	return nil
 }
@@ -301,10 +267,4 @@ func CheckGoModules() error {
 			` More info: https://github.com/operator-framework/operator-sdk/blob/master/doc/user-guide.md#go-modules`)
 	}
 	return nil
-}
-
-// PrintDeprecationWarning prints a colored warning wrapping msg to the terminal.
-func PrintDeprecationWarning(msg string) {
-	fmt.Printf(noticeColor, "[Deprecation Notice] "+msg+". Refer to the version upgrade guide "+
-		"for more information: https://operator-sdk.netlify.com/docs/migration/version-upgrade-guide\n\n")
 }

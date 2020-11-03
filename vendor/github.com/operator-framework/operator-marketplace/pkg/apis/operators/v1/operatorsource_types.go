@@ -28,7 +28,7 @@ type OperatorSourceList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// OperatorSource is used to define the external datastore we are using to store operator bundles.
+// OperatorSource is the Schema for the operatorsources API
 // +k8s:openapi-gen=true
 type OperatorSource struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -55,10 +55,12 @@ type OperatorSourceSpec struct {
 	// repositories in remote registry associated with the operator source.
 	AuthorizationToken OperatorSourceAuthorizationToken `json:"authorizationToken,omitempty"`
 
-	// DisplayName is passed along to the resulting CatalogSource to be used as a pretty name.
+	// DisplayName is passed along to the CatalogSourceConfig to be used
+	// by the resulting CatalogSource to be used as a pretty name.
 	DisplayName string `json:"displayName,omitempty"`
 
-	// Publisher is passed along to the resulting CatalogSource that defines what entity published
+	// Publisher is passed along to the CatalogSourceConfig to be used
+	// by the resulting CatalogSource that defines what entity published
 	// the artifacts from the OperatorSource.
 	Publisher string `json:"publisher,omitempty"`
 }

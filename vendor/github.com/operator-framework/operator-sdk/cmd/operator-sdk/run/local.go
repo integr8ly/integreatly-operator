@@ -21,7 +21,6 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 
@@ -41,7 +40,7 @@ import (
 
 type runLocalArgs struct {
 	kubeconfig           string
-	watchNamespace       string
+	namespace            string
 	operatorFlags        string
 	ldFlags              string
 	enableDelve          bool
@@ -49,12 +48,8 @@ type runLocalArgs struct {
 	helmOperatorFlags    *hoflags.HelmOperatorFlags
 }
 
-func (c *runLocalArgs) addToFlags(fs *pflag.FlagSet) {
+func (c runLocalArgs) addToFlags(fs *pflag.FlagSet) {
 	prefix := "[local only] "
-
-	fs.StringVar(&c.watchNamespace, "watch-namespace", "",
-		prefix+"The namespace where the operator watches for changes. Set \"\" for AllNamespaces, "+
-			"set \"ns1,ns2\" for MultiNamespace")
 	fs.StringVar(&c.operatorFlags, "operator-flags", "",
 		prefix+"The flags that the operator needs. Example: \"--flag1 value1 --flag2=value2\"")
 	fs.StringVar(&c.ldFlags, "go-ldflags", "", prefix+"Set Go linker options")
@@ -63,7 +58,7 @@ func (c *runLocalArgs) addToFlags(fs *pflag.FlagSet) {
 }
 
 func (c runLocalArgs) run() error {
-	log.Infof("Running the operator locally in namespace %s.", c.watchNamespace)
+	log.Infof("Running the operator locally in namespace %s.", c.namespace)
 
 	switch t := projutil.GetOperatorType(); t {
 	case projutil.OperatorTypeGo:
@@ -81,9 +76,6 @@ func (c runLocalArgs) runGo() error {
 	absProjectPath := projutil.MustGetwd()
 	projectName := filepath.Base(absProjectPath)
 	outputBinName := filepath.Join(scaffold.BuildBinDir, projectName+"-local")
-	if runtime.GOOS == "windows" {
-		outputBinName += ".exe"
-	}
 	if err := c.buildLocal(outputBinName); err != nil {
 		return fmt.Errorf("failed to build operator to run locally: %v", err)
 	}
@@ -122,14 +114,7 @@ func (c runLocalArgs) runGo() error {
 	if c.kubeconfig != "" {
 		dc.Env = append(dc.Env, fmt.Sprintf("%v=%v", k8sutil.KubeConfigEnvVar, c.kubeconfig))
 	}
-	dc.Env = append(dc.Env, fmt.Sprintf("%v=%v", k8sutil.WatchNamespaceEnvVar, c.watchNamespace))
-
-	// Set the ANSIBLE_ROLES_PATH
-	if c.ansibleOperatorFlags != nil && len(c.ansibleOperatorFlags.AnsibleRolesPath) > 0 {
-		log.Info(fmt.Sprintf("set the value %v for environment variable %v.", c.ansibleOperatorFlags.AnsibleRolesPath,
-			aoflags.AnsibleRolesPathEnvVar))
-		dc.Env = append(dc.Env, fmt.Sprintf("%v=%v", aoflags.AnsibleRolesPathEnvVar, c.ansibleOperatorFlags.AnsibleRolesPath))
-	}
+	dc.Env = append(dc.Env, fmt.Sprintf("%v=%v", k8sutil.WatchNamespaceEnvVar, c.namespace))
 
 	if err := projutil.ExecCmd(dc); err != nil {
 		return fmt.Errorf("failed to run operator locally: %v", err)
@@ -140,7 +125,7 @@ func (c runLocalArgs) runGo() error {
 
 func (c runLocalArgs) runAnsible() error {
 	logf.SetLogger(zap.Logger())
-	if err := setupOperatorEnv(c.kubeconfig, c.watchNamespace); err != nil {
+	if err := setupOperatorEnv(c.kubeconfig, c.namespace); err != nil {
 		return err
 	}
 	return ansible.Run(c.ansibleOperatorFlags)
@@ -148,7 +133,7 @@ func (c runLocalArgs) runAnsible() error {
 
 func (c runLocalArgs) runHelm() error {
 	logf.SetLogger(zap.Logger())
-	if err := setupOperatorEnv(c.kubeconfig, c.watchNamespace); err != nil {
+	if err := setupOperatorEnv(c.kubeconfig, c.namespace); err != nil {
 		return err
 	}
 	return helm.Run(c.helmOperatorFlags)

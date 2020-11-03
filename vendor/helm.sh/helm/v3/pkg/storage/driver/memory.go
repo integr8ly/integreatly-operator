@@ -26,33 +26,18 @@ import (
 
 var _ Driver = (*Memory)(nil)
 
-const (
-	// MemoryDriverName is the string name of this driver.
-	MemoryDriverName = "Memory"
-
-	defaultNamespace = "default"
-)
-
-// A map of release names to list of release records
-type memReleases map[string]records
+// MemoryDriverName is the string name of this driver.
+const MemoryDriverName = "Memory"
 
 // Memory is the in-memory storage driver implementation.
 type Memory struct {
 	sync.RWMutex
-	namespace string
-	// A map of namespaces to releases
-	cache map[string]memReleases
+	cache map[string]records
 }
 
 // NewMemory initializes a new memory driver.
 func NewMemory() *Memory {
-	return &Memory{cache: map[string]memReleases{}, namespace: "default"}
-}
-
-// SetNamespace sets a specific namespace in which releases will be accessed.
-// An empty string indicates all namespaces (for the list operation)
-func (mem *Memory) SetNamespace(ns string) {
-	mem.namespace = ns
+	return &Memory{cache: map[string]records{}}
 }
 
 // Name returns the name of the driver.
@@ -71,7 +56,7 @@ func (mem *Memory) Get(key string) (*rspb.Release, error) {
 		if _, err := strconv.Atoi(ver); err != nil {
 			return nil, ErrInvalidKey
 		}
-		if recs, ok := mem.cache[mem.namespace][name]; ok {
+		if recs, ok := mem.cache[name]; ok {
 			if r := recs.Get(key); r != nil {
 				return r.rls, nil
 			}
@@ -87,23 +72,13 @@ func (mem *Memory) List(filter func(*rspb.Release) bool) ([]*rspb.Release, error
 	defer unlock(mem.rlock())
 
 	var ls []*rspb.Release
-	for namespace := range mem.cache {
-		if mem.namespace != "" {
-			// Should only list releases of this namespace
-			namespace = mem.namespace
-		}
-		for _, recs := range mem.cache[namespace] {
-			recs.Iter(func(_ int, rec *record) bool {
-				if filter(rec.rls) {
-					ls = append(ls, rec.rls)
-				}
-				return true
-			})
-		}
-		if mem.namespace != "" {
-			// Should only list releases of this namespace
-			break
-		}
+	for _, recs := range mem.cache {
+		recs.Iter(func(_ int, rec *record) bool {
+			if filter(rec.rls) {
+				ls = append(ls, rec.rls)
+			}
+			return true
+		})
 	}
 	return ls, nil
 }
@@ -118,28 +93,18 @@ func (mem *Memory) Query(keyvals map[string]string) ([]*rspb.Release, error) {
 	lbs.fromMap(keyvals)
 
 	var ls []*rspb.Release
-	for namespace := range mem.cache {
-		if mem.namespace != "" {
-			// Should only query releases of this namespace
-			namespace = mem.namespace
-		}
-		for _, recs := range mem.cache[namespace] {
-			recs.Iter(func(_ int, rec *record) bool {
-				// A query for a release name that doesn't exist (has been deleted)
-				// can cause rec to be nil.
-				if rec == nil {
-					return false
-				}
-				if rec.lbs.match(lbs) {
-					ls = append(ls, rec.rls)
-				}
-				return true
-			})
-		}
-		if mem.namespace != "" {
-			// Should only query releases of this namespace
-			break
-		}
+	for _, recs := range mem.cache {
+		recs.Iter(func(_ int, rec *record) bool {
+			// A query for a release name that doesn't exist (has been deleted)
+			// can cause rec to be nil.
+			if rec == nil {
+				return false
+			}
+			if rec.lbs.match(lbs) {
+				ls = append(ls, rec.rls)
+			}
+			return true
+		})
 	}
 	return ls, nil
 }
@@ -148,25 +113,14 @@ func (mem *Memory) Query(keyvals map[string]string) ([]*rspb.Release, error) {
 func (mem *Memory) Create(key string, rls *rspb.Release) error {
 	defer unlock(mem.wlock())
 
-	// For backwards compatibility, we protect against an unset namespace
-	namespace := rls.Namespace
-	if namespace == "" {
-		namespace = defaultNamespace
-	}
-	mem.SetNamespace(namespace)
-
-	if _, ok := mem.cache[namespace]; !ok {
-		mem.cache[namespace] = memReleases{}
-	}
-
-	if recs, ok := mem.cache[namespace][rls.Name]; ok {
+	if recs, ok := mem.cache[rls.Name]; ok {
 		if err := recs.Add(newRecord(key, rls)); err != nil {
 			return err
 		}
-		mem.cache[namespace][rls.Name] = recs
+		mem.cache[rls.Name] = recs
 		return nil
 	}
-	mem.cache[namespace][rls.Name] = records{newRecord(key, rls)}
+	mem.cache[rls.Name] = records{newRecord(key, rls)}
 	return nil
 }
 
@@ -174,18 +128,9 @@ func (mem *Memory) Create(key string, rls *rspb.Release) error {
 func (mem *Memory) Update(key string, rls *rspb.Release) error {
 	defer unlock(mem.wlock())
 
-	// For backwards compatibility, we protect against an unset namespace
-	namespace := rls.Namespace
-	if namespace == "" {
-		namespace = defaultNamespace
-	}
-	mem.SetNamespace(namespace)
-
-	if _, ok := mem.cache[namespace]; ok {
-		if rs, ok := mem.cache[namespace][rls.Name]; ok && rs.Exists(key) {
-			rs.Replace(key, newRecord(key, rls))
-			return nil
-		}
+	if rs, ok := mem.cache[rls.Name]; ok && rs.Exists(key) {
+		rs.Replace(key, newRecord(key, rls))
+		return nil
 	}
 	return ErrReleaseNotFound
 }
@@ -205,13 +150,11 @@ func (mem *Memory) Delete(key string) (*rspb.Release, error) {
 	if _, err := strconv.Atoi(ver); err != nil {
 		return nil, ErrInvalidKey
 	}
-	if _, ok := mem.cache[mem.namespace]; ok {
-		if recs, ok := mem.cache[mem.namespace][name]; ok {
-			if r := recs.Remove(key); r != nil {
-				// recs.Remove changes the slice reference, so we have to re-assign it.
-				mem.cache[mem.namespace][name] = recs
-				return r.rls, nil
-			}
+	if recs, ok := mem.cache[name]; ok {
+		if r := recs.Remove(key); r != nil {
+			// recs.Remove changes the slice reference, so we have to re-assign it.
+			mem.cache[name] = recs
+			return r.rls, nil
 		}
 	}
 	return nil, ErrReleaseNotFound
