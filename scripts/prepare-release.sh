@@ -101,6 +101,8 @@ set_descriptions() {
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[1].displayName 'RHOAM installation'
 
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[0].description 'RHOAMConfig is the Schema for the rhoamconfigs API'
+      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.customresourcedefinitions.owned[0].displayName 'RHOAMConfig'
+
       ;;
   esac
 }
@@ -118,7 +120,6 @@ set_clusterPermissions() {
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].name 'rhoam-operator'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.selector.matchLabels.name 'rhoam-operator'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.metadata.labels.name 'rhoam-operator'
-      yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].command[0] 'rhoam-operator'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].env[2].value 'rhoam-operator'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.containers[0].name 'rhoam-operator'
       yq w -i "deploy/olm-catalog/$OLM_TYPE/${VERSION}/$OLM_TYPE.v${VERSION}.clusterserviceversion.yaml" --tag '!!str' spec.install.spec.deployments[0].spec.template.spec.serviceAccountName 'rhoam-operator'
