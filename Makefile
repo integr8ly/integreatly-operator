@@ -19,9 +19,8 @@ TEST_RESULTS_DIR ?= "test-results"
 TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
 
-# These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.7.0
-RHOAM_TAG ?= 0.1.0
+RHOAM_TAG ?= 0.1.0-rc2
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -47,7 +46,6 @@ else
 endif
 
 export SELF_SIGNED_CERTS   ?= true
-# Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE   ?= managed
 export INSTALLATION_NAME   ?= rhmi
 
@@ -72,8 +70,7 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
 	NAMESPACE_PREFIX ?= redhat-rhoam-
 	APPLICATION_REPO ?= managed-api-service
-	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
-	export INSTALLATION_PREFIX ?= redhat-managed-api
+	export INSTALLATION_PREFIX ?= redhat-rhoam
 	export OLM_TYPE ?= managed-api-service
 endif
 
