@@ -20,7 +20,7 @@ TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
 CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
 
 # These tags are modified by the prepare-release script.
-RHMI_TAG ?= 2.7.1
+RHMI_TAG ?= 2.7.0
 RHOAM_TAG ?= 0.1.0
 
 # If openapi-gen is available on the path, use that; otherwise use it through
