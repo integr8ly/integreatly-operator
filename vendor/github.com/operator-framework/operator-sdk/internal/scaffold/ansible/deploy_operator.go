@@ -1,4 +1,4 @@
-// Copyright 2020 The Operator-SDK Authors
+// Copyright 2018 The Operator-SDK Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,8 +38,7 @@ func (d *DeployOperator) GetInput() (input.Input, error) {
 	return d.Input, nil
 }
 
-const deployOperatorAnsibleTmpl = `---
-apiVersion: apps/v1
+const deployOperatorAnsibleTmpl = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: [[.ProjectName]]
@@ -55,10 +54,22 @@ spec:
     spec:
       serviceAccountName: [[.ProjectName]]
       containers:
-        - name: [[.ProjectName]]
+        - name: ansible
+          command:
+          - /usr/local/bin/ao-logs
+          - /tmp/ansible-operator/runner
+          - stdout
           # Replace this with the built image name
-          image: "REPLACE_IMAGE"
-          imagePullPolicy: "Always"
+          image: "{{ REPLACE_IMAGE }}"
+          imagePullPolicy: "{{ pull_policy|default('Always') }}"
+          volumeMounts:
+          - mountPath: /tmp/ansible-operator/runner
+            name: runner
+            readOnly: true
+        - name: operator
+          # Replace this with the built image name
+          image: "{{ REPLACE_IMAGE }}"
+          imagePullPolicy: "{{ pull_policy|default('Always') }}"
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
             name: runner

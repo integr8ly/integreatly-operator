@@ -46,7 +46,7 @@ func (GenerationChangedPredicate) Update(e event.UpdateEvent) bool {
 		log.Error(nil, "Update event has no new metadata", "event", e)
 		return false
 	}
-	if e.MetaNew.GetGeneration() == e.MetaOld.GetGeneration() && e.MetaNew.GetGeneration() != 0 {
+	if e.MetaNew.GetGeneration() == e.MetaOld.GetGeneration() {
 		return false
 	}
 	return true

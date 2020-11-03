@@ -17,7 +17,6 @@ package validate
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"unicode/utf8"
 
 	"github.com/go-openapi/errors"
@@ -27,27 +26,17 @@ import (
 
 // Enum validates if the data is a member of the enum
 func Enum(path, in string, data interface{}, enum interface{}) *errors.Validation {
-	return EnumCase(path, in, data, enum, true)
-}
-
-// EnumCase validates if the data is a member of the enum and may respect case-sensitivity for strings
-func EnumCase(path, in string, data interface{}, enum interface{}, caseSensitive bool) *errors.Validation {
 	val := reflect.ValueOf(enum)
 	if val.Kind() != reflect.Slice {
 		return nil
 	}
 
-	dataString := convertEnumCaseStringKind(data, caseSensitive)
 	var values []interface{}
 	for i := 0; i < val.Len(); i++ {
 		ele := val.Index(i)
 		enumValue := ele.Interface()
 		if data != nil {
 			if reflect.DeepEqual(data, enumValue) {
-				return nil
-			}
-			enumString := convertEnumCaseStringKind(enumValue, caseSensitive)
-			if dataString != nil && enumString != nil && strings.EqualFold(*dataString, *enumString) {
 				return nil
 			}
 			actualType := reflect.TypeOf(enumValue)
@@ -65,21 +54,6 @@ func EnumCase(path, in string, data interface{}, enum interface{}, caseSensitive
 		values = append(values, enumValue)
 	}
 	return errors.EnumFail(path, in, data, values)
-}
-
-// convertEnumCaseStringKind converts interface if it is kind of string and case insensitivity is set
-func convertEnumCaseStringKind(value interface{}, caseSensitive bool) *string {
-	if caseSensitive {
-		return nil
-	}
-
-	val := reflect.ValueOf(value)
-	if val.Kind() != reflect.String {
-		return nil
-	}
-
-	str := fmt.Sprintf("%v", value)
-	return &str
 }
 
 // MinItems validates that there are at least n items in a slice
@@ -387,26 +361,26 @@ func IsValueValidAgainstRange(val interface{}, typeName, format, prefix, path st
 	var errVal error
 
 	switch typeName {
-	case integerType:
+	case "integer":
 		switch format {
-		case integerFormatInt32:
+		case "int32":
 			_, errVal = swag.ConvertInt32(stringRep)
-		case integerFormatUInt32:
+		case "uint32":
 			_, errVal = swag.ConvertUint32(stringRep)
-		case integerFormatUInt64:
+		case "uint64":
 			_, errVal = swag.ConvertUint64(stringRep)
-		case integerFormatInt64:
+		case "int64":
 			fallthrough
 		default:
 			_, errVal = swag.ConvertInt64(stringRep)
 		}
-	case numberType:
+	case "number":
 		fallthrough
 	default:
 		switch format {
-		case numberFormatFloat, numberFormatFloat32:
+		case "float", "float32":
 			_, errVal = swag.ConvertFloat32(stringRep)
-		case numberFormatDouble, numberFormatFloat64:
+		case "double", "float64":
 			fallthrough
 		default:
 			// No check can be performed here since

@@ -39,16 +39,12 @@ func NewCmd() *cobra.Command {
 	newCmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Adds source code to an operator",
-		Long: `operator-sdk migrate adds a main.go source file and any associated source files` +
-			`for an operator that is not of the "go" type.`,
-		RunE: migrateRun,
+		Long:  `operator-sdk migrate adds a main.go source file and any associated source files for an operator that is not of the "go" type.`,
+		RunE:  migrateRun,
 	}
 
-	newCmd.Flags().StringVar(&headerFile, "header-file", "",
-		"Path to file containing headers for generated Go files. Copied to hack/boilerplate.go.txt")
-	newCmd.Flags().StringVar(&repo, "repo", "",
-		"Project repository path. Used as the project's Go import path. This must be set if outside of "+
-			"$GOPATH/src (e.g. github.com/example-inc/my-operator)")
+	newCmd.Flags().StringVar(&headerFile, "header-file", "", "Path to file containing headers for generated Go files. Copied to hack/boilerplate.go.txt")
+	newCmd.Flags().StringVar(&repo, "repo", "", "Project repository path. Used as the project's Go import path. This must be set if outside of $GOPATH/src (e.g. github.com/example-inc/my-operator)")
 
 	return newCmd
 }
@@ -69,17 +65,11 @@ func migrateRun(cmd *cobra.Command, args []string) error {
 	opType := projutil.GetOperatorType()
 	switch opType {
 	case projutil.OperatorTypeAnsible:
-		if err := migrateAnsible(); err != nil {
-			log.Fatal(err)
-		}
+		return migrateAnsible()
 	case projutil.OperatorTypeHelm:
-		if err := migrateHelm(); err != nil {
-			log.Fatal(err)
-		}
-	default:
-		return fmt.Errorf("operator of type %s cannot be migrated", opType)
+		return migrateHelm()
 	}
-	return nil
+	return fmt.Errorf("operator of type %s cannot be migrated", opType)
 }
 
 func verifyFlags() error {
@@ -101,9 +91,8 @@ func migrateAnsible() error {
 	}
 
 	dockerfile := ansible.DockerfileHybrid{
-		Watches:      true,
-		Roles:        true,
-		Requirements: true,
+		Watches: true,
+		Roles:   true,
 	}
 	_, err := os.Stat(ansible.PlaybookYamlFile)
 	switch {
@@ -134,7 +123,6 @@ func migrateAnsible() error {
 		&dockerfile,
 		&ansible.Entrypoint{},
 		&ansible.UserSetup{},
-		// todo(camilamacedo86): It is deprecated and should be removed before 1.0.0
 		&ansible.AoLogs{},
 	)
 	if err != nil {
@@ -190,7 +178,6 @@ func renameDockerfile() error {
 	if err != nil {
 		return fmt.Errorf("failed to rename Dockerfile: %v", err)
 	}
-	log.Infof("Renamed Dockerfile to %s and replaced with newer version. Compare the new Dockerfile to your"+
-		" old one and manually migrate any customizations", newDockerfilePath)
+	log.Infof("Renamed Dockerfile to %s and replaced with newer version. Compare the new Dockerfile to your old one and manually migrate any customizations", newDockerfilePath)
 	return nil
 }

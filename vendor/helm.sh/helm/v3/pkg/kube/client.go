@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -29,12 +30,10 @@ import (
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -42,7 +41,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes/scheme"
-	cachetools "k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
@@ -54,11 +52,7 @@ var ErrNoObjectsVisited = errors.New("no objects visited")
 type Client struct {
 	Factory Factory
 	Log     func(string, ...interface{})
-	// Namespace allows to bypass the kubeconfig file for the choice of the namespace
-	Namespace string
 }
-
-var addToScheme sync.Once
 
 // New creates a new Client.
 func New(getter genericclioptions.RESTClientGetter) *Client {
@@ -66,15 +60,10 @@ func New(getter genericclioptions.RESTClientGetter) *Client {
 		getter = genericclioptions.NewConfigFlags(true)
 	}
 	// Add CRDs to the scheme. They are missing by default.
-	addToScheme.Do(func() {
-		if err := apiextv1.AddToScheme(scheme.Scheme); err != nil {
-			// This should never happen.
-			panic(err)
-		}
-		if err := apiextv1beta1.AddToScheme(scheme.Scheme); err != nil {
-			panic(err)
-		}
-	})
+	if err := apiextv1beta1.AddToScheme(scheme.Scheme); err != nil {
+		// This should never happen.
+		panic(err)
+	}
 	return &Client{
 		Factory: cmdutil.NewFactory(getter),
 		Log:     nopLogger,
@@ -117,9 +106,6 @@ func (c *Client) Wait(resources ResourceList, timeout time.Duration) error {
 }
 
 func (c *Client) namespace() string {
-	if c.Namespace != "" {
-		return c.Namespace
-	}
 	if ns, _, err := c.Factory.ToRawKubeConfigLoader().Namespace(); err == nil {
 		return ns
 	}
@@ -367,12 +353,7 @@ func createPatch(target *resource.Info, current runtime.Object) ([]byte, types.P
 	// returned from ConvertToVersion. Anything that's unstructured should
 	// use the jsonpatch.CreateMergePatch. Strategic Merge Patch is not supported
 	// on objects like CRDs.
-	_, isUnstructured := versionedObject.(runtime.Unstructured)
-
-	// On newer K8s versions, CRDs aren't unstructured but has this dedicated type
-	_, isCRD := versionedObject.(*apiextv1beta1.CustomResourceDefinition)
-
-	if isUnstructured || isCRD {
+	if _, ok := versionedObject.(runtime.Unstructured); ok {
 		// fall back to generic JSON merge patch
 		patch, err := jsonpatch.CreateMergePatch(oldData, newData)
 		return patch, types.MergePatchType, err
@@ -415,7 +396,7 @@ func updateResource(c *Client, target *resource.Info, currentObj runtime.Object,
 		if err != nil {
 			return errors.Wrap(err, "failed to replace object")
 		}
-		c.Log("Replaced %q with kind %s for kind %s\n", target.Name, currentObj.GetObjectKind().GroupVersionKind().Kind, kind)
+		log.Printf("Replaced %q with kind %s for kind %s\n", target.Name, currentObj.GetObjectKind().GroupVersionKind().Kind, kind)
 	} else {
 		// send patch to server
 		obj, err = helper.Patch(target.Namespace, target.Name, patchType, patch, nil)
@@ -438,13 +419,10 @@ func (c *Client) watchUntilReady(timeout time.Duration, info *resource.Info) err
 
 	c.Log("Watching for changes to %s %s with timeout of %v", kind, info.Name, timeout)
 
-	// Use a selector on the name of the resource. This should be unique for the
-	// given version and kind
-	selector, err := fields.ParseSelector(fmt.Sprintf("metadata.name=%s", info.Name))
+	w, err := resource.NewHelper(info.Client, info.Mapping).WatchSingle(info.Namespace, info.Name, info.ResourceVersion)
 	if err != nil {
 		return err
 	}
-	lw := cachetools.NewListWatchFromClient(info.Client, info.Mapping.Resource.Resource, info.Namespace, selector)
 
 	// What we watch for depends on the Kind.
 	// - For a Job, we watch for completion.
@@ -454,7 +432,7 @@ func (c *Client) watchUntilReady(timeout time.Duration, info *resource.Info) err
 
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
 	defer cancel()
-	_, err = watchtools.ListWatchUntil(ctx, lw, func(e watch.Event) (bool, error) {
+	_, err = watchtools.UntilWithoutRetry(ctx, w, func(e watch.Event) (bool, error) {
 		// Make sure the incoming object is versioned as we use unstructured
 		// objects when we build manifests
 		obj := convertWithMapper(e.Object, info.Mapping)

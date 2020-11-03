@@ -23,16 +23,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/operator-framework/operator-sdk/internal/generate/gen"
+	gen "github.com/operator-framework/operator-sdk/internal/generate/gen"
 	"github.com/operator-framework/operator-sdk/internal/scaffold"
 	"github.com/operator-framework/operator-sdk/internal/util/fileutil"
 	"github.com/operator-framework/operator-sdk/internal/util/k8sutil"
+	"github.com/operator-framework/operator-sdk/internal/util/yamlutil"
 
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -46,23 +45,20 @@ type crdGenerator struct {
 	isOperatorGo bool
 	// resource contains API information used to configure single-CRD generation.
 	// This is only required when isOperatorGo is false.
-	resource   scaffold.Resource
-	crdVersion string
+	resource scaffold.Resource
 }
 
 const (
-	APIsDirKey        = "apis"
-	CRDsDirKey        = "crds"
-	DefaultCRDVersion = "v1beta1"
+	APIsDirKey = "apis"
+	CRDsDirKey = "crds"
 )
 
 // NewCRDGo returns a CRD generator configured to generate CustomResourceDefintion
 // manifests from Go API files.
-func NewCRDGo(cfg gen.Config, crdVersion string) gen.Generator {
+func NewCRDGo(cfg gen.Config) gen.Generator {
 	g := crdGenerator{
 		Config:       cfg,
 		isOperatorGo: true,
-		crdVersion:   crdVersion,
 	}
 	if g.Inputs == nil {
 		g.Inputs = map[string]string{}
@@ -81,12 +77,11 @@ func NewCRDGo(cfg gen.Config, crdVersion string) gen.Generator {
 
 // NewCRDNonGo returns a CRD generator configured to generate a
 // CustomResourceDefintion manifest from scratch using data in resource.
-func NewCRDNonGo(cfg gen.Config, resource scaffold.Resource, crdVersion string) gen.Generator {
+func NewCRDNonGo(cfg gen.Config, resource scaffold.Resource) gen.Generator {
 	g := crdGenerator{
 		Config:       cfg,
 		resource:     resource,
 		isOperatorGo: false,
-		crdVersion:   crdVersion,
 	}
 	if g.Inputs == nil {
 		g.Inputs = map[string]string{}
@@ -119,11 +114,6 @@ func (g crdGenerator) validate() error {
 		if err := g.resource.Validate(); err != nil {
 			return fmt.Errorf("resource is invalid: %w", err)
 		}
-	}
-	switch g.crdVersion {
-	case "v1", "v1beta1":
-	default:
-		return fmt.Errorf("crd version %q is invalid", g.crdVersion)
 	}
 	return nil
 }
@@ -166,11 +156,10 @@ func (g crdGenerator) generateGo() (map[string][]byte, error) {
 	defName := "output:crd:cache"
 	cacheOutputDir := filepath.Clean(g.OutputDir)
 	rawOpts := []string{
-		fmt.Sprintf("crd:crdVersions={%s}", g.crdVersion),
+		"crd",
 		fmt.Sprintf("paths=%s/...", fileutil.DotPath(g.Inputs[APIsDirKey])),
 		fmt.Sprintf("%s:dir=%s", defName, cacheOutputDir),
 	}
-
 	runner := gen.NewCachedRunner()
 	runner.AddOutputRule(defName, gen.OutputToCachedDirectory{})
 	if err := runner.Run(rawOpts); err != nil {
@@ -190,7 +179,7 @@ func (g crdGenerator) generateGo() (map[string][]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading cached CRD file %s: %w", path, err)
 		}
-		scanner := k8sutil.NewYAMLScanner(b)
+		scanner := yamlutil.NewYAMLScanner(b)
 		modifiedCRD := []byte{}
 		for scanner.Scan() {
 			crd := unstructured.Unstructured{}
@@ -220,7 +209,7 @@ func (g crdGenerator) generateGo() (map[string][]byte, error) {
 			if err != nil {
 				return nil, fmt.Errorf("error marshalling CRD %s: %w", crd.GetName(), err)
 			}
-			modifiedCRD = k8sutil.CombineManifests(modifiedCRD, b)
+			modifiedCRD = yamlutil.CombineManifests(modifiedCRD, b)
 		}
 		if err = scanner.Err(); err != nil {
 			return nil, fmt.Errorf("error scanning CRD manifest %s: %w", path, err)
@@ -279,31 +268,7 @@ func (g crdGenerator) generateNonGo() (map[string][]byte, error) {
 	if err := checkCRDVersions(crd); err != nil {
 		return nil, fmt.Errorf("error checking CRD %s versions: %w", crd.GetName(), err)
 	}
-
-	var (
-		b   []byte
-		err error
-	)
-	switch g.crdVersion {
-	case "v1beta1":
-		crd.TypeMeta.APIVersion = apiextv1beta1.SchemeGroupVersion.String()
-		b, err = k8sutil.GetObjectBytes(&crd, yaml.Marshal)
-	case "v1":
-		var unversioned apiext.CustomResourceDefinition
-		//nolint:lll
-		if err := apiextv1beta1.Convert_v1beta1_CustomResourceDefinition_To_apiextensions_CustomResourceDefinition(&crd, &unversioned, nil); err != nil {
-			return nil, err
-		}
-		var out apiextv1.CustomResourceDefinition
-		out.TypeMeta.APIVersion = apiextv1.SchemeGroupVersion.String()
-		out.TypeMeta.Kind = "CustomResourceDefinition"
-		//nolint:lll
-		if err := apiextv1.Convert_apiextensions_CustomResourceDefinition_To_v1_CustomResourceDefinition(&unversioned, &out, nil); err != nil {
-			return nil, err
-		}
-		b, err = k8sutil.GetObjectBytes(&out, yaml.Marshal)
-	}
-
+	b, err := k8sutil.GetObjectBytes(&crd, yaml.Marshal)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling CRD %s: %w", crd.GetName(), err)
 	}
@@ -373,11 +338,9 @@ func checkCRDVersions(crd apiextv1beta1.CustomResourceDefinition) error {
 	multiVers := len(crd.Spec.Versions) > 0
 	if singleVer {
 		if !multiVers {
-			log.Warnf("CRD %s: spec.version is deprecated and should be migrated to spec.versions",
-				crd.Spec.Names.Kind)
+			log.Warnf("CRD %s: spec.version is deprecated and should be migrated to spec.versions", crd.Spec.Names.Kind)
 		} else if crd.Spec.Version != crd.Spec.Versions[0].Name {
-			return fmt.Errorf("spec.version %s must be the first element in spec.versions for CRD %s",
-				crd.Spec.Version, crd.Spec.Names.Kind)
+			return fmt.Errorf("spec.version %s must be the first element in spec.versions for CRD %s", crd.Spec.Version, crd.Spec.Names.Kind)
 		}
 	}
 

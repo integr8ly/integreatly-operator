@@ -1,9 +1,7 @@
-# Sprig: Template functions for Go templates
+# Sprig: Template functions for Go templates [![GoDoc](https://godoc.org/github.com/Masterminds/sprig?status.svg)](https://godoc.org/github.com/Masterminds/sprig) [![Go Report Card](https://goreportcard.com/badge/github.com/Masterminds/sprig)](https://goreportcard.com/report/github.com/Masterminds/sprig)
 
-[![GoDoc](https://img.shields.io/static/v1?label=godoc&message=reference&color=blue)](https://pkg.go.dev/github.com/Masterminds/sprig/v3)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Masterminds/sprig)](https://goreportcard.com/report/github.com/Masterminds/sprig)
 [![Stability: Sustained](https://masterminds.github.io/stability/sustained.svg)](https://masterminds.github.io/stability/sustained.html)
-[![](https://github.com/Masterminds/sprig/workflows/Tests/badge.svg)](https://github.com/Masterminds/sprig/actions)
+[![Build Status](https://travis-ci.org/Masterminds/sprig.svg?branch=master)](https://travis-ci.org/Masterminds/sprig)
 
 The Go language comes with a [built-in template
 language](http://golang.org/pkg/text/template/), but not

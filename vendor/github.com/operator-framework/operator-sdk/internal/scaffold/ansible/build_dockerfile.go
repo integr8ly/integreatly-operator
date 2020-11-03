@@ -46,10 +46,6 @@ func (b *BuildDockerfile) GetInput() (input.Input, error) {
 
 const buildDockerfileAnsibleTmpl = `FROM quay.io/operator-framework/ansible-operator:[[.ImageTag]]
 
-COPY requirements.yml ${HOME}/requirements.yml
-RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
- && chmod -R ug+rwx ${HOME}/.ansible
-
 COPY watches.yaml ${HOME}/watches.yaml
 
 COPY [[.RolesDir]]/ ${HOME}/[[.RolesDir]]/

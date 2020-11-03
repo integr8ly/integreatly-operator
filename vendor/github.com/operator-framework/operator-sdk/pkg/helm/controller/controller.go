@@ -36,6 +36,7 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/helm/release"
 	"github.com/operator-framework/operator-sdk/pkg/internal/predicates"
+	"github.com/operator-framework/operator-sdk/pkg/predicate"
 )
 
 var log = logf.Log.WithName("helm.controller")
@@ -49,7 +50,6 @@ type WatchOptions struct {
 	ReconcilePeriod         time.Duration
 	WatchDependentResources bool
 	OverrideValues          map[string]string
-	MaxWorkers              int
 }
 
 // Add creates a new helm operator controller and adds it to the manager
@@ -69,17 +69,14 @@ func Add(mgr manager.Manager, options WatchOptions) error {
 	mgr.GetScheme().AddKnownTypeWithName(options.GVK, &unstructured.Unstructured{})
 	metav1.AddToGroupVersion(mgr.GetScheme(), options.GVK.GroupVersion())
 
-	c, err := controller.New(controllerName, mgr, controller.Options{
-		Reconciler:              r,
-		MaxConcurrentReconciles: options.MaxWorkers,
-	})
+	c, err := controller.New(controllerName, mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
 	o := &unstructured.Unstructured{}
 	o.SetGroupVersionKind(options.GVK)
-	if err := c.Watch(&source.Kind{Type: o}, &crthandler.EnqueueRequestForObject{}); err != nil {
+	if err := c.Watch(&source.Kind{Type: o}, &crthandler.EnqueueRequestForObject{}, predicate.GenerationChangedPredicate{}); err != nil {
 		return err
 	}
 
@@ -87,8 +84,7 @@ func Add(mgr manager.Manager, options WatchOptions) error {
 		watchDependentResources(mgr, r, c)
 	}
 
-	log.Info("Watching resource", "apiVersion", options.GVK.GroupVersion(), "kind",
-		options.GVK.Kind, "namespace", options.Namespace, "reconcilePeriod", options.ReconcilePeriod.String())
+	log.Info("Watching resource", "apiVersion", options.GVK.GroupVersion(), "kind", options.GVK.Kind, "namespace", options.Namespace, "reconcilePeriod", options.ReconcilePeriod.String())
 	return nil
 }
 
@@ -116,9 +112,6 @@ func watchDependentResources(mgr manager.Manager, r *HelmOperatorReconciler, c c
 			}
 
 			gvk := u.GroupVersionKind()
-			if gvk.Empty() {
-				continue
-			}
 			m.RLock()
 			_, ok := watches[gvk]
 			m.RUnlock()
@@ -131,8 +124,7 @@ func watchDependentResources(mgr manager.Manager, r *HelmOperatorReconciler, c c
 			if err != nil {
 				return err
 			}
-			ownerMapping, err := restMapper.RESTMapping(owner.GroupVersionKind().GroupKind(),
-				owner.GroupVersionKind().Version)
+			ownerMapping, err := restMapper.RESTMapping(owner.GroupVersionKind().GroupKind(), owner.GroupVersionKind().Version)
 			if err != nil {
 				return err
 			}
@@ -144,15 +136,12 @@ func watchDependentResources(mgr manager.Manager, r *HelmOperatorReconciler, c c
 				m.Lock()
 				watches[gvk] = struct{}{}
 				m.Unlock()
-				log.Info("Cannot watch cluster-scoped dependent resource for namespace-scoped owner."+
-					" Changes to this dependent resource type will not be reconciled",
-					"ownerApiVersion", r.GVK.GroupVersion(), "ownerKind", r.GVK.Kind, "apiVersion",
-					gvk.GroupVersion(), "kind", gvk.Kind)
+				log.Info("Cannot watch cluster-scoped dependent resource for namespace-scoped owner. Changes to this dependent resource type will not be reconciled",
+					"ownerApiVersion", r.GVK.GroupVersion(), "ownerKind", r.GVK.Kind, "apiVersion", gvk.GroupVersion(), "kind", gvk.Kind)
 				continue
 			}
 
-			err = c.Watch(&source.Kind{Type: &u}, &crthandler.EnqueueRequestForOwner{OwnerType: owner},
-				dependentPredicate)
+			err = c.Watch(&source.Kind{Type: &u}, &crthandler.EnqueueRequestForOwner{OwnerType: owner}, dependentPredicate)
 			if err != nil {
 				return err
 			}
@@ -160,8 +149,7 @@ func watchDependentResources(mgr manager.Manager, r *HelmOperatorReconciler, c c
 			m.Lock()
 			watches[gvk] = struct{}{}
 			m.Unlock()
-			log.Info("Watching dependent resource", "ownerApiVersion", r.GVK.GroupVersion(),
-				"ownerKind", r.GVK.Kind, "apiVersion", gvk.GroupVersion(), "kind", gvk.Kind)
+			log.Info("Watching dependent resource", "ownerApiVersion", r.GVK.GroupVersion(), "ownerKind", r.GVK.Kind, "apiVersion", gvk.GroupVersion(), "kind", gvk.Kind)
 		}
 	}
 	r.releaseHook = releaseHook

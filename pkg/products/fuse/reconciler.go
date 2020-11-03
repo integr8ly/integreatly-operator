@@ -380,7 +380,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 				},
 				Server: syndesisv1beta1.ServerConfiguration{
 					Features: syndesisv1beta1.ServerFeatures{
-						ManagementURLFor3scale: threescaleHost,
+						ManagementUrlFor3scale: threescaleHost,
 						IntegrationLimit:       0,
 					},
 				},

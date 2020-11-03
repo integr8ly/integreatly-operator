@@ -88,10 +88,6 @@ type RDSAPI interface {
 	BacktrackDBClusterWithContext(aws.Context, *rds.BacktrackDBClusterInput, ...request.Option) (*rds.BacktrackDBClusterOutput, error)
 	BacktrackDBClusterRequest(*rds.BacktrackDBClusterInput) (*request.Request, *rds.BacktrackDBClusterOutput)
 
-	CancelExportTask(*rds.CancelExportTaskInput) (*rds.CancelExportTaskOutput, error)
-	CancelExportTaskWithContext(aws.Context, *rds.CancelExportTaskInput, ...request.Option) (*rds.CancelExportTaskOutput, error)
-	CancelExportTaskRequest(*rds.CancelExportTaskInput) (*request.Request, *rds.CancelExportTaskOutput)
-
 	CopyDBClusterParameterGroup(*rds.CopyDBClusterParameterGroupInput) (*rds.CopyDBClusterParameterGroupOutput, error)
 	CopyDBClusterParameterGroupWithContext(aws.Context, *rds.CopyDBClusterParameterGroupInput, ...request.Option) (*rds.CopyDBClusterParameterGroupOutput, error)
 	CopyDBClusterParameterGroupRequest(*rds.CopyDBClusterParameterGroupInput) (*request.Request, *rds.CopyDBClusterParameterGroupOutput)
@@ -248,9 +244,6 @@ type RDSAPI interface {
 	DescribeCertificatesWithContext(aws.Context, *rds.DescribeCertificatesInput, ...request.Option) (*rds.DescribeCertificatesOutput, error)
 	DescribeCertificatesRequest(*rds.DescribeCertificatesInput) (*request.Request, *rds.DescribeCertificatesOutput)
 
-	DescribeCertificatesPages(*rds.DescribeCertificatesInput, func(*rds.DescribeCertificatesOutput, bool) bool) error
-	DescribeCertificatesPagesWithContext(aws.Context, *rds.DescribeCertificatesInput, func(*rds.DescribeCertificatesOutput, bool) bool, ...request.Option) error
-
 	DescribeCustomAvailabilityZones(*rds.DescribeCustomAvailabilityZonesInput) (*rds.DescribeCustomAvailabilityZonesOutput, error)
 	DescribeCustomAvailabilityZonesWithContext(aws.Context, *rds.DescribeCustomAvailabilityZonesInput, ...request.Option) (*rds.DescribeCustomAvailabilityZonesOutput, error)
 	DescribeCustomAvailabilityZonesRequest(*rds.DescribeCustomAvailabilityZonesInput) (*request.Request, *rds.DescribeCustomAvailabilityZonesOutput)
@@ -262,29 +255,17 @@ type RDSAPI interface {
 	DescribeDBClusterBacktracksWithContext(aws.Context, *rds.DescribeDBClusterBacktracksInput, ...request.Option) (*rds.DescribeDBClusterBacktracksOutput, error)
 	DescribeDBClusterBacktracksRequest(*rds.DescribeDBClusterBacktracksInput) (*request.Request, *rds.DescribeDBClusterBacktracksOutput)
 
-	DescribeDBClusterBacktracksPages(*rds.DescribeDBClusterBacktracksInput, func(*rds.DescribeDBClusterBacktracksOutput, bool) bool) error
-	DescribeDBClusterBacktracksPagesWithContext(aws.Context, *rds.DescribeDBClusterBacktracksInput, func(*rds.DescribeDBClusterBacktracksOutput, bool) bool, ...request.Option) error
-
 	DescribeDBClusterEndpoints(*rds.DescribeDBClusterEndpointsInput) (*rds.DescribeDBClusterEndpointsOutput, error)
 	DescribeDBClusterEndpointsWithContext(aws.Context, *rds.DescribeDBClusterEndpointsInput, ...request.Option) (*rds.DescribeDBClusterEndpointsOutput, error)
 	DescribeDBClusterEndpointsRequest(*rds.DescribeDBClusterEndpointsInput) (*request.Request, *rds.DescribeDBClusterEndpointsOutput)
-
-	DescribeDBClusterEndpointsPages(*rds.DescribeDBClusterEndpointsInput, func(*rds.DescribeDBClusterEndpointsOutput, bool) bool) error
-	DescribeDBClusterEndpointsPagesWithContext(aws.Context, *rds.DescribeDBClusterEndpointsInput, func(*rds.DescribeDBClusterEndpointsOutput, bool) bool, ...request.Option) error
 
 	DescribeDBClusterParameterGroups(*rds.DescribeDBClusterParameterGroupsInput) (*rds.DescribeDBClusterParameterGroupsOutput, error)
 	DescribeDBClusterParameterGroupsWithContext(aws.Context, *rds.DescribeDBClusterParameterGroupsInput, ...request.Option) (*rds.DescribeDBClusterParameterGroupsOutput, error)
 	DescribeDBClusterParameterGroupsRequest(*rds.DescribeDBClusterParameterGroupsInput) (*request.Request, *rds.DescribeDBClusterParameterGroupsOutput)
 
-	DescribeDBClusterParameterGroupsPages(*rds.DescribeDBClusterParameterGroupsInput, func(*rds.DescribeDBClusterParameterGroupsOutput, bool) bool) error
-	DescribeDBClusterParameterGroupsPagesWithContext(aws.Context, *rds.DescribeDBClusterParameterGroupsInput, func(*rds.DescribeDBClusterParameterGroupsOutput, bool) bool, ...request.Option) error
-
 	DescribeDBClusterParameters(*rds.DescribeDBClusterParametersInput) (*rds.DescribeDBClusterParametersOutput, error)
 	DescribeDBClusterParametersWithContext(aws.Context, *rds.DescribeDBClusterParametersInput, ...request.Option) (*rds.DescribeDBClusterParametersOutput, error)
 	DescribeDBClusterParametersRequest(*rds.DescribeDBClusterParametersInput) (*request.Request, *rds.DescribeDBClusterParametersOutput)
-
-	DescribeDBClusterParametersPages(*rds.DescribeDBClusterParametersInput, func(*rds.DescribeDBClusterParametersOutput, bool) bool) error
-	DescribeDBClusterParametersPagesWithContext(aws.Context, *rds.DescribeDBClusterParametersInput, func(*rds.DescribeDBClusterParametersOutput, bool) bool, ...request.Option) error
 
 	DescribeDBClusterSnapshotAttributes(*rds.DescribeDBClusterSnapshotAttributesInput) (*rds.DescribeDBClusterSnapshotAttributesOutput, error)
 	DescribeDBClusterSnapshotAttributesWithContext(aws.Context, *rds.DescribeDBClusterSnapshotAttributesInput, ...request.Option) (*rds.DescribeDBClusterSnapshotAttributesOutput, error)
@@ -293,9 +274,6 @@ type RDSAPI interface {
 	DescribeDBClusterSnapshots(*rds.DescribeDBClusterSnapshotsInput) (*rds.DescribeDBClusterSnapshotsOutput, error)
 	DescribeDBClusterSnapshotsWithContext(aws.Context, *rds.DescribeDBClusterSnapshotsInput, ...request.Option) (*rds.DescribeDBClusterSnapshotsOutput, error)
 	DescribeDBClusterSnapshotsRequest(*rds.DescribeDBClusterSnapshotsInput) (*request.Request, *rds.DescribeDBClusterSnapshotsOutput)
-
-	DescribeDBClusterSnapshotsPages(*rds.DescribeDBClusterSnapshotsInput, func(*rds.DescribeDBClusterSnapshotsOutput, bool) bool) error
-	DescribeDBClusterSnapshotsPagesWithContext(aws.Context, *rds.DescribeDBClusterSnapshotsInput, func(*rds.DescribeDBClusterSnapshotsOutput, bool) bool, ...request.Option) error
 
 	DescribeDBClusters(*rds.DescribeDBClustersInput) (*rds.DescribeDBClustersOutput, error)
 	DescribeDBClustersWithContext(aws.Context, *rds.DescribeDBClustersInput, ...request.Option) (*rds.DescribeDBClustersOutput, error)
@@ -421,13 +399,6 @@ type RDSAPI interface {
 	DescribeEventsPages(*rds.DescribeEventsInput, func(*rds.DescribeEventsOutput, bool) bool) error
 	DescribeEventsPagesWithContext(aws.Context, *rds.DescribeEventsInput, func(*rds.DescribeEventsOutput, bool) bool, ...request.Option) error
 
-	DescribeExportTasks(*rds.DescribeExportTasksInput) (*rds.DescribeExportTasksOutput, error)
-	DescribeExportTasksWithContext(aws.Context, *rds.DescribeExportTasksInput, ...request.Option) (*rds.DescribeExportTasksOutput, error)
-	DescribeExportTasksRequest(*rds.DescribeExportTasksInput) (*request.Request, *rds.DescribeExportTasksOutput)
-
-	DescribeExportTasksPages(*rds.DescribeExportTasksInput, func(*rds.DescribeExportTasksOutput, bool) bool) error
-	DescribeExportTasksPagesWithContext(aws.Context, *rds.DescribeExportTasksInput, func(*rds.DescribeExportTasksOutput, bool) bool, ...request.Option) error
-
 	DescribeGlobalClusters(*rds.DescribeGlobalClustersInput) (*rds.DescribeGlobalClustersOutput, error)
 	DescribeGlobalClustersWithContext(aws.Context, *rds.DescribeGlobalClustersInput, ...request.Option) (*rds.DescribeGlobalClustersOutput, error)
 	DescribeGlobalClustersRequest(*rds.DescribeGlobalClustersInput) (*request.Request, *rds.DescribeGlobalClustersOutput)
@@ -467,9 +438,6 @@ type RDSAPI interface {
 	DescribePendingMaintenanceActionsWithContext(aws.Context, *rds.DescribePendingMaintenanceActionsInput, ...request.Option) (*rds.DescribePendingMaintenanceActionsOutput, error)
 	DescribePendingMaintenanceActionsRequest(*rds.DescribePendingMaintenanceActionsInput) (*request.Request, *rds.DescribePendingMaintenanceActionsOutput)
 
-	DescribePendingMaintenanceActionsPages(*rds.DescribePendingMaintenanceActionsInput, func(*rds.DescribePendingMaintenanceActionsOutput, bool) bool) error
-	DescribePendingMaintenanceActionsPagesWithContext(aws.Context, *rds.DescribePendingMaintenanceActionsInput, func(*rds.DescribePendingMaintenanceActionsOutput, bool) bool, ...request.Option) error
-
 	DescribeReservedDBInstances(*rds.DescribeReservedDBInstancesInput) (*rds.DescribeReservedDBInstancesOutput, error)
 	DescribeReservedDBInstancesWithContext(aws.Context, *rds.DescribeReservedDBInstancesInput, ...request.Option) (*rds.DescribeReservedDBInstancesOutput, error)
 	DescribeReservedDBInstancesRequest(*rds.DescribeReservedDBInstancesInput) (*request.Request, *rds.DescribeReservedDBInstancesOutput)
@@ -487,9 +455,6 @@ type RDSAPI interface {
 	DescribeSourceRegions(*rds.DescribeSourceRegionsInput) (*rds.DescribeSourceRegionsOutput, error)
 	DescribeSourceRegionsWithContext(aws.Context, *rds.DescribeSourceRegionsInput, ...request.Option) (*rds.DescribeSourceRegionsOutput, error)
 	DescribeSourceRegionsRequest(*rds.DescribeSourceRegionsInput) (*request.Request, *rds.DescribeSourceRegionsOutput)
-
-	DescribeSourceRegionsPages(*rds.DescribeSourceRegionsInput, func(*rds.DescribeSourceRegionsOutput, bool) bool) error
-	DescribeSourceRegionsPagesWithContext(aws.Context, *rds.DescribeSourceRegionsInput, func(*rds.DescribeSourceRegionsOutput, bool) bool, ...request.Option) error
 
 	DescribeValidDBInstanceModifications(*rds.DescribeValidDBInstanceModificationsInput) (*rds.DescribeValidDBInstanceModificationsOutput, error)
 	DescribeValidDBInstanceModificationsWithContext(aws.Context, *rds.DescribeValidDBInstanceModificationsInput, ...request.Option) (*rds.DescribeValidDBInstanceModificationsOutput, error)
@@ -513,10 +478,6 @@ type RDSAPI interface {
 	ListTagsForResource(*rds.ListTagsForResourceInput) (*rds.ListTagsForResourceOutput, error)
 	ListTagsForResourceWithContext(aws.Context, *rds.ListTagsForResourceInput, ...request.Option) (*rds.ListTagsForResourceOutput, error)
 	ListTagsForResourceRequest(*rds.ListTagsForResourceInput) (*request.Request, *rds.ListTagsForResourceOutput)
-
-	ModifyCertificates(*rds.ModifyCertificatesInput) (*rds.ModifyCertificatesOutput, error)
-	ModifyCertificatesWithContext(aws.Context, *rds.ModifyCertificatesInput, ...request.Option) (*rds.ModifyCertificatesOutput, error)
-	ModifyCertificatesRequest(*rds.ModifyCertificatesInput) (*request.Request, *rds.ModifyCertificatesOutput)
 
 	ModifyCurrentDBClusterCapacity(*rds.ModifyCurrentDBClusterCapacityInput) (*rds.ModifyCurrentDBClusterCapacityOutput, error)
 	ModifyCurrentDBClusterCapacityWithContext(aws.Context, *rds.ModifyCurrentDBClusterCapacityInput, ...request.Option) (*rds.ModifyCurrentDBClusterCapacityOutput, error)
@@ -665,10 +626,6 @@ type RDSAPI interface {
 	StartDBInstance(*rds.StartDBInstanceInput) (*rds.StartDBInstanceOutput, error)
 	StartDBInstanceWithContext(aws.Context, *rds.StartDBInstanceInput, ...request.Option) (*rds.StartDBInstanceOutput, error)
 	StartDBInstanceRequest(*rds.StartDBInstanceInput) (*request.Request, *rds.StartDBInstanceOutput)
-
-	StartExportTask(*rds.StartExportTaskInput) (*rds.StartExportTaskOutput, error)
-	StartExportTaskWithContext(aws.Context, *rds.StartExportTaskInput, ...request.Option) (*rds.StartExportTaskOutput, error)
-	StartExportTaskRequest(*rds.StartExportTaskInput) (*request.Request, *rds.StartExportTaskOutput)
 
 	StopActivityStream(*rds.StopActivityStreamInput) (*rds.StopActivityStreamOutput, error)
 	StopActivityStreamWithContext(aws.Context, *rds.StopActivityStreamInput, ...request.Option) (*rds.StopActivityStreamOutput, error)

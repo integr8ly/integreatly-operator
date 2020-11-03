@@ -17,7 +17,6 @@ package completion
 import (
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -26,10 +25,7 @@ func newBashCmd() *cobra.Command {
 		Use:   "bash",
 		Short: "Generate bash completions",
 		RunE: func(cmd *cobra.Command, cmdArgs []string) error {
-			if err := cmd.Root().GenBashCompletion(os.Stdout); err != nil {
-				log.Fatal(err)
-			}
-			return nil
+			return cmd.Root().GenBashCompletion(os.Stdout)
 		},
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -23,7 +22,7 @@ func ResolveName(desc ocispec.Descriptor) (string, bool) {
 
 // tarDirectory walks the directory specified by path, and tar those files with a new
 // path prefix.
-func tarDirectory(root, prefix string, w io.Writer, stripTimes bool) error {
+func tarDirectory(root, prefix string, w io.Writer) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 	if err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -56,12 +55,6 @@ func tarDirectory(root, prefix string, w io.Writer, stripTimes bool) error {
 		header.Gid = 0
 		header.Uname = ""
 		header.Gname = ""
-
-		if stripTimes {
-			header.ModTime = time.Time{}
-			header.AccessTime = time.Time{}
-			header.ChangeTime = time.Time{}
-		}
 
 		// Write file
 		if err := tw.WriteHeader(header); err != nil {

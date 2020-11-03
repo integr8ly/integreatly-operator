@@ -42,6 +42,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
+const OLMNamespace = "olm"
+
 var ErrOLMNotInstalled = errors.New("no existing installation found")
 
 var Scheme = scheme.Scheme
@@ -147,23 +149,19 @@ func (c Client) DoRolloutWait(ctx context.Context, key types.NamespacedName) err
 			}
 			if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
 				onceReplicasUpdated.Do(func() {
-					log.Printf(
-						"  Waiting for Deployment %q to rollout: %d out of %d new replicas have been updated",
-						key, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
+					log.Printf("  Waiting for Deployment %q to rollout: %d out of %d new replicas have been updated", key, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
 				})
 				return false, nil
 			}
 			if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
 				oncePendingTermination.Do(func() {
-					log.Printf("  Waiting for Deployment %q to rollout: %d old replicas are pending termination",
-						key, deployment.Status.Replicas-deployment.Status.UpdatedReplicas)
+					log.Printf("  Waiting for Deployment %q to rollout: %d old replicas are pending termination", key, deployment.Status.Replicas-deployment.Status.UpdatedReplicas)
 				})
 				return false, nil
 			}
 			if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
 				onceNotAvailable.Do(func() {
-					log.Printf("  Waiting for Deployment %q to rollout: %d of %d updated replicas are available",
-						key, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
+					log.Printf("  Waiting for Deployment %q to rollout: %d of %d updated replicas are available", key, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
 				})
 				return false, nil
 			}
@@ -171,8 +169,7 @@ func (c Client) DoRolloutWait(ctx context.Context, key types.NamespacedName) err
 			return true, nil
 		}
 		onceSpecUpdate.Do(func() {
-			log.Printf("Waiting for Deployment %q to rollout: waiting for deployment spec update to be observed",
-				key)
+			log.Printf("  Waiting for Deployment %q to rollout: waiting for deployment spec update to be observed", key)
 		})
 		return false, nil
 	}
@@ -209,27 +206,24 @@ func (c Client) DoCSVWait(ctx context.Context, key types.NamespacedName) error {
 	return wait.PollImmediateUntil(time.Second, csvPhaseSucceeded, ctx.Done())
 }
 
-// GetInstalledVersion returns the OLM version installed in the namespace informed.
-func (c Client) GetInstalledVersion(ctx context.Context, namespace string) (string, error) {
-	opts := client.InNamespace(namespace)
+func (c Client) GetInstalledVersion(ctx context.Context) (string, error) {
+	opts := client.InNamespace(OLMNamespace)
 	csvs := &olmapiv1alpha1.ClusterServiceVersionList{}
 	if err := c.KubeClient.List(ctx, csvs, opts); err != nil {
 		if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			return "", ErrOLMNotInstalled
 		}
-		return "", fmt.Errorf("failed to list CSVs in namespace %q: %v", namespace, err)
+		return "", fmt.Errorf("failed to list CSVs in namespace %q: %v", OLMNamespace, err)
 	}
 	var pkgServerCSV *olmapiv1alpha1.ClusterServiceVersion
-	for i := range csvs.Items {
-		csv := csvs.Items[i]
+	for _, csv := range csvs.Items {
 		name := csv.GetName()
 		// Check old and new name possibilities.
 		if name == pkgServerCSVNewName || strings.HasPrefix(name, pkgServerCSVOldNamePrefix) {
 			// There is more than one version of OLM installed in the cluster,
 			// so we can't resolve the version being used.
 			if pkgServerCSV != nil {
-				return "", fmt.Errorf("more than one OLM (package server) version installed: %q and %q",
-					pkgServerCSV.GetName(), name)
+				return "", fmt.Errorf("more than one OLM (package server) version installed: %q and %q", pkgServerCSV.GetName(), name)
 			}
 			pkgServerCSV = &csv
 		}

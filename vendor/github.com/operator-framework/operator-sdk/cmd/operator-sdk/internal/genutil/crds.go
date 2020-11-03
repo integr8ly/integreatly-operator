@@ -26,13 +26,13 @@ import (
 )
 
 // CRDGen generates CRDs for all APIs in pkg/apis.
-func CRDGen(crdVersion string) error {
+func CRDGen() error {
 	projutil.MustInProjectRoot()
 
 	log.Info("Running CRD generator.")
 
 	cfg := gen.Config{}
-	crd := gencrd.NewCRDGo(cfg, crdVersion)
+	crd := gencrd.NewCRDGo(cfg)
 	if err := crd.Generate(); err != nil {
 		return fmt.Errorf("error generating CRDs from APIs in %s: %w", scaffold.ApisDir, err)
 	}
