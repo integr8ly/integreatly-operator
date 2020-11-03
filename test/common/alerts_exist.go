@@ -306,6 +306,14 @@ var managedApiSpecificRules = []alertsTestRule{
 			"RHOAMApiUsageLevel3ThresholdExceeded",
 		},
 	},
+	{
+		File: NamespacePrefix + "marin3r-rate-limit-soft-limits.yaml",
+		Rules: []string{
+			"RHOAMApiUsageSoftLimitReachedTier1",
+			"RHOAMApiUsageSoftLimitReachedTier2",
+			"RHOAMApiUsageSoftLimitReachedTier3",
+		},
+	},
 }
 
 // Common to all install types

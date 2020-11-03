@@ -26,6 +26,9 @@ route:
     - match:
         alertname: RHOAMApiUsageLevel3ThresholdExceeded
       receiver: SRECustomerBU
+    - match_re:
+        alertname: RHOAMApiUsageSoftLimitReachedTier[0-9]+
+      receiver: BU
 receivers:
   - name: default
     email_configs:
@@ -40,6 +43,10 @@ receivers:
   - name: deadmansswitch
     webhook_configs:
       - url: {{ index .Params "DeadMansSnitchURL" }}
+  - name: BU
+    email_configs:
+      - send_resolved: True
+        to: '{{ index .Params "SMTPToBUAddress" }}'
   - name: BUandCustomer
     email_configs:
       - send_resolved: True
