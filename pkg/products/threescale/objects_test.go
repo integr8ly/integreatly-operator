@@ -678,6 +678,20 @@ func getSuccessfullTestPreReqs(integreatlyOperatorNamespace, threeScaleInstallat
 	systemEnvConfigMap.Namespace = threeScaleInstallationNamepsace
 	oauthClientSecrets.Namespace = integreatlyOperatorNamespace
 	installation.Namespace = integreatlyOperatorNamespace
+	apicastProduction.Namespace = threeScaleInstallationNamepsace
+	apicastStaging.Namespace = threeScaleInstallationNamepsace
+	backendCron.Namespace = threeScaleInstallationNamepsace
+	backendListener.Namespace = threeScaleInstallationNamepsace
+	backendWorker.Namespace = threeScaleInstallationNamepsace
+	systemApp.Namespace = threeScaleInstallationNamepsace
+	systemAppDep.Namespace = threeScaleInstallationNamepsace
+	systemMemcache.Namespace = threeScaleInstallationNamepsace
+	systemSidekiq.Namespace = threeScaleInstallationNamepsace
+	systemSidekiqDep.Namespace = threeScaleInstallationNamepsace
+	systemSphinx.Namespace = threeScaleInstallationNamepsace
+	zync.Namespace = threeScaleInstallationNamepsace
+	zyncDatabase.Namespace = threeScaleInstallationNamepsace
+	zyncQue.Namespace = threeScaleInstallationNamepsace
 
 	return []runtime.Object{
 		s3BucketSecret,

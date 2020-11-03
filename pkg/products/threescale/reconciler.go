@@ -280,7 +280,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcilePodPriority(ctx, serverClient, installation)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
+		events.HandleError(r.recorder, installation, phase, "Failed to pod priority", err)
 		return phase, err
 	}
 
@@ -391,9 +391,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 	}
 
-	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient)
+	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
+		return phase, err
+	}
+
+	// Ensure deployment configs are ready before returning phase complete
+	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs are ready", err)
 		return phase, err
 	}
 
@@ -2021,17 +2028,40 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-
-	ns := global.NamespacePrefix + defaultInstallationNamespace
+func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	for _, name := range threeScaleDeploymentConfigs {
 		deploymentConfig := &appsv1.DeploymentConfig{}
 
-		phase, err := resources.ReconcileZoneTopologySpreadConstraints(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, "app", deploymentConfig)
+		phase, err := resources.ReconcileZoneTopologySpreadConstraints(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: productNamespace}, resources.SelectFromDeploymentConfig, "app", deploymentConfig)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// Deployment configs are rescaled when adding topologySpreadConstraints, PodTopology etc
+// Should check that these deployment configs are ready before returning phase complete in CR
+func (r *Reconciler) ensureDeploymentConfigsReady(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	for _, name := range threeScaleDeploymentConfigs {
+		deploymentConfig := &appsv1.DeploymentConfig{}
+
+		err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: name, Namespace: productNamespace}, deploymentConfig)
+
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+
+		for _, condition := range deploymentConfig.Status.Conditions {
+			if condition.Status != corev1.ConditionTrue || (deploymentConfig.Status.Replicas != deploymentConfig.Status.AvailableReplicas ||
+				deploymentConfig.Status.ReadyReplicas != deploymentConfig.Status.UpdatedReplicas) {
+				logrus.Infof("waiting for 3scale deployment config %s to become ready", name)
+				return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("waiting for 3scale deployment config %s to become available", name)
+			}
+		}
+	}
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
