@@ -92,7 +92,7 @@ VERSION=$(echo "$SEMVER" | awk -F - '{print $1}')
 if [[ $(uname) = Darwin ]]; then
   SED_INLINE=(sed -i '')
 else
-  SED_INLINE=(sed -i)  
+  SED_INLINE=(sed -i)
 fi
 
 # We have a new version so generate the csv
