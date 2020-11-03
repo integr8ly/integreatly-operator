@@ -1,11 +1,13 @@
 ---
 components:
   - product-apicurito
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.8.0
 estimate: 1h
-targets:
-  - 2.8.0
 ---
 
 # G03 - Verify API development walkthrough

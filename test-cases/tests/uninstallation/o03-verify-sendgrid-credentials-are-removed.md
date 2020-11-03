@@ -1,11 +1,7 @@
 ---
 automation:
   - INTLY-9992
-environments:
-  - osd-fresh-install
-estimate: 30m
 tags:
-  - per-release
   - automated
 ---
 

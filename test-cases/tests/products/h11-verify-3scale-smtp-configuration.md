@@ -1,10 +1,6 @@
 ---
 tags:
   - automated
-components:
-  - product-3scale
-environments:
-  - osd-post-upgrade
 estimate: 15m
 ---
 

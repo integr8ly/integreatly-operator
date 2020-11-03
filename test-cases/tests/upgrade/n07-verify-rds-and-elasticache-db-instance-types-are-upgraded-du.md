@@ -1,8 +1,10 @@
 ---
-environments:
-  - osd-post-upgrade
-targets:
-  - 2.5.0
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.5.0
 ---
 
 # N07 - Verify RDS and Elasticache DB instance types are upgraded during maintenance

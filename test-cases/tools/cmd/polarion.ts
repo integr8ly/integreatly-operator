@@ -1,6 +1,6 @@
 import { Argv, CommandModule } from "yargs";
 import { assertEpic, Jira } from "../lib/jira";
-import { uploadToPolarion } from "../lib/polarion";
+import { uploadToPolarion, extractPolarionTestId } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
 import { loadTestRuns } from "../lib/test-run";
 import { logger } from "../lib/winston";
@@ -8,6 +8,7 @@ import { logger } from "../lib/winston";
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
 
 interface TestCaseArgs {
+    product: string;
     polarionUsername: string;
     polarionPassword: string;
     dumpOnly: boolean;
@@ -17,6 +18,11 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
     command: "testcase",
     describe: "Upload all test cases to Polarion",
     builder: {
+        product: {
+            describe: "A product name (rhmi/rhoam)",
+            type: "string",
+            demand: true,
+        },
         polarionUsername: {
             describe: "Jira username or set POLARION_USERNAME",
             default: process.env.POLARION_USERNAME,
@@ -35,15 +41,15 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
         },
     },
     handler: async (args) => {
-        const tests = loadTestCases();
+        const tests = loadTestCases(args.product);
 
         // Polarion Test Case Importer: https://mojo.redhat.com/docs/DOC-1075945
         //
         // prepare the testcases xml document
         const testcases = tests.map((t) => ({
-            $: { id: t.id },
+            $: { id: extractPolarionTestId(t.id) },
             title: `${t.id} - ${t.category} - ${t.title}`,
-            description: t.file.link,
+            description: t.url,
             "custom-fields": [
                 {
                     "custom-field": [
@@ -159,7 +165,10 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                     $: { name: r.title },
                     properties: {
                         property: {
-                            $: { name: "polarion-testcase-id", value: r.id },
+                            $: {
+                                name: "polarion-testcase-id",
+                                value: extractPolarionTestId(r.id),
+                            },
                         },
                     },
                 };

@@ -26,6 +26,13 @@ var (
 		},
 		{
 			[]TestCase{
+				{"E09 - Verify customer dashboards exist", TestIntegreatlyCustomerDashboardsExist},
+				{"E10 - Verify Customer Grafana Route is accessible", TestCustomerGrafanaExternalRouteAccessible},
+			},
+			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManagedApi},
+		},
+		{
+			[]TestCase{
 				{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
 				{"Test RHMI installation CR metric", TestRHMICRMetrics},
 				{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
@@ -49,9 +56,9 @@ var (
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 				{"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
-				{"E01 - Verify Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
+				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
-				{"E03 - Verify dashboards exist", TestIntegreatlyDashboardsExist},
+				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
 				{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
@@ -64,6 +71,7 @@ var (
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
+				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
 			[]v1alpha1.InstallationType{v1alpha1.InstallationTypeManaged, v1alpha1.InstallationTypeManagedApi},
 		},

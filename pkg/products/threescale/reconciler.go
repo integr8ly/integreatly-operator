@@ -27,6 +27,7 @@ import (
 	structpb "google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
@@ -188,7 +189,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			return phase, err
+		}
+
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -406,7 +412,7 @@ func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sc
 		ns := global.NamespacePrefix + defaultInstallationNamespace
 		for _, name := range threeScaleDeploymentConfigs {
 			deploymentConfig := &appsv1.DeploymentConfig{}
-			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig)
+			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
 			if err != nil {
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
@@ -915,6 +921,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		Spec: threescalev1.APIManagerSpec{
 			HighAvailability:    &threescalev1.HighAvailabilitySpec{},
 			PodDisruptionBudget: &threescalev1.PodDisruptionBudgetSpec{},
+			Monitoring:          &threescalev1.MonitoringSpec{},
 			APIManagerCommonSpec: threescalev1.APIManagerCommonSpec{
 				ResourceRequirementsEnabled: &resourceRequirements,
 			},
@@ -951,6 +958,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.APIManagerCommonSpec.WildcardDomain = r.installation.Spec.RoutingSubdomain
 		apim.Spec.System.FileStorageSpec = fss
 		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
+		apim.Spec.Monitoring = &threescalev1.MonitoringSpec{Enabled: false}
 
 		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
 			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas

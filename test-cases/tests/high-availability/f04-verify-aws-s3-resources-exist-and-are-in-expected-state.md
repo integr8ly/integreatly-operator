@@ -3,12 +3,22 @@ automation:
   - INTLY-6654
 components:
   - product-3scale
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.8.0
+      - 2.7.0
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 15m
-targets:
-  - 2.8.0
-  - 2.7.0
+tags:
+  - automated
 ---
 
 # F04 - Verify AWS s3 resources exist and are in expected state

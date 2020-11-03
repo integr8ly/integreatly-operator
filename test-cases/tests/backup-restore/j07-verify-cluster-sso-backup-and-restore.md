@@ -1,8 +1,19 @@
 ---
 components:
   - product-sso
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
+  - name: rhoam
+    environments:
+      - osd-post-upgrade
+      - osd-fresh-install
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 1h
 tags:
   - destructive

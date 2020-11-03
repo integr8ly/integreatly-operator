@@ -1,14 +1,16 @@
 ---
 components:
   - product-amq
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.4.0
+      - 2.8.0
 estimate: 2h
 tags:
   - destructive
-targets:
-  - 2.4.0
-  - 2.8.0
 ---
 
 # J10 - Verify AMQ backup and restore

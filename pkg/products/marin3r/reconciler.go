@@ -9,6 +9,8 @@ import (
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
+	grafana "github.com/integr8ly/integreatly-operator/pkg/products/grafana"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +26,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -42,6 +45,12 @@ const (
 	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
+)
+
+var (
+	enabledNamespaces = []string{
+		global.NamespacePrefix + "3scale",
+	}
 )
 
 type Reconciler struct {
@@ -105,7 +114,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, client, productNamespace)
+		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, client, enabledNamespaces...)
+		if err != nil || phase != integreatlyv1alpha1.PhaseFailed {
+			return phase, err
+		}
+
+		if err := r.deleteDiscoveryService(ctx, client); err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
+		}
+
+		phase, err = resources.RemoveNamespace(ctx, installation, client, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
@@ -113,10 +131,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
-		}
-
-		if err := r.deleteDiscoveryService(ctx, client); err != nil {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
@@ -159,7 +173,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	logrus.Infof("about to start reconciling the discovery service")
-	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace, installation.Spec.NamespacePrefix)
+	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
 		return phase, err
@@ -229,7 +243,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 }
 
 func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	alertReconciler, err := r.newAlertsReconciler()
+
+	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
+	if err != nil {
+		logrus.Errorf("failed to get Grafana console URL %w", err)
+	}
+
+	alertReconciler, err := r.newAlertsReconciler(granafaConsoleURL)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
@@ -304,10 +324,7 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 	return phase, nil
 }
 
-func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string, namespacePrefix string) (integreatlyv1alpha1.StatusPhase, error) {
-	enabledNamespaces := []string{
-		namespacePrefix + "3scale",
-	}
+func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	discoveryService := &marin3r.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{

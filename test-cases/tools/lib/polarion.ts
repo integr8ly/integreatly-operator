@@ -15,7 +15,7 @@ const POLARION_IMPORTER_URL =
  * @param {string} username
  * @param {string} password
  */
-export async function uploadToPolarion(
+async function uploadToPolarion(
     type: "xunit" | "testcase",
     document: object,
     username: string,
@@ -84,3 +84,17 @@ export async function uploadToPolarion(
         }
     }
 }
+
+// Extract the 3 characters long Test ID
+// to keep the backward compatibility
+// with existing tests in Polarion
+function extractPolarionTestId(id: string): string {
+    const found = /[A-Z][0-9]{2}/.exec(id);
+    if (found) {
+        return found[0];
+    } else {
+        throw new Error(`cannot extract the polarion test ID from '${id}'`);
+    }
+}
+
+export { uploadToPolarion, extractPolarionTestId };

@@ -1,6 +1,8 @@
 ---
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
 estimate: 15m
 tags:
   - per-release

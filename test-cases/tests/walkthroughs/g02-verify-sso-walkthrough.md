@@ -1,11 +1,13 @@
 ---
 components:
   - product-sso
-environments:
-  - osd-fresh-install
+products:
+  - name: rhmi
+    environments:
+      - osd-fresh-install
+    targets:
+      - 2.6.0
 estimate: 30m
-targets:
-  - 2.6.0
 ---
 
 # G02 - Verify SSO walkthrough

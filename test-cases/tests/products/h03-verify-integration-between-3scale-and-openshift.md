@@ -1,13 +1,8 @@
 ---
 automation:
   - INTLY-5441
-components:
-  - product-3scale
-environments:
-  - osd-post-upgrade
-estimate: 15m
-targets:
-  - 2.7.0
+tags:
+  - automated
 ---
 
 # H03 - Verify integration between 3Scale and OpenShift

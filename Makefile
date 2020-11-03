@@ -60,7 +60,7 @@ export BU_ALERTING_EMAIL_ADDRESS ?= noreply-test@rhmi-redhat.com
 
 ifeq ($(INSTALLATION_TYPE), managed)
 	PROJECT=integreatly-operator
-	TAG ?= RHMI_TAG
+	TAG ?= $(RHMI_TAG)
 	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
 	NAMESPACE_PREFIX ?= redhat-rhmi-
 	APPLICATION_REPO ?= integreatly
@@ -70,7 +70,7 @@ endif
 
 ifeq ($(INSTALLATION_TYPE), managed-api)
 	PROJECT=managed-api-service
-	TAG ?= RHOAM_TAG
+	TAG ?= $(RHOAM_TAG)
 	OPERATOR_IMAGE=$(REG)/$(ORG)/$(PROJECT):v$(TAG)
 	NAMESPACE_PREFIX ?= redhat-rhmi-
 	APPLICATION_REPO ?= managed-api-service

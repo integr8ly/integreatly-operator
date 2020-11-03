@@ -1,7 +1,11 @@
 ---
-environments:
-  - external
-estimate: 1h
+products:
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+    targets:
+      - 0.2.0
+estimate: 2h
 tags:
   - manual-selection
 ---
@@ -56,7 +60,6 @@ services remain available.
    mw-collab-multi-45qpn-worker-eu-west-1a   3         3         3       3           94m
    mw-collab-multi-45qpn-worker-eu-west-1b   3         3         3       3           94m
    mw-collab-multi-45qpn-worker-eu-west-1c   3         3         3       3           94m
-
    # run the script to disable the AZ e.g.
    ./scripts/disableAz.sh true eu-west-1a
    ```
@@ -73,7 +76,6 @@ services remain available.
    | -------- | ----------------- |
    | keycloak-0 | eu-west-1c |
    | keycloak-1 | eu-west-1b |
-
    ```
 
 6. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RMOAN components are accessible

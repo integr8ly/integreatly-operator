@@ -18,10 +18,10 @@ import (
 const (
 	ThreescaleVersionAnnotation = "apps.3scale.net/apimanager-threescale-version"
 	OperatorVersionAnnotation   = "apps.3scale.net/threescale-operator-version"
+	Default3scaleAppLabel       = "3scale-api-management"
 )
 
 const (
-	defaultAppLabel                    = "3scale-api-management"
 	defaultTenantName                  = "3scale"
 	defaultImageStreamImportInsecure   = false
 	defaultResourceRequirementsEnabled = true
@@ -47,16 +47,23 @@ type APIManagerSpec struct {
 	// +optional
 	Zync *ZyncSpec `json:"zync,omitempty"`
 	// +optional
-	HighAvailability    *HighAvailabilitySpec    `json:"highAvailability,omitempty"`
+	HighAvailability *HighAvailabilitySpec `json:"highAvailability,omitempty"`
 	// +optional
 	PodDisruptionBudget *PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty"`
+	// +optional
+	Monitoring *MonitoringSpec `json:"monitoring,omitempty"`
 }
 
 // APIManagerStatus defines the observed state of APIManager
 // +k8s:openapi-gen=true
 type APIManagerStatus struct {
-	Conditions  []APIManagerCondition `json:"conditions,omitempty" protobuf:"bytes,4,rep,name=conditions"`
-	Deployments olm.DeploymentStatus  `json:"deployments"`
+	Conditions []APIManagerCondition `json:"conditions,omitempty" protobuf:"bytes,4,rep,name=conditions"`
+
+	// APIManager Deployment Configs
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors.displayName="Deployments"
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors.x-descriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
+	Deployments olm.DeploymentStatus `json:"deployments"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -64,6 +71,13 @@ type APIManagerStatus struct {
 // APIManager is the Schema for the apimanagers API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:path=apimanagers,scope=Namespaced
+// +operator-sdk:gen-csv:customresourcedefinitions.displayName="APIManager"
+// +operator-sdk:gen-csv:customresourcedefinitions.resources="DeploymentConfig,apps.openshift.io/v1"
+// +operator-sdk:gen-csv:customresourcedefinitions.resources="PersistentVolumeClaim,v1"
+// +operator-sdk:gen-csv:customresourcedefinitions.resources="Service,v1"
+// +operator-sdk:gen-csv:customresourcedefinitions.resources="Route,route.openshift.io/v1"
+// +operator-sdk:gen-csv:customresourcedefinitions.resources="ImageStream,image.openshift.io/v1"
 type APIManager struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -112,6 +126,10 @@ type APIManagerList struct {
 }
 
 type APIManagerCommonSpec struct {
+	// Wildcard domain as configured in the API Manager object
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors.displayName="Wildcard Domain"
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors.x-descriptors="urn:alm:descriptor:com.tectonic.ui:label"
 	WildcardDomain string `json:"wildcardDomain"`
 	// +optional
 	AppLabel *string `json:"appLabel,omitempty"`
@@ -143,11 +161,19 @@ type ApicastSpec struct {
 type ApicastProductionSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type ApicastStagingSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type BackendSpec struct {
@@ -156,6 +182,12 @@ type BackendSpec struct {
 	// +optional
 	RedisImage *string `json:"redisImage,omitempty"`
 	// +optional
+	RedisPersistentVolumeClaimSpec *BackendRedisPersistentVolumeClaimSpec `json:"redisPersistentVolumeClaim,omitempty"`
+	// +optional
+	RedisAffinity *v1.Affinity `json:"redisAffinity,omitempty"`
+	// +optional
+	RedisTolerations []v1.Toleration `json:"redisTolerations,omitempty"`
+	// +optional
 	ListenerSpec *BackendListenerSpec `json:"listenerSpec,omitempty"`
 	// +optional
 	WorkerSpec *BackendWorkerSpec `json:"workerSpec,omitempty"`
@@ -163,19 +195,36 @@ type BackendSpec struct {
 	CronSpec *BackendCronSpec `json:"cronSpec,omitempty"`
 }
 
+type BackendRedisPersistentVolumeClaimSpec struct {
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
+}
+
 type BackendListenerSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type BackendWorkerSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type BackendCronSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type SystemSpec struct {
@@ -186,7 +235,19 @@ type SystemSpec struct {
 	MemcachedImage *string `json:"memcachedImage,omitempty"`
 
 	// +optional
+	MemcachedAffinity *v1.Affinity `json:"memcachedAffinity,omitempty"`
+	// +optional
+	MemcachedTolerations []v1.Toleration `json:"memcachedTolerations,omitempty"`
+
+	// +optional
 	RedisImage *string `json:"redisImage,omitempty"`
+
+	// +optional
+	RedisPersistentVolumeClaimSpec *SystemRedisPersistentVolumeClaimSpec `json:"redisPersistentVolumeClaim,omitempty"`
+	// +optional
+	RedisAffinity *v1.Affinity `json:"redisAffinity,omitempty"`
+	// +optional
+	RedisTolerations []v1.Toleration `json:"redisTolerations,omitempty"`
 
 	// TODO should this field be optional? We have different approaches in Kubernetes.
 	// For example, in v1.Volume it is optional and there's an implied behaviour
@@ -196,7 +257,6 @@ type SystemSpec struct {
 	// something)
 
 	// +optional
-
 	FileStorageSpec *SystemFileStorageSpec `json:"fileStorage,omitempty"`
 
 	// TODO should union fields be optional?
@@ -204,18 +264,37 @@ type SystemSpec struct {
 	// +optional
 	DatabaseSpec *SystemDatabaseSpec `json:"database,omitempty"`
 
-	AppSpec     *SystemAppSpec     `json:"appSpec,omitempty"`
+	// +optional
+	AppSpec *SystemAppSpec `json:"appSpec,omitempty"`
+	// +optional
 	SidekiqSpec *SystemSidekiqSpec `json:"sidekiqSpec,omitempty"`
+	// +optional
+	SphinxSpec *SystemSphinxSpec `json:"sphinxSpec,omitempty"`
 }
 
 type SystemAppSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type SystemSidekiqSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+}
+
+type SystemSphinxSpec struct {
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type SystemFileStorageSpec struct {
@@ -227,6 +306,11 @@ type SystemFileStorageSpec struct {
 	DeprecatedS3 *DeprecatedSystemS3Spec `json:"amazonSimpleStorageService,omitempty"`
 	// +optional
 	S3 *SystemS3Spec `json:"simpleStorageService,omitempty"`
+}
+
+type SystemRedisPersistentVolumeClaimSpec struct {
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
 }
 
 type SystemPVCSpec struct {
@@ -258,11 +342,39 @@ type SystemDatabaseSpec struct {
 type SystemMySQLSpec struct {
 	// +optional
 	Image *string `json:"image,omitempty"`
+
+	// +optional
+	PersistentVolumeClaimSpec *SystemMySQLPVCSpec `json:"persistentVolumeClaim,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type SystemPostgreSQLSpec struct {
 	// +optional
 	Image *string `json:"image,omitempty"`
+
+	// +optional
+	PersistentVolumeClaimSpec *SystemPostgreSQLPVCSpec `json:"persistentVolumeClaim,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+}
+
+type SystemMySQLPVCSpec struct {
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
+}
+
+type SystemPostgreSQLPVCSpec struct {
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type ZyncSpec struct {
@@ -270,6 +382,11 @@ type ZyncSpec struct {
 	Image *string `json:"image,omitempty"`
 	// +optional
 	PostgreSQLImage *string `json:"postgreSQLImage,omitempty"`
+
+	// +optional
+	DatabaseAffinity *v1.Affinity `json:"databaseAffinity,omitempty"`
+	// +optional
+	DatabaseTolerations []v1.Toleration `json:"databaseTolerations,omitempty"`
 
 	// +optional
 	AppSpec *ZyncAppSpec `json:"appSpec,omitempty"`
@@ -281,11 +398,19 @@ type ZyncSpec struct {
 type ZyncAppSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type ZyncQueSpec struct {
 	// +optional
 	Replicas *int64 `json:"replicas,omitempty"`
+	// +optional
+	Affinity *v1.Affinity `json:"affinity,omitempty"`
+	// +optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type HighAvailabilitySpec struct {
@@ -293,6 +418,10 @@ type HighAvailabilitySpec struct {
 }
 
 type PodDisruptionBudgetSpec struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type MonitoringSpec struct {
 	Enabled bool `json:"enabled,omitempty"`
 }
 
@@ -454,7 +583,7 @@ func (apimanager *APIManager) setAPIManagerCommonSpecDefaults() bool {
 	changed := false
 	spec := &apimanager.Spec
 
-	tmpDefaultAppLabel := defaultAppLabel
+	tmpDefaultAppLabel := Default3scaleAppLabel
 	tmpDefaultTenantName := defaultTenantName
 	tmpDefaultImageStreamTagImportInsecure := defaultImageStreamImportInsecure
 	tmpDefaultResourceRequirementsEnabled := defaultResourceRequirementsEnabled
@@ -513,6 +642,11 @@ func (apimanager *APIManager) setSystemSpecDefaults() (bool, error) {
 
 	if spec.System.SidekiqSpec == nil {
 		spec.System.SidekiqSpec = &SystemSidekiqSpec{}
+		changed = true
+	}
+
+	if spec.System.SphinxSpec == nil {
+		spec.System.SphinxSpec = &SystemSphinxSpec{}
 		changed = true
 	}
 
@@ -579,6 +713,7 @@ func (apimanager *APIManager) setZyncDefaults() bool {
 
 	if spec.Zync.QueSpec == nil {
 		spec.Zync.QueSpec = &ZyncQueSpec{}
+		changed = true
 	}
 
 	if spec.Zync.AppSpec.Replicas == nil {
@@ -600,4 +735,20 @@ func (apimanager *APIManager) IsExternalDatabaseEnabled() bool {
 
 func (apimanager *APIManager) IsPDBEnabled() bool {
 	return apimanager.Spec.PodDisruptionBudget != nil && apimanager.Spec.PodDisruptionBudget.Enabled
+}
+
+func (apimanager *APIManager) IsSystemPostgreSQLEnabled() bool {
+	return !apimanager.IsExternalDatabaseEnabled() &&
+		apimanager.Spec.System.DatabaseSpec != nil &&
+		apimanager.Spec.System.DatabaseSpec.PostgreSQL != nil
+}
+
+func (apimanager *APIManager) IsSystemMysqlEnabled() bool {
+	return !apimanager.IsExternalDatabaseEnabled() &&
+		apimanager.Spec.System.DatabaseSpec != nil &&
+		apimanager.Spec.System.DatabaseSpec.MySQL != nil
+}
+
+func (apimanager *APIManager) IsMonitoringEnabled() bool {
+	return apimanager.Spec.Monitoring != nil && apimanager.Spec.Monitoring.Enabled
 }

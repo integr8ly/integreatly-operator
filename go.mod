@@ -3,7 +3,7 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
-	github.com/3scale/3scale-operator v0.5.0
+	github.com/3scale/3scale-operator v0.2.1-0.20200730110533-c3b57b704d73
 	github.com/3scale/marin3r v0.5.1
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
 	github.com/Masterminds/semver v1.5.0
@@ -30,7 +30,7 @@ require (
 	github.com/integr8ly/grafana-operator/v3 v3.4.0
 	github.com/integr8ly/keycloak-client v0.1.2
 	github.com/jstemmer/go-junit-report v0.9.1
-	github.com/keycloak/keycloak-operator v0.0.0-20200518131634-204a6a8d6ee0
+	github.com/keycloak/keycloak-operator v0.0.0-20201021091505-b576fa07b78a
 	github.com/matryer/moq v0.1.3
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect

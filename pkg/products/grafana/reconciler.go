@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
@@ -34,6 +35,7 @@ const (
 	manifestPackage              = "integreatly-grafana"
 	defaultGrafanaName           = "grafana"
 	defaultRoutename             = defaultGrafanaName + "-route"
+	rateLimitDashBoardName       = "rate-limit"
 )
 
 type Reconciler struct {
@@ -143,6 +145,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana dashboard", err)
+		return phase, err
+	}
+
 	if string(r.Config.GetProductVersion()) != string(integreatlyv1alpha1.VersionGrafana) {
 		r.Config.SetProductVersion(string(integreatlyv1alpha1.VersionGrafana))
 		r.ConfigManager.WriteConfig(r.Config)
@@ -185,6 +193,34 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (integreatlyv1alpha1.StatusPhase, error) {
+
+	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dashboard,
+			Namespace: r.Config.GetOperatorNamespace(),
+		},
+	}
+
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, grafanaDB, func() error {
+		grafanaDB.Labels = map[string]string{
+			"monitoring-key": "customer",
+		}
+		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
+			Json: CustomerMonitoringGrafanaRateLimitingJSON,
+			Name: rateLimitDashBoardName,
+		}
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if opRes != controllerutil.OperationResultNone {
+		r.logger.Infof("operation result of creating/updating grafana dashboard %v was %v", grafanaDB.Name, opRes)
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
 func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	r.logger.Info("reconciling grafana custom resource")
 
@@ -198,7 +234,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "grafana",
 			Namespace: r.Config.GetOperatorNamespace(),
-		}, Spec: grafanav1alpha1.GrafanaSpec{
+		},
+	}
+
+	status, err := controllerutil.CreateOrUpdate(ctx, client, grafana, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(grafana, r.installation)
+		grafana.Spec = grafanav1alpha1.GrafanaSpec{
 			Config: grafanav1alpha1.GrafanaConfig{
 				Log: &grafanav1alpha1.GrafanaConfigLog{
 					Mode:  "console",
@@ -275,12 +316,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 			ServiceAccount: &grafanav1alpha1.GrafanaServiceAccount{
 				Annotations: serviceAccountAnnotations,
 			},
-		},
-	}
-
-	status, err := controllerutil.CreateOrUpdate(ctx, client, grafana, func() error {
-		owner.AddIntegreatlyOwnerAnnotations(grafana, r.installation)
-
+			DashboardLabelSelector: []*metav1.LabelSelector{
+				{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "monitoring-key",
+							Operator: "In",
+							Values:   []string{"customer"},
+						},
+					},
+				},
+			},
+		}
 		return nil
 	})
 
@@ -416,4 +463,22 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.C
 	}
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (string, error) {
+
+	grafanaConsoleURL := installation.Status.Stages[integreatlyv1alpha1.ProductsStage].Products[integreatlyv1alpha1.ProductGrafana].Host
+	if grafanaConsoleURL != "" {
+		return grafanaConsoleURL, nil
+	}
+
+	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
+	grafanaRoute := &routev1.Route{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: ns}, grafanaRoute)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get route for Grafana: %w", err)
+	}
+
+	return "https://" + grafanaRoute.Spec.Host, nil
 }

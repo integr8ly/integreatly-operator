@@ -1,8 +1,14 @@
 ---
 automation:
   - INTLY-7413
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+      - osd-post-upgrade
 estimate: 15m
 tags:
   - per-build
@@ -12,7 +18,7 @@ tags:
 
 ## Prerequisites
 
-- access to `integreatly-notifications@redhat.com` email list
+- access to `cloud-services-qe-reporting@redhat.com` email list
 - workload webapp should be running on cluster and have been deployed shortly after cluster was provisioned
 
 ## Description
@@ -27,11 +33,10 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 1. Login via `oc` as **kubeadmin**
 
-2. Confirm the e-mail address where the alert notifications are sent, it should be `cloud-services-qe-reporting@redhat.com`. If this test is being carried out on cluster post upgrade the e-mail address will be an Intgreatly email account. Access can be granted by reaching out to a member of the Integreatly Engineering team.
+2. Confirm the e-mail address where the alert notifications are sent, it should be `cloud-services-qe-reporting@redhat.com`.
 
    ```bash
-   CSV_NAME=$(oc -n redhat-rhmi-operator get csv | grep integreatly-operator | awk '{print $1}')
-   oc -n redhat-rhmi-operator get csv $CSV_NAME -o json | jq '.spec.install.spec.deployments[] | select(.name=="rhmi-operator") | .spec.template.spec.containers[] | select(.name=="rhmi-operator") | .env[] | select(.name=="ALERTING_EMAIL_ADDRESS")'
+   oc get rhmi rhoam -n redhat-managed-api-operator -o json | jq -r .spec.alertingEmailAddress
    ```
 
 3. Check the inbox of the e-mail address and check if there are any alert notifications that are not related to testing. This can be acheived by subscribing to cloud-services-qe-reporting@redhat.com here: https://post-office.corp.redhat.com/mailman/listinfo/cloud-services-qe-reporting or alternatively you can view the archives without subscription here: http://post-office.corp.redhat.com/archives/cloud-services-qe-reporting/

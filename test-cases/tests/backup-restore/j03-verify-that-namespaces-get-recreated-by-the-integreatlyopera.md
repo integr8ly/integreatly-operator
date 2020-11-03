@@ -1,11 +1,20 @@
 ---
-environments:
-  - osd-post-upgrade
+products:
+  - name: rhmi
+    environments:
+      - osd-post-upgrade
+    targets:
+      - 2.6.0
+  - name: rhoam
+    environments:
+      - osd-fresh-install
+      - osd-post-upgrade
+    targets:
+      - 0.1.0
+      - 0.2.0
 estimate: 120m
 tags:
   - destructive
-targets:
-  - 2.6.0
 ---
 
 # J03 - Verify that namespaces get recreated by the integreatly-operator if deleted
