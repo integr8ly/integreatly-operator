@@ -1,15 +1,5 @@
 # Integreatly Operator
 
----
-**NOTE**
-
-When working on `RHOAM`, all `make` commands should be prefixed with `INSTALLATION_TYPE=managed-api`.
-This will configure any variables that may be required.
-
-The default `INSTALLATION_TYPE` is `managed` which configures variables for use with `RHMI`
-
----
-
 A Kubernetes Operator based on the Operator SDK for installing and reconciling Integreatly products.
 
 ### Project status: _alpha_
