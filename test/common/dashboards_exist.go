@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"encoding/json"
+	"fmt"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"strings"
 	"testing"
@@ -41,6 +42,27 @@ var commonExpectedDashboards = []dashboardsTestRule{
 	},
 	{
 		Title: "Critical SLO summary",
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / Backend", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / Apicast Services", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / Kubernetes / Compute Resources / Namespace (Pods)", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / Kubernetes / Compute Resources / Pod", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / System", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale / 3scale / Zync", NamespacePrefix),
+	},
+	{
+		Title: fmt.Sprintf("%s3scale/ 3scale / Apicast", NamespacePrefix),
 	},
 }
 

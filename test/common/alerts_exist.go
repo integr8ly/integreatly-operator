@@ -481,6 +481,63 @@ var commonExpectedRules = []alertsTestRule{
 			"SendgridSmtpSecretExists",
 		},
 	},
+	{
+		File: fmt.Sprintf("%s3scale-zync-que.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescaleZyncQueJobDown",
+			"ThreescaleZyncQueScheduledJobCountHigh",
+			"ThreescaleZyncQueFailedJobCountHigh",
+			"ThreescaleZyncQueReadyJobCountHigh",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-zync.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescaleZyncJobDown",
+			"ThreescaleZync5XXRequestsHigh",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-apicast.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescaleApicastJobDown",
+			"ThreescaleApicastRequestTime",
+			"ThreescaleApicastHttp4xxErrorRate",
+			"ThreescaleApicastLatencyHigh",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-threescale-kube-state-metrics.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescalePodCrashLooping",
+			"ThreescalePodNotReady",
+			"ThreescaleReplicationControllerReplicasMismatch",
+			"ThreescaleContainerWaiting",
+			"ThreescaleContainerCPUHigh",
+			"ThreescaleContainerMemoryHigh",
+			"ThreescaleContainerCPUThrottlingHigh",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-system-sidekiq.yaml", NamespacePrefix),
+		Rules: []string{
+			"SystemSidekiqZyncRuntime",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-backend-listener.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescaleBackendListener5XXRequestsHigh",
+			"ThreescaleBackendListenerJobDown",
+		},
+	},
+	{
+		File: fmt.Sprintf("%s3scale-backend-worker.yaml", NamespacePrefix),
+		Rules: []string{
+			"ThreescaleBackendWorkerJobsCountRunningHigh",
+			"ThreescaleBackendWorkerJobDown",
+		},
+	},
 }
 
 // common aws rules applicable to all install types
