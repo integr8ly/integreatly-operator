@@ -80,7 +80,7 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 					Alert: alertConfig.RuleName,
 					Annotations: map[string]string{
 						"message": fmt.Sprintf(
-							"3Scale API usage is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
+							"RHOAM API usage is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
 							alertConfig.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
 						),
 						"grafanaConsole": string(grafanaConsoleURL),

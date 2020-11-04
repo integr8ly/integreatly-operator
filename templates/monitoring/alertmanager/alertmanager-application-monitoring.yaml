@@ -18,13 +18,13 @@ route:
       repeat_interval: 5m
       receiver: deadmansswitch
     - match:
-        alertname: Level1ThreeScaleApiUsageThresholdExceeded
+        alertname: RHOAMApiUsageLevel1ThresholdExceeded
       receiver: BUandCustomer
     - match:
-        alertname: Level2ThreeScaleApiUsageThresholdExceeded
+        alertname: RHOAMApiUsageLevel2ThresholdExceeded
       receiver: BUandCustomer
     - match:
-        alertname: Level3ThreeScaleApiUsageThresholdExceeded
+        alertname: RHOAMApiUsageLevel3ThresholdExceeded
       receiver: SRECustomerBU
 receivers:
   - name: default
