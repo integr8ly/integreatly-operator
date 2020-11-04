@@ -3,7 +3,6 @@ import { assertEpic, Jira } from "../lib/jira";
 import { uploadToPolarion, extractPolarionTestId } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
 import { loadTestRuns } from "../lib/test-run";
-import { logger } from "../lib/winston";
 
 const POLARION_PROJECT_ID = "RedHatManagedIntegration";
 
@@ -109,6 +108,7 @@ interface TestRunArgs {
     jiraUsername: string;
     jiraPassword: string;
     epic: string;
+    template: string;
     dumpOnly: boolean;
 }
 
@@ -142,6 +142,11 @@ const testRun: CommandModule<{}, TestRunArgs> = {
         },
         epic: {
             describe: "the key of the epic containing all manual tests",
+            type: "string",
+            demand: true,
+        },
+        template: {
+            describe: "the Polarion template id for the test run",
             type: "string",
             demand: true,
         },
@@ -188,6 +193,8 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                 return testcase;
             });
 
+        console.log(`info: uploading ${testcases.length} tests`);
+
         const document = {
             testsuites: {
                 properties: {
@@ -202,6 +209,12 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                             $: {
                                 name: "polarion-testrun-title",
                                 value: epic.fields.summary,
+                            },
+                        },
+                        {
+                            $: {
+                                name: "polarion-testrun-template-id",
+                                value: args.template,
                             },
                         },
                         {
@@ -225,10 +238,6 @@ const testRun: CommandModule<{}, TestRunArgs> = {
             args.polarionUsername,
             args.polarionPassword,
             args.dumpOnly
-        );
-
-        logger.warn(
-            "Remember to set the Planned In version to the created Test Run"
         );
     },
 };
