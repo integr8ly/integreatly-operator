@@ -3,9 +3,11 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"os"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -219,9 +221,17 @@ func createService(ctx context.Context, client k8sclient.Client, owner ownerutil
 		}
 		service.Annotations[caServiceAnnotation] = "rhmi-webhook-cert"
 		service.Spec.ClusterIP = "None"
-		service.Spec.Selector = map[string]string{
-			"name": "rhmi-operator",
+
+		if os.Getenv("INSTALLATION_TYPE") == string(v1alpha1.InstallationTypeManagedApi) {
+			service.Spec.Selector = map[string]string{
+				"name": "rhoam-operator",
+			}
+		} else {
+			service.Spec.Selector = map[string]string{
+				"name": "rhmi-operator",
+			}
 		}
+
 		service.Spec.Ports = []corev1.ServicePort{
 			{
 				Protocol:   corev1.ProtocolTCP,
