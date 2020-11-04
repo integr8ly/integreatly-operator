@@ -50,7 +50,7 @@ import (
 const (
 	deletionFinalizer                = "finalizer/configmaps"
 	DefaultInstallationName          = "rhmi"
-	ManagedApiInstallationName       = "managed-api"
+	ManagedApiInstallationName       = "rhoam"
 	DefaultInstallationConfigMapName = "installation-config"
 	DefaultCloudResourceConfigName   = "cloud-resource-config"
 	alertingEmailAddressEnvName      = "ALERTING_EMAIL_ADDRESS"
