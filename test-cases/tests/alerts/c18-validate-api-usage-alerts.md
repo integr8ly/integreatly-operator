@@ -132,8 +132,8 @@ and insert the following data:
     > - `numRequests = expected rate x minutes to keep the alert firing`
     > - `interval = 60 / expected rate`
 
-    | Alert to fire                             | `numRequests` | `interval` |
-    | ----------------------------------------- | ------------- | ---------- |
+    | Alert to fire                        | `numRequests` | `interval` |
+    | ------------------------------------ | ------------- | ---------- |
     | RHOAMApiUsageLevel1ThresholdExceeded | 170           | 0.71       |
     | RHOAMApiUsageLevel2ThresholdExceeded | 186           | 0.645      |
     | RHOAMApiUsageLevel3ThresholdExceeded | 240           | 0.5        |
