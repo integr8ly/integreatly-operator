@@ -4,7 +4,10 @@ import { uploadToPolarion, extractPolarionTestId } from "../lib/polarion";
 import { loadTestCases } from "../lib/test-case";
 import { loadTestRuns } from "../lib/test-run";
 
-const POLARION_PROJECT_ID = "RedHatManagedIntegration";
+const POLARION_PROJECT_IDS = {
+    rhmi: "RedHatManagedIntegration",
+    rhoam: "OpenShiftAPIManagement",
+};
 
 interface TestCaseArgs {
     product: string;
@@ -80,7 +83,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
 
         const document = {
             testcases: {
-                $: { "project-id": POLARION_PROJECT_ID },
+                $: { "project-id": POLARION_PROJECT_IDS[args.product] },
                 properties: [
                     {
                         property: [
@@ -103,6 +106,7 @@ const testCase: CommandModule<{}, TestCaseArgs> = {
 };
 
 interface TestRunArgs {
+    product: string;
     polarionUsername: string;
     polarionPassword: string;
     jiraUsername: string;
@@ -116,6 +120,11 @@ const testRun: CommandModule<{}, TestRunArgs> = {
     command: "testrun",
     describe: "Report the result of all manual tests to Polarion",
     builder: {
+        product: {
+            describe: "A product name (rhmi/rhoam)",
+            type: "string",
+            demand: true,
+        },
         polarionUsername: {
             describe: "Jira username or set POLARION_USERNAME",
             default: process.env.POLARION_USERNAME,
@@ -202,7 +211,7 @@ const testRun: CommandModule<{}, TestRunArgs> = {
                         {
                             $: {
                                 name: "polarion-project-id",
-                                value: POLARION_PROJECT_ID,
+                                value: POLARION_PROJECT_IDS[args.product],
                             },
                         },
                         {

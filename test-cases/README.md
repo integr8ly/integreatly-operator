@@ -222,8 +222,10 @@ POLARION_USERNAME=yourusername POLARION_PASSWORD=yourpassword ./tools.sh polario
 
 This command will read all test results from Jira, and upload them to Polarion.
 
+For parameter `template`, use the required template id from `Test Runs -> Manage Templates`
+
 ```bash
-JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME
+JIRA_USERNAME=ju JIRA_PASSWORD=jp POLARION_USERNAME=pu POLARION_PASSWORD=pp ./tools.sh polarion testrun --epic INTLY-5390 --product PRODUCT_NAME --template v1_0_0_rc1
 ```
 
 ## Test Case Metadata
