@@ -410,3 +410,7 @@ vendor/check: vendor/fix
 vendor/fix:
 	go mod tidy
 	go mod vendor
+
+.PHONY: manifest/release
+manifest/release:
+	@./scripts/rhoam-manifest-generator.sh
