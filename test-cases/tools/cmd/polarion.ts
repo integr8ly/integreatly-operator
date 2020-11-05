@@ -6,8 +6,8 @@ import { loadTestRuns } from "../lib/test-run";
 
 const POLARION_PROJECT_IDS = {
     rhmi: "RedHatManagedIntegration",
-    rhoam: "OpenShiftAPIManagement"
-}
+    rhoam: "OpenShiftAPIManagement",
+};
 
 interface TestCaseArgs {
     product: string;
