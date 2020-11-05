@@ -89,6 +89,8 @@ if $DISABLE; then
 
   # create new disable ACL association
   ChangeAcl NetworkAclAssociationId.tmp NetworkAclId.tmp
+
+  date -u
 else
   echo "Re-enable AvailabilityZone"
   for SUBNETID in $(aws ec2 describe-subnets --region ${AZ%?} | jq ".Subnets[] | select(.AvailabilityZone==\"$AZ\")" | jq -r '.SubnetId')
