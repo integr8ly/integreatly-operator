@@ -270,9 +270,12 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			},
 		}
 
-		if err := resources.SetZoneTopologySpreadConstraints(
+		if err := resources.SetPodTemplate(
 			resources.SelectFromDeployment,
-			"app",
+			resources.AllMutationsOf(
+				resources.MutateZoneTopologySpreadConstraints("app"),
+				resources.MutateMultiAZAntiAffinity(ctx, client, "app"),
+			),
 			deployment,
 		); err != nil {
 			return fmt.Errorf("failed to set zone topology spread constraints: %w", err)

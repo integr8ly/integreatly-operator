@@ -357,18 +357,30 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, serverClient k8s
 	)
 }
 
-func (r *Reconciler) ReconcileZoneTopologySpreadConstraints(ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon) (integreatlyv1alpha1.StatusPhase, error) {
-	keycloakStatefulSet := &k8sappsv1.StatefulSet{}
-	return resources.ReconcileZoneTopologySpreadConstraints(
-		ctx,
-		serverClient,
-		k8sclient.ObjectKey{
+func (r *Reconciler) ReconcileStatefulSet(ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon) (integreatlyv1alpha1.StatusPhase, error) {
+	statefulSet := &k8sappsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak",
 			Namespace: config.GetNamespace(),
 		},
+	}
+
+	// Include the PodPriority mutation only if the install type is Managed API
+	mutatePodPriority := resources.NoopMutate
+	if r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		mutatePodPriority = resources.MutatePodPriority(r.Installation.Spec.PriorityClassName)
+	}
+
+	return resources.UpdatePodTemplateIfExists(
+		ctx,
+		serverClient,
 		resources.SelectFromStatefulSet,
-		"app",
-		keycloakStatefulSet,
+		resources.AllMutationsOf(
+			resources.MutateMultiAZAntiAffinity(ctx, serverClient, "app"),
+			resources.MutateZoneTopologySpreadConstraints("app"),
+			mutatePodPriority,
+		),
+		statefulSet,
 	)
 }
 
@@ -482,25 +494,6 @@ func (r *Reconciler) ReconcileBlackboxTargets(ctx context.Context, installation 
 	}, cfg, installation, client)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rhsso blackbox target: %w", err)
-	}
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) ReconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, config *config.RHSSOCommon, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-
-	if r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		keycloakStatefulSet := &k8sappsv1.StatefulSet{}
-		return resources.ReconcilePodPriority(
-			ctx,
-			serverClient,
-			k8sclient.ObjectKey{
-				Name:      "keycloak",
-				Namespace: config.GetNamespace(),
-			},
-			resources.SelectFromStatefulSet,
-			keycloakStatefulSet,
-			r.Installation.Spec.PriorityClassName,
-		)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/sirupsen/logrus"
 
 	openshiftv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -177,6 +178,7 @@ func TestThreeScale(t *testing.T) {
 			}
 
 			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder)
+			tsReconciler.logger = logrus.NewEntry(logrus.New())
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
@@ -251,6 +253,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 			r := &Reconciler{
 				ConfigManager: tt.fields.ConfigManager,
 				Config:        tt.fields.Config,
+				logger:        logrus.NewEntry(logrus.New()),
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
@@ -333,6 +336,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			r := &Reconciler{
 				ConfigManager: tt.fields.ConfigManager,
 				Config:        tt.fields.Config,
+				logger:        logrus.NewEntry(logrus.New()),
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,

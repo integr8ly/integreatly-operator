@@ -3,10 +3,12 @@ package resources
 import (
 	"context"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func Exists(ctx context.Context, serverClient k8sclient.Client, obj runtime.Object) (bool, error) {
@@ -22,4 +24,32 @@ func Exists(ctx context.Context, serverClient k8sclient.Client, obj runtime.Obje
 		return false, err
 	}
 	return true, nil
+}
+
+// UpdateIfExists uses serverClient to retrieve obj by it's object key. If
+// obj is not found, it returns InProgress. If obj is found, it applies fn
+// and updates the object
+func UpdateIfExists(ctx context.Context, serverClient k8sclient.Client, fn controllerutil.MutateFn, obj runtime.Object) (integreatlyv1alpha1.StatusPhase, error) {
+	objKey, err := k8sclient.ObjectKeyFromObject(obj)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := serverClient.Get(ctx, objKey, obj); err != nil {
+		if k8serr.IsNotFound(err) {
+			return integreatlyv1alpha1.PhaseInProgress, nil
+		}
+
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := fn(); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	if err := serverClient.Update(ctx, obj); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
