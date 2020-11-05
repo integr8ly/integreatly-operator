@@ -1368,7 +1368,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	rhssoNamespace := rhssoConfig.GetNamespace()
 	rhssoRealm := rhssoConfig.GetRealm()
 	if rhssoNamespace == "" || rhssoRealm == "" {
-		logrus.Info("Cannot configure SSO integration without SSO ns and SSO realm")
+		logrus.Warnf("Cannot configure SSO integration without SSO ns: %v and SSO realm: %v", rhssoNamespace, rhssoRealm)
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -1381,19 +1381,21 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
+		logrus.Errorf("Error retreiving client secret: %v", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
+	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
 		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
 		return nil
 	})
 	if err != nil {
-		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update 3scale keycloak client: %w operation: %v", err, opRes)
 	}
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
+		logrus.Errorf("Failed to get admin token %v", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
