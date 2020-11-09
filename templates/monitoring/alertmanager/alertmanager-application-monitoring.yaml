@@ -10,6 +10,14 @@ route:
   repeat_interval: 12h
   receiver: default
   routes:
+    # Manually lower severity of some 3scale 2.9 Monitoring alerts
+    - match:
+        alertname: ThreescaleBackendWorkerJobsCountRunningHigh
+      receiver: default
+    - match:
+        alertname: SystemSidekiqZyncRuntime
+      receiver: default
+    # End lower severity of 3scale alerts
     - match:
         severity: critical
       receiver: critical
