@@ -203,6 +203,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
+	if err != nil {
+		r.Logger.Errorf("error when deciding if monitoring pod anti affinity is required. Defaulted to false: %v", err)
+	}
+
 	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
 	logrus.Infof("Phase: %s ReconcileNamespace", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
@@ -220,7 +225,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileComponents(ctx, serverClient)
+	phase, err = r.reconcileComponents(ctx, serverClient, antiAffinityRequired)
 	logrus.Infof("Phase: %s reconcileComponents", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
@@ -279,7 +284,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(antiAffinityRequired).ReconcileAlerts(ctx, serverClient)
 	logrus.Infof("Phase: %s reconcilePrometheusRule", phase)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
@@ -549,7 +554,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 	return err
 }
 
-func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8sclient.Client, antiAffinityRequired bool) (integreatlyv1alpha1.StatusPhase, error) {
 	r.Logger.Info("Reconciling Monitoring Components")
 	m := &monitoring.ApplicationMonitoring{
 		ObjectMeta: metav1.ObjectMeta{
@@ -568,6 +573,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			AlertmanagerInstanceNamespaces:   r.Config.GetOperatorNamespace(),
 			PrometheusInstanceNamespaces:     r.Config.GetOperatorNamespace(),
 			SelfSignedCerts:                  r.installation.Spec.SelfSignedCerts,
+			Affinity: resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+				"prometheus":   "application-monitoring",
+				"alertmanager": "application-monitoring",
+			}),
 		}
 		r.monitoring = m
 		return nil

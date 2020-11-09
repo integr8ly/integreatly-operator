@@ -9,7 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(antiAffinityRequired bool) resources.AlertReconciler {
+	monitoringExpectedPodCount := 7
+	if antiAffinityRequired {
+		monitoringExpectedPodCount = 11
+	}
+
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "monitoring",
 		Installation: r.installation,
@@ -197,9 +202,9 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						Alert: "MiddlewareMonitoringPodCount",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly 7 pods.",
+							"message": fmt.Sprintf("Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly %d pods.", monitoringExpectedPodCount),
 						},
-						Expr:   intstr.FromString("(1 - absent(kube_pod_status_ready{condition='true',namespace='" + global.NamespacePrefix + "middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='" + global.NamespacePrefix + "middleware-monitoring-operator'}) != 7"),
+						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='"+global.NamespacePrefix+"middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='"+global.NamespacePrefix+"middleware-monitoring-operator'}) != %d", monitoringExpectedPodCount)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},
