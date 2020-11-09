@@ -246,7 +246,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 
 	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
-		logrus.Errorf("failed to get Grafana console URL %w", err)
+		logrus.Errorf("failed to get Grafana console URL %v", err)
 	}
 
 	alertReconciler, err := r.newAlertsReconciler(granafaConsoleURL)

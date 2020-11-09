@@ -11,6 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -23,6 +24,7 @@ func buildScheme() *runtime.Scheme {
 
 	integreatlyv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	olmv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	corev1.AddToScheme(scheme)
 
 	return scheme
 }

@@ -43,11 +43,11 @@ receivers:
   - name: BUandCustomer
     email_configs:
       - send_resolved: True
-        to: '{{ index .Params "SMTPToBUAddress" }}'
+        to: '{{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
   - name: SRECustomerBU
     email_configs:
       - send_resolved: True
-        to: '{{ index .Params "SMTPToSREAddress" }}, {{ index .Params "SMTPToBUAddress" }}'
+        to: '{{ index .Params "SMTPToSREAddress" }}, {{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
 inhibit_rules:
   - source_match:
       alertname: 'JobRunningTimeExceeded'
