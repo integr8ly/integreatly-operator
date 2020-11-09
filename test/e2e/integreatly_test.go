@@ -80,7 +80,7 @@ func TestIntegreatly(t *testing.T) {
 
 		installType, err := common.GetInstallType(f.KubeConfig)
 		if err != nil {
-			t.Fatalf("failed to get install type, err: %s", installType)
+			t.Fatalf("failed to get install type, err: %+v", err)
 		}
 
 		// get happy path test cases according to the install type
@@ -144,7 +144,7 @@ func integreatlyManagedTest(t *testing.T, f *framework.Framework, ctx *framework
 
 	installType, err := common.GetInstallType(f.KubeConfig)
 	if err != nil {
-		return fmt.Errorf("failed to get install type, err: %s", installType)
+		return fmt.Errorf("failed to get install type, err: %s", err)
 	}
 
 	namespace, err := ctx.GetNamespace()

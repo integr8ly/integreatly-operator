@@ -3,7 +3,7 @@ package webapp
 import (
 	"context"
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	"strings"
 
 	solutionExplorerv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/tutorial-web-app-operator/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -17,7 +17,7 @@ import (
 
 type UpgradeNotifier interface {
 	NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error)
-	ClearNotification() error
+	ClearNotification(namespacePrefix string) error
 }
 
 type UpgradeNotifierImpl struct {
@@ -72,28 +72,30 @@ func (lazyNotifier *LazyUpgradeNotifier) GetNotifier() (UpgradeNotifier, error) 
 }
 
 func (lazyNotifier *LazyUpgradeNotifier) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
-	notifer, err := lazyNotifier.GetNotifier()
+	notifier, err := lazyNotifier.GetNotifier()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	return notifer.NotifyUpgrade(config, version, isServiceAffecting)
+	return notifier.NotifyUpgrade(config, version, isServiceAffecting)
 }
 
-func (lazyNotifier *LazyUpgradeNotifier) ClearNotification() error {
+func (lazyNotifier *LazyUpgradeNotifier) ClearNotification(nsPrefix string) error {
 	notifier, err := lazyNotifier.GetNotifier()
 	if err != nil {
 		return err
 	}
 
-	return notifier.ClearNotification()
+	return notifier.ClearNotification(nsPrefix)
 }
 
 func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version string, isServiceAffecting bool) (integreatlyv1alpha1.StatusPhase, error) {
+	namespaceSegments := strings.Split(config.Namespace, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: global.NamespacePrefix + "solution-explorer",
+			Namespace: namespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(notifier.ctx, k8sclient.ObjectKey{
@@ -122,11 +124,11 @@ func (notifier *UpgradeNotifierImpl) NotifyUpgrade(config *integreatlyv1alpha1.R
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (notifier *UpgradeNotifierImpl) ClearNotification() error {
+func (notifier *UpgradeNotifierImpl) ClearNotification(namespacePrefix string) error {
 	webapp := &solutionExplorerv1alpha1.WebApp{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      solutionexplorer.DefaultName,
-			Namespace: global.NamespacePrefix + "solution-explorer",
+			Namespace: namespacePrefix + "solution-explorer",
 		},
 	}
 	if err := notifier.client.Get(
@@ -165,6 +167,6 @@ func (noop *NoOp) NotifyUpgrade(config *integreatlyv1alpha1.RHMIConfig, version 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (noop *NoOp) ClearNotification() error {
+func (noop *NoOp) ClearNotification(_ string) error {
 	return nil
 }

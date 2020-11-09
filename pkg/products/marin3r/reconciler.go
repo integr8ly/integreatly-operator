@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"strconv"
 
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
 	grafana "github.com/integr8ly/integreatly-operator/pkg/products/grafana"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,12 +46,6 @@ const (
 	metricsPort                  = 9102
 	discoveryServiceName         = "instance"
 	externalRedisSecretName      = "redis"
-)
-
-var (
-	enabledNamespaces = []string{
-		global.NamespacePrefix + "3scale",
-	}
 )
 
 type Reconciler struct {
@@ -114,6 +109,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, client, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+		threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
+		}
+
+		enabledNamespaces := []string{threescaleConfig.GetNamespace()}
 		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, client, enabledNamespaces...)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -325,22 +326,27 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 }
 
 func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
+	threescaleConfig, err := r.ConfigManager.ReadThreeScale()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
+	}
 
+	enabledNamespaces := []string{threescaleConfig.GetNamespace()}
 	discoveryService := &marin3r.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: discoveryServiceName,
 		},
-		Spec: marin3r.DiscoveryServiceSpec{
-			DiscoveryServiceNamespace: productNamespace,
-			EnabledNamespaces:         enabledNamespaces,
-			Image:                     fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r),
-		},
 	}
 
-	err := client.Create(ctx, discoveryService)
+	_, err = controllerutil.CreateOrUpdate(ctx, client, discoveryService, func() error {
+		discoveryService.Spec.DiscoveryServiceNamespace = productNamespace
+		discoveryService.Spec.EnabledNamespaces = enabledNamespaces
+		discoveryService.Spec.Image = fmt.Sprintf("quay.io/3scale/marin3r:v%s", integreatlyv1alpha1.VersionMarin3r)
+		return nil
+	})
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {
-			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating resource: %w", err)
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error reconciling resource: %w", err)
 		}
 	}
 

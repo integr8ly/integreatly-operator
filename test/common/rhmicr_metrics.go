@@ -23,11 +23,12 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("error getting rhmi-operator pod: %v", err)
 	}
-
+	nsSegments := strings.Split(NamespacePrefix, "-")
+	containerName := nsSegments[1] + "-operator"
 	output, err := execToPod("curl --silent localhost:8383/metrics",
-		rhmiOperatorPod.GetName(),
+		rhmiOperatorPod.Name,
 		RHMIOperatorNamespace,
-		"rhmi-operator",
+		containerName,
 		ctx)
 	if err != nil {
 		t.Fatalf("failed to exec to prometheus pod: %v", err)
@@ -74,10 +75,11 @@ func TestRHMICRMetrics(t *testing.T, ctx *TestingContext) {
 }
 
 func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
-
+	nsSegments := strings.Split(NamespacePrefix, "-")
+	podName := nsSegments[1] + "-operator"
 	listOptions := []k8sclient.ListOption{
 		k8sclient.MatchingLabels(map[string]string{
-			"name": "rhmi-operator",
+			"name": podName,
 		}),
 		k8sclient.InNamespace(RHMIOperatorNamespace),
 	}
@@ -90,7 +92,7 @@ func getRHMIOperatorPod(ctx *TestingContext) (*corev1.Pod, error) {
 	}
 
 	if len(rhmiOperatorPod.Items) == 0 {
-		return nil, fmt.Errorf("rhmi-operator pod doesn't exist: %v", err)
+		return nil, fmt.Errorf("%v pod doesn't exist in namespace: %v (err: %v)", podName, RHMIOperatorNamespace, err)
 	}
 
 	return &rhmiOperatorPod.Items[0], nil

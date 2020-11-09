@@ -3,9 +3,11 @@ package common
 import (
 	goctx "context"
 	"encoding/json"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"os"
 	"strings"
 	"testing"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -91,6 +93,10 @@ var customerRHOAMDashboards = []dashboardsTestRule{
 }
 
 func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
+	if os.Getenv("SKIP_FLAKES") == "true" {
+		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
+		t.SkipNow()
+	}
 	pods := &corev1.PodList{}
 	opts := []k8sclient.ListOption{
 		k8sclient.InNamespace(CustomerGrafanaNamespace),
@@ -117,7 +123,7 @@ func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
 		CustomerGrafanaNamespace,
 		"grafana", ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err)
+		t.Fatal("failed to exec to pod:", err, "pod name:", pods.Items[0].Name)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule

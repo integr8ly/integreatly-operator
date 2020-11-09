@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"reflect"
 	"testing"
 
@@ -35,14 +34,14 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      "rhmi",
-					Namespace: global.NamespacePrefix + "test",
+					Namespace: "testing-namespaces-test",
 				},
 			},
 			Alerts: []AlertConfiguration{
 				{
 					AlertName: "test-alert",
 					GroupName: "test-group",
-					Namespace: global.NamespacePrefix + "test",
+					Namespace: "testing-namespaces-test",
 					Rules:     rules,
 				},
 			},
@@ -59,7 +58,7 @@ func TestReconcileAlerts(t *testing.T) {
 				rule := &monitoringv1.PrometheusRule{}
 				if err := client.Get(context.TODO(), k8sclient.ObjectKey{
 					Name:      "test-alert",
-					Namespace: global.NamespacePrefix + "test",
+					Namespace: "testing-namespaces-test",
 				}, rule); err != nil {
 					return fmt.Errorf("error retrieving rule: %v", err)
 				}
@@ -85,7 +84,7 @@ func TestReconcileAlerts(t *testing.T) {
 				{
 					ObjectMeta: v1.ObjectMeta{
 						Name:      "test-alert",
-						Namespace: global.NamespacePrefix + "test",
+						Namespace: "testing-namespaces-test",
 					},
 					Spec: monitoringv1.PrometheusRuleSpec{
 						Groups: []monitoringv1.RuleGroup{
@@ -101,7 +100,7 @@ func TestReconcileAlerts(t *testing.T) {
 			Installation: &integreatlyv1alpha1.RHMI{
 				ObjectMeta: v1.ObjectMeta{
 					Name:              "rhmi",
-					Namespace:         global.NamespacePrefix + "test",
+					Namespace:         "testing-namespaces-test",
 					DeletionTimestamp: now(),
 				},
 			},
@@ -109,7 +108,7 @@ func TestReconcileAlerts(t *testing.T) {
 				{
 					AlertName: "test-alert",
 					GroupName: "test-group",
-					Namespace: global.NamespacePrefix + "test",
+					Namespace: "testing-namespaces-test",
 					Rules:     rules,
 				},
 			},
@@ -128,7 +127,7 @@ func TestReconcileAlerts(t *testing.T) {
 				deletedRule := &monitoringv1.PrometheusRule{}
 				err = client.Get(context.TODO(), k8sclient.ObjectKey{
 					Name:      "test-alert",
-					Namespace: global.NamespacePrefix + "test",
+					Namespace: "testing-namespaces-test",
 				}, deletedRule)
 				if err == nil {
 					return fmt.Errorf("expected an error retrieving deleted rule")
@@ -209,7 +208,7 @@ var (
 	existingRules = &monitoringv1.PrometheusRule{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "existing-rules",
-			Namespace: global.NamespacePrefix + "other",
+			Namespace: "testing-namespaces-other",
 		},
 		Spec: monitoringv1.PrometheusRuleSpec{
 			Groups: []monitoringv1.RuleGroup{

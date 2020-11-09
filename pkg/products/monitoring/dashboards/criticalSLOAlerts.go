@@ -1,10 +1,14 @@
 package monitoring
 
-import (
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
-)
+//GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
+func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(prefix string) string {
+	nsPrefix = prefix
+	return monitoringGrafanaDBCriticalSLORhmiAlertsJSON
+}
 
-var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
+var nsPrefix = ""
+
+var monitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 	"annotations": {
 		"list": [{
 			"builtIn": 1,
@@ -448,8 +452,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-					"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+					"text": "` + nsPrefix + `3scale|ThreeScale",
+					"value": "` + nsPrefix + `3scale|ThreeScale"
 				}
 			},
 			"title": "$product",
@@ -509,8 +513,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-					"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+					"text": "` + nsPrefix + `3scale|ThreeScale",
+					"value": "` + nsPrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -594,8 +598,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-					"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+					"text": "` + nsPrefix + `3scale|ThreeScale",
+					"value": "` + nsPrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -661,8 +665,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-					"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+					"text": "` + nsPrefix + `3scale|ThreeScale",
+					"value": "` + nsPrefix + `3scale|ThreeScale"
 				}
 			},
 			"seriesOverrides": [],
@@ -771,8 +775,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-					"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+					"text": "` + nsPrefix + `3scale|ThreeScale",
+					"value": "` + nsPrefix + `3scale|ThreeScale"
 				}
 			},
 			"sparkline": {
@@ -818,8 +822,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-					"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+					"text": "` + nsPrefix + `amq-online|AMQ",
+					"value": "` + nsPrefix + `amq-online|AMQ"
 				}
 			},
 			"title": "$product",
@@ -882,8 +886,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-					"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+					"text": "` + nsPrefix + `amq-online|AMQ",
+					"value": "` + nsPrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -970,8 +974,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-					"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+					"text": "` + nsPrefix + `amq-online|AMQ",
+					"value": "` + nsPrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -1039,8 +1043,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-					"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+					"text": "` + nsPrefix + `amq-online|AMQ",
+					"value": "` + nsPrefix + `amq-online|AMQ"
 				}
 			},
 			"seriesOverrides": [],
@@ -1152,8 +1156,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-					"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+					"text": "` + nsPrefix + `amq-online|AMQ",
+					"value": "` + nsPrefix + `amq-online|AMQ"
 				}
 			},
 			"sparkline": {
@@ -1199,8 +1203,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `fuse|Fuse",
-					"value": "` + global.NamespacePrefix + `fuse|Fuse"
+					"text": "` + nsPrefix + `fuse|Fuse",
+					"value": "` + nsPrefix + `fuse|Fuse"
 				}
 			},
 			"title": "$product",
@@ -1263,8 +1267,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `fuse|Fuse",
-					"value": "` + global.NamespacePrefix + `fuse|Fuse"
+					"text": "` + nsPrefix + `fuse|Fuse",
+					"value": "` + nsPrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1351,8 +1355,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `fuse|Fuse",
-					"value": "` + global.NamespacePrefix + `fuse|Fuse"
+					"text": "` + nsPrefix + `fuse|Fuse",
+					"value": "` + nsPrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1421,8 +1425,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `fuse|Fuse",
-					"value": "` + global.NamespacePrefix + `fuse|Fuse"
+					"text": "` + nsPrefix + `fuse|Fuse",
+					"value": "` + nsPrefix + `fuse|Fuse"
 				}
 			},
 			"seriesOverrides": [],
@@ -1534,8 +1538,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `fuse|Fuse",
-					"value": "` + global.NamespacePrefix + `fuse|Fuse"
+					"text": "` + nsPrefix + `fuse|Fuse",
+					"value": "` + nsPrefix + `fuse|Fuse"
 				}
 			},
 			"sparkline": {
@@ -1581,8 +1585,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+					"text": "` + nsPrefix + `rhsso|Keycloak",
+					"value": "` + nsPrefix + `rhsso|Keycloak"
 				}
 			},
 			"title": "$product",
@@ -1645,8 +1649,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+					"text": "` + nsPrefix + `rhsso|Keycloak",
+					"value": "` + nsPrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1733,8 +1737,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+					"text": "` + nsPrefix + `rhsso|Keycloak",
+					"value": "` + nsPrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1803,8 +1807,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+					"text": "` + nsPrefix + `rhsso|Keycloak",
+					"value": "` + nsPrefix + `rhsso|Keycloak"
 				}
 			},
 			"seriesOverrides": [],
@@ -1916,8 +1920,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-					"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+					"text": "` + nsPrefix + `rhsso|Keycloak",
+					"value": "` + nsPrefix + `rhsso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -1963,8 +1967,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+					"text": "` + nsPrefix + `user-sso|Keycloak",
+					"value": "` + nsPrefix + `user-sso|Keycloak"
 				}
 			},
 			"title": "$product",
@@ -2027,8 +2031,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+					"text": "` + nsPrefix + `user-sso|Keycloak",
+					"value": "` + nsPrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2115,8 +2119,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+					"text": "` + nsPrefix + `user-sso|Keycloak",
+					"value": "` + nsPrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2185,8 +2189,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+					"text": "` + nsPrefix + `user-sso|Keycloak",
+					"value": "` + nsPrefix + `user-sso|Keycloak"
 				}
 			},
 			"seriesOverrides": [],
@@ -2298,8 +2302,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-					"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+					"text": "` + nsPrefix + `user-sso|Keycloak",
+					"value": "` + nsPrefix + `user-sso|Keycloak"
 				}
 			},
 			"sparkline": {
@@ -2345,8 +2349,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-					"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+					"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+					"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"title": "$product",
@@ -2409,8 +2413,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-					"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+					"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+					"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2497,8 +2501,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-					"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+					"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+					"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2566,8 +2570,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-					"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+					"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+					"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"seriesOverrides": [],
@@ -2679,8 +2683,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-					"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+					"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+					"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 				}
 			},
 			"sparkline": {
@@ -2726,8 +2730,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-					"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+					"text": "` + nsPrefix + `solution-explorer|Solution",
+					"value": "` + nsPrefix + `solution-explorer|Solution"
 				}
 			},
 			"title": "$product",
@@ -2790,8 +2794,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-					"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+					"text": "` + nsPrefix + `solution-explorer|Solution",
+					"value": "` + nsPrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -2878,8 +2882,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-					"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+					"text": "` + nsPrefix + `solution-explorer|Solution",
+					"value": "` + nsPrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -2947,8 +2951,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-					"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+					"text": "` + nsPrefix + `solution-explorer|Solution",
+					"value": "` + nsPrefix + `solution-explorer|Solution"
 				}
 			},
 			"seriesOverrides": [],
@@ -3060,8 +3064,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-					"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+					"text": "` + nsPrefix + `solution-explorer|Solution",
+					"value": "` + nsPrefix + `solution-explorer|Solution"
 				}
 			},
 			"sparkline": {
@@ -3107,8 +3111,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-					"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+					"text": "` + nsPrefix + `apicurito|Apicurito",
+					"value": "` + nsPrefix + `apicurito|Apicurito"
 				}
 			},
 			"title": "$product",
@@ -3171,8 +3175,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-					"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+					"text": "` + nsPrefix + `apicurito|Apicurito",
+					"value": "` + nsPrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3259,8 +3263,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-					"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+					"text": "` + nsPrefix + `apicurito|Apicurito",
+					"value": "` + nsPrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3329,8 +3333,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-					"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+					"text": "` + nsPrefix + `apicurito|Apicurito",
+					"value": "` + nsPrefix + `apicurito|Apicurito"
 				}
 			},
 			"seriesOverrides": [],
@@ -3442,8 +3446,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-					"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+					"text": "` + nsPrefix + `apicurito|Apicurito",
+					"value": "` + nsPrefix + `apicurito|Apicurito"
 				}
 			},
 			"sparkline": {
@@ -3489,8 +3493,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-					"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+					"text": "` + nsPrefix + `ups|UnifiedPush",
+					"value": "` + nsPrefix + `ups|UnifiedPush"
 				}
 			},
 			"title": "$product",
@@ -3553,8 +3557,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-					"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+					"text": "` + nsPrefix + `ups|UnifiedPush",
+					"value": "` + nsPrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3641,8 +3645,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-					"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+					"text": "` + nsPrefix + `ups|UnifiedPush",
+					"value": "` + nsPrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3711,8 +3715,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-					"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+					"text": "` + nsPrefix + `ups|UnifiedPush",
+					"value": "` + nsPrefix + `ups|UnifiedPush"
 				}
 			},
 			"seriesOverrides": [],
@@ -3824,8 +3828,8 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 			"scopedVars": {
 				"product": {
 					"selected": false,
-					"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-					"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+					"text": "` + nsPrefix + `ups|UnifiedPush",
+					"value": "` + nsPrefix + `ups|UnifiedPush"
 				}
 			},
 			"sparkline": {
@@ -3983,103 +3987,103 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 				"name": "namespace",
 				"options": [{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `3scale",
-						"value": "` + global.NamespacePrefix + `3scale"
+						"text": "` + nsPrefix + `3scale",
+						"value": "` + nsPrefix + `3scale"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `3scale-operator",
-						"value": "` + global.NamespacePrefix + `3scale-operator"
+						"text": "` + nsPrefix + `3scale-operator",
+						"value": "` + nsPrefix + `3scale-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `amq-online",
-						"value": "` + global.NamespacePrefix + `amq-online"
+						"text": "` + nsPrefix + `amq-online",
+						"value": "` + nsPrefix + `amq-online"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `apicurito",
-						"value": "` + global.NamespacePrefix + `apicurito"
+						"text": "` + nsPrefix + `apicurito",
+						"value": "` + nsPrefix + `apicurito"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `apicurito-operator",
-						"value": "` + global.NamespacePrefix + `apicurito-operator"
+						"text": "` + nsPrefix + `apicurito-operator",
+						"value": "` + nsPrefix + `apicurito-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `cloud-resources-operator",
-						"value": "` + global.NamespacePrefix + `cloud-resources-operator"
+						"text": "` + nsPrefix + `cloud-resources-operator",
+						"value": "` + nsPrefix + `cloud-resources-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `codeready-workspaces",
-						"value": "` + global.NamespacePrefix + `codeready-workspaces"
+						"text": "` + nsPrefix + `codeready-workspaces",
+						"value": "` + nsPrefix + `codeready-workspaces"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `codeready-workspaces-operator",
-						"value": "` + global.NamespacePrefix + `codeready-workspaces-operator"
+						"text": "` + nsPrefix + `codeready-workspaces-operator",
+						"value": "` + nsPrefix + `codeready-workspaces-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `fuse",
-						"value": "` + global.NamespacePrefix + `fuse"
+						"text": "` + nsPrefix + `fuse",
+						"value": "` + nsPrefix + `fuse"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `fuse-operator",
-						"value": "` + global.NamespacePrefix + `fuse-operator"
+						"text": "` + nsPrefix + `fuse-operator",
+						"value": "` + nsPrefix + `fuse-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `middleware-monitoring-operator",
-						"value": "` + global.NamespacePrefix + `middleware-monitoring-operator"
+						"text": "` + nsPrefix + `middleware-monitoring-operator",
+						"value": "` + nsPrefix + `middleware-monitoring-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `operator",
-						"value": "` + global.NamespacePrefix + `operator"
+						"text": "` + nsPrefix + `operator",
+						"value": "` + nsPrefix + `operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `rhsso",
-						"value": "` + global.NamespacePrefix + `rhsso"
+						"text": "` + nsPrefix + `rhsso",
+						"value": "` + nsPrefix + `rhsso"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `rhsso-operator",
-						"value": "` + global.NamespacePrefix + `rhsso-operator"
+						"text": "` + nsPrefix + `rhsso-operator",
+						"value": "` + nsPrefix + `rhsso-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `solution-explorer",
-						"value": "` + global.NamespacePrefix + `solution-explorer"
+						"text": "` + nsPrefix + `solution-explorer",
+						"value": "` + nsPrefix + `solution-explorer"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `solution-explorer-operator",
-						"value": "` + global.NamespacePrefix + `solution-explorer-operator"
+						"text": "` + nsPrefix + `solution-explorer-operator",
+						"value": "` + nsPrefix + `solution-explorer-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `ups",
-						"value": "` + global.NamespacePrefix + `ups"
+						"text": "` + nsPrefix + `ups",
+						"value": "` + nsPrefix + `ups"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `ups-operator",
-						"value": "` + global.NamespacePrefix + `ups-operator"
+						"text": "` + nsPrefix + `ups-operator",
+						"value": "` + nsPrefix + `ups-operator"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `user-sso",
-						"value": "` + global.NamespacePrefix + `user-sso"
+						"text": "` + nsPrefix + `user-sso",
+						"value": "` + nsPrefix + `user-sso"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `user-sso-operator",
-						"value": "` + global.NamespacePrefix + `user-sso-operator"
+						"text": "` + nsPrefix + `user-sso-operator",
+						"value": "` + nsPrefix + `user-sso-operator"
 					}
 				],
 				"query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
@@ -4112,36 +4116,36 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `3scale",
-						"value": "` + global.NamespacePrefix + `3scale"
+						"text": "` + nsPrefix + `3scale",
+						"value": "` + nsPrefix + `3scale"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `amq-online",
-						"value": "` + global.NamespacePrefix + `amq-online"
+						"text": "` + nsPrefix + `amq-online",
+						"value": "` + nsPrefix + `amq-online"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `fuse",
-						"value": "` + global.NamespacePrefix + `fuse"
+						"text": "` + nsPrefix + `fuse",
+						"value": "` + nsPrefix + `fuse"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `rhsso",
-						"value": "` + global.NamespacePrefix + `rhsso"
+						"text": "` + nsPrefix + `rhsso",
+						"value": "` + nsPrefix + `rhsso"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `codeready-workspaces",
-						"value": "` + global.NamespacePrefix + `codeready-workspaces"
+						"text": "` + nsPrefix + `codeready-workspaces",
+						"value": "` + nsPrefix + `codeready-workspaces"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `solution-explorer",
-						"value": "` + global.NamespacePrefix + `solution-explorer"
+						"text": "` + nsPrefix + `solution-explorer",
+						"value": "` + nsPrefix + `solution-explorer"
 					}
 				],
-				"query": "` + global.NamespacePrefix + `3scale, ` + global.NamespacePrefix + `amq-online, ` + global.NamespacePrefix + `fuse, ` + global.NamespacePrefix + `rhsso, ` + global.NamespacePrefix + `codeready-workspaces, ` + global.NamespacePrefix + `solution-explorer",
+				"query": "` + nsPrefix + `3scale, ` + nsPrefix + `amq-online, ` + nsPrefix + `fuse, ` + nsPrefix + `rhsso, ` + nsPrefix + `codeready-workspaces, ` + nsPrefix + `solution-explorer",
 				"skipUrlSync": false,
 				"type": "custom"
 			},
@@ -4164,51 +4168,51 @@ var MonitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-						"value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+						"text": "` + nsPrefix + `3scale|ThreeScale",
+						"value": "` + nsPrefix + `3scale|ThreeScale"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `amq-online|AMQ",
-						"value": "` + global.NamespacePrefix + `amq-online|AMQ"
+						"text": "` + nsPrefix + `amq-online|AMQ",
+						"value": "` + nsPrefix + `amq-online|AMQ"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `fuse|Fuse",
-						"value": "` + global.NamespacePrefix + `fuse|Fuse"
+						"text": "` + nsPrefix + `fuse|Fuse",
+						"value": "` + nsPrefix + `fuse|Fuse"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-						"value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+						"text": "` + nsPrefix + `rhsso|Keycloak",
+						"value": "` + nsPrefix + `rhsso|Keycloak"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-						"value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+						"text": "` + nsPrefix + `user-sso|Keycloak",
+						"value": "` + nsPrefix + `user-sso|Keycloak"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady",
-						"value": "` + global.NamespacePrefix + `codeready-workspaces|CodeReady"
+						"text": "` + nsPrefix + `codeready-workspaces|CodeReady",
+						"value": "` + nsPrefix + `codeready-workspaces|CodeReady"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `solution-explorer|Solution",
-						"value": "` + global.NamespacePrefix + `solution-explorer|Solution"
+						"text": "` + nsPrefix + `solution-explorer|Solution",
+						"value": "` + nsPrefix + `solution-explorer|Solution"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `apicurito|Apicurito",
-						"value": "` + global.NamespacePrefix + `apicurito|Apicurito"
+						"text": "` + nsPrefix + `apicurito|Apicurito",
+						"value": "` + nsPrefix + `apicurito|Apicurito"
 					},
 					{
 						"selected": false,
-						"text": "` + global.NamespacePrefix + `ups|UnifiedPush",
-						"value": "` + global.NamespacePrefix + `ups|UnifiedPush"
+						"text": "` + nsPrefix + `ups|UnifiedPush",
+						"value": "` + nsPrefix + `ups|UnifiedPush"
 					}
 				],
-				"query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `amq-online|AMQ, ` + global.NamespacePrefix + `fuse|Fuse, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-sso|Keycloak, ` + global.NamespacePrefix + `codeready-workspaces|CodeReady, ` + global.NamespacePrefix + `solution-explorer|Solution, ` + global.NamespacePrefix + `apicurito|Apicurito, ` + global.NamespacePrefix + `ups|UnifiedPush",
+				"query": "` + nsPrefix + `3scale|ThreeScale, ` + nsPrefix + `amq-online|AMQ, ` + nsPrefix + `fuse|Fuse, ` + nsPrefix + `rhsso|Keycloak, ` + nsPrefix + `user-sso|Keycloak, ` + nsPrefix + `codeready-workspaces|CodeReady, ` + nsPrefix + `solution-explorer|Solution, ` + nsPrefix + `apicurito|Apicurito, ` + nsPrefix + `ups|UnifiedPush",
 				"skipUrlSync": false,
 				"type": "custom"
 			}
@@ -4728,8 +4732,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-          "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+          "text": "` + nsPrefix + `3scale|ThreeScale",
+          "value": "` + nsPrefix + `3scale|ThreeScale"
         }
       },
       "title": "$product",
@@ -4792,8 +4796,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-          "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+          "text": "` + nsPrefix + `3scale|ThreeScale",
+          "value": "` + nsPrefix + `3scale|ThreeScale"
         }
       },
       "sparkline": {
@@ -4884,8 +4888,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-          "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+          "text": "` + nsPrefix + `3scale|ThreeScale",
+          "value": "` + nsPrefix + `3scale|ThreeScale"
         }
       },
       "sparkline": {
@@ -4955,8 +4959,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-          "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+          "text": "` + nsPrefix + `3scale|ThreeScale",
+          "value": "` + nsPrefix + `3scale|ThreeScale"
         }
       },
       "seriesOverrides": [],
@@ -5071,8 +5075,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-          "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+          "text": "` + nsPrefix + `3scale|ThreeScale",
+          "value": "` + nsPrefix + `3scale|ThreeScale"
         }
       },
       "sparkline": {
@@ -5122,8 +5126,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+          "text": "` + nsPrefix + `rhsso|Keycloak",
+          "value": "` + nsPrefix + `rhsso|Keycloak"
         }
       },
       "title": "$product",
@@ -5189,8 +5193,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+          "text": "` + nsPrefix + `rhsso|Keycloak",
+          "value": "` + nsPrefix + `rhsso|Keycloak"
         }
       },
       "sparkline": {
@@ -5284,8 +5288,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+          "text": "` + nsPrefix + `rhsso|Keycloak",
+          "value": "` + nsPrefix + `rhsso|Keycloak"
         }
       },
       "sparkline": {
@@ -5358,8 +5362,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+          "text": "` + nsPrefix + `rhsso|Keycloak",
+          "value": "` + nsPrefix + `rhsso|Keycloak"
         }
       },
       "seriesOverrides": [],
@@ -5477,8 +5481,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-          "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+          "text": "` + nsPrefix + `rhsso|Keycloak",
+          "value": "` + nsPrefix + `rhsso|Keycloak"
         }
       },
       "sparkline": {
@@ -5528,8 +5532,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+          "text": "` + nsPrefix + `user-sso|Keycloak",
+          "value": "` + nsPrefix + `user-sso|Keycloak"
         }
       },
       "title": "$product",
@@ -5595,8 +5599,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+          "text": "` + nsPrefix + `user-sso|Keycloak",
+          "value": "` + nsPrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -5690,8 +5694,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+          "text": "` + nsPrefix + `user-sso|Keycloak",
+          "value": "` + nsPrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -5764,8 +5768,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+          "text": "` + nsPrefix + `user-sso|Keycloak",
+          "value": "` + nsPrefix + `user-sso|Keycloak"
         }
       },
       "seriesOverrides": [],
@@ -5883,8 +5887,8 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
       "scopedVars": {
         "product": {
           "selected": false,
-          "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-          "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+          "text": "` + nsPrefix + `user-sso|Keycloak",
+          "value": "` + nsPrefix + `user-sso|Keycloak"
         }
       },
       "sparkline": {
@@ -6056,48 +6060,48 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
         "options": [
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `3scale",
-            "value": "` + global.NamespacePrefix + `3scale"
+            "text": "` + nsPrefix + `3scale",
+            "value": "` + nsPrefix + `3scale"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `3scale-operator",
-            "value": "` + global.NamespacePrefix + `3scale-operator"
+            "text": "` + nsPrefix + `3scale-operator",
+            "value": "` + nsPrefix + `3scale-operator"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `cloud-resources-operator",
-            "value": "` + global.NamespacePrefix + `cloud-resources-operator"
+            "text": "` + nsPrefix + `cloud-resources-operator",
+            "value": "` + nsPrefix + `cloud-resources-operator"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `middleware-monitoring-operator",
-            "value": "` + global.NamespacePrefix + `middleware-monitoring-operator"
+            "text": "` + nsPrefix + `middleware-monitoring-operator",
+            "value": "` + nsPrefix + `middleware-monitoring-operator"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `operator",
-            "value": "` + global.NamespacePrefix + `operator"
+            "text": "` + nsPrefix + `operator",
+            "value": "` + nsPrefix + `operator"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `rhsso",
-            "value": "` + global.NamespacePrefix + `rhsso"
+            "text": "` + nsPrefix + `rhsso",
+            "value": "` + nsPrefix + `rhsso"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `rhsso-operator",
-            "value": "` + global.NamespacePrefix + `rhsso-operator"
+            "text": "` + nsPrefix + `rhsso-operator",
+            "value": "` + nsPrefix + `rhsso-operator"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `user-sso",
-            "value": "` + global.NamespacePrefix + `user-sso"
+            "text": "` + nsPrefix + `user-sso",
+            "value": "` + nsPrefix + `user-sso"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `user-sso-operator",
-            "value": "` + global.NamespacePrefix + `user-sso-operator"
+            "text": "` + nsPrefix + `user-sso-operator",
+            "value": "` + nsPrefix + `user-sso-operator"
           }
         ],
         "query": "query_result(count(kube_namespace_labels{label_monitoring_key='middleware'}) by (namespace))",
@@ -6131,16 +6135,16 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `3scale",
-            "value": "` + global.NamespacePrefix + `3scale"
+            "text": "` + nsPrefix + `3scale",
+            "value": "` + nsPrefix + `3scale"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `rhsso",
-            "value": "` + global.NamespacePrefix + `rhsso"
+            "text": "` + nsPrefix + `rhsso",
+            "value": "` + nsPrefix + `rhsso"
           }
         ],
-        "query": "` + global.NamespacePrefix + `3scale, ` + global.NamespacePrefix + `rhsso",
+        "query": "` + nsPrefix + `3scale, ` + nsPrefix + `rhsso",
         "skipUrlSync": false,
         "type": "custom"
       },
@@ -6164,21 +6168,21 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `3scale|ThreeScale",
-            "value": "` + global.NamespacePrefix + `3scale|ThreeScale"
+            "text": "` + nsPrefix + `3scale|ThreeScale",
+            "value": "` + nsPrefix + `3scale|ThreeScale"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `rhsso|Keycloak",
-            "value": "` + global.NamespacePrefix + `rhsso|Keycloak"
+            "text": "` + nsPrefix + `rhsso|Keycloak",
+            "value": "` + nsPrefix + `rhsso|Keycloak"
           },
           {
             "selected": false,
-            "text": "` + global.NamespacePrefix + `user-sso|Keycloak",
-            "value": "` + global.NamespacePrefix + `user-sso|Keycloak"
+            "text": "` + nsPrefix + `user-sso|Keycloak",
+            "value": "` + nsPrefix + `user-sso|Keycloak"
           }
         ],
-        "query": "` + global.NamespacePrefix + `3scale|ThreeScale, ` + global.NamespacePrefix + `rhsso|Keycloak, ` + global.NamespacePrefix + `user-sso|Keycloak",
+        "query": "` + nsPrefix + `3scale|ThreeScale, ` + nsPrefix + `rhsso|Keycloak, ` + nsPrefix + `user-sso|Keycloak",
         "skipUrlSync": false,
         "type": "custom"
       }
