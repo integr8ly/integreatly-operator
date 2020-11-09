@@ -482,7 +482,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "thresholds": "$perMinuteTwentyMillion*60*24",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Last 24 hours - No. Requests",
+      "title": "Last 24 Hours - No. Requests",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -568,7 +568,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "thresholds": "1",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Last 24 hours - Rejected",
+      "title": "Last 24 Hours - Rejected",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [
@@ -654,7 +654,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Last 24 hours -  Rejected/Requests",
+      "title": "Last 24 Hours -  Rejected/Requests",
       "type": "singlestat",
       "valueFontSize": "80%",
       "valueMaps": [

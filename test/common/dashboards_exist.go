@@ -86,7 +86,7 @@ var rhmi2ExpectedDashboards = []dashboardsTestRule{
 
 var customerRHOAMDashboards = []dashboardsTestRule{
 	{
-		Title: "3Scale API Rate Limiting",
+		Title: "RHOAM API Rate Limiting",
 	},
 }
 
