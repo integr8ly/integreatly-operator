@@ -1,10 +1,11 @@
 package osde2e
 
 import (
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"k8s.io/client-go/rest"
 	runtimeConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
-	"testing"
 )
 
 var (

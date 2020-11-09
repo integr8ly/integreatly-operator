@@ -13,7 +13,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	numberOfRhssoReplicas  int = 2
 	scaleUpRhssoReplicas   int = 3
 	scaleDownRhssoReplicas int = 1

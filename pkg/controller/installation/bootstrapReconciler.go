@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 
 	"github.com/sirupsen/logrus"
@@ -65,55 +67,55 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err := r.reconcileOauthSecrets(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth secrets", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to reconcile oauth secrets")
 	}
 
 	phase, err = r.reconcilerGithubOauthSecret(ctx, serverClient, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile github oauth secrets", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to reconcile github oauth secrets")
 	}
 
 	phase, err = r.reconcilerRHMIConfigCR(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to reconcile customer config")
 	}
 
 	phase, err = r.reconcileRHMIConfigPermissions(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile customer config dedicated admin permissions", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to reconcile customer config dedicated admin permissions")
 	}
 
 	phase, err = r.retrieveConsoleURLAndSubdomain(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to retrieve console url and subdomain", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to retrieve console url and subdomain")
 	}
 
 	phase, err = r.checkCloudResourcesConfig(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to check cloud resources config settings", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to check cloud resources config settings")
 	}
 
 	phase, err = r.checkRateLimitsConfig(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limits config settings", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to check rate limits config settings")
 	}
 
 	phase, err = r.reconcilePriorityClass(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile priority class", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to reconcile priority class")
 	}
 
 	phase, err = r.checkRateLimitAlertsConfig(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to check rate limit alert config settings", err)
-		return phase, err
+		return phase, errors.Wrap(err, "failed to check rate limit alert config settings")
 	}
 
 	events.HandleStageComplete(r.recorder, installation, integreatlyv1alpha1.BootstrapStage)

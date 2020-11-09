@@ -3,7 +3,6 @@ package subscription
 import (
 	"context"
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -285,7 +284,7 @@ func TestShouldReconcileSubscription(t *testing.T) {
 	}{
 		{
 			Name:      "Non matching namespace",
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: "testing-namespaces-operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
@@ -296,44 +295,44 @@ func TestShouldReconcileSubscription(t *testing.T) {
 		},
 		{
 			Name:      "Not in reconcile name list",
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: "testing-namespaces-operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "another",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 			},
 			ExpectedResult: false,
 		},
 		{
 			Name:      "\"integreatly\" subscription",
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: "testing-namespaces-operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "integreatly",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "RHMI Addon subscription",
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: "testing-namespaces-operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-rhmi",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 			},
 			ExpectedResult: true,
 		},
 		{
 			Name:      "Managed API Addon subscription",
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: "testing-namespaces-operator",
 			Request: reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "addon-managed-api-service",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 			},
 			ExpectedResult: true,

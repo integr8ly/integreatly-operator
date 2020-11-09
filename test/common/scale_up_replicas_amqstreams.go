@@ -14,7 +14,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	numberOfAmqstreamsReplicas  = 2 //size in reconciler
 	scaleUpAmqstreamsReplicas   = 1
 	scaleDownAmqstreamsReplicas = 1

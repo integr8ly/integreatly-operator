@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	pkgerr "github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -133,6 +134,13 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 		return nil
 	}
 
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+
 	// Reconcile the Service
 	if err := webhookConfig.ReconcileService(ctx, client, owner); err != nil {
 		return err
@@ -143,14 +151,14 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 	caConfigMap := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      webhookConfig.CAConfigMap,
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: namespacePrefix + "operator",
 			Annotations: map[string]string{
 				caConfigMapAnnotation: "true",
 			},
 		},
 	}
 
-	err := client.Create(ctx, caConfigMap)
+	err = client.Create(ctx, caConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
@@ -181,10 +189,16 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, cl
 
 // ReconcileService creates or updates the service that points to the Pod
 func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 	// Get the service. If it's not found, create it
 	service := &corev1.Service{}
 	if err := client.Get(ctx, k8sclient.ObjectKey{
-		Namespace: global.NamespacePrefix + "operator",
+		Namespace: namespacePrefix + "operator",
 		Name:      operatorPodServiceName,
 	}, service); err != nil {
 		if !errors.IsNotFound(err) {
@@ -205,13 +219,19 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 }
 
 func createService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 	service := &corev1.Service{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      operatorPodServiceName,
-			Namespace: global.NamespacePrefix + "operator",
+			Namespace: namespacePrefix + "operator",
 		},
 	}
-	_, err := controllerutil.CreateOrUpdate(ctx, client, service, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, service, func() error {
 		if owner != nil {
 			ownerutil.EnsureOwner(service, owner)
 		}
@@ -248,10 +268,17 @@ func createService(ctx context.Context, client k8sclient.Client, owner ownerutil
 // setupCerts waits for the secret created for the operator Service to exist, and
 // when it's ready, extracts the certificates and saves them in webhookConfig.CertDir
 func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, client k8sclient.Client) error {
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+
 	// Wait for the secret to te created
 	secret := &corev1.Secret{}
-	err := wait.PollImmediate(time.Second*1, time.Second*30, func() (bool, error) {
-		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: global.NamespacePrefix + "operator", Name: "rhmi-webhook-cert"}, secret)
+	err = wait.PollImmediate(time.Second*1, time.Second*30, func() (bool, error) {
+		err := client.Get(ctx, k8sclient.ObjectKey{Namespace: namespacePrefix + "operator", Name: "rhmi-webhook-cert"}, secret)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil
@@ -275,11 +302,17 @@ func (webhookConfig *IntegreatlyWebhookConfig) setupCerts(ctx context.Context, c
 
 func (webhookConfig *IntegreatlyWebhookConfig) waitForCAInConfigMap(ctx context.Context, client k8sclient.Client) ([]byte, error) {
 	var caBundle []byte
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return nil, pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 
-	err := wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
+	err = wait.PollImmediate(time.Second, time.Second*30, func() (bool, error) {
 		caConfigMap := &corev1.ConfigMap{}
 		if err := client.Get(ctx,
-			k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: global.NamespacePrefix + "operator"},
+			k8sclient.ObjectKey{Name: webhookConfig.CAConfigMap, Namespace: namespacePrefix + "operator"},
 			caConfigMap,
 		); err != nil {
 			if errors.IsNotFound(err) {

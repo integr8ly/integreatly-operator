@@ -152,9 +152,6 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 
 	// check if logged in already
 	if browser.StatusCode() == 302 {
-
-		t.Logf("status code %d before redirect to landing page", browser.StatusCode())
-
 		// opens landing page
 		browser.Open(tsDashboardURL)
 
@@ -163,11 +160,7 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 		}
 	}
 
-	t.Logf("status code %d before redirect to landing page", browser.StatusCode())
-
-	t.Logf("url %s body %s", browser.Url(), browser.Body())
-
-	// click on authenticate throught rhsso
+	// click on authenticate through rhsso
 	err = browser.Click("a.authorizeLink")
 	if err != nil {
 		return fmt.Errorf("failed to click authenticate throught rhsso: %w", err)
@@ -188,15 +181,9 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 			// gets the refresh url from the meta tag
 			browser.Dom().Find("meta").Each(func(index int, s *goquery.Selection) {
 				val, exist := s.Attr("content")
-				t.Logf("does meta att %s exist %t", val, exist)
-
 				if exist {
 					contentValue := strings.Split(val, ";")
-					t.Logf("length contentValue %v", len(contentValue))
-
 					if len(contentValue) > 0 {
-						t.Logf("contentValue url %v", contentValue[1])
-
 						browser.Open(contentValue[1])
 					}
 				}
@@ -209,8 +196,6 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 
 			// if redirected to the login page try again
 			if browser.Url().String() == tsLoginURL {
-				t.Logf("browser url redirected to %s", browser.Url().String())
-
 				// click on authenticate throught rhsso
 				err = browser.Click("a.authorizeLink")
 				if err != nil {
@@ -218,9 +203,6 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 				}
 			}
 		}
-
-		t.Logf("browser URL %s%s", browser.Url(), browser.Url().RequestURI())
-		t.Logf("status code %d", browser.StatusCode())
 
 		return isUserAuthenticated(browser.Url().RequestURI()), nil
 	})

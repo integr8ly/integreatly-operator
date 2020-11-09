@@ -14,7 +14,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -64,7 +63,6 @@ const (
 )
 
 var (
-	DefaultInstallationPrefix   = global.NamespacePrefix
 	productVersionMismatchFound bool
 )
 
@@ -172,7 +170,6 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	installation := &integreatlyv1alpha1.RHMI{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
-
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
@@ -201,6 +198,9 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			return fmt.Errorf("failed while retrieving addon parameter: %w", err)
 		}
 
+		namespaceSegments := strings.Split(namespace, "-")
+		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      getCrName(installType),
@@ -208,11 +208,11 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
 				Type:                 installType,
-				NamespacePrefix:      DefaultInstallationPrefix,
+				NamespacePrefix:      namespacePrefix,
 				SelfSignedCerts:      false,
-				SMTPSecret:           DefaultInstallationPrefix + "smtp",
-				DeadMansSnitchSecret: DefaultInstallationPrefix + "deadmanssnitch",
-				PagerDutySecret:      DefaultInstallationPrefix + "pagerduty",
+				SMTPSecret:           namespacePrefix + "smtp",
+				DeadMansSnitchSecret: namespacePrefix + "deadmanssnitch",
+				PagerDutySecret:      namespacePrefix + "pagerduty",
 				UseClusterStorage:    useClusterStorage,
 				AlertingEmailAddress: customerAlertingEmailAddress,
 				AlertingEmailAddresses: integreatlyv1alpha1.AlertingEmailAddresses{

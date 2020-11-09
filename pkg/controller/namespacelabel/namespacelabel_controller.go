@@ -22,8 +22,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +95,14 @@ var (
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	operatorNs := global.NamespacePrefix + "operator"
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		cancel()
+		return nil, errors.Wrap(err, "could not get watch namespace from namespacelabel controller")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+	operatorNs := namespacePrefix + "operator"
 
 	return &ReconcileNamespaceLabel{
 		mgr:               mgr,
