@@ -3,6 +3,7 @@ package installation
 import (
 	"context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"os"
 	"reflect"
 	"strings"
@@ -63,6 +64,7 @@ const (
 var (
 	DefaultInstallationPrefix   = global.NamespacePrefix
 	productVersionMismatchFound bool
+	log                         = logger.NewLogger()
 )
 
 // Add creates a new Installation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -86,6 +88,8 @@ func newReconciler(mgr manager.Manager) ReconcileInstallation {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r ReconcileInstallation) error {
+	log.Logger = log.WithContext(logger.Fields{logger.ControllerLogContext: "installation_controller"})
+
 	// Create a new controller
 	c, err := controller.New("installation-controller", mgr, controller.Options{Reconciler: reconcile.Reconciler(&r)})
 	if err != nil {
@@ -361,10 +365,13 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	for _, stage := range installType.GetInstallStages() {
 		var err error
 		var stagePhase integreatlyv1alpha1.StatusPhase
+
+		log.Logger = log.WithContext(map[string]interface{}{logger.StageLogContext: stage.Name})
+
 		if stage.Name == integreatlyv1alpha1.BootstrapStage {
-			stagePhase, err = r.bootstrapStage(installation, configManager)
+			stagePhase, err = r.bootstrapStage(installation, configManager, log)
 		} else {
-			stagePhase, err = r.processStage(installation, &stage, configManager)
+			stagePhase, err = r.processStage(installation, &stage, configManager, log)
 		}
 
 		if installation.Status.Stages == nil {
@@ -496,7 +503,7 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 				if !strings.Contains(productFinalizer, productName) {
 					continue
 				}
-				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr)
+				reconciler, err := products.NewReconciler(product, r.restConfig, configManager, installation, r.mgr, log)
 				if err != nil {
 					merr.Add(fmt.Errorf("Failed to build reconciler for product %s: %w", productName, err))
 				}
@@ -677,7 +684,7 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	serverClient, _ := k8sclient.New(r.restConfig, k8sclient.Options{})
 	for _, stage := range installationType.InstallStages {
 		for _, product := range stage.Products {
-			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
+			reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, log)
 			if err != nil {
 				return foundProducts, err
 			}
@@ -697,11 +704,11 @@ func (r *ReconcileInstallation) checkNamespaceForProducts(ns corev1.Namespace, i
 	return foundProducts, nil
 }
 
-func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.RHMI, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1.RHMI, configManager config.ConfigReadWriter, log logger.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	installation.Status.Stage = integreatlyv1alpha1.BootstrapStage
 	mpm := marketplace.NewManager()
 
-	reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(integreatlyv1alpha1.BootstrapStage)))
+	reconciler, err := NewBootstrapReconciler(configManager, installation, mpm, r.mgr.GetEventRecorderFor(string(integreatlyv1alpha1.BootstrapStage)), log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for Bootstrap: %w", err)
 	}
@@ -717,7 +724,7 @@ func (r *ReconcileInstallation) bootstrapStage(installation *integreatlyv1alpha1
 	return phase, nil
 }
 
-func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.RHMI, stage *Stage, configManager config.ConfigReadWriter, log logger.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	incompleteStage := false
 	productVersionMismatchFound = false
 
@@ -726,7 +733,9 @@ func (r *ReconcileInstallation) processStage(installation *integreatlyv1alpha1.R
 	installation.Status.Stage = stage.Name
 
 	for _, product := range stage.Products {
-		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr)
+		log.Logger = log.WithContext(logger.Fields{logger.ProductLogContext: product.Name})
+
+		reconciler, err := products.NewReconciler(product.Name, r.restConfig, configManager, installation, r.mgr, log)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to build a reconciler for %s: %w", product.Name, err)
 		}

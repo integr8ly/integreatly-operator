@@ -12,8 +12,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
-	"github.com/sirupsen/logrus"
-
 	chev1 "github.com/eclipse/che-operator/pkg/apis/org/v1"
 
 	crov1alpha1 "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
@@ -24,6 +22,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 
@@ -51,12 +50,12 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.RHMI
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	logger        logger.Logger
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, log logger.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadCodeReady()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve che config: %w", err)
@@ -72,14 +71,12 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		logger:        log,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
@@ -182,12 +179,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	r.logger.Infof("%s has reconciled successfully", logger.Fields{"productName": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling external datastore")
+	r.logger.Info("Reconciling external datastore")
 	ns := r.installation.Namespace
 
 	// setup postgres custom resource
@@ -218,7 +215,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create backup secret
-	logrus.Info("Reconciling codeready backup secret")
+	r.logger.Info("Reconciling codeready backup secret")
 	cheBackUpSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetPostgresBackupSecretName(),
@@ -253,7 +250,7 @@ func (r *Reconciler) reconcileCheCluster(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("keycloak config is not valid: %w", err)
 	}
 
-	r.logger.Infof("creating required custom resources in namespace: %s", r.Config.GetNamespace())
+	r.logger.Infof("Creating required custom resources", logger.Fields{"namespace": r.Config.GetNamespace()})
 
 	kcRealm := &keycloak.KeycloakRealm{}
 	key := k8sclient.ObjectKey{Name: kcConfig.GetRealm(), Namespace: kcConfig.GetNamespace()}
@@ -340,7 +337,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Infof("checking keycloak client exists for che")
+	r.logger.Info("checking keycloak client exists for che")
 	kcConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not retrieve keycloak config: %w", err)
@@ -390,7 +387,7 @@ func (r *Reconciler) reconcileKeycloakClient(ctx context.Context, serverClient k
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not create/update codeready keycloak client: %w", err)
 	}
 
-	r.logger.Infof("The operation result for keycloakclient %s was %s", kcClient.Name, or)
+	r.logger.Infof("Operation result for keycloakclient", logger.Fields{"kcClientName": kcClient.Name, "result": string(or)})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 

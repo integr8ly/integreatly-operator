@@ -2,6 +2,7 @@ package amqonline
 
 import (
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -14,7 +15,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "AMQ Online",
 		Installation: r.inst,
-		Logger:       r.logger,
+		Logger:       logger.NewLogger(),
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "rhmi-amq-online-slo",

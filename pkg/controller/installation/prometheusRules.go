@@ -17,7 +17,7 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,
-		Logger:       logger,
+		Logger:       log,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "rhmi-installation-controller-alerts",

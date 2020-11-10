@@ -14,9 +14,8 @@ import (
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-
-	"github.com/sirupsen/logrus"
 
 	syndesisv1beta1 "github.com/syndesisio/syndesis/install/operator/pkg/apis/syndesis/v1beta1"
 
@@ -60,12 +59,12 @@ type Reconciler struct {
 	installation  *integreatlyv1alpha1.RHMI
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	logger        logger.Logger
 	recorder      record.EventRecorder
 }
 
 // NewReconciler instantiates and returns a reference to a new Reconciler.
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, log logger.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadFuse()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve fuse config: %w", err)
@@ -86,14 +85,12 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	config.SetBlackboxTargetPath("/oauth/healthz")
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		logger:        log,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
@@ -184,7 +181,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	phase, err = r.reconcileTemplates(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileTemplates", phase)
+	r.logger.Infof("ReconcileTemplates", logger.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
@@ -207,7 +204,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	r.logger.Infof("Reconciled successfully", logger.Fields{"product": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -244,14 +241,14 @@ func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8scli
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update monitoring template %s: %w", template, err)
 		}
-		logrus.Infof("Reconciling the monitoring template %s was successful", template)
+		r.logger.Infof("Reconciling the monitoring template was successful", logger.Fields{"template": template})
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 // Ensures all users in rhmi-developers group have view Fuse permissions
 func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Infof("Reconciling view Fuse permissions for %s group on %s namespace", developersGroupName, r.Config.GetNamespace())
+	r.logger.Infof("Reconciling view Fuse permissions", logger.Fields{"group": developersGroupName, "namespace": r.Config.GetNamespace()})
 	viewFuseRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      developersGroupName + "-fuse-view",
@@ -275,7 +272,7 @@ func (r *Reconciler) reconcileViewFusePerms(ctx context.Context, client k8sclien
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
-	r.logger.Infof("The %s subjects were: %s", viewFuseRoleBinding.Name, or)
+	r.logger.Infof("Operation Result", logger.Fields{"viewFuseRoleBinding": viewFuseRoleBinding.Name, "result": string(or)})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -355,7 +352,7 @@ func (r *Reconciler) reconcileCustomResource(ctx context.Context, rhmi *integrea
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update syndesis-promtheus PVC custom resource: %w", err)
 	}
 	if opRes != controllerutil.OperationResultNone {
-		r.logger.Infof("operation result of creating/updating syndesis-prometheus PVC CR was %v", opRes)
+		r.logger.Infof("operation result of creating/updating syndesis-prometheus PVC CR", logger.Fields{"result": opRes})
 	}
 
 	cr := &syndesisv1beta1.Syndesis{

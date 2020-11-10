@@ -2,6 +2,7 @@ package marin3r
 
 import (
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -12,7 +13,7 @@ import (
 func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
-		Logger:       r.logger,
+		Logger:       logger.NewLogger(),
 		ProductName:  "Marin3r",
 		Alerts: []resources.AlertConfiguration{
 			{

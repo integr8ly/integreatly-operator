@@ -3,6 +3,7 @@ package monitoring
 import (
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -13,7 +14,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "monitoring",
 		Installation: r.installation,
-		Logger:       r.Logger,
+		Logger:       logger.NewLogger(),
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "backup-monitoring-alerts",

@@ -30,6 +30,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
@@ -94,7 +95,7 @@ type Interface interface {
 	VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool
 }
 
-func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log logger.Logger) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthHttpClient := &http.Client{
 		Timeout: time.Second * 10,
@@ -132,9 +133,9 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 			return nil, err
 		}
 	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductFuse:
-		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
 		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "")
 	case integreatlyv1alpha1.ProductAMQOnline:

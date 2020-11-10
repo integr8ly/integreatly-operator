@@ -3,6 +3,7 @@ package marin3r
 import (
 	"errors"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,7 +34,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaConsoleURL string) (resources.Al
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "3Scale",
 		Installation: r.installation,
-		Logger:       r.logger,
+		Logger:       logger.NewLogger(),
 		Alerts:       alerts,
 	}, nil
 }

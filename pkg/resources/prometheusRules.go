@@ -7,7 +7,7 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
-	"github.com/sirupsen/logrus"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,7 +20,7 @@ type AlertReconciler interface {
 
 type AlertReconcilerImpl struct {
 	ProductName  string
-	Logger       *logrus.Entry
+	Logger       logger.Logger
 	Installation *integreatlyv1alpha1.RHMI
 	Alerts       []AlertConfiguration
 }
@@ -51,11 +51,7 @@ func (r *AlertReconcilerImpl) ReconcileAlerts(ctx context.Context, client k8scli
 		if or, err := r.reconcileRule(ctx, client, monitoringConfig, alert); err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		} else if or != controllerutil.OperationResultNone {
-			r.Logger.Infof("The operation result for %s %s was %s",
-				r.ProductName,
-				alert.AlertName,
-				or,
-			)
+			r.Logger.Infof("The operation result", logger.Fields{"productName": r.ProductName, "alertName": alert.AlertName, "result": string(or)})
 		}
 	}
 
