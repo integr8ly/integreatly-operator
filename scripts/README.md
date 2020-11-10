@@ -14,3 +14,12 @@ This script creates a release csv for the operator under the `olm-catalog` using
 **Usage**
 
 `SEMVER=2.6.0 OLM_TYPE=managed-api-service ORG=<user-repo> ./prepare-release.sh`
+
+## rhoam-manifest-generator.sh
+This script generates a manifest of the integreatly-operator which includes the direct and indirect dependencies 
+used. The generated manifest corresponds to a released version and is located in: "../rhoam-manifests/" and can be used
+by external entities.
+
+**Usage**
+
+`make manifest/release`
