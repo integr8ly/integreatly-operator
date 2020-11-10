@@ -83,7 +83,7 @@ var (
 		// Uninstall RHMI
 		"api.openshift.com/addon-rhmi-operator-delete": Uninstall,
 		// Uninstall MAO
-		"api.openshift.com/addon-managed-api-service-delete": Uninstall,
+		"api.openshift.com/addon-rhoam-operator-delete": Uninstall,
 		// Update CIDR value
 		"cidr": CheckCidrValueAndUpdate,
 	}
