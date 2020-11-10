@@ -10,7 +10,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/version"
 
-	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/metrics"
@@ -570,6 +570,11 @@ func (r *ReconcileInstallation) handleUninstall(installation *integreatlyv1alpha
 
 		err = r.client.Update(context.TODO(), installation)
 		if err != nil {
+			merr.Add(err)
+			return retryRequeue, merr
+		}
+
+		if err := addon.UninstallOperator(context.TODO(), r.client, installation); err != nil {
 			merr.Add(err)
 			return retryRequeue, merr
 		}
