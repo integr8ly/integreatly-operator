@@ -409,7 +409,7 @@ github.com/integr8ly/cloud-resource-operator/pkg/providers/aws
 github.com/integr8ly/cloud-resource-operator/pkg/resources
 # github.com/integr8ly/grafana-operator v2.0.0+incompatible
 github.com/integr8ly/grafana-operator/pkg/apis/integreatly/v1alpha1
-# github.com/integr8ly/grafana-operator/v3 v3.4.0
+# github.com/integr8ly/grafana-operator/v3 v3.6.0
 github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1
 # github.com/integr8ly/keycloak-client v0.1.2
 github.com/integr8ly/keycloak-client/pkg/common
@@ -663,7 +663,7 @@ github.com/rubenv/sql-migrate
 github.com/rubenv/sql-migrate/sqlparse
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
-# github.com/sergi/go-diff v1.0.0
+# github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
