@@ -33,11 +33,11 @@ echo 'Percentage failed = ' $percent_failed"%"
 echo 'Percentage passed = ' $percent_passed"%"
 echo " "
 echo '==============================================================================================='
-echo '90% Percential'
+echo '90% Percentile'
 echo " "
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.statistics[].summary.percentileResponseTime."90.0"' > percential.txt
-NoOfEndpoints=$(wc -l percential.txt | awk '{print $1}')
-SumPercential=$(awk '{s+=$1} END {print s}' percential.txt)
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.statistics[].summary.percentileResponseTime."90.0"' > percentile.txt
+NoOfEndpoints=$(wc -l percentile.txt | awk '{print $1}')
+SumPercential=$(awk '{s+=$1} END {print s}' percentile.txt)
 mean=$(expr $SumPercential / $NoOfEndpoints)
-max=$(grep -Eo '[0-9]+' percential.txt | sort -rn | head -n 1)
+max=$(grep -Eo '[0-9]+' percentile.txt | sort -rn | head -n 1)
 echo "Mean = " $mean " Max = " $max
