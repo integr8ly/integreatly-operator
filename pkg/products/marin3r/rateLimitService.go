@@ -25,6 +25,7 @@ var (
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
+	Installation    *integreatlyv1alpha1.RHMI
 	StatsdConfig    *StatsdConfig
 	RateLimitConfig *marin3rconfig.RateLimitConfig
 }
@@ -34,9 +35,10 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
+		Installation:    installation,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
 	}
@@ -249,6 +251,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 						Env: envs,
 					},
 				},
+				PriorityClassName: r.Installation.Spec.PriorityClassName,
 				Volumes: []corev1.Volume{
 					{
 						Name: "runtime-config",
