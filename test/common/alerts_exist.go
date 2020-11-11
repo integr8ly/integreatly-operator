@@ -327,6 +327,12 @@ func managedApiSpecificRules() []alertsTestRule {
 			},
 		},
 		{
+			File: NamespacePrefix + "marin3r-rate-limit-spike.yaml",
+			Rules: []string{
+				"RHOAMApiUsageOverLimit",
+			},
+		},
+		{
 			File: NamespacePrefix + "operator-rhoam-installation-controller-alerts.yaml",
 			Rules: []string{
 				"RHOAMInstallationControllerIsNotReconciling",
