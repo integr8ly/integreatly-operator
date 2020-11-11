@@ -189,8 +189,10 @@ test/e2e/prow: test/e2e
 test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export MANAGED_API_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := "managed-api"
+test/e2e/rhoam/prow: export NAMESPACE := redhat-rhoam-operator
+test/e2e/rhoam/prow: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 test/e2e/rhoam/prow:
-	echo $(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
+	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
 
 .PHONY: test/e2e
 test/e2e:  export SURF_DEBUG_HEADERS=1
