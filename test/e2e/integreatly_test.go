@@ -36,7 +36,7 @@ const (
 	cloudResourcesStageTimeout   = time.Minute * 10
 	monitoringStageTimeout       = time.Minute * 10
 	authenticationStageTimeout   = time.Minute * 30
-	productsStageTimout          = time.Minute * 30
+	productsStageTimout          = time.Minute * 45
 	solutionExplorerStageTimeout = time.Minute * 10
 	artifactsDirEnv              = "ARTIFACT_DIR"
 )
