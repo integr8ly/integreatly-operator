@@ -44,6 +44,6 @@ do
     SumPercential=$(awk '{s+=$1} END {print s}' ${percentile})
     mean=$(expr $SumPercential / $NoOfEndpoints)
     max=$(grep -Eo '[0-9]+' ${percentile} | sort -rn | head -n 1)
-    echo ${percentile}" Mean = "$mean"ms Max = "$max"ms"
+    echo ${percentile}" Mean = "$mean"ns Max = "$max"ns"
 done
 curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.' > Backup.json
