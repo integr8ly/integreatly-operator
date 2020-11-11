@@ -57,7 +57,9 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
 
     Note: This not possible for installations via addon-flow since Hive would revert your modifications to whatever is set in Managed Tenants repository in [sku-limits.yaml.j2](https://gitlab.cee.redhat.com/service/managed-tenants/-/blob/master/addons/managed-api-service/metadata/stage/sku-limits.yaml.j2) file.
 
-6. Run the performance test suite
+6. In terminal window #2, run the following [script for alert watching](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh)
+
+7. Run the performance test suite
 
    The way to do it is described in [MGDAPI-238](https://issues.redhat.com/browse/MGDAPI-238) and in [Austin's doc](https://docs.google.com/document/d/1NJBUsieRkBLnN2PMAF5cpaH7uXq9mZCx1JQaT9Ruytk/edit?usp=sharing). Use [trepel fork](https://gitlab.cee.redhat.com/trepel/3scale-py-testsuite/-/tree/performance_tests). To validate the advertised load use [rhsso_tokens](https://gitlab.cee.redhat.com/trepel/3scale-py-testsuite/-/blob/performance_tests/testsuite/tests/performance/apicast/smoke/template_rhsso_tokens.hf.yaml) benchmark. It is set to have 10% of login flow requests. You will need to change `maxSessions` (~6000), `usersPerSec` (~25 to validate 20M load), `duration`, `maxDuration`, and [http.sharedConnections](https://gitlab.cee.redhat.com/trepel/3scale-py-testsuite/-/blob/performance_tests/testsuite/tests/performance/apicast/smoke/test_smoke_rhsso_tokens.py#L54-55) (~1200).
 
@@ -66,12 +68,12 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
   - best to track the log of Hyperfoil controller to get the exact time the when the `rampUp` phase starts
   - create the file in the directory where the script resides
 
-7. Create a `perf-test-end-time.txt` for [capture_resource_metrics script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/capture_resource_metrics.sh)
+8. Create a `perf-test-end-time.txt` for [capture_resource_metrics script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/capture_resource_metrics.sh)
 
 - create the file in the directory where the script resides
 - to get the exact time track the Hyperfoil controller log
 
-8. Collect the data about the performance test run
+9. Collect the data about the performance test run
 
 - from [alerts-during-perf-testing](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh)
 - from Hyperfoil
@@ -83,6 +85,8 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
   - stats <your-run-name>
   - export -f json -d . <your-run-name> # to export the data
   - use [report tool](https://github.com/Hyperfoil/report) to generate the HTML out of the exported data
+- review alerts based on the outcome of [the script for alert watching](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/alerts-during-perf-testing.sh)
+  - there should be no firings for 20M benchmark
 - eye review of various Grafana Dashboards, see [this guide](https://docs.google.com/document/d/1KznoB-we73lGUViJApVHyBoIgh3xpgyak6ODAEAHbwk/edit?usp=sharing) on how to do it
 - use [capture_resource_metrics script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/capture_resource_metrics.sh) to get the data
 - add a new column about the run to the [Load Testing](https://docs.google.com/spreadsheets/d/1v_bZIk8B_thZi93hGBNiOOnbSix0gmpwy3LV_s4WFPw/edit?usp=sharing) spreadsheet
@@ -90,11 +94,11 @@ Run performance tests against 3scale + user SSO to validate the advertised load.
   - rest of the rows should be filled in based on the [capture_resource_metrics script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/capture_resource_metrics.sh)
   - add any additional info (e.g. links to Hyperfoil report, Grafana Dashboard snapshots etc)
 
-9. Analyse the results
+10. Analyse the results
 
 - compare with the previous runs
 
-10. Attach the spreadsheet to the JIRA ticket
+11. Attach the spreadsheet to the JIRA ticket
 
 - store the Hyperfoil report in Google Drive
 - store the Grafana Dashboard snapshot(s) there too if needed
