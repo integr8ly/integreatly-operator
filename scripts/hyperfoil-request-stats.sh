@@ -35,9 +35,15 @@ echo " "
 echo '==============================================================================================='
 echo '90% Percentile'
 echo " "
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.statistics[].summary.percentileResponseTime."90.0"' > percentile.txt
-NoOfEndpoints=$(wc -l percentile.txt | awk '{print $1}')
-SumPercential=$(awk '{s+=$1} END {print s}' percentile.txt)
-mean=$(expr $SumPercential / $NoOfEndpoints)
-max=$(grep -Eo '[0-9]+' percentile.txt | sort -rn | head -n 1)
-echo "Mean = " $mean " Max = " $max
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric | test("post.")) | .summary.percentileResponseTime."90.0"' > post-percentile
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric | test("get.")) | .summary.percentileResponseTime."90.0"' > get-percentile
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric | test("create.")) | .summary.percentileResponseTime."90.0"' > login-percentile
+for percentile in post-percentile get-percentile login-percentile
+do
+    NoOfEndpoints=$(wc -l ${percentile} | awk '{print $1}')
+    SumPercential=$(awk '{s+=$1} END {print s}' ${percentile})
+    mean=$(expr $SumPercential / $NoOfEndpoints)
+    max=$(grep -Eo '[0-9]+' ${percentile} | sort -rn | head -n 1)
+    echo ${percentile}" Mean = "$mean"ms Max = "$max"ms"
+done
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total | jq '.' > Backup.json
