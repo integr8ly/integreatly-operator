@@ -309,6 +309,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 	r.Logger.Infof("Authentication flow added to %s IDP", idpAlias)
 
+	err = r.SyncOpenshiftIDPClientSecret(ctx, serverClient, authenticated, r.Config, keycloakRealmName)
+	if err != nil {
+		r.Logger.Infof("failed to sync openshift idp client secret: %v", err)
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to sync openshift idp client secret: %w", err)
+	}
+
 	// Get all currently existing keycloak users
 	keycloakUsers, err := GetKeycloakUsers(ctx, serverClient, r.Config.GetNamespace())
 	if err != nil {

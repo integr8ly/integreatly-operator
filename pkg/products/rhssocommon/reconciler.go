@@ -109,7 +109,6 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 		}
 	}
 
-	// Delete all clients
 	clients := &keycloak.KeycloakClientList{}
 	err = serverClient.List(ctx, clients, opts)
 	if err != nil {
@@ -225,22 +224,11 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 }
 
 func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI, sso config.RHSSOInterface, kcr *keycloak.KeycloakRealm, redirectUris []string) error {
-	oauthClientSecrets := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: r.ConfigManager.GetOauthClientsSecretName(),
-		},
-	}
 
-	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	clientSecret, err := r.getClientSecret(ctx, serverClient, sso)
 	if err != nil {
-		return fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+		return err
 	}
-
-	clientSecretBytes, ok := oauthClientSecrets.Data[string(sso.GetProductName())]
-	if !ok {
-		return fmt.Errorf("Could not find %s key in %s Secret: %w", string(sso.GetProductName()), oauthClientSecrets.Name, err)
-	}
-	clientSecret := string(clientSecretBytes)
 
 	oauthClient := &oauthv1.OAuthClient{
 		ObjectMeta: metav1.ObjectMeta{
@@ -280,7 +268,59 @@ func (r *Reconciler) SetupOpenshiftIDP(ctx context.Context, serverClient k8sclie
 			},
 		})
 	}
+
 	return nil
+}
+
+// Sync the secret to cover the scenario where the secret is changed through the Keycloak GUI.
+func (r *Reconciler) SyncOpenshiftIDPClientSecret(ctx context.Context, serverClient k8sclient.Client, authenticated keycloakCommon.KeycloakInterface, sso config.RHSSOInterface, keycloakRealmName string) error {
+
+	clientSecret, err := r.getClientSecret(ctx, serverClient, sso)
+	if err != nil {
+		return err
+	}
+
+	idp, err := authenticated.GetIdentityProvider(idpAlias, keycloakRealmName)
+	if err != nil {
+		r.Logger.Errorf("failed to get identity provider via keycloak api %v", err)
+		return fmt.Errorf("failed to get identity provider via keycloak api %w", err)
+	}
+
+	if idp.Config == nil {
+		idp.Config = map[string]string{}
+	}
+
+	idp.Config["clientSecret"] = clientSecret
+	err = authenticated.UpdateIdentityProvider(idp, keycloakRealmName)
+	if err != nil {
+		r.Logger.Errorf("Unable to update Identity Provider %v", err)
+		return fmt.Errorf("Unable to update Identity Provider %w", err)
+	}
+
+	r.Logger.Infof("Updated Identity Provider, %s, with client Secret: ", idpAlias)
+
+	return nil
+}
+
+func (r *Reconciler) getClientSecret(ctx context.Context, serverClient k8sclient.Client, sso config.RHSSOInterface) (string, error) {
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: r.ConfigManager.GetOauthClientsSecretName(),
+		},
+	}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: oauthClientSecrets.Name, Namespace: r.ConfigManager.GetOperatorNamespace()}, oauthClientSecrets)
+	if err != nil {
+		r.Logger.Errorf("Could not find %s Secret: %v", oauthClientSecrets.Name, err)
+		return "", fmt.Errorf("Could not find %s Secret: %w", oauthClientSecrets.Name, err)
+	}
+
+	clientSecretBytes, ok := oauthClientSecrets.Data[string(sso.GetProductName())]
+	if !ok {
+		r.Logger.Errorf("Could not find %s key in %s Secret: %v", string(sso.GetProductName()), oauthClientSecrets.Name, err)
+		return "", fmt.Errorf("Could not find %s key in %s Secret: %w", string(sso.GetProductName()), oauthClientSecrets.Name, err)
+	}
+	return string(clientSecretBytes), nil
 }
 
 func (r *Reconciler) GetOAuthClientName(sso config.RHSSOInterface) string {
