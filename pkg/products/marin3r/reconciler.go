@@ -261,7 +261,8 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		logrus.Errorf("failed to get Grafana console URL %v", err)
 	}
 
-	alertReconciler, err := r.newAlertsReconciler(granafaConsoleURL)
+	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", granafaConsoleURL)
+	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}

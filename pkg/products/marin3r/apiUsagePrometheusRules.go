@@ -19,13 +19,13 @@ var (
 	totalRequestsMetric = "ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits"
 )
 
-func (r *Reconciler) newAlertsReconciler(grafanaConsoleURL string) (resources.AlertReconciler, error) {
+func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.AlertReconciler, error) {
 
 	requestsAllowedPerSecond, err := getRateLimitInSeconds(r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit)
 	if err != nil {
 		return nil, err
 	}
-	alerts, err := mapAlertsConfiguration(r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaConsoleURL)
+	alerts, err := mapAlertsConfiguration(r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -41,7 +41,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaConsoleURL string) (resources.Al
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaConsoleURL string) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
@@ -83,7 +83,7 @@ func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPe
 							"RHOAM API usage is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
 							alertConfig.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
 						),
-						"grafanaConsole": string(grafanaConsoleURL),
+						"grafanaConsole": grafanaDashboardURL,
 					},
 					Expr:   intstr.FromString(expr),
 					Labels: map[string]string{"severity": alertConfig.Level},

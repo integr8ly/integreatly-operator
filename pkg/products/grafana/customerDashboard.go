@@ -778,3 +778,5 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
   "uid": "66ab72e0d012aacf34f907be9d81cd9e",
   "version": 1
 }`
+
+// The UID above is used to construct the url for the grafana dashboard in customer alerts. Please do not edit this value.
