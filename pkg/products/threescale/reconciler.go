@@ -278,13 +278,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcilePodPriority(ctx, serverClient, installation)
-	logrus.Infof("Phase: %s reconcilePodPriority", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to pod priority", err)
-		return phase, err
-	}
-
 	logrus.Infof("%s is successfully deployed", r.Config.GetProductName())
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
@@ -424,36 +417,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-
-		ns := global.NamespacePrefix + defaultInstallationNamespace
-		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{}
-			phase, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
-			if err != nil {
-				return phase, err
-			}
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-
-		ns := global.NamespacePrefix + defaultInstallationNamespace
-		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{}
-			phase, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
-			if err != nil {
-				return phase, err
-			}
-		}
-	}
-
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
 // restores seed and master api cast secrets if available
 func (r *Reconciler) restoreSystemSecrets(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	for _, secretName := range []string{systemSeedSecretName, systemMasterApiCastSecretName} {
