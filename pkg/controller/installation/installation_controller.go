@@ -88,7 +88,6 @@ func newReconciler(mgr manager.Manager) ReconcileInstallation {
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r ReconcileInstallation) error {
-	log.Logger = log.WithContext(logger.Fields{logger.ControllerLogContext: "installation_controller"})
 
 	// Create a new controller
 	c, err := controller.New("installation-controller", mgr, controller.Options{Reconciler: reconcile.Reconciler(&r)})
@@ -251,6 +250,8 @@ type ReconcileInstallation struct {
 // Reconcile reads that state of the cluster for a Installation object and makes changes based on the state read
 // and what is in the Installation.Spec
 func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	log.Logger = log.WithContext(logger.Fields{logger.ControllerLogContext: "installation_controller", "reconcile": resources.GetUUID()})
+
 	installInProgress := false
 	installation := &integreatlyv1alpha1.RHMI{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, installation)
