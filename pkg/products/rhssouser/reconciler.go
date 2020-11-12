@@ -200,7 +200,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.ReconcilePodPriority(ctx, serverClient, r.Config.RHSSOCommon, installation)
+	phase, err = r.ReconcileStatefulSet(ctx, serverClient, r.Config.RHSSOCommon)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconsile RHSSO pod priority", err)
 		return phase, err
@@ -231,12 +231,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.ReconcileZoneTopologySpreadConstraints(ctx, serverClient, r.Config.RHSSOCommon)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.Recorder, installation, phase, "Failed to reconcile topology spread constraints", err)
 		return phase, err
 	}
 

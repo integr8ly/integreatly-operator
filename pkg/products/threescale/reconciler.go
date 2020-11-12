@@ -277,13 +277,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcilePodPriority(ctx, serverClient, installation)
-	logrus.Infof("Phase: %s reconcileComponents", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to pod priority", err)
-		return phase, err
-	}
-
 	logrus.Infof("%s is successfully deployed", r.Config.GetProductName())
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
@@ -410,22 +403,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
-	return integreatlyv1alpha1.PhaseCompleted, nil
-}
-
-func (r *Reconciler) reconcilePodPriority(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-
-		ns := global.NamespacePrefix + defaultInstallationNamespace
-		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{}
-			_, err := resources.ReconcilePodPriority(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: ns}, resources.SelectFromDeploymentConfig, deploymentConfig, r.installation.Spec.PriorityClassName)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseInProgress, err
-			}
-		}
-	}
-
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -958,6 +935,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		},
 	}
 
+	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
+	if err != nil {
+		r.logger.Errorf("error when deciding if pod anti affinity is required. Defaulted to false: %v", err)
+		antiAffinityRequired = false
+	}
+
 	status, err := controllerutil.CreateOrUpdate(ctx, serverClient, apim, func() error {
 
 		apim.Spec.HighAvailability = &threescalev1.HighAvailabilitySpec{Enabled: true}
@@ -994,6 +977,44 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		if *apim.Spec.Zync.QueSpec.Replicas < numberOfReplicas {
 			*apim.Spec.Zync.QueSpec.Replicas = numberOfReplicas
 		}
+
+		apim.Spec.System.AppSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "system",
+			"threescale_component_element": "app",
+		})
+		apim.Spec.System.SidekiqSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "system",
+			"threescale_component_element": "sidekiq",
+		})
+		apim.Spec.Apicast.ProductionSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "apicast",
+			"threescale_component_element": "production",
+		})
+		apim.Spec.Apicast.StagingSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "apicast",
+			"threescale_component_element": "staging",
+		})
+
+		apim.Spec.Backend.ListenerSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "backend",
+			"threescale_component_element": "listener",
+		})
+		apim.Spec.Backend.WorkerSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "backend",
+			"threescale_component_element": "worker",
+		})
+		apim.Spec.Backend.CronSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "backend",
+			"threescale_component_element": "cron",
+		})
+		apim.Spec.Zync.AppSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "zync",
+			"threescale_component_element": "zync",
+		})
+		apim.Spec.Zync.QueSpec.Affinity = resources.SelectAntiAffinityForCluster(antiAffinityRequired, map[string]string{
+			"threescale_component":         "zync",
+			"threescale_component_element": "zync-que",
+		})
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
@@ -2031,9 +2052,28 @@ func (r *Reconciler) deleteConsoleLink(ctx context.Context, serverClient k8sclie
 func (r *Reconciler) reconcileDeploymentConfigs(ctx context.Context, serverClient k8sclient.Client, productNamespace string) (integreatlyv1alpha1.StatusPhase, error) {
 
 	for _, name := range threeScaleDeploymentConfigs {
-		deploymentConfig := &appsv1.DeploymentConfig{}
+		deploymentConfig := &appsv1.DeploymentConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: productNamespace,
+			},
+		}
 
-		phase, err := resources.ReconcileZoneTopologySpreadConstraints(ctx, serverClient, k8sclient.ObjectKey{Name: name, Namespace: productNamespace}, resources.SelectFromDeploymentConfig, "app", deploymentConfig)
+		podPriorityMutation := resources.NoopMutate
+		if r.installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			podPriorityMutation = resources.MutatePodPriority(r.installation.Spec.PriorityClassName)
+		}
+
+		phase, err := resources.UpdatePodTemplateIfExists(
+			ctx,
+			serverClient,
+			resources.SelectFromDeploymentConfig,
+			resources.AllMutationsOf(
+				resources.MutateZoneTopologySpreadConstraints("app"),
+				podPriorityMutation,
+			),
+			deploymentConfig,
+		)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
