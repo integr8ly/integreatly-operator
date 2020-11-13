@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
-
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -30,7 +28,7 @@ func makeScheduleScenario(scenario *scheduleScenario) struct {
 	Validate func(*testing.T, error, *integreatlyv1alpha1.RHMIConfig)
 } {
 	scenario.config.Name = "test-config"
-	scenario.config.Namespace = global.NamespacePrefix + "operator"
+	scenario.config.Namespace = "testing-namespaces-operator"
 
 	return struct {
 		Name     string
@@ -62,7 +60,7 @@ func TestUpdateStatus(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
@@ -97,7 +95,7 @@ func TestUpdateStatus(t *testing.T) {
 			Config: &integreatlyv1alpha1.RHMIConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-config",
-					Namespace: global.NamespacePrefix + "operator",
+					Namespace: "testing-namespaces-operator",
 				},
 				Spec: integreatlyv1alpha1.RHMIConfigSpec{
 					Maintenance: integreatlyv1alpha1.Maintenance{
@@ -257,7 +255,7 @@ func TestUpdateStatus(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(buildScheme(), scenario.Config)
 			err := UpdateStatus(context.TODO(), client, scenario.Config)
 			updatedConfig := &integreatlyv1alpha1.RHMIConfig{}
-			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: global.NamespacePrefix + "operator"}, updatedConfig)
+			client.Get(context.TODO(), k8sclient.ObjectKey{Name: "test-config", Namespace: "testing-namespaces-operator"}, updatedConfig)
 			scenario.Validate(t, err, updatedConfig)
 		})
 	}

@@ -3,7 +3,6 @@ package backup
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +15,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// TestAWSSnapshotPostgres tests that the AWSBackupExecutor succesfully creates
+// TestAWSSnapshotPostgres tests that the AWSBackupExecutor successfully creates
 // a PostgresSnapshot and waits for it's completion
 func TestAWSSnapshotPostgres(t *testing.T) {
 	scheme, err := buildSchemeForAWSBackup()
@@ -25,7 +24,7 @@ func TestAWSSnapshotPostgres(t *testing.T) {
 		return
 	}
 
-	namespace := global.NamespacePrefix + "operator"
+	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -73,7 +72,7 @@ func TestAWSSnapshotRedis(t *testing.T) {
 		return
 	}
 
-	namespace := global.NamespacePrefix + "operator"
+	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -121,7 +120,7 @@ func TestAWSSnapshotPostgres_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := global.NamespacePrefix + "operator"
+	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhmi-postgres"
 
 	client := fake.NewFakeClientWithScheme(scheme)
@@ -177,7 +176,7 @@ func TestAWSSnapshotRedis_FailedJob(t *testing.T) {
 		return
 	}
 
-	namespace := global.NamespacePrefix + "operator"
+	namespace := "testing-namespaces-operator"
 	resourceName := "test-rhmi-redis"
 
 	client := fake.NewFakeClientWithScheme(scheme)

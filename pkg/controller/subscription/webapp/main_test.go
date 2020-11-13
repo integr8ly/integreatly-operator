@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"reflect"
 	"testing"
 
@@ -38,8 +37,12 @@ func TestNotifyUpgrade(t *testing.T) {
 
 	scenarios := []*notifyUpgradeScenario{
 		{
-			name:               "Non existent webapp",
-			config:             &integreatlyv1alpha1.RHMIConfig{},
+			name: "Non existent webapp",
+			config: &integreatlyv1alpha1.RHMIConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "test-namespaces-webapp",
+				},
+			},
 			isServiceAffecting: true,
 			version:            "2.3.0",
 			webapp:             nil,
@@ -61,6 +64,9 @@ func TestNotifyUpgrade(t *testing.T) {
 		{
 			name: "Upgrade data added",
 			config: &integreatlyv1alpha1.RHMIConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Namespace: "test-namespaces-webapp",
+				},
 				Status: integreatlyv1alpha1.RHMIConfigStatus{
 					Upgrade: integreatlyv1alpha1.RHMIConfigStatusUpgrade{
 						Scheduled: &integreatlyv1alpha1.UpgradeSchedule{
@@ -74,7 +80,7 @@ func TestNotifyUpgrade(t *testing.T) {
 			webapp: &solutionExplorerv1alpha1.WebApp{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      solutionexplorer.DefaultName,
-					Namespace: global.NamespacePrefix + "solution-explorer",
+					Namespace: "test-namespaces-solution-explorer",
 				},
 				Spec: solutionExplorerv1alpha1.WebAppSpec{
 					Template: solutionExplorerv1alpha1.WebAppTemplate{
@@ -167,6 +173,7 @@ func TestClearNotification(t *testing.T) {
 		name      string
 		webapp    *solutionExplorerv1alpha1.WebApp
 		assertion func(error, *solutionExplorerv1alpha1.WebApp) error
+		nsPrefix  string
 	}
 
 	scenarios := []*clearNotificationScenario{
@@ -180,13 +187,14 @@ func TestClearNotification(t *testing.T) {
 
 				return nil
 			},
+			nsPrefix: "testing-namespaces-",
 		},
 		{
 			name: "Upgrade parameter is set to null",
 			webapp: &solutionExplorerv1alpha1.WebApp{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      solutionexplorer.DefaultName,
-					Namespace: global.NamespacePrefix + "solution-explorer",
+					Namespace: "testing-namespaces-solution-explorer",
 				},
 				Spec: solutionExplorerv1alpha1.WebAppSpec{
 					Template: solutionExplorerv1alpha1.WebAppTemplate{
@@ -216,6 +224,7 @@ func TestClearNotification(t *testing.T) {
 
 				return nil
 			},
+			nsPrefix: "testing-namespaces-",
 		},
 	}
 
@@ -232,7 +241,7 @@ func TestClearNotification(t *testing.T) {
 		client := fake.NewFakeClientWithScheme(scheme, objects...)
 		notifier := NewUpgradeNotifierWithClient(context.TODO(), client)
 
-		err := notifier.ClearNotification()
+		err := notifier.ClearNotification(scenario.nsPrefix)
 
 		var webapp *solutionExplorerv1alpha1.WebApp
 		if scenario.webapp != nil {

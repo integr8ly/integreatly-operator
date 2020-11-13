@@ -7,7 +7,7 @@ import (
 	monitoring "github.com/integr8ly/integreatly-operator/pkg/products/monitoring/dashboards"
 )
 
-func getSpecDetailsForDashboard(dashboard string) (string, string, error) {
+func getSpecDetailsForDashboard(dashboard, nsPrefix string) (string, string, error) {
 
 	switch dashboard {
 
@@ -30,7 +30,7 @@ func getSpecDetailsForDashboard(dashboard string) (string, string, error) {
 		return monitoring.MonitoringGrafanaDBClusterResourcesJSON, "cluster-resources-new.json", nil
 
 	case "critical-slo-rhmi-alerts":
-		return monitoring.MonitoringGrafanaDBCriticalSLORhmiAlertsJSON, "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix), "critical-slo-alerts.json", nil
 
 	case "critical-slo-managed-api-alerts":
 		return monitoring.MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON, "critical-slo-alerts.json", nil

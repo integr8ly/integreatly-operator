@@ -3,7 +3,10 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+	"strings"
+
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
+	pkgerr "github.com/pkg/errors"
 
 	"k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,14 +67,19 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 		failurePolicy  = v1beta1.Fail
 		timeoutSeconds = int32(30)
 	)
-
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 	cr := &v1beta1.MutatingWebhookConfiguration{
 		ObjectMeta: v1.ObjectMeta{
 			Name: fmt.Sprintf("%s.integreatly.org", reconciler.name),
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		cr.Webhooks = []v1beta1.MutatingWebhook{
 			{
 				Name:        fmt.Sprintf("%s-mutating-config.integreatly.org", reconciler.name),
@@ -79,7 +87,7 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, clie
 				ClientConfig: v1beta1.WebhookClientConfig{
 					CABundle: caBundle,
 					Service: &v1beta1.ServiceReference{
-						Namespace: global.NamespacePrefix + "operator",
+						Namespace: namespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,
@@ -115,14 +123,19 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, cl
 		failurePolicy  = v1beta1.Fail
 		timeoutSeconds = int32(30)
 	)
-
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 	cr := &v1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: v1.ObjectMeta{
 			Name: fmt.Sprintf("%s.integreatly.org", reconciler.name),
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		cr.Webhooks = []v1beta1.ValidatingWebhook{
 			{
 				Name:        fmt.Sprintf("%s-validating-config.integreatly.org", reconciler.name),
@@ -130,7 +143,7 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, cl
 				ClientConfig: v1beta1.WebhookClientConfig{
 					CABundle: caBundle,
 					Service: &v1beta1.ServiceReference{
-						Namespace: global.NamespacePrefix + "operator",
+						Namespace: namespacePrefix + "operator",
 						Name:      operatorPodServiceName,
 						Path:      &reconciler.Path,
 						Port:      &port,

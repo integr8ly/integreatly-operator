@@ -3,7 +3,6 @@ package rhmiConfigs
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"testing"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 )
 
 var (
-	defaultNamespace = global.NamespacePrefix + "operator"
+	defaultNamespace = "testing-namespaces-operator"
 )
 
 func setupRecorder() record.EventRecorder {

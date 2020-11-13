@@ -14,7 +14,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	numberOfApicuritoReplicas  = 2 //size in reconciler
 	scaleUpApicuritoReplicas   = 3
 	scaleDownApicuritoReplicas = 1
@@ -34,32 +34,32 @@ func TestReplicasInApicurito(t *testing.T, ctx *TestingContext) {
 	}
 
 	t.Log("Checking correct number of replicas are set")
-	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, numberOfApicuritoReplicas, retryIntervalApicurito, timeoutApicurito, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, int32(numberOfApicuritoReplicas), retryIntervalApicurito, timeoutApicurito, t); err != nil {
 		t.Fatalf("Incorrect number of replicas to start : %v", err)
 	}
 
-	apicuritoCR, err = updateApicurito(ctx, scaleUpApicuritoReplicas, t)
+	apicuritoCR, err = updateApicurito(ctx, int32(scaleUpApicuritoReplicas), t)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
 
 	t.Log("Checking correct number of updated replicas are set")
-	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, scaleUpApicuritoReplicas, retryIntervalApicurito, timeoutApicurito, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, int32(scaleUpApicuritoReplicas), retryIntervalApicurito, timeoutApicurito, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	apicuritoCR, err = updateApicurito(ctx, scaleDownApicuritoReplicas, t)
+	apicuritoCR, err = updateApicurito(ctx, int32(scaleDownApicuritoReplicas), t)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
 
 	t.Log("Checking correct number of updated replicas are set")
-	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, numberOfApicuritoReplicas, retryIntervalApicurito, timeoutApicurito, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueApicurito(apicuritoCR, ctx, int32(numberOfApicuritoReplicas), retryIntervalApicurito, timeoutApicurito, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
 	t.Log("Checking replicas are ready")
-	if err := checkReplicasAreReady(ctx, t, numberOfApicuritoReplicas); err != nil {
+	if err := checkReplicasAreReady(ctx, t, int32(numberOfApicuritoReplicas)); err != nil {
 		t.Fatalf("Replicas weren't ready within timeout")
 	}
 

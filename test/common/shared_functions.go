@@ -132,7 +132,7 @@ func GetRHMI(client dynclient.Client, failNotExist bool) (*integreatlyv1alpha1.R
 		return nil, err
 	}
 	if len(installationList.Items) == 0 && failNotExist == true {
-		return nil, fmt.Errorf("rhmi CRs does not exist: %w", err)
+		return nil, fmt.Errorf("rhmi CRs does not exist: %v namespace: '%v', list: %v", err, RHMIOperatorNamespace, installationList)
 	}
 	if len(installationList.Items) == 0 && failNotExist == false {
 		return nil, nil

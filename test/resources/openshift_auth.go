@@ -3,7 +3,6 @@ package resources
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
 	"net/url"
 	"strings"
@@ -25,10 +24,6 @@ const (
 
 	PathProjectRequests = "/apis/project.openshift.io/v1/projectrequests"
 	PathProjects        = "/api/kubernetes/apis/apis/project.openshift.io/v1/projects"
-)
-
-var (
-	PathFusePods = "/api/kubernetes/api/v1/namespaces/" + global.NamespacePrefix + "fuse/pods"
 )
 
 // User used to create url user query
@@ -126,13 +121,13 @@ func OpenshiftClientSubmitForm(browser *browser.Browser, username, password stri
 		selection.SetHtml(selection.Text())
 	})
 	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
-		l.Log("Error clicking IDP link", browser.Url().Host, browser.Body())
+		l.Log("Error clicking IDP link")
 		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
 	}
 
 	loginForm, err := browser.Form("#kc-form-login")
 	if err != nil {
-		l.Log("Error filling in form #kc-form-login on page", browser.Url().Host, browser.Body())
+		l.Log("Error filling in form #kc-form-login on page")
 		return fmt.Errorf("failed to get login form from oauth proxy screen: %w", err)
 	}
 	if err = loginForm.Input("username", username); err != nil {

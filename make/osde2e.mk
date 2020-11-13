@@ -1,5 +1,5 @@
 DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-MANAGED_API_TEST_HARNESS_IMAGE ?= $(REG)/$(ORG)/managed-api-test-harness:osde2e
+MANAGED_API_TEST_HARNESS_IMAGE ?= $(REG)/$(ORG)/integreatly-operator-test-harness:osde2e
 
 .PHONY: image/osde2e/build
 image/osde2e/build:
