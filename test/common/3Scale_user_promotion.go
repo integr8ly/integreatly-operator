@@ -3,15 +3,20 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"testing"
-	"time"
 )
 
 func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
-
+	if os.Getenv("SKIP_FLAKES") == "true" {
+		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
+		t.SkipNow()
+	}
 	var (
 		developerUser      = fmt.Sprintf("%v-%d", DefaultTestUserName, 0)
 		dedicatedAdminUser = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)

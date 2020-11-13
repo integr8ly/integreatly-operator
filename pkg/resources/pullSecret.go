@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -53,7 +54,7 @@ func ReconcileSecretToProductNamespace(ctx context.Context, client k8sclient.Cli
 	if err != nil {
 		// Secret may not initially exist - log warning without blocking a reconcile
 		if k8serr.IsNotFound(err) {
-			logrus.Warnf("Could not find %s secret in RHMI operator namespace to copy to %s", secretName, namespace)
+			logrus.Warnf("Could not find %s secret in operator namespace to copy to %s", secretName, namespace)
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to seed copy secret to product namespace: %w", err)

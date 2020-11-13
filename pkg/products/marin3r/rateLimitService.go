@@ -25,6 +25,7 @@ var (
 type RateLimitServiceReconciler struct {
 	Namespace       string
 	RedisSecretName string
+	Installation    *integreatlyv1alpha1.RHMI
 	StatsdConfig    *StatsdConfig
 	RateLimitConfig *marin3rconfig.RateLimitConfig
 }
@@ -34,9 +35,10 @@ type StatsdConfig struct {
 	Port string
 }
 
-func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, namespace, redisSecretName string) *RateLimitServiceReconciler {
+func NewRateLimitServiceReconciler(config *marin3rconfig.RateLimitConfig, installation *integreatlyv1alpha1.RHMI, namespace, redisSecretName string) *RateLimitServiceReconciler {
 	return &RateLimitServiceReconciler{
 		RateLimitConfig: config,
+		Installation:    installation,
 		Namespace:       namespace,
 		RedisSecretName: redisSecretName,
 	}
@@ -249,6 +251,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 						Env: envs,
 					},
 				},
+				PriorityClassName: r.Installation.Spec.PriorityClassName,
 				Volumes: []corev1.Volume{
 					{
 						Name: "runtime-config",
@@ -270,9 +273,12 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 			},
 		}
 
-		if err := resources.SetZoneTopologySpreadConstraints(
+		if err := resources.SetPodTemplate(
 			resources.SelectFromDeployment,
-			"app",
+			resources.AllMutationsOf(
+				resources.MutateZoneTopologySpreadConstraints("app"),
+				resources.MutateMultiAZAntiAffinity(ctx, client, "app"),
+			),
 			deployment,
 		); err != nil {
 			return fmt.Errorf("failed to set zone topology spread constraints: %w", err)

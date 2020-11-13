@@ -520,7 +520,7 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		},
 	}
 
-	specJSON, name, err := getSpecDetailsForDashboard(dashboard)
+	specJSON, name, err := getSpecDetailsForDashboard(dashboard, r.installation.Spec.NamespacePrefix)
 	if err != nil {
 		return err
 	}

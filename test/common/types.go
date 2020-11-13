@@ -2,9 +2,11 @@ package common
 
 import (
 	"encoding/json"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"net/http"
+	"strings"
 	"testing"
+
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -14,8 +16,8 @@ import (
 	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	NamespacePrefix                   = global.NamespacePrefix
+var (
+	NamespacePrefix                   = GetNamespacePrefix()
 	RHMIOperatorNamespace             = NamespacePrefix + "operator"
 	MonitoringOperatorNamespace       = NamespacePrefix + "middleware-monitoring-operator"
 	MonitoringFederateNamespace       = NamespacePrefix + "middleware-monitoring-federate"
@@ -119,4 +121,13 @@ type StatefulSets struct {
 type DeploymentConfigs struct {
 	Namespace string
 	Name      string
+}
+
+func GetNamespacePrefix() string {
+	ns, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return ""
+	}
+	return strings.Join(strings.Split(ns, "-")[0:2], "-") + "-"
+
 }

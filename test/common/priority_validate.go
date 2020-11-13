@@ -3,18 +3,17 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"testing"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	openshiftappsv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"testing"
 )
 
 var (
-	priorityClassName = "rhoam-pod-priority"
-
 	priorityStatefulSets = []StatefulSets{
 		{
 			Namespace: NamespacePrefix + "rhsso",
@@ -92,7 +91,7 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 
 	priorityClass := &schedulingv1.PriorityClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: priorityClassName,
+			Name: rhmi.Spec.PriorityClassName,
 		},
 	}
 
@@ -107,7 +106,7 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 			t.Errorf("Error: %v", err)
 		}
 
-		err = checkStatefulSetPriorityIsSet(item)
+		err = checkStatefulSetPriorityIsSet(item, rhmi.Spec.PriorityClassName)
 		if err != nil {
 			t.Errorf("Error %v", err)
 		}
@@ -122,21 +121,21 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 			break
 		}
 
-		err = checkDeploymentConfigPriorityIsSet(deploymentConfig)
+		err = checkDeploymentConfigPriorityIsSet(deploymentConfig, rhmi.Spec.PriorityClassName)
 		if err != nil {
 			t.Errorf("Error %v", err)
 		}
 	}
 }
 
-func checkStatefulSetPriorityIsSet(statefulSet *appsv1.StatefulSet) error {
+func checkStatefulSetPriorityIsSet(statefulSet *appsv1.StatefulSet, priorityClassName string) error {
 	if statefulSet.Spec.Template.Spec.PriorityClassName != priorityClassName {
 		return fmt.Errorf("priorityClassName is not set in statefulSet %v", statefulSet.Name)
 	}
 	return nil
 }
 
-func checkDeploymentConfigPriorityIsSet(deploymentConfig *openshiftappsv1.DeploymentConfig) error {
+func checkDeploymentConfigPriorityIsSet(deploymentConfig *openshiftappsv1.DeploymentConfig, priorityClassName string) error {
 	if deploymentConfig.Spec.Template.Spec.PriorityClassName != priorityClassName {
 		return fmt.Errorf("priorityClassName is not set in statefulSet %v", deploymentConfig.Name)
 	}

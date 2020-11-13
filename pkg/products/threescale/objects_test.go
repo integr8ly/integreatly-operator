@@ -27,6 +27,7 @@ var (
 	testRhssoNamespace = "test-rhsso"
 	testRhssoRealm     = "test-realm"
 	testRhssoURL       = "https://test.rhsso.url"
+	nsPrefix           = "testing-namespaces-"
 )
 
 var configManagerConfigMap = &corev1.ConfigMap{

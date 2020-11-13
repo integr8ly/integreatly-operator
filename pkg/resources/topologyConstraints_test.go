@@ -22,29 +22,29 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 	scenarios := []struct {
 		Name             string
 		InitObjs         []runtime.Object
-		ObjKey           k8sclient.ObjectKey
 		TemplateSelector PodTemplateSelector
 		LabelMatch       string
-		TargetObj        runtime.Object
+		TargetObj        v1.Object
 		Assert           func(k8sclient.Client, integreatlyv1alpha1.StatusPhase, error) error
 	}{
 		{
-			Name:     "Object not found",
-			InitObjs: []runtime.Object{},
-			ObjKey: k8sclient.ObjectKey{
-				Name:      "test-statefulset",
-				Namespace: "redhat-test-operator",
+			Name:       "Object not found",
+			InitObjs:   []runtime.Object{},
+			LabelMatch: "app",
+			TargetObj: &openshiftappsv1.DeploymentConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-statefulset",
+					Namespace: "redhat-test-operator",
+				},
 			},
-			LabelMatch:       "app",
-			TargetObj:        &openshiftappsv1.DeploymentConfig{},
 			TemplateSelector: SelectFromDeploymentConfig,
 			Assert: func(_ k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
 				if err != nil {
 					return fmt.Errorf("unexpected error: %v", err)
 				}
 
-				if phase != integreatlyv1alpha1.PhaseAwaitingComponents {
-					return fmt.Errorf("unexpected phase. Expected %s, got %s", integreatlyv1alpha1.PhaseAwaitingComponents, phase)
+				if phase != integreatlyv1alpha1.PhaseInProgress {
+					return fmt.Errorf("unexpected phase. Expected %s, got %s", integreatlyv1alpha1.PhaseInProgress, phase)
 				}
 
 				return nil
@@ -77,11 +77,12 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 				},
 			},
 			LabelMatch: "app",
-			ObjKey: k8sclient.ObjectKey{
-				Name:      "test-statefulset",
-				Namespace: "redhat-test-operator",
+			TargetObj: &appsv1.StatefulSet{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-statefulset",
+					Namespace: "redhat-test-operator",
+				},
 			},
-			TargetObj:        &appsv1.StatefulSet{},
 			TemplateSelector: SelectFromStatefulSet,
 			Assert: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
 				if err != nil {
@@ -145,11 +146,12 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 				},
 			},
 			LabelMatch: "app",
-			ObjKey: k8sclient.ObjectKey{
-				Name:      "test-dc",
-				Namespace: "redhat-test-operator",
+			TargetObj: &openshiftappsv1.DeploymentConfig{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "test-dc",
+					Namespace: "redhat-test-operator",
+				},
 			},
-			TargetObj:        &openshiftappsv1.DeploymentConfig{},
 			TemplateSelector: SelectFromDeploymentConfig,
 			Assert: func(client k8sclient.Client, phase integreatlyv1alpha1.StatusPhase, err error) error {
 				if err != nil {
@@ -191,12 +193,11 @@ func TestReconcileTopologySpreadConstraints(t *testing.T) {
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
 			client := fake.NewFakeClientWithScheme(scheme, scenario.InitObjs...)
-			phase, reconcileErr := ReconcileZoneTopologySpreadConstraints(
+			phase, reconcileErr := UpdatePodTemplateIfExists(
 				context.TODO(),
 				client,
-				scenario.ObjKey,
 				scenario.TemplateSelector,
-				scenario.LabelMatch,
+				MutateZoneTopologySpreadConstraints(scenario.LabelMatch),
 				scenario.TargetObj,
 			)
 

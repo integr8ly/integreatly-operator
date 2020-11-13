@@ -5,11 +5,11 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
+	namespacePrefix := r.installation.Spec.NamespacePrefix
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Logger:       r.logger,
@@ -127,7 +127,7 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "3Scale apicast-staging pods have no ratelimiting sidecar container attached.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%[1]v3scale'})) < 1", global.NamespacePrefix)),
+						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%[1]v3scale'})) < 1", namespacePrefix)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},
@@ -137,7 +137,7 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
 							"message": "3Scale apicast-production pods have no ratelimiting sidecar container attached.",
 						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%[1]v3scale'})) < 1", global.NamespacePrefix)),
+						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%[1]v3scale'})) < 1", namespacePrefix)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},

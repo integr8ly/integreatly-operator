@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -16,6 +17,11 @@ var (
 // Tests that a user in group rhmi-developers can log into fuse and
 // create an integration
 func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
+	if os.Getenv("SKIP_FLAKES") == "true" {
+		// https://issues.redhat.com/browse/MGDAPI-557
+		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
+		t.SkipNow()
+	}
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
 		t.Fatalf("error while creating testing idp: %v", err)
 	}

@@ -3,11 +3,12 @@ package subscription
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"os"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/resources"
 
 	"github.com/blang/semver"
 	"github.com/integr8ly/integreatly-operator/pkg/controller/subscription/csvlocator"
@@ -25,6 +26,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
+	pkgerr "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -53,15 +55,21 @@ var subscriptionsToReconcile []string = []string{
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
-	reconcile, err := newReconciler(mgr)
+	reconciler, err := newReconciler(mgr)
 	if err != nil {
 		return err
 	}
-	return add(mgr, reconcile)
+	return add(mgr, reconciler)
 }
 
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
-	operatorNs := global.NamespacePrefix + "operator"
+	watchNS, err := k8sutil.GetWatchNamespace()
+	if err != nil {
+		return nil, pkgerr.Wrap(err, "could not get watch namespace from subscription controller")
+	}
+	namespaceSegments := strings.Split(watchNS, "-")
+	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+	operatorNs := namespacePrefix + "operator"
 
 	restConfig := controllerruntime.GetConfigOrDie()
 	restConfig.Timeout = time.Second * 10
@@ -183,7 +191,9 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
 		logrus.Infof("no upgrade available")
 
-		if err := r.webbappNotifier.ClearNotification(); err != nil {
+		namespaceSegments := strings.Split(rhmiSubscription.Namespace, "-")
+		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+		if err := r.webbappNotifier.ClearNotification(namespacePrefix); err != nil {
 			return reconcile.Result{}, err
 		}
 
@@ -231,7 +241,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		}
 
 		if skipRangeStr, ok := csvFromCatalogSource.GetAnnotations()["olm.skipRange"]; ok {
-			regex := regexp.MustCompile(`(?m)integreatly\-operator\.v(.*)$`)
+			regex := regexp.MustCompile(`(?m)integreatly-operator\.v(.*)$`)
 			rhmiPreviousVersion := regex.FindAllStringSubmatch(csvFromCatalogSource.Spec.Replaces, -1)[0][1]
 
 			if rhmiPreviousVersion == "" {

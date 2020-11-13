@@ -3,13 +3,16 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	goctx "context"
+
 	prometheusv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -201,6 +204,11 @@ func getPodNamespaces(installType string) []string {
 
 // TestIntegreatlyAlertsFiring reports any firing or pending alerts
 func TestIntegreatlyAlertsPendingOrFiring(t *testing.T, ctx *TestingContext) {
+	if os.Getenv("SKIP_FLAKES") == "true" {
+		// https://issues.redhat.com/browse/MGDAPI-556
+		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
+		t.SkipNow()
+	}
 	var lastError error
 
 	// retry the tests every minute for up to 15 minutes

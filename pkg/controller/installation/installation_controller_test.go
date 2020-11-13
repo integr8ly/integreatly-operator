@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +33,7 @@ func setupRecorder() record.EventRecorder {
 }
 
 var (
-	defaultNamespace = global.NamespacePrefix + "operator"
+	defaultNamespace = "testing-namespaces-operator"
 )
 
 // Test that the installation CR spec value for UseClusterStorage is true when the

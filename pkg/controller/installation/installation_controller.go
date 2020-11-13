@@ -2,9 +2,11 @@ package installation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,7 +14,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -62,7 +63,6 @@ const (
 )
 
 var (
-	DefaultInstallationPrefix   = global.NamespacePrefix
 	productVersionMismatchFound bool
 )
 
@@ -170,7 +170,6 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	installation := &integreatlyv1alpha1.RHMI{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
-
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
@@ -199,6 +198,9 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			return fmt.Errorf("failed while retrieving addon parameter: %w", err)
 		}
 
+		namespaceSegments := strings.Split(namespace, "-")
+		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
+
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      getCrName(installType),
@@ -206,11 +208,11 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
 				Type:                 installType,
-				NamespacePrefix:      DefaultInstallationPrefix,
+				NamespacePrefix:      namespacePrefix,
 				SelfSignedCerts:      false,
-				SMTPSecret:           DefaultInstallationPrefix + "smtp",
-				DeadMansSnitchSecret: DefaultInstallationPrefix + "deadmanssnitch",
-				PagerDutySecret:      DefaultInstallationPrefix + "pagerduty",
+				SMTPSecret:           namespacePrefix + "smtp",
+				DeadMansSnitchSecret: namespacePrefix + "deadmanssnitch",
+				PagerDutySecret:      namespacePrefix + "pagerduty",
 				UseClusterStorage:    useClusterStorage,
 				AlertingEmailAddress: customerAlertingEmailAddress,
 				AlertingEmailAddresses: integreatlyv1alpha1.AlertingEmailAddresses{
@@ -606,6 +608,16 @@ func (r *ReconcileInstallation) preflightChecks(installation *integreatlyv1alpha
 
 	eventRecorder := r.mgr.GetEventRecorderFor("Preflight Checks")
 
+	// Validate the env vars used by the operator
+	if err := checkEnvVars(map[string]func(string, bool) error{
+		resources.AntiAffinityRequiredEnvVar: optionalEnvVar(func(s string) error {
+			_, err := strconv.ParseBool(s)
+			return err
+		}),
+	}); err != nil {
+		return result, err
+	}
+
 	if strings.ToLower(installation.Spec.UseClusterStorage) != "true" && strings.ToLower(installation.Spec.UseClusterStorage) != "false" {
 		installation.Status.PreflightStatus = integreatlyv1alpha1.PreflightFail
 		installation.Status.PreflightMessage = "Spec.useClusterStorage must be set to either 'true' or 'false' to continue"
@@ -864,6 +876,37 @@ func (r *ReconcileInstallation) addCustomInformer(crd runtime.Object, namespace 
 
 	logrus.Infof("Cache synced. A %s watch in %s namespace successfully initialized.", gvk, namespace)
 	return nil
+}
+
+func checkEnvVars(checks map[string]func(string, bool) error) error {
+	for env, check := range checks {
+		value, exists := os.LookupEnv(env)
+		if err := check(value, exists); err != nil {
+			return fmt.Errorf("validation failure for env var %s: %w", env, err)
+		}
+	}
+
+	return nil
+}
+
+func optionalEnvVar(check func(string) error) func(string, bool) error {
+	return func(value string, ok bool) error {
+		if !ok {
+			return nil
+		}
+
+		return check(value)
+	}
+}
+
+func requiredEnvVar(check func(string) error) func(string, bool) error {
+	return func(value string, ok bool) error {
+		if !ok {
+			return errors.New("required env var not present")
+		}
+
+		return check(value)
+	}
 }
 
 type multiErr struct {

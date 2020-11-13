@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
+  
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -337,7 +337,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 
 	logrus.Info("Grafana Status: ", status)
 
-	prometheusNamespace := fmt.Sprintf("%smiddleware-monitoring-operator", global.NamespacePrefix)
+	prometheusNamespace := fmt.Sprintf("%smiddleware-monitoring-operator", installation.Spec.NamespacePrefix)
 
 	prometheusService := &corev1.Service{}
 
