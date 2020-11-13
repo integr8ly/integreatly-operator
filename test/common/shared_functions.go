@@ -433,3 +433,15 @@ func GetHappyPathTestCases(installType string) []TestCase {
 	}
 	return testCases
 }
+
+func GetIDPBasedTestCases(installType string) []TestCase {
+	testCases := []TestCase{}
+	for _, testSuite := range IDP_BASED_TESTS {
+		for _, tsInstallType := range testSuite.InstallType {
+			if string(tsInstallType) == installType {
+				testCases = append(testCases, testSuite.TestCases...)
+			}
+		}
+	}
+	return testCases
+}
