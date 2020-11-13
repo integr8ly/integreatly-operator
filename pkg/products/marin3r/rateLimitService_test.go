@@ -31,7 +31,8 @@ func TestRateLimitService(t *testing.T) {
 			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
 				Unit:            "minute",
 				RequestsPerUnit: 1,
-			}, "redhat-test-marin3r", "ratelimit-redis"),
+			},
+				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
 			InitObjs: []runtime.Object{
 				&corev1.Secret{
 					ObjectMeta: v1.ObjectMeta{
@@ -109,6 +110,7 @@ func TestRateLimitService(t *testing.T) {
 					Unit:            "minute",
 					RequestsPerUnit: 1,
 				},
+				&integreatlyv1alpha1.RHMI{},
 				"redhat-test-marin3r",
 				"ratelimit-redis",
 			).
@@ -151,13 +153,56 @@ func TestRateLimitService(t *testing.T) {
 			Reconciler: NewRateLimitServiceReconciler(&marin3rconfig.RateLimitConfig{
 				Unit:            "minute",
 				RequestsPerUnit: 1,
-			}, "redhat-test-marin3r", "ratelimit-redis"),
+			},
+				&integreatlyv1alpha1.RHMI{}, "redhat-test-marin3r", "ratelimit-redis"),
 			Assert: allOf(
 				assertNoError,
 				assertPhase(integreatlyv1alpha1.PhaseAwaitingComponents),
 				assertDeployment(func(_ *appsv1.Deployment, e error) error {
 					if !k8serrors.IsNotFound(e) {
 						return fmt.Errorf("expected deployment not found error, got: %v", e)
+					}
+					return nil
+				}),
+			),
+		},
+
+		{
+			Name: "Pod priority set",
+			InitObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name:      "ratelimit-redis",
+						Namespace: "redhat-test-marin3r",
+					},
+					Data: map[string][]byte{
+						"URL": []byte("test-url"),
+					},
+				},
+			},
+			Reconciler: NewRateLimitServiceReconciler(
+				&marin3rconfig.RateLimitConfig{
+					Unit:            "minute",
+					RequestsPerUnit: 1,
+				},
+				&integreatlyv1alpha1.RHMI{
+					Spec: integreatlyv1alpha1.RHMISpec{
+						PriorityClassName: "rhoam-pod-priority",
+					},
+				},
+				"redhat-test-marin3r",
+				"ratelimit-redis",
+			).
+				WithStatsdConfig(StatsdConfig{
+					Host: "test-host",
+					Port: "9092",
+				}),
+			Assert: allOf(
+				assertNoError,
+				assertPhase(integreatlyv1alpha1.PhaseCompleted),
+				assertDeployment(func(deployment *appsv1.Deployment, e error) error {
+					if deployment.Spec.Template.Spec.PriorityClassName != "rhoam-pod-priority" {
+						return fmt.Errorf("expected pod priority not set, got: %v", e)
 					}
 					return nil
 				}),

@@ -203,7 +203,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, productNamespace, externalRedisSecretName).
+	phase, err = NewRateLimitServiceReconciler(r.RateLimitConfig, installation, productNamespace, externalRedisSecretName).
 		WithStatsdConfig(statsdConfig).
 		ReconcileRateLimitService(ctx, client)
 	if err != nil {
