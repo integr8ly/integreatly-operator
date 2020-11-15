@@ -203,9 +203,13 @@ test/e2e/rhoam/prow: export INSTALLATION_NAME := rhmi
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/rhoam/prow: test/e2e
 
+# e2e tests always run in redhat-rhmi-* namespaces, regardless of installation type
 .PHONY: test/e2e
 test/e2e: export SURF_DEBUG_HEADERS=1
-test/e2e: export WATCH_NAMESPACE := $(NAMESPACE)
+test/e2e: export WATCH_NAMESPACE := redhat-rhmi-operator
+test/e2e: export NAMESPACE_PREFIX := redhat-rhmi-
+test/e2e: export INSTALLATION_PREFIX := redhat-rhmi
+test/e2e: export INSTALLATION_NAME := rhmi
 test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(OPERATOR_IMAGE)
 
