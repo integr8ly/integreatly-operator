@@ -39,6 +39,19 @@ func TestIntegreatly(t *testing.T) {
 		common.RunTestCases(FUNCTIONAL_TESTS, t, config)
 	})
 
+	t.Run("Integreatly IDP Based Tests", func(t *testing.T) {
+		installType, err := common.GetInstallType(config)
+		if err != nil {
+			t.Fatalf("failed to get install type, err: %s, %v", installType, err)
+		}
+
+		// get IDP test cases according to the install type
+		idpTestCases := common.GetIDPBasedTestCases(installType)
+
+		// running IDP Based test cases
+		common.RunTestCases(idpTestCases, t, config)
+	})
+
 	t.Run("API Managed Multi-AZ Tests", func(t *testing.T) {
 		// Do not execute these tests unless MULTIAZ is set to true
 		if os.Getenv("MULTIAZ") != "true" {
