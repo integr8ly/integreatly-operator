@@ -87,7 +87,7 @@ spec:
                   description: Override default ports
                   items:
                     type: object
-                    descripton: A port to add to the grafana service
+                    description: A port to add to the grafana service
                 annotations:
                   type: object
                   description: Additional annotations for the service
@@ -106,6 +106,24 @@ spec:
                 labels:
                   type: object
                   description: Additional labels for the service
+                nodeSelector:
+                  type: object
+                  description: Additional labels for the running grafana pods in a labeled node.
+                tolerations:
+                  type: array
+                  description: Additonal labels for running grafana pods in tained nodes.
+                affinity:
+                  type: object
+                  description: Additonal labels for running grafana pods with affinity properties.
+                envFrom:
+                  type: array
+                  description: Environment variables from Secret or ConfigMap.
+                skipCreateAdminAccount:
+                  type: boolean
+                  description: Disable creating a random admin user
+                priorityClassName:
+                  type: string
+                  description: Pod priority class name
             serviceAccount:
               type: object
               properties:
@@ -126,3 +144,6 @@ spec:
               items:
                 type: object
                 description: Label selector or match expressions
+            jsonnet:
+              type: object
+              description: Jsonnet library configuration
