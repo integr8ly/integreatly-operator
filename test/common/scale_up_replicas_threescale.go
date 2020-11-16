@@ -14,7 +14,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	numberOfReplicas  int64 = 2
 	scaleUpReplicas   int64 = 3
 	scaleDownReplicas int64 = 1

@@ -3,8 +3,8 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -48,14 +48,16 @@ var (
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
 func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
-
+	if os.Getenv("SKIP_FLAKES") == "true" {
+		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
+		t.SkipNow()
+	}
 	t.Log("Create Namespace, Deployment and Service for SMTP-Server")
 	err := createNamespace(ctx, t)
 	if err != nil {
 		t.Logf("%v", err)
 	}
 
-	t.Log("Patch " + global.NamespacePrefix + "smtp with new details")
 	_, err = patchSecret(ctx, t)
 	if err != nil {
 		t.Log(err)

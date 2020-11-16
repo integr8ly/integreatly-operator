@@ -15,13 +15,15 @@ TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
 
 
 CONTAINER_ENGINE ?= docker
-TEST_RESULTS_DIR ?= "test-results"
-TEMP_SERVICEACCOUNT_NAME="rhmi-operator"
+TEST_RESULTS_DIR ?= test-results
+TEMP_SERVICEACCOUNT_NAME=rhmi-operator
 CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]*'")
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.7.0
-RHOAM_TAG ?= 0.7.0
+RHOAM_TAG ?= 0.8.0
+
+export SKIP_FLAKES := true
 
 # If openapi-gen is available on the path, use that; otherwise use it through
 # "go run" (slower)
@@ -49,7 +51,6 @@ endif
 export SELF_SIGNED_CERTS   ?= true
 # Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE   ?= managed
-export INSTALLATION_NAME   ?= rhmi
 
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
@@ -66,6 +67,8 @@ ifeq ($(INSTALLATION_TYPE), managed)
 	APPLICATION_REPO ?= integreatly
 	export INSTALLATION_PREFIX ?= redhat-rhmi
 	export OLM_TYPE ?= integreatly-operator
+	INSTALLATION_NAME ?= rhmi
+	INSTALLATION_SHORTHAND ?= rhmi
 endif
 
 ifeq ($(INSTALLATION_TYPE), managed-api)
@@ -77,6 +80,8 @@ ifeq ($(INSTALLATION_TYPE), managed-api)
 	# TODO follow on naming of this folder by INSTALLATION_PREFIX and contents of the role_binding.yaml
 	export INSTALLATION_PREFIX ?= redhat-rhoam
 	export OLM_TYPE ?= managed-api-service
+	INSTALLATION_NAME ?= rhoam
+	INSTALLATION_SHORTHAND ?= rhoam
 endif
 
 NAMESPACE=$(NAMESPACE_PREFIX)operator
@@ -105,11 +110,6 @@ setup/service_account:
 .PHONY: setup/git/hooks
 setup/git/hooks:
 	git config core.hooksPath .githooks
-
-.PHONE: code/setNamespace
-code/setNamespace:
-	@echo	$(NAMESPACE)
-	@ $(SED_INLINE) 's/NamespacePrefix = .*/NamespacePrefix = \"$(NAMESPACE_PREFIX)\"/g' pkg/resources/global/global.go
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
@@ -144,7 +144,7 @@ pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go:	pkg/apis/integreatly/v1a
 	$(OPERATOR_SDK) generate k8s
 
 .PHONY: code/gen
-code/gen: code/setNamespace setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
+code/gen: setup/moq deploy/crds/integreatly.org_rhmis_crd.yaml pkg/apis/integreatly/v1alpha1/zz_generated.deepcopy.go pkg/apis/integreatly/v1alpha1/zz_generated.openapi.go
 	@go generate ./...
 
 .PHONY: code/check
@@ -177,42 +177,67 @@ image/build/test:
 	$(OPERATOR_SDK) build --enable-tests $(OPERATOR_IMAGE)
 
 .PHONY: test/unit
+test/unit: export WATCH_NAMESPACE=testing-namespaces-operator
 test/unit:
 	@TEMPLATE_PATH=$(TEMPLATE_PATH) ./scripts/ci/unit_test.sh
 
 .PHONY: test/e2e/prow
 test/e2e/prow: export component := integreatly-operator
-test/e2e/prow: export OPERATOR_IMAGE := "${IMAGE_FORMAT}"
+test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
+test/e2e/prow: export INSTALLATION_TYPE := managed
+test/e2e/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
+test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
+test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
+test/e2e/prow: export INSTALLATION_NAME := rhmi
+test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
 test/e2e/rhoam/prow: export component := integreatly-operator
-test/e2e/rhoam/prow: export MANAGED_API_OPERATOR_IMAGE := "${IMAGE_FORMAT}"
-test/e2e/rhoam/prow: export INSTALLATION_TYPE := "managed-api"
-test/e2e/rhoam/prow:
-	echo $(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(MANAGED_API_OPERATOR_IMAGE)
+test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
+test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
+test/e2e/rhoam/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
+test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhmi-
+test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhmi
+test/e2e/rhoam/prow: export INSTALLATION_NAME := rhmi
+test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
+test/e2e/rhoam/prow: test/e2e
 
+# e2e tests always run in redhat-rhmi-* namespaces, regardless of installation type
 .PHONY: test/e2e
-test/e2e:  export SURF_DEBUG_HEADERS=1
-test/e2e:  cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
+test/e2e: export SURF_DEBUG_HEADERS=1
+test/e2e: export WATCH_NAMESPACE := redhat-rhmi-operator
+test/e2e: export NAMESPACE_PREFIX := redhat-rhmi-
+test/e2e: export INSTALLATION_PREFIX := redhat-rhmi
+test/e2e: export INSTALLATION_NAME := rhmi
+test/e2e: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --operator-namespace="$(NAMESPACE)" --go-test-flags "-timeout=120m" --debug --image=$(OPERATOR_IMAGE)
 
 .PHONY: test/e2e/local
+test/e2e/local: export WATCH_NAMESPACE := $(NAMESPACE)
 test/e2e/local: cluster/cleanup cluster/cleanup/crds cluster/prepare cluster/prepare/crd deploy/integreatly-rhmi-cr.yml
 	$(OPERATOR_SDK) --verbose test local ./test/e2e --watch-namespace="$(NAMESPACE)" --operator-namespace="${NAMESPACE}" --go-test-flags "-timeout=120m" --debug --up-local
 
+.PHONY: test/e2e/single
+test/e2e/single: export WATCH_NAMESPACE := $(NAMESPACE)
+test/e2e/single:
+	go clean -testcache && go test -v ./test/functional -run="//^$(TEST)" -timeout=80m
 
 .PHONY: test/functional
+test/functional: export WATCH_NAMESPACE := $(NAMESPACE)
 test/functional:
 	# Run the functional tests against an existing cluster. Make sure you have logged in to the cluster.
 	go clean -testcache && go test -v ./test/functional -timeout=80m
 
 .PHONY: test/osde2e
+test/osde2e: export WATCH_NAMESPACE := $(NAMESPACE)
+test/osde2e: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/osde2e:
 	# Run the osde2e tests against an existing cluster. Make sure you have logged in to the cluster.
-	go clean -testcache && go test -v ./test/osde2e -timeout=80m
+	go clean -testcache && go test -v ./test/osde2e -timeout=120m
 
 .PHONY: test/products/local
+test/products/local: export WATCH_NAMESPACE := $(NAMESPACE)
 test/products/local:
 	# Running the products tests against an existing cluster inside a container. Make sure you have logged in to the cluster.
 	# Using 'test-containers.yaml' as config and 'test-results' as output dir
@@ -221,14 +246,16 @@ test/products/local:
 	$(CONTAINER_ENGINE) run --rm -e KUBECONFIG=/kube.config -v "${HOME}/.kube/config":/kube.config:z -v $(shell pwd)/test-containers.yaml:/test-containers.yaml -v $(shell pwd)/test-results:/test-results quay.io/integreatly/delorean-cli:master delorean pipeline product-tests --test-config ./test-containers.yaml --output /test-results --namespace test-products
 
 .PHONY: test/products
+test/products: export WATCH_NAMESPACE := $(NAMESPACE)
 test/products:
 	# Running the products tests against an existing cluster. Make sure you have logged in to the cluster.
 	# Using "test-containers.yaml" as config and $(TEST_RESULTS_DIR) as output dir
 	mkdir -p $(TEST_RESULTS_DIR)
 	delorean pipeline product-tests --test-config ./test-containers.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
-.PHONY: test/managedapis/products
-test/managedapis/products:
+.PHONY: test/rhoam/products
+test/rhoam/products: export WATCH_NAMESPACE := $(NAMESPACE)
+test/rhoam/products:
 	mkdir -p $(TEST_RESULTS_DIR)
 	delorean pipeline product-tests --test-config ./test-containers-managed-api.yaml --output $(TEST_RESULTS_DIR) --namespace test-products
 
@@ -372,6 +399,7 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/INSTALLATION_NAME/$(INSTALLATION_NAME)/g" deploy/crds/examples/integreatly-rhmi-cr.yaml | \
 	sed "s/INSTALLATION_TYPE/$(INSTALLATION_TYPE)/g" | \
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
+	sed "s/INSTALLATION_SHORTHAND/$(INSTALLATION_SHORTHAND)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml

@@ -3,7 +3,6 @@ package threescale
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,7 +30,6 @@ import (
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
-	"github.com/integr8ly/integreatly-operator/pkg/resources/global"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/sirupsen/logrus"
@@ -68,7 +66,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	k8syaml "sigs.k8s.io/yaml"
 )
 
 const (
@@ -77,10 +74,6 @@ const (
 	apiManagerName               = "3scale"
 	clientID                     = "3scale"
 	rhssoIntegrationName         = "rhsso"
-	nsPrefix                     = global.NamespacePrefix
-	marinerNs                    = nsPrefix + "marin3r"
-
-	threeScaleNs = nsPrefix + "3scale"
 
 	s3CredentialsSecretName        = "s3-credentials"
 	externalRedisSecretName        = "system-redis"
@@ -118,28 +111,28 @@ var (
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
-	config, err := configManager.ReadThreeScale()
+	threescaleConfig, err := configManager.ReadThreeScale()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve threescale config: %w", err)
 	}
-	if config.GetNamespace() == "" {
-		config.SetNamespace(ns)
-		configManager.WriteConfig(config)
+	if threescaleConfig.GetNamespace() == "" {
+		threescaleConfig.SetNamespace(ns)
+		configManager.WriteConfig(threescaleConfig)
 	}
-	if config.GetOperatorNamespace() == "" {
+	if threescaleConfig.GetOperatorNamespace() == "" {
 		if installation.Spec.OperatorsInProductNamespace {
-			config.SetOperatorNamespace(config.GetNamespace())
+			threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace())
 		} else {
-			config.SetOperatorNamespace(config.GetNamespace() + "-operator")
+			threescaleConfig.SetOperatorNamespace(threescaleConfig.GetNamespace() + "-operator")
 		}
 	}
-	config.SetBlackboxTargetPathForAdminUI("/p/login/")
+	threescaleConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
 
 	logger := logrus.NewEntry(logrus.StandardLogger())
 
 	return &Reconciler{
 		ConfigManager: configManager,
-		Config:        config,
+		Config:        threescaleConfig,
 		mpm:           mpm,
 		installation:  installation,
 		tsClient:      tsClient,
@@ -504,11 +497,13 @@ func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient
 // pods, how to proxy the traffic and what traffic to listen for. Our data needs to be converted to JSON in order for the envoyapi omit empty to filter through fields that we are only interested in,
 // then we need to convert it to yaml and finally push.
 func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k8sclient.Client) error {
-
 	rateLimitService := &corev1.Service{}
-
-	err := client.Get(ctx, k8sclient.ObjectKey{
-		Namespace: marinerNs,
+	marin3rConfig, err := r.ConfigManager.ReadMarin3r()
+	if err != nil {
+		return fmt.Errorf("failed to load marin3r config in 3scale reconciler: %v", err)
+	}
+	err = client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: marin3rConfig.GetNamespace(),
 		Name:      "ratelimit",
 	}, rateLimitService)
 
@@ -578,7 +573,7 @@ func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k
 		},
 	}
 
-	// Setting up listener
+	// Setting up envoyListener
 	virtualHost := v2route.VirtualHost{
 		Name:    apicastRatelimiting,
 		Domains: []string{"*"},
@@ -691,7 +686,7 @@ func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k
 		return fmt.Errorf("failed to convert HttpConnectionManager for rate limiting: %v", err)
 	}
 
-	listener := &envoyapi.Listener{
+	envoyListener := &envoyapi.Listener{
 		Name: "http",
 		Address: &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
@@ -733,24 +728,24 @@ func (r *Reconciler) createEnvoyRateLimitingConfig(ctx context.Context, client k
 		return fmt.Errorf("Failed to convert envoy cluster JSON configuration to YAML %v", err)
 	}
 
-	listenerJson, err := ResourcesToJSON(listener)
+	listenerJson, err := ResourcesToJSON(envoyListener)
 	if err != nil {
-		return fmt.Errorf("Failed to convert envoy listener configuration to JSON %v", err)
+		return fmt.Errorf("Failed to convert envoy envoyListener configuration to JSON %v", err)
 	}
 
 	yamlListener, err := yaml.JSONToYAML(listenerJson)
 	if err != nil {
-		return fmt.Errorf("Failed to convert envoy listener JSON configuration to YAML %v", err)
+		return fmt.Errorf("Failed to convert envoy envoyListener JSON configuration to YAML %v", err)
 	}
 
 	envoyconfig := &marin3rv1alpha.EnvoyConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      apicastRatelimiting,
-			Namespace: threeScaleNs,
+			Namespace: r.Config.GetNamespace(),
 		},
 	}
 
-	controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
+	_, err = controllerutil.CreateOrUpdate(ctx, client, envoyconfig, func() error {
 		owner.AddIntegreatlyOwnerAnnotations(envoyconfig, r.installation)
 		envoyconfig.Spec.NodeID = apicastRatelimiting
 		envoyconfig.Spec.Serialization = "yaml"
@@ -790,18 +785,6 @@ func ResourcesToJSON(pb proto.Message) ([]byte, error) {
 		return []byte{}, err
 	}
 	return json.Bytes(), nil
-}
-
-func resourceToYAML(o interface{}) ([]byte, error) {
-	jsonMarshalled, err := json.Marshal(o)
-	if err != nil {
-		return nil, err
-	}
-	yaml, err := k8syaml.JSONToYAML(jsonMarshalled)
-	if err != nil {
-		return nil, err
-	}
-	return yaml, nil
 }
 
 func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sclient.Client) (string, error) {
@@ -1647,15 +1630,15 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the developer console ui
-	route, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
+	threescaleRoute, err := r.getThreescaleRoute(ctx, client, "system-developer", func(r routev1.Route) bool {
 		return strings.HasPrefix(r.Spec.Host, "3scale.")
 	})
 	if err != nil {
-		logrus.Errorf("Error retrieving threescale route: %v", err)
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer route: %w", err)
+		logrus.Errorf("Error retrieving threescale threescaleRoute: %v", err)
+		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer threescaleRoute: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + route.Spec.Host,
+		Url:     "https://" + threescaleRoute.Spec.Host,
 		Service: "3scale-developer-console-ui",
 	}, cfg, installation, client)
 	if err != nil {
@@ -1664,12 +1647,12 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 	}
 
 	// Create a blackbox target for the master console ui
-	route, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
+	threescaleRoute, err = r.getThreescaleRoute(ctx, client, "system-master", nil)
 	if err != nil {
-		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master route: %w", err)
+		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-master threescaleRoute: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-master", monitoringv1alpha1.BlackboxtargetData{
-		Url:     "https://" + route.Spec.Host,
+		Url:     "https://" + threescaleRoute.Spec.Host,
 		Service: "3scale-system-admin-ui",
 	}, cfg, installation, client)
 	if err != nil {
@@ -1707,9 +1690,9 @@ func (r *Reconciler) getThreescaleRoute(ctx context.Context, serverClient k8scli
 	}
 
 	var foundRoute *routev1.Route
-	for _, route := range routes.Items {
-		if filterFn(route) {
-			foundRoute = &route
+	for _, rt := range routes.Items {
+		if filterFn(rt) {
+			foundRoute = &rt
 			break
 		}
 	}

@@ -19,7 +19,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
+var (
 	projectName         = "project-test-e2e"
 	serviceName         = "testing-curl"
 	podName             = "testing-curl"
