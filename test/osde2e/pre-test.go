@@ -23,9 +23,9 @@ var (
 	OSD_E2E_PRE_TESTS = []common.TestCase{
 		{Description: "Managed-API pre-test", Test: PreTest},
 	}
-	pagerDutySecretName = common.NamespacePrefix + "pagerduty"
-	deadMansSnitchName  = common.NamespacePrefix + "deadmanssnitch"
-	smtpSecretName      = common.NamespacePrefix + "smtp"
+	pagerDutySecretName = "pagerduty"
+	deadMansSnitchName  = "deadmanssnitch"
+	smtpSecretName      = "smtp"
 )
 
 //PreTest This tests if an installation of Managed-API was finished and is successful
@@ -62,11 +62,11 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 		}
 
 		// Get smtp secret - if failed - create SMTP Secret
-		_, err = getSecret(ctx.Client, smtpSecretName)
+		_, err = getSecret(ctx.Client, common.NamespacePrefix+smtpSecretName)
 		if err != nil {
 			smtpSec := &v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprint(smtpSecretName),
+					Name:      fmt.Sprint(common.NamespacePrefix + smtpSecretName),
 					Namespace: common.RHMIOperatorNamespace,
 				},
 				Data: map[string][]byte{
@@ -83,12 +83,12 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 		}
 
 		// Get pagerduty secret - if failed - create
-		_, err = getSecret(ctx.Client, pagerDutySecretName)
+		_, err = getSecret(ctx.Client, common.NamespacePrefix+pagerDutySecretName)
 		if err != nil {
 
 			pagerDuty := v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      pagerDutySecretName,
+					Name:      common.NamespacePrefix + pagerDutySecretName,
 					Namespace: common.RHMIOperatorNamespace,
 				},
 				Data: map[string][]byte{
@@ -101,12 +101,12 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 		}
 
 		// Get dms - if failed - create
-		_, err = getSecret(ctx.Client, deadMansSnitchName)
+		_, err = getSecret(ctx.Client, common.NamespacePrefix+deadMansSnitchName)
 		if err != nil {
 
 			dms := v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      deadMansSnitchName,
+					Name:      common.NamespacePrefix + deadMansSnitchName,
 					Namespace: common.RHMIOperatorNamespace,
 				},
 				Data: map[string][]byte{
