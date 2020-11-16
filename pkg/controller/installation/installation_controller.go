@@ -170,14 +170,11 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 	installation := &integreatlyv1alpha1.RHMI{}
 	// Creates installation CR in case there is none
 	if len(installationList.Items) == 0 {
-		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
 
 		installType, _ := os.LookupEnv(installTypeEnvName)
 		priorityClassName, _ := os.LookupEnv(priorityClassNameEnvName)
-
-		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		if installType == "" {
 			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
@@ -185,6 +182,18 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) && priorityClassName == "" {
 			priorityClassName = managedServicePriorityClassName
+		}
+
+		useClusterStorage, ok, err := addon.GetStringParameterByInstallType(
+			ctx,
+			serverClient,
+			integreatlyv1alpha1.InstallationType(installType),
+			namespace,
+			"use-cluster-storage",
+		)
+		if !ok || err != nil {
+			useClusterStorage, _ = os.LookupEnv("USE_CLUSTER_STORAGE")
+			logrus.Infof("could not get use cluster storage value from addon parameters, defaulting to env value: '%v'", useClusterStorage)
 		}
 
 		customerAlertingEmailAddress, _, err := addon.GetStringParameterByInstallType(
@@ -197,6 +206,8 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		if err != nil {
 			return fmt.Errorf("failed while retrieving addon parameter: %w", err)
 		}
+
+		logrus.Infof("Creating a %s rhmi CR with UCS %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
 
 		namespaceSegments := strings.Split(namespace, "-")
 		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
