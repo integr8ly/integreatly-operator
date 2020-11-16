@@ -201,6 +201,11 @@ func (r *Reconciler) checkRateLimitsConfig(ctx context.Context, serverClient k8s
 			marin3rconfig.ManagedApiServiceSKU: {
 				Unit:            marin3rconfig.DefaultRateLimitUnit,
 				RequestsPerUnit: uint32(marin3rconfig.DefaultRateLimitRequests),
+				SoftDailyLimits: []uint32{
+					marin3rconfig.DailySoftLimitTier1,
+					marin3rconfig.DailySoftLimitTier2,
+					marin3rconfig.DailySoftLimitTier3,
+				},
 			},
 		}
 
