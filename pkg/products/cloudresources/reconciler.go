@@ -357,6 +357,10 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		return err
 	}
 
+	if cidrValue == "" {
+		cidrValue = "10.1.0.0/16"
+	}
+
 	if !ok {
 		return nil
 	}
