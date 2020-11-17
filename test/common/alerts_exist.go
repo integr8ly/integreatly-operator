@@ -400,6 +400,7 @@ func commonExpectedRules() []alertsTestRule {
 				"ThreeScaleContainerHighCPU",
 				"ThreeScaleZyncPodAvailability",
 				"ThreeScaleZyncDatabasePodAvailability",
+				"ThreescaleApicastWorkerRestart",
 			},
 		},
 		{
