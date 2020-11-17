@@ -3,7 +3,6 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -13,10 +12,9 @@ import (
 )
 
 func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
-	if os.Getenv("SKIP_FLAKES") == "true" {
-		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
-		t.SkipNow()
-	}
+	t.Log("skipping 3scale user promotion test due to skip_flakes flag")
+	t.SkipNow()
+
 	var (
 		developerUser      = fmt.Sprintf("%v-%d", DefaultTestUserName, 0)
 		dedicatedAdminUser = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)

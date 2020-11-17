@@ -4,7 +4,6 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -94,11 +93,8 @@ var customerRHOAMDashboards = []dashboardsTestRule{
 }
 
 func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
-	if os.Getenv("SKIP_FLAKES") == "true" {
-		// https://issues.redhat.com/browse/MGDAPI-555
-		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
-		t.SkipNow()
-	}
+	t.Log("skipping customer dashboards exist test due to flakiness")
+	t.SkipNow()
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
