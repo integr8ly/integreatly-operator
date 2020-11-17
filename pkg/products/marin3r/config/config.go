@@ -14,6 +14,9 @@ const (
 	AlertConfigMapName     = "rate-limit-alerts"
 	ManagedApiServiceSKU   = "RHOAM SERVICE SKU"
 
+	AlertTypeThreshold = "Threshold"
+	AlertTypeSpike     = "Spike"
+
 	DefaultRateLimitUnit     = "minute"
 	DefaultRateLimitRequests = 13860
 
@@ -29,11 +32,16 @@ type RateLimitConfig struct {
 }
 
 type AlertConfig struct {
-	RuleName string  `json:"ruleName"`
-	Level    string  `json:"level"`
-	MinRate  string  `json:"minRate"`
-	MaxRate  *string `json:"maxRate,omitempty"`
-	Period   string  `json:"period"`
+	Type      string                `json:"type"`
+	Level     string                `json:"level"`
+	RuleName  string                `json:"ruleName"`
+	Period    string                `json:"period"`
+	Threshold *AlertThresholdConfig `json:"threshold,omitempty"`
+}
+
+type AlertThresholdConfig struct {
+	MinRate string  `json:"minRate,omitempty"`
+	MaxRate *string `json:"maxRate,omitempty"`
 }
 
 // GetRateLimitConfig retrieves the configuration for the rate limit service,

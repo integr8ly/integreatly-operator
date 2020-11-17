@@ -234,14 +234,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-
 	if phase, err := r.newSoftLimitAlertsReconciler().ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile soft limit alerts", err)
-		return phase, err
-	}
-
-	if phase, err = r.newSpikeLimitAlertsReconciler().ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile spike alerts", err)
 		return phase, err
 	}
 

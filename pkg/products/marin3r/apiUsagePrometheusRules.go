@@ -25,7 +25,7 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 	if err != nil {
 		return nil, err
 	}
-	alerts, err := mapAlertsConfiguration(r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
+	alerts, err := mapAlertsConfiguration(r.logger, r.Config.GetNamespace(), r.RateLimitConfig.Unit, r.RateLimitConfig.RequestsPerUnit, requestsAllowedPerSecond, r.AlertsConfig, grafanaDashboardURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts from configuration: %w", err)
 	}
@@ -41,60 +41,97 @@ func (r *Reconciler) newAlertsReconciler(grafanaDashboardURL string) (resources.
 // mapAlertsConfiguration maps each value from alertsConfig into a
 // resources.AlertConfiguration object, resulting into a list of the
 // prometheus alerts to be created
-func mapAlertsConfiguration(namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
+func mapAlertsConfiguration(logger *logrus.Entry, namespace, rateLimitUnit string, rateLimitRequestsPerUnit uint32, requestsAllowedPerSecond float64, alertsConfig map[string]*marin3rconfig.AlertConfig, grafanaDashboardURL string) ([]resources.AlertConfiguration, error) {
 	result := make([]resources.AlertConfiguration, 0, len(alertsConfig))
 
 	for alertName, alertConfig := range alertsConfig {
-		usageFrequencyMins, err := intervalToMinutes(alertConfig.Period)
-		if err != nil {
-			return nil, err
+		switch alertConfig.Type {
+		case marin3rconfig.AlertTypeSpike:
+			expr := fmt.Sprintf(
+				"max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[%s:]) /2 > %d",
+				alertConfig.Period, rateLimitRequestsPerUnit)
+			annotations := map[string]string{
+				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),
+				"grafanaConsole": grafanaDashboardURL,
+			}
+			alert := mapSpikeAlert(alertConfig, alertName, namespace, expr, annotations)
+			result = append(result, alert)
+		case marin3rconfig.AlertTypeThreshold:
+
+			usageFrequencyMins, err := intervalToMinutes(alertConfig.Period)
+			if err != nil {
+				return nil, err
+			}
+			requestsAllowedOverTimePeriod := requestsAllowedPerSecond * float64(usageFrequencyMins*60)
+
+			minRateValue, maxRateValue, err := parsePercenteageRange(
+				alertConfig.Threshold.MinRate,
+				alertConfig.Threshold.MaxRate,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			lowerExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, ">=", requestsAllowedOverTimePeriod, &minRateValue)
+			upperExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, "<=", requestsAllowedOverTimePeriod, maxRateValue)
+
+			// Get the complete expression by ANDing the lower and the upper if the
+			// upper limit is set, if not, assign the lower one
+			expr := *lowerExpr
+			upperMessage := "*"
+			if upperExpr != nil {
+				expr = fmt.Sprintf("%s and %s", expr, *upperExpr)
+				upperMessage = *alertConfig.Threshold.MaxRate
+			}
+			annotations := map[string]string{
+				"message": fmt.Sprintf(
+					"Total API usage in your API Management service is between %s%% and %s%% of the allowable threshold, %d requests per %s, during the last %s",
+					alertConfig.Threshold.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
+				),
+				"grafanaConsole": grafanaDashboardURL,
+			}
+			alert := mapThresholdAlert(alertConfig, alertName, namespace, expr, annotations)
+
+			result = append(result, alert)
+		default:
+			logger.Infof("Unsupported Alert Type found for %s", alertName)
 		}
-		requestsAllowedOverTimePeriod := requestsAllowedPerSecond * float64(usageFrequencyMins*60)
 
-		minRateValue, maxRateValue, err := parsePercenteageRange(
-			alertConfig.MinRate,
-			alertConfig.MaxRate,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		lowerExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, ">=", requestsAllowedOverTimePeriod, &minRateValue)
-		upperExpr := increaseExpr(totalRequestsMetric, alertConfig.Period, "<=", requestsAllowedOverTimePeriod, maxRateValue)
-
-		// Get the complete expression by ANDing the lower and the upper if the
-		// upper limit is set, if not, assign the lower one
-		expr := *lowerExpr
-		upperMessage := "*"
-		if upperExpr != nil {
-			expr = fmt.Sprintf("%s and %s", expr, *upperExpr)
-			upperMessage = *alertConfig.MaxRate
-		}
-
-		alert := resources.AlertConfiguration{
-			AlertName: alertName,
-			GroupName: "api-usage.rules",
-			Namespace: namespace,
-			Rules: []monitoringv1.Rule{
-				{
-					Alert: alertConfig.RuleName,
-					Annotations: map[string]string{
-						"message": fmt.Sprintf(
-							"Total API usage in your API Management service is between %s%% and %s%% of the allowable threshold, %d requests per %s, during the last %s",
-							alertConfig.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
-						),
-						"grafanaConsole": grafanaDashboardURL,
-					},
-					Expr:   intstr.FromString(expr),
-					Labels: map[string]string{"severity": alertConfig.Level},
-				},
-			},
-		}
-
-		result = append(result, alert)
 	}
-
 	return result, nil
+}
+
+func mapSpikeAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string) resources.AlertConfiguration {
+	return resources.AlertConfiguration{
+		AlertName: alertName,
+		GroupName: "ratelimit-spike.rules",
+		Namespace: namespace,
+		Interval:  alertConfig.Period,
+		Rules: []monitoringv1.Rule{
+			{
+				Alert:       alertConfig.RuleName,
+				Annotations: annotations,
+				Expr:        intstr.FromString(expr),
+				Labels:      map[string]string{"severity": alertConfig.Level},
+			},
+		},
+	}
+}
+
+func mapThresholdAlert(alertConfig *marin3rconfig.AlertConfig, alertName string, namespace string, expr string, annotations map[string]string) resources.AlertConfiguration {
+	return resources.AlertConfiguration{
+		AlertName: alertName,
+		GroupName: "api-usage.rules",
+		Namespace: namespace,
+		Rules: []monitoringv1.Rule{
+			{
+				Alert:       alertConfig.RuleName,
+				Annotations: annotations,
+				Expr:        intstr.FromString(expr),
+				Labels:      map[string]string{"severity": alertConfig.Level},
+			},
+		},
+	}
 }
 
 func increaseExpr(totalRequestsMetric, period string, comparisonOperator string, requestsAllowedOverTimePeriod float64, percenteageLimit *int) *string {
