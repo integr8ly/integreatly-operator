@@ -182,12 +182,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
-		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-			return phase, err
+		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
