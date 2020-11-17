@@ -35,9 +35,9 @@ echo " "
 echo '==============================================================================================='
 echo '90% Percentile'
 echo " "
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric |  select(.phase | test("steady.")) | test("post.")) | .summary.percentileResponseTime."90.0"' > post-percentile
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric |  select(.phase | test("steady.")) | test("get.")) | .summary.percentileResponseTime."90.0"' > get-percentile
-curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.metric |  select(.phase | test("steady.")) | test("create.")) | .summary.percentileResponseTime."90.0"' > login-percentile
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("post.")) | .summary.percentileResponseTime."90.0"' > post-percentile
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("get.")) | .summary.percentileResponseTime."90.0"' > get-percentile
+curl -s ${HYPERFOIL_URL}/run/${RUN}/stats/total| jq '.statistics[] | select(.phase | test("steady.")) | select(.metric | test("create.")) | .summary.percentileResponseTime."90.0"' > login-percentile
 for percentile in post-percentile get-percentile login-percentile
 do
     NoOfEndpoints=$(wc -l ${percentile} | awk '{print $1}')
