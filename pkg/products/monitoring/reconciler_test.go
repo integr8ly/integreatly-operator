@@ -46,6 +46,7 @@ const (
 	mockCustomerAlertingEmailAddress = "noreply-customer-test@rhmi-redhat.com"
 	mockAlertingEmailAddress         = "noreply-test@rhmi-redhat.com"
 	mockBUAlertingEmailAddress       = "noreply-bu-test@rhmi-redhat.com"
+	mockIsMultiAZCluster             = true
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -252,7 +253,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				t.Fatal("unexpected err ", err)
 			}
 
-			phase, err := reconciler.reconcileComponents(context.TODO(), tc.FakeClient)
+			phase, err := reconciler.reconcileComponents(context.TODO(), tc.FakeClient, mockIsMultiAZCluster)
 			if tc.ExpectError && err == nil {
 				t.Fatal("expected an error but got none")
 			}

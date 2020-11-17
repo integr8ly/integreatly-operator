@@ -459,4 +459,12 @@ rules:
       - "*"
     verbs:
       - "*"
-  
+
+  # Permission to list nodes in order to determine if a cluster is multi-az
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
+  # END Permission to list nodes in order to determine if a cluster is multi-az
