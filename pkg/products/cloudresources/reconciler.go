@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -357,12 +358,10 @@ func (r *Reconciler) reconcileCIDRValue(ctx context.Context, client k8sclient.Cl
 		return err
 	}
 
-	if cidrValue == "" {
+	//!ok means the param wasn't found so we want to default rather than return
+	//but don't do it until the installation object is more than a minute old in case the secret is slow to create
+	if !ok || cidrValue == "" && r.installation.ObjectMeta.CreationTimestamp.Time.Before(time.Now().Add(-(1*time.Minute))) {
 		cidrValue = "10.1.0.0/16"
-	}
-
-	if !ok {
-		return nil
 	}
 
 	cfgMap := &corev1.ConfigMap{}
