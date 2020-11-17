@@ -8,18 +8,20 @@ import (
 	"testing"
 )
 
-var mangedApiTargets = map[string][]string{
-	// TODO: Should include other expected targets
-	Marin3rProductNamespace: {
-		"/prom-statsd-exporter/0",
-	},
+func mangedApiTargets() map[string][]string {
+	return map[string][]string{
+		// TODO: Should include other expected targets
+		Marin3rProductNamespace: {
+			"/prom-statsd-exporter/0",
+		},
+	}
 }
 
 func TestMetricsScrappedByPrometheus(t *testing.T, ctx *TestingContext) {
 	// get all active targets in prometheus
 	output, err := execToPod("curl localhost:9090/api/v1/targets?state=active",
 		"prometheus-application-monitoring-0",
-		MonitoringOperatorNamespace,
+		GetPrefixedNamespace("middleware-monitoring-operator"),
 		"prometheus",
 		ctx)
 	if err != nil {
@@ -66,7 +68,7 @@ func TestMetricsScrappedByPrometheus(t *testing.T, ctx *TestingContext) {
 
 func getTargets(installType string) map[string][]string {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return mangedApiTargets
+		return mangedApiTargets()
 	} else {
 		// TODO - return list for managed install type
 		return map[string][]string{}

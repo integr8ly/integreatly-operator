@@ -6,8 +6,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	namespaces = []Namespace{
+func getKeycloakNamespaces() []Namespace {
+	return []Namespace{
 		{
 			Name: NamespacePrefix + "rhsso",
 			PodDisruptionBudgetNames: []string{
@@ -35,10 +35,10 @@ var (
 		// 	},
 		// },
 	}
-)
+}
 
 func TestIntegreatlyPodDisruptionBudgetsExist(t *testing.T, ctx *TestingContext) {
-	for _, namespace := range namespaces {
+	for _, namespace := range getKeycloakNamespaces() {
 		for _, podDisruptionBudgetName := range namespace.PodDisruptionBudgetNames {
 			_, err := ctx.KubeClient.PolicyV1beta1().PodDisruptionBudgets(namespace.Name).Get(podDisruptionBudgetName, v1.GetOptions{})
 			if err != nil {

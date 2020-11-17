@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-var (
-	rhmi2Namespaces = []string{
+func rhmi2Namespaces() []string {
+	return []string{
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
 		AMQOnlineOperatorNamespace,
@@ -31,7 +31,10 @@ var (
 		UPSProductNamespace,
 		UPSOperatorNamespace,
 	}
-	managedApiNamespaces = []string{
+}
+
+func managedApiNamespaces() []string {
+	return []string{
 		MonitoringOperatorNamespace,
 		MonitoringFederateNamespace,
 		CloudResourceOperatorNamespace,
@@ -45,7 +48,7 @@ var (
 		Marin3rProductNamespace,
 		CustomerGrafanaNamespace,
 	}
-)
+}
 
 func TestNamespaceCreated(t *testing.T, ctx *TestingContext) {
 
@@ -71,8 +74,8 @@ func getNamespaces(t *testing.T, ctx *TestingContext) []string {
 	}
 
 	if rhmi.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return managedApiNamespaces
+		return managedApiNamespaces()
 	} else {
-		return rhmi2Namespaces
+		return rhmi2Namespaces()
 	}
 }

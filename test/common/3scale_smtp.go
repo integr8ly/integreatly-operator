@@ -140,11 +140,11 @@ func checkThreeScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
+			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
 
-			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
+			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deploymentConfig)
 			if err != nil {
-				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, err)
+				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
 			}
 
 			if deploymentConfig.Status.Replicas != int32(replicas) || deploymentConfig.Status.ReadyReplicas != int32(replicas) {

@@ -40,455 +40,463 @@ var (
 )
 
 // Specific to RHMI2
-var rhmi2ExpectedRules = []alertsTestRule{
-	{
-		File: NamespacePrefix + "amq-online-backupjobs-exist-alerts.yaml",
-		Rules: []string{
-			"CronJobExists_" + NamespacePrefix + "amq-online_enmasse-pv-backup",
-			"CronJobExists_" + NamespacePrefix + "amq-online_enmasse-postgres-backup",
-			"CronJobExists_" + NamespacePrefix + "amq-online_resources-backup",
+func rhmi2ExpectedRules() []alertsTestRule {
+
+	return []alertsTestRule{
+		{
+			File: NamespacePrefix + "amq-online-backupjobs-exist-alerts.yaml",
+			Rules: []string{
+				"CronJobExists_" + NamespacePrefix + "amq-online_enmasse-pv-backup",
+				"CronJobExists_" + NamespacePrefix + "amq-online_enmasse-postgres-backup",
+				"CronJobExists_" + NamespacePrefix + "amq-online_resources-backup",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "codeready-workspaces-backupjobs-exist-alerts.yaml",
-		Rules: []string{
-			"CronJobExists_" + NamespacePrefix + "codeready-workspaces_codeready-pv-backup",
+		{
+			File: NamespacePrefix + "codeready-workspaces-backupjobs-exist-alerts.yaml",
+			Rules: []string{
+				"CronJobExists_" + NamespacePrefix + "codeready-workspaces_codeready-pv-backup",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "amq-online-ksm-amqonline-alerts.yaml",
-		Rules: []string{
-			"AMQOnlinePodCount",
-			"AMQOnlineContainerHighMemory",
+		{
+			File: NamespacePrefix + "amq-online-ksm-amqonline-alerts.yaml",
+			Rules: []string{
+				"AMQOnlinePodCount",
+				"AMQOnlineContainerHighMemory",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "apicurito-ksm-apicurito-alerts.yaml",
-		Rules: []string{
-			"ApicuritoPodCount",
+		{
+			File: NamespacePrefix + "apicurito-ksm-apicurito-alerts.yaml",
+			Rules: []string{
+				"ApicuritoPodCount",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-ksm-fuse-online-alerts.yaml",
-		Rules: []string{
-			"FuseOnlineSyndesisServerInstanceDown",
-			"FuseOnlineSyndesisUIInstanceDown",
+		{
+			File: NamespacePrefix + "fuse-ksm-fuse-online-alerts.yaml",
+			Rules: []string{
+				"FuseOnlineSyndesisServerInstanceDown",
+				"FuseOnlineSyndesisUIInstanceDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "codeready-workspaces-ksm-codeready-alerts.yaml",
-		Rules: []string{
-			"CodeReadyPodCount",
+		{
+			File: NamespacePrefix + "codeready-workspaces-ksm-codeready-alerts.yaml",
+			Rules: []string{
+				"CodeReadyPodCount",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "amq-online-rhmi-amq-online-slo.yaml",
-		Rules: []string{
-			"AMQOnlineConsoleAvailable",
-			"AMQOnlineKeycloakAvailable",
-			"AMQOnlineOperatorAvailable",
+		{
+			File: NamespacePrefix + "amq-online-rhmi-amq-online-slo.yaml",
+			Rules: []string{
+				"AMQOnlineConsoleAvailable",
+				"AMQOnlineKeycloakAvailable",
+				"AMQOnlineOperatorAvailable",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "solution-explorer-ksm-solution-explorer-alerts.yaml",
-		Rules: []string{
-			"SolutionExplorerPodCount",
+		{
+			File: NamespacePrefix + "solution-explorer-ksm-solution-explorer-alerts.yaml",
+			Rules: []string{
+				"SolutionExplorerPodCount",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-syndesis-infra-meta-alerting-rules.yaml",
-		Rules: []string{
-			"FuseOnlineRestApiHighEndpointErrorRate",
-			"FuseOnlineRestApiHighEndpointLatency",
+		{
+			File: NamespacePrefix + "fuse-syndesis-infra-meta-alerting-rules.yaml",
+			Rules: []string{
+				"FuseOnlineRestApiHighEndpointErrorRate",
+				"FuseOnlineRestApiHighEndpointLatency",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-syndesis-infra-server-alerting-rules.yaml",
-		Rules: []string{
-			"FuseOnlineRestApiHighEndpointErrorRate",
-			"FuseOnlineRestApiHighEndpointLatency",
+		{
+			File: NamespacePrefix + "fuse-syndesis-infra-server-alerting-rules.yaml",
+			Rules: []string{
+				"FuseOnlineRestApiHighEndpointErrorRate",
+				"FuseOnlineRestApiHighEndpointLatency",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-syndesis-integrations-alerting-rules.yaml",
-		Rules: []string{
-			"IntegrationExchangesHighFailureRate",
+		{
+			File: NamespacePrefix + "fuse-syndesis-integrations-alerting-rules.yaml",
+			Rules: []string{
+				"IntegrationExchangesHighFailureRate",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "ups-unifiedpush.yaml",
-		Rules: []string{
-			"UnifiedPushDown",
-			"UnifiedPushConsoleDown",
-			"UnifiedPushJavaHeapThresholdExceeded",
-			"UnifiedPushJavaNonHeapThresholdExceeded",
-			"UnifiedPushJavaGCTimePerMinuteScavenge",
-			"UnifiedPushJavaDeadlockedThreads",
-			"UnifiedPushMessagesFailures",
+		{
+			File: NamespacePrefix + "ups-unifiedpush.yaml",
+			Rules: []string{
+				"UnifiedPushDown",
+				"UnifiedPushConsoleDown",
+				"UnifiedPushJavaHeapThresholdExceeded",
+				"UnifiedPushJavaNonHeapThresholdExceeded",
+				"UnifiedPushJavaGCTimePerMinuteScavenge",
+				"UnifiedPushJavaDeadlockedThreads",
+				"UnifiedPushMessagesFailures",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "ups-operator-unifiedpush-operator.yaml",
-		Rules: []string{
-			"UnifiedPushOperatorDown",
+		{
+			File: NamespacePrefix + "ups-operator-unifiedpush-operator.yaml",
+			Rules: []string{
+				"UnifiedPushOperatorDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "amq-online-kube-metrics.yaml",
-		Rules: []string{
-			"TerminatingPods",
-			"RestartingPods",
-			"RestartingPods",
-			"PendingPods",
+		{
+			File: NamespacePrefix + "amq-online-kube-metrics.yaml",
+			Rules: []string{
+				"TerminatingPods",
+				"RestartingPods",
+				"RestartingPods",
+				"PendingPods",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "amq-online-enmasse.yaml",
-		Rules: []string{
-			"ComponentHealth",
-			"AuthenticationService",
-			"AddressSpaceHealth",
-			"AddressHealth",
-			"RouterMeshConnectivityHealth",
-			"RouterMeshUndeliveredHealth",
-			"BrokerMemory",
+		{
+			File: NamespacePrefix + "amq-online-enmasse.yaml",
+			Rules: []string{
+				"ComponentHealth",
+				"AuthenticationService",
+				"AddressSpaceHealth",
+				"AddressHealth",
+				"RouterMeshConnectivityHealth",
+				"RouterMeshUndeliveredHealth",
+				"BrokerMemory",
+			},
 		},
-	},
-	{
-		File:  NamespacePrefix + "amq-online-enmasse-console-rules.yaml",
-		Rules: []string{},
-	},
-	{
-		File: NamespacePrefix + "apicurito-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIApicuritoServiceEndpointDown",
-			"RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+		{
+			File:  NamespacePrefix + "amq-online-enmasse-console-rules.yaml",
+			Rules: []string{},
 		},
-	},
-	{
-		File: NamespacePrefix + "amq-online-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIAMQOnlineNoneAuthServiceEndpointDown",
-			"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
-			"RHMIAMQOnlineConsoleServiceEndpointDown",
-			"RHMIAMQOnlineRegistryCsServiceEndpointDown",
-			"RHMIAMQOnlineStandardAuthServiceEndpointDown",
-			"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "apicurito-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIApicuritoServiceEndpointDown",
+				"RHMIApicuritoFuseApicuritoGeneratorServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
-			"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "amq-online-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIAMQOnlineNoneAuthServiceEndpointDown",
+				"RHMIAMQOnlineAddressSpaceControllerServiceEndpointDown",
+				"RHMIAMQOnlineConsoleServiceEndpointDown",
+				"RHMIAMQOnlineRegistryCsServiceEndpointDown",
+				"RHMIAMQOnlineStandardAuthServiceEndpointDown",
+				"RHMIAMQOnlineEnmasseOperatorMetricsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
-			"RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "fuse-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIFuseOnlineOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHMIFuseOnlineOperatorSyndesisOperatorMetricsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "codeready-workspaces-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMICodeReadyCheHostServiceEndpointDown",
-			"RHMICodeReadyDevfileRegistryServiceEndpointDown",
-			"RHMICodeReadyPluginRegistryServiceEndpointDown",
+		{
+			File: NamespacePrefix + "ups-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUPSOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHMIUPSOperatorUnifiedPushOperatorMetricsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "apicurito-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "codeready-workspaces-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMICodeReadyCheHostServiceEndpointDown",
+				"RHMICodeReadyDevfileRegistryServiceEndpointDown",
+				"RHMICodeReadyPluginRegistryServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
+		{
+			File: NamespacePrefix + "apicurito-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIApicuritoOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "solution-explorer-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMISolutionExplorerTutorialWebAppServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "solution-explorer-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMISolutionExplorerOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "fuse-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
-			"RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
-			"RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
-			"RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
-			"RHMIFuseOnlineSyndesisServerServiceEndpointDown",
-			"RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+		{
+			File: NamespacePrefix + "codeready-workspaces-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMICodeReadyOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIUPSUnifiedPushServiceEndpointDown",
-			"RHMIUPSUnifiedpushProxyServiceEndpointDown",
+		{
+			File: NamespacePrefix + "fuse-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIFuseOnlineBrokerAmqTcpServiceEndpointDown",
+				"RHMIFuseOnlineSyndesisMetaServiceEndpointDown",
+				"RHMIFuseOnlineSyndesisOauthproxyServiceEndpointDown",
+				"RHMIFuseOnlineSyndesisPrometheusServiceEndpointDown",
+				"RHMIFuseOnlineSyndesisServerServiceEndpointDown",
+				"RHMIFuseOnlineSyndesisUiServiceEndpointDown",
+			},
 		},
-	},
+		{
+			File: NamespacePrefix + "ups-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUPSUnifiedPushServiceEndpointDown",
+				"RHMIUPSUnifiedpushProxyServiceEndpointDown",
+			},
+		},
+	}
 }
 
 // Managed-Api-Service rules
-var managedApiSpecificRules = []alertsTestRule{
-	{
-		File: NamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"Marin3rDiscoveryServiceEndpointDown",
-			"Marin3rPromstatsdExporterServiceEndpointDown",
-			"Marin3rRateLimitServiceEndpointDown",
+func managedApiSpecificRules() []alertsTestRule {
+
+	return []alertsTestRule{
+		{
+			File: NamespacePrefix + "marin3r-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"Marin3rDiscoveryServiceEndpointDown",
+				"Marin3rPromstatsdExporterServiceEndpointDown",
+				"Marin3rRateLimitServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "marin3r-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"Marin3rOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
-		Rules: []string{
-			"Marin3rOperatorPod",
+		{
+			File: NamespacePrefix + "marin3r-operator-ksm-marin3r-alerts.yaml",
+			Rules: []string{
+				"Marin3rOperatorPod",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
-		Rules: []string{
-			"Marin3rDiscoveryServicePod",
-			"Marin3rPromstatsdExporterPod",
-			"Marin3rRateLimitPod",
-			"Marin3rEnvoyApicastStagingContainerDown",
-			"Marin3rEnvoyApicastProductionContainerDown",
+		{
+			File: NamespacePrefix + "marin3r-ksm-marin3r-alerts.yaml",
+			Rules: []string{
+				"Marin3rDiscoveryServicePod",
+				"Marin3rPromstatsdExporterPod",
+				"Marin3rRateLimitPod",
+				"Marin3rEnvoyApicastStagingContainerDown",
+				"Marin3rEnvoyApicastProductionContainerDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "customer-monitoring-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
-			"GrafanaServiceEndpointDown",
+		{
+			File: NamespacePrefix + "customer-monitoring-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"GrafanaOperatorRhmiRegistryCsServiceEndpointDown",
+				"GrafanaServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "customer-monitoring-operator-ksm-grafana-alerts.yaml",
-		Rules: []string{
-			"GrafanaOperatorPod",
-			"GrafanaServicePod",
+		{
+			File: NamespacePrefix + "customer-monitoring-operator-ksm-grafana-alerts.yaml",
+			Rules: []string{
+				"GrafanaOperatorPod",
+				"GrafanaServicePod",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-api-usage-alert-level1.yaml",
-		Rules: []string{
-			"RHOAMApiUsageLevel1ThresholdExceeded",
+		{
+			File: NamespacePrefix + "marin3r-api-usage-alert-level1.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel1ThresholdExceeded",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-api-usage-alert-level2.yaml",
-		Rules: []string{
-			"RHOAMApiUsageLevel2ThresholdExceeded",
+		{
+			File: NamespacePrefix + "marin3r-api-usage-alert-level2.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel2ThresholdExceeded",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-api-usage-alert-level3.yaml",
-		Rules: []string{
-			"RHOAMApiUsageLevel3ThresholdExceeded",
+		{
+			File: NamespacePrefix + "marin3r-api-usage-alert-level3.yaml",
+			Rules: []string{
+				"RHOAMApiUsageLevel3ThresholdExceeded",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "marin3r-rate-limit-soft-limits.yaml",
-		Rules: []string{
-			"RHOAMApiUsageSoftLimitReachedTier1",
-			"RHOAMApiUsageSoftLimitReachedTier2",
-			"RHOAMApiUsageSoftLimitReachedTier3",
+		{
+			File: NamespacePrefix + "marin3r-rate-limit-soft-limits.yaml",
+			Rules: []string{
+				"RHOAMApiUsageSoftLimitReachedTier1",
+				"RHOAMApiUsageSoftLimitReachedTier2",
+				"RHOAMApiUsageSoftLimitReachedTier3",
+			},
 		},
-	},
+	}
 }
 
 // Common to all install types
-var commonExpectedRules = []alertsTestRule{
-	{
-		File: NamespacePrefix + "middleware-monitoring-operator-backup-monitoring-alerts.yaml",
-		Rules: []string{
-			"JobRunningTimeExceeded",
-			"JobRunningTimeExceeded",
-			"CronJobsFailed",
-			"CronJobNotRunInThreshold",
+func commonExpectedRules() []alertsTestRule {
+	return []alertsTestRule{
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-backup-monitoring-alerts.yaml",
+			Rules: []string{
+				"JobRunningTimeExceeded",
+				"JobRunningTimeExceeded",
+				"CronJobsFailed",
+				"CronJobNotRunInThreshold",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "rhsso-keycloak.yaml",
-		Rules: []string{
-			"KeycloakJavaHeapThresholdExceeded",
-			"KeycloakJavaNonHeapThresholdExceeded",
-			"KeycloakJavaGCTimePerMinuteScavenge",
-			"KeycloakJavaGCTimePerMinuteMarkSweep",
-			"KeycloakJavaDeadlockedThreads",
-			"KeycloakLoginFailedThresholdExceeded",
-			"KeycloakInstanceNotAvailable",
-			"KeycloakAPIRequestDuration90PercThresholdExceeded",
-			"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+		{
+			File: NamespacePrefix + "rhsso-keycloak.yaml",
+			Rules: []string{
+				"KeycloakJavaHeapThresholdExceeded",
+				"KeycloakJavaNonHeapThresholdExceeded",
+				"KeycloakJavaGCTimePerMinuteScavenge",
+				"KeycloakJavaGCTimePerMinuteMarkSweep",
+				"KeycloakJavaDeadlockedThreads",
+				"KeycloakLoginFailedThresholdExceeded",
+				"KeycloakInstanceNotAvailable",
+				"KeycloakAPIRequestDuration90PercThresholdExceeded",
+				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "user-sso-keycloak.yaml",
-		Rules: []string{
-			"KeycloakJavaHeapThresholdExceeded",
-			"KeycloakJavaNonHeapThresholdExceeded",
-			"KeycloakJavaGCTimePerMinuteScavenge",
-			"KeycloakJavaGCTimePerMinuteMarkSweep",
-			"KeycloakJavaDeadlockedThreads",
-			"KeycloakLoginFailedThresholdExceeded",
-			"KeycloakInstanceNotAvailable",
-			"KeycloakAPIRequestDuration90PercThresholdExceeded",
-			"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+		{
+			File: NamespacePrefix + "user-sso-keycloak.yaml",
+			Rules: []string{
+				"KeycloakJavaHeapThresholdExceeded",
+				"KeycloakJavaNonHeapThresholdExceeded",
+				"KeycloakJavaGCTimePerMinuteScavenge",
+				"KeycloakJavaGCTimePerMinuteMarkSweep",
+				"KeycloakJavaDeadlockedThreads",
+				"KeycloakLoginFailedThresholdExceeded",
+				"KeycloakInstanceNotAvailable",
+				"KeycloakAPIRequestDuration90PercThresholdExceeded",
+				"KeycloakAPIRequestDuration99.5PercThresholdExceeded",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "middleware-monitoring-operator-ksm-alerts.yaml",
-		Rules: []string{
-			"KubePodCrashLooping",
-			"KubePodNotReady",
-			"KubePodImagePullBackOff",
-			"KubePodBadConfig",
-			"KubePodStuckCreating",
-			"ClusterSchedulableMemoryLow",
-			"ClusterSchedulableCPULow",
-			"PVCStorageAvailable",
-			"PVCStorageMetricsAvailable",
-			"KubePersistentVolumeFillingUp",
-			"KubePersistentVolumeFillingUp",
-			"PersistentVolumeErrors",
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-ksm-alerts.yaml",
+			Rules: []string{
+				"KubePodCrashLooping",
+				"KubePodNotReady",
+				"KubePodImagePullBackOff",
+				"KubePodBadConfig",
+				"KubePodStuckCreating",
+				"ClusterSchedulableMemoryLow",
+				"ClusterSchedulableCPULow",
+				"PVCStorageAvailable",
+				"PVCStorageMetricsAvailable",
+				"KubePersistentVolumeFillingUp",
+				"KubePersistentVolumeFillingUp",
+				"PersistentVolumeErrors",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "middleware-monitoring-operator-ksm-monitoring-alerts.yaml",
-		Rules: []string{
-			"MiddlewareMonitoringPodCount",
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-ksm-monitoring-alerts.yaml",
+			Rules: []string{
+				"MiddlewareMonitoringPodCount",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "3scale-ksm-3scale-alerts.yaml",
-		Rules: []string{
-			"ThreeScaleApicastStagingPod",
-			"ThreeScaleApicastProductionPod",
-			"ThreeScaleBackendWorkerPod",
-			"ThreeScaleBackendListenerPod",
-			"ThreeScaleSystemAppPod",
-			"ThreeScaleAdminUIBBT",
-			"ThreeScaleDeveloperUIBBT",
-			"ThreeScaleSystemAdminUIBBT",
-			"ThreeScaleContainerHighMemory",
-			"ThreeScaleContainerHighCPU",
-			"ThreeScaleZyncPodAvailability",
-			"ThreeScaleZyncDatabasePodAvailability",
+		{
+			File: NamespacePrefix + "3scale-ksm-3scale-alerts.yaml",
+			Rules: []string{
+				"ThreeScaleApicastStagingPod",
+				"ThreeScaleApicastProductionPod",
+				"ThreeScaleBackendWorkerPod",
+				"ThreeScaleBackendListenerPod",
+				"ThreeScaleSystemAppPod",
+				"ThreeScaleAdminUIBBT",
+				"ThreeScaleDeveloperUIBBT",
+				"ThreeScaleSystemAdminUIBBT",
+				"ThreeScaleContainerHighMemory",
+				"ThreeScaleContainerHighCPU",
+				"ThreeScaleZyncPodAvailability",
+				"ThreeScaleZyncDatabasePodAvailability",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "middleware-monitoring-operator-prometheus-application-monitoring-rules.yaml",
-		Rules: []string{
-			"DeadMansSwitch",
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-prometheus-application-monitoring-rules.yaml",
+			Rules: []string{
+				"DeadMansSwitch",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIThreeScaleApicastProductionServiceEndpointDown",
-			"RHMIThreeScaleApicastStagingServiceEndpointDown",
-			"RHMIThreeScaleBackendListenerServiceEndpointDown",
-			"RHMIThreeScaleSystemDeveloperServiceEndpointDown",
-			"RHMIThreeScaleSystemMasterServiceEndpointDown",
-			"RHMIThreeScaleSystemMemcacheServiceEndpointDown",
-			"RHMIThreeScaleSystemProviderServiceEndpointDown",
-			"RHMIThreeScaleSystemSphinxServiceEndpointDown",
-			"RHMIThreeScaleZyncDatabaseServiceEndpointDown",
-			"RHMIThreeScaleZyncServiceEndpointDown",
+		{
+			File: NamespacePrefix + "3scale-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIThreeScaleApicastProductionServiceEndpointDown",
+				"RHMIThreeScaleApicastStagingServiceEndpointDown",
+				"RHMIThreeScaleBackendListenerServiceEndpointDown",
+				"RHMIThreeScaleSystemDeveloperServiceEndpointDown",
+				"RHMIThreeScaleSystemMasterServiceEndpointDown",
+				"RHMIThreeScaleSystemMemcacheServiceEndpointDown",
+				"RHMIThreeScaleSystemProviderServiceEndpointDown",
+				"RHMIThreeScaleSystemSphinxServiceEndpointDown",
+				"RHMIThreeScaleZyncDatabaseServiceEndpointDown",
+				"RHMIThreeScaleZyncServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIUserRhssoKeycloakServiceEndpointDown",
-			"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+		{
+			File: NamespacePrefix + "user-sso-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoKeycloakServiceEndpointDown",
+				"RHMIUserRhssoKeycloakDiscoveryServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "cloud-resources-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMICloudResourceOperatorMetricsServiceEndpointDown",
-			"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "cloud-resources-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMICloudResourceOperatorMetricsServiceEndpointDown",
+				"RHMICloudResourceOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
-			"RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIMiddlewareMonitoringOperatorAlertmanagerOperatedServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
+				"RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIRhssoKeycloakServiceEndpointDown",
-			"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
+		{
+			File: NamespacePrefix + "rhsso-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIRhssoKeycloakServiceEndpointDown",
+				"RHMIRhssoKeycloakDiscoveryServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
-			"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "rhsso-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIRhssoKeycloakOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHMIRhssoKeycloakOperatorMetricsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
-			"RHMIThreeScaleOperatorServiceEndpointDown",
+		{
+			File: NamespacePrefix + "3scale-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIThreeScaleOperatorRhmiRegistryCsServiceEndpointDown",
+				"RHMIThreeScaleOperatorServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
-		Rules: []string{
-			"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
-			"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+		{
+			File: NamespacePrefix + "user-sso-operator-ksm-endpoint-alerts.yaml",
+			Rules: []string{
+				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
+				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
-		Rules: []string{
-			"RHMIInstallationControllerIsNotReconciling",
-			"RHMIInstallationControllerStoppedReconciling",
+		{
+			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
+			Rules: []string{
+				"RHMIInstallationControllerIsNotReconciling",
+				"RHMIInstallationControllerStoppedReconciling",
+			},
 		},
-	},
-	{
-		File: MonitoringOperatorNamespace + "-install-upgrade-alerts.yaml",
-		Rules: []string{
-			"RHMICSVRequirementsNotMet",
+		{
+			File: MonitoringOperatorNamespace + "-install-upgrade-alerts.yaml",
+			Rules: []string{
+				"RHMICSVRequirementsNotMet",
+			},
 		},
-	},
-	{
-		File: NamespacePrefix + "operator-sendgrid-smtp-secret-exists-rule.yaml",
-		Rules: []string{
-			"SendgridSmtpSecretExists",
+		{
+			File: NamespacePrefix + "operator-sendgrid-smtp-secret-exists-rule.yaml",
+			Rules: []string{
+				"SendgridSmtpSecretExists",
+			},
 		},
-	},
+	}
 }
 
 // common aws rules applicable to all install types
@@ -973,9 +981,9 @@ func getExpectedAWSRules(installType string, installationName string) []alertsTe
 
 func getExpectedRules(installType string) []alertsTestRule {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return append(commonExpectedRules, managedApiSpecificRules...)
+		return append(commonExpectedRules(), managedApiSpecificRules()...)
 	} else {
-		return append(commonExpectedRules, rhmi2ExpectedRules...)
+		return append(commonExpectedRules(), rhmi2ExpectedRules()...)
 	}
 }
 

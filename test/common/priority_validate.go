@@ -13,8 +13,8 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	priorityStatefulSets = []StatefulSets{
+func priorityStatefulSets() []StatefulSets {
+	return []StatefulSets{
 		{
 			Namespace: NamespacePrefix + "rhsso",
 			Name:      "keycloak",
@@ -24,8 +24,10 @@ var (
 			Name:      "keycloak",
 		},
 	}
+}
 
-	priorityDeploymentConfigs = []DeploymentConfigs{
+func priorityDeploymentConfigs() []DeploymentConfigs {
+	return []DeploymentConfigs{
 		{
 			Namespace: NamespacePrefix + "3scale",
 			Name:      "apicast-production",
@@ -75,7 +77,7 @@ var (
 			Name:      "zync-que",
 		},
 	}
-)
+}
 
 // TestPriorityClass tests to ensure the pod priority class is created and verifies the deploymentconfigs and statefulsets are updated correctly
 func TestPriorityClass(t *testing.T, ctx *TestingContext) {
@@ -100,7 +102,7 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 		t.Errorf("Error %v", err)
 	}
 
-	for _, priority := range priorityStatefulSets {
+	for _, priority := range priorityStatefulSets() {
 		item, err := ctx.KubeClient.AppsV1().StatefulSets(priority.Namespace).Get(priority.Name, metav1.GetOptions{})
 		if err != nil {
 			t.Errorf("Error: %v", err)
@@ -112,7 +114,7 @@ func TestPriorityClass(t *testing.T, ctx *TestingContext) {
 		}
 	}
 
-	for _, priority := range priorityDeploymentConfigs {
+	for _, priority := range priorityDeploymentConfigs() {
 		deploymentConfig := &openshiftappsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: priority.Name, Namespace: priority.Namespace}}
 		err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: deploymentConfig.Name, Namespace: deploymentConfig.Namespace}, deploymentConfig)
 

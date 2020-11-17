@@ -131,3 +131,7 @@ func GetNamespacePrefix() string {
 	return strings.Join(strings.Split(ns, "-")[0:2], "-") + "-"
 
 }
+
+func GetPrefixedNamespace(subNS string) string {
+	return NamespacePrefix + subNS
+}

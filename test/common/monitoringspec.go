@@ -20,34 +20,35 @@ const (
 	roleRefName                    = "rhmi-prometheus-k8s"
 )
 
-// Specific to rmhi install type
-var rhmi2ExpectedServiceMonitors = []string{
-	NamespacePrefix + "amq-online-enmasse-address-space-controller",
-	NamespacePrefix + "amq-online-enmasse-admin",
-	NamespacePrefix + "amq-online-enmasse-broker",
-	NamespacePrefix + "amq-online-enmasse-console",
-	NamespacePrefix + "amq-online-enmasse-iot",
-	NamespacePrefix + "amq-online-enmasse-operator-metrics",
-	NamespacePrefix + "amq-online-enmasse-router",
-	NamespacePrefix + "fuse-syndesis-infra",
-	NamespacePrefix + "fuse-syndesis-integrations",
-	NamespacePrefix + "ups-operator-unifiedpush-operator-metrics",
-	NamespacePrefix + "ups-unifiedpush",
-}
+func getServiceMonitorsByType(monitorsType string) []string {
+	monitors := map[string][]string{
+		"rhmi2ExpectedServiceMonitors": []string{
+			NamespacePrefix + "amq-online-enmasse-address-space-controller",
+			NamespacePrefix + "amq-online-enmasse-admin",
+			NamespacePrefix + "amq-online-enmasse-broker",
+			NamespacePrefix + "amq-online-enmasse-console",
+			NamespacePrefix + "amq-online-enmasse-iot",
+			NamespacePrefix + "amq-online-enmasse-operator-metrics",
+			NamespacePrefix + "amq-online-enmasse-router",
+			NamespacePrefix + "fuse-syndesis-infra",
+			NamespacePrefix + "fuse-syndesis-integrations",
+			NamespacePrefix + "ups-operator-unifiedpush-operator-metrics",
+			NamespacePrefix + "ups-unifiedpush",
+		},
+		"managedApiServiceMonitors": []string{
+			Marin3rProductNamespace + "-prom-statsd-exporter",
+		},
+		"commonExpectedServiceMonitors": []string{
+			NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
+			NamespacePrefix + "middleware-monitoring-operator-application-monitoring-operator-metrics",
+			NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
+			NamespacePrefix + "middleware-monitoring-operator-prometheus-servicemonitor",
+			NamespacePrefix + "rhsso-keycloak-service-monitor",
+			NamespacePrefix + "user-sso-keycloak-service-monitor",
+		},
+	}
 
-// Specific to managed api install type
-var managedApiServiceMonitors = []string{
-	Marin3rProductNamespace + "-prom-statsd-exporter",
-}
-
-// Common to all install types
-var commonExpectedServiceMonitors = []string{
-	NamespacePrefix + "cloud-resources-operator-cloud-resource-operator-metrics",
-	NamespacePrefix + "middleware-monitoring-operator-application-monitoring-operator-metrics",
-	NamespacePrefix + "middleware-monitoring-operator-grafana-servicemonitor",
-	NamespacePrefix + "middleware-monitoring-operator-prometheus-servicemonitor",
-	NamespacePrefix + "rhsso-keycloak-service-monitor",
-	NamespacePrefix + "user-sso-keycloak-service-monitor",
+	return monitors[monitorsType]
 }
 
 // TestServiceMonitorsCloneAndRolebindingsExist monitoring spec testcase
@@ -170,8 +171,8 @@ func checkRoleExists(ctx *TestingContext, name, namespace string) (err error) {
 
 func getExpectedServiceMonitors(installType string) []string {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return append(commonExpectedServiceMonitors, managedApiServiceMonitors...)
+		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("managedApiServiceMonitors")...)
 	} else {
-		return append(commonExpectedServiceMonitors, rhmi2ExpectedServiceMonitors...)
+		return append(getServiceMonitorsByType("commonExpectedServiceMonitors"), getServiceMonitorsByType("rhmi2ExpectedServiceMonitors")...)
 	}
 }
