@@ -19,7 +19,6 @@ var (
 	scaleUpReplicas   int64 = 3
 	scaleDownReplicas int64 = 1
 	name                    = "3scale"
-	namespace               = NamespacePrefix + "3scale"
 	retryInterval           = time.Second * 20
 	timeout                 = time.Minute * 7
 	requestURL3scale        = "/apis/apps.3scale.net/v1alpha1"
@@ -91,7 +90,7 @@ func TestReplicasInThreescale(t *testing.T, ctx *TestingContext) {
 func getAPIManager(dynClient k8sclient.Client) (threescalev1.APIManager, error) {
 	apim := &threescalev1.APIManager{}
 
-	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, apim); err != nil {
+	if err := dynClient.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: GetPrefixedNamespace("3scale")}, apim); err != nil {
 		return *apim, err
 	}
 	return *apim, nil
@@ -146,7 +145,7 @@ func updateAPIManager(dynClient *TestingContext, replicas int64) (threescalev1.A
 	request := dynClient.ExtensionClient.RESTClient().Patch(types.MergePatchType).
 		Resource(kind).
 		Name(name).
-		Namespace(namespace).
+		Namespace(GetPrefixedNamespace("3scale")).
 		RequestURI(requestURL3scale).Body(replicaBytes).Do()
 	_, err := request.Raw()
 
@@ -218,11 +217,11 @@ func check3ScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas int
 	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
+			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
 
-			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: namespace}, deploymentConfig)
+			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deploymentConfig)
 			if err != nil {
-				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, namespace, err)
+				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
 			}
 
 			if deploymentConfig.Status.Replicas != int32(replicas) {

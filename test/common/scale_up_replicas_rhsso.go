@@ -18,16 +18,14 @@ var (
 	scaleUpRhssoReplicas   int = 3
 	scaleDownRhssoReplicas int = 1
 	rhssoName                  = "rhsso"
-	rhssoNamespace             = NamespacePrefix + "rhsso"
 	userSSOName                = "rhssouser"
-	userSSONamespace           = NamespacePrefix + "user-sso"
 	requestURLSSO              = "/apis/keycloak.org/v1alpha1"
 	kindSSO                    = "Keycloaks"
 )
 
 func TestReplicasInRHSSOAndUserSSO(t *testing.T, ctx *TestingContext) {
-	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, rhssoNamespace)
-	checkScalingOfKeycloakReplicas(t, ctx, userSSOName, userSSONamespace)
+	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"))
+	checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"))
 }
 
 func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string) {

@@ -10,10 +10,9 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//Define list of namespaces and their claims
-var (
-	// applicable to the rhmi 2 installTypes
-	rhmi2PvcNamespaces = []PersistentVolumeClaim{
+// applicable to the rhmi 2 installTypes
+func rhmi2PvcNamespaces() []PersistentVolumeClaim {
+	return []PersistentVolumeClaim{
 		{
 
 			Namespace: NamespacePrefix + "fuse",
@@ -37,8 +36,11 @@ var (
 			},
 		},
 	}
-	// common to all installTypes including managed-api
-	commonPvcNamespaces = []PersistentVolumeClaim{
+}
+
+// common to all installTypes including managed-api
+func commonPvcNamespaces() []PersistentVolumeClaim {
+	return []PersistentVolumeClaim{
 		{
 
 			Namespace: NamespacePrefix + "middleware-monitoring-operator",
@@ -47,7 +49,7 @@ var (
 			},
 		},
 	}
-)
+}
 
 func TestPVClaims(t *testing.T, ctx *TestingContext) {
 
@@ -79,9 +81,9 @@ func TestPVClaims(t *testing.T, ctx *TestingContext) {
 
 func getPvcNamespaces(installType string) []PersistentVolumeClaim {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return commonPvcNamespaces
+		return commonPvcNamespaces()
 	} else {
-		return append(commonPvcNamespaces, rhmi2PvcNamespaces...)
+		return append(commonPvcNamespaces(), rhmi2PvcNamespaces()...)
 	}
 }
 

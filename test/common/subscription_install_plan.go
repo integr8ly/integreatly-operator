@@ -14,9 +14,8 @@ const (
 	expectedApprovalStrategy = coreosv1alpha1.ApprovalManual
 )
 
-var (
-	// applicable to all install types including managed api
-	commonSubscriptionsToCheck = []SubscriptionCheck{
+func commonSubscriptionsToCheck() []SubscriptionCheck {
+	return []SubscriptionCheck{
 		{
 			Name:      constants.MonitoringSubscriptionName,
 			Namespace: MonitoringOperatorNamespace,
@@ -38,8 +37,11 @@ var (
 			Namespace: CloudResourceOperatorNamespace,
 		},
 	}
-	// Applicable to rhmi 2 install types
-	rhmi2SubscriptionsToCheck = []SubscriptionCheck{
+}
+
+// Applicable to rhmi 2 install types
+func rhmi2SubscriptionsToCheck() []SubscriptionCheck {
+	return []SubscriptionCheck{
 		{
 			Name:      constants.AMQOnlineSubscriptionName,
 			Namespace: AMQOnlineOperatorNamespace,
@@ -65,7 +67,9 @@ var (
 			Namespace: SolutionExplorerOperatorNamespace,
 		},
 	}
-	managedApiSubscriptionsToCheck = []SubscriptionCheck{
+}
+func managedApiSubscriptionsToCheck() []SubscriptionCheck {
+	return []SubscriptionCheck{
 		{
 			Name:      constants.Marin3rSubscriptionName,
 			Namespace: Marin3rOperatorNamespace,
@@ -75,7 +79,7 @@ var (
 			Namespace: CustomerGrafanaNamespace,
 		},
 	}
-)
+}
 
 func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
 
@@ -125,8 +129,8 @@ func TestSubscriptionInstallPlanType(t *testing.T, ctx *TestingContext) {
 
 func getSubscriptionsToCheck(installType string) []SubscriptionCheck {
 	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return append(commonSubscriptionsToCheck, managedApiSubscriptionsToCheck...)
+		return append(commonSubscriptionsToCheck(), managedApiSubscriptionsToCheck()...)
 	} else {
-		return append(commonSubscriptionsToCheck, rhmi2SubscriptionsToCheck...)
+		return append(commonSubscriptionsToCheck(), rhmi2SubscriptionsToCheck()...)
 	}
 }
