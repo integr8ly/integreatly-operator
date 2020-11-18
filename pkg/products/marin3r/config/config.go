@@ -16,11 +16,16 @@ const (
 
 	DefaultRateLimitUnit     = "minute"
 	DefaultRateLimitRequests = 13860
+
+	DailySoftLimitTier1 = 5_000_000
+	DailySoftLimitTier2 = 10_000_000
+	DailySoftLimitTier3 = 15_000_000
 )
 
 type RateLimitConfig struct {
-	Unit            string `json:"unit"`
-	RequestsPerUnit uint32 `json:"requests_per_unit"`
+	Unit            string   `json:"unit"`
+	RequestsPerUnit uint32   `json:"requests_per_unit"`
+	SoftDailyLimits []uint32 `json:"soft_daily_limits,omitempty"`
 }
 
 type AlertConfig struct {

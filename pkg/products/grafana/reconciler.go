@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
@@ -169,6 +168,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
+
 func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI, cr *grafanav1alpha1.Grafana) (integreatlyv1alpha1.StatusPhase, error) {
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -291,6 +291,9 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 					},
 				},
 			},
+			Deployment: &grafanav1alpha1.GrafanaDeployment{
+				PriorityClassName: r.installation.Spec.PriorityClassName,
+			},
 			Secrets: []string{"grafana-k8s-tls", "grafana-k8s-proxy"},
 			Service: &grafanav1alpha1.GrafanaService{
 				Ports: []v1.ServicePort{
@@ -308,9 +311,6 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 			},
 			Client: &grafanav1alpha1.GrafanaClient{
 				PreferService: true,
-			},
-			Compat: &grafanav1alpha1.GrafanaCompat{
-				FixAnnotations: true,
 			},
 			ServiceAccount: &grafanav1alpha1.GrafanaServiceAccount{
 				Annotations: serviceAccountAnnotations,

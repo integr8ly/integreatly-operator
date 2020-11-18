@@ -111,3 +111,11 @@ func (r *AlertReconcilerImpl) deleteAlerts(ctx context.Context, client k8sclient
 
 	return nil
 }
+
+type NoopAlertReconciler struct{}
+
+var _ AlertReconciler = &NoopAlertReconciler{}
+
+func (n *NoopAlertReconciler) ReconcileAlerts(_ context.Context, _ k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}

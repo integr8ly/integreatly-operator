@@ -67,6 +67,7 @@ rules:
       - list
       - watch
       - update
+      - delete
 
   # Monitoring resources ar not covered by namespace "admin" permissions
   - apiGroups:
@@ -105,6 +106,16 @@ rules:
       - list
       - watch
       - delete
+
+  # Allow operator to delete its own CSV
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - clusterserviceversions
+    verbs:
+      - delete
+      - get
+      - list
 
   # Permissions needed to be able to grant to prometheus-k8s SA from openshift-monitoring NS
   - apiGroups:

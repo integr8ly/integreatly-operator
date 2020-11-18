@@ -5,12 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"runtime"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/spf13/pflag"
 
@@ -20,6 +22,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/integr8ly/integreatly-operator/pkg/addon"
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/controller"
@@ -296,6 +299,23 @@ func setupWebhooks(mgr manager.Manager) error {
 			Path: "/mutate-rhmiconfig",
 			Hook: &admission.Webhook{
 				Handler: integreatlyv1alpha1.NewRHMIConfigMutatingHandler(),
+			},
+		},
+	})
+
+	// Delete webhook for the RHMI CR that uninstalls the operator if there
+	// are no finalizers left
+	webhooks.Config.AddWebhook(webhooks.IntegreatlyWebhook{
+		Name: "rhmi-delete",
+		Rule: webhooks.NewRule().
+			OneResource("integreatly.org", "v1alpha1", "rhmis").
+			ForDelete().
+			NamespacedScope(),
+		Register: webhooks.AdmissionWebhookRegister{
+			Type: webhooks.ValidatingType,
+			Path: "/delete-rhmi",
+			Hook: &admission.Webhook{
+				Handler: addon.NewDeleteRHMIHandler(mgr.GetConfig()),
 			},
 		},
 	})

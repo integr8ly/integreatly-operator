@@ -7,6 +7,11 @@ data:
     {
       "RHOAM SERVICE SKU": {
         "unit": "minute",
-        "requests_per_unit": 20
+        "requests_per_unit": 20,
+        "soft_daily_limits": [
+          5000000,
+          10000000,
+          15000000
+        ]
       }
     }

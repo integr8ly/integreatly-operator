@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -88,42 +89,31 @@ var rhmi2ExpectedDashboards = []dashboardsTestRule{
 
 var customerRHOAMDashboards = []dashboardsTestRule{
 	{
-		Title: "RHOAM API Rate Limiting",
+		Title: "Rate Limiting",
 	},
 }
 
 func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
 	if os.Getenv("SKIP_FLAKES") == "true" {
+		// https://issues.redhat.com/browse/MGDAPI-555
 		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
 		t.SkipNow()
 	}
-	pods := &corev1.PodList{}
-	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(CustomerGrafanaNamespace),
-		k8sclient.MatchingLabels{"app": "grafana"},
-	}
-
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	err = ctx.Client.List(goctx.TODO(), pods, opts...)
-	if err != nil {
-		t.Fatal("failed to list pods", err)
-	}
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
-	if len(pods.Items) != 1 {
-		t.Fatal("grafana pod not found")
-	}
-
-	output, err := execToPod("curl localhost:3000/api/search",
-		pods.Items[0].ObjectMeta.Name,
-		CustomerGrafanaNamespace,
+	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
+		monitoringGrafanaPods.Items[0].ObjectMeta.Name,
+		MonitoringOperatorNamespace,
 		"grafana", ctx)
 	if err != nil {
-		t.Fatal("failed to exec to pod:", err, "pod name:", pods.Items[0].Name)
+		t.Fatal("failed to exec to pod:", err, "pod name:", customerMonitoringGrafanaPods.Items[0].Name)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule
@@ -137,33 +127,20 @@ func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
 	}
 
 	expectedDashboards := getExpectedCustomerDashboard(rhmi.Spec.Type)
-	verifyExpectedDashboards(t, expectedDashboards, grafanaApiCallOutput)
+	verifyExpectedDashboards(t, expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
 }
 
 func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext) {
-	pods := &corev1.PodList{}
-	opts := []k8sclient.ListOption{
-		k8sclient.InNamespace(MonitoringOperatorNamespace),
-		k8sclient.MatchingLabels{"app": "grafana"},
-	}
-
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	err = ctx.Client.List(goctx.TODO(), pods, opts...)
-	if err != nil {
-		t.Fatal("failed to list pods", err)
-	}
-
-	if len(pods.Items) != 1 {
-		t.Fatal("grafana pod not found")
-	}
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
 
 	output, err := execToPod("curl localhost:3000/api/search",
-		pods.Items[0].ObjectMeta.Name,
+		monitoringGrafanaPods.Items[0].ObjectMeta.Name,
 		MonitoringOperatorNamespace,
 		"grafana", ctx)
 	if err != nil {
@@ -224,4 +201,35 @@ func getExpectedMiddlewareDashboard(installType string) []dashboardsTestRule {
 	} else {
 		return append(commonExpectedDashboards, rhmi2ExpectedDashboards...)
 	}
+}
+
+func getGrafanaPods(t *testing.T, ctx *TestingContext, ns string) corev1.PodList {
+	pods := &corev1.PodList{}
+	opts := []k8sclient.ListOption{
+		k8sclient.InNamespace(ns),
+		k8sclient.MatchingLabels{"app": "grafana"},
+	}
+
+	err := ctx.Client.List(goctx.TODO(), pods, opts...)
+	if err != nil {
+		t.Fatalf("failed to list pods in ns %v", ns)
+	}
+
+	if len(pods.Items) != 1 {
+		t.Fatalf("grafana pod not found in ns %v", ns)
+	}
+
+	return *pods
+}
+
+func removeNamespaceDashboardFolder(grafanaApiOutput []dashboardsTestRule) []dashboardsTestRule {
+	var actualGrafanaDashboards []dashboardsTestRule
+
+	for _, dashboard := range grafanaApiOutput {
+		if dashboard.Title != CustomerGrafanaNamespace {
+			actualGrafanaDashboards = append(actualGrafanaDashboards, dashboard)
+		}
+	}
+
+	return actualGrafanaDashboards
 }
