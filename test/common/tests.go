@@ -48,7 +48,6 @@ var (
 				{"A18 - Verify RHMI Config CRs Successful", TestRHMIConfigCRs},
 				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
-				{"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				/*FLAKY*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
 				{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
@@ -59,7 +58,7 @@ var (
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 				{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
-				{"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
+				/*FLAKY*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
 				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
@@ -71,12 +70,12 @@ var (
 	IDP_BASED_TESTS = []TestSuite{
 		{
 			[]TestCase{
-				{"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
+				/*FLAKY*/ {"A16 - Custom first broker login flow", TestAuthDelayFirstBrokerLogin},
 				{"B03 - Verify RHMI Developer User Permissions are Correct", TestRHMIDeveloperUserPermissions},
 				{"B04 - Verify Dedicated Admin User Permissions are Correct", TestDedicatedAdminUserPermissions},
 				{"B06 - Verify users with no email get default email", TestDefaultUserEmail},
 				/*FLAKY*/ {"H03 - Verify 3scale CRUDL permissions", Test3ScaleCrudlPermissions},
-				{"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
+				/*FLAKY*/ {"H07 - ThreeScale User Promotion", Test3ScaleUserPromotion},
 				/*FLAKY*/ {"H11 - Verify 3scale SMTP config", Test3ScaleSMTPConfig},
 				{"Verify Network Policy allows cross NS access to SVC", TestNetworkPolicyAccessNSToSVC},
 			},
