@@ -4,7 +4,6 @@ import (
 	goctx "context"
 	"fmt"
 	"math/rand"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -48,10 +47,6 @@ var (
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
 func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
-	if os.Getenv("SKIP_FLAKES") == "true" {
-		t.Log("skipping 3scale SMTP test due to skip_flakes flag")
-		t.SkipNow()
-	}
 	t.Log("Create Namespace, Deployment and Service for SMTP-Server")
 	err := createNamespace(ctx, t)
 	if err != nil {
