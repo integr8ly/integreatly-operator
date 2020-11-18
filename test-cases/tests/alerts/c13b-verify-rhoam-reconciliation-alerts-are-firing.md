@@ -7,6 +7,7 @@ products:
     targets:
       - 0.1.0
       - 0.2.0
+      - 1.0.0
 ---
 
 # C13B - Verify RHOAM reconciliation alerts are firing

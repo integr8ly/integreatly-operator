@@ -15,6 +15,7 @@ products:
     targets:
       - 0.1.0
       - 0.2.0
+      - 1.0.0
 ---
 
 # E08 - Verify values are correct in Resource usage dashboard
