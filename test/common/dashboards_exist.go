@@ -15,6 +15,7 @@ import (
 )
 
 type dashboardsTestRule struct {
+	Type  string `json:"type"`
 	Title string `json:"title"`
 }
 
@@ -152,7 +153,7 @@ func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext
 	}
 
 	expectedDashboards := getExpectedMiddlewareDashboard(rhmi.Spec.Type)
-	verifyExpectedDashboards(t, expectedDashboards, grafanaApiCallOutput)
+	verifyExpectedDashboards(t, expectedDashboards, removeNamespaceDashboardFolder(grafanaApiCallOutput))
 
 }
 
@@ -220,7 +221,7 @@ func removeNamespaceDashboardFolder(grafanaApiOutput []dashboardsTestRule) []das
 	var actualGrafanaDashboards []dashboardsTestRule
 
 	for _, dashboard := range grafanaApiOutput {
-		if dashboard.Title != CustomerGrafanaNamespace {
+		if dashboard.Type != "dash-folder" {
 			actualGrafanaDashboards = append(actualGrafanaDashboards, dashboard)
 		}
 	}
