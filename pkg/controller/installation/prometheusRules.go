@@ -2,6 +2,7 @@ package installation
 
 import (
 	"fmt"
+	"strings"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/sirupsen/logrus"
@@ -13,68 +14,77 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 )
 
+var (
+	installationNames = map[string]string{
+		string(integreatlyv1alpha1.InstallationTypeManaged):    "rhmi",
+		string(integreatlyv1alpha1.InstallationTypeManagedApi): "rhoam",
+	}
+)
+
 func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, installation *integreatlyv1alpha1.RHMI) resources.AlertReconciler {
+	installationName := installationNames[installation.Spec.Type]
+
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "installation",
 		Installation: installation,
 		Logger:       logger,
 		Alerts: []resources.AlertConfiguration{
 			{
-				AlertName: "rhmi-installation-controller-alerts",
+				AlertName: fmt.Sprintf("%s-installation-controller-alerts", installationName),
 				Namespace: installation.Namespace,
-				GroupName: "rhmi-installation.rules",
+				GroupName: fmt.Sprintf("%s-installation.rules", installationName),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIInstallationControllerIsNotReconciling",
+						Alert: fmt.Sprintf("%sInstallationControllerIsNotReconciling", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "RHMI operator has not reconciled successfully in the interval of 15m over the past 1 hour",
+							"message": fmt.Sprintf("%s operator has not reconciled successfully in the interval of 15m over the past 1 hour", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprint("rhmi_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[15m]) == 0")),
+						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[15m]) == 0", installationName)),
 						For:    "1h",
 						Labels: map[string]string{"severity": "warning"},
 					},
 					{
-						Alert: "RHMIInstallationControllerStoppedReconciling",
+						Alert: fmt.Sprintf("%sInstallationControllerStoppedReconciling", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "RHMI operator has not reconciled successfully in the interval of 30m over the past 2 hours",
+							"message": fmt.Sprintf("%s operator has not reconciled successfully in the interval of 30m over the past 2 hours", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprint("rhmi_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[30m]) == 0")),
+						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[30m]) == 0", installationName)),
 						For:    "2h",
 						Labels: map[string]string{"severity": "critical"},
 					},
 				},
 			},
 			{
-				AlertName: "rhmi-installation-alerts",
+				AlertName: fmt.Sprintf("%s-installation-alerts", installationName),
 				Namespace: monitoring.OpenshiftMonitoringNamespace,
-				GroupName: "rhmi-installation.rules",
+				GroupName: fmt.Sprintf("%s-installation.rules", installationName),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIOperatorInstallDelayed",
+						Alert: fmt.Sprintf("%sOperatorInstallDelayed", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "RHMI operator is taking more than 2 hours to go to a complete stage",
+							"message": fmt.Sprintf("%s operator is taking more than 2 hours to go to a complete stage", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprint("absent(rhmi_status{stage='complete'} == 1)")),
+						Expr:   intstr.FromString(fmt.Sprintf(`absent(%s_status{stage='complete'} == 1)`, installationName)),
 						For:    "120m",
 						Labels: map[string]string{"severity": "critical"},
 					},
 				},
 			},
 			{
-				AlertName: "rhmi-upgrade-alerts",
+				AlertName: fmt.Sprintf("%s-upgrade-alerts", installationName),
 				Namespace: monitoring.OpenshiftMonitoringNamespace,
-				GroupName: "rhmi-upgrade.rules",
+				GroupName: fmt.Sprintf("%s-upgrade.rules", installationName),
 				Rules: []monitoringv1.Rule{
 					{
-						Alert: "RHMIUpgradeExpectedDurationExceeded",
+						Alert: fmt.Sprintf("%sUpgradeExpectedDurationExceeded", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "RHMI operator upgrade is taking more than 10 minutes",
+							"message": fmt.Sprintf("%s operator upgrade is taking more than 10 minutes", strings.ToUpper(installationName)),
 						},
-						Expr:   intstr.FromString(fmt.Sprintf(`absent((rhmi_version * on(version) csv_succeeded{exported_namespace=~"%s"}) or absent(rhmi_version))`, installation.Namespace)),
+						Expr:   intstr.FromString(fmt.Sprintf(`absent((%s_version * on(version) csv_succeeded{exported_namespace=~"%s"}) or absent(%s_version))`, installationName, installation.Namespace, installationName)),
 						For:    "10m",
 						Labels: map[string]string{"severity": "critical"},
 					},
