@@ -4,12 +4,13 @@ import (
 	goctx "context"
 	"encoding/json"
 	"fmt"
-	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"net/url"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
+
+	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -310,8 +311,8 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 		return "", fmt.Errorf("failed to list pods: %w", err)
 	}
 
-	if len(pods.Items) != 1 {
-		return "", fmt.Errorf("grafana pod not found")
+	if len(pods.Items) < 1 {
+		return "", fmt.Errorf("grafana pod not found for app %s", app)
 	}
 
 	return pods.Items[0].ObjectMeta.Name, nil
