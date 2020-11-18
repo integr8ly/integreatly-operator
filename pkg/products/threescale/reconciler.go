@@ -343,19 +343,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler := r.newAlertReconciler()
-	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
-		return phase, err
-	}
-
-	phase, err = r.reconcileConsoleLink(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileConsoleLink", phase)
-	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
-		return phase, err
-	}
-
 	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 
 		apicasts := []string{apicastStagingName, apicastProductionName}
@@ -386,6 +373,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
 		}
+
+		alertsReconciler := r.newEnvoyAlertReconciler()
+		if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
+			return phase, err
+		}
+	}
+
+	alertsReconciler := r.newAlertReconciler()
+	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
+		return phase, err
+	}
+
+	phase, err = r.reconcileConsoleLink(ctx, serverClient)
+	logrus.Infof("Phase: %s reconcileConsoleLink", phase)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
+		return phase, err
 	}
 
 	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)

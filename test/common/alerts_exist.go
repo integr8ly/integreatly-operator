@@ -282,6 +282,11 @@ func managedApiSpecificRules() []alertsTestRule {
 				"Marin3rDiscoveryServicePod",
 				"Marin3rPromstatsdExporterPod",
 				"Marin3rRateLimitPod",
+			},
+		},
+		{
+			File: NamespacePrefix + "3scale-ksm-marin3r-alerts.yaml",
+			Rules: []string{
 				"Marin3rEnvoyApicastStagingContainerDown",
 				"Marin3rEnvoyApicastProductionContainerDown",
 			},
