@@ -11,7 +11,7 @@ products:
 
 ## Description
 
-Verify that RHMI operator alerts are in place and firing
+Verify that RHOAM operator alerts are in place and firing
 
 More info: <https://issues.redhat.com/browse/INTLY-7395>
 

@@ -39,7 +39,7 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 2. Trigger RHOAM uninstallation
 
 ```bash
-oc delete rhmi rhmi -n redhat-managed-api-operator
+oc delete rhmi rhoam -n redhat-rhoam-operator
 ```
 
 3. Verify the `cloud-resources-aws-strategies` configmap in the rhmi operator has got the fields:
@@ -49,13 +49,13 @@ oc delete rhmi rhmi -n redhat-managed-api-operator
    - `redis.production.deleteStrategy.FinalSnapshotIdentifier` set to empty.
 
 ```bash
-oc describe configmap cloud-resources-aws-strategies -n redhat-managed-api-operator
+oc describe configmap cloud-resources-aws-strategies -n redhat-rhoam-operator
 ```
 
 4. Ensure that there are no manual or automatic RDS snapshots associated to the install remaining in the AWS account.
 
 ```bash
-for id in $(oc get postgres -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get postgres -n redhat-rhoam-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
 do
   if [[ -n $(aws rds describe-db-snapshots --db-instance-identifier=$id | jq -r '.DBSnapshots[]') ]]
   then
@@ -70,7 +70,7 @@ done
 5. Ensure that there are no manual or automatic Elasticache snapshots associated to the install remaining in the AWS account.
 
 ```bash
-for id in $(oc get redis -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get redis -n redhat-rhoam-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
 do
   if [[ -n $(aws elasticache describe-snapshots --cache-cluster-id=$id-001 | jq -r '.Snapshots[]') ]]
   then
@@ -87,7 +87,7 @@ done
 ```bash
 aws_s3_buckets=$(aws s3 ls)
 
-for id in $(oc get blobstorages -n redhat-managed-api-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
+for id in $(oc get blobstorages -n redhat-rhoam-operator -o json | jq -r ".items[].metadata.annotations.resourceIdentifier");
   do echo $aws_s3_buckets | grep $b || echo bucket $id not found ;
 done
 ```

@@ -2,11 +2,6 @@
 components:
   - product-3scale
 products:
-  - name: rhmi
-    environments:
-      - osd-post-upgrade
-    targets:
-      - 2.7.0
   - name: rhoam
     environments:
       - osd-post-upgrade
@@ -20,7 +15,7 @@ tags:
   - destructive
 ---
 
-# J05 - Verify 3scale backup and restore
+# J05B - Verify 3scale backup and restore
 
 ## Description
 
@@ -30,10 +25,10 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ### Postgres
 
-1. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
+1. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhoam-operator` namespace
 
 ```
-# password and host retrieved from threescale-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
+# password and host retrieved from threescale-postgres-rhoam secret in redhat-rhoam-operator, psql will prompt for password
 psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
 $ select * from plans;
 $ select * from accounts;

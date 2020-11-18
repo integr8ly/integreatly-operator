@@ -19,7 +19,7 @@ This test case should verify that the pod priority class is name is updated on R
 
 1. Log in to cluster console as kubeadmin
 
-2. Confirm managed-api CR has the field `priorityClassName` and it's value is `managed-service-priority`
+2. Confirm rhoam CR has the field `priorityClassName` and it's value is `managed-service-priority`
 
 3. Confirm RHSSO and USERSSO `keycloak` statefulsets have the field `priorityClassName` with the value of `managed-service-priority`
 

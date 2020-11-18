@@ -6,24 +6,14 @@ products:
     environments:
       - osd-post-upgrade
     targets:
-      - 2.8.0
-  - name: rhoam
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
-    targets:
-      - 0.1.0
-      - 0.2.0
-      - 1.0.0
+      - 2.6.0
+      - 2.7.1
 estimate: 1h
 tags:
   - destructive
-targets:
-  - 2.8.0
-  - 2.7.1
 ---
 
-# J08 - Verify User SSO Backup and Restore
+# J07A - Verify Cluster SSO Backup and Restore
 
 ## Description
 
@@ -37,7 +27,7 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 2. Verify Clients and Realms exist in postgres.
 
-Create a throwaway Postgres instance to access the User SSO Postgres instance
+Create a throwaway Postgres instance to access the RHSSO Postgres instance
 
 ```sh
 cat << EOF | oc create -f - -n redhat-rhmi-operator
@@ -56,10 +46,10 @@ EOF
 ```
 
 ```
-# password and host retrieved from rhssouser-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
-psql --host=<db_host> --port=5432 --username=postgres --password --dbname=postgres
-select * from client;
-select * from realm;
+# password and host retrieved from rhsso-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
+psql --host=<<db host> --port=5432 --username=postgresuser --password --dbname=rhsso-postgres-rhmi
+$ select * from client;
+$ select * from realm;
 ```
 
 Once verified. Delete the throwaway Postgres
@@ -72,7 +62,7 @@ oc delete -n redhat-rhmi-operator postgres/throw-away-postgres
 
 ```sh
 cd test/scripts/backup-restore
-./j08-verify-user-sso-backup-and-restore.sh | tee test-output.txt
+./j07-verify-rhsso-backup-and-restore.sh | tee test-output.txt
 ```
 
 4. Wait for the script to finish without errors

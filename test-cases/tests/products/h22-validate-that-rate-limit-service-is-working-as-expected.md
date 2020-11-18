@@ -20,7 +20,7 @@ This test case should prove that the rate limiting Redis counter correctly incre
 
 1. Open Openshift Console in your browser
 2. Copy `oc login` command and login to your cluster in the terminal
-3. Go to `Networking` > `Routes` under `redhat-rhmi-3scale` namespace
+3. Go to `Networking` > `Routes` under `redhat-rhoam-3scale` namespace
 4. Click on the `zync` route that starts with `https://3scale-admin...`
 5. Go to `Secrets` > `system-seed` under 3Scale namespace and copy the admin password
 6. Go back to 3Scale login page and login
@@ -32,7 +32,7 @@ This test case should prove that the rate limiting Redis counter correctly incre
 ```
 #!/bin/sh
 echo "Creating throwaway redis container..."
-  cat << EOF | oc create -f - -n redhat-rhmi-operator
+  cat << EOF | oc create -f - -n redhat-rhoam-operator
   apiVersion: integreatly.org/v1alpha1
   kind: Redis
   metadata:
@@ -48,7 +48,7 @@ EOF
 
   while true
   do
-      PHASE=`oc get redis/throw-away-redis-pod -n redhat-rhmi-operator -o template --template={{.status.phase}}`
+      PHASE=`oc get redis/throw-away-redis-pod -n redhat-rhoam-operator -o template --template={{.status.phase}}`
       if [ "$PHASE" = 'complete' ]; then
         break
       fi
@@ -62,26 +62,32 @@ echo ""
 echo "Running Redis connections count for 30 minutes..."
 echo ""
 
-POD_NAME=$(oc get pod -n redhat-rhmi-operator | grep -v "deploy" | grep throw-away-redis-pod | awk '{print $1}')
-REDIS_HOST=$(oc get secrets/ratelimit-service-redis-managed-api -n redhat-rhmi-operator -o template --template={{.data.uri}} | base64 -d)
+POD_NAME=$(oc get pod -n redhat-rhoam-operator | grep -v "deploy" | grep throw-away-redis-pod | awk '{print $1}')
+REDIS_HOST=$(oc get secrets/ratelimit-service-redis-managed-api -n redhat-rhoam-operator -o template --template={{.data.uri}} | base64 --decode)
 
-RUNTIME="30 minute"
-ENDTIME=$(date -ud "$RUNTIME" +%s)
+OS=$(uname)
+if [[ $OS = Linux ]]; then
+    RUNTIME="30 minute"
+    ENDTIME=$(date -ud "$RUNTIME" +%s)
+elif [[ $OS = Darwin ]]; then
+    RUNTIME="+30m"
+    ENDTIME=$(date -v $RUNTIME +%s)
+fi
 
 while [[ $(date -u +%s) -le $ENDTIME ]]
 do
 RESULT=$(kubectl exec $POD_NAME \
-    -n redhat-rhmi-operator \
+    -n redhat-rhoam-operator \
     -- /opt/rh/rh-redis32/root/usr/bin/redis-cli -c -h $REDIS_HOST -p 6379 KEYS '*' | grep -v "liveness-probe")
 
     if (( $(grep -c . <<<"$RESULT") > 1 )); then
         echo "Flushing REDIS, time slot for allowed hits per unit has been reached. Ping APICAST again to create a new key value pair"
         kubectl exec $POD_NAME \
-            -n redhat-rhmi-operator \
+            -n redhat-rhoam-operator \
             -- /opt/rh/rh-redis32/root/usr/bin/redis-cli -c -h $REDIS_HOST -p 6379 FLUSHALL
     else
         HITCOUNT=$(kubectl exec $POD_NAME \
-            -n redhat-rhmi-operator \
+            -n redhat-rhoam-operator \
             -- /opt/rh/rh-redis32/root/usr/bin/redis-cli -c -h $REDIS_HOST -p 6379 GET $RESULT)
 
         if echo $HITCOUNT | grep -q "ERR";
@@ -108,5 +114,5 @@ done
 13. Once verified that the REDIS hitcount increases, shut down the script and run the following command to remove redis throw-away pod
 
 ```
-oc delete redis/throw-away-redis-pod -n redhat-rhmi-operator
+oc delete redis/throw-away-redis-pod -n redhat-rhoam-operator
 ```
