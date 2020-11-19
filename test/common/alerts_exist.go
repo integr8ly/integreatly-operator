@@ -242,6 +242,13 @@ func rhmi2ExpectedRules() []alertsTestRule {
 				"RHMIUPSUnifiedpushProxyServiceEndpointDown",
 			},
 		},
+		{
+			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
+			Rules: []string{
+				"RHMIInstallationControllerIsNotReconciling",
+				"RHMIInstallationControllerStoppedReconciling",
+			},
+		},
 	}
 }
 
@@ -317,6 +324,13 @@ func managedApiSpecificRules() []alertsTestRule {
 				"RHOAMApiUsageSoftLimitReachedTier1",
 				"RHOAMApiUsageSoftLimitReachedTier2",
 				"RHOAMApiUsageSoftLimitReachedTier3",
+			},
+		},
+		{
+			File: NamespacePrefix + "operator-rhoam-installation-controller-alerts.yaml",
+			Rules: []string{
+				"RHOAMInstallationControllerIsNotReconciling",
+				"RHOAMInstallationControllerStoppedReconciling",
 			},
 		},
 	}
@@ -475,13 +489,6 @@ func commonExpectedRules() []alertsTestRule {
 			Rules: []string{
 				"RHMIUserRhssoOperatorRhmiRegistryCsMetricsServiceEndpointDown",
 				"RHMIUserRhssoKeycloakOperatorMetricsServiceEndpointDown",
-			},
-		},
-		{
-			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
-			Rules: []string{
-				"RHMIInstallationControllerIsNotReconciling",
-				"RHMIInstallationControllerStoppedReconciling",
 			},
 		},
 		{

@@ -65,6 +65,7 @@ func init() {
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIVersion)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHMIStatus)
 	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMVersion)
+	customMetrics.Registry.MustRegister(integreatlymetrics.RHOAMStatus)
 	integreatlymetrics.OperatorVersion.Add(1)
 }
 

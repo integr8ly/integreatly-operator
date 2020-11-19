@@ -659,10 +659,12 @@ func getMoqKeycloakClientFactory() keycloakCommon.KeycloakClientFactory {
 					return &keycloak.KeycloakIdentityProvider{
 						Alias:                     "babla",
 						FirstBrokerLoginFlowAlias: "authdelay",
+						Config:                    map[string]string{},
 					}, nil
 				}, CreateAuthenticatorConfigFunc: func(authenticatorConfig *keycloak.AuthenticatorConfig, realmName string, executionID string) (string, error) {
 					return "", nil
 				},
+				UpdateIdentityProviderFunc:               keycloakInterfaceMock.UpdateIdentityProvider,
 				AddExecutionToAuthenticatonFlowFunc:      keycloakInterfaceMock.AddExecutionToAuthenticatonFlow,
 				CreateAuthenticationFlowFunc:             keycloakInterfaceMock.CreateAuthenticationFlow,
 				FindAuthenticationFlowByAliasFunc:        keycloakInterfaceMock.FindAuthenticationFlowByAlias,
@@ -729,6 +731,10 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 			return []*keycloakCommon.AuthenticationFlow{}, nil
 		}
 		return context.AuthenticationFlow[realmName], nil
+	}
+
+	updateIdentityProviderFunc := func(specIdentityProvider *v1alpha1.KeycloakIdentityProvider, realmName string) error {
+		return nil
 	}
 
 	findAuthenticationFlowByAliasFunc := func(flowAlias, realmName string) (*keycloakCommon.AuthenticationFlow, error) {
@@ -831,5 +837,6 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		FindAuthenticationExecutionForFlowFunc:   findAuthenticationExecutionForFlowFunc,
 		UpdateAuthenticationExecutionForFlowFunc: updateAuthenticationExecutionForFlowFunc,
 		ListAuthenticationFlowsFunc:              listAuthenticationFlowsFunc,
+		UpdateIdentityProviderFunc:               updateIdentityProviderFunc,
 	}, &context
 }

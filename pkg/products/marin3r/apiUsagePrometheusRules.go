@@ -103,7 +103,7 @@ func increaseExpr(totalRequestsMetric, period string, comparisonOperator string,
 	}
 
 	result := fmt.Sprintf(
-		"(increase(%s[%s]) %s (%f / 100 * %d))",
+		"(sum(increase(%s[%s]) %s (%f / 100 * %d)))",
 		totalRequestsMetric, period, comparisonOperator, requestsAllowedOverTimePeriod, *percenteageLimit,
 	)
 

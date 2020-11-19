@@ -21,7 +21,7 @@ CLUSTER_URL:=$(shell sh -c "oc cluster-info | grep -Eo 'https?://[-a-zA-Z0-9\.:]
 
 # These tags are modified by the prepare-release script.
 RHMI_TAG ?= 2.7.0
-RHOAM_TAG ?= 0.8.0
+RHOAM_TAG ?= 0.9.0
 
 export SKIP_FLAKES := true
 
