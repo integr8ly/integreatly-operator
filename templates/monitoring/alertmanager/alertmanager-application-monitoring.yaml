@@ -29,6 +29,9 @@ route:
     - match_re:
         alertname: RHOAMApiUsageSoftLimitReachedTier[0-9]+
       receiver: BU
+    - match:
+        alertname: RHOAMApiUsageOverLimit
+      receiver: BUandCustomer
 receivers:
   - name: default
     email_configs:
