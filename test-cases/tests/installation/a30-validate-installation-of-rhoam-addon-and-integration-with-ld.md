@@ -19,7 +19,7 @@ We want to validate that customer is able to install RHOAM via OCM UI and can us
 
 ## Prerequisites
 
-- access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (ask somebody from QE to give you the git key)
+- access to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) (follow the guide in the [README](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/README.md) to unlock the vault with git-crypt key)
 - login to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/)
 - access to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs)
 
@@ -29,7 +29,7 @@ We want to validate that customer is able to install RHOAM via OCM UI and can us
 
 1. Go to the [spreadsheet with shared AWS credentials](https://docs.google.com/spreadsheets/d/1P57LhhhvhJOT5y7Y49HlL-7BRcMel7qWWJwAw3JCGMs) and select "AWS accounts" sheet
 2. Look for AWS account ID that is free (doesn't have anything specified in 'Note'). If no account is free, you can use account that is used by nightly pipelines (but don't forget to clean it up for night)
-3. Go to [AWS secrets file in 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
+3. Open the [AWS secrets file from 'vault' repository](https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md) locally and look for the AWS credentials for the selected AWS account (aws account id, access key ID and secret access key)
 4. Go to [OCM UI (staging environment)](https://qaprodauth.cloud.redhat.com/beta/openshift/) and log in
 5. Click on `Create cluster` and select `OpenShift Dedicated`
 6. Select AWS and click on `Customer cloud subscription` (and close the pop up notification)
