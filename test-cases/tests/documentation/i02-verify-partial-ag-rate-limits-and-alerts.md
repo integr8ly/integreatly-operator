@@ -4,12 +4,12 @@ products:
     environments:
       - osd-fresh-install
     targets:
-      - 1.0
+      - 1.0.0
 tags:
   - manual-selection
 ---
 
-# I02 - Verify rate limts and alerts
+# I02 - Verify partial ag rate limits and alerts
 
 ## Description
 
