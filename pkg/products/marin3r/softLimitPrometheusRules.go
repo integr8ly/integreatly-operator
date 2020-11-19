@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	softLimitAlertQuery = "vector(scalar(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits or on() vector(0))" +
-		" - " +
-		"scalar((ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits " +
-		"offset 1d) or on() vector(0))) > %d"
+	// softLimitAlertQuery = "vector(scalar(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits or on() vector(0))" +
+	// 	" - " +
+	// 	"scalar((ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits " +
+	// 	"offset 1d) or on() vector(0))) > %d"
+	softLimitAlertQuery = "floor(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[24h]))) > %d"
 )
 
 func (r *Reconciler) newSoftLimitAlertsReconciler() resources.AlertReconciler {
