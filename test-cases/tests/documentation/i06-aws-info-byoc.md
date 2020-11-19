@@ -21,7 +21,6 @@ Publish AWS SCP info for BYOC in an KCS article.
 
 * Staging doc link: https://access.redhat.com/articles/5581801 .
 
-
 ## Steps
 
 1. Navigate https://access.redhat.com/articles/5581801
