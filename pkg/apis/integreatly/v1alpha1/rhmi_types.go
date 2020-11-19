@@ -97,8 +97,8 @@ var (
 	OperatorVersionAMQOnline        OperatorVersion = "1.4"
 	OperatorVersionMonitoring       OperatorVersion = "1.2.1"
 	OperatorVersionSolutionExplorer OperatorVersion = "0.0.62"
-	OperatorVersionRHSSO            OperatorVersion = "10.0.1"
-	OperatorVersionRHSSOUser        OperatorVersion = "10.0.1"
+	OperatorVersionRHSSO            OperatorVersion = "11.0.3"
+	OperatorVersionRHSSOUser        OperatorVersion = "11.0.3"
 
 	OperatorVersionCodeReadyWorkspaces OperatorVersion = "2.1.1"
 	OperatorVersion3Scale              OperatorVersion = "0.6.1"
