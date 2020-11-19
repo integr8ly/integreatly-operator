@@ -4,7 +4,7 @@ products:
     environments:
       - osd-fresh-install
     targets:
-      - 0.1
+      - 1.0
 tags:
   - manual-selection
 ---
@@ -27,4 +27,3 @@ Publish AWS SCP info for BYOC in an KCS article.
 1. Navigate https://access.redhat.com/articles/5581801
 2. Check the links for doc.
 3. Check accuracy of the doc.
-
