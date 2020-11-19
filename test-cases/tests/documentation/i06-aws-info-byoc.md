@@ -4,7 +4,7 @@ products:
     environments:
       - osd-fresh-install
     targets:
-      - 1.0
+      - 1.0.0
 tags:
   - manual-selection
 ---
