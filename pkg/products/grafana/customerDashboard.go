@@ -1,6 +1,19 @@
 package grafana
 
-const CustomerMonitoringGrafanaRateLimitingJSON = `{
+// This dashboard json is dynamically configured
+// Search for %s to see where there are values passed
+// At the time of writing there are two places that are dynamically configured
+// 1. Dashboard Variables
+// 2. Rate Limit Graph Queries
+// In both cases these are configured based on soft limits provided in the sku-limits-managed-api-servic config map
+// present in the operator namespace for RHOAM installations
+// For example if there are softLimits provided of [500000,10000000,15000000] Five, Ten and Fifteen Million per day
+// Then there are 3 Dashboard variables configured, in addition to a static 2000000, TwentyMillion Variable representing
+// the cluster hard limit.
+// Each of these soft limits are then dynamically added as queries to the Rate Limit Graph.
+//
+// Each of the static hard limit and dynamic soft limit are calculated to a perMinute amount.
+var CustomerMonitoringGrafanaRateLimitingJSON = `{
   "annotations": {
     "list": [
       {
@@ -81,9 +94,9 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -113,7 +126,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "title": "Last 1 Minute - No. Requests",
       "transparent": true,
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -167,9 +180,9 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -198,7 +211,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 1 Minute - Rejected",
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -251,10 +264,10 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullPointMode": "connected",
       "nullText": null,
       "options": {},
-      "postfix": "%",
-      "postfixFontSize": "50%",
+      "postfix": "%%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -283,7 +296,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 1 Minute - Rejected/Requests",
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -345,27 +358,8 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
           "interval": "30s",
           "legendFormat": "No. of Requests",
           "refId": "A"
-        },
-        {
-          "expr": "$perMinuteFiveMillion",
-          "legendFormat": "Five Million Daily Requests",
-          "refId": "B"
-        },
-        {
-          "expr": "$perMinuteTenMillion",
-          "legendFormat": "Ten Million Daily Requests",
-          "refId": "C"
-        },
-        {
-          "expr": "$perMinuteFifteenMillion",
-          "legendFormat": "Fifteen Million Daily Requests",
-          "refId": "D"
-        },
-        {
-          "expr": "$perMinuteTwentyMillion",
-          "legendFormat": "Twenty Million Daily Requests",
-          "refId": "E"
         }
+        %s
       ],
       "thresholds": [],
       "timeFrom": null,
@@ -453,9 +447,9 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -484,7 +478,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 24 Hours - No. Requests",
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -538,9 +532,9 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -570,7 +564,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 24 Hours - Rejected",
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -623,10 +617,10 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullPointMode": "connected",
       "nullText": null,
       "options": {},
-      "postfix": "%",
-      "postfixFontSize": "50%",
+      "postfix": "%%",
+      "postfixFontSize": "50%%",
       "prefix": "",
-      "prefixFontSize": "50%",
+      "prefixFontSize": "50%%",
       "rangeMaps": [
         {
           "from": "null",
@@ -656,7 +650,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 24 Hours -  Rejected/Requests",
       "type": "singlestat",
-      "valueFontSize": "80%",
+      "valueFontSize": "80%%",
       "valueMaps": [
         {
           "op": "=",
@@ -692,68 +686,9 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
         "query": "13889",
         "skipUrlSync": false,
         "type": "constant"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "10417",
-          "value": "10417"
-        },
-        "hide": 2,
-        "label": null,
-        "name": "perMinuteFifteenMillion",
-        "options": [
-          {
-            "selected": true,
-            "text": "10417",
-            "value": "10417"
-          }
-        ],
-        "query": "10417",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "6944",
-          "value": "6944"
-        },
-        "hide": 2,
-        "label": null,
-        "name": "perMinuteTenMillion",
-        "options": [
-          {
-            "selected": true,
-            "text": "6944",
-            "value": "6944"
-          }
-        ],
-        "query": "6944",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "3472",
-          "value": "3472"
-        },
-        "hide": 2,
-        "label": null,
-        "name": "perMinuteFiveMillion",
-        "options": [
-          {
-            "selected": true,
-            "text": "3472",
-            "value": "3472"
-          }
-        ],
-        "query": "3472",
-        "skipUrlSync": false,
-        "type": "constant"
       }
-    ]
+		%s
+	]
   },
   "time": {
     "from": "now-12h",
