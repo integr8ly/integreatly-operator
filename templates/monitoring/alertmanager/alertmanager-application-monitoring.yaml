@@ -58,7 +58,7 @@ receivers:
 inhibit_rules:
   - source_match:
       alertname: 'JobRunningTimeExceeded'
-      severity: 'critical'
+      severity: 'warning'
     target_match:
       alertname: 'JobRunningTimeExceeded'
       severity: 'warning'

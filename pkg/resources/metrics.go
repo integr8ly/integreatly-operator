@@ -273,7 +273,7 @@ func createPostgresResourceStatusPhaseFailedAlert(ctx context.Context, client k8
 	)
 	alertDescription := fmt.Sprintf("The creation of the Postgres instance has been failing longer that %s. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
@@ -352,7 +352,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	ruleName = "postgres-storage-will-fill-in-4-days"
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 days"
 	labels = map[string]string{
-		"severity": "critical",
+		"severity": "warning",
 	}
 
 	// building a predict_linear query using 2 hour of data points to predict a 4 day projection, and checking if it is less than or equal 0
@@ -373,7 +373,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	ruleName = "postgres-storage-low"
 	alertDescription = "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }}, storage is currently under 10 percent of its capacity"
 	labels = map[string]string{
-		"severity": "critical",
+		"severity": "warning",
 	}
 
 	// checking if the percentage of free storage is less than 10% of the current allocated storage
@@ -476,7 +476,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName := fmt.Sprintf("redis-memory-usage-high")
 	alertDescription := "Redis Memory for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 
@@ -494,7 +494,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	ruleName = fmt.Sprintf("redis-memory-usage-will-max-in-4-hours")
 	alertDescription = "Redis Memory Usage is predicted to max with in four hours for instance {{ $labels.instanceID }}. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels = map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
@@ -547,7 +547,7 @@ func createRedisResourceStatusPhaseFailedAlert(ctx context.Context, client k8scl
 	)
 	alertDescription := fmt.Sprintf("The creation of the Redis cache is Failing longer that %s. Redis Custom Resource: %s in namespace %s (strategy: %s) for product: %s", alertFor5Mins, cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 	// create the rule
@@ -652,7 +652,7 @@ func CreateRedisCpuUsageAlerts(ctx context.Context, client k8sclient.Client, ins
 	ruleName := fmt.Sprintf("redis-cpu-usage-high")
 	alertDescription := "Redis Cpu for instance {{ $labels.instanceID }} is 90 percent or higher for the last hour. Redis Custom Resource: {{ $labels.resourceID }} in namespace {{ $labels.namespace }} for the product: {{ $labels.productName }}"
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    "warning",
 		"productName": productName,
 	}
 

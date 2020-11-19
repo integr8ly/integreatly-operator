@@ -42,7 +42,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 							"message": " Job {{ $labels.namespace }} / {{ $labels.job  }} has been running for longer than 600 seconds",
 						},
 						Expr:   intstr.FromString("time() - (max(kube_job_status_active * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name) * ON(job_name) GROUP_RIGHT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (job_name, namespace, label_cronjob_name) > 0) > 600 "),
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "CronJobNotRunInThreshold",
@@ -60,7 +60,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("clamp_max(max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'} ) BY (job_name, label_cronjob_name, namespace) == ON(label_cronjob_name) GROUP_LEFT() max(kube_job_status_start_time * ON(job_name) GROUP_RIGHT() kube_job_labels{label_monitoring_key='middleware'}) BY (label_cronjob_name), 1) * ON(job_name) GROUP_LEFT() kube_job_status_failed > 0"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
@@ -78,7 +78,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("rate(kube_pod_container_status_restarts_total{job='kube-state-metrics'}[10m]) * on (namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'} * 60 * 5 > 0"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "KubePodNotReady",
@@ -88,7 +88,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("sum by(pod, namespace) (kube_pod_status_phase{phase=~'Pending|Unknown'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "KubePodImagePullBackOff",
@@ -98,7 +98,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ImagePullBackOff'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "KubePodBadConfig",
@@ -108,7 +108,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='CreateContainerConfigError'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "KubePodStuckCreating",
@@ -118,7 +118,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("(kube_pod_container_status_waiting_reason{reason='ContainerCreating'} * on (namespace, namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "ClusterSchedulableMemoryLow",
@@ -178,7 +178,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("(kubelet_volume_stats_available_bytes{job='kubelet'} / kubelet_volume_stats_capacity_bytes{job='kubelet'} < 0.03) * on(namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 
 					{
@@ -189,7 +189,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("(sum by(persistentvolumeclaim, namespace, phase) (kube_persistentvolumeclaim_status_phase{phase=~'Failed|Pending|Lost'}) * on ( namespace) group_left(label_monitoring_key) kube_namespace_labels{label_monitoring_key='middleware'}) > 0"),
 						For:    "15m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
@@ -206,7 +206,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 							"message": fmt.Sprintf("Pod count for namespace {{ $labels.namespace }} is {{ $value }}. Expected exactly %d pods.", monitoringExpectedPodCount),
 						},
 						Expr: intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='"+nsPrefix+"middleware-monitoring-operator'})) or sum(kube_pod_status_ready{condition='true',namespace='"+nsPrefix+"middleware-monitoring-operator'}) != %d", monitoringExpectedPodCount)), For: "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
@@ -224,7 +224,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='alertmanager-operated'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorAlertmanagerServiceEndpointDown",
@@ -234,7 +234,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='alertmanager-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorApplicationMonitoringMetricsServiceEndpointDown",
@@ -244,7 +244,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='application-monitoring-operator-metrics'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorGrafanaServiceEndpointDown",
@@ -254,7 +254,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='grafana-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorPrometheusOperatedServiceEndpointDown",
@@ -264,7 +264,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='prometheus-operated'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorPrometheusServiceEndpointDown",
@@ -274,7 +274,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString("kube_endpoint_address_available{endpoint='prometheus-service'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1"),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIMiddlewareMonitoringOperatorRhmiRegistryCsServiceEndpointDown",
@@ -284,7 +284,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
