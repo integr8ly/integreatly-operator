@@ -275,6 +275,19 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 						For:    "15m",
 						Labels: map[string]string{"severity": "warning"},
 					},
+					{
+						Alert: "ThreescaleApicastWorkerRestart",
+						Annotations: map[string]string{
+							"summary":     "A new worker process in Nginx has been started",
+							"description": "A new thread has been started. This could indicate that a worker process has died due to the memory limits being exceeded. Please investigate the memory pressure on pod (instance {{ $labels.instance }})",
+							"sop_url":     "https://github.com/3scale/3scale-Operations/blob/master/sops/alerts/apicast_worker_restart.adoc",
+						},
+						Expr: intstr.FromString(fmt.Sprintf(`changes(worker_process{kubernetes_namespace='%s', kubernetes_pod_name=~'apicast-production.*'}[5m]) > 0`, r.Config.GetNamespace())),
+						For:  "5m",
+						Labels: map[string]string{
+							"severity": "critical",
+						},
+					},
 				},
 			},
 		},
