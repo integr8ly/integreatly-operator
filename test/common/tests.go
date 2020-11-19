@@ -53,7 +53,7 @@ var (
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
-				{"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
+				/*FLAKY*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
 				{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
