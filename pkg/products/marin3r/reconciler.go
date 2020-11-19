@@ -443,7 +443,7 @@ func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8s
 				Containers: []corev1.Container{
 					{
 						Name:  statsdHost,
-						Image: "prom/statsd-exporter:v0.18.0",
+						Image: "quay.io/integreatly/statsd-exporter:v0.18.0",
 						Ports: []corev1.ContainerPort{
 							{
 								Name:          "prom-statsd",

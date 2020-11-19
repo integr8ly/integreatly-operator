@@ -226,7 +226,7 @@ func (r *RateLimitServiceReconciler) reconcileDeployment(ctx context.Context, cl
 				Containers: []corev1.Container{
 					{
 						Name:    "ratelimit",
-						Image:   "envoyproxy/ratelimit:v1.4.0",
+						Image:   "quay.io/integreatly/ratelimit:v1.4.0",
 						Command: []string{"ratelimit"},
 						VolumeMounts: []corev1.VolumeMount{
 							{
