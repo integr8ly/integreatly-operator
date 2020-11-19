@@ -9,7 +9,7 @@ tags:
   - manual-selection
 ---
 
-# I06 - AWS info BYOC
+# I06 - Verify aws info byoc
 
 ## Description
 
