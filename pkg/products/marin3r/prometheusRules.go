@@ -9,7 +9,6 @@ import (
 )
 
 func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
-	namespacePrefix := r.installation.Spec.NamespacePrefix
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
 		Logger:       r.logger,
@@ -118,26 +117,6 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 							"message": "Marin3r Rate Limit has no pods in a ready state.",
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on(pod, namespace) kube_pod_labels{label_app='ratelimit',namespace='%[1]v'}))", r.Config.GetNamespace())),
-						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
-					},
-					{
-						Alert: "Marin3rEnvoyApicastStagingContainerDown",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlMarin3rEnvoyApicastStagingContainerDown,
-							"message": "3Scale apicast-staging pods have no ratelimiting sidecar container attached.",
-						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-staging',namespace='%[1]v3scale'})) < 1", namespacePrefix)),
-						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
-					},
-					{
-						Alert: "Marin3rEnvoyApicastProductionContainerDown",
-						Annotations: map[string]string{
-							"sop_url": resources.SopUrlMarin3rEnvoyApicastProductionContainerDown,
-							"message": "3Scale apicast-production pods have no ratelimiting sidecar container attached.",
-						},
-						Expr:   intstr.FromString(fmt.Sprintf("(1 - absent(kube_pod_container_status_running{container='envoy-sidecar'} * on (pod,namespace) kube_pod_labels{label_deploymentconfig='apicast-production',namespace='%[1]v3scale'})) < 1", namespacePrefix)),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},
