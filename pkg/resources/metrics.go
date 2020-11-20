@@ -184,12 +184,14 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	productName := cr.Labels["productName"]
 	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresInstanceUnavailable"
+	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if strings.Contains(productName, "sso") {
 		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
 		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
 		// https://issues.redhat.com/browse/MGDAPI-587
 		alertSeverity = "warning"
+		sopURL = sopUrlPostgresInstanceUnavailable
 	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -201,8 +203,9 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 		"severity":    alertSeverity,
 		"productName": cr.Labels["productName"],
 	}
+
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresInstanceUnavailable, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -219,12 +222,14 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	productName := cr.Labels["productName"]
 	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresConnectionFailed"
+	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if strings.Contains(productName, "sso") {
 		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
 		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
 		// https://issues.redhat.com/browse/MGDAPI-587
 		alertSeverity = "warning"
+		sopURL = sopUrlPostgresConnectionFailed
 	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -237,7 +242,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 		"productName": cr.Labels["productName"],
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresConnectionFailed, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -342,6 +347,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 
 	// build and reconcile postgres will fill in 4 hours alert
 	alertName := "PostgresStorageWillFillIn4Hours"
+	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	ruleName := "postgres-storage-will-fill-in-4-hours"
 	alertDescription := "The postgres instance {{ $labels.instanceID }} for product {{  $labels.productName  }} will run of disk space in the next 4 hours"
 	labels := map[string]string{
@@ -356,7 +362,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	alertExp := intstr.FromString(
 		fmt.Sprintf("(predict_linear(cro_postgres_free_storage_average{job='%s'}[1h], 5 * 3600) <= 0 and on(job) (time() - process_start_time_seconds{job='%s'}) / 3600 > 2) and (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))", job, job))
 
-	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
+	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return err
 	}
@@ -608,12 +614,14 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	productName := cr.Labels["productName"]
 	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheUnavailable"
+	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if productName == "marin3r" {
 		// Setting alert severity level to warning for Marin3r redis alerts as we don't want to
 		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
 		// https://issues.redhat.com/browse/MGDAPI-587
 		alertSeverity = "warning"
+		sopURL = sopUrlRedisCacheUnavailable
 	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -626,7 +634,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisCacheUnavailable, alertFor5Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor5Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
@@ -643,12 +651,14 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	productName := cr.Labels["productName"]
 	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheConnectionFailed"
+	sopURL := sopUrlRhoamBase + alertName + ".asciidoc"
 	alertSeverity := "critical"
 	if productName == "marin3r" {
 		// Setting alert severity level to warning for Marin3r redis alerts as we don't want to
 		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
 		// https://issues.redhat.com/browse/MGDAPI-587
 		alertSeverity = "warning"
+		sopURL = sopUrlRedisConnectionFailed
 	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
@@ -661,7 +671,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 		"productName": productName,
 	}
 	// create the rule
-	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisConnectionFailed, alertFor60Mins, alertExp, labels)
+	pr, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
 		return nil, err
 	}
