@@ -184,6 +184,13 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	productName := cr.Labels["productName"]
 	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresInstanceUnavailable"
+	alertSeverity := "critical"
+	if strings.Contains(productName, "sso") {
+		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
+		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
+		// https://issues.redhat.com/browse/MGDAPI-587
+		alertSeverity = "warning"
+	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -191,7 +198,7 @@ func createPostgresAvailabilityAlert(ctx context.Context, client k8sclient.Clien
 	)
 	alertDescription := fmt.Sprintf("Postgres instance: '%s' (strategy: %s) for product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    alertSeverity,
 		"productName": cr.Labels["productName"],
 	}
 	// create the rule
@@ -212,6 +219,13 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	productName := cr.Labels["productName"]
 	postgresCRName := strings.Title(strings.Replace(cr.Name, "postgres-example-rhmi", "", -1))
 	alertName := postgresCRName + "PostgresConnectionFailed"
+	alertSeverity := "critical"
+	if strings.Contains(productName, "sso") {
+		// Setting alert severity level to warning for Cluster and User SSO redis alerts as we don't want to
+		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
+		// https://issues.redhat.com/browse/MGDAPI-587
+		alertSeverity = "warning"
+	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -219,7 +233,7 @@ func createPostgresConnectivityAlert(ctx context.Context, client k8sclient.Clien
 	)
 	alertDescription := fmt.Sprintf("Unable to connect to Postgres instance. Postgres Custom Resource: %s in namespace %s (strategy: %s) for product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    alertSeverity,
 		"productName": cr.Labels["productName"],
 	}
 	// create the rule
@@ -594,6 +608,13 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	productName := cr.Labels["productName"]
 	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheUnavailable"
+	alertSeverity := "critical"
+	if productName == "marin3r" {
+		// Setting alert severity level to warning for Marin3r redis alerts as we don't want to
+		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
+		// https://issues.redhat.com/browse/MGDAPI-587
+		alertSeverity = "warning"
+	}
 	ruleName := fmt.Sprintf("availability-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -601,7 +622,7 @@ func createRedisAvailabilityAlert(ctx context.Context, client k8sclient.Client, 
 	)
 	alertDescription := fmt.Sprintf("Redis instance: '%s' (strategy: %s) for the product: %s is unavailable", cr.Name, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    alertSeverity,
 		"productName": productName,
 	}
 	// create the rule
@@ -622,6 +643,13 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	productName := cr.Labels["productName"]
 	redisCRName := strings.Title(strings.Replace(cr.Name, "redis-example-rhmi", "", -1))
 	alertName := redisCRName + "RedisCacheConnectionFailed"
+	alertSeverity := "critical"
+	if productName == "marin3r" {
+		// Setting alert severity level to warning for Marin3r redis alerts as we don't want to
+		// trigger a Pagerduty incident for Rate Limiting. Will need to revisit Post GA.
+		// https://issues.redhat.com/browse/MGDAPI-587
+		alertSeverity = "warning"
+	}
 	ruleName := fmt.Sprintf("connectivity-rule-%s", cr.Name)
 	alertExp := intstr.FromString(
 		fmt.Sprintf("absent(%s{exported_namespace='%s',resourceID='%s',productName='%s'} == 1)",
@@ -629,7 +657,7 @@ func createRedisConnectivityAlert(ctx context.Context, client k8sclient.Client, 
 	)
 	alertDescription := fmt.Sprintf("Unable to connect to Redis instance. Redis Custom Resource: %s in namespace %s (strategy: %s) for the product: %s", cr.Name, cr.Namespace, cr.Status.Strategy, productName)
 	labels := map[string]string{
-		"severity":    "critical",
+		"severity":    alertSeverity,
 		"productName": productName,
 	}
 	// create the rule
