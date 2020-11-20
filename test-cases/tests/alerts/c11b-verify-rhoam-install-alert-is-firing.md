@@ -23,7 +23,7 @@ Verify that RHOAM operator alerts are in place and working as expected
 3. Login as admin
 4. Go to Deployments, in the `redhat-rhoam-operator` namespace and click on `rhmi-operator`
 5. In the details tab, decrease the pod count by clicking on the down arrow
-   > RHMI pod should be scaled to 0
+   > rhmi-operator pod should be scaled to 0
 6. In the left hand side menu, go to Monitoring >> Alerting and select only pending in the filter bar
-   > RHMIOperatorInstallDelayed should be in the list
+   > RHOAMOperatorInstallDelayed should be in the list
 7. Go to `rhmi-operator` deployment and scale the pod up again.
