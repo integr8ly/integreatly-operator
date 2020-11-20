@@ -8,17 +8,9 @@ products:
     targets:
       - 2.4.0
       - 2.8.0
-  - name: rhoam
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
-    targets:
-      - 0.1.0
-      - 0.2.0
-      - 1.0.0
 ---
 
-# E07 - Verify drill down links
+# E07A - Verify drill down links
 
 ## Description
 

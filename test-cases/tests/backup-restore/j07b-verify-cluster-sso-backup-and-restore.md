@@ -48,6 +48,10 @@ EOF
 ```
 
 ```
+# Wait until the throwaway Postgres instance is running
+oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $3}'
+# oc rsh to the pod
+oc rsh -n redhat-rhoam-operator $(oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $1}')
 # password and host retrieved from rhsso-postgres-rhoam secret in redhat-rhoam-operator, psql will prompt for password
 psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
 $ select * from client;

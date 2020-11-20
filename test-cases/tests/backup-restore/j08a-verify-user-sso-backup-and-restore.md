@@ -46,6 +46,10 @@ EOF
 ```
 
 ```
+# Wait until the throwaway Postgres instance is running
+oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $3}'
+# oc rsh to the pod
+oc rsh -n redhat-rhmi-operator $(oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $1}')
 # password and host retrieved from rhssouser-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
 psql --host=<db_host> --port=5432 --username=postgres --password --dbname=postgres
 select * from client;
