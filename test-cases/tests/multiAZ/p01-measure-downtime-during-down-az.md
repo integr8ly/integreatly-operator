@@ -50,8 +50,8 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
    ```bash
    # e.g.
-   ./scripts/podsAz.sh redhat-rhmi-user-sso
-   Pods distribution for 'redhat-rhmi-user-sso'
+   ./scripts/podsAz.sh redhat-rhoam-user-sso
+   Pods distribution for 'redhat-rhoam-user-sso'
    | Pod name | Availability Zone |
    | -------- | ----------------- |
    | keycloak-0 | eu-west-1c |
@@ -100,7 +100,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    If you did it manually then you need to generate a token:
 
    ```bash
-   curl -X POST 'https://keycloak-edge-redhat-rhmi-user-sso.apps.<YOUR-CLUSTER>.s1.devshift.org:443/auth/realms/<YOUR-REALM>/protocol/openid-connect/token' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
+   curl -X POST 'https://keycloak-edge-redhat-rhoam-user-sso.apps.<YOUR-CLUSTER>.s1.devshift.org:443/auth/realms/<YOUR-REALM>/protocol/openid-connect/token' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
    ```
 
    All the required values for the command above are available in your user SSO instance.
@@ -133,8 +133,8 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
     ```bash
     # e.g.
-    ./scripts/podsAz.sh redhat-rhmi-user-sso
-    Pods distribution for 'redhat-rhmi-user-sso'
+    ./scripts/podsAz.sh redhat-rhoam-user-sso
+    Pods distribution for 'redhat-rhoam-user-sso'
     | Pod name | Availability Zone |
     | -------- | ----------------- |
     | keycloak-0 | eu-west-1c |
@@ -143,7 +143,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
     All the RHOAM alerts should get green eventually. You might experience OSD issues (failed `oc login...` etc) for some time (~15 minutes).
 
-11. Go to the OpenShift console, go through all the `redhat-rhmi-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
+11. Go to the OpenShift console, go through all the `redhat-rhoam-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
 - If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
@@ -157,10 +157,10 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 
     There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-13. Open the RHOAM Grafana Console in the `redhat-rhmi-middleware-monitoring-operator` namespace
+13. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
     ```bash
-    echo "https://$(oc get route grafana-route -n redhat-rhmi-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+    echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
     ```
 
 14. Select the **Workload App** dashboard

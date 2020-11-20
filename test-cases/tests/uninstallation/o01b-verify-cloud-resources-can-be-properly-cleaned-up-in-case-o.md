@@ -6,6 +6,7 @@ products:
     targets:
       - 0.1.0
       - 0.2.0
+      - 1.0.0
 estimate: 30m
 tags:
   - destructive
@@ -40,38 +41,38 @@ oc login --token=<TOKEN> --server=https://api.<CLUSTER_NAME>.s1.devshift.org:644
 2. Verify that new alerts for indicating issues with deleting cloud resources are present:
 
 ```bash
-oc get prometheusrule -n redhat-managed-api-operator | grep -cE "resource-deletion((.*rhsso|.*rhssouser|.*threescale)-postgres|(.*threescale|.*threescale-backend)-redis)"
+oc get prometheusrule -n redhat-rhoam-operator | grep -cE "resource-deletion((.*rhsso|.*rhssouser|.*threescale)-postgres|(.*threescale|.*threescale-backend)-redis)"
 ```
 
-> You should get "8" in the output
+> You should get "5" in the output
 
 3. Patch the `cloud-resources-aws-strategies` config map with a dummy value in `region` field for `postgres` and `redis` instances
 
 ```bash
-postgres=$(oc get configmap cloud-resources-aws-strategies -n redhat-managed-api-operator -o jsonpath='{.data.postgres}' | jq -c '.production.region = "blabla123"' | jq -R)
-redis=$(oc get configmap cloud-resources-aws-strategies -n redhat-managed-api-operator -o jsonpath='{.data.redis}' | jq -c '.production.region = "blabla123"' | jq -R)
-oc patch configmap cloud-resources-aws-strategies -n redhat-managed-api-operator --type=merge --patch="{\"data\": { \"postgres\": $postgres }}" --dry-run=false
-oc patch configmap cloud-resources-aws-strategies -n redhat-managed-api-operator --type=merge --patch="{\"data\": { \"redis\": $redis }}" --dry-run=false
+postgres=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhoam-operator -o jsonpath='{.data.postgres}' | jq -c '.production.region = "blabla123"' | jq -R .)
+redis=$(oc get configmap cloud-resources-aws-strategies -n redhat-rhoam-operator -o jsonpath='{.data.redis}' | jq -c '.production.region = "blabla123"' | jq -R .)
+oc patch configmap cloud-resources-aws-strategies -n redhat-rhoam-operator --type=merge --patch="{\"data\": { \"postgres\": $postgres }}" --dry-run=false
+oc patch configmap cloud-resources-aws-strategies -n redhat-rhoam-operator --type=merge --patch="{\"data\": { \"redis\": $redis }}" --dry-run=false
 ```
 
 4. Trigger RHOAM uninstallation
 
 ```bash
-oc delete rhmi rhoam -n redhat-managed-api-operator
+oc delete rhmi rhoam -n redhat-rhoam-operator
 ```
 
 5. Trigger Redis CR deletion (Note: this step won't be necessary after https://issues.redhat.com/browse/INTLY-9101 is resolved)
 
 ```bash
-oc delete redis --all -n redhat-managed-api-operator
+oc delete redis --all -n redhat-rhoam-operator
 ```
 
 6. Go to alert manager
 
 ```bash
-open "https://$(oc get routes alertmanager-route -n redhat-managed-api-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
+open "https://$(oc get routes alertmanager-route -n redhat-rhoam-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
-> Verify that all Postgres-RhmiPostgresResourceDeletionStatusPhaseFailed and Redis-RhmiRedisResourceDeletionStatusPhaseFailed alerts (8 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
+> Verify that all Postgres-RhoamPostgresResourceDeletionStatusPhaseFailed and Redis-RhoamRedisResourceDeletionStatusPhaseFailed alerts (5 in total) go into a pending state and then they start firing (it should take 5 minutes for these alerts to go from pending to firing state)
 
 7. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)

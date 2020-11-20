@@ -5,6 +5,7 @@ products:
       - external
     targets:
       - 0.0.2
+      - 1.0.0
 estimate: 2h
 tags:
   - manual-selection
@@ -70,7 +71,7 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
    >
    > Once it's finished, it should print out "Upgrade completed!" (it could take ~1 hour)
 
-7. Go to the OpenShift console, go through all the `redhat-managed-api-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
+7. Go to the OpenShift console, go through all the `redhat-rhoam-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
@@ -84,10 +85,10 @@ Mesure the downtime of the RHOAM components during the OpenShift upgrade (not to
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-9. Open the RHOAM Grafana Console in the `redhat-managed-api-middleware-monitoring-operator` namespace
+9. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-managed-api-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 10. Select the **Workload App** dashboard

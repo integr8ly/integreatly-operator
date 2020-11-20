@@ -7,19 +7,12 @@ products:
       - osd-post-upgrade
     targets:
       - 2.7.0
-  - name: rhoam
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
-    targets:
-      - 0.1.0
-      - 0.2.0
 estimate: 3h
 tags:
   - destructive
 ---
 
-# J05 - Verify 3scale backup and restore
+# J05A - Verify 3scale backup and restore
 
 ## Description
 
@@ -29,9 +22,33 @@ Note: this test should only be performed at a time it will not affect other ongo
 
 ### Postgres
 
-1. Verify data exists in postgres using the terminal in the `standard-auth` pod in the `redhat-rhmi-operator` namespace
+1. Login via `oc` as **kubeadmin**
+
+2. Verify data exist in postgres.
+
+Create a throwaway Postgres instance to access the RHSSO Postgres instance
+
+```sh
+cat << EOF | oc create -f - -n redhat-rhmi-operator
+  apiVersion: integreatly.org/v1alpha1
+  kind: Postgres
+  metadata:
+    name: throw-away-postgres
+    labels:
+      productName: productName
+  spec:
+    secretRef:
+      name: throw-away-postgres-sec
+    tier: development
+    type: workshop
+EOF
+```
 
 ```
+# Wait until the throwaway Postgres instance is running
+oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $3}'
+# oc rsh to the pod
+oc rsh -n redhat-rhmi-operator $(oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $1}')
 # password and host retrieved from threescale-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
 psql --host=<<db host> --port=5432 --username=postgres --password --dbname=postgres
 $ select * from plans;

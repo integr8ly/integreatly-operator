@@ -2,11 +2,6 @@
 components:
   - product-sso
 products:
-  - name: rhmi
-    environments:
-      - osd-post-upgrade
-    targets:
-      - 2.8.0
   - name: rhoam
     environments:
       - osd-post-upgrade
@@ -14,15 +9,13 @@ products:
     targets:
       - 0.1.0
       - 0.2.0
+      - 1.0.0
 estimate: 1h
 tags:
   - destructive
-targets:
-  - 2.8.0
-  - 2.7.1
 ---
 
-# J08 - Verify User SSO Backup and Restore
+# J08B - Verify User SSO Backup and Restore
 
 ## Description
 
@@ -39,7 +32,7 @@ Note: this test should only be performed at a time it will not affect other ongo
 Create a throwaway Postgres instance to access the User SSO Postgres instance
 
 ```sh
-cat << EOF | oc create -f - -n redhat-rhmi-operator
+cat << EOF | oc create -f - -n redhat-rhoam-operator
   apiVersion: integreatly.org/v1alpha1
   kind: Postgres
   metadata:
@@ -55,7 +48,11 @@ EOF
 ```
 
 ```
-# password and host retrieved from rhssouser-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
+# Wait until the throwaway Postgres instance is running
+oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $3}'
+# oc rsh to the pod
+oc rsh -n redhat-rhoam-operator $(oc get pods -n redhat-rhoam-operator | grep throw-away | awk '{print $1}')
+# password and host retrieved from rhssouser-postgres-rhoam secret in redhat-rhoam-operator, psql will prompt for password
 psql --host=<db_host> --port=5432 --username=postgres --password --dbname=postgres
 select * from client;
 select * from realm;
@@ -64,7 +61,7 @@ select * from realm;
 Once verified. Delete the throwaway Postgres
 
 ```sh
-oc delete -n redhat-rhmi-operator postgres/throw-away-postgres
+oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
 ```
 
 3. Run the backup and restore script

@@ -5,19 +5,12 @@ products:
       - osd-post-upgrade
     targets:
       - 2.6.0
-  - name: rhoam
-    environments:
-      - osd-fresh-install
-      - osd-post-upgrade
-    targets:
-      - 0.1.0
-      - 0.2.0
 estimate: 120m
 tags:
   - destructive
 ---
 
-# J03 - Verify that namespaces get recreated by the integreatly-operator if deleted
+# J03A - Verify that namespaces get recreated by the integreatly-operator if deleted
 
 https://github.com/integr8ly/integreatly-operator/blob/master/test/common/namespace_restoration.go
 

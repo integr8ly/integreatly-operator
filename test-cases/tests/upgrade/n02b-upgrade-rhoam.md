@@ -44,10 +44,10 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There should be no errors in the command output and product (3scale, SSO) URLS should not be blank. Alternatively, you can check the `Environment` tab in workload-webapp namespace in OpenShift console. See step 8 and 9, you might want to do these pre-upgrade as well.
 
-3. Edit RHOAMConfig in the `redhat-managed-api-operator` config to start the upgrade
+3. Edit RHOAMConfig in the `redhat-rhoam-operator` config to start the upgrade
 
    ```
-   oc edit RHOAMConfig rhmi-config -n redhat-managed-api-operator
+   oc edit RHOAMConfig rhmi-config -n redhat-rhoam-operator
    ```
 
 4. Edit following fields in the **rhmi-config** and save:
@@ -60,20 +60,20 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
    Use the command below to check whether the installPlan exists and is approved. The operator should approve the installPlan based on **rhoam-config**. The installPlan should not be approved manually - if the installPlan is not approved shortly, restart the rhmi-operator (delete the pod or scale down to 0 and then scale back up to 1).
 
    ```
-   oc get installplans -n redhat-managed-api-operator
+   oc get installplans -n redhat-rhoam-operator
    ```
 
 5. Poll cluster to check when the RHOAM upgrade is completed (update version to match currently tested version (e.g. `2.4.0`)):
 
    ```bash
-   watch -n 60 " oc get rhmi rhmi -n redhat-managed-api-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHOAM Upgrade completed\!'"
+   watch -n 60 " oc get rhmi rhoam -n redhat-rhoam-operator -o json | jq -r .status.version | grep -q "2.x.x" && echo 'RHOAM Upgrade completed\!'"
    ```
 
    > This script will run every 60 seconds to check whether the RHOAM upgrade has finished
    >
    > Once it's finished, it should print out "Upgrade completed!"
 
-6. Go to the OpenShift console, go through all the `redhat-managed-api-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
+6. Go to the OpenShift console, go through all the `redhat-rhoam-` prefixed namespaces and verify that all routes (Networking -> Routes) of RHOAM components are accessible
 
    > If some of the routes are not accessible, try again later. If they won't come up in the end, report the issue.
 
@@ -87,10 +87,10 @@ Note: If [N09 test case](https://github.com/integr8ly/integreatly-operator/blob/
 
    There will be a yaml file generated in the output directory. Upload the file to the JIRA issue. Upload the file to this [google drive folder](https://drive.google.com/drive/folders/10Gn8fMiZGgW_34kHlC2n1qigdfJytCpx?usp=sharing)
 
-8. Open the RHOAM Grafana Console in the `redhat-managed-api-middleware-monitoring-operator` namespace
+8. Open the RHOAM Grafana Console in the `redhat-rhoam-middleware-monitoring-operator` namespace
 
 ```bash
-echo "https://$(oc get route grafana-route -n redhat-managed-api-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
+echo "https://$(oc get route grafana-route -n redhat-rhoam-middleware-monitoring-operator -o=jsonpath='{.spec.host}')"
 ```
 
 9. Select the **Workload App** dashboard

@@ -7,22 +7,13 @@ products:
       - osd-post-upgrade
     targets:
       - 2.6.0
-  - name: rhoam
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
-    targets:
-      - 0.1.0
-      - 0.2.0
+      - 2.7.1
 estimate: 1h
 tags:
   - destructive
-targets:
-  - 2.6.0
-  - 2.7.1
 ---
 
-# J07 - Verify Cluster SSO Backup and Restore
+# J07A - Verify Cluster SSO Backup and Restore
 
 ## Description
 
@@ -55,6 +46,10 @@ EOF
 ```
 
 ```
+# Wait until the throwaway Postgres instance is running
+oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $3}'
+# oc rsh to the pod
+oc rsh -n redhat-rhmi-operator $(oc get pods -n redhat-rhmi-operator | grep throw-away | awk '{print $1}')
 # password and host retrieved from rhsso-postgres-rhmi secret in redhat-rhmi-operator, psql will prompt for password
 psql --host=<<db host> --port=5432 --username=postgresuser --password --dbname=rhsso-postgres-rhmi
 $ select * from client;

@@ -23,7 +23,7 @@ The following steps are still not automated in [user_dedicated_admin_permissions
 
 JIRA: [INTLY-7748](https://issues.redhat.com/browse/INTLY-7748)
 
-1. Go to the **redhat-managed-api-operator** namespace in the OpenShift console
+1. Go to the **redhat-rhoam-operator** namespace in the OpenShift console
 2. Go to **Home** > **Search**
 3. Select **RHMI** in the dropdown
    > Verify that you are able to view the `rhmi` custom resource in the RHMI operator namespace
