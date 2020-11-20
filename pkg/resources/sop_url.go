@@ -21,4 +21,5 @@ const (
 	sopUrlSendGridSmtpSecretExists                   = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/alerts/sendgrid_smtp_secret_not_present.asciidoc"
 	SopUrlMarin3rEnvoyApicastProductionContainerDown = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/Marin3rEnvoyApicastProductionContainerDown.asciidoc"
 	SopUrlMarin3rEnvoyApicastStagingContainerDown    = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/rhoam/alerts/Marin3rEnvoyApicastStagingContainerDown.asciidoc"
+	SopUrlPodDistributionIncorrect                   = "https://github.com/RHCloudServices/integreatly-help/blob/master/sops/multi-az/pod_distribution.md"
 )

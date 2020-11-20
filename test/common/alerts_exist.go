@@ -515,6 +515,12 @@ func commonExpectedRules() []alertsTestRule {
 				"SendgridSmtpSecretExists",
 			},
 		},
+		{
+			File: NamespacePrefix + "middleware-monitoring-operator-multi-az-pod-distribution.yaml",
+			Rules: []string{
+				"MultiAZPodDistribution",
+			},
+		},
 	}
 }
 
