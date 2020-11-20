@@ -1039,7 +1039,8 @@ func (c *Client) login(user, pass string) error {
 	tokenRes := &v1alpha1.TokenResponse{}
 	err = json.Unmarshal(body, tokenRes)
 	if err != nil {
-		return errors.Wrap(err, "error parsing token response")
+		msg := fmt.Sprintf(" error parsing token response. Status: %s, Url: %s, Body: %s", res.Status, fmt.Sprintf("%s/%s", c.URL, authURL), string(body))
+		return errors.Wrap(err, msg)
 	}
 
 	if tokenRes.Error != "" {
