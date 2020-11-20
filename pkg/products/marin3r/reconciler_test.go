@@ -55,23 +55,38 @@ func getBasicReconciler() *Reconciler {
 		},
 		AlertsConfig: map[string]*marin3rconfig.AlertConfig{
 			"api-usage-alert-level1": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel1ThresholdExceeded",
 				Level:    "warning",
-				MinRate:  "80%",
-				MaxRate:  strPtr("90%"),
-				Period:   "4h",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "80%",
+					MaxRate: strPtr("90%"),
+				},
+				Period: "4h",
 			},
 			"api-usage-alert-level2": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel2ThresholdExceeded",
 				Level:    "warning",
-				MinRate:  "90%",
-				MaxRate:  strPtr("95%"),
-				Period:   "2h",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "90%",
+					MaxRate: strPtr("95%"),
+				},
+				Period: "2h",
 			},
 			"api-usage-alert-level3": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel3ThresholdExceeded",
 				Level:    "warning",
-				MinRate:  "95%",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "95%",
+				},
+				Period: "30m",
+			},
+			"rate-limit-spike": {
+				Type:     marin3rconfig.AlertTypeSpike,
+				RuleName: "RHOAMApiUsageOverLimit",
+				Level:    "warning",
 				Period:   "30m",
 			},
 		},

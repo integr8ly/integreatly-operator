@@ -11,7 +11,7 @@ import (
 	prometheus "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
-	grafana "github.com/integr8ly/integreatly-operator/pkg/products/grafana"
+	"github.com/integr8ly/integreatly-operator/pkg/products/grafana"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -255,7 +255,8 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 		logrus.Errorf("failed to get Grafana console URL %v", err)
 	}
 
-	alertReconciler, err := r.newAlertsReconciler(granafaConsoleURL)
+	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", granafaConsoleURL)
+	alertReconciler, err := r.newAlertsReconciler(grafanaDashboardURL)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, err
 	}

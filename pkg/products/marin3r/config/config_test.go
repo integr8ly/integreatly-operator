@@ -94,15 +94,18 @@ func TestGetAlertConfig(t *testing.T) {
 					},
 					Data: map[string]string{
 						"alerts": `
-						{
-							"alert-1": {
-								"ruleName": "Rule1",
-								"level": "warning",
-								"minRate": "80%",
-								"maxRate": "90%",
-								"period": "2h"
+							{
+								"alert-1": {
+									"type": "Threshold",
+									"ruleName": "Rule1",
+									"level": "warning",
+									"period": "2h",
+									"threshold": {
+										"minRate": "80%",
+										"maxRate": "90%"
+									}
+								}
 							}
-						}
 						`,
 					},
 				},
@@ -122,9 +125,12 @@ func TestGetAlertConfig(t *testing.T) {
 				expectedConfig := &AlertConfig{
 					RuleName: "Rule1",
 					Level:    "warning",
-					MaxRate:  &maxRate,
-					MinRate:  "80%",
-					Period:   "2h",
+					Threshold: &AlertThresholdConfig{
+						MaxRate: &maxRate,
+						MinRate: "80%",
+					},
+					Period: "2h",
+					Type:   AlertTypeThreshold,
 				}
 
 				if !reflect.DeepEqual(alertConfig, expectedConfig) {

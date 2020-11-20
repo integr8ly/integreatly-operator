@@ -248,24 +248,39 @@ func (r *Reconciler) checkRateLimitAlertsConfig(ctx context.Context, serverClien
 
 		defaultConfig := map[string]*marin3rconfig.AlertConfig{
 			"api-usage-alert-level1": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel1ThresholdExceeded",
-				Level:    "warning",
-				MinRate:  "80%",
-				MaxRate:  &maxRate1,
-				Period:   "4h",
+				Level:    "info",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "80%",
+					MaxRate: &maxRate1,
+				},
+				Period: "4h",
 			},
 			"api-usage-alert-level2": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel2ThresholdExceeded",
-				Level:    "warning",
-				MinRate:  "90%",
-				MaxRate:  &maxRate2,
-				Period:   "2h",
+				Level:    "info",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "90%",
+					MaxRate: &maxRate2,
+				},
+				Period: "2h",
 			},
 			"api-usage-alert-level3": {
+				Type:     marin3rconfig.AlertTypeThreshold,
 				RuleName: "RHOAMApiUsageLevel3ThresholdExceeded",
+				Level:    "info",
+				Threshold: &marin3rconfig.AlertThresholdConfig{
+					MinRate: "95%",
+					MaxRate: nil,
+				},
+				Period: "30m",
+			},
+			"rate-limit-spike": {
+				Type:     marin3rconfig.AlertTypeSpike,
+				RuleName: "RHOAMApiUsageOverLimit",
 				Level:    "warning",
-				MinRate:  "95%",
-				MaxRate:  nil,
 				Period:   "30m",
 			},
 		}

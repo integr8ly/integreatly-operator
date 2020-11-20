@@ -18,7 +18,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
   "gnetId": null,
   "graphTooltip": 0,
   "id": 2,
-  "iteration": 1604491512771,
+  "iteration": 1605286887536,
   "links": [],
   "panels": [
     {
@@ -102,7 +102,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
           "instant": true,
           "refId": "A"
         }
@@ -188,7 +188,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]))",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]) * (60 - 30) / 60)",
           "instant": true,
           "refId": "A"
         }
@@ -340,10 +340,10 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
           "instant": false,
           "interval": "30s",
-          "legendFormat": "No. of Reqests",
+          "legendFormat": "No. of Requests",
           "refId": "A"
         },
         {
@@ -646,7 +646,7 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
       "targets": [
         {
           "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[24h]))/sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[24h]))*100  ",
-          "instant": false,
+          "instant": true,
           "legendFormat": "",
           "refId": "A"
         }
@@ -775,6 +775,8 @@ const CustomerMonitoringGrafanaRateLimitingJSON = `{
   },
   "timezone": "",
   "title": "Rate Limiting",
-  "uid": "bc313a41402056cf0982e639d1330ca0",
+  "uid": "66ab72e0d012aacf34f907be9d81cd9e",
   "version": 1
 }`
+
+// The UID above is used to construct the url for the grafana dashboard in customer alerts. Please do not edit this value.
