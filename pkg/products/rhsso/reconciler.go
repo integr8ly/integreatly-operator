@@ -235,7 +235,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1G"), corev1.ResourceMemory: k8sresource.MustParse("4G")},
 		}
 		return nil
 	})

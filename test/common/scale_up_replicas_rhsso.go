@@ -96,7 +96,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 		"kind": "Keycloak",
 		"spec": {
 			"instances": %[1]v
-		}		
+		}
 	}`, replicas)
 
 	replicaBytes := []byte(replica)
