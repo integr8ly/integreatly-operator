@@ -45,7 +45,7 @@ Networking: Advanced
 Machine CIDR: 10.11.128.0/24
 Service CIDR: 10.11.0.0/18
 Pod CIDR: 10.11.64.0/18
-Host prefix: 26
+Host prefix: /26
 ```
 
 9. Click on `Create cluster` (cluster creation takes ~40 minutes)
