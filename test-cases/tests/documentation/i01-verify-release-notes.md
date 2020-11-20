@@ -1,10 +1,10 @@
 ---
 products:
-  - name: rhmi
+  - name: rhoam
     environments:
       - osd-fresh-install
     targets:
-      - 2.7.0
+      - 1.0.0
 tags:
   - manual-selection
 ---
@@ -13,18 +13,16 @@ tags:
 
 ## Description
 
-The release notes (KSC article) for the RHMI 2.7.0 release.
+The release notes for the RHOAM MVP release.
 
-- Jira ref link: https://issues.redhat.com/browse/RHMIDOC-235, https://issues.redhat.com/browse/RHMIDOC-236, https://issues.redhat.com/browse/RHMIDOC-234, https://issues.redhat.com/browse/RHMIDOC-238
+- Jira ref link: https://issues.redhat.com/browse/MGDDOC-66
 
-- Peer contact: Susan Jay; Joan Edwards
+- Peer contact: Joan Edwards
 
-* Staging doc link: https://access.redhat.com/articles/5224991
-  > **NOTE:** The _Staging doc link_ is not to the Customer Portal. The formatting will not match what is on the Customer Portal; however, the steps should be the same.
+* Staging doc link: https://gitlab.cee.redhat.com/red-hat-managed-services-documentation/rhoam-documentation/-/blob/main/assemblies/release-notes/assembly_release-notes-rhoam.adoc.
 
 ## Steps
 
-1. Navigate to https://access.redhat.com/articles/5224991.
+1. Navigate to https://gitlab.cee.redhat.com/red-hat-managed-services-documentation/rhoam-documentation/-/blob/main/assemblies/release-notes/assembly_release-notes-rhoam.adoc.
 2. Check the links for the component versions.
-3. Check accuracy of Known Issues section.
-4. Technology Preview text is present.
+3. Check accuracy of issues section.
