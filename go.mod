@@ -28,7 +28,7 @@ require (
 	github.com/integr8ly/cloud-resource-operator v0.16.2
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.6.0
-	github.com/integr8ly/keycloak-client v0.1.2
+	github.com/integr8ly/keycloak-client v0.1.3
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/keycloak/keycloak-operator v0.0.0-20201021091505-b576fa07b78a
 	github.com/matryer/moq v0.1.3
@@ -84,6 +84,7 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.4
 	k8s.io/metrics => k8s.io/metrics v0.17.4
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.17.4
+	github.com/openshift/api => github.com/openshift/api v3.9.0+incompatible
 )
 
 replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.5.2
