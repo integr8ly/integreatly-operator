@@ -3,6 +3,9 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
+	4d63.com/gochecknoglobals v0.0.0-20201008074935-acfc0b28355a // indirect
+	4d63.com/gochecknoinits v0.0.0-20200108094044-eb73b47b9fc4 // indirect
+	dmitri.shuralyov.com/go/generated v0.0.0-20170818220700-b1254a446363 // indirect
 	github.com/3scale/3scale-operator v0.2.1-0.20200730110533-c3b57b704d73
 	github.com/3scale/marin3r v0.5.1
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
@@ -10,6 +13,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v1.4.4
 	github.com/aerogear/unifiedpush-operator v0.5.0
+	github.com/alecthomas/gocyclo v0.0.0-20150208221726-aa8f8b160214 // indirect
+	github.com/alexkohler/nakedret v1.0.0 // indirect
 	github.com/apicurio/apicurio-operators/apicurito v0.0.0-20200123142409-83e0a91dd6be
 	github.com/aws/aws-sdk-go v1.34.5
 	github.com/blang/semver v3.5.1+incompatible
@@ -21,6 +26,7 @@ require (
 	github.com/go-openapi/spec v0.19.9
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-querystring v1.0.0
+	github.com/gordonklaus/ineffassign v0.0.0-20201107091007-3b93a8888063 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190203031600-7a902570cb17 // indirect
 	github.com/headzoo/surf v1.0.0
 	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
@@ -29,11 +35,16 @@ require (
 	github.com/integr8ly/grafana-operator v2.0.0+incompatible
 	github.com/integr8ly/grafana-operator/v3 v3.6.0
 	github.com/integr8ly/keycloak-client v0.1.2
+	github.com/jgautheron/goconst v0.0.0-20201117150253-ccae5bf973f3 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/keycloak/keycloak-operator v0.0.0-20201021091505-b576fa07b78a
 	github.com/matryer/moq v0.1.3
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
+	github.com/mdempsky/maligned v0.0.0-20201101000000-d73c43cb16d0 // indirect
+	github.com/mdempsky/unconvert v0.0.0-20200228143138-95ecdbfc0b5f // indirect
+	github.com/mibk/dupl v1.0.0 // indirect
+	github.com/opennota/check v0.0.0-20180911053232-0c771f5545ff // indirect
 	github.com/openshift/api v3.9.1-0.20191031084152-11eee842dafd+incompatible
 	github.com/openshift/client-go v3.9.0+incompatible
 	github.com/openshift/cluster-samples-operator v0.0.0-20191113195805-9e879e661d71
@@ -43,12 +54,15 @@ require (
 	github.com/operator-framework/operator-sdk v0.19.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/securego/gosec v0.0.0-20200401082031-e946c8c39989 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/pflag v1.0.5
+	github.com/stripe/safesql v0.2.0 // indirect
 	github.com/syndesisio/syndesis/install/operator v0.0.0-20200921104849-b99c54c8a481
-	golang.org/x/net v0.0.0-20200625001655-4c5254603344
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
+	github.com/tsenart/deadcode v0.0.0-20160724212837-210d2dc333e9 // indirect
+	github.com/walle/lll v1.0.1 // indirect
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	google.golang.org/protobuf v1.23.0
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.18.6
