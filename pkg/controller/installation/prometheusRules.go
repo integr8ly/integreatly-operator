@@ -52,7 +52,7 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("%s_status{stage='complete'} AND on(namespace) rate(controller_runtime_reconcile_total{controller='installation-controller', result='success'}[30m]) == 0", installationName)),
 						For:    "2h",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
@@ -64,12 +64,12 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 					{
 						Alert: fmt.Sprintf("%sOperatorInstallDelayed", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlOperatorInstallDelayed,
 							"message": fmt.Sprintf("%s operator is taking more than 2 hours to go to a complete stage", strings.ToUpper(installationName)),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(`absent(%s_status{stage='complete'} == 1) and absent(%s_version{version=~".+"})`, installationName, installationName)),
 						For:    "120m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "addon": "managed-api-service"},
 					},
 				},
 			},
@@ -81,12 +81,12 @@ func (r *ReconcileInstallation) newAlertsReconciler(logger *logrus.Entry, instal
 					{
 						Alert: fmt.Sprintf("%sUpgradeExpectedDurationExceeded", strings.ToUpper(installationName)),
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
+							"sop_url": resources.SopUrlUpgradeExpectedDurationExceeded,
 							"message": fmt.Sprintf("%s operator upgrade is taking more than 10 minutes", strings.ToUpper(installationName)),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf(`%s_version{to_version=~".+",version=~".+"} and (absent((%s_version * on(version) csv_succeeded{exported_namespace=~"%s"})) or %s_version)`, installationName, installationName, installation.Namespace, installationName)),
 						For:    "10m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "critical", "addon": "managed-api-service"},
 					},
 				},
 			},

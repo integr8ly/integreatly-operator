@@ -22,7 +22,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 					{
 						Alert: "RHMICloudResourceOperatorMetricsServiceEndpointDown",
 						Annotations: map[string]string{
-							"sop_url": resources.SopUrlEndpointAvailableAlert,
+							"sop_url": resources.SopUrlRHMICloudResourceOperatorMetricsServiceEndpointDown,
 							"message": fmt.Sprintf("No {{  $labels.endpoint  }} endpoints in namespace %s. Expected at least 1.", r.Config.GetOperatorNamespace()),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='cloud-resource-operator-metrics', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
@@ -36,7 +36,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetOperatorNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 				},
 			},
