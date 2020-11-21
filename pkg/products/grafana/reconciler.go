@@ -5,11 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
-
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -21,11 +20,13 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sort"
 )
 
 const (
@@ -143,7 +144,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName)
+	rateLimitConfig, err := marin3rconfig.GetRateLimitConfig(ctx, client, r.installation.Namespace)
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to obtain rate limit config", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimitConfig.SoftDailyLimits)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana dashboard", err)
 		return phase, err
@@ -192,7 +199,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, softLimits []uint32) (integreatlyv1alpha1.StatusPhase, error) {
 
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -205,8 +212,14 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		grafanaDB.Labels = map[string]string{
 			"monitoring-key": "customer",
 		}
+
+		// sorting the array from smallest to largest
+		// this array is loaded from a config map which can be edited by human
+		// the order of the queries on the graph are important for the visualisation
+		sort.Slice(softLimits, func(i, j int) bool { return softLimits[i] < softLimits[j] })
+		graphQueries, dashboardVariables := buildGrafanaDashboardStrings(softLimits)
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
-			Json: CustomerMonitoringGrafanaRateLimitingJSON,
+			Json: fmt.Sprintf(CustomerMonitoringGrafanaRateLimitingJSON, graphQueries, dashboardVariables),
 			Name: rateLimitDashBoardName,
 		}
 		return nil
@@ -480,4 +493,49 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 	}
 
 	return "https://" + grafanaRoute.Spec.Host, nil
+}
+
+func buildGrafanaDashboardStrings(softLimits []uint32) (string, string) {
+	//todo improve this line
+	refID := []string{"B", "C", "D", "E", "F", "G", "H", "I", "J", "Q"}
+	graphQueries := ""
+	dashboardVariables := ""
+	for i, limit := range softLimits {
+		limitVariableName := fmt.Sprintf("SoftLimit%d", i+1)
+		graphQuery := fmt.Sprintf(`,
+                    {
+                     "expr": "$%s",
+                     "legendFormat": "%d Daily Requests",
+                     "refId": "%s"
+                    }`, limitVariableName, limit, refID[i])
+		graphQueries = fmt.Sprintf("%s%s", graphQueries, graphQuery)
+		// caluclating the per minute value of each of the soft limits
+		// the values shown in the dashboad are based on the per minute limits
+		perMinuteValue := limit / 24 / 60
+		dashboardVariable := fmt.Sprintf(`,
+							{
+								"current": {
+								"selected": false,
+									"text": "%d",
+									"value": "%d"
+							},
+								"hide": 2,
+								"label": null,
+								"name": "%s",
+								"options": [
+							{
+								"selected": true,
+								"text": "%d",
+								"value": "%d"
+							}
+						],
+							"query": "%d",
+							"skipUrlSync": false,
+							"type": "constant"
+						}
+				`, perMinuteValue, perMinuteValue, limitVariableName, perMinuteValue, perMinuteValue, perMinuteValue)
+		dashboardVariables = fmt.Sprintf("%s%s", dashboardVariables, dashboardVariable)
+	}
+
+	return graphQueries, dashboardVariables
 }

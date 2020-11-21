@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +55,7 @@ func GetRateLimitConfig(ctx context.Context, client k8sclient.Client, namespace 
 		RateLimitConfigMapName, namespace, "rate_limit",
 		&skuConfigs,
 	); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("could not read rate_limit config from %s config map", RateLimitConfigMapName))
 	}
 
 	sku, err := GetSKU(ctx, client)

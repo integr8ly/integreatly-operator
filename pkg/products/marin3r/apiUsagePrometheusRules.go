@@ -85,7 +85,7 @@ func mapAlertsConfiguration(logger *logrus.Entry, namespace, rateLimitUnit strin
 			}
 			annotations := map[string]string{
 				"message": fmt.Sprintf(
-					"Total API usage in your API Management service is between %s%% and %s%% of the allowable threshold, %d requests per %s, during the last %s",
+					"Total API usage in your API Management service is between %s and %s of the allowable threshold, %d requests per %s, during the last %s",
 					alertConfig.Threshold.MinRate, upperMessage, rateLimitRequestsPerUnit, rateLimitUnit, alertConfig.Period,
 				),
 				"grafanaConsole": grafanaDashboardURL,
