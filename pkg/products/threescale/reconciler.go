@@ -947,23 +947,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
 		apim.Spec.Monitoring = &threescalev1.MonitoringSpec{Enabled: false}
 
-		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
-			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas
+		if *apim.Spec.System.AppSpec.Replicas < 2 {
+			*apim.Spec.System.AppSpec.Replicas = 2
 		}
 		if *apim.Spec.System.SidekiqSpec.Replicas < numberOfReplicas {
 			*apim.Spec.System.SidekiqSpec.Replicas = numberOfReplicas
 		}
-		if *apim.Spec.Apicast.ProductionSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Apicast.ProductionSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Apicast.ProductionSpec.Replicas < 6 {
+			*apim.Spec.Apicast.ProductionSpec.Replicas = 6
 		}
-		if *apim.Spec.Apicast.StagingSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Apicast.StagingSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Apicast.StagingSpec.Replicas < 3 {
+			*apim.Spec.Apicast.StagingSpec.Replicas = 3
 		}
-		if *apim.Spec.Backend.ListenerSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Backend.ListenerSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Backend.ListenerSpec.Replicas < 5 {
+			*apim.Spec.Backend.ListenerSpec.Replicas = 5
 		}
-		if *apim.Spec.Backend.WorkerSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Backend.WorkerSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Backend.WorkerSpec.Replicas < 4 {
+			*apim.Spec.Backend.WorkerSpec.Replicas = 4
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < numberOfReplicas {
 			*apim.Spec.Backend.CronSpec.Replicas = numberOfReplicas

@@ -3,6 +3,7 @@ package rhsso
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/version"
@@ -42,7 +43,7 @@ var (
 	githubIdpAlias            = "github"
 	authFlowAlias             = "authdelay"
 	adminCredentialSecretName = "credential-" + keycloakName
-	numberOfReplicas          = 2
+	numberOfReplicas          = 3
 	ssoType                   = "rhsso"
 	postgresResourceName      = "rhsso-postgres-rhmi"
 )
@@ -233,9 +234,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Spec.Profile = RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
-		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1G"), corev1.ResourceMemory: k8sresource.MustParse("4G")},
+		if (os.Getenv("IN_PROW") == "") {
+			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			}
 		}
 		return nil
 	})

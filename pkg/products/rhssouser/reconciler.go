@@ -3,6 +3,7 @@ package rhssouser
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -271,9 +272,11 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
-		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1G"), corev1.ResourceMemory: k8sresource.MustParse("4G")},
+		if (os.Getenv("IN_PROW") == "") {
+			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			}
 		}
 		return nil
 	})

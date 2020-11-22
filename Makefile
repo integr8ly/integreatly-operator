@@ -189,6 +189,7 @@ test/e2e/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
 test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/prow: export INSTALLATION_NAME := rhmi
+test/e2e/prow: export IN_PROW := true
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/prow: test/e2e
 
@@ -200,6 +201,7 @@ test/e2e/rhoam/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
 test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhmi
+test/e2e/rhoam/prow: export IN_PROW := true
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/rhoam/prow: test/e2e
 
