@@ -3,8 +3,6 @@ package rhsso
 import (
 	"context"
 	"fmt"
-	"os"
-
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
 	"github.com/integr8ly/integreatly-operator/version"
 
@@ -234,7 +232,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Spec.Profile = RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
-		if os.Getenv("IN_PROW") == "" {
+		//These resources work in OSD but upset PROW, so adding an exception
+		if r.Installation.Annotations["IN_PROW"] != "" && r.Installation.Annotations["IN_PROW"] != "false" {
 			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
