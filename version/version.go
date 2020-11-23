@@ -13,7 +13,7 @@ const (
 
 var (
 	version           = "2.7.0"
-	managedAPIVersion = "0.9.0"
+	managedAPIVersion = "1.0.0"
 )
 
 func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStatus, expectedProductVersion string, expectedOpVersion string) bool {
