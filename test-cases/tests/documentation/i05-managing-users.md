@@ -27,4 +27,3 @@ Procedure to grant administrator permissions to developers.
 2. Check prerequisites are correct and all are present.
 3. Follow the steps in the procedure.
 4. Check accuracy of procedure.
-
