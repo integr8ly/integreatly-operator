@@ -1818,7 +1818,6 @@ func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.Keycloa
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
 		Client: &keycloak.KeycloakAPIClient{
-			ID:                      "",
 			ClientID:                clientID,
 			Enabled:                 true,
 			Secret:                  clientSecret,
