@@ -14,21 +14,25 @@ import (
 )
 
 var (
-	numberOfRhssoReplicas  int = 2
-	scaleUpRhssoReplicas   int = 3
-	scaleDownRhssoReplicas int = 1
-	rhssoName                  = "rhsso"
-	userSSOName                = "rhssouser"
-	requestURLSSO              = "/apis/keycloak.org/v1alpha1"
-	kindSSO                    = "Keycloaks"
+	numberOfRhssoReplicas     int = 2
+	numberOfUserRhssoReplicas int = 3
+	scaleDownRhssoReplicas    int = 1
+	rhssoName                     = "rhsso"
+	rhssoNamespace                = NamespacePrefix + "rhsso"
+	userSSOName                   = "rhssouser"
+	userSSONamespace              = NamespacePrefix + "user-sso"
+	requestURLSSO                 = "/apis/keycloak.org/v1alpha1"
+	kindSSO                       = "Keycloaks"
 )
 
 func TestReplicasInRHSSOAndUserSSO(t *testing.T, ctx *TestingContext) {
-	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"))
-	checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"))
+	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
+	checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), numberOfUserRhssoReplicas)
 }
 
-func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string) {
+func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string, expectedReplicas int) {
+	scaleUpRhssoReplicas := expectedReplicas + 1
+	scaleDownRhssoReplicas := expectedReplicas - 1
 	keycloakCR, err := getKeycloakCR(ctx.Client, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
 		t.Fatalf("failed to get KeycloakCR : %v", err)
@@ -92,7 +96,7 @@ func updateKeycloakCR(dynClient *TestingContext, replicas int, keycloakCRName st
 		"kind": "Keycloak",
 		"spec": {
 			"instances": %[1]v
-		}		
+		}
 	}`, replicas)
 
 	replicaBytes := []byte(replica)

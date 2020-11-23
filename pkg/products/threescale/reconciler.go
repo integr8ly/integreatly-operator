@@ -953,23 +953,23 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		apim.Spec.PodDisruptionBudget = &threescalev1.PodDisruptionBudgetSpec{Enabled: true}
 		apim.Spec.Monitoring = &threescalev1.MonitoringSpec{Enabled: false}
 
-		if *apim.Spec.System.AppSpec.Replicas < numberOfReplicas {
-			*apim.Spec.System.AppSpec.Replicas = numberOfReplicas
+		if *apim.Spec.System.AppSpec.Replicas < 2 {
+			*apim.Spec.System.AppSpec.Replicas = 2
 		}
 		if *apim.Spec.System.SidekiqSpec.Replicas < numberOfReplicas {
 			*apim.Spec.System.SidekiqSpec.Replicas = numberOfReplicas
 		}
-		if *apim.Spec.Apicast.ProductionSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Apicast.ProductionSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Apicast.ProductionSpec.Replicas < 6 {
+			*apim.Spec.Apicast.ProductionSpec.Replicas = 6
 		}
-		if *apim.Spec.Apicast.StagingSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Apicast.StagingSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Apicast.StagingSpec.Replicas < 3 {
+			*apim.Spec.Apicast.StagingSpec.Replicas = 3
 		}
-		if *apim.Spec.Backend.ListenerSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Backend.ListenerSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Backend.ListenerSpec.Replicas < 5 {
+			*apim.Spec.Backend.ListenerSpec.Replicas = 5
 		}
-		if *apim.Spec.Backend.WorkerSpec.Replicas < numberOfReplicas {
-			*apim.Spec.Backend.WorkerSpec.Replicas = numberOfReplicas
+		if *apim.Spec.Backend.WorkerSpec.Replicas < 4 {
+			*apim.Spec.Backend.WorkerSpec.Replicas = 4
 		}
 		if *apim.Spec.Backend.CronSpec.Replicas < numberOfReplicas {
 			*apim.Spec.Backend.CronSpec.Replicas = numberOfReplicas
@@ -1382,6 +1382,16 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		},
 	}
 
+	// keycloak-operator sets the spec.client.id, we need to preserve that value
+	apiClientID := ""
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: rhssoNamespace,
+		Name:      clientID,
+	}, kcClient)
+	if err == nil {
+		apiClientID = kcClient.Spec.Client.ID
+	}
+
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
 		logrus.Errorf("Error retrieving client secret: %v", err)
@@ -1389,7 +1399,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
+		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
 		return nil
 	})
 	if err != nil {
@@ -1818,13 +1828,13 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	return false
 }
 
-func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.KeycloakClientSpec {
+func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.KeycloakClientSpec {
 	return keycloak.KeycloakClientSpec{
 		RealmSelector: &metav1.LabelSelector{
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
 		Client: &keycloak.KeycloakAPIClient{
-			ID:                      clientID,
+			ID:                      id,
 			ClientID:                clientID,
 			Enabled:                 true,
 			Secret:                  clientSecret,

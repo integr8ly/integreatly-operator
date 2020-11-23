@@ -12,7 +12,7 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.17.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-
+IN_PROW="false"
 
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
@@ -190,6 +190,7 @@ test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/prow: export INSTALLATION_NAME := rhmi
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
+test/e2e/prow: IN_PROW = "true"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
@@ -201,6 +202,7 @@ test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhmi-
 test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhmi
 test/e2e/rhoam/prow: export INSTALLATION_NAME := rhmi
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
+test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
 
 # e2e tests always run in redhat-rhmi-* namespaces, regardless of installation type
@@ -401,6 +403,7 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/INSTALLATION_SHORTHAND/$(INSTALLATION_SHORTHAND)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
+	sed "s/IN_PROW/'$(IN_PROW)'/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
 	@-oc create -f deploy/integreatly-rhmi-cr.yml

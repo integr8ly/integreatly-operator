@@ -31,7 +31,9 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +46,7 @@ var (
 	idpAlias                  = "openshift-v4"
 	masterRealmName           = "master"
 	adminCredentialSecretName = "credential-" + keycloakName
-	numberOfReplicas          = 2
+	numberOfReplicas          = 3
 	ssoType                   = "user sso"
 	postgresResourceName      = "rhssouser-postgres-rhmi"
 )
@@ -269,6 +271,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
+		//These resources work in OSD but upset PROW, so adding an exception
+		if v, ok := r.Installation.Annotations["in_prow"]; !ok || v == "false" {
+			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			}
+		}
 		return nil
 	})
 	if err != nil {
