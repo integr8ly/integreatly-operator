@@ -41,7 +41,7 @@ var (
 	githubIdpAlias            = "github"
 	authFlowAlias             = "authdelay"
 	adminCredentialSecretName = "credential-" + keycloakName
-	numberOfReplicas          = 3
+	numberOfReplicas          = 2
 	ssoType                   = "rhsso"
 	postgresResourceName      = "rhsso-postgres-rhmi"
 )
@@ -233,10 +233,10 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.Profile = RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		//These resources work in OSD but upset PROW, so adding an exception
-		if _, ok := r.Installation.Annotations["in_prow"]; !ok {
+		if v, ok := r.Installation.Annotations["in_prow"]; !ok || v == "false" {
 			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 			}
 		}
 		return nil

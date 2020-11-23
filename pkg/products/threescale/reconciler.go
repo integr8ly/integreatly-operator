@@ -1376,6 +1376,16 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 		},
 	}
 
+	// keycloak-operator sets the spec.client.id, we need to preserve that value
+	apiClientID := ""
+	err = serverClient.Get(ctx, k8sclient.ObjectKey{
+		Namespace: rhssoNamespace,
+		Name:      clientID,
+	}, kcClient)
+	if err == nil {
+		apiClientID = kcClient.Spec.Client.ID
+	}
+
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
 		logrus.Errorf("Error retrieving client secret: %v", err)
@@ -1383,7 +1393,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	}
 
 	opRes, err := controllerutil.CreateOrUpdate(ctx, serverClient, kcClient, func() error {
-		kcClient.Spec = r.getKeycloakClientSpec(clientSecret)
+		kcClient.Spec = r.getKeycloakClientSpec(apiClientID, clientSecret)
 		return nil
 	})
 	if err != nil {
@@ -1812,12 +1822,13 @@ func userIsOpenshiftAdmin(tsUser *User, adminGroup *usersv1.Group) bool {
 	return false
 }
 
-func (r *Reconciler) getKeycloakClientSpec(clientSecret string) keycloak.KeycloakClientSpec {
+func (r *Reconciler) getKeycloakClientSpec(id, clientSecret string) keycloak.KeycloakClientSpec {
 	return keycloak.KeycloakClientSpec{
 		RealmSelector: &metav1.LabelSelector{
 			MatchLabels: rhsso.GetInstanceLabels(),
 		},
 		Client: &keycloak.KeycloakAPIClient{
+			ID:                      id,
 			ClientID:                clientID,
 			Enabled:                 true,
 			Secret:                  clientSecret,
