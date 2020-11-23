@@ -168,7 +168,10 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
 - Verify that **3scale** and **SSO** are working by checking the **Status** graph.
 - Take the screenshot of the dashboard and attach it to this ticket
 
-15. Re-enable the AZ by running the same [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh)
+15. Consult the results with engineering (especially in case some components have a longer downtime than 30min
+    or are not working properly)
+
+16. Re-enable the AZ by running the same [script](https://github.com/integr8ly/integreatly-operator/blob/master/scripts/disableAz.sh)
     as before
 
     ```bash
@@ -176,7 +179,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
     ./scripts/disableAz.sh false eu-west-1a
     ```
 
-16. Wait until the AZ is restored and OpenShift starts using it
+17. Wait until the AZ is restored and OpenShift starts using it
 
 ```bash
 # You should see a similar output to the one below when running the following oc command:
@@ -190,11 +193,8 @@ mw-collab-multi-45qpn-worker-eu-west-1b   3         3         3       3         
 mw-collab-multi-45qpn-worker-eu-west-1c   3         3         3       3           94m
 ```
 
-17. Run the automated test for checking the correct pod distribution across all AZs and make sure it passes (it might take a while until all pods are correctly redistributed)
+18. Run the automated test for checking the correct pod distribution across all AZs and make sure it passes (it might take a while until all pods are correctly redistributed)
 
 ```bash
 $ go clean -testcache && MULTIAZ=true WATCH_NAMESPACE=redhat-rhoam-operator go test -v ./test/functional -run="//^F09"
 ```
-
-18. Consult the results with engineering (especially in case some components have a longer downtime than 30min
-    or are not working properly)
