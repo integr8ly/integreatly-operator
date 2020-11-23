@@ -193,7 +193,7 @@ mw-collab-multi-45qpn-worker-eu-west-1b   3         3         3       3         
 mw-collab-multi-45qpn-worker-eu-west-1c   3         3         3       3           94m
 ```
 
-18. Run the automated test for checking the correct pod distribution across all AZs and make sure it passes (it might take a while until all pods are correctly redistributed)
+18. Run the automated test for checking the correct pod distribution across all AZs and make sure it passes (It might take a while until all pods are correctly redistributed, so if the test fails, try to run it again after couple of minutes. If the test keeps failing, consult the issue with engineering.)
 
 ```bash
 $ go clean -testcache && MULTIAZ=true WATCH_NAMESPACE=redhat-rhoam-operator go test -v ./test/functional -run="//^F09"
