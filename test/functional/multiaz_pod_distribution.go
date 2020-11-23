@@ -77,7 +77,7 @@ func TestMultiAZPodDistribution(t *testing.T, ctx *common.TestingContext) {
 			}
 
 		}
-		testErrors = testCorrectPodDistribution(distributionPerOwner)
+		testErrors = append(testErrors, testCorrectPodDistribution(distributionPerOwner)...)
 	}
 
 	if len(testErrors) != 0 {
@@ -124,19 +124,22 @@ func getPodZoneName(pod v1.Pod, nodes *v1.NodeList) string {
 
 // Test whether the pod distribution (per pod owner) is correct
 // and return a slice of errors (strings) if any was encountered
+// Verify that all pods are not on the same zone with the exception of
+// replica count = 1
 func testCorrectPodDistribution(dist map[string]*podDistribution) []string {
 	var testErrors []string
 	for podOwner, pd := range dist {
-		minPodsPerZone, maxPodsPerZone := getAllowedNumberOfPodsPerZone(pd.podsTotal)
-		// fmt.Printf("Pods distribution in %s: %+v\n", podOwner, pd)
-		for _, n := range pd.zones {
-			if n == minPodsPerZone || n == maxPodsPerZone {
-				continue
+		if pd.podsTotal > 1 {
+			for _, n := range pd.zones {
+				if n == pd.podsTotal {
+					testErrors = append(testErrors, fmt.Sprintf("Pod owner '%s'. All Pods are on the same zone. %+v\n", podOwner, pd))
+					break
+				}
 			}
-			testErrors = append(testErrors, fmt.Sprintf("Pod owner '%s' pods are not distributed correctly. %+v\n", podOwner, pd))
 		}
 	}
 	return testErrors
+
 }
 
 // Takes the total number of pods belonging to the pod owner
