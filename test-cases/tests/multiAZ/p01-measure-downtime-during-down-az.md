@@ -175,6 +175,21 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
     # e.g.
     ./scripts/disableAz.sh false eu-west-1a
     ```
-
-16. Consult the results with engineering (especially in case some components have a longer downtime than 30min
+16. Wait until the AZ is restored and OpenShift starts using it
+  ```bash
+  # You should see a similar output to the one below when running the following oc command:
+  $ oc get machineset -n openshift-machine-api
+  NAME                                      DESIRED   CURRENT   READY   AVAILABLE   AGE
+  mw-collab-multi-45qpn-infra-eu-west-1a    1         1         1       1           70m
+  mw-collab-multi-45qpn-infra-eu-west-1b    1         1         1       1           70m
+  mw-collab-multi-45qpn-infra-eu-west-1c    1         1         1       1           70m
+  mw-collab-multi-45qpn-worker-eu-west-1a   3         3         3       3           94m
+  mw-collab-multi-45qpn-worker-eu-west-1b   3         3         3       3           94m
+  mw-collab-multi-45qpn-worker-eu-west-1c   3         3         3       3           94m
+  ```
+17. Run the automated test for checking the correct pod distribution across all AZs and make sure it passes (it might take a while until all pods are correctly redistributed)
+  ```bash
+  $ go clean -testcache && MULTIAZ=true WATCH_NAMESPACE=redhat-rhoam-operator go test -v ./test/functional -run="//^F09"
+  ```
+18. Consult the results with engineering (especially in case some components have a longer downtime than 30min
     or are not working properly)
