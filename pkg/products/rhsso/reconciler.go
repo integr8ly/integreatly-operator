@@ -233,7 +233,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		kc.Spec.Profile = RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		//These resources work in OSD but upset PROW, so adding an exception
-		if _, ok := r.Installation.Annotations["IN_PROW"]; !ok {
+		if _, ok := r.Installation.Annotations["in_prow"]; !ok {
 			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
