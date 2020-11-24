@@ -6,7 +6,7 @@ products:
       - osd-fresh-install
     targets:
       - 0.2.0
-	  - 1.0.0
+      - 1.0.0
 tags:
   - automated
 ---
