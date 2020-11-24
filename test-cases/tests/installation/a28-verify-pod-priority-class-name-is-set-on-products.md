@@ -6,7 +6,9 @@ products:
       - osd-fresh-install
     targets:
       - 0.2.0
-      - 1.0.0
+	  - 1.0.0
+tags:
+  - automated
 ---
 
 # A28 - Verify pod priority class name is set on products
