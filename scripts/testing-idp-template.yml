@@ -30,7 +30,6 @@ objects:
         matchLabels:
           sso: ${REALM}
       client:
-        id: openshift
         clientId: openshift
         rootUrl: ${OAUTH_URL}
         secret: ${CLIENT_SECRET}
