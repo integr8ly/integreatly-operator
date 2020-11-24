@@ -3,6 +3,7 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	"testing"
 	"time"
 
@@ -14,20 +15,36 @@ import (
 )
 
 var (
-	numberOfRhssoReplicas     int = 2
-	numberOfUserRhssoReplicas int = 3
-	scaleDownRhssoReplicas    int = 1
-	rhssoName                     = "rhsso"
-	rhssoNamespace                = NamespacePrefix + "rhsso"
-	userSSOName                   = "rhssouser"
-	userSSONamespace              = NamespacePrefix + "user-sso"
-	requestURLSSO                 = "/apis/keycloak.org/v1alpha1"
-	kindSSO                       = "Keycloaks"
+	numberOfRhssoReplicas     = 2
+	numberOfUserRhssoReplicas = 3
+	rhssoName                 = "rhsso"
+	userSSOName               = "rhssouser"
+	requestURLSSO             = "/apis/keycloak.org/v1alpha1"
+	kindSSO                   = "Keycloaks"
 )
 
-func TestReplicasInRHSSOAndUserSSO(t *testing.T, ctx *TestingContext) {
-	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
-	checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), numberOfUserRhssoReplicas)
+func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
+	inst, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get RHMI instance %v", err)
+	}
+	if resources.RunningInProw(inst) {
+		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), 1)
+	} else {
+		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
+	}
+}
+
+func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
+	inst, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get RHMI instance %v", err)
+	}
+	if resources.RunningInProw(inst) {
+		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), 1)
+	} else {
+		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), numberOfUserRhssoReplicas)
+	}
 }
 
 func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string, expectedReplicas int) {
@@ -39,7 +56,7 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 	}
 
 	t.Log("Checking correct number of replicas are set")
-	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, numberOfRhssoReplicas, retryInterval, timeout, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, expectedReplicas, retryInterval, timeout, t); err != nil {
 		t.Fatalf("Incorrect number of replicas to start : %v", err)
 	}
 
@@ -59,22 +76,22 @@ func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakC
 	}
 
 	t.Log("Checking correct number of updated replicas are set")
-	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, numberOfRhssoReplicas, retryInterval, timeout, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, expectedReplicas, retryInterval, timeout, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
-	keycloakCR, err = updateKeycloakCR(ctx, numberOfRhssoReplicas, keycloakCRName, keycloakCRNamespace)
+	keycloakCR, err = updateKeycloakCR(ctx, expectedReplicas, keycloakCRName, keycloakCRNamespace)
 	if err != nil {
 		t.Fatalf("Unable to update : %v", err)
 	}
 
 	t.Log("Checking correct number of replicas has been reset")
-	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, numberOfRhssoReplicas, retryInterval, timeout, t); err != nil {
+	if err := checkNumberOfReplicasAgainstValueRhsso(keycloakCR, ctx, expectedReplicas, retryInterval, timeout, t); err != nil {
 		t.Fatalf("Incorrect number of replicas : %v", err)
 	}
 
 	t.Log("Checking replicas are ready")
-	if err := checkSSOReplicasAreReady(ctx, t, int32(numberOfRhssoReplicas), keycloakCRName, keycloakCRNamespace, retryInterval, timeout); err != nil {
+	if err := checkSSOReplicasAreReady(ctx, t, int32(expectedReplicas), keycloakCRNamespace, retryInterval, timeout); err != nil {
 		t.Fatalf("Replicas weren't ready within timeout")
 	}
 }
@@ -131,23 +148,23 @@ func checkNumberOfReplicasAgainstValueRhsso(keycloakCR keycloakv1alpha1.Keycloak
 	})
 }
 
-func checkSSOReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int32, keycloakCRName string, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
+func checkSSOReplicasAreReady(dynClient *TestingContext, t *testing.T, replicas int32, keycloakCRNamespace string, retryInterval, timeout time.Duration) error {
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
-		statefulset, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get("keycloak", metav1.GetOptions{})
+		statefulSet, err := dynClient.KubeClient.AppsV1().StatefulSets(keycloakCRNamespace).Get("keycloak", metav1.GetOptions{})
 		if err != nil {
-			t.Errorf("Failed to get Statefulset %s in namespace %s with error: %s", "Keycloak", keycloakCRNamespace, err)
+			t.Errorf("failed to get Statefulset %s in namespace %s with error: %s", "Keycloak", keycloakCRNamespace, err)
 		}
-		if statefulset.Status.ReadyReplicas != replicas {
-			t.Logf("Replicas Ready %v", statefulset.Status.ReadyReplicas)
+		if statefulSet.Status.ReadyReplicas != replicas {
+			t.Logf("replicas ready %v", statefulSet.Status.ReadyReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
 		return true, nil
 	})
 	if err != nil {
-		return fmt.Errorf("Number of replicas for sso.Spec.replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
+		return fmt.Errorf("number of replicas for sso.Spec.replicas is not correct : Replicas - %v, Expected - %v", err, replicas)
 	}
 	return nil
 }

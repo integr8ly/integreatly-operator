@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
+	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/integr8ly/integreatly-operator/version"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
@@ -223,21 +224,22 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			"https://github.com/integr8ly/authentication-delay-plugin/releases/download/1.0.1/authdelay.jar",
 		}
 		kc.Labels = GetInstanceLabels()
-		if kc.Spec.Instances < numberOfReplicas {
-			kc.Spec.Instances = numberOfReplicas
-		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{
 			Enabled: true,
 		}
 		kc.Spec.Profile = RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
-		//These resources work in OSD but upset PROW, so adding an exception
-		if v, ok := r.Installation.Annotations["in_prow"]; !ok || v == "false" {
-			kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-				Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
-			}
+		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
+		}
+		//OSD has more resources than PROW, so adding an exception
+		if testResources.RunningInProw(r.Installation) {
+			numberOfReplicas = 1
+		}
+		if kc.Spec.Instances < numberOfReplicas {
+			kc.Spec.Instances = numberOfReplicas
 		}
 		return nil
 	})

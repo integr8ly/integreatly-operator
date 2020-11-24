@@ -2,6 +2,8 @@ package common
 
 import (
 	goctx "context"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -304,7 +306,7 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	deploymentConfigs := getDeploymentConfigs(rhmi.Spec.Type)
+	deploymentConfigs := getDeploymentConfigs(rhmi)
 
 	for _, namespace := range deploymentConfigs {
 		for _, product := range namespace.Products {
@@ -344,23 +346,26 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getDeploymentConfigs(installType string) []Namespace {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI) []Namespace {
+	threescaleConfig := config.NewThreeScale(map[string]string{})
+	replicas := threescaleConfig.GetReplicasConfig(inst)
+
+	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return []Namespace{Namespace{
 			Name: NamespacePrefix + "3scale",
 			Products: []Product{
-				Product{Name: "apicast-production", ExpectedReplicas: 2},
-				Product{Name: "apicast-staging", ExpectedReplicas: 2},
-				Product{Name: "backend-cron", ExpectedReplicas: 2},
-				Product{Name: "backend-listener", ExpectedReplicas: 2},
-				Product{Name: "backend-worker", ExpectedReplicas: 2},
-				Product{Name: "system-app", ExpectedReplicas: 2},
+				Product{Name: "apicast-production", ExpectedReplicas: int32(replicas["apicastProd"])},
+				Product{Name: "apicast-staging", ExpectedReplicas: int32(replicas["apicastStage"])},
+				Product{Name: "backend-cron", ExpectedReplicas: int32(replicas["backendCron"])},
+				Product{Name: "backend-listener", ExpectedReplicas: int32(replicas["backendListener"])},
+				Product{Name: "backend-worker", ExpectedReplicas: int32(replicas["backendWorker"])},
+				Product{Name: "system-app", ExpectedReplicas: int32(replicas["systemApp"])},
 				Product{Name: "system-memcache", ExpectedReplicas: 1},
-				Product{Name: "system-sidekiq", ExpectedReplicas: 2},
+				Product{Name: "system-sidekiq", ExpectedReplicas: int32(replicas["systemSidekiq"])},
 				Product{Name: "system-sphinx", ExpectedReplicas: 1},
-				Product{Name: "zync", ExpectedReplicas: 2},
-				Product{Name: "zync-database", ExpectedReplicas: 1},
-				Product{Name: "zync-que", ExpectedReplicas: 2},
+				Product{Name: "zync", ExpectedReplicas: 1},
+				Product{Name: "zync-database", ExpectedReplicas: int32(replicas["zyncDatabase"])},
+				Product{Name: "zync-que", ExpectedReplicas: int32(replicas["zyncQue"])},
 			},
 		}}
 	} else {
@@ -373,6 +378,17 @@ func getDeploymentConfigs(installType string) []Namespace {
 }
 
 func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	var rhssoExpectedReplicas int32 = 2
+	var rhssoUserExpectedReplicas int32 = 3
+	if resources.RunningInProw(rhmi) {
+		rhssoExpectedReplicas = 1
+		rhssoUserExpectedReplicas = 1
+	}
 	statefulSets := []Namespace{
 		{
 			Name: MonitoringOperatorNamespace,
@@ -384,13 +400,13 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 		{
 			Name: NamespacePrefix + "rhsso",
 			Products: []Product{
-				Product{Name: "keycloak", ExpectedReplicas: 2},
+				Product{Name: "keycloak", ExpectedReplicas: rhssoExpectedReplicas},
 			},
 		},
 		{
 			Name: NamespacePrefix + "user-sso",
 			Products: []Product{
-				Product{Name: "keycloak", ExpectedReplicas: 2},
+				Product{Name: "keycloak", ExpectedReplicas: rhssoUserExpectedReplicas},
 			},
 		},
 	}

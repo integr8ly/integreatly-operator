@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
@@ -100,4 +101,31 @@ func (t *ThreeScale) Validate() error {
 		return errors.New("config host is not defined")
 	}
 	return nil
+}
+
+func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[string]int64 {
+	if resources.RunningInProw(inst) {
+		return map[string]int64{
+			"systemApp":       1,
+			"systemSidekiq":   1,
+			"apicastProd":     1,
+			"apicastStage":    1,
+			"backendListener": 1,
+			"backendWorker":   1,
+			"backendCron":     1,
+			"zyncApp":         1,
+			"zyncQue":         1,
+		}
+	}
+	return map[string]int64{
+		"systemApp":       2,
+		"systemSidekiq":   2,
+		"apicastProd":     6,
+		"apicastStage":    3,
+		"backendListener": 5,
+		"backendWorker":   4,
+		"backendCron":     2,
+		"zyncApp":         2,
+		"zyncQue":         2,
+	}
 }
