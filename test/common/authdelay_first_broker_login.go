@@ -17,6 +17,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/headzoo/surf"
+	"github.com/headzoo/surf/browser"
 	brow "github.com/headzoo/surf/browser"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +60,12 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error occurred while waiting on keycloak user to be reconciled: %v", err)
 	}
 
-	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, ctx.HttpClient)
+	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
 		dumpAuthResources(ctx.Client, t)
 		t.Skip("Skipping due to known flaky behavior, reported in Jira: https://issues.redhat.com/browse/INTLY-10087")
@@ -151,31 +157,102 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 		return fmt.Errorf("failed to open browser url: %w", err)
 	}
 
-	// check if logged in already
-	if browser.StatusCode() == 302 {
-		// opens landing page
-		browser.Open(tsDashboardURL)
-
-		if isUserAuthenticated(browser.Url().RequestURI()) {
-			return nil
-		}
+	// check if user is already authenticated
+	if isUserAuthenticated(browser, tsDashboardURL) {
+		return nil
 	}
+
+	t.Logf("User is not authenticated yet, going to authenticate through rhsso url  %s", browser.Url().String())
 
 	// click on authenticate through rhsso
-	err = browser.Click("a.authorizeLink")
+	err = authenticateThroughRHSSO(browser)
 	if err != nil {
-		return fmt.Errorf("failed to click authenticate throught rhsso: %w", err)
+		t.Logf("response %s", browser.Body())
+		return err
 	}
 
+	// check if user is already authenticated through rhsso
+	if isUserAuthenticated(browser, tsDashboardURL) {
+		return nil
+	}
+
+	t.Logf("User is not authenticated through rhsso yet, going to select the IDP %s", browser.Url().String())
+
+	selectIDPURL := browser.Url().String()
+	// select the IDP to authenticate through RHSSO
+	err = selectRHSSOIDP(browser, idp)
+	if err != nil {
+		return err
+	}
+
+	// check if user is already authenticated after selecting the IDP
+	if isUserAuthenticated(browser, tsDashboardURL) {
+		return nil
+	}
+
+	t.Logf("User is not authenticated after selecting the IDP yet, going to submit the form to authenticate the user through rhsso %s", browser.Url().String())
+
 	// submit openshift oauth login form
+	err = browser.Open(selectIDPURL)
+	if err != nil {
+		return fmt.Errorf("failed to open selectIDPURL url: %w", err)
+	}
 	err = resources.OpenshiftClientSubmitForm(browser, username, password, idp, t)
 	if err != nil {
 		return fmt.Errorf("failed to submit the openshift oauth login: %w", err)
 	}
 
+	// check if user is authenticated after submiting rhsso login form
+	if isUserAuthenticated(browser, tsDashboardURL) {
+		return nil
+	}
+
 	// waits until the account is provisioned and user is authenticated in three scale
 	err = wait.Poll(time.Second*5, time.Minute*5, func() (done bool, err error) {
-		t.Logf("browser URL first %s%s", browser.Url(), browser.Url().RequestURI())
+		t.Logf("browser URL first %s - URL with requestURI %s, status code %v", browser.Url().String(), browser.Url().RequestURI(), browser.StatusCode())
+
+		// checks if an error happened in the login
+		if browser.StatusCode() == 502 {
+			t.Logf("Unexpected error, User already authenticated: URL - %s | Request status code - %v", browser.Url().String(), browser.StatusCode())
+
+			err := browser.Open(tsDashboardURL)
+			t.Logf("Opened dashboard URL to validate user authentication: URL - %s | DashboardURL - %s", browser.Url().String(), tsDashboardURL)
+			if err != nil {
+				t.Logf("failed to open dashboard url: %w", err)
+				return false, fmt.Errorf("failed to open dashboard url: %w", err)
+			}
+
+			// if user is redirected to the login page try again
+			if browser.Url().String() == tsLoginURL {
+				// click on authenticate through rhsso
+				err = authenticateThroughRHSSO(browser)
+				if err != nil {
+					return false, err
+				}
+
+				// check if user is already authenticated through rhsso
+				if isUserAuthenticated(browser, tsDashboardURL) {
+					return true, nil
+				}
+
+				selectIDPURL = browser.Url().String()
+				// select the IDP to authenticate through RHSSO
+				err = selectRHSSOIDP(browser, idp)
+				if err != nil {
+					return false, err
+				}
+
+				// check if user is already authenticated after selecting the IDP
+				if isUserAuthenticated(browser, tsDashboardURL) {
+					return true, nil
+				}
+				t.Logf("authenticate after click on idp url: %s", browser.Url().String())
+			}
+		}
+
+		if isUserAuthenticated(browser, tsDashboardURL) {
+			return true, nil
+		}
 
 		browser.Find(fmt.Sprintf("h1:contains('%s')", provisioningAccountTxt)).Each(func(index int, s *goquery.Selection) {
 
@@ -186,36 +263,66 @@ func loginToThreeScale(t *testing.T, tsHost, username, password string, idp stri
 					contentValue := strings.Split(val, ";")
 					if len(contentValue) > 0 {
 						browser.Open(contentValue[1])
+						t.Logf("open new url after creating user in rhsso url: %s", browser.Url().String())
 					}
 				}
 			})
 		})
 
-		// checks if an error happened in the login
-		if browser.StatusCode() == 502 {
-			browser.Open(tsDashboardURL)
+		t.Logf("request status code %v , browser response", browser.StatusCode())
 
-			// if redirected to the login page try again
-			if browser.Url().String() == tsLoginURL {
-				// click on authenticate throught rhsso
-				err = browser.Click("a.authorizeLink")
-				if err != nil {
-					return false, fmt.Errorf("failed to click authenticate throught rhsso: %w", err)
-				}
-			}
-		}
-
-		return isUserAuthenticated(browser.Url().RequestURI()), nil
+		return isUserAuthenticated(browser, tsDashboardURL), nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("Account was not provisioned: %w", err)
+		errLogin := browser.Open(tsDashboardURL)
+		if errLogin != nil {
+			t.Logf("failed to open dashboard url: %w", err)
+		}
+		if !isUserAuthenticated(browser, tsDashboardURL) {
+			return fmt.Errorf("Account was not provisioned: %w", err)
+		}
 	}
 
 	return nil
 }
 
-func isUserAuthenticated(tsURL string) bool {
-	return strings.Contains(tsURL, threeScaleDashboardURI) ||
-		strings.Contains(tsURL, threeScaleOnboardingURI)
+// checks if user is authenticated according to the browser url
+func isUserAuthenticated(browser *browser.Browser, tsDashboardURL string) bool {
+
+	// Check if the request returns 302
+	// which means that the user is already authenticated
+	if browser.StatusCode() == 302 {
+		// opens landing page
+		err := browser.Open(tsDashboardURL)
+		if err != nil {
+			return false
+		}
+	}
+
+	// checks if user is redirected to the lading page
+	return strings.Contains(browser.Url().RequestURI(), threeScaleDashboardURI) ||
+		strings.Contains(browser.Url().RequestURI(), threeScaleOnboardingURI)
+
+}
+
+func authenticateThroughRHSSO(browser *browser.Browser) error {
+	// click on authenticate throught rhsso
+	err := browser.Click("a.authorizeLink")
+	if err != nil {
+		return fmt.Errorf("failed to click on a.authorizeLink to authenticate throught rhsso: %w", err)
+	}
+
+	return nil
+}
+
+func selectRHSSOIDP(browser *browser.Browser, idp string) error {
+	browser.Find("noscript").Each(func(i int, selection *goquery.Selection) {
+		selection.SetHtml(selection.Text())
+	})
+	if err := browser.Click(fmt.Sprintf("a:contains('%s')", idp)); err != nil {
+		return fmt.Errorf("failed to click testing-idp identity provider in oauth proxy login, ensure the identity provider exists on the cluster: %w", err)
+	}
+
+	return nil
 }
