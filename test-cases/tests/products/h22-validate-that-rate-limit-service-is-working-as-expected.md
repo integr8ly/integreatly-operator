@@ -24,7 +24,8 @@ This test case should prove that the rate limiting Redis counter correctly incre
 4. Click on the `zync` route that starts with `https://3scale-admin...`
 5. Go to `Secrets` > `system-seed` under 3Scale namespace and copy the admin password
 6. Go back to 3Scale login page and login
-7. Click on `Ok, how does 3scale work?` and follow the 3Scale wizard to create an API
+7. Click on `Ok, how does 3scale work?` and follow the 3Scale wizard to create an API.
+   If no wizard is present, edit the URL to match `https://3scale-admin.[your_admin_domain].devshift.org/p/admin/onboarding/wizard/intro`
 8. Once on your API overview page, click on `Integration` on the left, then on `Configuration`
 9. Copy the `example curl for testing` for `Staging-APIcast` and paste into a terminal window
 10. Create and run the following script:
@@ -63,7 +64,7 @@ echo "Running Redis connections count for 30 minutes..."
 echo ""
 
 POD_NAME=$(oc get pod -n redhat-rhoam-operator | grep -v "deploy" | grep throw-away-redis-pod | awk '{print $1}')
-REDIS_HOST=$(oc get secrets/ratelimit-service-redis-managed-api -n redhat-rhoam-operator -o template --template={{.data.uri}} | base64 --decode)
+REDIS_HOST=$(oc get secrets/ratelimit-service-redis-rhoam -n redhat-rhoam-operator -o template --template={{.data.uri}} | base64 --decode)
 
 OS=$(uname)
 if [[ $OS = Linux ]]; then

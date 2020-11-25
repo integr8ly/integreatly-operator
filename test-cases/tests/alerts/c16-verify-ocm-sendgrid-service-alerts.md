@@ -4,14 +4,8 @@ products:
   - name: rhmi
     environments:
       - osd-post-upgrade
-    tags:
-      - per-release
-  - name: rhoam
-    environments:
-      - osd-post-upgrade
-      - osd-fresh-install
-tags:
-  - per-release
+    targets:
+      - 2.7.0
 ---
 
 # C16 - Verify OCM SendGrid Service alerts

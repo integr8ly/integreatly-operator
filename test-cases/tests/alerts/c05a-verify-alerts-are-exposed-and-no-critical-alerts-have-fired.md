@@ -5,10 +5,6 @@ products:
   - name: rhmi
     environments:
       - osd-post-upgrade
-  - name: rhoam
-    environments:
-      - osd-fresh-install
-      - osd-post-upgrade
 estimate: 15m
 tags:
   - per-build
@@ -35,9 +31,11 @@ Testcase should not be performed on a cluster that has been used for destructive
 
 2. Confirm the e-mail address where the alert notifications are sent, it should be `cloud-services-qe-reporting@redhat.com`.
 
-   ```bash
-   oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .spec.alertingEmailAddress
-   ```
+For RHMI:
+
+```bash
+oc get rhmi rhmi -n redhat-rhmi-operator -o json | jq -r .spec.alertingEmailAddress
+```
 
 3. Check the inbox of the e-mail address and check if there are any alert notifications that are not related to testing. This can be acheived by subscribing to cloud-services-qe-reporting@redhat.com here: https://post-office.corp.redhat.com/mailman/listinfo/cloud-services-qe-reporting or alternatively you can view the archives without subscription here: http://post-office.corp.redhat.com/archives/cloud-services-qe-reporting/
 

@@ -84,7 +84,7 @@ while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso
 ### Code #4
 
 ```bash
-NS_PREFIX="redhat-managed-api"
+NS_PREFIX="redhat-rhoam"
 
 namespaces=("3scale" "amq-online" "apicurito" "codeready-workspaces" "fuse" "rhsso" "solution-explorer" "ups" "user-sso")
 
