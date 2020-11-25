@@ -25,9 +25,13 @@ Products:
 
 1. Login to all Products listed in the Description using a **developer** user
    > Should succeed
-2. Try to login to the Cluster SSO using a **developer** user
+2. Try to login to the Customer Grafana using a **developer** user
    > Should fail
-3. Login to all Products listed in the Description using a **dedicated-admin** user
+3. Try to login to the Cluster SSO using a **developer** user
+   > Should fail
+4. Login to all Products listed in the Description using a **dedicated-admin** user
    > Should succeed
-4. Try to login to the Cluster SSO using a **dedicated-admin** user
+5. Try to login to the Customer Grafana using a **dedicated-admin** user
+   > Should succeed
+6. Try to login to the Cluster SSO using a **dedicated-admin** user
    > Should fail
