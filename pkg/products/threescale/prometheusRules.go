@@ -231,7 +231,7 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 							"sop_url": resources.SopUrlThreeScaleSystemAdminUIBBT,
 							"message": "3Scale System Admin UI Blackbox Target: If this console is unavailable, the client is unable to perform Account Management,Analytics or Billing.",
 						},
-						Expr:   intstr.FromString("absent(probe_success{job='blackbox',service='3scale-system-admin-ui'} == 1)"),
+						Expr:   intstr.FromString("probe_success{job='blackbox', service='3scale-system-admin-ui'} == 0 and up{job='blackbox', service='3scale-system-admin-ui'} ==1"),
 						For:    "5m",
 						Labels: map[string]string{"severity": "critical"},
 					},
