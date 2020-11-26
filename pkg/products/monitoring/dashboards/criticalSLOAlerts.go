@@ -1,14 +1,8 @@
 package monitoring
 
 //GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
-func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(prefix string) string {
-	nsPrefix = prefix
-	return monitoringGrafanaDBCriticalSLORhmiAlertsJSON
-}
-
-var nsPrefix = ""
-
-var monitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
+func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
+	return `{
 	"annotations": {
 		"list": [{
 			"builtIn": 1,
@@ -4253,8 +4247,11 @@ var monitoringGrafanaDBCriticalSLORhmiAlertsJSON = `{
 	"uid": "eT5llOjWz",
 	"version": 440
 }`
+}
 
-var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
+//GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON configured with given namespace prefix
+func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) string {
+	return `{
   "annotations": {
     "list": [
       {
@@ -6223,3 +6220,4 @@ var MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON = `{
   "uid": "eT5llOjWz",
   "version": 440
 }`
+}

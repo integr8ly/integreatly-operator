@@ -78,7 +78,7 @@ while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-rhsso-op
 ### Code #3
 
 ```bash
-while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 2; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
+while true; do   if oc get deployment keycloak-operator -n redhat-rhoam-user-sso-operator -o json | jq '.spec.replicas' | grep 1; then     oc scale deployment keycloak-operator --replicas=0 -n redhat-rhoam-user-sso-operator;   fi;   if oc get statefulset keycloak -n redhat-rhoam-user-sso -o json | jq '.spec.replicas' | grep 3; then     oc scale statefulset keycloak --replicas=0 -n redhat-rhoam-user-sso;   fi;   sleep 5; done
 ```
 
 ### Code #4
