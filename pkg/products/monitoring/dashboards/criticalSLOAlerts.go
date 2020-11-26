@@ -4249,7 +4249,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 }`
 }
 
-//GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON configured with given namespace prefix
+//GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON configured with given namespace prefix
 func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) string {
 	return `{
   "annotations": {
