@@ -40,7 +40,7 @@ oc patch rhmi rhoam -n redhat-rhoam-operator --type merge -p "{\"spec\":{\"alert
 
 You should get the output `rhmi.integreatly.org/rhoam patched`.
 
-You verify that the email will be redirected by checking the status in _Alertmanager_.
+You can verify that the email will be redirected by checking the status in _Alertmanager_.
 
 - Open alert manager with the command (on your testing cluster)
 
@@ -52,19 +52,20 @@ open "https://$(oc get route alertmanager-route -n redhat-rhoam-middleware-monit
 - Search for _email_configs_ and the _to_ value should be set to yourRedhatUsername+test-rate-limit-SRE@redhat.com
   or yourRedhatUsername+test-rate-limit-BU@redhat.com
 
-- Edit the **rate-limit-alerts** config map to fire every 1m by running the following command on your test cluster
+- Patch the **rate-limit-alerts** config map to fire every 1 minute or every 10 minutes by running the following command on your test cluster
 
 ```
-oc edit configmap rate-limit-alerts -n redhat-rhoam-operator -o yaml
+oc patch configmap rate-limit-alerts -n redhat-rhoam-operator -p '"data": {
+  "alerts": "{\n  \"api-usage-alert-level1\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel1ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"80%\",\n      \"maxRate\": \"90%\"\n    }\n  },\n  \"api-usage-alert-level2\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel2ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"90%\",\n      \"maxRate\": \"95%\"\n    }\n  },\n  \"api-usage-alert-level3\": {\n    \"type\": \"Threshold\",\n    \"level\": \"info\",\n    \"ruleName\": \"RHOAMApiUsageLevel3ThresholdExceeded\",\n    \"period\": \"1m\",\n    \"threshold\": {\n      \"minRate\": \"95%\"\n    }\n  },\n  \"rate-limit-spike\": {\n    \"type\": \"Spike\",\n    \"level\": \"warning\",\n    \"ruleName\": \"RHOAMApiUsageOverLimit\",\n    \"period\": \"10m\"\n  }\n}"
+}'
 ```
-
-Change the value of period for each alert to **"period": "1m"**
 
 You can check the values **rate-limit-alerts** config map have been updated sucessfully :
 
 ```
  oc -n redhat-rhoam-operator get configmap rate-limit-alerts -o yaml
 ```
+The **period** value for each of the alerts should be set to **1m** with the exception of for the **rate-limit-spike (RHOAMApiUsageOverLimit)** which should be set to **10m**.
 
 An Email alert for rate limiting should be in your inbox when rate-limits are hit/exceeded during testing (step 9) .
 
@@ -101,16 +102,16 @@ wget https://gist.githubusercontent.com/psturc/9d7486bac0a5791d80419694721069e8/
 
 The script.js file should now be downloaded.
 
-**4. Set the customer config values rate limiting:**
+**4. Set the customer config rate limiting values :**
 
-- Ensure you are logged into the testing cluster (Multi AZ).
-- Execute the command
+- Ensure you are logged into the testing cluster.
+- Execute the following command
 
 ```bash
 oc get configmap sku-limits-managed-api-service -n redhat-rhoam-operator -o json | jq -r .data.rate_limit
 ```
 
-to ensure that the values are as follows:
+Ensure that the values are as follows:
 
 _"unit":"minute"_
 
@@ -133,7 +134,7 @@ change the values to match the following
 **5. Check that there are no critical alerts firing:**
 
 - Select the test cluster from https://qaprodauth.cloud.redhat.com/beta/openshift/
-- Click the 'monitoring' tab and check the alerts.
+- Click the 'monitoring' tab and check there are no critical alerts firing.
 
 **6. Configure an endpoint to run the load test using 3scale and promote the endpoint to production:**
 
@@ -141,11 +142,11 @@ change the values to match the following
 - Create a new endpoint by clicking though all the wizard options using the default settings.
 - When completed, you will be on the Overview page. Select 'Integration' from the menu listings on the left and select 'Configuration'.
 - Scroll down and click 'Promote to Production'
-- take a copy of the Staging APIcast `Example curl for testing` and extract the URL (within the double quotes) and replace **'staging'** with **'production'** (see example below)
+- take a copy of the Staging APIcast `Example curl for testing` and extract the URL (within the double quotes) and replace the word **'staging'** with **'production'** in the URL (see example below)
 
 EXAMPLE:
 
-Change
+Change (original)
 
 ```
 https://api-3scale-apicast-staging.apps.mgdapi-84-trdoy.ro2p.s1.devshift.org:443/?user_key=7e9c1ef1c9c156af05fa7894f4a3529f
@@ -200,7 +201,7 @@ This will run for 10 minutes at 15,000 requests per min.
 **Example:**
 _↳ 93% — ✓ 140021 / ✗ 10195_\*
 
-Divide this number by 10 and the result should be (approximately) equal to the rate limit value from the config map.
+Divide this number (first value under 'status') by 10 and the result should be (approximately) equal to the rate limit value from the config map.
 eg: _1400021/10 <=> 13860_
 We would expect the result to be (close to) ≈ 14,000
 
