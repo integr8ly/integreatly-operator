@@ -15,6 +15,8 @@ import (
 
 var (
 	namespacesToCheck = []string{
+		common.MonitoringOperatorNamespace,
+		common.Marin3rProductNamespace,
 		common.RHSSOUserProductOperatorNamespace,
 		common.RHSSOProductNamespace,
 		common.ThreeScaleProductNamespace,
