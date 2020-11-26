@@ -115,7 +115,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
           "instant": true,
           "refId": "A"
         }
@@ -201,7 +201,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]) * (60 - 30) / 60)",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]))",
           "instant": true,
           "refId": "A"
         }
@@ -353,7 +353,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
           "instant": false,
           "interval": "30s",
           "legendFormat": "No. of Requests",
