@@ -308,6 +308,23 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
+	customerAlertingEmailAddress, ok, err := addon.GetStringParameterByInstallType(
+		context.TODO(),
+		r.client,
+		integreatlyv1alpha1.InstallationType(installation.Spec.Type),
+		installation.Namespace,
+		"notification-email",
+	)
+	if err != nil {
+		logrus.Errorf("failed while retrieving addon parameter: %v", err)
+	} else if ok && customerAlertingEmailAddress != "" && installation.Spec.AlertingEmailAddress != customerAlertingEmailAddress {
+		logrus.Info("Updating customer email address from parameter")
+		installation.Spec.AlertingEmailAddress = customerAlertingEmailAddress
+		if err := r.client.Update(context.TODO(), installation); err != nil {
+			logrus.Errorf("Error while updating customer email address to RHMI CR: %v", err)
+		}
+	}
+
 	// gets the products from the install type to expose rhmi status metric
 	stages := make([]integreatlyv1alpha1.RHMIStageStatus, 0)
 	for _, stage := range installType.GetInstallStages() {

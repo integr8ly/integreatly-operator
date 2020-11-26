@@ -65,6 +65,7 @@ You can check the values **rate-limit-alerts** config map have been updated suce
 ```
  oc -n redhat-rhoam-operator get configmap rate-limit-alerts -o yaml
 ```
+
 The **period** value for each of the alerts should be set to **1m** with the exception of for the **rate-limit-spike (RHOAMApiUsageOverLimit)** which should be set to **10m**.
 
 An Email alert for rate limiting should be in your inbox when rate-limits are hit/exceeded during testing (step 9) .
