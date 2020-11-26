@@ -315,7 +315,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 							"sop_url": resources.SopUrlPodDistributionIncorrect,
 							"message": "Pod {{  $labels.namespace  }} / {{  $labels.pod  }} ({{  $labels.container  }}) is incorretly distributed to the zone {{  $value  }} ; for the last 5 minutes",
 						},
-						Expr:   intstr.FromString("kube_pod_info{namespace=~'" + nsPrefix + ".*',created_by_kind!=\"<none>\"} <= on (namespace, created_by_name) group_left (label_topology_kubernetes_io_zone) (count by (namespace, created_by_name, label_topology_kubernetes_io_zone) (kube_pod_info{namespace=~'" + nsPrefix + ".*', created_by_kind!=\"<none>\"} == on (node) group_left  (label_topology_kubernetes_io_zone) kube_node_labels) > on (namespace, created_by_name) group_left ceil(count by (namespace, created_by_name) (kube_pod_info{namespace=~'" + nsPrefix + ".*', created_by_kind!=\"<none>\"} == on (node) group_left  (label_topology_kubernetes_io_zone) kube_node_labels) / scalar(count(count by (label_topology_kubernetes_io_zone) (kube_node_labels)))))"),
+						Expr:   intstr.FromString("count by(namespace, created_by_name, label_topology_kubernetes_io_zone) (kube_pod_info{namespace=~'" + nsPrefix + ".*', created_by_kind!=\"<none>\"} == on(node) group_left(label_topology_kubernetes_io_zone) kube_node_labels) == on (namespace, created_by_name)(count by(namespace, created_by_name) (kube_pod_info{namespace=~'" + nsPrefix + ".*', created_by_kind!=\"<none>\"}) > 1) > scalar((count(count by (label_topology_kubernetes_io_zone) (kube_node_labels)) >= bool 2) == 1)"),
 						For:    "5m",
 						Labels: map[string]string{"severity": "warning"},
 					},
