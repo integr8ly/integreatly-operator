@@ -33,7 +33,7 @@ func getSpecDetailsForDashboard(dashboard, nsPrefix string) (string, string, err
 		return monitoring.GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix), "critical-slo-alerts.json", nil
 
 	case "critical-slo-managed-api-alerts":
-		return monitoring.MonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON, "critical-slo-alerts.json", nil
+		return monitoring.GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix), "critical-slo-alerts.json", nil
 
 	default:
 		return "", "", fmt.Errorf("Invalid/Unsupported Grafana Dashboard")
