@@ -24,4 +24,4 @@ The following steps are still not automated in [user_rhmi_developer_permissions.
 JIRA: [INTLY-7792](https://issues.redhat.com/browse/INTLY-7792)
 
 1. Navigate to the console & log in as an RHMI developer user (e.g. as a test-userXX)
-2. Go to **Home** and ensure you dont have the ability to search for RHMI and cant see anything to do with RHOAM custom resources. 
+2. Go to **Home** and ensure you dont have the ability to search for RHMI and cant see anything to do with RHOAM custom resources.

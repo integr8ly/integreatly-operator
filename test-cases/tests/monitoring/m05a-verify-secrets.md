@@ -30,7 +30,6 @@ More info:
 9. Click on `redhat-rhmi-pagerduty` secret
 10. **Reveal Values**
 11. Compare that the `redhat-rhmi-pagerduty` secret matches the value for `receivers[1].pagerduty_configs.service_key` in the `alertmanager-application-monitoring` secret in `redhat-rhmi-middleware-monitoring-operator` namespace
-    
 
 ### Verify deadmanssnitch secret
 
@@ -43,4 +42,4 @@ More info:
 7. Open **Workloads > Secrets**
 8. Click on `redhat-rhmi-deadmanssnitch` secret
 9. **Reveal Values**
-10.  Compare that the `redhat-rhmi-deadmanssnitch` secret matches the value for `receivers[2].webhook_configs.url` in the  `alertmanager-application-monitoring` secret in `redhat-rhmi-middleware-monitoring-operator` namespace 
+10. Compare that the `redhat-rhmi-deadmanssnitch` secret matches the value for `receivers[2].webhook_configs.url` in the `alertmanager-application-monitoring` secret in `redhat-rhmi-middleware-monitoring-operator` namespace

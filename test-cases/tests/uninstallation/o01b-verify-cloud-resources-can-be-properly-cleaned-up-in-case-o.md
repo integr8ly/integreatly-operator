@@ -67,8 +67,8 @@ oc delete rhmi rhoam -n redhat-rhoam-operator
 open "https://$(oc get routes prometheus-route -n redhat-rhoam-middleware-monitoring-operator -o jsonpath='{.spec.host}')"
 ```
 
-6. Verify that all **Postgres-RhoamPostgresResourceDeletionStatusPhaseFailed** and **Redis-RhoamRedisResourceDeletionStatusPhaseFailed** alerts (5 in total) go into a pending state and then they start firing 
+6. Verify that all **Postgres-RhoamPostgresResourceDeletionStatusPhaseFailed** and **Redis-RhoamRedisResourceDeletionStatusPhaseFailed** alerts (5 in total) go into a pending state and then they start firing
 
-***Note*** It should take 5 minutes for these alerts to go from pending to firing state
+**_Note_** It should take 5 minutes for these alerts to go from pending to firing state
 
 7. Verify [this SOP](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/uninstall/delete_cluster_teardown.md#procedure) (guide to delete the cluster and related RHMI Cloud Resources)
