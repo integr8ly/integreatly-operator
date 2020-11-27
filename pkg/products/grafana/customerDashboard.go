@@ -353,6 +353,13 @@ func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVar
           "interval": "30s",
           "legendFormat": "No. of Requests",
           "refId": "A"
+        },
+		{
+          "expr": "$perMinuteRequestsPerUnit",
+          "instant": false,
+          "interval": "30s",
+          "legendFormat": "Hard Limit - ` + requestsPerUnit + ` per minute",
+          "refId": "B"
         }
         ` + graphQueries + `
       ],

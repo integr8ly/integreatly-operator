@@ -498,7 +498,7 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 
 func buildGrafanaDashboardStrings(softLimits []uint32) (string, string) {
 	//todo improve this line
-	refID := []string{"B", "C", "D", "E", "F", "G", "H", "I", "J", "K"}
+	refID := []string{"C", "D", "E", "F", "G", "H", "I", "J", "K", "L"}
 	graphQueries := ""
 	dashboardVariables := ""
 	for i, limit := range softLimits {
