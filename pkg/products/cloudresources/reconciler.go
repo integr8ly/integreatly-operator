@@ -194,7 +194,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 
 	for _, pgSnap := range pgSnaps.Items {
-		logrus.Infof("bgbg Deleting %s", pgSnap.Name)
+		logrus.Infof("Deleting postgres snapshot %s", pgSnap.Name)
 		if err := client.Delete(ctx, &pgSnap); err != nil {
 			logrus.Infof("Failed to delete postgres snapshot %s", pgSnap.Name)
 			return integreatlyv1alpha1.PhaseFailed, err
@@ -212,6 +212,7 @@ func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integrea
 	}
 
 	for _, redisSnap := range redisSnaps.Items {
+		logrus.Infof("Deleting redis snapshot %s", redisSnap.Name)
 		if err := client.Delete(ctx, &redisSnap); err != nil {
 			logrus.Infof("Failed to delete redis snapshot %s", redisSnap.Name)
 			return integreatlyv1alpha1.PhaseFailed, err
