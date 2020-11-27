@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	numberOfReplicas  int64 = 2
+	numberOfReplicas  int64 = 3
 	scaleUpReplicas   int64 = 3
 	scaleDownReplicas int64 = 1
 	name                    = "3scale"
@@ -173,27 +173,27 @@ func checkNumberOfReplicasAgainstValue(apim threescalev1.APIManager, ctx *Testin
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
-		if *apim.Spec.Apicast.ProductionSpec.Replicas != numberOfRequiredReplicas {
+		if *apim.Spec.Apicast.ProductionSpec.Replicas != 6 {
 			t.Logf("Number of replicas for apim.Spec.Apicast.ProductionSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.ProductionSpec.Replicas, numberOfRequiredReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
-		if *apim.Spec.Apicast.StagingSpec.Replicas != numberOfRequiredReplicas {
+		if *apim.Spec.Apicast.StagingSpec.Replicas != 3 {
 			t.Logf("Number of replicas for apim.Spec.Apicast.StagingSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Apicast.StagingSpec.Replicas, numberOfRequiredReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
-		if *apim.Spec.Backend.ListenerSpec.Replicas != numberOfRequiredReplicas {
+		if *apim.Spec.Backend.ListenerSpec.Replicas != 5 {
 			t.Logf("Number of replicas for apim.Spec.Backend.ListenerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.ListenerSpec.Replicas, numberOfRequiredReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
-		if *apim.Spec.Backend.WorkerSpec.Replicas != numberOfRequiredReplicas {
+		if *apim.Spec.Backend.WorkerSpec.Replicas != 4 {
 			t.Logf("Number of replicas for apim.Spec.Backend.WorkerSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.WorkerSpec.Replicas, numberOfRequiredReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
 		}
-		if *apim.Spec.Backend.CronSpec.Replicas != numberOfRequiredReplicas {
+		if *apim.Spec.Backend.CronSpec.Replicas != 1 {
 			t.Logf("Number of replicas for apim.Spec.Backend.CronSpec is not correct : Replicas - %v, Expected - %v", *apim.Spec.Backend.CronSpec.Replicas, numberOfRequiredReplicas)
 			t.Logf("retrying in : %v seconds", retryInterval)
 			return false, nil
