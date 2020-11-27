@@ -32,13 +32,7 @@ More info:
 8. Open **Workloads > Secrets**
 9. Click on `redhat-rhoam-pagerduty` secret
 10. **Reveal Values**
-    > Value for `serviceKey` key should match value noted earlier
-11. **Actions > Edit Secret**
-12. **Add Key/Value**
-13. For **Key** use `PAGERDUTY_KEY`
-14. For **Value** use `new_test`
-15. Check again `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace
-    > Value for `receivers[1].pagerduty_configs.service_key` should be `new_test`
+11. Compare that the `redhat-rhoam-pagerduty` secret matches the value for `receivers[1].pagerduty_configs.service_key` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace
 
 ### Verify deadmanssnitch secret
 
@@ -51,10 +45,4 @@ More info:
 7. Open **Workloads > Secrets**
 8. Click on `redhat-rhoam-deadmanssnitch` secret
 9. **Reveal Values**
-   > Value for `url` key should match value noted earlier
-10. **Actions > Edit Secret**
-11. **Add Key/Value**
-12. For **Key** use `SNITCH_URL`
-13. For **Value** use `https://dms2.example.com`
-14. Check again `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace
-    > Value for `receivers[2].webhook_configs.url` should be `https://dms2.example.com`
+10. Compare that the `redhat-rhoam-deadmanssnitch` secret matches the value for `receivers[2].webhook_configs.url` in the `alertmanager-application-monitoring` secret in `redhat-rhoam-middleware-monitoring-operator` namespace

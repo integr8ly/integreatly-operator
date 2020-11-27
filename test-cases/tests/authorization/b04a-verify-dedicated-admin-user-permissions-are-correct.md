@@ -26,13 +26,9 @@ JIRA: [INTLY-7748](https://issues.redhat.com/browse/INTLY-7748)
 1. Go to the **redhat-rhmi-operator** namespace in the OpenShift console
 2. Go to **Home** > **Search**
 3. Select **RHMI** in the dropdown
-   > Verify that you are able to view the `rhmi` custom resource in the RHMI operator namespace
-4. Create a new RHMI custom resource
-   > Verify that you cannot create a new RHMI custom resource
-5. Click on the **rhmi** custom resource
-   > Verify that you are able to view the RHMI custom resource details and YAML file
-6. Change a value in the RHMI custom resource `spec` field
-7. Click **Update**
-   > Verify that the RHMI custom resource was not updated
-8. Click on **Actions** > **Delete RHMI**
-   > Verify that the RHMI custom resource was not deleted
+4. Verify that you are able to view the **rhmi** custom resource in the RHMI operator namespace
+5. Verify that the user doesn't have the permission to create a new RHMI custom resource
+6. Click on the **rhmi** custom resource.
+7. Verify that you are able to view the RHMI custom resource details and YAML file.
+8. Verify that you can't change the YAML by clicking it and ensuring it wont allow you to add or modify values in the spec, also verify there is no update button.
+9. Verify that when you go to **Actions** > **Delete RHMI** that it's greyed out and you cant click it.
