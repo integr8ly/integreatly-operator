@@ -104,8 +104,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		_, err := resources.GetNS(ctx, operatorNamespace, client)
 		if !k8serr.IsNotFound(err) {
 
+			phase, err := r.removeSnapshots(ctx, installation, client)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+
 			// overrides cro default deletion strategy to delete resources snapshots
-			phase, err := r.createDeletionStrategy(ctx, installation, client)
+			phase, err = r.createDeletionStrategy(ctx, installation, client)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 				return phase, err
 			}
@@ -171,6 +176,51 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.CloudResourcesStage, r.Config.GetProductName())
 	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) removeSnapshots(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	logrus.Infof("Removing postgres and redis snapshots")
+
+	pgSnaps := &crov1alpha1.PostgresSnapshotList{}
+	listOpts := []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
+	}
+	err := client.List(ctx, pgSnaps, listOpts...)
+	if err != nil {
+		logrus.Error("Failed to list postgres snapshots")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list postgres snapshots: %w", err)
+	}
+
+	for _, pgSnap := range pgSnaps.Items {
+		logrus.Infof("Deleting postgres snapshot %s", pgSnap.Name)
+		if err := client.Delete(ctx, &pgSnap); err != nil {
+			logrus.Infof("Failed to delete postgres snapshot %s", pgSnap.Name)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	redisSnaps := &crov1alpha1.RedisSnapshotList{}
+	listOpts = []k8sclient.ListOption{
+		k8sclient.InNamespace(installation.Namespace),
+	}
+	err = client.List(ctx, redisSnaps, listOpts...)
+	if err != nil {
+		logrus.Error("Failed to list redis snapshots")
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to list redis snapshots: %w", err)
+	}
+
+	for _, redisSnap := range redisSnaps.Items {
+		logrus.Infof("Deleting redis snapshot %s", redisSnap.Name)
+		if err := client.Delete(ctx, &redisSnap); err != nil {
+			logrus.Infof("Failed to delete redis snapshot %s", redisSnap.Name)
+			return integreatlyv1alpha1.PhaseFailed, err
+		}
+	}
+
+	logrus.Infof("Finished postgres and redis snapshots removal")
+
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
