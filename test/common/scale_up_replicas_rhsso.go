@@ -29,7 +29,7 @@ func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
 	if resources.RunningInProw(inst) {
-		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), 1)
+		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), 1)
 	} else {
 		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
 	}
