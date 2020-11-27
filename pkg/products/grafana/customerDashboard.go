@@ -201,7 +201,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]))",
+          "expr": "(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteTwentyMillion) > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -286,7 +286,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]))/sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))*100",
+          "expr": "((sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteTwentyMillion) > 0 or vector(0))/(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])))*100",
           "instant": true,
           "refId": "A"
         }
