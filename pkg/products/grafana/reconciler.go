@@ -150,7 +150,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimitConfig.SoftDailyLimits)
+	phase, err = r.reconcileGrafanaDashboards(ctx, client, rateLimitDashBoardName, rateLimitConfig)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile grafana dashboard", err)
 		return phase, err
@@ -199,7 +199,7 @@ func (r *Reconciler) reconcileSecrets(ctx context.Context, client k8sclient.Clie
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, softLimits []uint32) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClient k8sclient.Client, dashboard string, limitConfig *marin3rconfig.RateLimitConfig) (integreatlyv1alpha1.StatusPhase, error) {
 
 	grafanaDB := &grafanav1alpha1.GrafanaDashboard{
 		ObjectMeta: metav1.ObjectMeta{
@@ -216,10 +216,11 @@ func (r *Reconciler) reconcileGrafanaDashboards(ctx context.Context, serverClien
 		// sorting the array from smallest to largest
 		// this array is loaded from a config map which can be edited by human
 		// the order of the queries on the graph are important for the visualisation
+		softLimits := limitConfig.SoftDailyLimits
 		sort.Slice(softLimits, func(i, j int) bool { return softLimits[i] < softLimits[j] })
 		graphQueries, dashboardVariables := buildGrafanaDashboardStrings(softLimits)
 		grafanaDB.Spec = grafanav1alpha1.GrafanaDashboardSpec{
-			Json: fmt.Sprintf(CustomerMonitoringGrafanaRateLimitingJSON, graphQueries, dashboardVariables),
+			Json: getCustomerMonitoringGrafanaRateLimitJSON(graphQueries, dashboardVariables, fmt.Sprintf("%d", limitConfig.RequestsPerUnit)),
 			Name: rateLimitDashBoardName,
 		}
 		return nil
@@ -497,7 +498,7 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 
 func buildGrafanaDashboardStrings(softLimits []uint32) (string, string) {
 	//todo improve this line
-	refID := []string{"B", "C", "D", "E", "F", "G", "H", "I", "J", "K"}
+	refID := []string{"C", "D", "E", "F", "G", "H", "I", "J", "K", "L"}
 	graphQueries := ""
 	dashboardVariables := ""
 	for i, limit := range softLimits {
@@ -509,8 +510,8 @@ func buildGrafanaDashboardStrings(softLimits []uint32) (string, string) {
                      "refId": "%s"
                     }`, limitVariableName, limit, refID[i])
 		graphQueries = fmt.Sprintf("%s%s", graphQueries, graphQuery)
-		// caluclating the per minute value of each of the soft limits
-		// the values shown in the dashboad are based on the per minute limits
+		// calculating the per minute value of each of the soft limits
+		// the values shown in the dashboard are based on the per minute limits
 		perMinuteValue := limit / 24 / 60
 		dashboardVariable := fmt.Sprintf(`,
 							{

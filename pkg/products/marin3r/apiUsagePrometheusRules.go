@@ -48,7 +48,7 @@ func mapAlertsConfiguration(logger *logrus.Entry, namespace, rateLimitUnit strin
 		switch alertConfig.Type {
 		case marin3rconfig.AlertTypeSpike:
 			expr := fmt.Sprintf(
-				"max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[%s:]) /2 > %d",
+				"max_over_time((increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))[%s:]) > %d",
 				alertConfig.Period, rateLimitRequestsPerUnit)
 			annotations := map[string]string{
 				"message":        fmt.Sprintf("hard limit of %d breached at least once in the last %s", rateLimitRequestsPerUnit, alertConfig.Period),

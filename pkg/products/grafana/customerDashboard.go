@@ -1,19 +1,14 @@
 package grafana
 
-// This dashboard json is dynamically configured
-// Search for %s to see where there are values passed
-// At the time of writing there are two places that are dynamically configured
-// 1. Dashboard Variables
-// 2. Rate Limit Graph Queries
-// In both cases these are configured based on soft limits provided in the sku-limits-managed-api-servic config map
+// This dashboard json is dynamically configured based on soft limits and perUnitRequests provided in the sku-limits-managed-api-servic config map
 // present in the operator namespace for RHOAM installations
 // For example if there are softLimits provided of [500000,10000000,15000000] Five, Ten and Fifteen Million per day
-// Then there are 3 Dashboard variables configured, in addition to a static 2000000, TwentyMillion Variable representing
-// the cluster hard limit.
 // Each of these soft limits are then dynamically added as queries to the Rate Limit Graph.
 //
-// Each of the static hard limit and dynamic soft limit are calculated to a perMinute amount.
-var CustomerMonitoringGrafanaRateLimitingJSON = `{
+// Each of the hard limit and soft limits are calculated to a perMinute amount.
+
+func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVariables string, requestsPerUnit string) string {
+	return `{
   "annotations": {
     "list": [
       {
@@ -94,9 +89,9 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -115,18 +110,18 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
           "instant": true,
           "refId": "A"
         }
       ],
-      "thresholds": "$perMinuteTwentyMillion",
+      "thresholds": "$perMinuteRequestsPerUnit",
       "timeFrom": null,
       "timeShift": null,
       "title": "Last 1 Minute - No. Requests",
       "transparent": true,
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -180,9 +175,9 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -201,7 +196,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]) * (60 - 30) / 60)",
+          "expr": "(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteRequestsPerUnit) > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -211,7 +206,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 1 Minute - Rejected",
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -264,10 +259,10 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullPointMode": "connected",
       "nullText": null,
       "options": {},
-      "postfix": "%%",
-      "postfixFontSize": "50%%",
+      "postfix": "%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -286,7 +281,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[1m]))/sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))*100",
+          "expr": "((sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteRequestsPerUnit) > 0 or vector(0))/(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])))*100",
           "instant": true,
           "refId": "A"
         }
@@ -296,7 +291,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 1 Minute - Rejected/Requests",
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -353,13 +348,20 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]) * (60 - 30) / 60)",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m]))",
           "instant": false,
           "interval": "30s",
           "legendFormat": "No. of Requests",
           "refId": "A"
+        },
+		{
+          "expr": "$perMinuteRequestsPerUnit",
+          "instant": false,
+          "interval": "30s",
+          "legendFormat": "Hard Limit - ` + requestsPerUnit + ` per minute",
+          "refId": "B"
         }
-        %s
+        ` + graphQueries + `
       ],
       "thresholds": [],
       "timeFrom": null,
@@ -447,9 +449,9 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -473,12 +475,12 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
           "refId": "A"
         }
       ],
-      "thresholds": "$perMinuteTwentyMillion*60*24",
+      "thresholds": "$perMinuteRequestsPerUnit*60*24",
       "timeFrom": null,
       "timeShift": null,
       "title": "Last 24 Hours - No. Requests",
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -532,9 +534,9 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullText": null,
       "options": {},
       "postfix": "",
-      "postfixFontSize": "50%%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -564,7 +566,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 24 Hours - Rejected",
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -617,10 +619,10 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "nullPointMode": "connected",
       "nullText": null,
       "options": {},
-      "postfix": "%%",
-      "postfixFontSize": "50%%",
+      "postfix": "%",
+      "postfixFontSize": "50%",
       "prefix": "",
-      "prefixFontSize": "50%%",
+      "prefixFontSize": "50%",
       "rangeMaps": [
         {
           "from": "null",
@@ -650,7 +652,7 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       "timeShift": null,
       "title": "Last 24 Hours -  Rejected/Requests",
       "type": "singlestat",
-      "valueFontSize": "80%%",
+      "valueFontSize": "80%",
       "valueMaps": [
         {
           "op": "=",
@@ -670,24 +672,24 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
       {
         "current": {
           "selected": false,
-          "text": "13889",
-          "value": "13889"
+          "text": "` + requestsPerUnit + `",
+          "value": "` + requestsPerUnit + `"
         },
         "hide": 2,
         "label": null,
-        "name": "perMinuteTwentyMillion",
+        "name": "perMinuteRequestsPerUnit",
         "options": [
           {
             "selected": true,
-            "text": "13889",
-            "value": "13889"
+            "text": "` + requestsPerUnit + `",
+            "value": "` + requestsPerUnit + `"
           }
         ],
-        "query": "13889",
+        "query": "` + requestsPerUnit + `",
         "skipUrlSync": false,
         "type": "constant"
       }
-		%s
+		` + dashboardVariables + `
 	]
   },
   "time": {
@@ -713,5 +715,6 @@ var CustomerMonitoringGrafanaRateLimitingJSON = `{
   "uid": "66ab72e0d012aacf34f907be9d81cd9e",
   "version": 1
 }`
+}
 
 // The UID above is used to construct the url for the grafana dashboard in customer alerts. Please do not edit this value.
