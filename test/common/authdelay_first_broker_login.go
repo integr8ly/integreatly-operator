@@ -68,8 +68,8 @@ func TestAuthDelayFirstBrokerLogin(t *testing.T, ctx *TestingContext) {
 	err = loginToThreeScale(t, tsHost, testUser.UserName, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
 		dumpAuthResources(ctx.Client, t)
-		t.Skip("Skipping due to known flaky behavior, reported in Jira: https://issues.redhat.com/browse/INTLY-10087")
-		//t.Fatalf("[%s] error logging in to three scale: %v", getTimeStampPrefix(), err)
+		// t.Skip("Skipping due to known flaky behavior, reported in Jira: https://issues.redhat.com/browse/INTLY-10087")
+		t.Fatalf("[%s] error logging in to three scale: %v", getTimeStampPrefix(), err)
 	}
 }
 

@@ -458,7 +458,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 				},
 			},
 			Client: &v1alpha1.KeycloakAPIClient{
-				ID:                      "openshift",
+				// ID:                      "openshift",
 				ClientID:                "openshift",
 				Enabled:                 true,
 				ClientAuthenticatorType: "client-secret",
