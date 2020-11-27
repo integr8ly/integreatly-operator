@@ -2,6 +2,8 @@ package common
 
 import (
 	goctx "context"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	"testing"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -36,7 +38,9 @@ var (
 	}
 )
 
-func getDeploymentConfiguration(deploymentName string) Namespace {
+func getDeploymentConfiguration(deploymentName string, inst *integreatlyv1alpha1.RHMI) Namespace {
+	threescaleConfig := config.NewThreeScale(map[string]string{})
+	replicas := threescaleConfig.GetReplicasConfig(inst)
 	deployment := map[string]Namespace{
 		"threeScaleDeployment": Namespace{
 			Name: ThreeScaleOperatorNamespace,
@@ -146,18 +150,18 @@ func getDeploymentConfiguration(deploymentName string) Namespace {
 		"threeScaleDeploymentConfig": Namespace{
 			Name: NamespacePrefix + "3scale",
 			Products: []Product{
-				{Name: "apicast-production", ExpectedReplicas: 2},
-				{Name: "apicast-staging", ExpectedReplicas: 2},
-				{Name: "backend-cron", ExpectedReplicas: 2},
-				{Name: "backend-listener", ExpectedReplicas: 2},
-				{Name: "backend-worker", ExpectedReplicas: 2},
-				{Name: "system-app", ExpectedReplicas: 2},
+				{Name: "apicast-production", ExpectedReplicas: int32(replicas["apicastProd"])},
+				{Name: "apicast-staging", ExpectedReplicas: int32(replicas["apicastStage"])},
+				{Name: "backend-cron", ExpectedReplicas: int32(replicas["backendCron"])},
+				{Name: "backend-listener", ExpectedReplicas: int32(replicas["backendListener"])},
+				{Name: "backend-worker", ExpectedReplicas: int32(replicas["backendWorker"])},
+				{Name: "system-app", ExpectedReplicas: int32(replicas["systemApp"])},
 				{Name: "system-memcache", ExpectedReplicas: 1},
-				{Name: "system-sidekiq", ExpectedReplicas: 2},
+				{Name: "system-sidekiq", ExpectedReplicas: int32(replicas["systemSidekiq"])},
 				{Name: "system-sphinx", ExpectedReplicas: 1},
-				{Name: "zync", ExpectedReplicas: 2},
-				{Name: "zync-database", ExpectedReplicas: 1},
-				{Name: "zync-que", ExpectedReplicas: 2},
+				{Name: "zync", ExpectedReplicas: 1},
+				{Name: "zync-database", ExpectedReplicas: int32(replicas["zyncDatabase"])},
+				{Name: "zync-que", ExpectedReplicas: int32(replicas["zyncQue"])},
 			},
 		},
 		"fuseDeploymentConfig": Namespace{
@@ -226,7 +230,7 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
-	deployments := getDeployments(rhmi.Spec.Type)
+	deployments := getDeployments(rhmi)
 	clusterStorageDeployments := getClusterStorageDeployments(rhmi.Name, rhmi.Spec.Type)
 
 	isClusterStorage, err := isClusterStorage(ctx)
@@ -276,25 +280,25 @@ func TestDeploymentExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getDeployments(installType string) []Namespace {
+func getDeployments(inst *integreatlyv1alpha1.RHMI) []Namespace {
 	var rhmi2Deployments []Namespace
 	var commonApiDeployments []Namespace
 	var managedApiDeployments []Namespace
 
 	for _, deployment := range rhmi2DeploymentsList {
-		rhmi2Deployments = append(rhmi2Deployments, getDeploymentConfiguration(deployment))
+		rhmi2Deployments = append(rhmi2Deployments, getDeploymentConfiguration(deployment, inst))
 	}
 	for _, deployment := range commonApiDeploymentsList {
-		commonApiDeployments = append(commonApiDeployments, getDeploymentConfiguration(deployment))
+		commonApiDeployments = append(commonApiDeployments, getDeploymentConfiguration(deployment, inst))
 	}
 	for _, deployment := range managedApiDeploymentsList {
-		managedApiDeployments = append(managedApiDeployments, getDeploymentConfiguration(deployment))
+		managedApiDeployments = append(managedApiDeployments, getDeploymentConfiguration(deployment, inst))
 	}
 
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi")}...), managedApiDeployments...)
+	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		return append(append(commonApiDeployments, []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForManagedApi", inst)}...), managedApiDeployments...)
 	} else {
-		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForRhmi2")}...)
+		return append(append(commonApiDeployments, rhmi2Deployments...), []Namespace{getDeploymentConfiguration("rhmiOperatorDeploymentForRhmi2", inst)}...)
 	}
 }
 
@@ -304,7 +308,7 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	deploymentConfigs := getDeploymentConfigs(rhmi.Spec.Type)
+	deploymentConfigs := getDeploymentConfigs(rhmi)
 
 	for _, namespace := range deploymentConfigs {
 		for _, product := range namespace.Products {
@@ -344,35 +348,31 @@ func TestDeploymentConfigExpectedReplicas(t *testing.T, ctx *TestingContext) {
 	}
 }
 
-func getDeploymentConfigs(installType string) []Namespace {
-	if installType == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
-		return []Namespace{Namespace{
-			Name: NamespacePrefix + "3scale",
-			Products: []Product{
-				Product{Name: "apicast-production", ExpectedReplicas: 2},
-				Product{Name: "apicast-staging", ExpectedReplicas: 2},
-				Product{Name: "backend-cron", ExpectedReplicas: 2},
-				Product{Name: "backend-listener", ExpectedReplicas: 2},
-				Product{Name: "backend-worker", ExpectedReplicas: 2},
-				Product{Name: "system-app", ExpectedReplicas: 2},
-				Product{Name: "system-memcache", ExpectedReplicas: 1},
-				Product{Name: "system-sidekiq", ExpectedReplicas: 2},
-				Product{Name: "system-sphinx", ExpectedReplicas: 1},
-				Product{Name: "zync", ExpectedReplicas: 2},
-				Product{Name: "zync-database", ExpectedReplicas: 1},
-				Product{Name: "zync-que", ExpectedReplicas: 2},
-			},
-		}}
-	} else {
+func getDeploymentConfigs(inst *integreatlyv1alpha1.RHMI) []Namespace {
+	if inst.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
 		return []Namespace{
-			getDeploymentConfiguration("threeScaleDeploymentConfig"),
-			getDeploymentConfiguration("fuseDeploymentConfig"),
-			getDeploymentConfiguration("solutionExplorerDeploymentConfig"),
+			getDeploymentConfiguration("threeScaleDeploymentConfig", inst),
 		}
+	}
+	return []Namespace{
+		getDeploymentConfiguration("threeScaleDeploymentConfig", inst),
+		getDeploymentConfiguration("fuseDeploymentConfig", inst),
+		getDeploymentConfiguration("solutionExplorerDeploymentConfig", inst),
 	}
 }
 
 func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
+	rhmi, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("error getting RHMI CR: %v", err)
+	}
+
+	var rhssoExpectedReplicas int32 = 2
+	var rhssoUserExpectedReplicas int32 = 3
+	if resources.RunningInProw(rhmi) {
+		rhssoExpectedReplicas = 1
+		rhssoUserExpectedReplicas = 1
+	}
 	statefulSets := []Namespace{
 		{
 			Name: MonitoringOperatorNamespace,
@@ -384,13 +384,13 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 		{
 			Name: NamespacePrefix + "rhsso",
 			Products: []Product{
-				Product{Name: "keycloak", ExpectedReplicas: 2},
+				Product{Name: "keycloak", ExpectedReplicas: rhssoExpectedReplicas},
 			},
 		},
 		{
 			Name: NamespacePrefix + "user-sso",
 			Products: []Product{
-				Product{Name: "keycloak", ExpectedReplicas: 2},
+				Product{Name: "keycloak", ExpectedReplicas: rhssoUserExpectedReplicas},
 			},
 		},
 	}

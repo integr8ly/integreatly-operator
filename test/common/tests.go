@@ -31,7 +31,8 @@ var (
 		},
 		{
 			[]TestCase{
-				{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus}, // Keep test as first on the list, as it ensures that all products are reported as complete
+				// Keep test as first on the list, as it ensures that all products are reported as complete
+				{"A01 - Verify that all stages in the integreatly-operator CR report completed", TestIntegreatlyStagesStatus},
 				{"Test RHMI installation CR metric", TestRHMICRMetrics},
 				{"A03 - Verify all namespaces have been created with the correct name", TestNamespaceCreated},
 				{"A05 - Verify product operator version", TestProductOperatorVersions},
@@ -56,10 +57,11 @@ var (
 				/*FLAKY*/ {"E05 - Verify Grafana Route returns dashboards", TestGrafanaExternalRouteDashboardExist},
 				{"F02 - Verify PodDisruptionBudgets exist", TestIntegreatlyPodDisruptionBudgetsExist},
 				{"F05 - Verify Replicas Scale correctly in Threescale", TestReplicasInThreescale},
-				{"F08 - Verify Replicas Scale correctly in RHSSO and user SSO", TestReplicasInRHSSOAndUserSSO},
+				{"F08 - Verify Replicas Scale correctly in RHSSO", TestReplicasInRHSSO},
+				{"F08 - Verify Replicas Scale correctly in User SSO", TestReplicasInUserSSO},
 				{"Verify servicemonitors are cloned in monitoring namespace and rolebindings are created", TestServiceMonitorsCloneAndRolebindingsExist},
 				/*FLAKY*/ {"Verify Alerts are not firing during or after installation apart from DeadMansSwitch", TestIntegreatlyAlertsFiring},
-				{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
+				//{"C03 - Verify that alerting mechanism works", TestIntegreatlyAlertsMechanism},
 				{"Verify prometheus metrics scrapped", TestMetricsScrappedByPrometheus},
 				{"A27 + A28 - Verify pod priority class is created and set", TestPriorityClass},
 			},
