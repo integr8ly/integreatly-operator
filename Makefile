@@ -185,10 +185,6 @@ test/unit:
 test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/prow: export INSTALLATION_TYPE := managed
-test/e2e/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
-test/e2e/prow: export NAMESPACE_PREFIX := redhat-rhmi-
-test/e2e/prow: export INSTALLATION_PREFIX := redhat-rhmi
-test/e2e/prow: export INSTALLATION_NAME := rhmi
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/prow: IN_PROW = "true"
 test/e2e/prow: test/e2e
@@ -197,10 +193,6 @@ test/e2e/prow: test/e2e
 test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
-test/e2e/rhoam/prow: export WATCH_NAMESPACE := redhat-rhmi-operator
-test/e2e/rhoam/prow: export NAMESPACE_PREFIX := redhat-rhmi-
-test/e2e/rhoam/prow: export INSTALLATION_PREFIX := redhat-rhmi
-test/e2e/rhoam/prow: export INSTALLATION_NAME := rhmi
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
 test/e2e/rhoam/prow: IN_PROW = "true"
 test/e2e/rhoam/prow: test/e2e
@@ -296,11 +288,11 @@ cluster/prepare/project:
 
 .PHONY: cluster/prepare/configmaps
 cluster/prepare/configmaps:
-	@oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) | oc apply -f -
+	@ - oc process -f deploy/cro-configmaps.yaml -p INSTALLATION_NAMESPACE=$(NAMESPACE) | oc apply -f -
 
 .PHONY: cluster/prepare/croaws
 cluster/prepare/croaws:
-	@oc create -f deploy/cro-aws-config.yml -n $(NAMESPACE)
+	@ - oc create -f deploy/cro-aws-config.yml -n $(NAMESPACE)
 
 .PHONY: cluster/prepare/osrc
 cluster/prepare/osrc:
@@ -313,9 +305,9 @@ cluster/prepare/crd:
 
 .PHONY: cluster/prepare/local
 cluster/prepare/local: cluster/prepare/project cluster/prepare/crd cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty cluster/prepare/ratelimits cluster/prepare/delorean cluster/prepare/croaws
-	@oc create -f deploy/service_account.yaml
-	@oc create -f deploy/role.yaml
-	@oc create -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
+	@ - oc create -f deploy/service_account.yaml
+	@ - oc create -f deploy/role.yaml
+	@ - oc create -f deploy/$(INSTALLATION_PREFIX)/role_binding.yaml -n ${NAMESPACE}
 
 .PHONY: cluster/prepare/olm/subscription
 cluster/prepare/olm/subscription:
