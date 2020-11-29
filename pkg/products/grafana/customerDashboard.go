@@ -281,7 +281,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVar
       "tableColumn": "",
       "targets": [
         {
-          "expr": "((sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteRequestsPerUnit) > 0 or vector(0))/(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])))*100",
+          "expr": "((sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])) - $perMinuteRequestsPerUnit) > 0 or vector(0))/(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[1m])))*100 > 0 or vector(0)",
           "instant": true,
           "refId": "A"
         }
@@ -641,7 +641,7 @@ func getCustomerMonitoringGrafanaRateLimitJSON(graphQueries string, dashboardVar
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[24h]))/sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[24h]))*100  ",
+          "expr": "sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_over_limit[24h]))/sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[24h]))*100 > 0 or vector(0)",
           "instant": true,
           "legendFormat": "",
           "refId": "A"
