@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
-	"github.com/integr8ly/integreatly-operator/version"
-
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	testResources "github.com/integr8ly/integreatly-operator/test/resources"
+	"github.com/integr8ly/integreatly-operator/version"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -235,7 +234,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
 		//OSD has more resources than PROW, so adding an exception
-		if testResources.RunningInProw(r.Installation) {
+		if testResources.ScaleDown(r.Installation) {
 			numberOfReplicas = 1
 		}
 		if kc.Spec.Instances < numberOfReplicas {

@@ -12,7 +12,7 @@ COMPILE_TARGET=./tmp/_output/bin/$(PROJECT)
 OPERATOR_SDK_VERSION=0.17.1
 AUTH_TOKEN=$(shell curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '{"user": {"username": "$(QUAY_USERNAME)", "password": "$(QUAY_PASSWORD)"}}' | jq -r '.token')
 TEMPLATE_PATH="$(shell pwd)/templates/monitoring"
-IN_PROW="false"
+SCALE_DOWN=false
 
 CONTAINER_ENGINE ?= docker
 TEST_RESULTS_DIR ?= test-results
@@ -112,15 +112,9 @@ setup/git/hooks:
 	git config core.hooksPath .githooks
 
 .PHONY: code/run
+code/run: export SCALE_DOWN := $(SCALE_DOWN)
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
 	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
-
-.PHONY: code/rerun
-code/rerun: setup/service_account
-	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
-
-.PHONY: code/run/service_account
-code/run/service_account: code/run
 
 .PHONY: code/run/delorean
 code/run/delorean: cluster/cleanup cluster/prepare cluster/prepare/local deploy/integreatly-rhmi-cr.yml code/run/service_account
@@ -186,7 +180,7 @@ test/e2e/prow: export component := integreatly-operator
 test/e2e/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/prow: export INSTALLATION_TYPE := managed
 test/e2e/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
-test/e2e/prow: IN_PROW = "true"
+test/e2e/prow: SCALE_DOWN = "true"
 test/e2e/prow: test/e2e
 
 .PHONY: test/e2e/rhoam/prow
@@ -194,7 +188,7 @@ test/e2e/rhoam/prow: export component := integreatly-operator
 test/e2e/rhoam/prow: export OPERATOR_IMAGE := ${IMAGE_FORMAT}
 test/e2e/rhoam/prow: export INSTALLATION_TYPE := managed-api
 test/e2e/rhoam/prow: export SKIP_FLAKES := $(SKIP_FLAKES)
-test/e2e/rhoam/prow: IN_PROW = "true"
+test/e2e/rhoam/prow: SCALE_DOWN = "true"
 test/e2e/rhoam/prow: test/e2e
 
 # e2e tests always run in redhat-rhmi-* namespaces, regardless of installation type
@@ -395,7 +389,7 @@ deploy/integreatly-rhmi-cr.yml:
 	sed "s/INSTALLATION_PREFIX/$(INSTALLATION_PREFIX)/g" | \
 	sed "s/INSTALLATION_SHORTHAND/$(INSTALLATION_SHORTHAND)/g" | \
 	sed "s/SELF_SIGNED_CERTS/$(SELF_SIGNED_CERTS)/g" | \
-	sed "s/IN_PROW/'$(IN_PROW)'/g" | \
+	sed "s/SCALE_DOWN/'$(SCALE_DOWN)'/g" | \
 	sed "s/OPERATORS_IN_PRODUCT_NAMESPACE/$(OPERATORS_IN_PRODUCT_NAMESPACE)/g" | \
 	sed "s/USE_CLUSTER_STORAGE/$(USE_CLUSTER_STORAGE)/g" > deploy/integreatly-rhmi-cr.yml
 	@-oc create -f deploy/integreatly-rhmi-cr.yml

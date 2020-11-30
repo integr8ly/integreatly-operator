@@ -28,7 +28,7 @@ func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
-	if resources.RunningInProw(inst) {
+	if resources.ScaleDown(inst) {
 		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), 1)
 	} else {
 		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
@@ -40,7 +40,7 @@ func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
-	if resources.RunningInProw(inst) {
+	if resources.ScaleDown(inst) {
 		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), 1)
 	} else {
 		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), numberOfUserRhssoReplicas)

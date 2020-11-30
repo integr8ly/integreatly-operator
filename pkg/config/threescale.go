@@ -2,10 +2,9 @@ package config
 
 import (
 	"errors"
-	"github.com/integr8ly/integreatly-operator/test/resources"
-
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
 	threescalev1alpha1 "github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/test/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -104,7 +103,7 @@ func (t *ThreeScale) Validate() error {
 }
 
 func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[string]int64 {
-	if resources.RunningInProw(inst) {
+	if resources.ScaleDown(inst) {
 		return map[string]int64{
 			"systemApp":       1,
 			"systemSidekiq":   1,

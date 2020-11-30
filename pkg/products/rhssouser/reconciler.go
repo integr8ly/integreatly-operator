@@ -274,7 +274,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
 		//OSD has more resources than PROW, so adding an exception
-		if testResources.RunningInProw(r.Installation) {
+		if testResources.ScaleDown(r.Installation) {
 			numberOfReplicas = 1
 		}
 		if kc.Spec.Instances < numberOfReplicas {

@@ -369,7 +369,7 @@ func TestStatefulSetsExpectedReplicas(t *testing.T, ctx *TestingContext) {
 
 	var rhssoExpectedReplicas int32 = 2
 	var rhssoUserExpectedReplicas int32 = 3
-	if resources.RunningInProw(rhmi) {
+	if resources.ScaleDown(rhmi) {
 		rhssoExpectedReplicas = 1
 		rhssoUserExpectedReplicas = 1
 	}

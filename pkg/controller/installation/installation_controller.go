@@ -173,11 +173,10 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 		useClusterStorage, _ := os.LookupEnv("USE_CLUSTER_STORAGE")
 		cssreAlertingEmailAddress, _ := os.LookupEnv(alertingEmailAddressEnvName)
 		buAlertingEmailAddress, _ := os.LookupEnv(buAlertingEmailAddressEnvName)
-
 		installType, _ := os.LookupEnv(installTypeEnvName)
 		priorityClassName, _ := os.LookupEnv(priorityClassNameEnvName)
-
-		logrus.Infof("Creating a %s rhmi CR with USC %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, namespace)
+		scaleDown, _ := os.LookupEnv("SCALE_DOWN")
+		logrus.Infof("Creating a %s rhmi CR with UCS %s and scaleDown %s, as no CR rhmis were found in %s namespace", installType, useClusterStorage, scaleDown, namespace)
 
 		if installType == "" {
 			installType = string(integreatlyv1alpha1.InstallationTypeManaged)
@@ -203,8 +202,9 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 
 		installation = &integreatlyv1alpha1.RHMI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      getCrName(installType),
-				Namespace: namespace,
+				Name:        getCrName(installType),
+				Namespace:   namespace,
+				Annotations: map[string]string{},
 			},
 			Spec: integreatlyv1alpha1.RHMISpec{
 				Type:                 installType,
@@ -222,6 +222,10 @@ func createInstallationCR(ctx context.Context, serverClient k8sclient.Client) er
 				OperatorsInProductNamespace: false, // e2e tests and Makefile need to be updated when default is changed
 				PriorityClassName:           priorityClassName,
 			},
+		}
+
+		if scaleDown == "true" {
+			installation.ObjectMeta.Annotations["scale_down"] = "true"
 		}
 
 		err = serverClient.Create(ctx, installation)

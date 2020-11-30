@@ -3,7 +3,7 @@ kind: RHMI
 metadata:
   name: INSTALLATION_NAME
   annotations:
-    in_prow: IN_PROW
+    scale_down: SCALE_DOWN
 spec:
   type: INSTALLATION_TYPE
   namespacePrefix: INSTALLATION_PREFIX-
