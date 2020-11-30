@@ -58,8 +58,21 @@ $ select * from plans;
 $ select * from accounts;
 ```
 
-3. Follow [sop](https://github.com/RHCloudServices/integreatly-help/blob/master/sops/2.x/backup_restore/3scale_backup.md#postgres)
-4. Verify the same data exist in postgres follow `Step 2.`
+Once verified, delete the throwaway Postgres
+
+```sh
+oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
+```
+
+3. Run the backup and restore script
+
+```sh
+cd test/scripts/backup-restore
+NS_PREFIX=redhat-rhoam ./j05-verify-3scale-postgres-backup-and-restore.sh | tee test-output.txt
+```
+
+4. Wait for the script to finish without errors
+5. Verify in the `test-output.txt` log that the test finished successfully.
 
 ### Redis
 

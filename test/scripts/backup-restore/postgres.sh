@@ -13,13 +13,15 @@
 #      * username
 #      * password
 #   3. ID of the AWS RDS instance.
+#   4. AWS region (e.g. us-east-1)
+#   5. Namespace prefix ("redhat-rhmi" or "redhat-rhoam")
 #
 # In order to use this function, source this file and pass call it with the
 # parameters. Example:
 #
 # ```
 # . ./postgres.sh --source-only
-# test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID
+# test_postgres_backup $POSTGRES_CR_NAME $DATABASE_SECRET $AWS_DB_ID $AWS_REGION $NS_PREFIX
 # ````
 #
 # It will print the test log in the standard output, so it's recommended to
@@ -30,13 +32,14 @@ test_postgres_backup () {
   POSTGRES_SECRET=$2
   AWS_DB_ID=$3
   AWS_REGION=$4
+  NS_PREFIX=$5
 
   # Get the database credentials
-  DB_HOST=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.host}} | base64 -d`
-  DB_PORT=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.port}} | base64 -d`
-  DATABASE_NAME=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.database}} | base64 -d`
-  DB_USER=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.username}} | base64 -d`
-  DB_PASSWORD=`oc get secrets/$POSTGRES_SECRET -n redhat-rhmi-operator -o template --template={{.data.password}} | base64 -d`
+  DB_HOST=$(oc get secrets/$POSTGRES_SECRET -n ${NS_PREFIX}-operator -o template --template={{.data.host}} | base64 --decode)
+  DB_PORT=$(oc get secrets/$POSTGRES_SECRET -n ${NS_PREFIX}-operator -o template --template={{.data.port}} | base64 --decode)
+  DATABASE_NAME=$(oc get secrets/$POSTGRES_SECRET -n ${NS_PREFIX}-operator -o template --template={{.data.database}} | base64 --decode)
+  DB_USER=$(oc get secrets/$POSTGRES_SECRET -n ${NS_PREFIX}-operator -o template --template={{.data.username}} | base64 --decode)
+  DB_PASSWORD=$(oc get secrets/$POSTGRES_SECRET -n ${NS_PREFIX}-operator -o template --template={{.data.password}} | base64 --decode)
 
   # Disable the AWS pager to avoid the user to be displayed with an interactive
   # output when using the AWS CLI
@@ -50,7 +53,7 @@ test_postgres_backup () {
   # Create the snapshot
   POSTGRES_SNAPSHOT_NAME="${POSTGRES_CR_NAME}-snapshot-test-$(date +"%Y-%m-%d-%H%M%S")"
   echo "Creating snapshot $POSTGRES_SNAPSHOT_NAME..."
-  cat << EOF | oc create -f - -n redhat-rhmi-operator
+  cat << EOF | oc create -f - -n "$NS_PREFIX-operator"
   apiVersion: integreatly.org/v1alpha1
   kind: PostgresSnapshot
   metadata:
@@ -64,7 +67,7 @@ EOF
   # Wait for it to complete
   while true
   do
-      PHASE=`oc get postgressnapshot/$POSTGRES_SNAPSHOT_NAME -n redhat-rhmi-operator -o template --template={{.status.phase}}`
+      PHASE=$(oc get postgressnapshot/$POSTGRES_SNAPSHOT_NAME -n ${NS_PREFIX}-operator -o template --template={{.status.phase}})
       if [ "$PHASE" = 'complete' ]; then
         echo "Snapshot creation completed."
         break
@@ -76,7 +79,7 @@ EOF
 
   # Edit Postgres CR to prevent RDS recreation during restoration
   echo "Disabling automatic RDS recreation..."
-  oc patch postgres/$POSTGRES_CR_NAME -n redhat-rhmi-operator -p '{"spec":{"skipCreate":true}}' --type merge
+  oc patch postgres/$POSTGRES_CR_NAME -n ${NS_PREFIX}-operator -p '{"spec":{"skipCreate":true}}' --type merge
 
   # Get VPC security group IDs from existing RDS
   VPC_SECURITY_GROUP_IDS=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq '.DBInstances[0].VpcSecurityGroups[].VpcSecurityGroupId' -r | tr '\n' ' ' | sed -e 's/[[:space:]]$//')
@@ -100,7 +103,7 @@ EOF
   while true
   do
     # Check if the database still exists. If it does not, break the loop
-    EXISTS=`aws rds describe-db-instances --region $AWS_REGION | jq ".DBInstances | any(.DBInstanceIdentifier == \"$AWS_DB_ID\")"`
+    EXISTS=$(aws rds describe-db-instances --region $AWS_REGION | jq ".DBInstances | any(.DBInstanceIdentifier == \"$AWS_DB_ID\")")
     if [ "$EXISTS" = 'false' ]; then
       echo "Database deleted"
       break
@@ -109,7 +112,7 @@ EOF
     # Attempt to get the database status. If it fails, check if the error is
     # not found. If it's not found it means the database was deleted, so break
     # the loop. Otherwise report the error
-    DATABASE=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION 2>&1`
+    DATABASE=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION 2>&1)
     if [ ! "$?" = 0 ]; then
       if echo $DATABASE | grep -q "DBInstanceNotFound"; then
         echo "Database deleted"
@@ -122,7 +125,7 @@ EOF
 
     # Assert that, as the database hasn't been deleted yet, the status is "deleting"
     # meanwhile
-    STATUS=`echo $DATABASE | jq -r '.DBInstances[0].DBInstanceStatus'`
+    STATUS=$(echo $DATABASE | jq -r '.DBInstances[0].DBInstanceStatus')
     if [ "$STATUS" = 'deleting' ]; then
       echo "Waiting for database deletion..."
       sleep 10s
@@ -136,7 +139,7 @@ EOF
 
   # Restore the database
   echo "Restoring database from snapshot..."
-  RDS_RESTORE_SNAPSHOT=`oc get postgressnapshots $POSTGRES_SNAPSHOT_NAME -n redhat-rhmi-operator -o json | jq -r '.status.snapshotID'`
+  RDS_RESTORE_SNAPSHOT=$(oc get postgressnapshots $POSTGRES_SNAPSHOT_NAME -n ${NS_PREFIX}-operator -o json | jq -r '.status.snapshotID')
   aws rds restore-db-instance-from-db-snapshot \
       --db-instance-identifier $AWS_DB_ID \
       --db-snapshot-identifier $RDS_RESTORE_SNAPSHOT \
@@ -150,7 +153,7 @@ EOF
   # Wait for the database to be available
   while true
   do
-    STATUS=`aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq -r '.DBInstances[0].DBInstanceStatus'`
+    STATUS=$(aws rds describe-db-instances --db-instance-identifier $AWS_DB_ID --region $AWS_REGION | jq -r '.DBInstances[0].DBInstanceStatus')
     if [ "$STATUS" = 'available' ]; then
       echo "Database restored."
       break
@@ -168,7 +171,7 @@ EOF
 
   # Revert PostGres CR Change
   echo "Re-enabling automating RDS recreation..."
-  oc patch postgres/$POSTGRES_CR_NAME -n redhat-rhmi-operator -p '{"spec":{"skipCreate":false}}' --type merge
+  oc patch postgres/$POSTGRES_CR_NAME -n ${NS_PREFIX}-operator -p '{"spec":{"skipCreate":false}}' --type merge
 
   # Dump the database after the restoration
   echo "Dumping restored database..."
@@ -176,7 +179,7 @@ EOF
   echo "Dumped restore database to dump_after.sql"
 
   echo "Calculating difference between databases..."
-  DB_DIFF=`diff dump_before.sql dump_after.sql`
+  DB_DIFF=$(diff dump_before.sql dump_after.sql)
   if [ ! -z "$DB_DIFF" ]; then
     echo "Difference found between database dumps:"
     echo $DB_DIFF
@@ -196,7 +199,7 @@ dump_database() {
   DUMP_FILE=$1
 
   echo "Creating throwaway Postgres container..."
-  cat << EOF | oc create -f - -n redhat-rhmi-operator
+  cat << EOF | oc create -f - -n "$NS_PREFIX-operator"
   apiVersion: integreatly.org/v1alpha1
   kind: Postgres
   metadata:
@@ -213,7 +216,7 @@ EOF
   # Wait for the Postgres to be reconciled
   while true
   do
-      PHASE=`oc get postgres/throw-away-postgres -n redhat-rhmi-operator -o template --template={{.status.phase}}`
+      PHASE=$(oc get postgres/throw-away-postgres -n ${NS_PREFIX}-operator -o template --template={{.status.phase}})
       if [ "$PHASE" = 'complete' ]; then
         break
       fi
@@ -224,9 +227,9 @@ EOF
 
   # Create the dump
   kubectl exec deploy/throw-away-postgres \
-    -n redhat-rhmi-operator \
+    -n ${NS_PREFIX}-operator \
     -- env PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER $DATABASE_NAME > $DUMP_FILE
 
   # Delete the throwaway postgres
-  oc delete postgres/throw-away-postgres -n redhat-rhmi-operator
+  oc delete postgres/throw-away-postgres -n ${NS_PREFIX}-operator
 }

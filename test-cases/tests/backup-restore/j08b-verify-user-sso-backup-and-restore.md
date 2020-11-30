@@ -68,7 +68,7 @@ oc delete -n redhat-rhoam-operator postgres/throw-away-postgres
 
 ```sh
 cd test/scripts/backup-restore
-./j08-verify-user-sso-backup-and-restore.sh | tee test-output.txt
+NS_PREFIX=redhat-rhoam ./j08-verify-user-sso-backup-and-restore.sh | tee test-output.txt
 ```
 
 4. Wait for the script to finish without errors
