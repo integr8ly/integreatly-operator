@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 	"os"
 	"strconv"
 
@@ -140,4 +141,81 @@ func IsMultiAZCluster(ctx context.Context, client k8sclient.Client) (bool, error
 	}
 
 	return false, nil
+}
+
+type KindNameSpaceName struct{
+	*k8sTypes.NamespacedName
+	Kind string
+}
+
+func (knn KindNameSpaceName) String()string  {
+	return fmt.Sprintf("%s/%s/%s",knn.Kind,knn.Namespace,knn.Name)
+}
+
+func FindUnbalanced(ctx context.Context,nameSpace string, client k8sclient.Client)([]string, error){
+	nodes := &corev1.NodeList{}
+	unBalanced:= []string{}
+	if err := client.List(ctx, nodes,&k8sclient.ListOptions{}); err != nil{
+		return unBalanced,err
+	}
+	nodesToZone := map[string]string{}
+	for _,n := range nodes.Items{
+		for _,a := range n.Status.Addresses{
+			if a.Type == corev1.NodeInternalIP{
+				nodesToZone[a.Address] = n.Labels[ZoneLabel]
+				break
+			}
+		}
+	}
+	logrus.Infof("nodes to zone %v", nodesToZone)
+	balance := map[string][]string{}
+	l := &corev1.PodList{}
+	if err := client.List(ctx, l, &k8sclient.ListOptions{Namespace:nameSpace}); err != nil{
+		return unBalanced,err
+	}
+	// need to check if there is more than 1 pod of a kind
+	podCount := map[string]int{}
+	logrus.Info("total pods in ns ", nameSpace, len(l.Items))
+	for _,p := range l.Items{
+		if p.Status.Phase != "Running"{
+			continue
+		}
+
+		for _, o := range p.OwnerReferences{
+			if *o.Controller {
+				knn := &KindNameSpaceName{
+					NamespacedName: &k8sTypes.NamespacedName{
+						Namespace: nameSpace,
+					},
+				}
+
+				if o.Kind == "ReplicationController"{
+					knn.Name = p.Annotations["openshift.io/deployment-config.name"]
+					knn.Kind = "DeploymentConfig"
+				}else{
+					knn.Name=o.Name
+					knn.Kind=o.Kind
+				}
+				if _, ok := podCount[knn.Name]; !ok{
+					podCount[knn.Name]=1
+				}else{
+					podCount[p.Name] = podCount[p.Name]+1
+				}
+				if balance[knn.String()] == nil{
+					balance[knn.String()]=[]string{}
+				}
+
+				balance[knn.String()] = append(balance[knn.String()],nodesToZone[p.Status.HostIP])
+				break
+			}
+		}
+	}
+	for knn,z := range balance{
+		if len(z) == 1 && podCount[knn] > 1{
+			// need rebalance
+			unBalanced = append(unBalanced, knn)
+		}
+	}
+
+	return unBalanced,nil
 }
