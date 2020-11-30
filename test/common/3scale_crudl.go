@@ -3,7 +3,9 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
@@ -40,8 +42,8 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 	err = loginToThreeScale(t, host, threescaleLoginUser, DefaultPassword, "testing-idp", ctx.HttpClient)
 	if err != nil {
 		dumpAuthResources(ctx.Client, t)
-		t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-10087")
-		//t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
+		// t.Skip("Skipping due to known flaky behavior, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-10087")
+		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
 
 	// Make sure 3Scale is available
@@ -50,8 +52,11 @@ func Test3ScaleCrudlPermissions(t *testing.T, ctx *TestingContext) {
 		t.Fatal(err)
 	}
 
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+
 	// Create a product
-	productId, err := tsClient.CreateProduct("dummy-product")
+	productId, err := tsClient.CreateProduct(fmt.Sprintf("dummy-product-%v", r1.Intn(100000)))
 	if err != nil {
 		t.Fatal(err)
 	}

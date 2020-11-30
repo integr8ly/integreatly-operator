@@ -2,10 +2,11 @@ package common
 
 import (
 	"fmt"
-	k8errors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/rest"
 	"testing"
 	"time"
+
+	k8errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/rest"
 
 	"github.com/integr8ly/integreatly-operator/test/resources"
 	"github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
@@ -48,6 +49,13 @@ type TestUser struct {
 
 // creates testing idp
 func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client, kubeConfig *rest.Config, hasSelfSignedCerts bool) error {
+
+	// checks if the IDP is created already
+	if hasIDPCreated(ctx, client, t) {
+		t.Log("not creating IDP, it's already created")
+		return nil
+	}
+
 	rhmiCR, err := GetRHMI(client, true)
 	if err != nil {
 		return fmt.Errorf("error occurred while getting rhmi cr: %w", err)
@@ -138,12 +146,13 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 }
 
 func waitForOauthDeployment(ctx context.Context, client dynclient.Client) error {
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (done bool, err error) {
+	err := wait.PollImmediate(time.Second*5, time.Minute*1, func() (done bool, err error) {
 		oauthDeployment := &appsv1.Deployment{}
 		if err := client.Get(ctx, types.NamespacedName{Name: "oauth-openshift", Namespace: "openshift-authentication"}, oauthDeployment); err != nil {
 			return true, fmt.Errorf("error occurred while getting dedicated admin group")
 		}
-		if oauthDeployment.Status.UnavailableReplicas == 0 {
+
+		if oauthDeployment.Status.AvailableReplicas > 0 {
 			return true, nil
 		}
 		return false, nil
@@ -449,7 +458,7 @@ func createKeycloakClient(ctx context.Context, client dynclient.Client, oauthURL
 				},
 			},
 			Client: &v1alpha1.KeycloakAPIClient{
-				ID:                      "openshift",
+				// ID:                      "openshift",
 				ClientID:                "openshift",
 				Enabled:                 true,
 				ClientAuthenticatorType: "client-secret",
@@ -657,6 +666,25 @@ func setupDedicatedAdminGroup(ctx context.Context, client dynclient.Client) erro
 		return fmt.Errorf("error occurred while creating or updating dedicated admin cluster role binding: %w", err)
 	}
 	return nil
+}
+
+func hasIDPCreated(ctx context.Context, client dynclient.Client, t *testing.T) bool {
+	clusterOauth := &configv1.OAuth{}
+	if err := client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterOauth); err != nil {
+		t.Logf("error occurred while getting cluster oauth: %w", err)
+	}
+
+	idpExists := false
+	identityProviders := clusterOauth.Spec.IdentityProviders
+	if identityProviders != nil {
+		for _, providers := range identityProviders {
+			if providers.Name == TestingIDPRealm {
+				idpExists = true
+			}
+		}
+	}
+
+	return idpExists
 }
 
 // checks to see if a dedicated admin group exists
