@@ -309,6 +309,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
 	}
 
+	err = updateGrafanaImage(r.Config.GetOperatorNamespace(), ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.MonitoringStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", packageName)
 	return integreatlyv1alpha1.PhaseCompleted, nil
@@ -902,4 +907,23 @@ func (r *Reconciler) getDMSSecret(ctx context.Context, serverClient k8sclient.Cl
 func prepareEmailAddresses(list string) string {
 	addresses := strings.Split(strings.TrimSpace(list), " ")
 	return strings.Join(addresses, ", ")
+}
+
+func updateGrafanaImage(operatorNamespace string, ctx context.Context, serverClient k8sclient.Client) error {
+	logrus.Info("Updating grafana image to quay")
+
+	grafana := &grafanav1alpha1.Grafana{}
+
+	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: "grafana", Namespace: operatorNamespace}, grafana)
+	if err != nil {
+		return err
+	}
+
+	grafana.Spec.BaseImage = fmt.Sprintf("%s:%s", constants.GrafanaImage, constants.GrafanaVersion)
+	err = serverClient.Update(ctx, grafana)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

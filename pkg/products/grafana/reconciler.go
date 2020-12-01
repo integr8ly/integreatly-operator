@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"sort"
+
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -26,7 +28,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sort"
 )
 
 const (
@@ -269,6 +270,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, client k8sclient.C
 					Enabled: &[]bool{true}[0],
 				},
 			},
+			BaseImage: fmt.Sprintf("%s:%s", constants.GrafanaImage, constants.GrafanaVersion),
 			Containers: []v1.Container{
 				{Name: "grafana-proxy",
 					Image: "quay.io/openshift/origin-oauth-proxy:4.2",
