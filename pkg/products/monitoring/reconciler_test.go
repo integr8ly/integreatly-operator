@@ -318,6 +318,13 @@ func TestReconciler_fullReconcile(t *testing.T) {
 		},
 	}
 
+	grafana := &grafanav1alpha1.Grafana{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grafana",
+			Namespace: defaultInstallationNamespace,
+		},
+	}
+
 	installation := basicInstallation()
 
 	smtpSecret := &corev1.Secret{
@@ -383,7 +390,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			ExpectedStatus: integreatlyv1alpha1.PhaseCompleted,
 			FakeClient: moqclient.NewSigsClientMoqWithScheme(scheme, ns, operatorNS, federationNs,
 				grafanadatasourcesecret, installation, smtpSecret, pagerdutySecret,
-				dmsSecret, alertmanagerRoute),
+				dmsSecret, alertmanagerRoute, grafana),
 			FakeConfig: &config.ConfigReadWriterMock{
 				ReadMonitoringFunc: func() (ready *config.Monitoring, e error) {
 					return config.NewMonitoring(config.ProductConfig{
