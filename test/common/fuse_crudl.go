@@ -3,13 +3,14 @@ package common
 import (
 	goctx "context"
 	"fmt"
+	"testing"
+
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/test/resources"
-	"testing"
 )
 
 var (
-	fuseLoginUser     = fmt.Sprintf("%v-%d", DefaultTestUserName, 0)
+	fuseLoginUser     = fmt.Sprintf("%v%02d", DefaultTestUserName, 1)
 	fuseLoginPassword = DefaultPassword
 )
 

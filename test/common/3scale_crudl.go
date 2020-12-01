@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	threescaleLoginUser = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
+	threescaleLoginUser = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 )
 
 // Tests that a user in group rhmi-developers can log into fuse and

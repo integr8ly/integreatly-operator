@@ -32,7 +32,7 @@ var (
 	s1                            = rand.NewSource(time.Now().UnixNano())
 	r1                            = rand.New(s1)
 	smtpReplicas            int32 = 1
-	threescaleLoginUserSMTP       = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
+	threescaleLoginUserSMTP       = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 	emailAddress                  = fmt.Sprintf("test%v@test.com", r1.Intn(200))
 	serviceIP                     = ""
 	emailUsername                 = "dummy"
