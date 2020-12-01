@@ -344,6 +344,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		var portNumber int
+		var rateLimitStatus string
 
 		apicasts := []string{apicastStagingName, apicastProductionName}
 		for _, apicast := range apicasts {
@@ -363,9 +365,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 				return phase, nil
 			}
 
-			err = r.patchDeploymentConfig(ctx, serverClient, deploymentConfig, service)
-			if err != nil {
-				return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+			marinerPresent := r.checkIfMarinerIsPresent(deploymentConfig)
+
+			marinerState := r.checkIfMarinerIsEnabled(deploymentConfig)
+
+			if !marinerPresent || marinerState == "enabled" {
+				portNumber = 8443
+				rateLimitStatus = "enabled"
+				err = r.patchDeploymentConfig(ctx, serverClient, deploymentConfig, service, portNumber, rateLimitStatus)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+				}
+			} else {
+				portNumber = 8080
+				rateLimitStatus = "disabled"
+				err = r.patchDeploymentConfig(ctx, serverClient, deploymentConfig, service, portNumber, rateLimitStatus)
+				if err != nil {
+					return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to update the deployment config: %w", err)
+				}
+
 			}
 		}
 
@@ -416,6 +434,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) checkIfMarinerIsPresent(deploymentConfig *appsv1.DeploymentConfig) bool {
+	// if mariner label is set, return true
+	if deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] != "" {
+		return true
+	}
+	return false
+}
+
+func (r *Reconciler) checkIfMarinerIsEnabled(deploymentConfig *appsv1.DeploymentConfig) string {
+	if deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] == "enabled" {
+		return "enabled"
+	} else {
+		return "disabled"
+	}
 }
 
 // restores seed and master api cast secrets if available
@@ -476,13 +510,13 @@ func (r *Reconciler) getService(ctx context.Context, client k8sclient.Client, dc
 // Patching the deployment configuration of both apicasts, this is required in order to enable rate limiting on the deployment. "Enabled" means that the Discovery Service
 // will attach a sidecar container to the apicasts, annotations are set to label the apicasts so that appropriate envoy config(sidecar container used configuration) is
 // pulled and attached to sidecar containers.
-func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, service *corev1.Service) error {
+func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, service *corev1.Service, portNumber int, marinerStatus string) error {
 
 	ports := service.Spec.Ports
 	for i, port := range ports {
 		if port.Name == "gateway" {
-			service.Spec.Ports[i].Port = 8443
-			service.Spec.Ports[i].TargetPort = intstr.FromInt(8443)
+			service.Spec.Ports[i].Port = int32(portNumber)
+			service.Spec.Ports[i].TargetPort = intstr.FromInt(int(portNumber))
 			break
 		}
 	}
@@ -490,7 +524,7 @@ func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient
 		return fmt.Errorf("failed to update service: %v", err)
 	}
 
-	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+	deploymentConfig.Spec.Template.Labels["marin3r.3scale.net/status"] = marinerStatus
 	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = apicastRatelimiting
 	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8443"
 	deploymentConfig.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0"
