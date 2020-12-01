@@ -19,15 +19,14 @@ func TestIntegreatly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	installType, err := common.GetInstallType(config)
+	if err != nil {
+		t.Fatalf("failed to get install type, err: %s, %v", installType, err)
+	}
 	t.Run("Integreatly Happy Path Tests", func(t *testing.T) {
 
 		// running ALL_TESTS test cases
 		common.RunTestCases(common.ALL_TESTS, t, config)
-
-		installType, err := common.GetInstallType(config)
-		if err != nil {
-			t.Fatalf("failed to get install type, err: %s, %v", installType, err)
-		}
 
 		// get happy path test cases according to the install type
 		happyPathTestCases := common.GetHappyPathTestCases(installType)
@@ -40,10 +39,6 @@ func TestIntegreatly(t *testing.T) {
 	})
 
 	t.Run("Integreatly IDP Based Tests", func(t *testing.T) {
-		installType, err := common.GetInstallType(config)
-		if err != nil {
-			t.Fatalf("failed to get install type, err: %s, %v", installType, err)
-		}
 
 		// get IDP test cases according to the install type
 		idpTestCases := common.GetIDPBasedTestCases(installType)
