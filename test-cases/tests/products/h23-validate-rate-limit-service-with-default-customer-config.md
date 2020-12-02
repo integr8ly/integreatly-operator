@@ -140,9 +140,9 @@ change the values to match the following
 **6. Configure an endpoint to run the load test using 3scale and promote the endpoint to production:**
 
 - Login to the API Management (3Scale) on the testing cluster using on the the testing idp **customer-adminxx**
-- Create a new endpoint by clicking though all the wizard options using the default settings.
+- Create a new endpoint by clicking though all the wizard options using the default settings (Note: if the wizard doesn't appear after logging in to 3scale, you can use the existing application: click on INTEGRATION in the 3scale 'dashboard' page)
 - When completed, you will be on the Overview page. Select 'Integration' from the menu listings on the left and select 'Configuration'.
-- Scroll down and click 'Promote to Production'
+- Scroll down and click 'Promote to Production' (if you didn't go through the wizard, you have to promote it to staging first)
 - take a copy of the Staging APIcast `Example curl for testing` and extract the URL (within the double quotes) and replace the word **'staging'** with **'production'** in the URL (see example below)
 
 EXAMPLE:
@@ -203,7 +203,7 @@ This will run for 10 minutes at 15,000 requests per min.
 _↳ 93% — ✓ 140021 / ✗ 10195_\*
 
 Divide this number (first value under 'status') by 10 and the result should be (approximately) equal to the rate limit value from the config map.
-eg: _1400021/10 <=> 13860_
+eg: _140021/10 <=> 13860_
 We would expect the result to be (close to) ≈ 14,000
 
 **11. Check that only one email alert has been generated**
