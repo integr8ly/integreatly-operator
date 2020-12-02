@@ -9,6 +9,8 @@ COPY pkg ./pkg
 COPY vendor ./vendor
 COPY test ./test
 COPY Makefile ./
+COPY manifests/ ./manifests
+
 RUN make test/compile/functional
 
 FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
