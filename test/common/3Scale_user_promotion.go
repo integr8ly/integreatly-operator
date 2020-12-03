@@ -13,8 +13,8 @@ import (
 
 func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	var (
-		developerUser      = fmt.Sprintf("%v-%d", DefaultTestUserName, 0)
-		dedicatedAdminUser = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
+		developerUser      = fmt.Sprintf("%v%02d", DefaultTestUserName, 1)
+		dedicatedAdminUser = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 	)
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {

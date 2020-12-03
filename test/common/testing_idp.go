@@ -131,7 +131,7 @@ func createTestingIDP(t *testing.T, ctx context.Context, client dynclient.Client
 			return false, fmt.Errorf("failed to create temporary client for idp setup: %w", err)
 		}
 
-		dedicatedAdminUsername := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins-1)
+		dedicatedAdminUsername := fmt.Sprintf("%s%02d", defaultDedicatedAdminName, defaultNumberOfDedicatedAdmins)
 		authErr := resources.DoAuthOpenshiftUser(fmt.Sprintf("https://%s/auth/login", masterURL), dedicatedAdminUsername, DefaultPassword, tempHTTPClient, TestingIDPRealm, t)
 		if authErr != nil {
 			t.Logf("Error while checking IDP is setup, retrying: %+v", authErr)
@@ -168,9 +168,9 @@ func addDedicatedAdminUsers(ctx context.Context, client dynclient.Client, number
 
 	// populate admin users
 	var adminUsers []string
-	postfix := 0
-	for postfix < numberOfAdmins {
-		user := fmt.Sprintf("%s-%d", defaultDedicatedAdminName, postfix)
+	postfix := 1
+	for postfix <= numberOfAdmins {
+		user := fmt.Sprintf("%s%02d", defaultDedicatedAdminName, postfix)
 		adminUsers = append(adminUsers, user)
 		postfix++
 	}
@@ -335,24 +335,24 @@ func createClientSecret(ctx context.Context, client dynclient.Client, clientSecr
 func createKeycloakUsers(ctx context.Context, client dynclient.Client, installationName string) error {
 	// populate users to be created
 	var testUsers []TestUser
-	postfix := 0
+	postfix := 1
 	// build rhmi developer users
-	for postfix < defaultNumberOfTestUsers {
+	for postfix <= defaultNumberOfTestUsers {
 		user := TestUser{
-			UserName:  fmt.Sprintf("%s-%d", DefaultTestUserName, postfix),
+			UserName:  fmt.Sprintf("%s%02d", DefaultTestUserName, postfix),
 			FirstName: "Test",
-			LastName:  fmt.Sprintf("User %d", postfix),
+			LastName:  fmt.Sprintf("User %02d", postfix),
 		}
 		testUsers = append(testUsers, user)
 		postfix++
 	}
-	postfix = 0
+	postfix = 1
 	// build dedicated admin users
-	for postfix < defaultNumberOfDedicatedAdmins {
+	for postfix <= defaultNumberOfDedicatedAdmins {
 		user := TestUser{
-			UserName:  fmt.Sprintf("%s-%d", defaultDedicatedAdminName, postfix),
+			UserName:  fmt.Sprintf("%s%02d", defaultDedicatedAdminName, postfix),
 			FirstName: defaultDedicatedAdminName,
-			LastName:  fmt.Sprintf("User %d", postfix),
+			LastName:  fmt.Sprintf("User %02d", postfix),
 		}
 		testUsers = append(testUsers, user)
 		postfix++

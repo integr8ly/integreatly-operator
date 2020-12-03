@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
-	appsv1 "github.com/openshift/api/apps/v1"
 	k8sv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
@@ -32,7 +32,7 @@ var (
 	s1                            = rand.NewSource(time.Now().UnixNano())
 	r1                            = rand.New(s1)
 	smtpReplicas            int32 = 1
-	threescaleLoginUserSMTP       = fmt.Sprintf("%v-%d", defaultDedicatedAdminName, 0)
+	threescaleLoginUserSMTP       = fmt.Sprintf("%v%02d", defaultDedicatedAdminName, 1)
 	emailAddress                  = fmt.Sprintf("test%v@test.com", r1.Intn(200))
 	serviceIP                     = ""
 	emailUsername                 = "dummy"
@@ -42,13 +42,17 @@ var (
 	originalPassword              = ""
 	originalPort                  = ""
 	originalUsername              = ""
-	replicas                      = 2
 )
 
 //Test3ScaleSMTPConfig to confirm 3scale can send an email
 func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
+	inst, err := GetRHMI(ctx.Client, true)
+	if err != nil {
+		t.Fatalf("failed to get RHMI instance %v", err)
+	}
+
 	t.Log("Create Namespace, Deployment and Service for SMTP-Server")
-	err := createNamespace(ctx, t)
+	err = createNamespace(ctx, t)
 	if err != nil {
 		t.Logf("%v", err)
 	}
@@ -64,16 +68,20 @@ func Test3ScaleSMTPConfig(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("Unable to reconcile smtp details : %v ", err)
 	}
 
-	t.Log("Restart system-app and system-sidekiq")
-	err = patchReplicationController(ctx, t)
-	if err != nil {
-		t.Log(err)
+	// Scale down system-app and system-sidekiq in order to load new smtp config
+	for _, dc := range []string{"system-app", "system-sidekiq"} {
+		t.Logf("Scalind down dc '%s' to 0 replicas in '%s' namespace", dc, threescaleNamespace)
+		err = scaleDeploymentConfig(dc, threescaleNamespace, 0, ctx.Client)
+		if err != nil {
+			t.Errorf("Failed to scale down %s: %v ", dc, err)
+		}
 	}
 
 	t.Log("Checking pods are ready")
-	err = checkThreeScaleReplicasAreReady(ctx, t, 2, retryInterval, timeout)
-	if err != nil {
-		t.Log(err)
+	threescaleConfig := config.NewThreeScale(map[string]string{})
+	replicas := threescaleConfig.GetReplicasConfig(inst)
+	if err := check3ScaleReplicasAreReady(ctx, t, replicas, retryInterval, timeout); err != nil {
+		t.Logf("Replicas not Ready within timeout: %v", err)
 	}
 
 	// Add sleep to give threescale time to reconcile the pods restarts otherwise host address will update during next steps
@@ -130,26 +138,6 @@ func checkHostAddressIsReady(ctx *TestingContext, t *testing.T, retryInterval, t
 	}
 	return nil
 
-}
-func checkThreeScaleReplicasAreReady(ctx *TestingContext, t *testing.T, replicas int64, retryInterval, timeout time.Duration) error {
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-
-		for _, name := range threeScaleDeploymentConfigs {
-			deploymentConfig := &appsv1.DeploymentConfig{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: GetPrefixedNamespace("3scale")}}
-
-			err := ctx.Client.Get(goctx.TODO(), k8sclient.ObjectKey{Name: name, Namespace: GetPrefixedNamespace("3scale")}, deploymentConfig)
-			if err != nil {
-				t.Errorf("failed to get DeploymentConfig %s in namespace %s with error: %s", name, GetPrefixedNamespace("3scale"), err)
-			}
-
-			if deploymentConfig.Status.Replicas != int32(replicas) || deploymentConfig.Status.ReadyReplicas != int32(replicas) {
-				t.Logf("%s replicas ready %v, expected %v ", name, deploymentConfig.Status.ReadyReplicas, replicas)
-				return false, nil
-			}
-		}
-
-		return true, nil
-	})
 }
 
 func removeNamespace(ctx *TestingContext) error {
@@ -265,47 +253,6 @@ func sendTestEmail(ctx *TestingContext, t *testing.T) {
 		dumpAuthResources(ctx.Client, t)
 		t.Fatalf("[%s] error ocurred: %v", getTimeStampPrefix(), err)
 	}
-}
-
-func patchReplicationController(ctx *TestingContext, t *testing.T) error {
-	//Patch the deployment config so that the pods are removed.
-	//These will be automatically restarted using the new smtp details
-	replica := fmt.Sprintf(`{
-		"apiVersion": "apps.openshift.io/v1",
-		"kind": "DeploymentConfig",
-		"spec": {
-			"strategy": {
-				"type": "Recreate"
-			},
-			"replicas": %[1]v
-		}
-	}`, 0)
-
-	replicaBytes := []byte(replica)
-
-	request := ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
-		Resource("deploymentconfigs").
-		Name("system-app").
-		Namespace(NamespacePrefix + "3scale").
-		RequestURI("/apis/apps.openshift.io/v1").Body(replicaBytes).Do()
-	_, err := request.Raw()
-
-	if err != nil {
-		return err
-	}
-
-	request = ctx.ExtensionClient.RESTClient().Patch(types.MergePatchType).
-		Resource("deploymentconfigs").
-		Name("system-sidekiq").
-		Namespace(NamespacePrefix + "3scale").
-		RequestURI("/apis/apps.openshift.io/v1").Body(replicaBytes).Do()
-	_, err = request.Raw()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func resetSecret(ctx *TestingContext, t *testing.T) (string, error) {
