@@ -52,3 +52,5 @@ spec:
               value: "info"
             - name: INSTALLATION_TYPE
               value: "managed"
+            - name: REBALANCE_PODS
+              value: "true"
