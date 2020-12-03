@@ -3,9 +3,10 @@ module github.com/integr8ly/integreatly-operator
 go 1.13
 
 require (
-	github.com/3scale/3scale-operator v0.2.1-0.20200730110533-c3b57b704d73
+	github.com/3scale/3scale-operator v0.2.1-0.20201120164439-360b1f382716
 	github.com/3scale/marin3r v0.5.1
 	github.com/Apicurio/apicurio-registry-operator v0.0.0-20200903111206-f9f14054bc16
+	github.com/Azure/go-autorest v12.2.0+incompatible // indirect
 	github.com/Masterminds/semver v1.5.0
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/RHsyseng/operator-utils v1.4.4
