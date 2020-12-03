@@ -44,6 +44,8 @@ dmitri.shuralyov.com/state v0.0.0-20180228185332-28bcc343414c/go.mod h1:0PRwlb0D
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/3scale/3scale-operator v0.2.1-0.20200730110533-c3b57b704d73 h1:sJm/n6Thj4a3QEtiEaPq4Jj2iP+wRrEVfSUx/n4EhG8=
 github.com/3scale/3scale-operator v0.2.1-0.20200730110533-c3b57b704d73/go.mod h1:tfFLcg4Gl9J8BKWpPbORDVD1emi52//uxKLp97V5UW0=
+github.com/3scale/3scale-operator v0.2.1-0.20201120164439-360b1f382716 h1:tf8orCQQujPBJaaufYQYw+qcguf0zdaG3B4QuIQYwH8=
+github.com/3scale/3scale-operator v0.2.1-0.20201120164439-360b1f382716/go.mod h1:26IAn5kF9aYfTS0yC8XHrE9oeHX+nxPqJEdrB9A5o8w=
 github.com/3scale/3scale-porta-go-client v0.0.4/go.mod h1:nUbuVh0fU2rs/lJfowmS5YhEk2tQoybL4htDIdxxMaM=
 github.com/3scale/marin3r v0.5.1 h1:+h4ivtwOw0+8lCOY8yRoCfpUFtZ+TIDEeIek3D63uvk=
 github.com/3scale/marin3r v0.5.1/go.mod h1:k7N9r8L7a/BmbelGFgJrX2cftg+Q/KEHZKa1OnFL7Us=
@@ -140,6 +142,7 @@ github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdko
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV/sSk/8dngufqelfh6jnri85riMAaF/M=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/RHsyseng/operator-utils v0.0.0-20200204194854-c5b0d8533458/go.mod h1:E+hCtYz+9UsXfAGnRjX2LGuaa5gSGNKHCVTmGZR79vY=
+github.com/RHsyseng/operator-utils v0.0.0-20200506183821-e3b4a2ba9c30/go.mod h1:ZFQi9Pp9lp0+2rKqgESwj1MMEgHqPfsMm2JqOXEh+Ok=
 github.com/RHsyseng/operator-utils v0.0.0-20200709142328-d5a5812a443f/go.mod h1:E+hCtYz+9UsXfAGnRjX2LGuaa5gSGNKHCVTmGZR79vY=
 github.com/RHsyseng/operator-utils v1.4.4 h1:uRgqPIKmorv8wYtBeKrWfoeLLVaBQd5ymlZRYgnqT48=
 github.com/RHsyseng/operator-utils v1.4.4/go.mod h1:ZFQi9Pp9lp0+2rKqgESwj1MMEgHqPfsMm2JqOXEh+Ok=
@@ -458,6 +461,7 @@ github.com/glycerine/go-unsnap-stream v0.0.0-20180323001048-9f0cb55181dd/go.mod 
 github.com/glycerine/goconvey v0.0.0-20190410193231-58a59202ab31/go.mod h1:Ogl1Tioa0aV7gstGFO7KhffUsb9M4ydbEbbxpcEDc24=
 github.com/go-acme/lego v2.5.0+incompatible/go.mod h1:yzMNe9CasVUhkquNvti5nAtPmG94USbYxYrZfTkIn0M=
 github.com/go-bindata/go-bindata v3.1.1+incompatible/go.mod h1:xK8Dsgwmeed+BBsSy2XTopBn/8uK2HWuGSnA11C3Joo=
+github.com/go-bindata/go-bindata v3.1.2+incompatible h1:5vjJMVhowQdPzjE1LdxyFF7YFTXg5IgGVW4gBr5IbvE=
 github.com/go-bindata/go-bindata v3.1.2+incompatible/go.mod h1:xK8Dsgwmeed+BBsSy2XTopBn/8uK2HWuGSnA11C3Joo=
 github.com/go-critic/go-critic v0.3.5-0.20190526074819-1df300866540/go.mod h1:+sE8vrLDS2M0pZkBk0wy6+nLdKexVDrl/jBqQOTDThA=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
@@ -909,6 +913,7 @@ github.com/integr8ly/grafana-operator/v3 v3.0.2-0.20200103111057-03d7fa884db4/go
 github.com/integr8ly/grafana-operator/v3 v3.1.0/go.mod h1:0WBJ5MjgAgIu9briw0EaDkpXsWIXMoRJKnE/J024+bM=
 github.com/integr8ly/grafana-operator/v3 v3.4.0 h1:h+qRqPWMTUl3s0Zgzm+LEEAYOLKQ4iibL8bhr7kWL6M=
 github.com/integr8ly/grafana-operator/v3 v3.4.0/go.mod h1:nie1yDLaWkgUjW+EBTLUjDzj1xsGOG444ZpcR1i1MrA=
+github.com/integr8ly/grafana-operator/v3 v3.5.0/go.mod h1:nie1yDLaWkgUjW+EBTLUjDzj1xsGOG444ZpcR1i1MrA=
 github.com/integr8ly/grafana-operator/v3 v3.6.0 h1:0+wUyPBT37kCM/2+sItKS3iEyeK1k+BnOJQOkES6vFI=
 github.com/integr8ly/grafana-operator/v3 v3.6.0/go.mod h1:pWWg9RerCkkwmTcmaygmfhkjjGilEN30han1yq2MAsA=
 github.com/integr8ly/keycloak-client v0.1.2 h1:sGy4zBBXUmRvIVRrExjKIoNXPmhbhnRWyVIecJV4ywo=
