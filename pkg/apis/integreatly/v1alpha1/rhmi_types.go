@@ -69,7 +69,7 @@ var (
 	VersionCodeReadyWorkspaces ProductVersion = "2.1.1"
 	VersionFuseOnOpenshift     ProductVersion = "7.6"
 	VersionMonitoring          ProductVersion = "1.5.0"
-	Version3Scale              ProductVersion = "2.9.1"
+	Version3Scale              ProductVersion = "2.10"
 	VersionUps                 ProductVersion = "2.3.2"
 	VersionCloudResources      ProductVersion = "0.23.0"
 	VersionFuseOnline          ProductVersion = "7.6"
