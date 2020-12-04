@@ -46,7 +46,7 @@ metadata:
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.0-rc3
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.0
     description: RHOAM integration suite of tools
     support: RHOAM
   name: managed-api-service.v1.0.0
@@ -190,7 +190,7 @@ spec:
         - apiGroups:
           - user.openshift.io
           resourceNames:
-          - rhoam-developers
+          - rhmi-developers
           resources:
           - groups
           verbs:
@@ -355,7 +355,7 @@ spec:
                   value: info
                 - name: INSTALLATION_TYPE
                   value: managed-api
-                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.0-rc3
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.0
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
