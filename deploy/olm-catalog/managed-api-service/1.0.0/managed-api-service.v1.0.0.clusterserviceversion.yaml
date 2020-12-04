@@ -190,7 +190,7 @@ spec:
         - apiGroups:
           - user.openshift.io
           resourceNames:
-          - rhoam-developers
+          - rhmi-developers
           resources:
           - groups
           verbs:
