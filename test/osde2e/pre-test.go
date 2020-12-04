@@ -38,7 +38,7 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 		}
 
 		// Patch Managed-API CR with cluster storage
-		if rhmi.Spec.UseClusterStorage == "" {
+		if rhmi.Spec.UseClusterStorage == "false" || rhmi.Spec.UseClusterStorage == "" {
 			rhmiCR := fmt.Sprintf(`{
 				"apiVersion": "integreatly.org/v1alpha1",
 				"kind": "RHMI",
