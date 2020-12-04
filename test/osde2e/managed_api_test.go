@@ -68,4 +68,8 @@ func TestManagedAPI(t *testing.T) {
 	t.Run("Managed-API-e2e-test", func(t *testing.T) {
 		common.RunTestCases(happyPathTestCases, t, config)
 	})
+
+	t.Run("Managed-API-uninstall", func(t *testing.T) {
+		common.RunTestCases(UNINSTALL, t, config)
+	})
 }

@@ -10,8 +10,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/test/common"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -23,14 +21,11 @@ var (
 	OSD_E2E_PRE_TESTS = []common.TestCase{
 		{Description: "Managed-API pre-test", Test: PreTest},
 	}
-	pagerDutySecretName = "pagerduty"
-	deadMansSnitchName  = "deadmanssnitch"
-	smtpSecretName      = "smtp"
 )
 
 //PreTest This tests if an installation of Managed-API was finished and is successful
 func PreTest(t *testing.T, ctx *common.TestingContext) {
-	err := wait.Poll(time.Second*15, time.Minute*40, func() (done bool, err error) {
+	err := wait.Poll(time.Second*15, time.Minute*80, func() (done bool, err error) {
 
 		rhmi, err := getRHMI(ctx.Client)
 		if err != nil {
@@ -38,14 +33,14 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 		}
 
 		// Patch Managed-API CR with cluster storage
-		if rhmi.Spec.UseClusterStorage == "false" || rhmi.Spec.UseClusterStorage == "" {
+		if rhmi.Spec.UseClusterStorage != "true" {
 			rhmiCR := fmt.Sprintf(`{
-				"apiVersion": "integreatly.org/v1alpha1",
-				"kind": "RHMI",
-				"spec": {
-					"useClusterStorage" : "true"
-				}
-			}`)
+					"apiVersion": "integreatly.org/v1alpha1",
+					"kind": "RHMI",
+					"spec": {
+						"useClusterStorage" : "true"
+					}
+				}`)
 
 			rhmiCRBytes := []byte(rhmiCR)
 
@@ -61,63 +56,6 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 			}
 		}
 
-		// Get smtp secret - if failed - create SMTP Secret
-		_, err = getSecret(ctx.Client, common.NamespacePrefix+smtpSecretName)
-		if err != nil {
-			smtpSec := &v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprint(common.NamespacePrefix + smtpSecretName),
-					Namespace: common.RHMIOperatorNamespace,
-				},
-				Data: map[string][]byte{
-					"host":     []byte("test"),
-					"password": []byte("test"),
-					"port":     []byte("test"),
-					"tls":      []byte("test"),
-					"username": []byte("test"),
-				},
-			}
-			if err := ctx.Client.Create(goctx.TODO(), smtpSec.DeepCopy()); err != nil {
-				t.Fatalf("Failed to create Pager Duty Secret: %v", err)
-			}
-		}
-
-		// Get pagerduty secret - if failed - create
-		_, err = getSecret(ctx.Client, common.NamespacePrefix+pagerDutySecretName)
-		if err != nil {
-
-			pagerDuty := v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      common.NamespacePrefix + pagerDutySecretName,
-					Namespace: common.RHMIOperatorNamespace,
-				},
-				Data: map[string][]byte{
-					"serviceKey": []byte("test"),
-				},
-			}
-			if err := ctx.Client.Create(goctx.TODO(), pagerDuty.DeepCopy()); err != nil {
-				t.Fatalf("Failed to create Pager Duty Secret: %v", err)
-			}
-		}
-
-		// Get dms - if failed - create
-		_, err = getSecret(ctx.Client, common.NamespacePrefix+deadMansSnitchName)
-		if err != nil {
-
-			dms := v1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      common.NamespacePrefix + deadMansSnitchName,
-					Namespace: common.RHMIOperatorNamespace,
-				},
-				Data: map[string][]byte{
-					"url": []byte("test"),
-				},
-			}
-			if err := ctx.Client.Create(goctx.TODO(), dms.DeepCopy()); err != nil {
-				t.Fatalf("Failed to create DMS secret: %v", err)
-			}
-		}
-
 		if rhmi.Status.Stage != "complete" {
 			t.Logf("Current stage is %v", rhmi.Status.Stage)
 			return false, nil
@@ -126,7 +64,7 @@ func PreTest(t *testing.T, ctx *common.TestingContext) {
 	})
 
 	if err != nil {
-		t.Errorf("Something went wrong ...%v", err)
+		t.Errorf("Installation was not successful after 80minutes ...%v", err)
 	}
 }
 
@@ -142,13 +80,4 @@ func getRHMI(client dynclient.Client) (*integreatlyv1alpha1.RHMI, error) {
 		return nil, fmt.Errorf("error getting RHMI CR: %w", err)
 	}
 	return rhmi, nil
-}
-
-func getSecret(client dynclient.Client, secretName string) (*v1.Secret, error) {
-	secret := &v1.Secret{}
-
-	if err := client.Get(goctx.TODO(), types.NamespacedName{Name: secretName, Namespace: common.RHMIOperatorNamespace}, secret); err != nil {
-		return nil, fmt.Errorf("Error getting secret")
-	}
-	return secret, nil
 }
