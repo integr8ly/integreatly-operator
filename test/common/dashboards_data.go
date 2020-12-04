@@ -81,11 +81,12 @@ var (
 
 // TestDashboardsData verifies that all dashboards are installed and all the graphs are filled with data
 func TestDashboardsData(t *testing.T, ctx *TestingContext) {
-	grafanaPodName, err := getMonitoringAppPodName("grafana", ctx)
-	if err != nil {
-		t.Fatal("failed to get grafana pod name", err)
-	}
+	// Get grafana pod ip to curl
+	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	grafanaPodIP := monitoringGrafanaPods.Items[0].Status.PodIP
 
+	// Pod and container name to perform curls from
+	curlContainerName := "prometheus"
 	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
 	if err != nil {
 		t.Fatal("failed to get prometheus pod name", err)
@@ -95,7 +96,7 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 	monitoringTimeout := 10 * time.Minute
 	monitoringRetryInterval := 1 * time.Minute
 	err = wait.PollImmediate(monitoringRetryInterval, monitoringTimeout, func() (done bool, err error) {
-		expressions, err := getDashboardExpressions(grafanaPodName, prometheusPodName, ctx, t)
+		expressions, err := getDashboardExpressions(grafanaPodIP, prometheusPodName, curlContainerName, prometheusPodName, ctx, t)
 		if err != nil {
 			return false, fmt.Errorf("failed to get dashboard expressions: %w", err)
 		}
@@ -145,12 +146,11 @@ func TestDashboardsData(t *testing.T, ctx *TestingContext) {
 		return !failed, nil
 	})
 	if err != nil {
-		//Flaky test: https://issues.redhat.com/browse/MGDAPI-815
-		t.Skip("failed queries", err)
+		t.Fatalf("failed queries: %s", err)
 	}
 }
 
-func getDashboardExpressions(grafanaPodName string, prometheusPodName string, ctx *TestingContext, t *testing.T) ([]string, error) {
+func getDashboardExpressions(grafanaPodIp string, curlPodName string, curlContainerName string, prometheusPodName string, ctx *TestingContext, t *testing.T) ([]string, error) {
 
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
@@ -173,7 +173,7 @@ func getDashboardExpressions(grafanaPodName string, prometheusPodName string, ct
 	expressions := make(map[string]struct{})
 
 	for _, dashboardName := range dashboardsNames {
-		panels, err := getDashboardPanels(dashboardName, grafanaPodName, ctx)
+		panels, err := getDashboardPanels(dashboardName, grafanaPodIp, curlPodName, curlContainerName, ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get dashboard panels: %w", err)
 		}
@@ -269,11 +269,11 @@ func getRHMINamespaces(prometheusPodName string, ctx *TestingContext) ([]string,
 	return namespaces, nil
 }
 
-func getDashboardPanels(dashboardName string, grafanaPodName string, ctx *TestingContext) ([]panelDefinition, error) {
+func getDashboardPanels(dashboardName string, grafanaPodIp string, curlPodName string, curlContainerName string, ctx *TestingContext) ([]panelDefinition, error) {
 	query := url.QueryEscape(dashboardName)
-	searchOutput, err := curlGrafana("/api/search?query="+query, grafanaPodName, ctx)
+	searchOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/search?query=%s", query), curlPodName, curlContainerName, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to curl grafana: %w", err)
+		return nil, fmt.Errorf("failed to curl grafana search: %w, dashboard name: %s, grafanaPodIp: %s, curlPodName: %s, curlContainerName: %s", err, dashboardName, grafanaPodIp, curlPodName, curlContainerName)
 	}
 
 	var dashboardSearch []dashboardSearchResponse
@@ -286,9 +286,9 @@ func getDashboardPanels(dashboardName string, grafanaPodName string, ctx *Testin
 		return nil, fmt.Errorf(dashboardName + " dashboard not found")
 	}
 
-	dashboardOutput, err := curlGrafana("/api/dashboards/uid/"+dashboardSearch[0].UID, grafanaPodName, ctx)
+	dashboardOutput, err := curlGrafana(grafanaPodIp, fmt.Sprintf("/api/dashboards/uid/%s", dashboardSearch[0].UID), curlPodName, curlContainerName, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to curl grafana: %w", err)
+		return nil, fmt.Errorf("failed to curl grafana dashboard: %w, grafanaPodIp: %s, curlPodName: %s, curlContainerName: %s, dashboard uuid: %s", err, grafanaPodIp, curlPodName, curlContainerName, dashboardSearch[0].UID)
 	}
 
 	var dashboardDetail dashboardDetailResponse
@@ -319,11 +319,11 @@ func getMonitoringAppPodName(app string, ctx *TestingContext) (string, error) {
 	return pods.Items[0].ObjectMeta.Name, nil
 }
 
-func curlGrafana(path string, podName string, ctx *TestingContext) (string, error) {
-	return execToPod("curl localhost:3000"+path,
-		podName,
+func curlGrafana(grafanaPodIp string, path string, curlPodName string, curlContainerName string, ctx *TestingContext) (string, error) {
+	return execToPod(fmt.Sprintf("curl %s:3000", grafanaPodIp)+path,
+		curlPodName,
 		MonitoringOperatorNamespace,
-		"grafana", ctx)
+		curlContainerName, ctx)
 }
 
 func queryPrometheus(query string, podName string, ctx *TestingContext) ([]prometheusQueryResult, error) {
