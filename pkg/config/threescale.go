@@ -108,7 +108,7 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 	threeScaleComponents := map[string]int64{
 		"systemApp":       3,
 		"systemSidekiq":   3,
-		"apicastProd":     6,
+		"apicastProd":     3,
 		"apicastStage":    3,
 		"backendListener": 5,
 		"backendWorker":   4,
