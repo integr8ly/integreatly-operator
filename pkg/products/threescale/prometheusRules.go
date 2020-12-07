@@ -239,10 +239,10 @@ func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
 						Alert: "ThreeScaleZyncPodAvailability",
 						Annotations: map[string]string{
 							"sop_url": resources.SopUrlAlertsAndTroubleshooting,
-							"message": "3Scale Zync has {{   $value  }} pods in a ready state. Expected a minimum of 2 pods.",
+							"message": fmt.Sprintf("3Scale Zync has {{   $value  }} pods in a ready state. Expected %d of pods.", r.Config.GetReplicasConfig(r.installation)["zyncApp"]),
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("(1-absent(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='zync'})) or count(kube_pod_status_ready{condition='true',namespace='%[1]v'} * on (pod, namespace) kube_pod_labels{namespace='%[1]v', label_threescale_component='zync', label_threescale_component_element='zync'}) != %d", r.Config.GetNamespace(), r.Config.GetReplicasConfig(r.installation)["zyncApp"])),
-						For:    "5m",
+						For:    "15m",
 						Labels: map[string]string{"severity": "warning"},
 					},
 					{
