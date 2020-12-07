@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+
 	"github.com/integr8ly/integreatly-operator/test/resources"
 
 	threescaleapps "github.com/3scale/3scale-operator/pkg/apis/apps"
@@ -120,7 +121,7 @@ func (t *ThreeScale) GetReplicasConfig(inst *integreatlyv1alpha1.RHMI) map[strin
 	return map[string]int64{
 		"systemApp":       3,
 		"systemSidekiq":   3,
-		"apicastProd":     6,
+		"apicastProd":     3,
 		"apicastStage":    3,
 		"backendListener": 5,
 		"backendWorker":   4,
