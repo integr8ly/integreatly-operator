@@ -341,6 +341,11 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	// Reconcile the webhooks
+	if err := webhooks.Config.Reconcile(context.TODO(), r.client, installation); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if !resources.Contains(installation.GetFinalizers(), deletionFinalizer) && installation.GetDeletionTimestamp() == nil {
 		installation.SetFinalizers(append(installation.GetFinalizers(), deletionFinalizer))
 	}
@@ -383,11 +388,6 @@ func (r *ReconcileInstallation) Reconcile(request reconcile.Request) (reconcile.
 	_, err = r.newAlertsReconciler(logrus.NewEntry(logrus.StandardLogger()), installation).ReconcileAlerts(context.TODO(), alertsClient)
 	if err != nil {
 		logrus.Infof("Error reconciling alerts for the rhmi installation: %v", err)
-	}
-
-	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(context.TODO(), r.client, installation); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	for _, stage := range installType.GetInstallStages() {
