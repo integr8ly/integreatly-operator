@@ -3,9 +3,10 @@ package common
 import (
 	goctx "context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/test/resources"
 	"testing"
 	"time"
+
+	"github.com/integr8ly/integreatly-operator/pkg/config"
 
 	keycloakv1alpha1 "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,12 +16,10 @@ import (
 )
 
 var (
-	numberOfRhssoReplicas     = 2
-	numberOfUserRhssoReplicas = 3
-	rhssoName                 = "rhsso"
-	userSSOName               = "rhssouser"
-	requestURLSSO             = "/apis/keycloak.org/v1alpha1"
-	kindSSO                   = "Keycloaks"
+	rhssoName     = "rhsso"
+	userSSOName   = "rhssouser"
+	requestURLSSO = "/apis/keycloak.org/v1alpha1"
+	kindSSO       = "Keycloaks"
 )
 
 func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
@@ -28,11 +27,11 @@ func TestReplicasInRHSSO(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
-	if resources.RunningInProw(inst) {
-		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), 1)
-	} else {
-		checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
-	}
+
+	rhssoConfig := config.NewRHSSO(map[string]string{})
+	numberOfRhssoReplicas := rhssoConfig.GetReplicasConfig(inst)
+	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfRhssoReplicas)
+
 }
 
 func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
@@ -40,11 +39,10 @@ func TestReplicasInUserSSO(t *testing.T, ctx *TestingContext) {
 	if err != nil {
 		t.Fatalf("failed to get RHMI instance %v", err)
 	}
-	if resources.RunningInProw(inst) {
-		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), 1)
-	} else {
-		checkScalingOfKeycloakReplicas(t, ctx, userSSOName, GetPrefixedNamespace("user-sso"), numberOfUserRhssoReplicas)
-	}
+
+	userRhssoConfig := config.NewRHSSO(map[string]string{})
+	numberOfUserRhssoReplicas := userRhssoConfig.GetReplicasConfig(inst)
+	checkScalingOfKeycloakReplicas(t, ctx, rhssoName, GetPrefixedNamespace("rhsso"), numberOfUserRhssoReplicas)
 }
 
 func checkScalingOfKeycloakReplicas(t *testing.T, ctx *TestingContext, keycloakCRName string, keycloakCRNamespace string, expectedReplicas int) {
