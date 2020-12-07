@@ -100,16 +100,21 @@ func TestIntegreatlyCustomerDashboardsExist(t *testing.T, ctx *TestingContext) {
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
-	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
+	// Pod and container to perform curls from
+	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
+	if err != nil {
+		t.Fatal("failed to get prometheus pod name", err)
+	}
+	curlContainerName := "prometheus"
+
 	customerMonitoringGrafanaPods := getGrafanaPods(t, ctx, CustomerGrafanaNamespace)
 
 	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", customerMonitoringGrafanaPods.Items[0].Status.PodIP),
-		monitoringGrafanaPods.Items[0].ObjectMeta.Name,
+		prometheusPodName,
 		MonitoringOperatorNamespace,
-		"grafana", ctx)
+		curlContainerName, ctx)
 	if err != nil {
-		t.Skip("failed to exec to pod:", err)
-		//t.Fatal("failed to exec to pod:", err, "pod name:", customerMonitoringGrafanaPods.Items[0].Name)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule
@@ -133,15 +138,21 @@ func TestIntegreatlyMiddelewareDashboardsExist(t *testing.T, ctx *TestingContext
 		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
+	// Pod and container to perform curls from
+	prometheusPodName, err := getMonitoringAppPodName("prometheus", ctx)
+	if err != nil {
+		t.Fatal("failed to get prometheus pod name", err)
+	}
+	curlContainerName := "prometheus"
+
 	monitoringGrafanaPods := getGrafanaPods(t, ctx, MonitoringOperatorNamespace)
 
-	output, err := execToPod("curl localhost:3000/api/search",
-		monitoringGrafanaPods.Items[0].ObjectMeta.Name,
+	output, err := execToPod(fmt.Sprintf("curl %v:3000/api/search", monitoringGrafanaPods.Items[0].Status.PodIP),
+		prometheusPodName,
 		MonitoringOperatorNamespace,
-		"grafana", ctx)
+		curlContainerName, ctx)
 	if err != nil {
-		//Flaky test: https://issues.redhat.com/browse/MGDAPI-815
-		t.Skip("failed to exec to pod:", err)
+		t.Fatal("failed to exec to pod:", err, "pod name:", prometheusPodName, "container name:", containerName, "namespace:", MonitoringOperatorNamespace)
 	}
 
 	var grafanaApiCallOutput []dashboardsTestRule
