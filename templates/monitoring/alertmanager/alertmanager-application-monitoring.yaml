@@ -32,6 +32,9 @@ route:
     - match:
         alertname: RHOAMApiUsageOverLimit
       receiver: BUandCustomer
+    - match:
+        alertname: RHOAMApiUsageRejectedRequestsMismatch
+      receiver: SRECustomerBU
 receivers:
   - name: default
     email_configs:

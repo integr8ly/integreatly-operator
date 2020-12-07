@@ -234,6 +234,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler()
+	if err != nil {
+		events.HandleError(r.recorder, installation, phase, "Failed to instantiate rejected requests alert reconciler", err)
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	if phase, err := rejectedRequestsAlertReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rejected requests alert", err)
+		return phase, err
+	}
+
 	if phase, err := r.newSoftLimitAlertsReconciler().ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile soft limit alerts", err)
 		return phase, err
