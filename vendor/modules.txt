@@ -1,6 +1,6 @@
 # cloud.google.com/go v0.56.0
 cloud.google.com/go/compute/metadata
-# github.com/3scale/3scale-operator v0.6.0
+# github.com/3scale/3scale-operator v0.2.1-0.20201120164439-360b1f382716
 github.com/3scale/3scale-operator/pkg/3scale/amp/product
 github.com/3scale/3scale-operator/pkg/apis/apps
 github.com/3scale/3scale-operator/pkg/apis/apps/v1alpha1
