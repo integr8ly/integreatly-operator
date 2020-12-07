@@ -36,6 +36,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
 	rbacv1 "k8s.io/api/rbac/v1"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -1018,6 +1019,12 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			"threescale_component":         "zync",
 			"threescale_component_element": "zync-que",
 		})
+
+		apicastProdResources := corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("250M")},
+			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("500m"), corev1.ResourceMemory: k8sresource.MustParse("250M")},
+		}
+		apim.Spec.Apicast.ProductionSpec.Resources = &apicastProdResources
 
 		owner.AddIntegreatlyOwnerAnnotations(apim, r.installation)
 
