@@ -50,7 +50,7 @@ var (
 				{"A22 - Verify RHMI Config Updates CRO Strategy Override Config Map", TestRHMIConfigCROStrategyOverride},
 				{"A26 - Verify Sendgrid Credentials Are Configured Properly", TestSendgridCredentialsAreValid},
 				/*FLAKY*/ {"C01 - Verify Alerts are not pending or firing apart from DeadMansSwitch", TestIntegreatlyAlertsPendingOrFiring},
-				/*FLAKY*/{"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
+				/*FLAKY*/ {"C04 - Verify Alerts exist", TestIntegreatlyAlertsExist},
 				{"E01 - Verify Middleware Grafana Route is accessible", TestGrafanaExternalRouteAccessible},
 				{"E02 - Verify that all dashboards are installed and all the graphs are filled with data", TestDashboardsData},
 				{"E03 - Verify middleware dashboards exist", TestIntegreatlyMiddelewareDashboardsExist},
