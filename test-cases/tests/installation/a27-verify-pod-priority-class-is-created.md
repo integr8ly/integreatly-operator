@@ -7,6 +7,8 @@ products:
     targets:
       - 0.2.0
       - 1.0.0
+tags:
+  - automated
 ---
 
 # A27 - Verify pod priority class is created
