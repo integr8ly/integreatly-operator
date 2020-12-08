@@ -12,10 +12,6 @@ The default `INSTALLATION_TYPE` is `managed` which configures variables for use 
 
 A Kubernetes Operator based on the Operator SDK for installing and reconciling Integreatly products.
 
-### Project status: _alpha_
-
-This is a proof of concept/alpha version. Most functionality is present but it is highly likely there are bugs and improvements needed.
-
 ### Installed products
 Currently the operator installs the following products:
 - AMQ Online
