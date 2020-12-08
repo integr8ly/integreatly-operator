@@ -880,15 +880,13 @@ func managedApiAwsExpectedRules(installtionName string) []alertsTestRule {
 func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 	isClusterStorage, err := isClusterStorage(ctx)
 	if err != nil {
-		// t.Fatal("error getting isClusterStorage:", err)
-		t.Skip("skip due to flaky test https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatal("error getting isClusterStorage:", err)
 	}
 
 	rhmi, err := GetRHMI(ctx.Client, true)
 
 	if err != nil {
-		// t.Fatalf("failed to get the RHMI: %s", err)
-		t.Skip("skip due to flaky test https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatalf("failed to get the RHMI: %s", err)
 	}
 	expectedAWSRules := getExpectedAWSRules(rhmi.Spec.Type, rhmi.Name)
 	expectedRules := getExpectedRules(rhmi.Spec.Type)
@@ -907,22 +905,19 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		MonitoringOperatorNamespace,
 		"prometheus", ctx)
 	if err != nil {
-		// t.Fatal("failed to exec to pod:", err)
-		t.Skip("skip due to flaky test https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatal("failed to exec to pod:", err)
 	}
 
 	// get all found rules from the prometheus api
 	var promApiCallOutput prometheusAPIResponse
 	err = json.Unmarshal([]byte(output), &promApiCallOutput)
 	if err != nil {
-		// t.Fatal("failed to unmarshal json:", err)
-		t.Skip("skip due to flaky test https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatal("failed to unmarshal json:", err)
 	}
 	var rulesResult prometheusv1.RulesResult
 	err = json.Unmarshal([]byte(promApiCallOutput.Data), &rulesResult)
 	if err != nil {
-		// t.Fatal("failed to unmarshal json:", err)
-		t.Skip("skip due to flaky test https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatal("failed to unmarshal json:", err)
 	}
 
 	// convert prometheus rule to PrometheusRule type
@@ -1003,8 +998,7 @@ func TestIntegreatlyAlertsExist(t *testing.T, ctx *TestingContext) {
 		t.Log("\nUnexpected alerts were found in Prometheus. If these Alert rules were intentionally added, please update this test to add them to the check. If these Alert rules were not added intentionally or you are not sure, please create a Jira & discuss with the monitoring team on how best to proceed.")
 	}
 	if extraCount > 0 || missingCount > 0 {
-		// t.Fatal("Found missing or too many alerts")
-		t.Skip("skip due to flaky test jira https://issues.redhat.com/browse/MGDAPI-934")
+		t.Fatal("Found missing or too many alerts")
 	}
 }
 
