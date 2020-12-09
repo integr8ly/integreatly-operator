@@ -8,7 +8,7 @@ import (
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetRhmiCr(client k8sclient.Client, ctx context.Context, namespace string) (*integreatlyv1alpha1.RHMI, error) {
+func GetRhmiCr(ctx context.Context, client k8sclient.Client, namespace string) (*integreatlyv1alpha1.RHMI, error) {
 	logrus.Infof("Looking for RHMI CR in %s namespace", namespace)
 
 	installationList := &integreatlyv1alpha1.RHMIList{}
