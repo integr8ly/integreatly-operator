@@ -105,7 +105,6 @@ setup/service_account:
 	@oc replace --force -f deploy/role.yaml
 	@-oc create -f deploy/service_account.yaml -n $(NAMESPACE)
 	@cat deploy/$(INSTALLATION_PREFIX)/role_binding.yaml | sed "s/namespace: integreatly/namespace: $(NAMESPACE)/g" | oc replace --force -f -
-	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG
 
 .PHONY: setup/git/hooks
 setup/git/hooks:
@@ -113,10 +112,12 @@ setup/git/hooks:
 
 .PHONY: code/run
 code/run: code/gen cluster/prepare/smtp cluster/prepare/dms cluster/prepare/pagerduty setup/service_account
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
 
 .PHONY: code/rerun
 code/rerun: setup/service_account
+	@oc login --token=$(shell oc serviceaccounts get-token rhmi-operator -n ${NAMESPACE}) --server=${CLUSTER_URL} --kubeconfig=TMP_SA_KUBECONFIG --insecure-skip-tls-verify=true
 	@KUBECONFIG=TMP_SA_KUBECONFIG $(OPERATOR_SDK) run --local --watch-namespace="$(NAMESPACE)"
 
 .PHONY: code/run/service_account
@@ -351,7 +352,7 @@ cluster/prepare/delorean: cluster/prepare/delorean/pullsecret
 cluster/prepare/delorean/pullsecret:
 ifneq ( ,$(findstring image_mirror_mapping,$(IMAGE_MAPPINGS)))
 	$(MAKE) setup/service_account
-	@./scripts/setup-delorean-pullsecret.sh
+	./scripts/setup-delorean-pullsecret.sh
 	$(MAKE) cluster/cleanup/serviceaccount
 endif
 
