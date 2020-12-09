@@ -209,7 +209,7 @@ func Uninstall(v string, request reconcile.Request, r *ReconcileNamespaceLabel) 
 
 	logrus.Info("Uninstall label has been set")
 
-	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
+	rhmiCr, err := resources.GetRhmiCr(context.TODO(), r.client, request.NamespacedName.Namespace)
 	if err != nil {
 		// Error reading the object - requeue the request.
 		return err

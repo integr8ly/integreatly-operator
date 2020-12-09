@@ -161,7 +161,7 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
+	rhmiCr, err := resources.GetRhmiCr(context.TODO(), r.client, request.NamespacedName.Namespace)
 	if err != nil {
 		return reconcile.Result{}, err
 	}

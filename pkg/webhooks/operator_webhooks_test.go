@@ -74,7 +74,7 @@ func TestReconcile(t *testing.T) {
 
 	// Perform one reconcilliation. After this, the ValidatingWebhookConfiguration
 	// must have been created with the specification of the testing webhook
-	if err := settings.Reconcile(context.TODO(), client, rhmi); err != nil {
+	if err := settings.Reconcile(context.TODO(), rhmi, client, rhmi); err != nil {
 		t.Fatalf("Error reconciling webhook objects: %v", err)
 	}
 
