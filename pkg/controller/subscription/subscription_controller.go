@@ -316,12 +316,14 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		return reconcile.Result{}, err
 	}
 
-	phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-	if phase == integreatlyv1alpha1.PhaseInProgress {
-		logrus.Infof("WebApp instance not found yet, skipping upgrade addition")
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManaged) {
+		phase, err := r.webbappNotifier.NotifyUpgrade(config, latestRHMICSV.Spec.Version.String(), isServiceAffecting)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if phase == integreatlyv1alpha1.PhaseInProgress {
+			logrus.Infof("WebApp instance not found yet, skipping upgrade addition")
+		}
 	}
 
 	if !isServiceAffecting || canUpgradeNow {
