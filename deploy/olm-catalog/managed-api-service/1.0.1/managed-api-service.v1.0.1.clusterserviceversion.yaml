@@ -8,9 +8,6 @@ metadata:
           "apiVersion": "integreatly.org/v1alpha1",
           "kind": "RHMI",
           "metadata": {
-            "annotations": {
-              "in_prow": "IN_PROW"
-            },
             "name": "INSTALLATION_NAME"
           },
           "spec": {
@@ -191,7 +188,7 @@ spec:
         - apiGroups:
           - user.openshift.io
           resourceNames:
-          - rhoam-developers
+          - rhmi-developers
           resources:
           - groups
           verbs:
