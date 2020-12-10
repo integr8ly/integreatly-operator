@@ -64,6 +64,7 @@ function toIssue(
 
     return {
         fields: {
+            versions: [{ id: fixVersionId }],
             assignee: null,
             components: [{ name: "Testing" }],
             customfield_12311140: epicKey,

@@ -20,6 +20,7 @@ interface IssueLink {
 interface Issue {
     key?: string;
     fields: {
+        versions: { id: string; name?: string }[];
         fixVersions: { id: string; name?: string }[];
         customfield_12312442?: { id: string; value?: string }; // fixBuild
         customfield_12311140: string;
