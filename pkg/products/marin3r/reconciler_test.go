@@ -2,6 +2,7 @@ package marin3r
 
 import (
 	"context"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/test/common"
@@ -13,7 +14,6 @@ import (
 	projectv1 "github.com/openshift/api/project/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,7 +51,7 @@ descriptors:
 func getBasicReconciler() *Reconciler {
 	return &Reconciler{
 		installation: getBasicInstallation(),
-		logger:       logrus.NewEntry(logrus.StandardLogger()),
+		log:          getLogger(),
 		Config: &config.Marin3r{
 			Config: config.ProductConfig{
 				"NAMESPACE": defaultInstallationNamespace,
@@ -225,4 +225,8 @@ func TestAlertCreation(t *testing.T) {
 
 func strPtr(str string) *string {
 	return &str
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
 }

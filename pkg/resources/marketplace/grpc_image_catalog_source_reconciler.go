@@ -3,9 +3,8 @@ package marketplace
 import (
 	"context"
 	"fmt"
-
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,21 +17,23 @@ type GRPCImageCatalogSourceReconciler struct {
 	Client    k8sclient.Client
 	Namespace string
 	CSName    string
+	Log       l.Logger
 }
 
 var _ CatalogSourceReconciler = &GRPCImageCatalogSourceReconciler{}
 
-func NewGRPCImageCatalogSourceReconciler(image string, client client.Client, namespace string, catalogSourceName string) *GRPCImageCatalogSourceReconciler {
+func NewGRPCImageCatalogSourceReconciler(image string, client client.Client, namespace string, catalogSourceName string, log l.Logger) *GRPCImageCatalogSourceReconciler {
 	return &GRPCImageCatalogSourceReconciler{
 		Image:     image,
 		Client:    client,
 		Namespace: namespace,
 		CSName:    catalogSourceName,
+		Log:       log,
 	}
 }
 
 func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context) (reconcile.Result, error) {
-	logrus.Infof("Reconciling registry catalog source for namespace %s", r.Namespace)
+	r.Log.Infof("Reconciling registry catalog source for namespace", l.Fields{"ns": r.Namespace})
 
 	catalogSource := &coreosv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -58,16 +59,16 @@ func (r *GRPCImageCatalogSourceReconciler) Reconcile(ctx context.Context) (recon
 
 	switch or {
 	case controllerutil.OperationResultCreated:
-		logrus.Infof("Created registry catalog source for namespace %s", r.Namespace)
+		r.Log.Infof("Created registry catalog source", l.Fields{"ns": r.Namespace})
 	case controllerutil.OperationResultUpdated:
-		logrus.Infof("Updated registry catalog source for namespace %s", r.Namespace)
+		r.Log.Infof("Updated registry catalog source", l.Fields{"ns": r.Namespace})
 	case controllerutil.OperationResultNone:
 		break
 	default:
 		return reconcile.Result{}, fmt.Errorf("Unknown controllerutil.OperationResult '%v'", or)
 	}
 
-	logrus.Infof("Successfully reconciled registry catalog source for namespace %s", r.Namespace)
+	r.Log.Infof("Successfully reconciled registry catalog source", l.Fields{"ns": r.Namespace})
 
 	return reconcile.Result{}, nil
 }

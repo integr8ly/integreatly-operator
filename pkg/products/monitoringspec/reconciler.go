@@ -3,13 +3,13 @@ package monitoringspec
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/version"
 	"github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
-	"github.com/sirupsen/logrus"
 	rbac "k8s.io/api/rbac/v1"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -44,7 +44,7 @@ type Reconciler struct {
 	Config        *config.MonitoringSpec
 	extraParams   map[string]string
 	ConfigManager config.ConfigReadWriter
-	Logger        *logrus.Entry
+	Log           l.Logger
 	mpm           marketplace.MarketplaceInterface
 	installation  *integreatlyv1alpha1.RHMI
 	*resources.Reconciler
@@ -64,8 +64,8 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI,
-	mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
-	logger := logrus.NewEntry(logrus.StandardLogger())
+	mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
+
 	config, err := configManager.ReadMonitoringSpec()
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		Config:        config,
 		extraParams:   make(map[string]string),
 		ConfigManager: configManager,
-		Logger:        logger,
+		Log:           logger,
 		installation:  installation,
 		mpm:           mpm,
 		Reconciler:    resources.NewReconciler(mpm),
@@ -91,43 +91,51 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()),
 		func() (integreatlyv1alpha1.StatusPhase, error) {
-			logrus.Infof("Phase: Monitoringspec ReconcileFinalizer")
+			r.Log.Info("Phase: Monitoringspec ReconcileFinalizer")
 
 			// Check if namespace is still present before trying to delete it resources
 			_, err := resources.GetNS(ctx, r.Config.GetNamespace(), serverClient)
 			if err != nil && k8serr.IsNotFound(err) {
-				logrus.Infof("Spec phase completed")
+				r.Log.Info("Spec phase completed")
 				//namespace is gone, return complete
 				return integreatlyv1alpha1.PhaseCompleted, nil
 			}
-			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+			phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace(), r.Log)
 			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-				logrus.Infof("Spec phase removal failure: %v", err)
+				if err != nil {
+					r.Log.Error("Spec phase removal failure", err)
+				}
 				return phase, err
 			}
 			return integreatlyv1alpha1.PhaseInProgress, nil
 		},
-	)
+		r.Log)
 
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		logrus.Errorf("failed to reconcile finalizer: %v", err)
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+		if err != nil {
+			r.Log.Error("failed to reconcile finalizer:", err)
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
+		}
 		return phase, err
 	}
 
 	phase, err = r.createNamespace(ctx, serverClient, installation)
-	logrus.Infof("Phase: %s createNamespace", phase)
+	r.Log.Infof("Phase: createNamespace", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		logrus.Errorf("failed to create namespace : %v", err)
-		events.HandleError(r.recorder, installation, phase, "Failed to create namespace", err)
+		if err != nil {
+			r.Log.Error("failed to create namespace", err)
+			events.HandleError(r.recorder, installation, phase, "Failed to create namespace", err)
+		}
 		return phase, err
 	}
 
 	phase, err = r.reconcileMonitoring(ctx, serverClient, installation)
-	logrus.Infof("Phase: %s reconcileMonitoring", phase)
+	r.Log.Infof("Phase: reconcileMonitoring", l.Fields{"status": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
-		logrus.Errorf("failed to reconcile: %v", err)
-		events.HandleError(r.recorder, installation, phase, "Failed to reconcile:", err)
+		if err != nil {
+			r.Log.Error("failed to reconcile", err)
+			events.HandleError(r.recorder, installation, phase, "Failed to reconcile:", err)
+		}
 		return phase, err
 	}
 
@@ -136,13 +144,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	err = r.ConfigManager.WriteConfig(r.Config)
 	if err != nil {
-		logrus.Errorf("failed to write config: %v ", err)
+		r.Log.Error("failed to write config", err)
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Failed to update monitoring config", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update monitoring config: %w", err)
 	}
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.MonitoringStage, r.Config.GetProductName())
-	logrus.Infof("%s installation is reconciled successfully", packageName)
+	r.Log.Infof("Reconciled successfully", l.Fields{"installation": packageName})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -241,8 +249,8 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 	serverClient k8sclient.Client, serviceMonitor *monitoringv1.ServiceMonitor) (err error) {
 
 	if serviceMonitor.Spec.NamespaceSelector.Any {
-		logrus.Warnf("servicemonitor : %s cannot be copied to %s namespace. Namespace selector has been set to any",
-			serviceMonitor.Name, r.Config.GetNamespace())
+		r.Log.Warningf("servicemonitor cannot be copied to namespace. Namespace selector has been set to any",
+			l.Fields{"serviceMonitor": serviceMonitor.Name, "ns": r.Config.GetNamespace()})
 		return nil
 	}
 	sm := &monitoringv1.ServiceMonitor{
@@ -270,7 +278,7 @@ func (r *Reconciler) reconcileServiceMonitor(ctx context.Context,
 		return err
 	}
 	if opRes != controllerutil.OperationResultNone {
-		r.Logger.Infof("operation result of creating servicemonitor %v was %v", sm.Name, opRes)
+		r.Log.Infof("Operation result", l.Fields{"serviceMonitor": sm.Name, "result": opRes})
 	}
 	return err
 }
@@ -330,7 +338,7 @@ func (r *Reconciler) reconcileRole(ctx context.Context,
 		return nil
 	})
 	if opRes != controllerutil.OperationResultNone {
-		r.Logger.Infof("operation result of creating role: %v was %v", roleRefName, opRes)
+		r.Log.Infof("Operation result", l.Fields{"role": roleRefName, "result": opRes})
 	}
 	return err
 }
@@ -360,7 +368,7 @@ func (r *Reconciler) reconcileRoleBinding(ctx context.Context,
 		return nil
 	})
 	if opRes != controllerutil.OperationResultNone {
-		r.Logger.Infof("operation result of creating rolebinding: %v was %v", roleBindingName, opRes)
+		r.Log.Infof("Operation result", l.Fields{"roleBinding": roleBindingName, "result": opRes})
 	}
 	return err
 }

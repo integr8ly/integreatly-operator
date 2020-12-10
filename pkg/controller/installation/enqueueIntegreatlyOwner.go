@@ -2,8 +2,9 @@ package installation
 
 import (
 	"errors"
+	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,6 +19,7 @@ const (
 )
 
 type EnqueueIntegreatlyOwner struct {
+	log l.Logger
 }
 
 func (e *EnqueueIntegreatlyOwner) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
@@ -49,7 +51,7 @@ func (e *EnqueueIntegreatlyOwner) getIntegreatlyOwner(object metav1.Object) (rec
 	ant := object.GetAnnotations()
 	if ns, ok := ant[IntegreatlyOwnerNamespace]; ok {
 		if name, ok := ant[IntegreatlyOwnerName]; ok {
-			logrus.Infof("%s %s/%s > got integreatly owner %s/%s", typeObj.GetKind(), object.GetNamespace(), object.GetName(), ns, name)
+			log.Info(fmt.Sprintf("%s %s/%s > got integreatly owner %s/%s", typeObj.GetKind(), object.GetNamespace(), object.GetName(), ns, name))
 			return reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: ns,

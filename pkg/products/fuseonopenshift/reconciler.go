@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/sirupsen/logrus"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
@@ -100,7 +99,7 @@ type Reconciler struct {
 	Config        *config.FuseOnOpenshift
 	ConfigManager config.ConfigReadWriter
 	httpClient    *http.Client
-	logger        *logrus.Entry
+	log           l.Logger
 	recorder      record.EventRecorder
 	installation  *integreatlyv1alpha1.RHMI
 	baseURL       string
@@ -110,7 +109,7 @@ func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
 	return nil
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, httpClient *http.Client, baseURL string) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, httpClient *http.Client, baseURL string, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadFuseOnOpenshift()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve %s config: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
@@ -124,7 +123,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		return nil, fmt.Errorf("%s config is not valid: %w", integreatlyv1alpha1.ProductFuseOnOpenshift, err)
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	httpClient.Timeout = time.Second * 20
 	httpClient.Transport = &http.Transport{DisableKeepAlives: true, IdleConnTimeout: time.Second * 20}
 
@@ -137,7 +135,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
-		logger:        logger,
+		log:           logger,
 		httpClient:    httpClient,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
@@ -177,12 +175,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s successfully reconciled", integreatlyv1alpha1.ProductFuseOnOpenshift)
+	r.log.Infof("Successfully reconciled", l.Fields{"product": integreatlyv1alpha1.ProductFuseOnOpenshift})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infoln("Reconciling Fuse on OpenShift templates config map")
+	r.log.Info("Reconciling Fuse on OpenShift templates config map")
 	cfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      templatesConfigMapName,
@@ -249,7 +247,7 @@ func (r *Reconciler) reconcileConfigMap(ctx context.Context, serverClient k8scli
 }
 
 func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infoln("Reconciling Fuse on OpenShift imagestreams")
+	r.log.Info("Reconciling Fuse on OpenShift imagestreams")
 	cfgMap, err := r.getTemplatesConfigMap(ctx, serverClient)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to get configmap %s from %s namespace: %w", cfgMap.Name, cfgMap.Data, err)
@@ -304,7 +302,7 @@ func (r *Reconciler) reconcileImageStreams(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcileTemplates(ctx context.Context, serverClient k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infoln("Reconciling Fuse on OpenShift templates")
+	r.log.Info("Reconciling Fuse on OpenShift templates")
 	var templateFiles []string
 	templates := make(map[string]runtime.Object)
 
@@ -452,7 +450,7 @@ func (r *Reconciler) updateClusterSampleCR(ctx context.Context, serverClient k8s
 	})
 
 	if err != nil {
-		logrus.Errorf("Error updating cluster Sample CR")
+		r.log.Error("Error updating cluster Sample CR", err)
 	}
 
 	return nil

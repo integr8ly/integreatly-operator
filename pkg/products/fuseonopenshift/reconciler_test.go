@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	moqclient "github.com/integr8ly/integreatly-operator/pkg/client"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -274,6 +275,7 @@ func TestFuseOnOpenShift(t *testing.T) {
 				tc.Recorder,
 				tc.Client,
 				tc.Url,
+				getLogger(),
 			)
 
 			if err != nil && err.Error() != tc.ExpectedError {
@@ -303,4 +305,8 @@ func TestFuseOnOpenShift(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
 }

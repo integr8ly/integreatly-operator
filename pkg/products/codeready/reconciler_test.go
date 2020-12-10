@@ -38,6 +38,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 )
 
 var testKeycloakClient = &keycloak.KeycloakClient{
@@ -143,6 +144,7 @@ func TestReconciler_config(t *testing.T) {
 		Installation   *integreatlyv1alpha1.RHMI
 		Product        *integreatlyv1alpha1.RHMIProductStatus
 		Recorder       record.EventRecorder
+		Logger         l.Logger
 	}{
 		{
 			Name:           "test error on failed config",
@@ -158,6 +160,7 @@ func TestReconciler_config(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
+			Logger:   l.NewLogger(),
 		},
 		{
 			Name:           "test subscription phase with error from mpm",
@@ -174,6 +177,7 @@ func TestReconciler_config(t *testing.T) {
 			FakeConfig: basicConfigMock(),
 			Product:    &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder:   setupRecorder(),
+			Logger:     l.NewLogger(),
 		},
 	}
 
@@ -184,6 +188,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				tc.Logger,
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -240,6 +245,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Recorder       record.EventRecorder
+		Logger         l.Logger
 	}{
 		{
 			Name:           "test phase in progress when che cluster is missing",
@@ -260,6 +266,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 			}),
 			FakeConfig: basicConfigMock(),
 			Recorder:   setupRecorder(),
+			Logger:     l.NewLogger(),
 		},
 	}
 
@@ -270,6 +277,7 @@ func TestCodeready_reconcileCluster(t *testing.T) {
 				scenario.Installation,
 				scenario.FakeMPM,
 				scenario.Recorder,
+				scenario.Logger,
 			)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
@@ -302,6 +310,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 		FakeClient          k8sclient.Client
 		FakeMPM             *marketplace.MarketplaceInterfaceMock
 		Recorder            record.EventRecorder
+		Logger              l.Logger
 	}{
 		{
 			Name:           "test creating components phase missing cluster expect p",
@@ -338,6 +347,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				},
 			},
 			Recorder: setupRecorder(),
+			Logger:   l.NewLogger(),
 		},
 		{
 			Name:           "test creating components returns in progress",
@@ -373,6 +383,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				},
 			},
 			Recorder: setupRecorder(),
+			Logger:   l.NewLogger(),
 		},
 	}
 
@@ -383,6 +394,7 @@ func TestCodeready_reconcileClient(t *testing.T) {
 				scenario.Installation,
 				scenario.FakeMPM,
 				scenario.Recorder,
+				scenario.Logger,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedCreateError)
@@ -424,6 +436,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 		FakeClient     k8sclient.Client
 		FakeMPM        *marketplace.MarketplaceInterfaceMock
 		Recorder       record.EventRecorder
+		Logger         l.Logger
 	}{
 		{
 			Name:           "test che cluster creating returns phase in progress",
@@ -437,6 +450,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			FakeClient: fakeclient.NewFakeClientWithScheme(buildScheme(), testKeycloakClient, testKeycloakRealm, &testCheCluster),
 			FakeConfig: basicConfigMock(),
 			Recorder:   setupRecorder(),
+			Logger:     l.NewLogger(),
 		},
 		{
 			Name:           "test che cluster create error returns phase failed",
@@ -456,6 +470,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			ExpectedError: "could not retrieve checluster for keycloak client update: get request failed",
 			FakeConfig:    basicConfigMock(),
 			Recorder:      setupRecorder(),
+			Logger:        l.NewLogger(),
 		},
 		{
 			Name:           "test che cluster available returns phase complete",
@@ -477,6 +492,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 			}),
 			FakeConfig: basicConfigMock(),
 			Recorder:   setupRecorder(),
+			Logger:     l.NewLogger(),
 		},
 	}
 
@@ -487,6 +503,7 @@ func TestCodeready_reconcileProgress(t *testing.T) {
 				scenario.Installation,
 				scenario.FakeMPM,
 				scenario.Recorder,
+				scenario.Logger,
 			)
 			if err != nil && err.Error() != scenario.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedError)
@@ -620,6 +637,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 		ValidateCallCounts  func(mockConfig *config.ConfigReadWriterMock, mockMPM *marketplace.MarketplaceInterfaceMock, t *testing.T)
 		Product             *integreatlyv1alpha1.RHMIProductStatus
 		Recorder            record.EventRecorder
+		Logger              l.Logger
 	}{
 		{
 			Name:           "test successful installation without errors",
@@ -672,6 +690,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			},
 			Product:  &integreatlyv1alpha1.RHMIProductStatus{},
 			Recorder: setupRecorder(),
+			Logger:   l.NewLogger(),
 		},
 	}
 
@@ -682,6 +701,7 @@ func TestCodeready_fullReconcile(t *testing.T) {
 				scenario.Installation,
 				scenario.FakeMPM,
 				scenario.Recorder,
+				scenario.Logger,
 			)
 			if err != nil && err.Error() != scenario.ExpectedCreateError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, scenario.ExpectedCreateError)
@@ -714,4 +734,8 @@ func TestCodeready_fullReconcile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductCodeReadyWorkspaces})
 }

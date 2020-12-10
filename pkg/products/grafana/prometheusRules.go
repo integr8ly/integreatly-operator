@@ -5,13 +5,14 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertReconciler(logger l.Logger) resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		Installation: r.installation,
-		Logger:       r.logger,
+		Log:          logger,
 		ProductName:  "Grafana",
 		Alerts: []resources.AlertConfiguration{
 			{

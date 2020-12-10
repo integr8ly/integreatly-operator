@@ -5,12 +5,11 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 )
@@ -22,13 +21,15 @@ const rootCAFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 type OauthResolver struct {
 	client *http.Client
 	Host   string
+	Log    l.Logger
 }
 
-func NewOauthResolver(client *http.Client) *OauthResolver {
+func NewOauthResolver(client *http.Client, log l.Logger) *OauthResolver {
 	client.Timeout = time.Second * 10
 	return &OauthResolver{
 		client: client,
 		Host:   defaultHost,
+		Log:    log,
 	}
 }
 
@@ -38,7 +39,7 @@ func (or *OauthResolver) GetOauthEndPoint() (*OauthServerConfig, error) {
 	caCert, err := ioutil.ReadFile(rootCAFile)
 	// if running locally, CA certificate isn't available in expected path
 	if os.IsNotExist(err) && os.Getenv(k8sutil.ForceRunModeEnv) == string(k8sutil.LocalRunMode) {
-		logrus.Warn("GetOauthEndPoint() will skip certificate verification - this is acceptable only if operator is running locally")
+		or.Log.Warning("GetOauthEndPoint() will skip certificate verification - this is acceptable only if operator is running locally")
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}

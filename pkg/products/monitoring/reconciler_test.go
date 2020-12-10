@@ -5,14 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	configv1 "github.com/openshift/api/config/v1"
 	"testing"
 
-	v1 "github.com/openshift/api/route/v1"
-	"github.com/sirupsen/logrus"
-
 	grafanav1alpha1 "github.com/integr8ly/grafana-operator/v3/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
+	v1 "github.com/openshift/api/route/v1"
 
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 
@@ -194,7 +193,7 @@ func TestReconciler_config(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			_, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -254,7 +253,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil {
 				t.Fatal("unexpected err ", err)
 			}
@@ -460,7 +459,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -615,7 +614,7 @@ func TestReconciler_testPhases(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeMPM, tc.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("unexpected error : '%v'", err)
 			}
@@ -636,11 +635,11 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	basicLogger := logrus.NewEntry(logrus.StandardLogger())
+	basicLogger := getLogger()
 	basicReconciler := func() *Reconciler {
 		return &Reconciler{
 			installation: basicInstallation(),
-			Logger:       basicLogger,
+			Log:          basicLogger,
 			Config: &config.Monitoring{
 				Config: map[string]string{
 					"OPERATOR_NAMESPACE": defaultInstallationNamespace,
@@ -934,10 +933,9 @@ func TestReconciler_getPagerDutySecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	basicLogger := logrus.NewEntry(logrus.StandardLogger())
 	basicReconciler := &Reconciler{
 		installation: basicInstallation(),
-		Logger:       basicLogger,
+		Log:          getLogger(),
 		Config: &config.Monitoring{
 			Config: map[string]string{
 				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
@@ -1049,10 +1047,9 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	basicLogger := logrus.NewEntry(logrus.StandardLogger())
 	basicReconciler := &Reconciler{
 		installation: basicInstallation(),
-		Logger:       basicLogger,
+		Log:          getLogger(),
 		Config: &config.Monitoring{
 			Config: map[string]string{
 				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
@@ -1157,4 +1154,8 @@ func TestReconciler_getDMSSecret(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
 }

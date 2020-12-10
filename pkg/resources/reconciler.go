@@ -8,9 +8,9 @@ import (
 	productsConfig "github.com/integr8ly/integreatly-operator/pkg/config"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	projectv1 "github.com/openshift/api/project/v1"
@@ -114,7 +114,7 @@ func CreateNSWithProjectRequest(ctx context.Context, namespace string, client k8
 	return ns, err
 }
 
-func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		// Since we are using ProjectRequests and limited permissions,
@@ -144,7 +144,7 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 	}
 
 	if ns.Status.Phase == corev1.NamespaceTerminating {
-		logrus.Debugf("namespace %s is terminating, maintaining phase to try again on next reconcile", namespace)
+		log.Debugf("namespace terminating, maintaining phase to try again on next reconcile", l.Fields{"ns": namespace})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -156,12 +156,12 @@ func (r *Reconciler) ReconcileNamespace(ctx context.Context, namespace string, i
 
 type finalizerFunc func() (integreatlyv1alpha1.StatusPhase, error)
 
-func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Client, inst *integreatlyv1alpha1.RHMI, productName string, finalFunc finalizerFunc, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	finalizer := "finalizer." + productName + ".integreatly.org"
 	// Add finalizer if not there
-	err := AddFinalizer(ctx, inst, client, finalizer)
+	err := AddFinalizer(ctx, inst, client, finalizer, log)
 	if err != nil {
-		logrus.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
+		log.Error(fmt.Sprintf("Error adding finalizer %s to installation", finalizer), err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -175,7 +175,7 @@ func (r *Reconciler) ReconcileFinalizer(ctx context.Context, client k8sclient.Cl
 			}
 
 			// Remove the finalizer to allow for deletion of the installation cr
-			logrus.Infof("Removing finalizer: %s", finalizer)
+			log.Infof("Removing finalizer", l.Fields{"finalizer": finalizer})
 			inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 		}
 		// Don't continue reconciling the product
@@ -193,8 +193,8 @@ func (r *Reconciler) ReconcilePullSecret(ctx context.Context, destSecretNamespac
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
-func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, catalogSourceReconciler marketplace.CatalogSourceReconciler) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("reconciling subscription %s from channel %s in namespace: %s", target.Pkg, marketplace.IntegreatlyChannel, target.Namespace)
+func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketplace.Target, operandNS []string, preUpgradeBackupExecutor backup.BackupExecutor, client k8sclient.Client, catalogSourceReconciler marketplace.CatalogSourceReconciler, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
+	log.Infof("Reconciling subscription", l.Fields{"subscription": target.Pkg, "channel": marketplace.IntegreatlyChannel, "ns": target.Namespace})
 	err := r.mpm.InstallOperator(ctx, client, target, operandNS, operatorsv1alpha1.ApprovalManual, catalogSourceReconciler)
 
 	if err != nil && !k8serr.IsAlreadyExists(err) {
@@ -214,18 +214,18 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, target marketpla
 	}
 
 	for _, ip := range ips.Items {
-		err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, &ip)
+		err = upgradeApproval(ctx, preUpgradeBackupExecutor, client, &ip, log)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error approving installplan for %v: %w", target.Pkg, err)
 		}
 
 		//if it's approved but not complete, then it's in progress
 		if ip.Status.Phase != operatorsv1alpha1.InstallPlanPhaseComplete && ip.Spec.Approved {
-			logrus.Infof("%s install plan is not complete yet ", target.Pkg)
+			log.Infof("Install plan is not complete yet ", l.Fields{"install plan": target.Pkg})
 			return integreatlyv1alpha1.PhaseInProgress, nil
 			//if it's not approved by now, then it will not be approved by this version of the integreatly-operator
 		} else if !ip.Spec.Approved {
-			logrus.Infof("%s has an upgrade installplan above the maximum allowed version", target.Pkg)
+			log.Infof("Upgrade installplan above the maximum allowed version", l.Fields{"install plan": target.Pkg})
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -214,7 +214,7 @@ func TestReconciler_reconcileCloudResources(t *testing.T) {
 				}),
 			}
 			r := &Reconciler{
-				Logger: logrus.NewEntry(logrus.StandardLogger()),
+				Log: getLogger(),
 			}
 
 			got, err := r.ReconcileCloudResources(constants.RHSSOUserProstgresPrefix, defaultNamespace, ssoType, config, context.TODO(), tt.installation, tt.fakeClient())
@@ -275,7 +275,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		ExpectError           bool
 		ExpectedStatus        integreatlyv1alpha1.StatusPhase
 		ExpectedError         string
-		Logger                *logrus.Entry
+		Logger                l.Logger
 		FakeConfig            *config.ConfigReadWriterMock
 		FakeClient            k8sclient.Client
 		FakeOauthClient       oauthClient.OauthV1Interface
@@ -288,7 +288,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:                  "test ready kcr returns phase complete",
 			ExpectedStatus:        integreatlyv1alpha1.PhaseCompleted,
-			Logger:                logrus.NewEntry(logrus.StandardLogger()),
+			Logger:                getLogger(),
 			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, kcr, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
@@ -300,7 +300,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 		{
 			Name:                  "test unready kcr cr returns phase in progress",
 			ExpectedStatus:        integreatlyv1alpha1.PhaseInProgress,
-			Logger:                logrus.NewEntry(logrus.StandardLogger()),
+			Logger:                getLogger(),
 			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, kc, secret, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseFailing}), githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
@@ -325,7 +325,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 			Name:                  "test missing kcr cr returns phase failed",
 			ExpectedStatus:        integreatlyv1alpha1.PhaseFailed,
 			ExpectError:           true,
-			Logger:                logrus.NewEntry(logrus.StandardLogger()),
+			Logger:                getLogger(),
 			FakeClient:            moqclient.NewSigsClientMoqWithScheme(scheme, secret, kc, githubOauthSecret, oauthClientSecrets),
 			FakeOauthClient:       fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
 			FakeConfig:            basicConfigMock(),
@@ -876,4 +876,8 @@ type mockClientContext struct {
 	ClientRoles                   map[string][]*keycloak.KeycloakUserRole
 	RealmRoles                    map[string][]*keycloak.KeycloakUserRole
 	AuthenticationFlowsExecutions map[string][]*keycloak.AuthenticationExecutionInfo
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductRHSSO})
 }

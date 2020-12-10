@@ -3,6 +3,7 @@ package ups
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
@@ -13,8 +14,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/monitoring"
 
@@ -50,12 +49,12 @@ type Reconciler struct {
 	ConfigManager config.ConfigReadWriter
 	installation  *integreatlyv1alpha1.RHMI
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	log           l.Logger
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadUps()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve ups config: %w", err)
@@ -76,14 +75,12 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	config.SetBlackboxTargetPath("/rest/auth/config/")
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
@@ -107,34 +104,34 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling %s", defaultUpsName)
+	r.log.Info("Start Reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
@@ -143,7 +140,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	phase, err = r.reconcileSubscription(ctx, serverClient, installation, productNamespace, operatorNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s subscription", constants.UPSSubscriptionName), err)
-
 		return phase, err
 	}
 
@@ -165,7 +161,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(r.log).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile alerts", err)
 		return phase, err
@@ -183,12 +179,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s is successfully reconciled", defaultUpsName)
+	r.log.Infof("Reconcile successful", l.Fields{"ups": defaultUpsName})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling external postgres")
+	r.log.Info("Reconciling external postgres")
 	ns := installation.Namespace
 
 	// setup postgres custom resource
@@ -203,7 +199,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	}
 
 	// reconcile postgres alerts
-	phase, err := resources.ReconcilePostgresAlerts(ctx, client, installation, postgres)
+	phase, err := resources.ReconcilePostgresAlerts(ctx, client, installation, postgres, r.log)
 	productName := postgres.Labels["productName"]
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
@@ -242,7 +238,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 	})
 
 	// Reconcile ups custom resource
-	logrus.Info("Reconciling unified push server cr")
+	r.log.Info("Reconciling unified push server cr")
 	cr := &upsv1alpha1.UnifiedPushServer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultUpsName,
@@ -269,18 +265,18 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 
 	// Wait till the ups cr status is complete
 	if cr.Status.Phase != upsv1alpha1.PhaseReconciling {
-		logrus.Info("Waiting for unified push server cr phase to complete")
+		r.log.Info("Waiting for unified push server cr phase to complete")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	logrus.Info("Successfully reconciled unified push server custom resource")
+	r.log.Info("Successfully reconciled unified push server custom resource")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	// Setting host on config to exposed route
-	logrus.Info("Setting unified push server config host")
+	r.log.Info("Setting unified push server config host")
 	upsRoute := &routev1.Route{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: r.Config.GetNamespace()}, upsRoute)
 	if err != nil {
@@ -293,7 +289,7 @@ func (r *Reconciler) reconcileHost(ctx context.Context, serverClient k8sclient.C
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("could not update unified push server config: %w", err)
 	}
 
-	logrus.Info("Successfully set unified push server host")
+	r.log.Info("Successfully set unified push server host")
 
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
@@ -346,6 +342,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		preUpgradeBackupExecutor(inst),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }
 

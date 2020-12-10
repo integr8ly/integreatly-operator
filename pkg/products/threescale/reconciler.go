@@ -3,7 +3,9 @@ package threescale
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +34,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/backup"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 	"github.com/integr8ly/integreatly-operator/version"
-	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8sTypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -107,7 +108,7 @@ var (
 	}
 )
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, appsv1Client appsv1Client.AppsV1Interface, oauthv1Client oauthClient.OauthV1Interface, tsClient ThreeScaleInterface, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	threescaleConfig, err := configManager.ReadThreeScale()
 	if err != nil {
@@ -126,8 +127,6 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 	}
 	threescaleConfig.SetBlackboxTargetPathForAdminUI("/p/login/")
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        threescaleConfig,
@@ -138,7 +137,7 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		oauthv1Client: oauthv1Client,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
-		logger:        logger,
+		log:           logger,
 	}, nil
 }
 
@@ -153,7 +152,7 @@ type Reconciler struct {
 	*resources.Reconciler
 	extraParams map[string]string
 	recorder    record.EventRecorder
-	logger      *logrus.Entry
+	log         l.Logger
 }
 
 func (r *Reconciler) GetPreflightObject(ns string) runtime.Object {
@@ -174,7 +173,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Reconciling %s", r.Config.GetProductName())
+	r.log.Info("Start Reconciling")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
@@ -187,17 +186,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			}
 		}
 
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName())
+		err = resources.RemoveOauthClient(r.oauthv1Client, r.getOAuthClientName(), r.log)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
@@ -208,19 +207,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -265,30 +264,30 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 
 	phase, err = r.reconcileComponents(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileComponents", phase)
+	r.log.Infof("reconcileComponents", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile components", err)
 		return phase, err
 	}
 
-	logrus.Infof("%s is successfully deployed", r.Config.GetProductName())
+	r.log.Info("Successfully deployed")
 
 	phase, err = r.reconcileRHSSOIntegration(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileRHSSOIntegration", phase)
+	r.log.Infof("reconcileRHSSOIntegration", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile rhsso integration", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileBlackboxTargets(ctx, installation, serverClient)
-	logrus.Infof("Phase: %s reconcileBlackboxTargets", phase)
+	r.log.Infof("reconcileBlackboxTargets", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile blackbox targets", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileOpenshiftUsers(ctx, installation, serverClient)
-	logrus.Infof("Phase: %s reconcileOpenshiftUsers", phase)
+	r.log.Infof("reconcileOpenshiftUsers", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile openshift users", err)
 		return phase, err
@@ -314,28 +313,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		},
 		GrantMethod: oauthv1.GrantHandlerAuto,
 	}, serverClient)
-	logrus.Infof("Phase: %s ReconcileOauthClient", phase)
+	r.log.Infof("ReconcileOauthClient", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile oauth client", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileServiceDiscovery(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileServiceDiscovery", phase)
+	r.log.Infof("reconcileServiceDiscovery", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile service discovery", err)
 		return phase, err
 	}
 
 	phase, err = r.backupSystemSecrets(ctx, serverClient, installation)
-	logrus.Infof("Phase: %s backupSystemSecrets", phase)
+	r.log.Infof("backupSystemSecrets", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile templates", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileRouteEditRole(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileRouteEditRole", phase)
+	r.log.Infof("reconcileRouteEditRole", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile roles", err)
 		return phase, err
@@ -372,28 +371,28 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
 		}
 
-		alertsReconciler := r.newEnvoyAlertReconciler()
+		alertsReconciler := r.newEnvoyAlertReconciler(r.log)
 		if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 			return phase, err
 		}
 	}
 
-	alertsReconciler := r.newAlertReconciler()
+	alertsReconciler := r.newAlertReconciler(r.log)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, serverClient); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile threescale alerts", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileConsoleLink(ctx, serverClient)
-	logrus.Infof("Phase: %s reconcileConsoleLink", phase)
+	r.log.Infof("reconcileConsoleLink", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile console link", err)
 		return phase, err
 	}
 
 	phase, err = r.reconcileDeploymentConfigs(ctx, serverClient, productNamespace)
-	logrus.Infof("Phase: %s reconcileDeploymentConfigs", phase)
+	r.log.Infof("reconcileDeploymentConfigs", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile deployment configs", err)
 		return phase, err
@@ -401,7 +400,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 
 	// Ensure deployment configs are ready before returning phase complete
 	phase, err = r.ensureDeploymentConfigsReady(ctx, serverClient, productNamespace)
-	logrus.Infof("Phase: %s ensureDeploymentConfigsReady", phase)
+	r.log.Infof("ensureDeploymentConfigsReady", l.Fields{"phase": phase})
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to ensure deployment configs are ready", err)
 		return phase, err
@@ -412,7 +411,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	r.log.Infof("Installation reconciled successfully", l.Fields{"product": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -424,7 +423,7 @@ func (r *Reconciler) restoreSystemSecrets(ctx context.Context, serverClient k8sc
 			if !k8serr.IsNotFound(err) && !k8serr.IsConflict(err) {
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
-			logrus.Info(fmt.Sprintf("no backed up secret %v found in %v", secretName, installation.Namespace))
+			r.log.Info(fmt.Sprintf("no backed up secret %v found in %v", secretName, installation.Namespace))
 		}
 	}
 
@@ -471,7 +470,7 @@ func (r *Reconciler) getService(ctx context.Context, client k8sclient.Client, dc
 
 }
 
-// Patching the deployment configuration of both apicasts, this is required in order to enable rate limiting on the deployment. "Enabled" means that the Discovery Service
+// Patching the deployment configuration of both apicasts, this is required in order to enable rate limiting on the deployment. "Enabled"means that the Discovery Service
 // will attach a sidecar container to the apicasts, annotations are set to label the apicasts so that appropriate envoy config(sidecar container used configuration) is
 // pulled and attached to sidecar containers.
 func (r *Reconciler) patchDeploymentConfig(ctx context.Context, client k8sclient.Client, deploymentConfig *appsv1.DeploymentConfig, service *corev1.Service) error {
@@ -814,13 +813,13 @@ func (r *Reconciler) getOauthClientSecret(ctx context.Context, serverClient k8sc
 }
 
 func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling smtp credentials")
+	r.log.Info("Reconciling smtp credentials")
 
 	// get the secret containing smtp credentials
 	credSec := &corev1.Secret{}
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: r.installation.Spec.SMTPSecret, Namespace: r.installation.Namespace}, credSec)
 	if err != nil {
-		logrus.Warnf("could not obtain smtp credentials secret: %v", err)
+		r.log.Warningf("could not obtain smtp credentials secret", l.Fields{"error": err})
 	}
 	smtpConfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -871,12 +870,12 @@ func (r *Reconciler) reconcileSMTPCredentials(ctx context.Context, serverClient 
 		if smtpUpdated {
 			err = r.RolloutDeployment("system-app")
 			if err != nil {
-				logrus.Error(err)
+				r.log.Error("Rollout system-app deployment", err)
 			}
 
 			err = r.RolloutDeployment("system-sidekiq")
 			if err != nil {
-				logrus.Error(err)
+				r.log.Error("Rollout system-sidekiq deployment", err)
 			}
 		}
 
@@ -938,7 +937,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 
 	antiAffinityRequired, err := resources.IsAntiAffinityRequired(ctx, serverClient)
 	if err != nil {
-		r.logger.Errorf("error when deciding if pod anti affinity is required. Defaulted to false: %v", err)
+		r.log.Error("error when deciding if pod anti affinity is required. Defaulted to false", err)
 		antiAffinityRequired = false
 	}
 
@@ -1028,7 +1027,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
-	logrus.Info("API Manager: ", status)
+	r.log.Infof("API Manager: ", l.Fields{"status": status})
 
 	if len(apim.Status.Deployments.Starting) == 0 && len(apim.Status.Deployments.Stopped) == 0 && len(apim.Status.Deployments.Ready) > 0 {
 
@@ -1042,6 +1041,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 				return integreatlyv1alpha1.PhaseFailed, err
 			}
 		} else if err != nil {
+			r.log.Error("Error getting system-provider route", err)
 			return integreatlyv1alpha1.PhaseFailed, err
 		}
 		// Its not enough to just check if the system-provider route exists. This can exist but system-master, for example, may not
@@ -1059,6 +1059,8 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, serverClient k8scl
 			return r.resyncRoutes(ctx, serverClient)
 		}
 	}
+	r.log.Infof("3Scale Deployments in progress",
+		l.Fields{"starting": len(apim.Status.Deployments.Starting), "stopped": len(apim.Status.Deployments.Stopped), "ready": len(apim.Status.Deployments.Ready)})
 
 	return integreatlyv1alpha1.PhaseInProgress, nil
 }
@@ -1076,6 +1078,7 @@ func (r *Reconciler) routesExist(ctx context.Context, serverClient k8sclient.Cli
 	}
 
 	if len(routes.Items) >= expectedRoutes {
+		r.log.Warningf("Required number of routes do not exist", l.Fields{"required": expectedRoutes})
 		return true, nil
 	}
 	return false, nil
@@ -1100,25 +1103,26 @@ func (r *Reconciler) resyncRoutes(ctx context.Context, client k8sclient.Client) 
 	}
 
 	if podname == "" {
-		logrus.Info("Waiting on system-sidekiq pod to start, 3Scale install in progress")
+		r.log.Info("Waiting on system-sidekiq pod to start, 3Scale install in progress")
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	stdout, stderr, err := resources.ExecuteRemoteCommand(ns, podname, "bundle exec rake zync:resync:domains")
+	stdout, stderr, err := resources.ExecuteRemoteCommand(ns, podname, "bundle exec rake zync:resync:domains", r.log)
 	if err != nil {
-		logrus.Errorf("Failed to resync 3Scale routes %v", err)
+		r.log.Error("Failed to resync 3Scale routes", err)
 		return integreatlyv1alpha1.PhaseFailed, nil
 	} else if stderr != "" {
-		logrus.Errorf("Error attempting to resync 3Scale routes %s", stderr)
-		return integreatlyv1alpha1.PhaseFailed, nil
+		err := errors.New(stderr)
+		r.log.Error("Error attempting to resync 3Scale routes", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	} else {
-		logrus.Infof("Resync 3Scale routes result: %s", stdout)
+		r.log.Infof("Resync 3Scale routes result", l.Fields{"stdout": stdout})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 }
 
 func (r *Reconciler) reconcileBlobStorage(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling blob storage")
+	r.log.Info("Reconciling blob storage")
 	ns := r.installation.Namespace
 
 	// setup blob storage cr for the cloud resource operator
@@ -1197,12 +1201,12 @@ func (r *Reconciler) getBlobStorageFileStorageSpec(ctx context.Context, serverCl
 // reconcileExternalDatasources provisions 2 redis caches and a postgres instance
 // which are used when 3scale HighAvailability mode is enabled
 func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling external datastores")
+	r.log.Info("Reconciling external datastores")
 	ns := r.installation.Namespace
 
 	// setup backend redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
-	logrus.Info("Creating backend redis instance")
+	r.log.Info("Creating backend redis instance")
 	backendRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleBackendRedisPrefix, r.installation.Name)
 	backendRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, backendRedisName, ns, backendRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
@@ -1214,7 +1218,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// setup system redis custom resource
 	// this will be used by the cloud resources operator to provision a redis instance
-	logrus.Info("Creating system redis instance")
+	r.log.Info("Creating system redis instance")
 	systemRedisName := fmt.Sprintf("%s%s", constants.ThreeScaleSystemRedisPrefix, r.installation.Name)
 	systemRedis, err := croUtil.ReconcileRedis(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, systemRedisName, ns, systemRedisName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
@@ -1226,7 +1230,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 
 	// setup postgres cr for the cloud resource operator
 	// this will be used by the cloud resources operator to provision a postgres instance
-	logrus.Info("Creating postgres instance")
+	r.log.Info("Creating postgres instance")
 	postgresName := fmt.Sprintf("%s%s", constants.ThreeScalePostgresPrefix, r.installation.Name)
 	postgres, err := croUtil.ReconcilePostgres(ctx, serverClient, defaultInstallationNamespace, r.installation.Spec.Type, croUtil.TierProduction, postgresName, ns, postgresName, ns, func(cr metav1.Object) error {
 		owner.AddIntegreatlyOwnerAnnotations(cr, r.installation)
@@ -1236,7 +1240,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres request: %w", err)
 	}
 
-	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis)
+	phase, err := resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
@@ -1245,7 +1249,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// create Redis Cpu Usage High alert
-	err = resources.CreateRedisCpuUsageAlerts(ctx, serverClient, r.installation, backendRedis)
+	err = resources.CreateRedisCpuUsageAlerts(ctx, serverClient, r.installation, backendRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backend redis prometheus Cpu usage high alerts for threescale: %s", err)
 	}
@@ -1281,7 +1285,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create or update 3scale %s connection secret: %w", externalBackendRedisSecretName, err)
 	}
 
-	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, systemRedis)
+	phase, err = resources.ReconcileRedisAlerts(ctx, serverClient, r.installation, systemRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
@@ -1322,7 +1326,7 @@ func (r *Reconciler) reconcileExternalDatasources(ctx context.Context, serverCli
 	}
 
 	// reconcile postgres alerts
-	phase, err = resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres)
+	phase, err = resources.ReconcilePostgresAlerts(ctx, serverClient, r.installation, postgres, r.log)
 	productName := postgres.Labels["productName"]
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile postgres alerts for %s: %w", productName, err)
@@ -1371,7 +1375,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 	rhssoNamespace := rhssoConfig.GetNamespace()
 	rhssoRealm := rhssoConfig.GetRealm()
 	if rhssoNamespace == "" || rhssoRealm == "" {
-		logrus.Warnf("Cannot configure SSO integration without SSO ns: %v and SSO realm: %v", rhssoNamespace, rhssoRealm)
+		r.log.Warningf("Cannot configure SSO integration without SSO", l.Fields{"ns": rhssoNamespace, "realm": rhssoRealm})
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
@@ -1394,7 +1398,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	clientSecret, err := r.getOauthClientSecret(ctx, serverClient)
 	if err != nil {
-		logrus.Errorf("Error retrieving client secret: %v", err)
+		r.log.Error("Error retrieving client secret", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -1408,12 +1412,12 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 
 	accessToken, err := r.GetAdminToken(ctx, serverClient)
 	if err != nil {
-		logrus.Errorf("Failed to get admin token %v", err)
+		r.log.Error("Failed to get admin token", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	_, err = r.tsClient.GetAuthenticationProviderByName(rhssoIntegrationName, *accessToken)
 	if err != nil && !tsIsNotFoundError(err) {
-		logrus.Errorf("Failed to get authentication provider: %v", err)
+		r.log.Error("Failed to get authentication provider:", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	if tsIsNotFoundError(err) {
@@ -1428,7 +1432,7 @@ func (r *Reconciler) reconcileRHSSOIntegration(ctx context.Context, serverClient
 			"published":                         "true",
 		}, *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
-			logrus.Errorf("Failed to add authentication provider: %v", err)
+			r.log.Error("Failed to add authentication provider", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
@@ -1441,7 +1445,7 @@ func (r *Reconciler) getOAuthClientName() string {
 }
 
 func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Reconciling openshift users to 3scale")
+	r.log.Info("Reconciling openshift users to 3scale")
 
 	rhssoConfig, err := r.ConfigManager.ReadRHSSO()
 	if err != nil {
@@ -1455,7 +1459,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	systemAdminUsername, _, err := r.GetAdminNameAndPassFromSecret(ctx, serverClient)
 	if err != nil {
-		logrus.Errorf("Failed to retrieve admin name and password from secret: %v", err)
+		r.log.Error("Failed to retrieve admin name and password from secret", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1466,7 +1470,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	tsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
-		logrus.Errorf("Failed to get users: %v", err)
+		r.log.Error("Failed to get users", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1474,7 +1478,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	for _, kcUser := range added {
 		res, err := r.tsClient.AddUser(strings.ToLower(kcUser.UserName), strings.ToLower(kcUser.Email), "", *accessToken)
 		if err != nil || res.StatusCode != http.StatusCreated {
-			logrus.Errorf("Failed to add user: %v", err)
+			r.log.Error("Failed to add user", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
@@ -1482,7 +1486,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 		if tsUser.UserDetails.Username != *systemAdminUsername {
 			res, err := r.tsClient.DeleteUser(tsUser.UserDetails.Id, *accessToken)
 			if err != nil || res.StatusCode != http.StatusOK {
-				logrus.Errorf("Failed to delete user: %v", err)
+				r.log.Error("Failed to delete user", err)
 				return integreatlyv1alpha1.PhaseInProgress, err
 			}
 		}
@@ -1518,12 +1522,12 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 	openshiftAdminGroup := &usersv1.Group{}
 	err = serverClient.Get(ctx, k8sclient.ObjectKey{Name: "dedicated-admins"}, openshiftAdminGroup)
 	if err != nil && !k8serr.IsNotFound(err) {
-		logrus.Errorf("Failed to retrieve dedicated admins: %v", err)
+		r.log.Error("Failed to retrieve dedicated admins", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 	newTsUsers, err := r.tsClient.GetUsers(*accessToken)
 	if err != nil {
-		logrus.Errorf("Failed to get users: %v", err)
+		r.log.Error("Failed to get users", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1531,7 +1535,7 @@ func (r *Reconciler) reconcileOpenshiftUsers(ctx context.Context, installation *
 
 	err = syncOpenshiftAdminMembership(openshiftAdminGroup, newTsUsers, *systemAdminUsername, isWorkshop, r.tsClient, *accessToken)
 	if err != nil {
-		logrus.Errorf("Failed to sync openshift admin membership: %v", err)
+		r.log.Error("Failed to sync openshift admin membership", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
@@ -1612,20 +1616,20 @@ func (r *Reconciler) reconcileServiceDiscovery(ctx context.Context, serverClient
 	})
 
 	if err != nil {
-		logrus.Errorf("Failed to get oauth client secret: %v", err)
+		r.log.Error("Failed to get oauth client secret", err)
 		return integreatlyv1alpha1.PhaseInProgress, err
 	}
 
 	if status != controllerutil.OperationResultNone {
 		err = r.RolloutDeployment("system-app")
 		if err != nil {
-			logrus.Errorf("Failed to rollout deployment (system-app): %v", err)
+			r.log.Error("Failed to rollout deployment (system-app)", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 
 		err = r.RolloutDeployment("system-sidekiq")
 		if err != nil {
-			logrus.Errorf("Failed to rollout deployment (system-sidekiq): %v", err)
+			r.log.Error("Failed to rollout deployment (system-sidekiq)", err)
 			return integreatlyv1alpha1.PhaseInProgress, err
 		}
 	}
@@ -1644,7 +1648,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		Service: "3scale-admin-ui",
 	}, cfg, installation, client)
 	if err != nil {
-		logrus.Errorf("Error creating threescale blackbox target: %v", err)
+		r.log.Error("Error creating threescale blackbox target", err)
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target: %w", err)
 	}
 
@@ -1653,7 +1657,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		return strings.HasPrefix(r.Spec.Host, "3scale.")
 	})
 	if err != nil {
-		logrus.Errorf("Error retrieving threescale threescaleRoute: %v", err)
+		r.log.Error("Error retrieving threescale threescaleRoute", err)
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error getting threescale system-developer threescaleRoute: %w", err)
 	}
 	err = monitoring.CreateBlackboxTarget(ctx, "integreatly-3scale-system-developer", monitoringv1alpha1.BlackboxtargetData{
@@ -1661,7 +1665,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		Service: "3scale-developer-console-ui",
 	}, cfg, installation, client)
 	if err != nil {
-		logrus.Errorf("Error creating blackbox target (system-developer): %v", err)
+		r.log.Error("Error creating blackbox target (system-developer)", err)
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-developer): %w", err)
 	}
 
@@ -1675,7 +1679,7 @@ func (r *Reconciler) reconcileBlackboxTargets(ctx context.Context, installation 
 		Service: "3scale-system-admin-ui",
 	}, cfg, installation, client)
 	if err != nil {
-		logrus.Errorf("Error creating blackbox target (system-master): %v", err)
+		r.log.Error("Error creating blackbox target (system-master)", err)
 		return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("error creating threescale blackbox target (system-master): %w", err)
 	}
 
@@ -1959,7 +1963,7 @@ func (r *Reconciler) reconcileRouteEditRole(ctx context.Context, client k8sclien
 	// Allow dedicated-admin group to edit routes. This is enabled to allow the public API in 3Scale, on private clusters, to be exposed.
 	// This is achieved by labelling the route to match the additional router created by SRE for private clusters. INTLY-7398.
 
-	logrus.Infof("reconciling edit routes role to the dedicated admins group")
+	r.log.Info("reconciling edit routes role to the dedicated admins group")
 
 	editRoutesRole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -2035,6 +2039,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }
 
@@ -2128,7 +2133,7 @@ func (r *Reconciler) ensureDeploymentConfigsReady(ctx context.Context, serverCli
 		for _, condition := range deploymentConfig.Status.Conditions {
 			if condition.Status != corev1.ConditionTrue || (deploymentConfig.Status.Replicas != deploymentConfig.Status.AvailableReplicas ||
 				deploymentConfig.Status.ReadyReplicas != deploymentConfig.Status.UpdatedReplicas) {
-				logrus.Infof("waiting for 3scale deployment config %s to become ready", name)
+				r.log.Infof("waiting for 3scale dc to become ready", l.Fields{"dc": name})
 				return integreatlyv1alpha1.PhaseInProgress, fmt.Errorf("waiting for 3scale deployment config %s to become available", name)
 			}
 		}

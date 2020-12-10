@@ -155,7 +155,7 @@ func TestNewReconciler_ReconcileSubscription(t *testing.T) {
 			testNamespace := "test-ns"
 			manifestsDirectory := "fakemanifestsdirectory"
 			cfgMapCsReconciler := marketplace.NewConfigMapCatalogSourceReconciler(manifestsDirectory, tc.client, testNamespace, marketplace.CatalogSourceName)
-			status, err := reconciler.ReconcileSubscription(context.TODO(), marketplace.Target{Namespace: testNamespace, Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{testNamespace}, backup.NewNoopBackupExecutor(), tc.client, cfgMapCsReconciler)
+			status, err := reconciler.ReconcileSubscription(context.TODO(), marketplace.Target{Namespace: testNamespace, Channel: "integreatly", Pkg: tc.SubscriptionName}, []string{testNamespace}, backup.NewNoopBackupExecutor(), tc.client, cfgMapCsReconciler, getLogger())
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}
@@ -394,7 +394,7 @@ func TestReconciler_ReconcileNamespace(t *testing.T) {
 			reconciler := NewReconciler(
 				tc.FakeMPM,
 			)
-			phase, err := reconciler.ReconcileNamespace(context.TODO(), "test-ns", tc.Installation, tc.client)
+			phase, err := reconciler.ReconcileNamespace(context.TODO(), "test-ns", tc.Installation, tc.client, getLogger())
 			if tc.ExpectErr && err == nil {
 				t.Fatal("expected an error but got none")
 			}

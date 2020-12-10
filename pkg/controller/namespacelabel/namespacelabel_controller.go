@@ -27,8 +27,8 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -41,14 +41,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 var (
-	log           = logf.Log.WithName("controller_namespace_label")
+	log           = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "namespacelabel_controller"})
 	configMapName = "cloud-resources-aws-strategies"
 )
 
@@ -94,6 +94,7 @@ var (
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	watchNS, err := k8sutil.GetWatchNamespace()
 	if err != nil {
@@ -111,6 +112,7 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		operatorNamespace: operatorNs,
 		context:           ctx,
 		cancel:            cancel,
+		log:               log,
 	}, nil
 }
 
@@ -146,6 +148,7 @@ type ReconcileNamespaceLabel struct {
 	controller        controller.Controller
 	context           context.Context
 	cancel            context.CancelFunc
+	log               l.Logger
 }
 
 // Reconcile : The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -153,11 +156,11 @@ type ReconcileNamespaceLabel struct {
 func (r *ReconcileNamespaceLabel) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	if request.NamespacedName.Name == r.operatorNamespace {
-		logrus.Info("Reconciling namespace labels")
+		r.log.Info("Reconciling namespace labels")
 
 		ns, err := GetNS(r.context, r.operatorNamespace, r.client)
 		if err != nil {
-			logrus.Errorf("could not retrieve %s namespace: %v", ns.Name, err)
+			r.log.Error("could not retrieve %s namespace:", err)
 		}
 		err = r.CheckLabel(ns, request)
 
@@ -165,7 +168,7 @@ func (r *ReconcileNamespaceLabel) Reconcile(request reconcile.Request) (reconcil
 			return reconcile.Result{}, err
 		}
 
-		logrus.Info("Reconciling namespace labels completed")
+		r.log.Info("Reconciling namespace labels completed")
 	}
 	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Minute}, nil
 }
@@ -207,9 +210,9 @@ func Uninstall(v string, request reconcile.Request, r *ReconcileNamespaceLabel) 
 		return nil
 	}
 
-	logrus.Info("Uninstall label has been set")
+	r.log.Info("Uninstall label has been set")
 
-	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
+	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace, log)
 	if err != nil {
 		// Error reading the object - requeue the request.
 		return err
@@ -222,10 +225,10 @@ func Uninstall(v string, request reconcile.Request, r *ReconcileNamespaceLabel) 
 	}
 
 	if rhmiCr.DeletionTimestamp == nil {
-		logrus.Info("Deleting RHMI CR")
+		r.log.Info("Deleting RHMI CR")
 		err := r.client.Delete(r.context, rhmiCr)
 		if err != nil {
-			logrus.Errorf("failed to delete RHMI CR: %v", err)
+			r.log.Error("failed to delete RHMI CR", err)
 		}
 	}
 	return nil
@@ -233,7 +236,7 @@ func Uninstall(v string, request reconcile.Request, r *ReconcileNamespaceLabel) 
 
 // CheckCidrValueAndUpdate Checks cidr value and updates it in the configmap if the config map value is ""
 func CheckCidrValueAndUpdate(value string, request reconcile.Request, r *ReconcileNamespaceLabel) error {
-	logrus.Infof("Cidr value : %v, passed in as a namespace label", value)
+	r.log.Infof("Cidr value : passed in as a namespace label", l.Fields{"value": value})
 	cfgMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
@@ -252,20 +255,20 @@ func CheckCidrValueAndUpdate(value string, request reconcile.Request, r *Reconci
 	// Unmarshal or Decode the JSON to the interface.
 	err = json.Unmarshal([]byte(data), &cfgMapData)
 	if err != nil {
-		logrus.Error(err)
+		r.log.Error("Failed to unmarshal cfgMapData", err)
 	}
 
 	cidr := cfgMapData.Production.CreateStrategy.CidrBlock
 
 	if cidr != "" {
-		logrus.Infof("Cidr value is already set to : %v , not updating", cidr)
+		r.log.Infof("Cidr value is already set, not updating", l.Fields{"value": cidr})
 		return nil
 	}
 
 	// replace - character from label with / so that the cidr value is set correctly.
 	// / is not a valid character in namespace label values.
 	newCidr := strings.Replace(value, "-", "/", -1)
-	logrus.Infof("No cidr has been set in configmap yet, Setting cidr from namespace label : %v", newCidr)
+	r.log.Infof("No cidr has been set in configmap yet, setting cidr from namespace label", l.Fields{"newCidr": newCidr})
 
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		clientcmd.NewDefaultClientConfigLoadingRules(),

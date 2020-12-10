@@ -3,10 +3,10 @@ package marketplace
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"reflect"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +58,7 @@ func (r *ConfigMapCatalogSourceReconciler) Reconcile(ctx context.Context) (recon
 }
 
 func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx context.Context, configMapData map[string]string) (string, error) {
-	logrus.Infof("Reconciling registry config map for namespace %s", r.Namespace)
+	log.Infof("Reconciling registry config map", l.Fields{"ns": r.Namespace})
 
 	configMapName := "registry-cm-" + r.Namespace
 	configMap := &corev1.ConfigMap{
@@ -78,7 +78,7 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx contex
 			return "", fmt.Errorf("Failed to create configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
 		}
 
-		logrus.Infof("Created registry config map for namepsace %s", r.Namespace)
+		log.Infof("Created registry config map", l.Fields{"ns": r.Namespace})
 	} else {
 		if !reflect.DeepEqual(configMap.Data, configMapData) {
 			configMap.Data = configMapData
@@ -86,17 +86,17 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileRegistryConfigMap(ctx contex
 				return "", fmt.Errorf("Failed to update configmap %s in %s namespace: %w", configMap.Name, configMap.Namespace, err)
 			}
 
-			logrus.Infof("Updated config map %s in namspace %s", configMapName, r.Namespace)
+			log.Infof("Updated", l.Fields{"configMap": configMapName, "ns": r.Namespace})
 		}
 	}
 
-	logrus.Infof("Successfully reconciled registry config map for namespace %s", r.Namespace)
+	log.Infof("Successfully reconciled registry config map", l.Fields{"ns": r.Namespace})
 
 	return configMapName, nil
 }
 
 func (r *ConfigMapCatalogSourceReconciler) reconcileCatalogSource(ctx context.Context, configMapName string) (reconcile.Result, error) {
-	logrus.Infof("Reconciling registry catalog source for namespace %s", r.Namespace)
+	log.Infof("Reconciling registry catalog source", l.Fields{"ns": r.Namespace})
 
 	catalogSource := &coreosv1alpha1.CatalogSource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,16 +122,16 @@ func (r *ConfigMapCatalogSourceReconciler) reconcileCatalogSource(ctx context.Co
 
 	switch or {
 	case controllerutil.OperationResultCreated:
-		logrus.Infof("Created registry catalog source for namespace %s", r.Namespace)
+		log.Infof("Created registry catalog source", l.Fields{"ns": r.Namespace})
 	case controllerutil.OperationResultUpdated:
-		logrus.Infof("Updated registry catalog source for namespace %s", r.Namespace)
+		log.Infof("Updated registry catalog source", l.Fields{"ns": r.Namespace})
 	case controllerutil.OperationResultNone:
 		break
 	default:
 		return reconcile.Result{}, fmt.Errorf("Unknown controllerutil.OperationResult '%v'", or)
 	}
 
-	logrus.Infof("Successfully reconciled registry catalog source for namespace %s", r.Namespace)
+	log.Infof("Successfully reconciled registry catalog source", l.Fields{"ns": r.Namespace})
 
 	return reconcile.Result{}, nil
 }

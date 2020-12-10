@@ -30,6 +30,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/products/solutionexplorer"
 	"github.com/integr8ly/integreatly-operator/pkg/products/ups"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/amqonline"
@@ -94,7 +95,7 @@ type Interface interface {
 	VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool
 }
 
-func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager) (reconciler Interface, err error) {
+func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mgr manager.Manager, log l.Logger) (reconciler Interface, err error) {
 	mpm := marketplace.NewManager()
 	oauthHttpClient := &http.Client{
 		Timeout: time.Second * 10,
@@ -104,20 +105,20 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 			TLSClientConfig:   &tls.Config{InsecureSkipVerify: installation.Spec.SelfSignedCerts},
 		},
 	}
-	oauthResolver := resources.NewOauthResolver(oauthHttpClient)
+	oauthResolver := resources.NewOauthResolver(oauthHttpClient, log)
 	oauthResolver.Host = rc.Host
 	recorder := mgr.GetEventRecorderFor(string(product))
 
 	switch product {
 	case integreatlyv1alpha1.ProductAMQStreams:
-		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = amqstreams.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductRHSSO:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
-		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{})
+		reconciler, err = rhsso.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{}, log)
 		if err != nil {
 			return nil, err
 		}
@@ -127,36 +128,36 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		if err != nil {
 			return nil, err
 		}
-		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{})
+		reconciler, err = rhssouser.NewReconciler(configManager, installation, oauthv1Client, mpm, recorder, rc.Host, &keycloakCommon.LocalConfigKeycloakFactory{}, log)
 		if err != nil {
 			return nil, err
 		}
 	case integreatlyv1alpha1.ProductCodeReadyWorkspaces:
-		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = codeready.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductFuse:
-		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = fuse.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductFuseOnOpenshift:
-		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "")
+		reconciler, err = fuseonopenshift.NewReconciler(configManager, installation, mpm, recorder, &http.Client{}, "", log)
 	case integreatlyv1alpha1.ProductAMQOnline:
-		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = amqonline.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductSolutionExplorer:
 		oauthv1Client, err := oauthClient.NewForConfig(rc)
 		oauthv1Client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
 		if err != nil {
 			return nil, err
 		}
-		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver, recorder)
+		reconciler, err = solutionexplorer.NewReconciler(configManager, installation, oauthv1Client, mpm, oauthResolver, recorder, log)
 		if err != nil {
 			return nil, err
 		}
 	case integreatlyv1alpha1.ProductMonitoring:
-		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = monitoring.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductMonitoringSpec:
-		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = monitoringspec.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductApicurioRegistry:
-		reconciler, err = apicurioregistry.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = apicurioregistry.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductApicurito:
-		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = apicurito.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.Product3Scale:
 		client, err := appsv1Client.NewForConfig(rc)
 		client.RESTClient().(*rest.RESTClient).Client.Timeout = 10 * time.Second
@@ -180,21 +181,20 @@ func NewReconciler(product integreatlyv1alpha1.ProductName, rc *rest.Config, con
 		}
 
 		tsClient := threescale.NewThreeScaleClient(httpc, installation.Spec.RoutingSubdomain)
-
-		reconciler, err = threescale.NewReconciler(configManager, installation, client, oauthv1Client, tsClient, mpm, recorder)
+		reconciler, err = threescale.NewReconciler(configManager, installation, client, oauthv1Client, tsClient, mpm, recorder, log)
 		if err != nil {
 			return nil, err
 		}
 	case integreatlyv1alpha1.ProductUps:
-		reconciler, err = ups.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = ups.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductCloudResources:
-		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = cloudresources.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductDataSync:
-		reconciler, err = datasync.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = datasync.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductMarin3r:
-		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = marin3r.NewReconciler(configManager, installation, mpm, recorder, log)
 	case integreatlyv1alpha1.ProductGrafana:
-		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder)
+		reconciler, err = grafana.NewReconciler(configManager, installation, mpm, recorder, log)
 	default:
 		err = errors.New("unknown products: " + string(product))
 		reconciler = &NoOp{}

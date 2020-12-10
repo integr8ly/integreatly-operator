@@ -303,7 +303,7 @@ func TestReconcileSecretToProductNamespace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			got, err := ReconcileSecretToProductNamespace(context.TODO(), tt.FakeClient, basicConfig, productSecret.Name, basicConfig.GetOperatorNamespace())
+			got, err := ReconcileSecretToProductNamespace(context.TODO(), tt.FakeClient, basicConfig, productSecret.Name, basicConfig.GetOperatorNamespace(), getLogger())
 			if (err != nil) != tt.ExpectedError {
 				t.Errorf("ReconcileSecretToProductNamespace() error = %v, wantErr %v", err, tt.ExpectedError)
 				return

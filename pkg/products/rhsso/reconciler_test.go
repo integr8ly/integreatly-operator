@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -214,6 +215,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Recorder,
 				tc.APIURL,
 				tc.KeycloakClientFactory,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -379,6 +381,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 				tc.Recorder,
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
+				getLogger(),
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -603,6 +606,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Recorder,
 				tc.ApiUrl,
 				tc.KeycloakClientFactory,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -839,4 +843,8 @@ func createKeycloakInterfaceMock() (keycloakCommon.KeycloakInterface, *mockClien
 		ListAuthenticationFlowsFunc:              listAuthenticationFlowsFunc,
 		UpdateIdentityProviderFunc:               updateIdentityProviderFunc,
 	}, &context
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductMonitoringSpec})
 }

@@ -2,12 +2,11 @@ package threescale
 
 import (
 	"context"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
-	"github.com/sirupsen/logrus"
-
 	openshiftv1 "github.com/openshift/api/apps/v1"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -177,8 +176,7 @@ func TestThreeScale(t *testing.T) {
 				t.Fatalf("Error creating config manager")
 			}
 
-			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder)
-			tsReconciler.logger = logrus.NewEntry(logrus.New())
+			tsReconciler, err := NewReconciler(configManager, scenario.Installation, scenario.FakeAppsV1Client, scenario.FakeOauthClient, scenario.FakeThreeScaleClient, scenario.MPM, scenario.Recorder, getLogger())
 			if err != nil {
 				t.Fatalf("Error creating new reconciler %s: %v", constants.ThreeScaleSubscriptionName, err)
 			}
@@ -253,7 +251,7 @@ func TestReconciler_reconcileBlobStorage(t *testing.T) {
 			r := &Reconciler{
 				ConfigManager: tt.fields.ConfigManager,
 				Config:        tt.fields.Config,
-				logger:        logrus.NewEntry(logrus.New()),
+				log:           getLogger(),
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
@@ -336,7 +334,7 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			r := &Reconciler{
 				ConfigManager: tt.fields.ConfigManager,
 				Config:        tt.fields.Config,
-				logger:        logrus.NewEntry(logrus.New()),
+				log:           getLogger(),
 				mpm:           tt.fields.mpm,
 				installation:  tt.fields.installation,
 				tsClient:      tt.fields.tsClient,
@@ -427,4 +425,8 @@ func TestReconciler_syncOpenshiftAdmimMembership(t *testing.T) {
 	if !calledSetUserAsAdmin {
 		t.Fatal("Expected user with ID 1 to be promoted as admin, but no promotion was invoked")
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.Product3Scale})
 }

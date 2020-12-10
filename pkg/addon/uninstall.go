@@ -2,11 +2,11 @@ package addon
 
 import (
 	"context"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"net/http"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,7 +29,7 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 		return nil
 	}
 
-	logrus.Infof("deleting subscription %s", subscription.Name)
+	log.Infof("Deleting subscription", l.Fields{"name": subscription.Name})
 
 	// Declare the deleting subscription function
 	deleteSubscription := func() error {
@@ -52,7 +52,7 @@ func UninstallOperator(ctx context.Context, client k8sclient.Client, installatio
 		return deleteSubscription()
 	}
 
-	logrus.Infof("Deleting operator CSV %s", csv.Name)
+	log.Infof("Deleting operator CSV", l.Fields{"name": csv.Name})
 
 	// Delete the CSV
 	if err := client.Delete(ctx, csv); err != nil {

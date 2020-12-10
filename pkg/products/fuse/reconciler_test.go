@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
@@ -196,6 +197,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -362,6 +364,7 @@ func TestReconciler_reconcileCustomResource(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil {
 				t.Fatal("unexpected err ", err)
@@ -556,6 +559,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -613,4 +617,8 @@ func getFuseCr(phase syndesisv1beta1.SyndesisPhase) *syndesisv1beta1.Syndesis {
 			Phase: phase,
 		},
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductDataSync})
 }

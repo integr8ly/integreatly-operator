@@ -2,6 +2,7 @@ package solutionexplorer
 
 import (
 	"context"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	consolev1 "github.com/openshift/api/console/v1"
@@ -107,7 +108,7 @@ func TestReconciler_ReconcileCustomResource(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			mockResolver := tc.OauthResolver()
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, mockResolver, tc.Recorder, getLogger())
 			if err != nil {
 				t.Fatal("unexpected err setting up reconciler ", err)
 			}
@@ -180,7 +181,7 @@ func TestSolutionExplorer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder)
+			reconciler, err := NewReconciler(tc.FakeConfig, tc.Installation, tc.FakeOauthClient, tc.FakeMPM, tc.OauthResolver(), tc.Recorder, getLogger())
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
 			}
@@ -208,4 +209,8 @@ func TestSolutionExplorer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductSolutionExplorer})
 }

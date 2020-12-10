@@ -2,8 +2,7 @@ package resources
 
 import (
 	"context"
-
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 
@@ -18,12 +17,12 @@ import (
 
 // AddFinalizer adds a finalizer to the custom resource. This allows us to clean up oauth clients
 // and other cluster level objects owned by the installation before the cr is deleted
-func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
+func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string, log l.Logger) error {
 	if !Contains(inst.GetFinalizers(), finalizer) && inst.GetDeletionTimestamp() == nil {
 		inst.SetFinalizers(append(inst.GetFinalizers(), finalizer))
 		err := client.Update(ctx, inst)
 		if err != nil {
-			logrus.Error("Error adding finalizer to custom resource", err)
+			log.Error("Error adding finalizer to custom resource", err)
 			return err
 		}
 	}
@@ -31,17 +30,17 @@ func AddFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8
 }
 
 // RemoveOauthClient deletes an oauth client by name
-func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string) error {
+func RemoveOauthClient(oauthClient oauthClient.OauthV1Interface, oauthClientName string, log l.Logger) error {
 	err := oauthClient.OAuthClients().Delete(oauthClientName, &metav1.DeleteOptions{})
 	if err != nil && !k8serr.IsNotFound(err) {
-		logrus.Error("Error cleaning up oauth client", err)
+		log.Error("Error cleaning up oauth client", err)
 		return err
 	}
 	return nil
 }
 
 // RemoveNamespace deletes a namespace of a product
-func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
+func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, namespace string, log l.Logger) (integreatlyv1alpha1.StatusPhase, error) {
 	ns, err := GetNS(ctx, namespace, client)
 	if err != nil {
 		// Since we are using ProjectRequests and limited permissions,
@@ -49,7 +48,7 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 		if k8serr.IsNotFound(err) || k8serr.IsForbidden(err) {
 			return integreatlyv1alpha1.PhaseCompleted, nil
 		}
-		logrus.Error("Error getting a namespace", err)
+		log.Error("Error getting a namespace", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -62,32 +61,32 @@ func RemoveNamespace(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client
 	}
 
 	err = client.Delete(ctx, nsProject)
-	logrus.Infof("namespace %s removal triggered, status will be checked on next reconcile", namespace)
+	log.Infof("Removal triggered, status will be checked on next reconcile", l.Fields{"ns": namespace})
 	if err != nil && !k8serr.IsNotFound(err) {
-		logrus.Error("Error deleting a namespace", err)
+		log.Error("Error deleting a namespace", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 	return integreatlyv1alpha1.PhaseInProgress, nil
 }
 
 // RemoveProductFinalizer removes a given finalizer from the installation custom resource
-func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, product string) error {
+func RemoveProductFinalizer(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, product string, log l.Logger) error {
 	finalizer := "finalizer." + product + ".integreatly.org"
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
-		logrus.Info("Error removing finalizer from custom resource", err)
+		log.Error("Error removing finalizer from custom resource", err)
 		return err
 	}
 	return nil
 }
 
 // RemoveFinalizerAndUpdate removes a given finalizer from the installation custom resource
-func RemoveFinalizerAndUpdate(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string) error {
+func RemoveFinalizerAndUpdate(ctx context.Context, inst *integreatlyv1alpha1.RHMI, client k8sclient.Client, finalizer string, log l.Logger) error {
 	inst.SetFinalizers(Remove(inst.GetFinalizers(), finalizer))
 	err := client.Update(ctx, inst)
 	if err != nil {
-		logrus.Info("Error removing finalizer from custom resource", err)
+		log.Error("Error removing finalizer from custom resource", err)
 		return err
 	}
 	return nil

@@ -3,6 +3,7 @@ package apicurioregistry
 import (
 	"context"
 	"errors"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	apicurioregistry "github.com/Apicurio/apicurio-registry-operator/pkg/apis/apicur/v1alpha1"
@@ -138,6 +139,7 @@ func TestReconciler_config(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -224,6 +226,7 @@ func TestReconciler_handleProgress(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -346,6 +349,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 			if err != nil && err.Error() != tc.ExpectedError {
 				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
@@ -366,4 +370,8 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductApicurioRegistry})
 }

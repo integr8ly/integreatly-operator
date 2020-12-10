@@ -11,7 +11,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
 
-	"github.com/sirupsen/logrus"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	kafkav1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/kafka.strimzi.io/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -44,12 +44,12 @@ type Reconciler struct {
 	Config        *config.AMQStreams
 	ConfigManager config.ConfigReadWriter
 	mpm           marketplace.MarketplaceInterface
-	logger        *logrus.Entry
+	log           l.Logger
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, log l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadAMQStreams()
 	if err != nil {
 		return nil, fmt.Errorf("could not read amq streams config: %w", err)
@@ -66,13 +66,11 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
-		logger:        logger,
+		log:           log,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
@@ -97,29 +95,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace)
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
 	ns := r.Config.GetNamespace()
-	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, ns, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", ns), err)
 		return phase, err
@@ -154,12 +152,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	r.logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
+	r.log.Infof("Reconciled successfully", l.Fields{"productName": r.Config.GetProductName()})
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Debug("reconciling amq streams custom resource")
+	r.log.Debug("reconciling amq streams custom resource")
 
 	kafka := &kafkav1alpha1.Kafka{
 		ObjectMeta: metav1.ObjectMeta{
@@ -215,7 +213,7 @@ func (r *Reconciler) handleCreatingComponents(ctx context.Context, client k8scli
 }
 
 func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Debug("checking amq streams pods are running")
+	r.log.Debug("checking amq streams pods are running")
 
 	pods := &corev1.PodList{}
 	listOpts := []k8sclient.ListOption{
@@ -236,7 +234,7 @@ func (r *Reconciler) handleProgressPhase(ctx context.Context, client k8sclient.C
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
-	r.logger.Infof("all pods ready, returning complete")
+	r.log.Info("all pods ready, returning complete")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -290,5 +288,6 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		backup.NewNoopBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }

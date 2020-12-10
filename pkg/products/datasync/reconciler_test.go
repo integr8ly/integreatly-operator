@@ -3,6 +3,7 @@ package datasync
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"testing"
 
 	"github.com/integr8ly/integreatly-operator/pkg/apis"
@@ -113,6 +114,7 @@ func TestDataSync(t *testing.T) {
 				tc.Installation,
 				tc.FakeMPM,
 				tc.Recorder,
+				getLogger(),
 			)
 
 			if err != nil && err.Error() != tc.ExpectedError {
@@ -142,4 +144,8 @@ func TestDataSync(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{l.ProductLogContext: integreatlyv1alpha1.ProductDataSync})
 }

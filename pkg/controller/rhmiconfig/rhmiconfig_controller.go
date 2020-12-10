@@ -19,10 +19,10 @@ package rhmiconfig
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"time"
 
 	croUtil "github.com/integr8ly/cloud-resource-operator/pkg/client"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
@@ -32,13 +32,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_rhmiconfig")
+var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "rhmi_config_controller"})
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
@@ -98,7 +97,7 @@ type ReconcileRHMIConfig struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logrus.Info("reconciling RHMIConfig")
+	log.Info("reconciling RHMIConfig")
 
 	// Fetch the RHMIConfig instance
 	rhmiConfig := &integreatlyv1alpha1.RHMIConfig{}
@@ -140,23 +139,23 @@ func (r *ReconcileRHMIConfig) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// ensure values are as expected
 	if err := r.reconcileValues(rhmiConfig, reconcileBackupAndMaintenanceValues, reconcileUpgradeValues); err != nil {
-		logrus.Errorf("failed to reconcile rhmi config values : %v", err)
+		log.Error("failed to reconcile rhmi config values", err)
 		return retryRequeue, err
 	}
 
 	// create cloud resource operator override config map
 	if err := r.ReconcileCloudResourceStrategies(rhmiConfig); err != nil {
-		logrus.Errorf("rhmi config failure while reconciling cloud resource strategies : %v", err)
+		log.Error("rhmi config failure while reconciling cloud resource strategies", err)
 		return retryRequeue, err
 	}
 
-	logrus.Infof("rhmi config reconciled successfully")
+	log.Info("rhmi config reconciled successfully")
 	return reconcile.Result{Requeue: true, RequeueAfter: 5 * time.Minute}, nil
 }
 
 // reconciles cloud resource strategies, setting backup and maintenance values for postgres and redis instances
 func (r *ReconcileRHMIConfig) ReconcileCloudResourceStrategies(config *integreatlyv1alpha1.RHMIConfig) error {
-	logrus.Info("reconciling cloud resource maintenance strategies")
+	log.Info("reconciling cloud resource maintenance strategies")
 
 	// validate the applyOn and applyFrom values are correct
 	// we also perform this validation on the validate web-hook

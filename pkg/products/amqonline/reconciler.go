@@ -3,14 +3,13 @@ package amqonline
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"strconv"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/version"
-
-	"github.com/sirupsen/logrus"
 
 	monitoringv1alpha1 "github.com/integr8ly/application-monitoring-operator/pkg/apis/applicationmonitoring/v1alpha1"
 	enmasseadminv1beta1 "github.com/integr8ly/integreatly-operator/pkg/apis-products/enmasse/admin/v1beta1"
@@ -51,13 +50,13 @@ type Reconciler struct {
 	extraParams   map[string]string
 	mpm           marketplace.MarketplaceInterface
 	restConfig    *rest.Config
-	logger        *logrus.Entry
+	log           l.Logger
 	inst          *integreatlyv1alpha1.RHMI
 	*resources.Reconciler
 	recorder record.EventRecorder
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	config, err := configManager.ReadAMQOnline()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve amq online config: %w", err)
@@ -72,13 +71,11 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 
 	config.SetBlackboxTargetPath("/oauth/healthz")
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
-
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		inst:          installation,
 		recorder:      recorder,
@@ -110,29 +107,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	productNamespace := r.Config.GetNamespace()
 
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
-		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace())
+		phase, err := resources.RemoveNamespace(ctx, installation, serverClient, r.Config.GetNamespace(), r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
-		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, serverClient, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", operatorNamespace), err)
 		return phase, err
 	}
 
 	ns := r.Config.GetNamespace()
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, serverClient, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s namespace", productNamespace), err)
 		return phase, err
@@ -198,7 +195,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.newAlertsReconciler().ReconcileAlerts(ctx, serverClient)
+	phase, err = r.newAlertsReconciler(r.log).ReconcileAlerts(ctx, serverClient)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile amqonline alerts", err)
 		return phase, err
@@ -253,7 +250,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 }
 
 func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling default auth services")
+	r.log.Info("reconciling default auth services")
 
 	noneAuthService := &enmasseadminv1beta1.AuthenticationService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -267,13 +264,14 @@ func (r *Reconciler) reconcileNoneAuthenticationService(ctx context.Context, ser
 		return nil
 	})
 	if err != nil {
+		r.log.Error("failed to create/update 'none' AuthenticationService", err)
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create/update 'none' AuthenticationService: %w", err)
 	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
 func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling standard AuthenticationService")
+	r.log.Info("reconciling standard AuthenticationService")
 
 	const postgresqlName string = constants.AMQAuthServicePostgres
 
@@ -345,7 +343,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 	}
 
 	// create backup secret
-	logrus.Info("Reconciling amq-online postgres backup secret")
+	r.log.Info("Reconciling amq-online postgres backup secret")
 	amqOnlneBackUpSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      r.Config.GetPostgresBackupSecretName(),
@@ -403,7 +401,7 @@ func (r *Reconciler) reconcileStandardAuthenticationService(ctx context.Context,
 }
 
 func (r *Reconciler) reconcileInfraConfigs(ctx context.Context, serverClient k8sclient.Client, brokeredCfgs []*enmassev1beta1.BrokeredInfraConfig, stdCfgs []*enmassev1beta1.StandardInfraConfig) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling default infra configs")
+	r.log.Info("reconciling default infra configs")
 
 	for _, bic := range brokeredCfgs {
 
@@ -431,7 +429,7 @@ func (r *Reconciler) reconcileInfraConfigs(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient k8sclient.Client, addrPlans []*enmassev1beta2.AddressPlan) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling default address plans")
+	r.log.Info("reconciling default address plans")
 
 	for _, ap := range addrPlans {
 		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, ap, func() error {
@@ -446,7 +444,7 @@ func (r *Reconciler) reconcileAddressPlans(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClient k8sclient.Client, addrSpacePlans []*enmassev1beta2.AddressSpacePlan) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling default address space plans")
+	r.log.Info("reconciling default address space plans")
 
 	for _, asp := range addrSpacePlans {
 		_, err := controllerutil.CreateOrUpdate(ctx, serverClient, asp, func() error {
@@ -461,7 +459,7 @@ func (r *Reconciler) reconcileAddressSpacePlans(ctx context.Context, serverClien
 }
 
 func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Info("reconciling service admin role to the dedicated admins group")
+	r.log.Info("reconciling service admin role to the dedicated admins group")
 
 	serviceAdminRole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -519,7 +517,7 @@ func (r *Reconciler) reconcileServiceAdmin(ctx context.Context, serverClient k8s
 }
 
 func (r *Reconciler) reconcileConfig(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	r.logger.Infof("reconciling config")
+	r.log.Info("reconciling config")
 
 	consoleSvc := &enmasseadminv1beta1.ConsoleService{
 		ObjectMeta: metav1.ObjectMeta{
@@ -574,7 +572,7 @@ func (r *Reconciler) reconcileBackup(ctx context.Context, serverClient k8sclient
 		},
 	}
 
-	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager)
+	err := resources.ReconcileBackup(ctx, serverClient, backupConfig, r.ConfigManager, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create backups for amq-online: %w", err)
 	}
@@ -618,5 +616,6 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }

@@ -5,10 +5,11 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool, logger l.Logger) resources.AlertReconciler {
 	nsPrefix := r.installation.Spec.NamespacePrefix
 
 	monitoringExpectedPodCount := 7
@@ -19,7 +20,7 @@ func (r *Reconciler) newAlertsReconciler(isClusterMultiAZ bool) resources.AlertR
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "monitoring",
 		Installation: r.installation,
-		Logger:       r.Logger,
+		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "backup-monitoring-alerts",

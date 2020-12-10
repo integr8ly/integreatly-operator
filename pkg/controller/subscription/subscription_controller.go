@@ -3,6 +3,7 @@ package subscription
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"os"
 	"regexp"
 	"strings"
@@ -20,8 +21,6 @@ import (
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	catalogsourceClient "github.com/integr8ly/integreatly-operator/pkg/resources/catalogsource"
-
-	"github.com/sirupsen/logrus"
 
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -52,6 +51,8 @@ var subscriptionsToReconcile []string = []string{
 	ManagedAPIAddonSubscription,
 }
 
+var log = l.NewLoggerWithContext(l.Fields{l.ControllerLogContext: "subscription_controller"})
+
 // Add creates a new Subscription Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -79,7 +80,7 @@ func newReconciler(mgr manager.Manager) (reconcile.Reconciler, error) {
 		return nil, err
 	}
 
-	catalogSourceClient, err := catalogsourceClient.NewClient(context.TODO(), client)
+	catalogSourceClient, err := catalogsourceClient.NewClient(context.TODO(), client, log)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ type ReconcileSubscription struct {
 func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// skip any Subscriptions that are not integreatly operator
 	if !r.shouldReconcileSubscription(request) {
-		logrus.Infof("not our subscription: %+v, %s", request, r.operatorNamespace)
+		log.Infof("Not our subscription", l.Fields{"request": request, "opNS": r.operatorNamespace})
 		return reconcile.Result{}, nil
 	}
 
@@ -161,7 +162,7 @@ func (r *ReconcileSubscription) Reconcile(request reconcile.Request) (reconcile.
 		}
 	}
 
-	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace)
+	rhmiCr, err := resources.GetRhmiCr(r.client, context.TODO(), request.NamespacedName.Namespace, log)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -189,7 +190,7 @@ func (r *ReconcileSubscription) shouldReconcileSubscription(request reconcile.Re
 
 func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscription *operatorsv1alpha1.Subscription, installation *integreatlyv1alpha1.RHMI) (reconcile.Result, error) {
 	if !rhmiConfigs.IsUpgradeAvailable(rhmiSubscription) {
-		logrus.Infof("no upgrade available")
+		log.Info("no upgrade available")
 
 		namespaceSegments := strings.Split(rhmiSubscription.Namespace, "-")
 		namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
@@ -270,7 +271,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 			}
 
 			isInstallPlanDeleted = true
-			logrus.Info("Installplan deleted for the install of patch upgrade")
+			log.Info("Installplan deleted for the install of patch upgrade")
 
 			err = rhmiConfigs.CreateInstallPlan(ctx, rhmiSubscription, r.client)
 			if err != nil {
@@ -321,7 +322,7 @@ func (r *ReconcileSubscription) HandleUpgrades(ctx context.Context, rhmiSubscrip
 		return reconcile.Result{}, err
 	}
 	if phase == integreatlyv1alpha1.PhaseInProgress {
-		logrus.Infof("WebApp instance not found yet, skipping upgrade addition")
+		log.Info("WebApp instance not found yet, skipping upgrade addition")
 	}
 
 	if !isServiceAffecting || canUpgradeNow {

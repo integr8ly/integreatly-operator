@@ -5,16 +5,17 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconciler {
 	const apicuritoPodCountExpected int = 3
 
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "Apicurito",
 		Installation: r.installation,
-		Logger:       r.logger,
+		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "ksm-apicurito-alerts",

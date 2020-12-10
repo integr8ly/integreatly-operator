@@ -2,6 +2,7 @@ package marin3r
 
 import (
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
@@ -16,7 +17,7 @@ const (
 	softLimitAlertQuery = "floor(sum(increase(ratelimit_service_rate_limit_apicast_ratelimit_generic_key_slowpath_total_hits[24h]))) > %d"
 )
 
-func (r *Reconciler) newSoftLimitAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newSoftLimitAlertsReconciler(logger l.Logger) resources.AlertReconciler {
 	softDailyLimits := r.RateLimitConfig.SoftDailyLimits
 	if softDailyLimits == nil || len(softDailyLimits) == 0 {
 		return &resources.NoopAlertReconciler{}
@@ -25,7 +26,7 @@ func (r *Reconciler) newSoftLimitAlertsReconciler() resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "3scale",
 		Installation: r.installation,
-		Logger:       r.logger,
+		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "rate-limit-soft-limits",

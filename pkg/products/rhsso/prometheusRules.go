@@ -5,14 +5,15 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/integr8ly/integreatly-operator/pkg/resources"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
+func (r *Reconciler) newAlertsReconciler(logger l.Logger) resources.AlertReconciler {
 	return &resources.AlertReconcilerImpl{
 		ProductName:  "rhsso",
 		Installation: r.Installation,
-		Logger:       r.Logger,
+		Log:          logger,
 		Alerts: []resources.AlertConfiguration{
 			{
 				AlertName: "ksm-endpoint-alerts",

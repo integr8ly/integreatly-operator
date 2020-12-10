@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-
-	"github.com/sirupsen/logrus"
 
 	coreosv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	grpc "github.com/operator-framework/operator-registry/pkg/client"
@@ -22,14 +20,16 @@ type CatalogSourceClientInterface interface {
 type CatalogSourceClient struct {
 	ctx    context.Context
 	client k8sclient.Client
+	log    l.Logger
 }
 
 var _ CatalogSourceClientInterface = &CatalogSourceClient{}
 
-func NewClient(ctx context.Context, client k8sclient.Client) (*CatalogSourceClient, error) {
+func NewClient(ctx context.Context, client k8sclient.Client, log l.Logger) (*CatalogSourceClient, error) {
 	return &CatalogSourceClient{
 		client: client,
 		ctx:    ctx,
+		log:    log,
 	}, nil
 }
 
@@ -56,7 +56,7 @@ func (client *CatalogSourceClient) GetLatestCSV(catalogSourceKey k8sclient.Objec
 	csv := &olmv1alpha1.ClusterServiceVersion{}
 	err = json.Unmarshal([]byte(bundle.GetCsvJson()), &csv)
 	if err != nil {
-		logrus.Errorf("failed to unmarshal json: %v", err)
+		client.log.Error("failed to unmarshal json:", err)
 	}
 	return csv, nil
 }

@@ -3,6 +3,7 @@ package marin3r
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 
 	"github.com/pkg/errors"
 
@@ -30,7 +31,6 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	"github.com/integr8ly/integreatly-operator/version"
-	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -57,7 +57,7 @@ type Reconciler struct {
 	AlertsConfig    map[string]*marin3rconfig.AlertConfig
 	installation    *integreatlyv1alpha1.RHMI
 	mpm             marketplace.MarketplaceInterface
-	logger          *logrus.Entry
+	log             l.Logger
 	recorder        record.EventRecorder
 }
 
@@ -73,7 +73,7 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 	)
 }
 
-func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder) (*Reconciler, error) {
+func NewReconciler(configManager config.ConfigReadWriter, installation *integreatlyv1alpha1.RHMI, mpm marketplace.MarketplaceInterface, recorder record.EventRecorder, logger l.Logger) (*Reconciler, error) {
 	ns := installation.Spec.NamespacePrefix + defaultInstallationNamespace
 	config, err := configManager.ReadMarin3r()
 	if err != nil {
@@ -91,20 +91,19 @@ func NewReconciler(configManager config.ConfigReadWriter, installation *integrea
 		}
 	}
 
-	logger := logrus.NewEntry(logrus.StandardLogger())
 	return &Reconciler{
 		ConfigManager: configManager,
 		Config:        config,
 		installation:  installation,
 		mpm:           mpm,
-		logger:        logger,
+		log:           logger,
 		Reconciler:    resources.NewReconciler(mpm),
 		recorder:      recorder,
 	}, nil
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Start marin3r reconcile")
+	r.log.Info("Start marin3r reconcile")
 
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
@@ -125,18 +124,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to delete discovery service: %v", err)
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, client, productNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, client, productNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
-		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace)
+		phase, err = resources.RemoveNamespace(ctx, installation, client, operatorNamespace, r.log)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
 		}
 
 		return integreatlyv1alpha1.PhaseCompleted, nil
-	})
+	}, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile finalizer", err)
 		return phase, err
@@ -156,13 +155,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	}
 	r.AlertsConfig = alertsConfig
 
-	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, operatorNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", operatorNamespace), err)
 		return phase, err
 	}
 
-	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, client)
+	phase, err = r.ReconcileNamespace(ctx, productNamespace, installation, client, r.log)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile %s ns", productNamespace), err)
 		return phase, err
@@ -174,7 +173,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	logrus.Infof("about to start reconciling the discovery service")
+	r.log.Info("about to start reconciling the discovery service")
 	phase, err = r.reconcileDiscoveryService(ctx, client, productNamespace)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, fmt.Sprintf("Failed to reconcile DiscoveryService cr"), err)
@@ -222,7 +221,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	alertsReconciler := r.newAlertReconciler()
+	alertsReconciler := r.newAlertReconciler(r.log)
 	if phase, err := alertsReconciler.ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile Marin3r alerts", err)
 		return phase, err
@@ -235,7 +234,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler()
+	rejectedRequestsAlertReconciler, err := r.newRejectedRequestsAlertsReconciler(r.log)
 	if err != nil {
 		events.HandleError(r.recorder, installation, phase, "Failed to instantiate rejected requests alert reconciler", err)
 		return integreatlyv1alpha1.PhaseFailed, err
@@ -245,7 +244,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	if phase, err := r.newSoftLimitAlertsReconciler().ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+	if phase, err := r.newSoftLimitAlertsReconciler(r.log).ReconcileAlerts(ctx, client); err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.recorder, installation, phase, "Failed to reconcile soft limit alerts", err)
 		return phase, err
 	}
@@ -255,7 +254,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	product.OperatorVersion = r.Config.GetOperatorVersion()
 
 	events.HandleProductComplete(r.recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
-	logrus.Infof("%s installation is reconciled successfully", r.Config.GetProductName())
+	r.log.Info("Installation successful")
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
@@ -271,12 +270,12 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 					(grafanaProduct.Status != v1alpha1.PhaseCompleted &&
 						(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
 
-					logrus.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
+					r.log.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
 					return integreatlyv1alpha1.PhaseInProgress, nil
 				}
 			}
 		}
-		logrus.Errorf("failed to get Grafana console URL %v", err)
+		r.log.Error("failed to get Grafana console URL", err)
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
@@ -295,7 +294,7 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 }
 
 func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Info("Creating backend redis instance in marine3r reconcile")
+	r.log.Info("Creating backend redis instance in marine3r reconcile")
 
 	ns := r.installation.Namespace
 
@@ -339,7 +338,7 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 		return nil
 	})
 
-	phase, err := resources.ReconcileRedisAlerts(ctx, client, r.installation, rateLimitRedis)
+	phase, err := resources.ReconcileRedisAlerts(ctx, client, r.installation, rateLimitRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to reconcile redis alerts: %w", err)
 	}
@@ -348,7 +347,7 @@ func (r *Reconciler) reconcileRedis(ctx context.Context, client k8sclient.Client
 	}
 
 	// create Redis Cpu Usage High alert
-	err = resources.CreateRedisCpuUsageAlerts(ctx, client, r.installation, rateLimitRedis)
+	err = resources.CreateRedisCpuUsageAlerts(ctx, client, r.installation, rateLimitRedis, r.log)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create rate limit redis prometheus Cpu usage high alerts for threescale: %s", err)
 	}
@@ -418,6 +417,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		r.preUpgradeBackupExecutor(),
 		serverClient,
 		catalogSourceReconciler,
+		r.log,
 	)
 }
 
@@ -434,7 +434,7 @@ func (r *Reconciler) preUpgradeBackupExecutor() backup.BackupExecutor {
 }
 
 func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Start reconcilePromStatsdExporter for marin3r")
+	r.log.Info("Start reconcilePromStatsdExporter for marin3r")
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -496,7 +496,7 @@ func (r *Reconciler) reconcilePromStatsdExporter(ctx context.Context, client k8s
 }
 
 func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Start reconcilePromStatsdExporterService for marin3r")
+	r.log.Info("Start reconcilePromStatsdExporterService for marin3r")
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -540,7 +540,7 @@ func (r *Reconciler) reconcilePromStatsdExporterService(ctx context.Context, cli
 }
 
 func (r *Reconciler) reconcileServiceMonitor(ctx context.Context, client k8sclient.Client, namespace string) (integreatlyv1alpha1.StatusPhase, error) {
-	logrus.Infof("Start reconcileServiceMonitor for marin3r")
+	r.log.Info("Start reconcileServiceMonitor for marin3r")
 
 	serviceMonitor := &prometheus.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{

@@ -101,7 +101,7 @@ func TestBackups(t *testing.T) {
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.Name, func(t *testing.T) {
-			err := ReconcileBackup(scenario.Context, scenario.Client, scenario.BackupConfig, scenario.ConfigManager)
+			err := ReconcileBackup(scenario.Context, scenario.Client, scenario.BackupConfig, scenario.ConfigManager, getLogger())
 
 			if scenario.Validation != nil {
 				scenario.Validation(err, t)

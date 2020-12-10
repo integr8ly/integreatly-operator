@@ -3,12 +3,12 @@ package resources
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"reflect"
 	"testing"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -169,7 +169,7 @@ func TestReconcileAlerts(t *testing.T) {
 			ProductName:  "Test",
 			Alerts:       scenario.Alerts,
 			Installation: scenario.Installation,
-			Logger:       logrus.NewEntry(logrus.New()),
+			Log:          getLogger(),
 		}
 
 		phase, err := alertReconciler.ReconcileAlerts(context.TODO(), client)
@@ -229,4 +229,8 @@ var (
 func now() *v1.Time {
 	now := v1.Now()
 	return &now
+}
+
+func getLogger() l.Logger {
+	return l.NewLoggerWithContext(l.Fields{})
 }

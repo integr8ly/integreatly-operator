@@ -1,10 +1,10 @@
 package version
 
 import (
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"os"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -14,6 +14,7 @@ const (
 var (
 	version           = "2.7.0"
 	managedAPIVersion = "1.1.0"
+	log               = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "version"})
 )
 
 func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStatus, expectedProductVersion string, expectedOpVersion string) bool {
@@ -21,11 +22,11 @@ func VerifyProductAndOperatorVersion(product integreatlyv1alpha1.RHMIProductStat
 	installedProductVersion := string(product.Version)
 
 	if expectedOpVersion != installedOpVersion {
-		logrus.Debugf("%s Operator Version is not as expected. Expected %s, Actual %s", product.Name, expectedOpVersion, installedOpVersion)
+		log.Debugf("Operator Version is not as expected", l.Fields{"product": product.Name, "expected": expectedOpVersion, "actual": installedOpVersion})
 		return false
 	}
 	if expectedProductVersion != installedProductVersion {
-		logrus.Debugf("%s Version is not as expected. Expected %s, Actual %s", product.Name, expectedProductVersion, installedProductVersion)
+		log.Debugf("Product Version is not as expected.", l.Fields{"product": product.Name, "expected": expectedProductVersion, "actual": installedProductVersion})
 		return false
 	}
 	return true

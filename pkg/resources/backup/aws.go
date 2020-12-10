@@ -3,16 +3,18 @@ package backup
 import (
 	"context"
 	"fmt"
+	l "github.com/integr8ly/integreatly-operator/pkg/resources/logger"
 	"time"
 
 	"github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1"
 	crotypes "github.com/integr8ly/cloud-resource-operator/pkg/apis/integreatly/v1alpha1/types"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var log = l.NewLoggerWithContext(l.Fields{l.ComponentLogContext: "backup"})
 
 // AWSBackupExecutor knows how to perform backups by creating snapshot CRs
 // and waiting for their completion
@@ -43,7 +45,7 @@ const (
 // PerformBackup creates a snapshot CR and waits until the status of the CR
 // is `complete`
 func (e *AWSBackupExecutor) PerformBackup(client k8sclient.Client, timeout time.Duration) error {
-	logrus.Infof("Performing backup by creating %s for AWS resource %s", e.SnapshotType, e.ResourceName)
+	log.Infof("Performing backup on AWS", l.Fields{"snapshotType": e.SnapshotType, "resourceName": e.ResourceName})
 
 	snapshotName := fmt.Sprintf("%s-preupgrade-snapshot-%s", e.ResourceName, time.Now().Format("2006-01-02-150405"))
 
