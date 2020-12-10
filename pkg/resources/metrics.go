@@ -358,7 +358,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	//    * [1h] - one hour data points
 	//    * , 5 * 3600 - multiplying data points by 5 hour, to allow 1 hour of pending before firing the alert
 	alertExp := intstr.FromString(
-		fmt.Sprintf("(predict_linear(cro_postgres_free_storage_average{job='%s'}[1h], 5 * 3600) <= 0 and (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))) * on(pod) group_left(label_name) kube_pod_labels{label_name='cloud-resource-operator'}", job))
+		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[1h:1m], 5 * 3600) <= 0 and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25)))", job))
 
 	_, err := reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopURL, alertFor60Mins, alertExp, labels)
 	if err != nil {
@@ -377,7 +377,7 @@ func reconcilePostgresFreeStorageAlerts(ctx context.Context, client k8sclient.Cl
 	//    * [2h] - 2 hour data points
 	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
 	alertExp = intstr.FromString(
-		fmt.Sprintf("(predict_linear(cro_postgres_free_storage_average{job='%s'}[6h], 4 * 24 * 3600) <= 0 and (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))) * on(pod) group_left(label_name) kube_pod_labels{label_name='cloud-resource-operator'}", job))
+		fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_postgres_free_storage_average{job='%s'})[6h:1m], 4 * 24 * 3600) <= 0) and on (instanceID) (cro_postgres_free_storage_average < ((cro_postgres_current_allocated_storage / 100) * 25))", job))
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlPostgresWillFill, alertFor60Mins, alertExp, labels)
 	if err != nil {
@@ -516,7 +516,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [1h] - one hour data points
 	//    * , 4 * 3600 - multiplying data points by 4 hours
-	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(cro_redis_memory_usage_percentage_average{job='%s'}[1h], 5 * 3600) >= 100 and cro_redis_memory_usage_percentage_average > 75) * on(pod) group_left(label_name) kube_pod_labels{label_name='cloud-resource-operator'}", job))
+	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[1h:1m], 5 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
@@ -533,7 +533,7 @@ func createRedisMemoryUsageAlerts(ctx context.Context, client k8sclient.Client, 
 	// building a predict_linear query using 1 hour of data points to predict a 4 hour projection, and checking if it is less than or equal 0
 	//    * [6h] - six hour data points
 	//    * , 4 * 24 * 3600 - multiplying data points by 4 days
-	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(cro_redis_memory_usage_percentage_average{job='%s'}[6h], 4 * 24 * 3600) >= 100 and cro_redis_memory_usage_percentage_average > 75) * on(pod) group_left(label_name) kube_pod_labels{label_name='cloud-resource-operator'}", job))
+	alertExp = intstr.FromString(fmt.Sprintf("(predict_linear(sum by (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'})[6h:1m], 4 * 24 * 3600) >= 100) and on (instanceID) (cro_redis_memory_usage_percentage_average{job='%s'} > 75)", job, job))
 
 	_, err = reconcilePrometheusRule(ctx, client, ruleName, cr.Namespace, alertName, alertDescription, sopUrlRedisMemoryUsageHigh, alertFor60Mins, alertExp, labels)
 	if err != nil {
