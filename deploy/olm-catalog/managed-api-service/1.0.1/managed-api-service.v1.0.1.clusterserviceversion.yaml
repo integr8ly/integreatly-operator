@@ -8,6 +8,9 @@ metadata:
           "apiVersion": "integreatly.org/v1alpha1",
           "kind": "RHMI",
           "metadata": {
+            "annotations": {
+              "in_prow": "IN_PROW"
+            },
             "name": "INSTALLATION_NAME"
           },
           "spec": {
@@ -43,8 +46,10 @@ metadata:
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.1-rc1
+
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.1
     description: RHOAM integration suite of tools
+    serviceAffecting: "false"
     support: RHOAM
   name: managed-api-service.v1.0.1
   namespace: placeholder
@@ -187,7 +192,7 @@ spec:
         - apiGroups:
           - user.openshift.io
           resourceNames:
-          - rhmi-developers
+          - rhoam-developers
           resources:
           - groups
           verbs:
@@ -352,7 +357,7 @@ spec:
                   value: info
                 - name: INSTALLATION_TYPE
                   value: managed-api
-                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.1-rc1
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.1
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
