@@ -3,8 +3,6 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/resources"
 	"os"
 	"strings"
 	"time"
@@ -96,21 +94,8 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 		return err
 	}
 
-	ns, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return err
-	}
-	cr, err := resources.GetRhmiCr(context.TODO(), client, ns)
-	if err != nil {
-		return err
-	}
-
-	// this is only called from main.go, so sending in an empty RHMI instance should get us passed the uninstall checks
-	if cr == nil {
-		cr = &v1alpha1.RHMI{}
-	}
 	// Create the service pointing to the operator pod
-	if err := webhookConfig.ReconcileService(context.TODO(), cr, client, nil); err != nil {
+	if err := webhookConfig.ReconcileService(context.TODO(), client, nil); err != nil {
 		return err
 	}
 	// Get the secret with the certificates for the service
@@ -142,7 +127,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) SetupServer(mgr manager.Manager) 
 // It reconciles a Service that exposes the webhook server
 // A ownerRef to the owner parameter is set on the reconciled resources. This
 // parameter is optional, if `nil` is passed, no ownerReference will be set
-func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, owner ownerutil.Owner) error {
+func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
 	if !enabled() {
 		return nil
 	}
@@ -155,7 +140,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, in
 	namespacePrefix := strings.Join(namespaceSegments[0:2], "-") + "-"
 
 	// Reconcile the Service
-	if err := webhookConfig.ReconcileService(ctx, inst, client, owner); err != nil {
+	if err := webhookConfig.ReconcileService(ctx, client, owner); err != nil {
 		return err
 	}
 
@@ -171,22 +156,15 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, in
 		},
 	}
 
-	var caBundle []byte
-	if inst.DeletionTimestamp == nil {
-		err = client.Create(ctx, caConfigMap)
-		if err != nil && !errors.IsAlreadyExists(err) {
-			return err
-		}
-		// Wait for the config map to be injected with the CA
-		caBundle, err = webhookConfig.waitForCAInConfigMap(ctx, client)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = client.Delete(ctx, caConfigMap)
-		if err != nil && !errors.IsNotFound(err) {
-			return err
-		}
+	err = client.Create(ctx, caConfigMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+
+	// Wait for the config map to be injected with the CA
+	caBundle, err := webhookConfig.waitForCAInConfigMap(ctx, client)
+	if err != nil {
+		return err
 	}
 
 	// Reconcile the webhooks
@@ -199,7 +177,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, in
 		reconciler.SetName(webhook.Name)
 		reconciler.SetRule(webhook.Rule)
 
-		if err := reconciler.Reconcile(ctx, inst, client, caBundle); err != nil {
+		if err := reconciler.Reconcile(ctx, client, caBundle); err != nil {
 			return err
 		}
 	}
@@ -208,7 +186,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) Reconcile(ctx context.Context, in
 }
 
 // ReconcileService creates or updates the service that points to the Pod
-func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, owner ownerutil.Owner) error {
+func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Context, client k8sclient.Client, owner ownerutil.Owner) error {
 	watchNS, err := k8sutil.GetWatchNamespace()
 	if err != nil {
 		return pkgerr.Wrap(err, "could not get watch namespace from operator_webhooks reconcile")
@@ -225,9 +203,7 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 			return err
 		}
 
-		if inst.DeletionTimestamp == nil {
-			return createService(ctx, client, owner)
-		}
+		return createService(ctx, client, owner)
 	}
 
 	// If the existing service has a different .spec.clusterIP value, delete it
@@ -237,9 +213,6 @@ func (webhookConfig *IntegreatlyWebhookConfig) ReconcileService(ctx context.Cont
 		}
 	}
 
-	if inst.DeletionTimestamp != nil {
-		return client.Delete(ctx, service)
-	}
 	return createService(ctx, client, owner)
 }
 

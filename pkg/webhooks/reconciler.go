@@ -3,8 +3,6 @@ package webhooks
 import (
 	"context"
 	"fmt"
-	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"strings"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -20,7 +18,7 @@ import (
 type WebhookReconciler interface {
 	SetName(name string)
 	SetRule(rule RuleWithOperations)
-	Reconcile(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, caBundle []byte) error
+	Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error
 }
 
 type CompositeWebhookReconciler struct {
@@ -39,9 +37,9 @@ func (reconciler *CompositeWebhookReconciler) SetRule(rule RuleWithOperations) {
 	}
 }
 
-func (reconciler *CompositeWebhookReconciler) Reconcile(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, caBundle []byte) error {
+func (reconciler *CompositeWebhookReconciler) Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error {
 	for _, innerReconciler := range reconciler.Reconcilers {
-		if err := innerReconciler.Reconcile(ctx, inst, client, caBundle); err != nil {
+		if err := innerReconciler.Reconcile(ctx, client, caBundle); err != nil {
 			return err
 		}
 	}
@@ -61,7 +59,7 @@ type MutatingWebhookReconciler struct {
 	rule RuleWithOperations
 }
 
-func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, caBundle []byte) error {
+func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error {
 	var (
 		sideEffects    = v1beta1.SideEffectClassNone
 		port           = int32(servicePort)
@@ -80,13 +78,7 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, inst
 			Name: fmt.Sprintf("%s.integreatly.org", reconciler.name),
 		},
 	}
-	if inst.DeletionTimestamp != nil {
-		err = client.Delete(ctx, cr)
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
+
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		cr.Webhooks = []v1beta1.MutatingWebhook{
 			{
@@ -123,7 +115,7 @@ func (reconciler *MutatingWebhookReconciler) Reconcile(ctx context.Context, inst
 	return err
 }
 
-func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, inst *v1alpha1.RHMI, client k8sclient.Client, caBundle []byte) error {
+func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, client k8sclient.Client, caBundle []byte) error {
 	var (
 		sideEffects    = v1beta1.SideEffectClassNone
 		port           = int32(servicePort)
@@ -143,13 +135,6 @@ func (reconciler *ValidatingWebhookReconciler) Reconcile(ctx context.Context, in
 		},
 	}
 
-	if inst.DeletionTimestamp != nil {
-		err = client.Delete(ctx, cr)
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, cr, func() error {
 		cr.Webhooks = []v1beta1.ValidatingWebhook{
 			{
