@@ -9,6 +9,7 @@ products:
       - osd-fresh-install
     targets:
       - 1.0.0
+      - 1.0.1
 ---
 
 # A30 - Validate installation of RHOAM addon and integration with LDAP IDP
@@ -236,7 +237,37 @@ Verify the integration with the LDAP server for a regular user
 
    > You should be redirected to the 3scale main page.
 
-As the test is finished lets stop the EC2 instance.
+**Verify RHOAM uninstall**
+
+1. Go to OCM UI, select your cluster, go to Add-ons tab
+2. Click on the three dots menu and select "Uninstall add-on"
+   > Verify that RHOAM addon updates the status to "Uninstalling"
+3. Go to OpenShift console of your cluster
+   > In a while you should see RHOAM namespaces disappearing
+   > Uninstall of RHOAM should finish in ~20 minutes (all `redhat-rhoam-*` namespaces should be gone)
+4. If there's still `redhat-rhoam-operator` namespace present after 20 minutes, follow the next steps, otherwise skip to the last step
+5. Go to `redhat-rhoam-operator` namespace and select Operators -> Installed operators
+   > Verify that there's no operator subscription present
+6. Go to `redhat-rhoam-operator` namespace and search for "RHMI"
+   > Verify that there's nothing in the results
+7. If there's no subscription or RHMI CR present in `redhat-rhoam-operator` namespace, you have to wait for `hive` to finish the uninstall (sometimes it could take more than 10 minutes)
+8. Go to OCM UI, select your cluster, go to Add-ons tab and verify that RHOAM addon is uninstalled (you should see a button "Install" again)
+
+**Verify RHOAM secrets are recreated on reinstall and RHOAM can be uninstalled during "preflight checks" phase**
+
+1. From OCM UI, trigger RHOAM install again
+2. Go to OpenShift console and select `redhat-rhoam-operator` namespace
+3. Go to Workloads -> Secrets
+   > Verify that `redhat-rhoam-deadmanssnitch`, `redhat-rhoam-pagerduty` and `redhat-rhoam-smtp` are present
+4. Go to OCM UI, select your cluster
+5. Note your cluster's ID from the address bar (https://qaprodauth.cloud.redhat.com/beta/openshift/details/<cluster_id>#overview)
+6. Delete the addon via ocm CLI
+```bash
+ocm delete /api/clusters_mgmt/v1/clusters/<CLUSTER-ID>/addons/managed-api-service
+```
+7. Go back to OpenShift console and verify RHMI CR was removed as well as and `redhat-rhoam-operator` namespace
+
+**As the test is finished lets stop the EC2 instance.**
 
 1. Access the AWS EC2 console, you can find the credentials in https://gitlab.cee.redhat.com/integreatly-qe/vault/-/blob/master/SECRETS.md
 
