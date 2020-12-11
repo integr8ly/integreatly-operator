@@ -262,9 +262,11 @@ Verify the integration with the LDAP server for a regular user
 4. Go to OCM UI, select your cluster
 5. Note your cluster's ID from the address bar (https://qaprodauth.cloud.redhat.com/beta/openshift/details/<cluster_id>#overview)
 6. Delete the addon via ocm CLI
+
 ```bash
 ocm delete /api/clusters_mgmt/v1/clusters/<CLUSTER-ID>/addons/managed-api-service
 ```
+
 7. Go back to OpenShift console and verify RHMI CR was removed as well as and `redhat-rhoam-operator` namespace
 
 **As the test is finished lets stop the EC2 instance.**
