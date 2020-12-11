@@ -2,27 +2,21 @@ package addon
 
 import (
 	"context"
+	"net/http"
+
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
-	"github.com/integr8ly/integreatly-operator/pkg/webhooks"
 	operatorsv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/sirupsen/logrus"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"net/http"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"time"
 )
 
 // UninstallOperator uninstalls the RHMI operator by deleting the subscription
 // and CSV. If the subscription is not found, it doesn't do anything, as the
 // operator might not be run through OLM
 func UninstallOperator(ctx context.Context, client k8sclient.Client, installation *integreatlyv1alpha1.RHMI) error {
-	// Reconcile the webhooks
-	if err := webhooks.Config.Reconcile(context.TODO(), installation, client, installation); err != nil {
-		return err
-	}
 	// Get the operator subscription
 	subscription, err := GetSubscription(ctx, client, installation)
 	if err != nil {
@@ -104,7 +98,6 @@ func (h *deleteRHMIHandler) Handle(ctx context.Context, request admission.Reques
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	rhmi.DeletionTimestamp = &metav1.Time{Time: time.Now()}
 	if err := UninstallOperator(ctx, client, rhmi); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
