@@ -43,10 +43,10 @@ metadata:
     capabilities: Basic Install
     categories: RHOAM integration
     certified: "false"
-    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.1-rc2
+    containerImage: quay.io/integreatly/managed-api-service:rhoam-v1.0.1
     description: RHOAM integration suite of tools
-    support: RHOAM
     serviceAffecting: "false"
+    support: RHOAM
   name: managed-api-service.v1.0.1
   namespace: placeholder
 spec:
@@ -353,7 +353,7 @@ spec:
                   value: info
                 - name: INSTALLATION_TYPE
                   value: managed-api
-                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.1-rc2
+                image: quay.io/integreatly/managed-api-service:rhoam-v1.0.1
                 imagePullPolicy: Always
                 name: rhmi-operator
                 ports:
