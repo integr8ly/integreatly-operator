@@ -4096,7 +4096,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 				"current": {
 					"selected": true,
 					"text": "All",
-					"value": "$__all"
+					"value": ["$__all"]
 				},
 				"hide": 0,
 				"includeAll": true,
@@ -4148,7 +4148,7 @@ func GetMonitoringGrafanaDBCriticalSLORHMIAlertsJSON(nsPrefix string) string {
 				"current": {
 					"selected": true,
 					"text": "All",
-					"value": "$__all"
+					"value": ["$__all"]
 				},
 				"hide": 0,
 				"includeAll": true,
@@ -6117,7 +6117,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
         "current": {
           "selected": true,
           "text": "All",
-          "value": "$__all"
+          "value": ["$__all"]
         },
         "hide": 0,
         "includeAll": true,
@@ -6150,7 +6150,7 @@ func GetMonitoringGrafanaDBCriticalSLOManagedAPIAlertsJSON(nsPrefix string) stri
         "current": {
           "selected": true,
           "text": "All",
-          "value": "$__all"
+          "value": ["$__all"]
         },
         "hide": 0,
         "includeAll": true,
