@@ -114,7 +114,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
 		}
 
-		enabledNamespaces := []string{threescaleConfig.GetNamespace()}
+		userSSOConfig, err := r.ConfigManager.ReadRHSSOUser()
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read User-SSO config from marin3r reconciler")
+		}
+
+		enabledNamespaces := []string{threescaleConfig.GetNamespace(), userSSOConfig.GetNamespace()}
 		phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, client, enabledNamespaces...)
 		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 			return phase, err
@@ -347,7 +352,12 @@ func (r *Reconciler) reconcileDiscoveryService(ctx context.Context, client k8scl
 		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read 3scale config from marin3r reconciler")
 	}
 
-	enabledNamespaces := []string{threescaleConfig.GetNamespace()}
+	userSSOConfig, err := r.ConfigManager.ReadRHSSOUser()
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, errors.Wrap(err, "could not read User-SSO config from marin3r reconciler")
+	}
+
+	enabledNamespaces := []string{threescaleConfig.GetNamespace(), userSSOConfig.GetNamespace()}
 	discoveryService := &marin3r.DiscoveryService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: discoveryServiceName,

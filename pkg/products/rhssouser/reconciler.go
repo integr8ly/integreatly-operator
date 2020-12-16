@@ -3,24 +3,24 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
-
-	"github.com/integr8ly/integreatly-operator/version"
-
-	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	testResources "github.com/integr8ly/integreatly-operator/test/resources"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhsso"
+	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/version"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	consolev1 "github.com/openshift/api/console/v1"
 	usersv1 "github.com/openshift/api/user/v1"
+	k8sappsv1 "k8s.io/api/apps/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/events"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
-
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
+	k8sTypes "k8s.io/apimachinery/pkg/types"
 
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/sirupsen/logrus"
@@ -32,6 +32,7 @@ import (
 	oauthClient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
+	"github.com/integr8ly/integreatly-operator/pkg/resources/ratelimit"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	k8sresource "k8s.io/apimachinery/pkg/api/resource"
@@ -66,6 +67,7 @@ const (
 	firstBrokerLoginFlowAlias   = "first broker login"
 	reviewProfileExecutionAlias = "review profile config"
 	userSsoConsoleLink          = "rhoam-user-sso-console-link"
+	keycloakRatelimiting        = "keycloak"
 
 	userSSOIcon = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2Q3MWUwMDt9LmNscy0ye2ZpbGw6I2MyMWEwMDt9LmNscy0ze2ZpbGw6I2NkY2RjZDt9LmNscy00e2ZpbGw6I2ZmZjt9LmNscy01e2ZpbGw6I2VhZWFlYTt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPnByb2R1Y3RpY29uc18xMDE3X1JHQl9TU08gZmluYWwgY29sb3I8L3RpdGxlPjxnIGlkPSJMYXllcl8xIiBkYXRhLW5hbWU9IkxheWVyIDEiPjxjaXJjbGUgY2xhc3M9ImNscy0xIiBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMC43MSA1MCkgcm90YXRlKC00NSkiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik04NS4zNiwxNC42NEE1MCw1MCwwLDAsMSwxNC42NCw4NS4zNloiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0yMy40OCw3MC41OHYzYTEuNDQsMS40NCwwLDAsMCwwLC4yOEw0Niw1MS40NWwtLjcxLTIuNjNaIi8+PHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODEuMjQsNDIuMDksNzYuNjUsMjQuOTVBMiwyLDAsMCwwLDc2LDI0bC0yLjIxLDIuMjFhMiwyLDAsMCwxLC42MiwxbDMuNzksMTQuMTNhMiwyLDAsMCwxLS41MywyTDY3LjM2LDUzLjU5YTIsMiwwLDAsMS0yLC41M0w1MS4yNyw1MC4zM2EyLDIsMCwwLDEtMS0uNjJsLTIuMjEsMi4yMWEyLDIsMCwwLDAsMSwuNjJsMTcuMTQsNC41OWEyLDIsMCwwLDAsMi0uNTNMODAuNzIsNDQuMDVBMiwyLDAsMCwwLDgxLjI0LDQyLjA5WiIvPjxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTQ1LjA5LDQxLjYybC0xLjcxLDEuNzFhMi4xMywyLjEzLDAsMCwwLDAsM2wuNzcuNzctMjAuMywyMC4zYTEuMjUsMS4yNSwwLDAsMC0uMzcuODh2Mi4yOUw0NS4yNCw0OC44Miw0Niw1MS40NSwyMy41MSw3My44OUExLjQ0LDEuNDQsMCwwLDAsMjQuOTIsNzVoMEw0OC4wOCw1MS45MWEyLjQsMi40LDAsMCwxLS40NS0uODJaIi8+PHBhdGggY2xhc3M9ImNscy00IiBkPSJNNzMsMjUuNzEsNTguODgsMjEuOTNhMiwyLDAsMCwwLTIsLjUzTDQ2LjU3LDMyLjhhMiwyLDAsMCwwLS41MywybDMuNzksMTQuMTNhMiwyLDAsMCwwLC40NS44Mkw2Ni41NywzMy40Myw2Mi4xNCwyOWExLjI1LDEuMjUsMCwwLDEsLjI4LTEuMTVsLS4wNiwwLC4xMS0uMTEsMCwuMDZhMS4yNSwxLjI1LDAsMCwxLDEuMTUtLjI4TDcwLDI5LjI5YTEuMjQsMS4yNCwwLDAsMSwuNDcuMjVsMy4zNy0zLjM3QTIsMiwwLDAsMCw3MywyNS43MVoiLz48cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik03OC4yMyw0MS4yOCw3NC40NSwyNy4xNWEyLDIsMCwwLDAtLjYyLTFsLTMuMzcsMy4zN2ExLjI1LDEuMjUsMCwwLDEsLjQyLjY0bDEuNzIsNi40MWExLjI1LDEuMjUsMCwwLDEtLjI4LDEuMTVsLjA2LDAtLjExLjExLDAtLjA2YTEuMjUsMS4yNSwwLDAsMS0xLjE1LjI4bC00LjU5LTQuNTlMNTAuMjksNDkuNzFhMiwyLDAsMCwwLDEsLjYyTDY1LjQsNTQuMTFhMiwyLDAsMCwwLDItLjUzTDc3LjcsNDMuMjRBMiwyLDAsMCwwLDc4LjIzLDQxLjI4WiIvPjxwYXRoIGNsYXNzPSJjbHMtNSIgZD0iTTc1LjIxLDIzLjUxLDU4LjA3LDE4LjkyYTIsMiwwLDAsMC0yLC41M0w0My41NiwzMkEyLDIsMCwwLDAsNDMsMzRsNC41OSwxNy4xNGEyLjQsMi40LDAsMCwwLC40NS44MkwyNC45NSw3NWg2LjY0YTEuMjUsMS4yNSwwLDAsMCwuODgtLjM3bDEuODMtMS44M2ExLjI1LDEuMjUsMCwwLDAsLjM3LS44OHYtMy42QS40Ny40NywwLDAsMSwzNC44LDY4bC42Mi0uNjJhLjQ3LjQ3LDAsMCwxLC4zMy0uMTRoMy4xNGExLjI1LDEuMjUsMCwwLDAsLjg4LS4zN2wuNTYtLjU2YTEuMjUsMS4yNSwwLDAsMCwuMzctLjg4VjYzLjE3YS40Ny40NywwLDAsMSwuMTQtLjMzbC43LS43YS40Ny40NywwLDAsMSwuMzMtLjE0aDQuNjdhMS4yNSwxLjI1LDAsMCwwLC44OC0uMzdMNTMsNTZsLjc3Ljc3YTIuMTMsMi4xMywwLDAsMCwzLDBsMS43MS0xLjcxLTkuNDctMi41NGEyLDIsMCwwLDEtMS0uNjJsMi4yMS0yLjIxYTIsMiwwLDAsMS0uNDUtLjgyTDQ2LDM0Ljc2YTIsMiwwLDAsMSwuNTMtMkw1Ni45MiwyMi40NmEyLDIsMCwwLDEsMi0uNTNMNzMsMjUuNzFhMiwyLDAsMCwxLC44Mi40NUw3NiwyNEEyLjQzLDIuNDMsMCwwLDAsNzUuMjEsMjMuNTFaIi8+PC9nPjwvc3ZnPg=="
 )
@@ -124,7 +126,16 @@ func (r *Reconciler) VerifyVersion(installation *integreatlyv1alpha1.RHMI) bool 
 func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1alpha1.RHMI, product *integreatlyv1alpha1.RHMIProductStatus, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
 	operatorNamespace := r.Config.GetOperatorNamespace()
 	productNamespace := r.Config.GetNamespace()
+
 	phase, err := r.ReconcileFinalizer(ctx, serverClient, installation, string(r.Config.GetProductName()), func() (integreatlyv1alpha1.StatusPhase, error) {
+
+		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			phase, err := ratelimit.DeleteEnvoyConfigsInNamespaces(ctx, serverClient, productNamespace)
+			if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+				return phase, err
+			}
+		}
+
 		// Check if namespace is still present before trying to delete it resources
 		_, err := resources.GetNS(ctx, productNamespace, serverClient)
 		if !k8serr.IsNotFound(err) {
@@ -186,7 +197,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon)
+	// Route created is different for RHOAM and RHMI due to envoy settings
+	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon, installation)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
@@ -242,6 +254,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
+	// add rate limiting configuration
+	if r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+
+		// Add sidecar container to user-sso pods
+		phase, err := r.addSideCarContainer(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.Recorder, installation, phase, "Failed add sidecar container to user-sso", err)
+			return phase, err
+		}
+
+		// Create rate-limit service
+		phase, err = r.createRateLimitService(ctx, serverClient)
+		if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+			events.HandleError(r.Recorder, installation, phase, "Failed to create user-sso rate limit service", err)
+			return phase, err
+		}
+
+		err = ratelimit.CreateEnvoyConfigurationCR(ctx, serverClient, keycloakRatelimiting, r.ConfigManager, r.Config, *r.Installation)
+		if err != nil {
+			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)
+		}
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 	product.OperatorVersion = r.Config.GetOperatorVersion()
@@ -249,6 +284,96 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 	events.HandleProductComplete(r.Recorder, installation, integreatlyv1alpha1.ProductsStage, r.Config.GetProductName())
 	r.Logger.Infof("%s has reconciled successfully", r.Config.GetProductName())
 	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) addSideCarContainer(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+
+	// Get keycloak stateful set
+	statefulSet, phase, err := r.getStatefulSet(ctx, serverClient)
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to get keycloak stateful set")
+	}
+	if phase == integreatlyv1alpha1.PhaseAwaitingComponents {
+		return phase, nil
+	}
+
+	// Enable marin3r and attach sidecar container to keycloak pods
+	_, err = controllerutil.CreateOrUpdate(ctx, serverClient, statefulSet, func() error {
+		statefulSet.Spec.Template.Labels["marin3r.3scale.net/status"] = "enabled"
+
+		if statefulSet.Spec.Template.Annotations == nil {
+			statefulSet.Spec.Template.Annotations = map[string]string{}
+		}
+		statefulSet.Spec.Template.Annotations["marin3r.3scale.net/node-id"] = "keycloak"
+		statefulSet.Spec.Template.Annotations["marin3r.3scale.net/ports"] = "envoy-https:8444"
+		statefulSet.Spec.Template.Annotations["marin3r.3scale.net/envoy-image"] = "registry.redhat.io/openshift-service-mesh/proxyv2-rhel8:2.0"
+		return nil
+	})
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Failed to update keycloak stateful set %v", err)
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) getStatefulSet(ctx context.Context, serverClient k8sclient.Client) (*k8sappsv1.StatefulSet, integreatlyv1alpha1.StatusPhase, error) {
+	keycloakStatefulSet := &k8sappsv1.StatefulSet{}
+
+	err := serverClient.Get(ctx, k8sTypes.NamespacedName{Name: "keycloak", Namespace: r.Config.GetNamespace()}, keycloakStatefulSet)
+
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil, integreatlyv1alpha1.PhaseAwaitingComponents, nil
+		}
+		return nil, integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error getting the keycloak stateful set %v", err)
+	}
+
+	return keycloakStatefulSet, integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+// A new service is required in order for keycloak rate limiting to work. This is because keycloak operator reconciles the existing service/route and part of stateful set
+func (r *Reconciler) createRateLimitService(ctx context.Context, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ratelimit",
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, service, func() error {
+		owner.AddIntegreatlyOwnerAnnotations(service, r.Installation)
+		if service.Labels == nil {
+			service.Labels = map[string]string{}
+		}
+
+		service.Labels["app"] = "keycloak"
+		service.Spec.Ports = []corev1.ServicePort{
+			{
+				Name:       "ratelimit",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8444,
+				TargetPort: intstr.FromInt(8444),
+			},
+			{
+				Name:       "keycloak",
+				Protocol:   corev1.ProtocolTCP,
+				Port:       8080,
+				TargetPort: intstr.FromInt(8080),
+			},
+		}
+		service.Spec.Selector = map[string]string{
+			"app":       "keycloak",
+			"component": "keycloak",
+		}
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+
+	return integreatlyv1alpha1.PhaseCompleted, nil
+
 }
 
 func (r *Reconciler) reconcileComponents(ctx context.Context, installation *integreatlyv1alpha1.RHMI, serverClient k8sclient.Client) (integreatlyv1alpha1.StatusPhase, error) {

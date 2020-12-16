@@ -14,6 +14,7 @@ import (
 	"github.com/integr8ly/integreatly-operator/pkg/resources/constants"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/marketplace"
 	userHelper "github.com/integr8ly/integreatly-operator/pkg/resources/user"
+	"github.com/integr8ly/integreatly-operator/test/common"
 	keycloakCommon "github.com/integr8ly/keycloak-client/pkg/common"
 	keycloak "github.com/keycloak/keycloak-operator/pkg/apis/keycloak/v1alpha1"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -175,13 +176,25 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 // this should use the same valid certs as the cluster itself but for some reason the
 // signing operator gives out self signed certs
 // to circumvent this we create another keycloak route with edge termination
-func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8sclient.Client, config config.ConfigReadable, ssoCommon *config.RHSSOCommon) (integreatlyv1alpha1.StatusPhase, error) {
+func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8sclient.Client, config config.ConfigReadable, ssoCommon *config.RHSSOCommon, installation *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
 	// We need a route with edge termination to serve the correct cluster certificate
+	var (
+		terminationType = routev1.TLSTerminationReencrypt
+		serviceName     = "keycloak"
+		routePort       = "keycloak"
+	)
+
 	edgeRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keycloak-edge",
 			Namespace: ssoCommon.GetNamespace(),
 		},
+	}
+
+	if config.GetNamespace() == common.RHSSOUserProductOperatorNamespace && r.Installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		terminationType = routev1.TLSTerminationEdge
+		serviceName = "ratelimit"
+		routePort = "ratelimit"
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
@@ -190,13 +203,13 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 			Host: host,
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
-				Name: "keycloak",
+				Name: serviceName,
 			},
 			Port: &routev1.RoutePort{
-				TargetPort: intstr.FromString("keycloak"),
+				TargetPort: intstr.FromString(routePort),
 			},
 			TLS: &routev1.TLSConfig{
-				Termination: routev1.TLSTerminationReencrypt,
+				Termination: terminationType,
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
 		}
