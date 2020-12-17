@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	marin3r "github.com/3scale/marin3r/pkg/apis/operator/v1alpha1"
+	"github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
@@ -262,7 +263,21 @@ func (r *Reconciler) reconcileAlerts(ctx context.Context, client k8sclient.Clien
 
 	granafaConsoleURL, err := grafana.GetGrafanaConsoleURL(ctx, client, installation)
 	if err != nil {
+		if productsStage, ok := installation.Status.Stages[v1alpha1.ProductsStage]; ok {
+			if productsStage.Products != nil {
+				grafanaProduct, grafanaProductExists := productsStage.Products[v1alpha1.ProductGrafana]
+				// Ignore the Forbidden and NotFound errors if Grafana is not installed yet
+				if !grafanaProductExists ||
+					(grafanaProduct.Status != v1alpha1.PhaseCompleted &&
+						(k8serr.IsForbidden(err) || k8serr.IsNotFound(err))) {
+
+					logrus.Info("Failed to get Grafana console URL. Awaiting completion of Grafana installation")
+					return integreatlyv1alpha1.PhaseInProgress, nil
+				}
+			}
+		}
 		logrus.Errorf("failed to get Grafana console URL %v", err)
+		return integreatlyv1alpha1.PhaseFailed, err
 	}
 
 	grafanaDashboardURL := fmt.Sprintf("%s/d/66ab72e0d012aacf34f907be9d81cd9e/rate-limiting", granafaConsoleURL)
