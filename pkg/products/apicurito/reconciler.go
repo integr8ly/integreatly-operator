@@ -418,6 +418,13 @@ func (r *Reconciler) createRouteForGenerator(ctx context.Context, client k8sclie
 	host = strings.Replace(host, "http://", "", 1)
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, route, func() error {
+		annotations := route.ObjectMeta.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations["haproxy.router.openshift.io/hsts_header"] = "max-age=31536000;includeSubDomains;preload"
+		route.ObjectMeta.SetAnnotations(annotations)
+
 		route.Spec.Host = host
 		route.Spec.Path = "/api/v1"
 		route.Spec.To = routev1.RouteTargetReference{
@@ -425,7 +432,8 @@ func (r *Reconciler) createRouteForGenerator(ctx context.Context, client k8sclie
 			Name: "fuse-apicurito-generator",
 		}
 		route.Spec.TLS = &routev1.TLSConfig{
-			Termination: "edge",
+			Termination:                   "edge",
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
 		}
 		route.Spec.WildcardPolicy = "None"
 		return nil
@@ -477,8 +485,16 @@ func (r *Reconciler) addTLSToApicuritoRoute(ctx context.Context, client k8sclien
 	}
 
 	or, err := controllerutil.CreateOrUpdate(ctx, client, apicuritoRoute, func() error {
+		annotations := apicuritoRoute.ObjectMeta.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations["haproxy.router.openshift.io/hsts_header"] = "max-age=31536000;includeSubDomains;preload"
+		apicuritoRoute.ObjectMeta.SetAnnotations(annotations)
+
 		apicuritoRoute.Spec.TLS = &routev1.TLSConfig{
-			Termination: "edge",
+			Termination:                   "edge",
+			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
 		}
 		return nil
 	})

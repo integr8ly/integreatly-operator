@@ -171,6 +171,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.addHSTSAnnotationToRoute(ctx, serverClient, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to secure route", err)
+		return phase, err
+	}
+
 	product.Host = r.Config.GetHost()
 	product.Version = r.Config.GetProductVersion()
 
@@ -341,4 +347,28 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, serverClient k8s
 		serverClient,
 		catalogSourceReconciler,
 	)
+}
+
+func (r *Reconciler) addHSTSAnnotationToRoute(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	upsRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultRoutename,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, upsRoute, func() error {
+		annotations := upsRoute.ObjectMeta.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations["haproxy.router.openshift.io/hsts_header"] = "max-age=31536000;includeSubDomains;preload"
+		upsRoute.ObjectMeta.SetAnnotations(annotations)
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
+	return integreatlyv1alpha1.PhaseCompleted, nil
 }
