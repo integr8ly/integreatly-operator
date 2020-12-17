@@ -271,6 +271,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 			return phase, err
 		}
 
+		// Create envoy config for user-sso
 		err = ratelimit.CreateEnvoyConfigurationCR(ctx, serverClient, keycloakRatelimiting, r.ConfigManager, r.Config, *r.Installation)
 		if err != nil {
 			return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to create envoy config: %w", err)

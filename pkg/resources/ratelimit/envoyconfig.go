@@ -16,6 +16,7 @@ import (
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v2route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	yaml "github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -24,11 +25,18 @@ import (
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	"github.com/integr8ly/integreatly-operator/pkg/resources/owner"
+	"github.com/integr8ly/integreatly-operator/test/common"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+var (
+	sidecarToClusterEndpoint envoycore.Address
+	sidecarPort              uint32
+	routes                   []*v2route.Route
 )
 
 func DeleteEnvoyConfigsInNamespaces(ctx context.Context, client k8sclient.Client, namespaces ...string) (integreatlyv1alpha1.StatusPhase, error) {
@@ -74,7 +82,7 @@ func DeleteEnvoyConfigsInNamespace(ctx context.Context, client k8sclient.Client,
 }
 
 func CreateEnvoyConfigurationCR(ctx context.Context, client k8sclient.Client, configTarget string, configManager config.ConfigReadWriter, config config.ConfigReadable, installation integreatlyv1alpha1.RHMI) error {
-
+	// Getting rate marin3r rate limit service to populate the redirect ip address that is happening from sidecar container
 	rateLimitService := &corev1.Service{}
 	marin3rConfig, err := configManager.ReadMarin3r()
 	if err != nil {
@@ -84,21 +92,150 @@ func CreateEnvoyConfigurationCR(ctx context.Context, client k8sclient.Client, co
 		Namespace: marin3rConfig.GetNamespace(),
 		Name:      "ratelimit",
 	}, rateLimitService)
-
 	if err != nil {
-		return fmt.Errorf("failed to rate limiting service: %v", err)
+		return fmt.Errorf("failed to get Marin3r rate limiting service: %v", err)
 	}
 
-	// Setting up cluster endpoints for rate limit and apicast
-	apicastEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
-		SocketAddress: &envoycore.SocketAddress{
-			Address:  "127.0.0.1",
-			Protocol: envoycore.SocketAddress_TCP,
-			PortSpecifier: &envoycore.SocketAddress_PortValue{
-				PortValue: uint32(8080),
+	// Getting keycloak rate limit service that serves as redirect between edge route and keycloak pods
+	// NOTE - this can be changed once keycloak operator allows us to change values in the keycloak service
+	keycloakConfig, err := configManager.ReadRHSSOUser()
+	keycloakRatelimitService := &corev1.Service{}
+	err = client.Get(ctx, k8sclient.ObjectKey{
+		Namespace: keycloakConfig.GetNamespace(),
+		Name:      "ratelimit",
+	}, keycloakRatelimitService)
+
+	if err != nil {
+		return fmt.Errorf("failed to get Keycloak rate limiting service: %v", err)
+	}
+
+	// Creating 3Scale Rate Limit configuration
+	if config.GetNamespace() == common.ThreeScaleProductNamespace {
+		// sidecar container port number
+		sidecarPort = 8443
+		// Setting up cluster endpoints for apicast
+		sidecarToClusterEndpoint = envoycore.Address{Address: &envoycore.Address_SocketAddress{
+			SocketAddress: &envoycore.SocketAddress{
+				Address:  "127.0.0.1",
+				Protocol: envoycore.SocketAddress_TCP,
+				PortSpecifier: &envoycore.SocketAddress_PortValue{
+					PortValue: uint32(8080),
+				},
 			},
-		},
-	}}
+		}}
+
+		// Filtering routes and applying actions to filtered routes for 3Scale rate limiting
+		routes = []*v2route.Route{
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_SafeRegex{
+						SafeRegex: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
+							Regex:      "/.*",
+						},
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: configTarget,
+						},
+						RateLimits: []*route.RateLimit{{
+							Stage: &wrappers.UInt32Value{Value: 0},
+							Actions: []*route.RateLimit_Action{{
+								ActionSpecifier: &route.RateLimit_Action_GenericKey_{
+									GenericKey: &route.RateLimit_Action_GenericKey{
+										DescriptorValue: "slowpath",
+									},
+								},
+							}},
+						}},
+					},
+				},
+			},
+		}
+	}
+
+	// Creating keycloak specific configuration
+	if config.GetNamespace() == common.RHSSOUserProductOperatorNamespace {
+		// sidecar container port number
+		sidecarPort = 8444
+		// Setting up cluster enpoint for keycloak
+		sidecarToClusterEndpoint = envoycore.Address{Address: &envoycore.Address_SocketAddress{
+			SocketAddress: &envoycore.SocketAddress{
+				Address:  keycloakRatelimitService.Spec.ClusterIP,
+				Protocol: envoycore.SocketAddress_TCP,
+				PortSpecifier: &envoycore.SocketAddress_PortValue{
+					PortValue: uint32(8080),
+				},
+			},
+		}}
+
+		// Filtering routes and applying actions to filtered routes for Keycloak rate limiting
+		routes = []*v2route.Route{
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_SafeRegex{
+						SafeRegex: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
+							Regex:      "/auth/realms/master/protocol/openid-connect/token",
+						},
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: configTarget,
+						},
+					},
+				},
+			},
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_SafeRegex{
+						SafeRegex: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
+							Regex:      ".*/token",
+						},
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: configTarget,
+						},
+						RateLimits: []*route.RateLimit{{
+							Stage: &wrappers.UInt32Value{Value: 0},
+							Actions: []*route.RateLimit_Action{{
+								ActionSpecifier: &route.RateLimit_Action_GenericKey_{
+									GenericKey: &route.RateLimit_Action_GenericKey{
+										DescriptorValue: "slowpath",
+									},
+								},
+							}},
+						}},
+					},
+				},
+			},
+			{
+				Match: &v2route.RouteMatch{
+					PathSpecifier: &v2route.RouteMatch_SafeRegex{
+						SafeRegex: &envoy_type_matcher.RegexMatcher{
+							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{},
+							Regex:      "/.*",
+						},
+					},
+				},
+				Action: &v2route.Route_Route{
+					Route: &v2route.RouteAction{
+						ClusterSpecifier: &route.RouteAction_Cluster{
+							Cluster: configTarget,
+						},
+					},
+				},
+			},
+		}
+	}
 
 	rateLimitEndpoint := &envoycore.Address{Address: &envoycore.Address_SocketAddress{
 		SocketAddress: &envoycore.SocketAddress{
@@ -122,7 +259,7 @@ func CreateEnvoyConfigurationCR(ctx context.Context, client k8sclient.Client, co
 					{
 						HostIdentifier: &envoy_api_v2_endpoint.LbEndpoint_Endpoint{
 							Endpoint: &envoy_api_v2_endpoint.Endpoint{
-								Address: apicastEndpoint,
+								Address: &sidecarToClusterEndpoint,
 							}},
 					},
 				},
@@ -155,33 +292,7 @@ func CreateEnvoyConfigurationCR(ctx context.Context, client k8sclient.Client, co
 	virtualHost := v2route.VirtualHost{
 		Name:    configTarget,
 		Domains: []string{"*"},
-
-		Routes: []*v2route.Route{
-			{
-				Match: &v2route.RouteMatch{
-					PathSpecifier: &v2route.RouteMatch_Prefix{
-						Prefix: "/",
-					},
-				},
-				Action: &v2route.Route_Route{
-					Route: &v2route.RouteAction{
-						ClusterSpecifier: &route.RouteAction_Cluster{
-							Cluster: configTarget,
-						},
-						RateLimits: []*route.RateLimit{{
-							Stage: &wrappers.UInt32Value{Value: 0},
-							Actions: []*route.RateLimit_Action{{
-								ActionSpecifier: &route.RateLimit_Action_GenericKey_{
-									GenericKey: &route.RateLimit_Action_GenericKey{
-										DescriptorValue: "slowpath",
-									},
-								},
-							}},
-						}},
-					},
-				},
-			},
-		},
+		Routes:  routes,
 	}
 
 	// Setting GRPC
@@ -272,7 +383,7 @@ func CreateEnvoyConfigurationCR(ctx context.Context, client k8sclient.Client, co
 					Protocol: envoycore.SocketAddress_TCP,
 					Address:  "0.0.0.0",
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
-						PortValue: uint32(8443),
+						PortValue: sidecarPort,
 					},
 				},
 			},
