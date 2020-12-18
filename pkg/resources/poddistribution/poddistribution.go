@@ -29,11 +29,12 @@ const (
 
 type KindNameSpaceName struct {
 	*k8sTypes.NamespacedName
-	Kind runtime.Object
+	Obj  runtime.Object
+	Kind string
 }
 
 func (knn KindNameSpaceName) String() string {
-	return fmt.Sprintf("%s/%s/%s", getKindString(knn.Kind), knn.Namespace, knn.Name)
+	return fmt.Sprintf("%s/%s/%s", knn.Kind, knn.Namespace, knn.Name)
 }
 
 // Check the PodBalanceAttempts, ensure less than maxBalanceAttempts
@@ -63,7 +64,7 @@ func verifyRebalanceCount(ctx context.Context, client k8sclient.Client, obj runt
 }
 
 func getObject(ctx context.Context, client k8sclient.Client, knn *KindNameSpaceName) (runtime.Object, error) {
-	object := knn.Kind
+	object := knn.Obj
 	err := client.Get(ctx, k8sTypes.NamespacedName{Name: knn.Name, Namespace: knn.Namespace}, object)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting object %s, on ns %s: %w", knn.Name, knn.Namespace, err)
@@ -172,13 +173,16 @@ func findUnbalanced(ctx context.Context, nameSpace string, client k8sclient.Clie
 
 				if o.Kind == "ReplicationController" {
 					knn.Name = p.Annotations["openshift.io/deployment-config.name"]
-					knn.Kind = &appsv1.DeploymentConfig{}
+					knn.Obj = &appsv1.DeploymentConfig{}
+					knn.Kind = "dc"
 				} else if o.Kind == "StatefulSet" {
 					knn.Name = o.Name
-					knn.Kind = &k8appsv1.StatefulSet{}
+					knn.Obj = &k8appsv1.StatefulSet{}
+					knn.Kind = "ss"
 				} else if o.Kind == "ReplicaSet" {
 					knn.Name = o.Name
-					knn.Kind = &k8appsv1.ReplicaSet{}
+					knn.Obj = &k8appsv1.ReplicaSet{}
+					knn.Kind = "rs"
 				}
 
 				// If this knn already exists use it.
@@ -220,7 +224,7 @@ func getExisting(knn *KindNameSpaceName, allKnn []*KindNameSpaceName) (*KindName
 	for _, val := range allKnn {
 		if knn.Namespace == val.Namespace &&
 			knn.Name == val.Name &&
-			knn.Kind.GetObjectKind().GroupVersionKind().Kind == val.Kind.GetObjectKind().GroupVersionKind().Kind {
+			knn.Kind == val.Kind {
 			return val, allKnn
 		}
 	}
@@ -273,7 +277,7 @@ func deletePod(ctx context.Context, client k8sclient.Client, podName string, ns 
 }
 
 func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client, knn *KindNameSpaceName) error {
-	obj := knn.Kind
+	obj := knn.Obj
 
 	err := client.Get(ctx, k8sclient.ObjectKey{
 		Name:      knn.Name,
@@ -281,7 +285,7 @@ func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client,
 	}, obj)
 
 	if err != nil {
-		return fmt.Errorf("Error getting %s %s on namespace %s. %w", getKindString(knn.Kind), knn.Name, knn.Namespace, err)
+		return fmt.Errorf("Error getting %s %s on namespace %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
 	}
 	metaObj, err := meta.Accessor(obj)
 	if err != nil {
@@ -293,14 +297,10 @@ func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client,
 	}
 	metaObj.SetAnnotations(ant)
 	if err := client.Update(ctx, obj); err != nil {
-		return fmt.Errorf("Error Updating %s %s on %s. %w", getKindString(knn.Kind), knn.Name, knn.Namespace, err)
+		return fmt.Errorf("Error Updating %s %s on %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
 	}
-	logrus.Infof("Successfully updated %s %s on %s", getKindString(knn.Kind), knn.Name, knn.Namespace)
+	logrus.Infof("Successfully updated %s %s on %s", knn.Kind, knn.Name, knn.Namespace)
 	return nil
-}
-
-func getKindString(kind runtime.Object) string {
-	return kind.GetObjectKind().GroupVersionKind().Kind
 }
 
 func getAnnotations(ant map[string]string, name string, ns string) (map[string]string, error) {
