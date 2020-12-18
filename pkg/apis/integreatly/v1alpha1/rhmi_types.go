@@ -131,6 +131,7 @@ type RHMISpec struct {
 	RoutingSubdomain       string                 `json:"routingSubdomain,omitempty"`
 	MasterURL              string                 `json:"masterURL,omitempty"`
 	NamespacePrefix        string                 `json:"namespacePrefix"`
+	RebalancePods          bool                   `json:"rebalancePods,omitempty"`
 	SelfSignedCerts        bool                   `json:"selfSignedCerts,omitempty"`
 	PullSecret             PullSecretSpec         `json:"pullSecret,omitempty"`
 	UseClusterStorage      string                 `json:"useClusterStorage,omitempty"`
