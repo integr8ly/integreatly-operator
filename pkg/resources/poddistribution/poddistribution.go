@@ -33,7 +33,7 @@ type KindNameSpaceName struct {
 }
 
 func (knn KindNameSpaceName) String() string {
-	return fmt.Sprintf("%s/%s/%s", knn.Kind, knn.Namespace, knn.Name)
+	return fmt.Sprintf("%s/%s/%s", getKindString(knn.Kind), knn.Namespace, knn.Name)
 }
 
 // Check the PodBalanceAttempts, ensure less than maxBalanceAttempts
@@ -281,7 +281,7 @@ func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client,
 	}, obj)
 
 	if err != nil {
-		return fmt.Errorf("Error getting %s %s on namespace %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
+		return fmt.Errorf("Error getting %s %s on namespace %s. %w", getKindString(knn.Kind), knn.Name, knn.Namespace, err)
 	}
 	metaObj, err := meta.Accessor(obj)
 	if err != nil {
@@ -293,10 +293,14 @@ func updatePodBalanceAttemptsOnKNN(ctx context.Context, client k8sclient.Client,
 	}
 	metaObj.SetAnnotations(ant)
 	if err := client.Update(ctx, obj); err != nil {
-		return fmt.Errorf("Error Updating %s %s on %s. %w", knn.Kind, knn.Name, knn.Namespace, err)
+		return fmt.Errorf("Error Updating %s %s on %s. %w", getKindString(knn.Kind), knn.Name, knn.Namespace, err)
 	}
-	logrus.Infof("Successfully updated %s %s on %s", knn.Kind, knn.Name, knn.Namespace)
+	logrus.Infof("Successfully updated %s %s on %s", getKindString(knn.Kind), knn.Name, knn.Namespace)
 	return nil
+}
+
+func getKindString(kind runtime.Object) string {
+	return kind.GetObjectKind().GroupVersionKind().Kind
 }
 
 func getAnnotations(ant map[string]string, name string, ns string) (map[string]string, error) {

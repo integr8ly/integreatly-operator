@@ -463,10 +463,10 @@ func (r *ReconcileInstallation) reconcilePodDistribution(installation *integreat
 		installation.Status.LastError = err.Error()
 		return
 	}
-	err = poddistribution.ReconcilePodDistribution(context.TODO(), serverClient, installation.Spec.NamespacePrefix, installation.Spec.Type)
-	if err != nil {
-		logrus.Errorf("Error reconciling pod distributions %v", err.Error())
-		installation.Status.LastError = err.Error()
+	mErr := poddistribution.ReconcilePodDistribution(context.TODO(), serverClient, installation.Spec.NamespacePrefix, installation.Spec.Type)
+	if mErr != nil && len(mErr.Errors) > 0 {
+		logrus.Errorf("Error reconciling pod distributions %v", mErr)
+		installation.Status.LastError = mErr.Error()
 	}
 }
 
