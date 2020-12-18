@@ -1,7 +1,7 @@
 global:
   resolve_timeout: 5m
   smtp_smarthost: {{ index .Params "SMTPHost" }}:{{ index .Params "SMTPPort" }}
-  smtp_from: noreply@{{ index .Params "AlertManagerRoute" }}
+  smtp_from: {{ index .Params "SMTPFrom" }}
   smtp_auth_username: {{ index .Params "SMTPUsername" }}
   smtp_auth_password: {{ index .Params "SMTPPassword"}}
 route:

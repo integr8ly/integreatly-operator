@@ -119,6 +119,8 @@ var (
 
 	DefaultOriginPullSecretName      = "pull-secret"
 	DefaultOriginPullSecretNamespace = "openshift-config"
+
+	EnvKeyAlertSMTPFrom = "ALERT_SMTP_FROM"
 )
 
 // RHMISpec defines the desired state of Installation
@@ -138,6 +140,7 @@ type RHMISpec struct {
 	AlertingEmailAddress   string                 `json:"alertingEmailAddress,omitempty"`
 	PriorityClassName      string                 `json:"priorityClassName,omitempty"`
 	AlertingEmailAddresses AlertingEmailAddresses `json:"alertingEmailAddresses,omitempty"`
+	AlertFromAddress       string                 `json:"alertFromAddress,omitempty"`
 
 	// OperatorsInProductNamespace is a flag that decides if
 	// the product operators should be installed in the product

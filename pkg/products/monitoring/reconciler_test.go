@@ -47,6 +47,7 @@ const (
 	mockAlertingEmailAddress         = "noreply-test@rhmi-redhat.com"
 	mockBUAlertingEmailAddress       = "noreply-bu-test@rhmi-redhat.com"
 	mockIsMultiAZCluster             = true
+	mockAlertFromAddress             = "noreply-alert@devshift.org"
 )
 
 func basicInstallation() *integreatlyv1alpha1.RHMI {
@@ -71,6 +72,7 @@ func basicInstallation() *integreatlyv1alpha1.RHMI {
 
 func basicInstallationWithAlertEmailAddress() *integreatlyv1alpha1.RHMI {
 	installation := basicInstallation()
+	installation.Spec.AlertFromAddress = mockAlertFromAddress
 	installation.Spec.AlertingEmailAddress = mockCustomerAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.CSSRE = mockAlertingEmailAddress
 	installation.Spec.AlertingEmailAddresses.BusinessUnit = mockBUAlertingEmailAddress
@@ -622,14 +624,16 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 	basicLogger := logrus.NewEntry(logrus.StandardLogger())
-	basicReconciler := &Reconciler{
-		installation: basicInstallation(),
-		Logger:       basicLogger,
-		Config: &config.Monitoring{
-			Config: map[string]string{
-				"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+	basicReconciler := func() *Reconciler {
+		return &Reconciler{
+			installation: basicInstallation(),
+			Logger:       basicLogger,
+			Config: &config.Monitoring{
+				Config: map[string]string{
+					"OPERATOR_NAMESPACE": defaultInstallationNamespace,
+				},
 			},
-		},
+		}
 	}
 
 	installation := basicInstallation()
@@ -690,14 +694,14 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
 		"SMTPPort":              string(smtpSecret.Data["port"]),
-		"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+		"SMTPFrom":              mockAlertFromAddress,
 		"SMTPUsername":          string(smtpSecret.Data["username"]),
 		"SMTPPassword":          string(smtpSecret.Data["password"]),
 		"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
 		"DeadMansSnitchURL":     string(dmsSecret.Data["url"]),
-		"SMTPToCustomerAddress": fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
-		"SMTPToSREAddress":      fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
-		"SMTPToBUAddress":       fmt.Sprintf("noreply@%s", alertmanagerRoute.Spec.Host),
+		"SMTPToCustomerAddress": mockCustomerAlertingEmailAddress,
+		"SMTPToSREAddress":      mockAlertingEmailAddress,
+		"SMTPToBUAddress":       mockBUAlertingEmailAddress,
 	})
 
 	testSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
@@ -717,7 +721,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			wantErr: "could not obtain pagerduty credentials secret: secrets \"test-pd\" not found",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -730,7 +734,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, emptyPagerdutySecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			wantErr: "secret key is undefined in pager duty secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -741,7 +745,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			wantErr: "could not obtain dead mans snitch credentials secret: secrets \"test-dms\" not found",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -754,7 +758,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, emptyDMSSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			wantErr: "url is undefined in dead mans snitch secret",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -765,7 +769,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			want: integreatlyv1alpha1.PhaseAwaitingComponents,
 		},
@@ -779,7 +783,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				}
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				return basicReconciler()
 			},
 			wantErr: "could not obtain alert manager route: test",
 			want:    integreatlyv1alpha1.PhaseFailed,
@@ -790,7 +794,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				rec := basicReconciler()
+				rec.installation = basicInstallationWithAlertEmailAddress()
+				return rec
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -810,7 +816,9 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute, alertmanagerConfigSecret)
 			},
 			reconciler: func() *Reconciler {
-				return basicReconciler
+				rec := basicReconciler()
+				rec.installation = basicInstallationWithAlertEmailAddress()
+				return rec
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
 			wantFn: func(c k8sclient.Client) error {
@@ -830,7 +838,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				return fakeclient.NewFakeClientWithScheme(basicScheme, smtpSecret, pagerdutySecret, dmsSecret, alertmanagerRoute)
 			},
 			reconciler: func() *Reconciler {
-				reconciler := basicReconciler
+				reconciler := basicReconciler()
 				reconciler.installation = basicInstallationWithAlertEmailAddress()
 				return reconciler
 			},
@@ -843,7 +851,7 @@ func TestReconciler_reconcileAlertManagerConfigSecret(t *testing.T) {
 				templateUtil := NewTemplateHelper(map[string]string{
 					"SMTPHost":              string(smtpSecret.Data["host"]),
 					"SMTPPort":              string(smtpSecret.Data["port"]),
-					"AlertManagerRoute":     alertmanagerRoute.Spec.Host,
+					"SMTPFrom":              mockAlertFromAddress,
 					"SMTPUsername":          string(smtpSecret.Data["username"]),
 					"SMTPPassword":          string(smtpSecret.Data["password"]),
 					"PagerDutyServiceKey":   string(pagerdutySecret.Data["serviceKey"]),
