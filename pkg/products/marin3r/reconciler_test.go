@@ -4,14 +4,18 @@ import (
 	"context"
 	"testing"
 
+	"github.com/integr8ly/integreatly-operator/test/common"
+
 	prometheusmonitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	integreatlyv1alpha1 "github.com/integr8ly/integreatly-operator/pkg/apis/integreatly/v1alpha1"
 	"github.com/integr8ly/integreatly-operator/pkg/config"
 	marin3rconfig "github.com/integr8ly/integreatly-operator/pkg/products/marin3r/config"
 	projectv1 "github.com/openshift/api/project/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	coreosv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -109,9 +113,33 @@ func getBasicInstallation() *integreatlyv1alpha1.RHMI {
 			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
 		},
 		Spec: integreatlyv1alpha1.RHMISpec{
-			//SMTPSecret:           mockSMTPSecretName,
-			//PagerDutySecret:      mockPagerdutySecretName,
-			//DeadMansSnitchSecret: mockDMSSecretName,
+			NamespacePrefix: common.NamespacePrefix,
+		},
+		Status: integreatlyv1alpha1.RHMIStatus{
+			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+				integreatlyv1alpha1.ProductsStage: {
+					Name:  integreatlyv1alpha1.ProductsStage,
+					Phase: integreatlyv1alpha1.PhaseInProgress,
+					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+						integreatlyv1alpha1.ProductGrafana: {
+							Name:   integreatlyv1alpha1.ProductGrafana,
+							Status: integreatlyv1alpha1.PhaseInProgress,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func getGrafanaRoute() *routev1.Route {
+	return &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grafana-route",
+			Namespace: common.NamespacePrefix + "customer-monitoring",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
 		},
 	}
 }
@@ -128,6 +156,9 @@ func getBuildScheme() (*runtime.Scheme, error) {
 		return nil, err
 	}
 	if err := projectv1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	if err := routev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 
@@ -152,12 +183,22 @@ func TestAlertCreation(t *testing.T) {
 		{
 			name: "returns expected alerts",
 			serverClient: func() k8sclient.Client {
-				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap())
+				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap(), getGrafanaRoute())
 			},
 			reconciler: func() *Reconciler {
 				return getBasicReconciler()
 			},
 			want: integreatlyv1alpha1.PhaseCompleted,
+		},
+		{
+			name: "returns PhaseInProgress when grafana not installed",
+			serverClient: func() k8sclient.Client {
+				return fakeclient.NewFakeClientWithScheme(scheme, getRateLimitConfigMap())
+			},
+			reconciler: func() *Reconciler {
+				return getBasicReconciler()
+			},
+			want: integreatlyv1alpha1.PhaseInProgress,
 		},
 	}
 	for _, tt := range tests {

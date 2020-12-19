@@ -492,7 +492,7 @@ func GetGrafanaConsoleURL(ctx context.Context, serverClient k8sclient.Client, in
 
 	err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: defaultRoutename, Namespace: ns}, grafanaRoute)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get route for Grafana: %w", err)
+		return "", err
 	}
 
 	return "https://" + grafanaRoute.Spec.Host, nil
