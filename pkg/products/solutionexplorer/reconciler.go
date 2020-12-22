@@ -323,23 +323,23 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 }
 
 func (r *Reconciler) addHSTSAnnotationToRoute(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
-	upsRoute := &routev1.Route{
+	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      defaultRouteName,
 			Namespace: r.Config.GetNamespace(),
 		},
 	}
 
-	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, upsRoute, func() error {
-		annotations := upsRoute.ObjectMeta.GetAnnotations()
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, route, func() error {
+		annotations := route.ObjectMeta.GetAnnotations()
 		if annotations == nil {
 			annotations = map[string]string{}
 		}
 		annotations["haproxy.router.openshift.io/hsts_header"] = "max-age=31536000;includeSubDomains;preload"
-		upsRoute.ObjectMeta.SetAnnotations(annotations)
+		route.ObjectMeta.SetAnnotations(annotations)
 
-		if upsRoute.Spec.TLS != nil {
-			upsRoute.Spec.TLS.InsecureEdgeTerminationPolicy = routev1.InsecureEdgeTerminationPolicyRedirect
+		if route.Spec.TLS != nil {
+			route.Spec.TLS.InsecureEdgeTerminationPolicy = routev1.InsecureEdgeTerminationPolicyRedirect
 		}
 
 		return nil
