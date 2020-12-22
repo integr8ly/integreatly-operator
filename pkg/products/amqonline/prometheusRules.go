@@ -97,7 +97,7 @@ func (r *Reconciler) newAlertsReconciler() resources.AlertReconciler {
 						},
 						Expr:   intstr.FromString(fmt.Sprintf("kube_endpoint_address_available{endpoint='rhmi-registry-cs', namespace='%s'} * on (namespace) group_left kube_namespace_labels{label_monitoring_key='middleware'} < 1", r.Config.GetNamespace())),
 						For:    "5m",
-						Labels: map[string]string{"severity": "critical"},
+						Labels: map[string]string{"severity": "warning"},
 					},
 					{
 						Alert: "RHMIAMQOnlineStandardAuthServiceEndpointDown",
