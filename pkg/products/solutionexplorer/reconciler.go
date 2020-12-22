@@ -199,6 +199,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
+	phase, err = r.addHSTSAnnotationToRoute(ctx, serverClient, installation)
+	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
+		events.HandleError(r.recorder, installation, phase, "Failed to set HSTS header on Route", err)
+		return phase, err
+	}
+
 	route, err := r.ensureAppURL(ctx, serverClient)
 	if err != nil {
 		events.HandleError(r.recorder, installation, integreatlyv1alpha1.PhaseFailed, "Route for solution explorer is not available", err)
@@ -313,6 +319,35 @@ func (r *Reconciler) reconcileBlackboxTarget(ctx context.Context, installation *
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating solution explorer blackbox target: %w", err)
 	}
 
+	return integreatlyv1alpha1.PhaseCompleted, nil
+}
+
+func (r *Reconciler) addHSTSAnnotationToRoute(ctx context.Context, serverClient k8sclient.Client, inst *integreatlyv1alpha1.RHMI) (integreatlyv1alpha1.StatusPhase, error) {
+	route := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultRouteName,
+			Namespace: r.Config.GetNamespace(),
+		},
+	}
+
+	_, err := controllerutil.CreateOrUpdate(ctx, serverClient, route, func() error {
+		annotations := route.ObjectMeta.GetAnnotations()
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations["haproxy.router.openshift.io/hsts_header"] = "max-age=31536000;includeSubDomains;preload"
+		route.ObjectMeta.SetAnnotations(annotations)
+
+		if route.Spec.TLS != nil {
+			route.Spec.TLS.InsecureEdgeTerminationPolicy = routev1.InsecureEdgeTerminationPolicyRedirect
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return integreatlyv1alpha1.PhaseFailed, err
+	}
 	return integreatlyv1alpha1.PhaseCompleted, nil
 }
 
