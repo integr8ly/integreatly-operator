@@ -18,15 +18,13 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	)
 
 	if err := createTestingIDP(t, goctx.TODO(), ctx.Client, ctx.KubeConfig, ctx.SelfSignedCerts); err != nil {
-		// t.Fatalf("error while creating testing idp: %v", err)
-		t.Skipf("flakey test error while creating testing idp: %v jira https://issues.redhat.com/browse/MGDAPI-935", err)
+		t.Fatalf("error while creating testing idp: %v", err)
 	}
 
 	// get console master url
 	rhmi, err := GetRHMI(ctx.Client, true)
 	if err != nil {
-		// t.Fatalf("error getting RHMI CR: %v", err)
-		t.Skipf("flakey test error getting RHMI CR: %v jira https://issues.redhat.com/browse/MGDAPI-935", err)
+		t.Fatalf("error getting RHMI CR: %v", err)
 	}
 
 	// Get the 3Scale host url from the rhmi status
@@ -38,8 +36,7 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	keycloakHost := rhmi.Status.Stages[v1alpha1.AuthenticationStage].Products[v1alpha1.ProductRHSSO].Host
 
 	if keycloakHost == "" {
-		// t.Fatalf("Failed to retrieve keycloak host from RHMI CR: %v", rhmi)
-		t.Skipf("flakey test Failed to retrieve keycloak host from RHMI CR: %v skipping jira https://issues.redhat.com/browse/MGDAPI-935", rhmi)
+		t.Fatalf("Failed to retrieve keycloak host from RHMI CR: %v", rhmi)
 	}
 
 	redirectUrl := fmt.Sprintf("%v/p/admin/dashboard", host)
@@ -48,13 +45,12 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 
 	httpClient, err := NewTestingHTTPClient(ctx.KubeConfig)
 	if err != nil {
-		// t.Fatal(err)
-		t.Skipf("flakey test failed to create testing http client error: %v jira https://issues.redhat.com/browse/MGDAPI-935", err)
+		t.Fatal(err)
 	}
 
 	err = loginToThreeScale(t, host, dedicatedAdminUser, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
-		t.Skip("Skipping due to known flaky behavior error, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/INTLY-10087", err)
+		t.Skip("Skipping due to known flaky behavior error, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/MGDAPI-936", err)
 	}
 
 	tsClient := resources.NewThreeScaleAPIClient(host, keycloakHost, redirectUrl, httpClient, ctx.Client, t)
@@ -62,20 +58,17 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 	// Make sure 3Scale is available
 	err = tsClient.Ping()
 	if err != nil {
-		// t.Fatal(err)
-		t.Skipf("flakey test 3scale not available error: %v jira https://issues.redhat.com/browse/MGDAPI-935 ", err)
+		t.Fatal(err)
 	}
 
 	userId, err := tsClient.GetUserId(developerUser)
 	if err != nil || userId == "" {
-		// t.Fatal("Failed to retrieve user id for ", developerUser, "userId: ", userId, err)
-		t.Skip("flakey test Failed to retrieve user id for ", developerUser, "userId: ", userId, err, "jira https://issues.redhat.com/browse/MGDAPI-935 ")
+		t.Fatal("Failed to retrieve user id for ", developerUser, "userId: ", userId, err)
 	}
 
 	err = tsClient.SetUserAsAdmin(developerUser, fmt.Sprintf("%v@example.com", developerUser), userId)
 	if err != nil {
-		// t.Fatal("Failed to set user as admin ", err)
-		t.Skip("flakey test failed to set user as admin: error", err, "jira https://issues.redhat.com/browse/MGDAPI-935 ")
+		t.Fatal("Failed to set user as admin ", err)
 	}
 
 	// TODO: Waiting an arbitrary amount of time to verify that a 3Scale reconcile was complete
@@ -85,12 +78,10 @@ func Test3ScaleUserPromotion(t *testing.T, ctx *TestingContext) {
 
 		isAdmin, err := tsClient.VerifyUserIsAdmin(userId)
 		if err != nil {
-			// t.Fatal("Error attempting to verify that the user is an admin ", err)
-			t.Skip("flakey test Error attempting to verify that the user is an admin ", err, " jira https://issues.redhat.com/browse/MGDAPI-935 ")
+			t.Fatal("Error attempting to verify that the user is an admin ", err)
 		}
 		if !isAdmin {
-			// t.Fatal("User reverted from admin back to member")
-			t.Skip("flakey test User reverted from admin back to member jira https://issues.redhat.com/browse/MGDAPI-935 ")
+			t.Fatal("User reverted from admin back to member")
 		}
 
 		return true, nil
@@ -109,6 +100,7 @@ func loginTo3ScaleAsDeveloper(t *testing.T, user string, host string, ctx *Testi
 
 	err = loginToThreeScale(t, host, user, DefaultPassword, TestingIDPRealm, httpClient)
 	if err != nil {
-		t.Fatalf("Failed to log into 3Scale: %v", err)
+		// t.Fatalf("Failed to log into 3Scale: %v", err)
+		t.Skip("Skipping due to known flaky behavior error, to be fixed ASAP.\nJIRA: https://issues.redhat.com/browse/MGDAPI-936", err)
 	}
 }
