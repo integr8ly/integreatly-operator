@@ -478,7 +478,7 @@ spec:
                 - name: ZYNC_IMAGE
                   value: quay.io/integreatly/delorean:3scale-amp2-zync-rhel7_d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
                 - name: SYSTEM_MEMCACHED_IMAGE
-                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_c109baa8242e3c4a2dd627efbd78d53081feaf42747586be7c4fb8038e7acddd
+                  value: quay.io/integreatly/delorean:3scale-amp2-memcached-rhel7_c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
                 - name: BACKEND_REDIS_IMAGE
                   value: quay.io/integreatly/delorean:rhscl-redis-32-rhel7_a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
                 - name: SYSTEM_REDIS_IMAGE
@@ -737,7 +737,7 @@ spec:
     name: system-rhel7
   - image: registry.redhat.io/3scale-amp2/zync-rhel7@sha256:d0a1fe622a6988b3fd97ebb62fa7d23be082b618248178150ae3287701121a96
     name: zync-rhel7
-  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:c109baa8242e3c4a2dd627efbd78d53081feaf42747586be7c4fb8038e7acddd
+  - image: registry.redhat.io/3scale-amp2/memcached-rhel7@sha256:c04749ad063f9b91de8c883ead964993f5d3e42c074569b116b78c6e2c741c6a
     name: memcached-rhel7
   - image: registry.redhat.io/rhscl/redis-32-rhel7@sha256:a9bdf52384a222635efc0284db47d12fbde8c3d0fcb66517ba8eefad1d4e9dc9
     name: redis-32-rhel7
