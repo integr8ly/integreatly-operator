@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Obtaining security group"
-SECGRP=`aws ec2 describe-security-groups --region ${CLUSTER_REGION} --filters Name=group-name,Values=pipeline-sg --query SecurityGroups[0].GroupId --output text`
+SECGRP=`aws ec2 describe-security-groups --region ${CLUSTER_REGION} --filters Name=group-name,Values=${EC2_NAME}-sg --query SecurityGroups[0].GroupId --output text`
 for (( i=0; i<5; i++ )) do
     if [[ $SECGRP =~ "sg-" ]]; then
       echo "SECGRP "${SECGRP}" identified"
@@ -10,8 +10,8 @@ for (( i=0; i<5; i++ )) do
     sleep 5
 done
 
-echo "Obtaining EC2 micro-t2 instance"
-EC2=`aws ec2 describe-instances  --region ${CLUSTER_REGION} --filters Name=key-name,Values=pipelineKey Name=instance-state-name,Values=running --query Reservations[0].Instances[0].InstanceId --output text`
+echo "Obtaining EC2 instance"
+EC2=`aws ec2 describe-instances  --region ${CLUSTER_REGION} --filters Name=key-name,Values=${EC2_NAME}Key Name=instance-state-name,Values=running --query Reservations[0].Instances[0].InstanceId --output text`
 for (( i=0; i<5; i++ )) do
     if [[ $EC2 =~ "i-" ]]; then
       echo "EC2 "${EC2}" identified"
@@ -46,7 +46,7 @@ aws ec2 disassociate-address --association-id $ASSOC --region $CLUSTER_REGION
 echo "Releasing address "$ELIP
 aws ec2 release-address --allocation-id $ELIP --region $CLUSTER_REGION
 
-echo "Terminatinng EC2 instance "$EC2
+echo "Terminating EC2 instance "$EC2
 aws ec2 terminate-instances --instance-ids $EC2 --region $CLUSTER_REGION
 for (( i=0; i<60; i++ )) do
     commandResult=$(aws ec2 describe-instances  --region ${CLUSTER_REGION} --instance-ids $EC2 --query Reservations[0].Instances[0].State.Name --output text)
@@ -63,7 +63,7 @@ sleep 30
 echo "Deleting security group "$SECGRP
 aws ec2 delete-security-group --group-id $SECGRP --region $CLUSTER_REGION
 
-echo "Deleting key-pair pipelineKey from aws"
-aws ec2 delete-key-pair --key-name pipelineKey --region $CLUSTER_REGION
+echo "Deleting key-pair ${EC2_NAME}Key from aws"
+aws ec2 delete-key-pair --key-name ${EC2_NAME}Key --region $CLUSTER_REGION
 
 
