@@ -3,7 +3,6 @@ package rhssouser
 import (
 	"context"
 	"fmt"
-	testResources "github.com/integr8ly/integreatly-operator/test/resources"
 	"strings"
 
 	"github.com/integr8ly/integreatly-operator/pkg/products/rhssocommon"
@@ -47,7 +46,6 @@ var (
 	idpAlias                  = "openshift-v4"
 	masterRealmName           = "master"
 	adminCredentialSecretName = "credential-" + keycloakName
-	numberOfReplicas          = 3
 	ssoType                   = "user sso"
 	postgresResourceName      = "rhssouser-postgres-rhmi"
 )
@@ -274,9 +272,7 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 			Limits:   corev1.ResourceList{corev1.ResourceCPU: k8sresource.MustParse("1"), corev1.ResourceMemory: k8sresource.MustParse("2G")},
 		}
 		//OSD has more resources than PROW, so adding an exception
-		if testResources.RunningInProw(r.Installation) {
-			numberOfReplicas = 1
-		}
+		numberOfReplicas := r.Config.GetReplicasConfig(r.Installation)
 		if kc.Spec.Instances < numberOfReplicas {
 			kc.Spec.Instances = numberOfReplicas
 		}
