@@ -52,7 +52,7 @@ export SELF_SIGNED_CERTS   ?= true
 # Setting the INSTALLATION_TYPE to managed-api will configure the values required for RHOAM installs
 export INSTALLATION_TYPE   ?= managed
 
-export ALERT_SMTP_FROM ?=no-reply-alert@devshift.org
+export ALERT_SMTP_FROM ?= noreply-alert@devshift.org
 export USE_CLUSTER_STORAGE ?= true
 export OPERATORS_IN_PRODUCT_NAMESPACE ?= false # e2e tests and createInstallationCR() need to be updated when default is changed
 export DELOREAN_PULL_SECRET_NAME ?= integreatly-delorean-pull-secret

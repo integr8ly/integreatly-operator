@@ -81,7 +81,6 @@ spec:
             useClusterStorage:
               type: string
           required:
-          - alertFromAddress
           - namespacePrefix
           - type
           type: object
