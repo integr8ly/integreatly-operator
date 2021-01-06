@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Creating key-pair"
-aws ec2 create-key-pair --key-name pipelineKey --query 'KeyMaterial' --output text --region ${CLUSTER_REGION} > pipelineKey.pem && Keyfile=true
+aws ec2 create-key-pair --key-name ${EC2_NAME}Key --query 'KeyMaterial' --output text --region ${CLUSTER_REGION} > ${EC2_NAME}Key.pem && Keyfile=true
 
 echo "Getting VPC Details"
 VPC=`aws ec2 describe-vpcs --region ${CLUSTER_REGION} --filters "Name=tag:Name,Values=${clusterID}*" --query "Vpcs[0].VpcId" --output text` 
@@ -26,7 +26,7 @@ for (( i=0; i<5; i++ )) do
 done
 
 echo "Creating security group"
-SECGRP=`aws ec2 create-security-group --group-name pipeline-sg --description "pipeline security group" --vpc-id $VPC --region ${CLUSTER_REGION} --output text`
+SECGRP=`aws ec2 create-security-group --group-name ${EC2_NAME}-sg --description "${EC2_NAME} security group" --vpc-id $VPC --region ${CLUSTER_REGION} --output text`
 for (( i=0; i<5; i++ )) do
     if [[ $SECGRP =~ "sg-" ]]; then
       echo "SECGRP "${SECGRP}" is created"
@@ -50,7 +50,7 @@ for (( i=0; i<5; i++ )) do
 done
 
 echo "Starting EC2 micro-t2 instance"
-EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type t2.micro --key-name pipelineKey --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --query 'Instances[0].InstanceId' --output text`
+EC2=`aws ec2 run-instances --image-id $AMI --count 1 --instance-type ${EC2_TYPE} --key-name ${EC2_NAME}Key --security-group-ids $SECGRP --subnet-id $SUBNET --region ${CLUSTER_REGION} --query 'Instances[0].InstanceId' --output text`
 for (( i=0; i<60; i++ )) do
     commandResult=$(aws ec2 describe-instance-status --region $CLUSTER_REGION --instance-ids $EC2 --query 'InstanceStatuses[0].InstanceState.Name' --output text)
     if [[ $commandResult == "running" ]]; then
@@ -93,10 +93,10 @@ done
 INSTANCE=`aws ec2 describe-instances --instance-ids $EC2 --region ${CLUSTER_REGION} --output json`
 echo ${INSTANCE}
 echo ""
-echo "If working locally, you will need to create the pipelineKey.pem and paste in the following contents before running the following commands."
+echo "If working locally, you will need to create the ${EC2_NAME}Key.pem and paste in the following contents before running the following commands."
 echo ""
-cat pipelineKey.pem 
+cat ${EC2_NAME}Key.pem 
 echo ""
-echo "chmod 700 pipelineKey.pem"
-echo "ssh -i pipelineKey.pem ec2-user@$PUBIP"
+echo "chmod 700 ${EC2_NAME}Key.pem"
+echo "ssh -i ${EC2_NAME}Key.pem ec2-user@$PUBIP"
 
