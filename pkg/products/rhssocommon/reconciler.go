@@ -175,18 +175,17 @@ func (r *Reconciler) CleanupKeycloakResources(ctx context.Context, inst *integre
 // this should use the same valid certs as the cluster itself but for some reason the
 // signing operator gives out self signed certs
 // to circumvent this we create another keycloak route with edge termination
-func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8sclient.Client, config config.ConfigReadable, ssoCommon *config.RHSSOCommon) (integreatlyv1alpha1.StatusPhase, error) {
-	// We need a route with edge termination to serve the correct cluster certificate
-	edgeRoute := &routev1.Route{
+func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8sclient.Client, config config.ConfigReadable, ssoCommon *config.RHSSOCommon, routeName string) (integreatlyv1alpha1.StatusPhase, error) {
+	keycloakRoute := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keycloak-edge",
+			Name:      routeName,
 			Namespace: ssoCommon.GetNamespace(),
 		},
 	}
 
-	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, edgeRoute, func() error {
-		host := edgeRoute.Spec.Host
-		edgeRoute.Spec = routev1.RouteSpec{
+	or, err := controllerutil.CreateOrUpdate(ctx, serverClient, keycloakRoute, func() error {
+		host := keycloakRoute.Spec.Host
+		keycloakRoute.Spec = routev1.RouteSpec{
 			Host: host,
 			To: routev1.RouteTargetReference{
 				Kind: "Service",
@@ -206,15 +205,15 @@ func (r *Reconciler) CreateKeycloakRoute(ctx context.Context, serverClient k8scl
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("error creating keycloak edge route: %w", err)
 	}
-	r.Logger.Info(fmt.Sprintf("operation result of creating %v service was %v", edgeRoute.Name, or))
+	r.Logger.Info(fmt.Sprintf("operation result of creating %v service was %v", keycloakRoute.Name, or))
 
-	if edgeRoute.Spec.Host == "" {
+	if keycloakRoute.Spec.Host == "" {
 		return integreatlyv1alpha1.PhaseInProgress, nil
 	}
 
 	// Override the keycloak host to the host of the edge route (instead of the
 	// operator generated route)
-	ssoCommon.SetHost(fmt.Sprintf("https://%v", edgeRoute.Spec.Host))
+	ssoCommon.SetHost(fmt.Sprintf("https://%v", keycloakRoute.Spec.Host))
 	err = r.ConfigManager.WriteConfig(config)
 	if err != nil {
 		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("Error writing to config in rhsso reconciler: %w", err)

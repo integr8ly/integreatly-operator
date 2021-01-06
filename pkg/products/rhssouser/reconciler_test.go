@@ -392,11 +392,12 @@ func TestReconciler_reconcileComponents(t *testing.T) {
 			if tc.ExpectedStatus != phase {
 				t.Fatal("expected phase ", tc.ExpectedStatus, " but got ", phase)
 			}
+
 		})
 	}
 }
 
-func TestReconciler_fullReconcile(t *testing.T) {
+func TestReconciler_full_RHMI_Reconcile(t *testing.T) {
 	scheme, err := getBuildScheme()
 	if err != nil {
 		t.Fatal(err)
@@ -492,6 +493,7 @@ func TestReconciler_fullReconcile(t *testing.T) {
 			Host: "sampleHost",
 		},
 	}
+
 	group := &usersv1.Group{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "dedicated-admins",
@@ -551,6 +553,235 @@ func TestReconciler_fullReconcile(t *testing.T) {
 	}{
 		{
 			Name:            "test successful reconcile",
+			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
+			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet),
+			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),
+			FakeConfig:      basicConfigMock(),
+			FakeMPM: &marketplace.MarketplaceInterfaceMock{
+				InstallOperatorFunc: func(ctx context.Context, serverClient k8sclient.Client, t marketplace.Target, operatorGroupNamespaces []string, approvalStrategy operatorsv1alpha1.Approval, catalogSourceReconciler marketplace.CatalogSourceReconciler) error {
+
+					return nil
+				},
+				GetSubscriptionInstallPlansFunc: func(ctx context.Context, serverClient k8sclient.Client, subName string, ns string) (plans *operatorsv1alpha1.InstallPlanList, subscription *operatorsv1alpha1.Subscription, e error) {
+					return &operatorsv1alpha1.InstallPlanList{
+							Items: []operatorsv1alpha1.InstallPlan{
+								{
+									ObjectMeta: metav1.ObjectMeta{
+										Name: "codeready-install-plan",
+									},
+									Status: operatorsv1alpha1.InstallPlanStatus{
+										Phase: operatorsv1alpha1.InstallPlanPhaseComplete,
+									},
+								},
+							},
+						}, &operatorsv1alpha1.Subscription{
+							Status: operatorsv1alpha1.SubscriptionStatus{
+								Install: &operatorsv1alpha1.InstallPlanReference{
+									Name: "codeready-install-plan",
+								},
+							},
+						}, nil
+				},
+			},
+			Installation:          installation,
+			Product:               &integreatlyv1alpha1.RHMIProductStatus{},
+			Recorder:              setupRecorder(),
+			ApiUrl:                "https://serverurl",
+			KeycloakClientFactory: getMoqKeycloakClientFactory(),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testReconciler, err := NewReconciler(
+				tc.FakeConfig,
+				tc.Installation,
+				tc.FakeOauthClient,
+				tc.FakeMPM,
+				tc.Recorder,
+				tc.ApiUrl,
+				tc.KeycloakClientFactory,
+			)
+			if err != nil && err.Error() != tc.ExpectedError {
+				t.Fatalf("unexpected error : '%v', expected: '%v'", err, tc.ExpectedError)
+			}
+
+			status, err := testReconciler.Reconcile(context.TODO(), tc.Installation, tc.Product, tc.FakeClient)
+
+			if err != nil && !tc.ExpectError {
+				t.Fatalf("expected no errors, but got one: %v", err)
+			}
+
+			if err == nil && tc.ExpectError {
+				t.Fatal("expected error but got none")
+			}
+
+			if status != tc.ExpectedStatus {
+				t.Fatalf("Expected status: '%v', got: '%v'", tc.ExpectedStatus, status)
+			}
+		})
+	}
+}
+
+func TestReconciler_full_RHOAM_Reconcile(t *testing.T) {
+	scheme, err := getBuildScheme()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	installation := &integreatlyv1alpha1.RHMI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       "installation",
+			Namespace:  defaultNamespace,
+			Finalizers: []string{"finalizer.user-sso.integreatly.org"},
+			UID:        types.UID("xyz"),
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       integreatlyv1alpha1.SchemaGroupVersionKind.Kind,
+			APIVersion: integreatlyv1alpha1.SchemeGroupVersion.String(),
+		},
+		Status: integreatlyv1alpha1.RHMIStatus{
+			Stages: map[integreatlyv1alpha1.StageName]integreatlyv1alpha1.RHMIStageStatus{
+				"rhsso-stage": {
+					Name: "rhsso-stage",
+					Products: map[integreatlyv1alpha1.ProductName]integreatlyv1alpha1.RHMIProductStatus{
+						integreatlyv1alpha1.ProductCodeReadyWorkspaces: {
+							Name:   integreatlyv1alpha1.ProductRHSSO,
+							Status: integreatlyv1alpha1.PhaseCreatingComponents,
+						},
+					},
+				},
+			},
+		},
+		Spec: integreatlyv1alpha1.RHMISpec{
+			Type: string(integreatlyv1alpha1.InstallationTypeManagedApi),
+		},
+	}
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultNamespace,
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	operatorNS := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultNamespace + "-operator",
+			Labels: map[string]string{
+				resources.OwnerLabelKey: string(installation.GetUID()),
+			},
+		},
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceActive,
+		},
+	}
+
+	kc := &keycloak.Keycloak{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      keycloakName,
+			Namespace: defaultNamespace,
+		},
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: defaultNamespace,
+		},
+	}
+
+	githubOauthSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "github-oauth-secret",
+			Namespace: defaultOperatorNamespace,
+		},
+	}
+
+	oauthClientSecrets := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "oauth-client-secrets",
+			Namespace: defaultOperatorNamespace,
+		},
+		Data: map[string][]byte{
+			"rhssouser": bytes.NewBufferString("test").Bytes(),
+		},
+	}
+
+	edgeRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: "user-sso",
+		},
+		Spec: routev1.RouteSpec{
+			Host: "sampleHost",
+		},
+	}
+
+	group := &usersv1.Group{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "dedicated-admins",
+		},
+		Users: nil,
+	}
+
+	//completed postgres that points at the secret croPostgresSecret
+	croPostgres := &crov1.Postgres{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("rhssouser-postgres-%s", installation.Name),
+			Namespace: defaultNamespace,
+		},
+		Status: crov1.PostgresStatus{
+			Phase: croTypes.PhaseComplete,
+			SecretRef: &croTypes.SecretRef{
+				Name:      "test",
+				Namespace: defaultNamespace,
+			},
+		},
+	}
+
+	//secret created by the cloud resource operator postgres reconciler
+	croPostgresSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: defaultNamespace,
+		},
+		Data: map[string][]byte{},
+		Type: corev1.SecretTypeOpaque,
+	}
+
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "keycloak",
+			Namespace: defaultNamespace,
+			Labels: map[string]string{
+				"app": "keycloak",
+			},
+		},
+	}
+
+	cases := []struct {
+		Name                  string
+		ExpectError           bool
+		ExpectedStatus        integreatlyv1alpha1.StatusPhase
+		ExpectedError         string
+		FakeConfig            *config.ConfigReadWriterMock
+		FakeClient            k8sclient.Client
+		FakeOauthClient       oauthClient.OauthV1Interface
+		FakeMPM               *marketplace.MarketplaceInterfaceMock
+		Installation          *integreatlyv1alpha1.RHMI
+		Product               *integreatlyv1alpha1.RHMIProductStatus
+		Recorder              record.EventRecorder
+		ApiUrl                string
+		KeycloakClientFactory keycloakCommon.KeycloakClientFactory
+	}{
+		{
+			Name:            "RHOAM - test successful reconcile",
 			ExpectedStatus:  integreatlyv1alpha1.PhaseCompleted,
 			FakeClient:      moqclient.NewSigsClientMoqWithScheme(scheme, getKcr(keycloak.KeycloakRealmStatus{Phase: keycloak.PhaseReconciling}), kc, secret, ns, operatorNS, githubOauthSecret, oauthClientSecrets, installation, edgeRoute, group, croPostgresSecret, croPostgres, getRHSSOCredentialSeed(), statefulSet),
 			FakeOauthClient: fakeoauthClient.NewSimpleClientset([]runtime.Object{}...).OauthV1(),

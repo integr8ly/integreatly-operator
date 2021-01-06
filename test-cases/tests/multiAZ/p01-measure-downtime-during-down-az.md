@@ -100,7 +100,7 @@ Measure the downtime of the RHOAM components during a AWS Availability Zone fail
    If you did it manually then you need to generate a token:
 
    ```bash
-   curl -X POST 'https://keycloak-edge-redhat-rhoam-user-sso.apps.<YOUR-CLUSTER>.s1.devshift.org:443/auth/realms/<YOUR-REALM>/protocol/openid-connect/token' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
+   curl -X POST 'https://keycloak-redhat-rhoam-user-sso.apps.<YOUR-CLUSTER>.s1.devshift.org:443/auth/realms/<YOUR-REALM>/protocol/openid-connect/token' -H "Content-Type: application/x-www-form-urlencoded" --data "grant_type=password&client_id=<CLIENT-ID>&client_secret=<CLIENT-SECRET>&username=<USER>&password=<PASSWORD>" | jq -r '.access_token'
    ```
 
    All the required values for the command above are available in your user SSO instance.

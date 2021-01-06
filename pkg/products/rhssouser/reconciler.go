@@ -50,6 +50,7 @@ var (
 	numberOfReplicas          = 3
 	ssoType                   = "user sso"
 	postgresResourceName      = "rhssouser-postgres-rhmi"
+	routeName                 = "keycloak-edge"
 )
 
 const (
@@ -186,7 +187,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, installation *integreatlyv1a
 		return phase, err
 	}
 
-	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon)
+	// Setting a name for keycloak-edge to "keycloak" for managed-api install type.
+	// This is done as the KCO route has been disabled, but if needs to be enabled in future, we won't have to change the route name.
+	if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+		routeName = "keycloak"
+	}
+
+	phase, err = r.CreateKeycloakRoute(ctx, serverClient, r.Config, r.Config.RHSSOCommon, routeName)
 	if err != nil || phase != integreatlyv1alpha1.PhaseCompleted {
 		events.HandleError(r.Recorder, installation, phase, "Failed to handle in progress phase", err)
 		return phase, err
@@ -266,7 +273,13 @@ func (r *Reconciler) reconcileComponents(ctx context.Context, installation *inte
 		}
 		kc.Spec.ExternalDatabase = keycloak.KeycloakExternalDatabase{Enabled: true}
 		kc.Labels = getMasterLabels()
-		kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
+
+		// Disabling the KCO route for managed-api
+		if installation.Spec.Type == string(integreatlyv1alpha1.InstallationTypeManagedApi) {
+			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: false}
+		} else {
+			kc.Spec.ExternalAccess = keycloak.KeycloakExternalAccess{Enabled: true}
+		}
 		kc.Spec.Profile = rhsso.RHSSOProfile
 		kc.Spec.PodDisruptionBudget = keycloak.PodDisruptionBudgetConfig{Enabled: true}
 		kc.Spec.KeycloakDeploymentSpec.Resources = corev1.ResourceRequirements{
