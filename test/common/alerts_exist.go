@@ -245,8 +245,7 @@ func rhmi2ExpectedRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "operator-rhmi-installation-controller-alerts.yaml",
 			Rules: []string{
-				"RHMIInstallationControllerIsNotReconciling",
-				"RHMIInstallationControllerStoppedReconciling",
+				"RHMIInstallationControllerIsInReconcilingErrorState",
 			},
 		},
 	}
@@ -346,8 +345,7 @@ func managedApiSpecificRules() []alertsTestRule {
 		{
 			File: NamespacePrefix + "operator-rhoam-installation-controller-alerts.yaml",
 			Rules: []string{
-				"RHOAMInstallationControllerIsNotReconciling",
-				"RHOAMInstallationControllerStoppedReconciling",
+				"RHOAMInstallationControllerIsInReconcilingErrorState",
 			},
 		},
 	}
