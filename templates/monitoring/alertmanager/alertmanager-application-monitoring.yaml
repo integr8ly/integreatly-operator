@@ -40,12 +40,16 @@ receivers:
     email_configs:
       - send_resolved: true
         to: {{ index .Params "SMTPToSREAddress" }}
+        headers:
+          Subject: '{{ index .Params "Subject" }}'
   - name: critical
     pagerduty_configs:
       - service_key: {{ index .Params "PagerDutyServiceKey" }}
     email_configs:
       - send_resolved: true
         to: {{ index .Params "SMTPToSREAddress" }}
+        headers:
+          Subject: '{{ index .Params "Subject" }}'
   - name: deadmansswitch
     webhook_configs:
       - url: {{ index .Params "DeadMansSnitchURL" }}
@@ -53,14 +57,20 @@ receivers:
     email_configs:
       - send_resolved: True
         to: '{{ index .Params "SMTPToBUAddress" }}'
+        headers:
+          Subject: '{{ index .Params "Subject" }}'
   - name: BUandCustomer
     email_configs:
       - send_resolved: True
         to: '{{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
+        headers:
+          Subject: '{{ index .Params "Subject" }}'
   - name: SRECustomerBU
     email_configs:
       - send_resolved: True
         to: '{{ index .Params "SMTPToSREAddress" }}, {{ index .Params "SMTPToBUAddress" }}, {{ index .Params "SMTPToCustomerAddress" }}'
+        headers:
+          Subject: '{{ index .Params "Subject" }}'
 inhibit_rules:
   - source_match:
       alertname: 'JobRunningTimeExceeded'

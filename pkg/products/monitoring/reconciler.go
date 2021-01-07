@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"os"
 	"strings"
 
@@ -63,6 +64,9 @@ const (
 	federationRoleBindingName                 = "federation-view"
 	clusterMonitoringPrometheusServiceAccount = "prometheus-k8s"
 	clusterMonitoringNamespace                = "openshift-monitoring"
+
+	// Cluster infrastructure
+	clusterInfraName = "cluster"
 )
 
 type Reconciler struct {
@@ -746,6 +750,11 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		smtpAlertFromAddress = r.installation.Spec.AlertFromAddress
 	}
 
+	clusterInfra := &configv1.Infrastructure{}
+	if err := serverClient.Get(ctx, k8sclient.ObjectKey{Name: clusterInfraName}, clusterInfra); err != nil {
+		return integreatlyv1alpha1.PhaseFailed, fmt.Errorf("failed to fetch cluster infra details for alertmanager config: %w", err)
+	}
+
 	// parse the config template into a secret object
 	templateUtil := NewTemplateHelper(map[string]string{
 		"SMTPHost":              string(smtpSecret.Data["host"]),
@@ -758,6 +767,7 @@ func (r *Reconciler) reconcileAlertManagerConfigSecret(ctx context.Context, serv
 		"SMTPToBUAddress":       smtpToBUAddress,
 		"PagerDutyServiceKey":   pagerDutySecret,
 		"DeadMansSnitchURL":     dmsSecret,
+		"Subject":               fmt.Sprintf(`[%s] {{template "email.default.subject" . }}`, clusterInfra.Status.InfrastructureName),
 	})
 	configSecretData, err := templateUtil.loadTemplate(alertManagerConfigTemplatePath)
 	if err != nil {
